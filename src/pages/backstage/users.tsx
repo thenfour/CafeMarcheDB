@@ -68,18 +68,13 @@ const UserListItem = (props: UserListItemProps) => {
                         color={props.user.role.color}
                         shape={"rectangle"}
                         size="small"
+                        variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.roleFilter.options.includes(props.user.role.id) }}
                     >
                         {props.user.role.name}
                     </CMChip>}
                 {props.user.googleId &&
-                    <CMChip
-                        color={null}
-                        shape={"rounded"}
-                        size="small"
-                        tooltip="Has google identity"
-                    >
-                        G
-                    </CMChip>}
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /><path d="M1 1h22v22H1z" fill="none" /></svg>
+                }
             </CMChipContainer>
 
             <CMChipContainer className="instruments">
@@ -87,7 +82,7 @@ const UserListItem = (props: UserListItemProps) => {
                     key={tag.id}
                     size='small'
                     model={tag.instrument}
-                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.instrumentId) }}
+                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.instrumentFilter.options.includes(tag.instrumentId) }}
                     getTooltip={(_) => tag.instrument.description}
                 />)}
             </CMChipContainer>
@@ -115,6 +110,14 @@ interface UsersFilterSpecStatic {
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
     tagFilterOptions: number[];
+
+    roleFilterEnabled: boolean;
+    roleFilterBehavior: DiscreteCriterionFilterType;
+    roleFilterOptions: number[];
+
+    instrumentFilterEnabled: boolean;
+    instrumentFilterBehavior: DiscreteCriterionFilterType;
+    instrumentFilterOptions: number[];
 };
 
 
@@ -228,6 +231,12 @@ const gStaticFilters: UsersFilterSpecStatic[] = [
         tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
         tagFilterOptions: [],
         tagFilterEnabled: false,
+        instrumentFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+        instrumentFilterOptions: [],
+        instrumentFilterEnabled: false,
+        roleFilterBehavior: DiscreteCriterionFilterType.hasAny,
+        roleFilterOptions: [],
+        roleFilterEnabled: false,
     },
 ];
 
@@ -270,6 +279,34 @@ const UserListOuter = () => {
         setTagFilterOptionsWhenEnabled(x.options as any);
     };
 
+    // "rl" prefix
+    const [roleFilterBehaviorWhenEnabled, setRoleFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("rlb", gDefaultStaticFilterValue.roleFilterBehavior);
+    const [roleFilterOptionsWhenEnabled, setRoleFilterOptionsWhenEnabled] = useURLState<number[]>("rlo", gDefaultStaticFilterValue.roleFilterOptions);
+    const [roleFilterEnabled, setRoleFilterEnabled] = useURLState<boolean>("rle", gDefaultStaticFilterValue.roleFilterEnabled);
+    const roleFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "role",
+        behavior: roleFilterBehaviorWhenEnabled,
+        options: roleFilterOptionsWhenEnabled,
+    };
+    const setRoleFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setRoleFilterBehaviorWhenEnabled(x.behavior);
+        setRoleFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // "in" prefix
+    const [instrumentFilterBehaviorWhenEnabled, setInstrumentFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("inb", gDefaultStaticFilterValue.instrumentFilterBehavior);
+    const [instrumentFilterOptionsWhenEnabled, setInstrumentFilterOptionsWhenEnabled] = useURLState<number[]>("ino", gDefaultStaticFilterValue.instrumentFilterOptions);
+    const [instrumentFilterEnabled, setInstrumentFilterEnabled] = useURLState<boolean>("ine", gDefaultStaticFilterValue.instrumentFilterEnabled);
+    const instrumentFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "instruments",
+        behavior: instrumentFilterBehaviorWhenEnabled,
+        options: instrumentFilterOptionsWhenEnabled,
+    };
+    const setInstrumentFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setInstrumentFilterBehaviorWhenEnabled(x.behavior);
+        setInstrumentFilterOptionsWhenEnabled(x.options as any);
+    };
+
     // the default basic filter spec when no params specified.
     const filterSpec: UsersFilterSpec = {
         refreshSerial,
@@ -281,6 +318,8 @@ const UserListOuter = () => {
         orderByDirection: sortDirection,
 
         tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        instrumentFilter: instrumentFilterEnabled ? instrumentFilterWhenEnabled : { db3Column: "instruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        roleFilter: roleFilterEnabled ? roleFilterWhenEnabled : { db3Column: "role", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
     const { enrichedItems, results, loadMoreData } = useUserListData(filterSpec);
@@ -295,6 +334,14 @@ const UserListOuter = () => {
             tagFilterEnabled,
             tagFilterBehavior: tagFilterBehaviorWhenEnabled,
             tagFilterOptions: tagFilterOptionsWhenEnabled,
+
+            roleFilterEnabled,
+            roleFilterBehavior: roleFilterBehaviorWhenEnabled,
+            roleFilterOptions: roleFilterOptionsWhenEnabled,
+
+            instrumentFilterEnabled,
+            instrumentFilterBehavior: instrumentFilterBehaviorWhenEnabled,
+            instrumentFilterOptions: instrumentFilterOptionsWhenEnabled,
         }
         const txt = JSON.stringify(o, null, 2);
         console.log(o);
@@ -312,6 +359,14 @@ const UserListOuter = () => {
         setTagFilterEnabled(x.tagFilterEnabled);
         setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
         setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+
+        setRoleFilterEnabled(x.roleFilterEnabled);
+        setRoleFilterBehaviorWhenEnabled(x.roleFilterBehavior);
+        setRoleFilterOptionsWhenEnabled(x.roleFilterOptions);
+
+        setInstrumentFilterEnabled(x.instrumentFilterEnabled);
+        setInstrumentFilterBehaviorWhenEnabled(x.instrumentFilterBehavior);
+        setInstrumentFilterOptionsWhenEnabled(x.instrumentFilterOptions);
     };
 
     const MatchesStaticFilter = (x: UsersFilterSpecStatic): boolean => {
@@ -324,6 +379,18 @@ const UserListOuter = () => {
             if (!arraysContainSameValues(tagFilterOptionsWhenEnabled, x.tagFilterOptions)) return false;
         }
 
+        if (x.roleFilterEnabled !== roleFilterEnabled) return false;
+        if (roleFilterEnabled) {
+            if (roleFilterBehaviorWhenEnabled !== x.roleFilterBehavior) return false;
+            if (!arraysContainSameValues(roleFilterOptionsWhenEnabled, x.roleFilterOptions)) return false;
+        }
+
+        if (x.instrumentFilterEnabled !== instrumentFilterEnabled) return false;
+        if (instrumentFilterEnabled) {
+            if (instrumentFilterBehaviorWhenEnabled !== x.instrumentFilterBehavior) return false;
+            if (!arraysContainSameValues(instrumentFilterOptionsWhenEnabled, x.instrumentFilterOptions)) return false;
+        }
+
         return true;
     };
 
@@ -332,6 +399,8 @@ const UserListOuter = () => {
     const hasExtraFilters = ((): boolean => {
         if (!!matchingStaticFilter) return false;
         if (tagFilterEnabled) return true;
+        if (roleFilterEnabled) return true;
+        if (instrumentFilterEnabled) return true;
         return false;
     })();
 
@@ -395,6 +464,59 @@ const UserListOuter = () => {
                                         label: tag.text,
                                         shape: "rounded",
                                         tooltip: tag.description,
+                                    };
+                                }}
+                            />
+
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Role"}
+                                style="foreignSingle"
+                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "role")?.error}
+                                value={roleFilterWhenEnabled}
+                                filterEnabled={roleFilterEnabled}
+                                onChange={(n, enabled) => {
+                                    setRoleFilterEnabled(enabled);
+                                    setRoleFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "role")?.items || []}
+                                sanitize={x => {
+                                    if (!x.id) return x;
+                                    const role = dashboardContext.role.getById(x.id)!;
+                                    return {
+                                        ...x,
+                                        color: role.color || null,
+                                        label: role.name,
+                                        shape: "rectangle",
+                                        tooltip: role.description,
+                                    };
+                                }}
+                            />
+
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Instruments"}
+                                style="tags"
+                                filterEnabled={instrumentFilterEnabled}
+                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "instruments")?.error}
+                                value={instrumentFilterWhenEnabled}
+                                onChange={(n, enabled) => {
+                                    setInstrumentFilterEnabled(enabled);
+                                    setInstrumentFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "instruments")?.items || []}
+                                sanitize={x => {
+                                    if (!x.id) return x;
+                                    const instrument = dashboardContext.instrument.getById(x.id);
+                                    if (!instrument) return x;
+                                    const instrumentGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
+                                    if (!instrumentGroup) return x;
+                                    return {
+                                        ...x,
+                                        color: instrumentGroup.color || null,
+                                        label: instrument.name,
+                                        shape: "rounded",
+                                        tooltip: instrument.description,
                                     };
                                 }}
                             />

@@ -21,6 +21,8 @@ function GetSearchResultsQueryArgs(filterSpec: UsersFilterSpec, offset: number, 
         quickFilter: filterSpec.quickFilter,
         discreteCriteria: [
             filterSpec.tagFilter,
+            filterSpec.roleFilter,
+            filterSpec.instrumentFilter,
         ],
     };
 }

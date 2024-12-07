@@ -33,6 +33,8 @@ export interface UsersFilterSpec {
     orderByDirection: SortDirection;
 
     tagFilter: DiscreteCriterion;
+    instrumentFilter: DiscreteCriterion;
+    roleFilter: DiscreteCriterion;
 };
 
 

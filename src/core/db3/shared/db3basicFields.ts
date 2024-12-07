@@ -1004,7 +1004,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             },
             hasAllOf: () => {
                 // you can't have multiple of this type of member; it would be impossible 
-                throw new Error(`query type 'hasAllOf' is impossible for foreign single fields. make sure your filter spec doesn't invoke it.`);
+                throw new Error(`query type 'hasAllOf' is impossible for foreign single fields. make sure your filter spec doesn't invoke it. field:${crit.db3Column}`);
             },
             doesntHaveAnyOf: () => {
                 // similar to hasSomeOf with 0 items, treat 0 items as a synonym for null.
