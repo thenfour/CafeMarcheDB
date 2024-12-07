@@ -28,6 +28,10 @@ function GetSearchResultsQueryArgs(filterSpec: EventsFilterSpec, offset: number,
     };
 }
 
+type FetchItem = SearchResultsRet & {
+    ignoredDueToOverlapIds: number[];
+};
+
 export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number = gPageSize) {
     const dashboardContext = useContext(DashboardContext);
     const snackbarContext = useContext(SnackbarContext);
@@ -36,6 +40,7 @@ export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number 
 
     const [enrichedEvents, setEnrichedEvents] = useState<db3.EnrichedSearchEventPayload[]>([]);
     const [results, setResults] = useState<SearchResultsRet>(MakeEmptySearchResultsRet());
+    //const [fetchHistory, setFetchHistory] = useState<FetchItem[]>([]);
 
     const isFetchingRef = useRef(false);
     const totalEventsFetchedRef = useRef(0);
@@ -51,9 +56,11 @@ export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number 
                 db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext)
             );
 
+            //const ignoredDueToOverlapIds : number[] = [];
+            const overlaps: db3.EnrichedSearchEventPayload[] = [];
+
             setEnrichedEvents(prevEvents => {
                 const newItems: db3.EnrichedSearchEventPayload[] = [];
-                const overlaps: db3.EnrichedSearchEventPayload[] = [];
 
                 for (const event of newEvents) {
                     const foundIndex = prevEvents.findIndex(e => e.id === event.id);
@@ -68,6 +75,8 @@ export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number 
                 const ret = [...prevEvents, ...newItems];
                 return ret;
             });
+
+            //setFetchHistory([...fetchHistory, { ...searchResult, ignoredDueToOverlapIds: overlaps.map(x => x.id) }]);
 
             setResults(searchResult);
         } catch (error) {

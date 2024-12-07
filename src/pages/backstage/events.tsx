@@ -350,6 +350,16 @@ const EventListOuter = () => {
 
     const { enrichedEvents, results, /*hasMore, */loadMoreData } = useEventListData(filterSpec);
 
+
+    // // check if all history has the same total IDs in order; check each against previous
+    // for (var i = 1; i < fetchHistory.length; ++i) {
+    //     const a = JSON.stringify(fetchHistory[i - 1]?.allIdsInOrder);
+    //     const b = JSON.stringify(fetchHistory[i]?.allIdsInOrder);
+    //     if (a !== b) {
+    //         console.warn(`SORT ORDER SEEEMS TO HAVE CHANGED on fetch ${i}`);
+    //     }
+    // }
+
     const handleCopyFilterspec = () => {
         const o: EventsFilterSpecStatic = {
             label: "(n/a)",
@@ -454,6 +464,7 @@ const EventListOuter = () => {
                 {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
                 <AdminInspectObject src={filterSpec} label="Filter spec" />
                 <AdminInspectObject src={results} label="Results obj" />
+                {/* <AdminInspectObject src={fetchHistory} label="Fetch history" /> */}
 
                 {/* <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} /> */}
                 <FilterControls

@@ -14,6 +14,9 @@ export const Date_MAX_VALUE = new Date(8640000000000000);
 BigInt.prototype.toJSON = function (): number {
     return this.toString();
 };
+export function BigintToNumber(x: BigInt): number {
+    return new Number(x).valueOf();
+};
 
 export const gMinImageDimension = 10;
 

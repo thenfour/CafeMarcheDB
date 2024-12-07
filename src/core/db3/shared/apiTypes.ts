@@ -746,6 +746,7 @@ export interface CalculateFilterQueryResult {
 
 export interface SearchResultsRet {
     rowCount: number;
+    allIdsInOrder: number[];
     results: any[];
     facets: SearchResultsFacet[];
     filterQueryResult: CalculateFilterQueryResult;
@@ -758,9 +759,10 @@ export interface SearchResultsRet {
     queryMetrics: SearchQueryMetric[];
 };
 
-export function MakeEmptySearchResultsRet() {
+export function MakeEmptySearchResultsRet(): SearchResultsRet {
     return {
         facets: [],
+        allIdsInOrder: [],
         results: [],
         rowCount: 0,
         customData: null,

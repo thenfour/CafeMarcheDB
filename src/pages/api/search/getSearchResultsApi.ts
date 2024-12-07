@@ -6,11 +6,11 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
-import { SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } from "shared/utils";
+import { BigintToNumber, SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
-import { CalculateFilterQueryResult, GetSearchResultsInput, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
+import { CalculateFilterQueryResult, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import superjson from "superjson";
 import * as db3 from "../../../core/db3/db3";
 
@@ -93,16 +93,17 @@ function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQ
         }
     }
 
-    if (sortElementsArray.length === 0) {
-        sortElementsArray.push({
-            join: [],
-            select: [{
-                alias: getSortColumnAPI.getColumnAlias(),
-                expression: `P.id`,
-                direction: "asc",
-            }],
-        });
-    }
+    // now finally sort by ID to ensure the search results are 100% deterministic.
+    // without this, #342 items can return in slightly different order each paginated query,
+    // resulting in skipping and incomplete results or mismatch between total rows & total rows returned
+    sortElementsArray.push({
+        join: [],
+        select: [{
+            alias: getSortColumnAPI.getColumnAlias(),
+            expression: `P.id`,
+            direction: "asc",
+        }],
+    });
 
     // flatten sort columns
     const emptySortElements: SortQueryElements = {
@@ -198,17 +199,17 @@ function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSe
 async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: AuthenticatedCtx): Promise<SearchResultsRet> {
     try {
         const rootsw = new Stopwatch();
-        const ret: SearchResultsRet = {
-            facets: [],
-            results: [],
-            rowCount: 0,
-            customData: null,
-            queryMetrics: [],
-            filterQueryResult: {
-                errors: [],
-                sqlSelect: "",
-            }
-        };
+        const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
+        //     facets: [],
+        //     results: [],
+        //     rowCount: 0,
+        //     customData: null,
+        //     queryMetrics: [],
+        //     filterQueryResult: {
+        //         errors: [],
+        //         sqlSelect: "",
+        //     }
+        // };
         const u = (await mutationCore.getCurrentUserCore(ctx))!;
         if (!u.role || u.role.permissions.length < 1) {
             return ret;
@@ -322,6 +323,38 @@ async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Authentica
         };
 
         queries.push(totalRowCountQueryProc());
+
+        // // TOTAL filtered row IDs (for debugging purposes)
+        // const allFilteredIdsQueryProc = async () => {
+        //     const sw = new Stopwatch();
+        //     const orderBy: string[] = [];
+        //     sortElements.select.forEach(s => {
+        //         orderBy.push(`${s.alias} ${s.direction}`);
+        //     });
+
+        //     const query = `
+        //         with FilteredItems as (
+        //             ${filterResult.sqlSelect}
+        //         )
+        //         select
+        //             id
+        //         from
+        //             FilteredItems
+        //         order by
+        //             ${orderBy.join(`,\n`)}
+        //             `;
+        //     const r: { id: bigint }[] = await db.$queryRaw(Prisma.raw(query));
+        //     //ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
+        //     ret.queryMetrics.push({
+        //         title: "all row IDs in order",
+        //         millis: sw.ElapsedMillis,
+        //         query,
+        //         rowCount: r.length,
+        //     });
+        //     ret.allIdsInOrder = r.map(x => BigintToNumber(x.id));
+        // };
+
+        // queries.push(allFilteredIdsQueryProc());
 
         const parallelsw = new Stopwatch();
         await Promise.all(queries);
