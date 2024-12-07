@@ -56,6 +56,23 @@ export default resolver.pipe(
                     // TODO: visibility permission.
                     responses: {
                         some: { userId: args.userId }
+                    },
+                    NOT: {
+                        startsAt: null
+                    }
+                },
+                orderBy: { startsAt: "asc" },
+                select: { startsAt: true },
+            });
+
+            // Find the earliest event that this user responded to:
+            const earliestUserEventSegment = await db.eventSegment.findFirst({
+                where: {
+                    responses: {
+                        some: { userId: args.userId }
+                    },
+                    NOT: {
+                        startsAt: null
                     }
                 },
                 orderBy: { startsAt: "asc" },
@@ -65,8 +82,12 @@ export default resolver.pipe(
             // If the user has responded to events, we start from the earliest one.
             // If that earliest event is in the past, we also include events in the future by using today's date if it's later.
             const now = new Date();
-            const earliestStart = earliestUserEvent ? (earliestUserEvent.startsAt || now) : now;
-            const filterDate = earliestStart < now ? now : earliestStart;
+            const candidates = [
+                earliestUserEvent?.startsAt,
+                earliestUserEventSegment?.startsAt,
+                now,
+            ].filter(x => !!x).toSorted((a, b) => a.valueOf() - b.valueOf());
+            const earliestDateFilter = candidates[0]!;
 
             const q = await db.event.findMany({
                 include: {
@@ -85,7 +106,7 @@ export default resolver.pipe(
                     AND: [
                         { isDeleted: false },
                         // TODO: visibility permission.
-                        { startsAt: { gte: filterDate } }
+                        { startsAt: { gte: earliestDateFilter } }
                     ]
                 }
             });

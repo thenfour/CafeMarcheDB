@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, UserChip } from "./CMCoreComponents";
@@ -156,6 +156,24 @@ type UserAttendanceTabContentProps = {
 export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) => {
     const dashboardContext = useDashboardContext();
     const [qr, refetch] = useQuery(getUserEventAttendance, { userId: props.user.id });
+    const agg = qr.events.reduce((acc, event) => {
+        const segAgg = event.segments.reduce((segAcc, seg) => {
+            const hasResponse = seg.attendanceId != null;
+            const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
+            return {
+                responseCount: segAcc.responseCount + (hasResponse ? 1 : 0),
+                goingCount: segAcc.goingCount + ((att?.strength || 0) > 50 ? 1 : 0),
+            };
+        }, { responseCount: 0, goingCount: 0 });
+        return {
+            totalSegmentCount: acc.totalSegmentCount + event.segments.length,
+            responseCount: acc.responseCount + segAgg.responseCount,
+            goingCount: acc.goingCount + segAgg.goingCount,
+        };
+    }, { totalSegmentCount: 0, responseCount: 0, goingCount: 0 });
+
+    const sortedQr = API.events.sortEvents(qr.events);
+
     return <div>
         <AdminInspectObject src={qr} label="results" />
         <table>
@@ -168,13 +186,14 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                 </tr>
             </thead>
             <tbody>
-                {qr.events.map(event => {
+                {sortedQr.map(event => {
                     const inst = dashboardContext.instrument.getById(event.instrumentId);
+                    const sortedSegs = API.events.sortEvents(event.segments);
                     return <tr key={event.id}>
                         <td><EventTextLink event={event} /></td>
                         <td>{inst && <InstrumentChip value={inst} />}</td>
                         <td><CMChipContainer>
-                            {event.segments.map(seg => {
+                            {sortedSegs.map(seg => {
                                 const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
                                 return <AttendanceChip size={"small"} fadeNoResponse={true} showLabel={false} value={att} tooltipOverride={db3.EventAPI.getLabel(seg)} />
                             })}</CMChipContainer></td>
@@ -183,6 +202,15 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                 })}
             </tbody>
         </table>
+
+        {agg.totalSegmentCount > 0 &&
+            <KeyValueTable data={{
+                ...agg,
+                "Response rate": <>{(agg.responseCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
+                "Attendance rate (overall)": <>{(agg.goingCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
+                "Attendance rate (when responding)": <>{(agg.goingCount * 100 / agg.responseCount).toFixed(1)}%</>,
+            }} />}
+
     </div>;
 };
 
@@ -280,7 +308,9 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 //summarySubtitle={song.taggedFiles.length}
                 //canBeDefault={!!song.taggedFiles.length}
                 >
-                    <UserAttendanceTabContent user={user} />
+                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                        <UserAttendanceTabContent user={user} />
+                    </Suspense>
                 </CMTab>
                 <CMTab
                     thisTabId={UserDetailTabSlug.credits}
