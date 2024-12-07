@@ -457,6 +457,7 @@ export const gIconOptions = {
     Alarm: "Alarm",
     AttachFile: "AttachFile",
     AutoAwesome: "AutoAwesome",
+    Blank: "Blank",
     CalendarMonth: "CalendarMonth",
     Campaign: "Campaign",
     Cancel: "Cancel",

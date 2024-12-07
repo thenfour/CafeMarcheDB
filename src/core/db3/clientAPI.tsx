@@ -273,7 +273,6 @@ class EventsAPI {
         return ClientAPILL.getURIForEvent(event, tabSlug);
     }
 
-
     getSongListStats = (songList: db3.EventSongListPayload): SongListStats => {
         console.assert(songList.songs);
         const initialValue: SongListStats = {

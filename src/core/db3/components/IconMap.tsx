@@ -64,6 +64,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React from "react";
 import { TIconOptions } from "shared/utils";
 import { AccountTree, Alarm, Check, Equalizer, Notifications, Pause, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
+import SvgIcon from '@mui/icons-material/Add';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -101,6 +102,7 @@ export const gIconMap /*: IIconMap*/ = {
     AttachFile: () => <AttachFileIcon />,
     AddCircleOutline: () => <AddCircleOutlineIcon />,
     AutoAwesome: () => <AutoAwesomeIcon />,
+    Blank: () => <SvgIcon />,
     CalendarMonth: () => <CalendarMonthIcon />,
     Campaign: () => <CampaignIcon />,
     Cancel: () => <CancelIcon />,

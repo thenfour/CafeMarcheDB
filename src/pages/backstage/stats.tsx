@@ -7,6 +7,7 @@ import { arraysContainSameValues, getEnumValues } from "shared/utils";
 import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
 import { CMChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { EventTextLink } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -153,9 +154,8 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
                 <ul>
                     {selectedBucket?.items.map(i => {
                         return <li key={i.item.eventId}>
-                            <a rel="noreferrer" target="_blank" href={getURIForEvent({ id: i.item.eventId, name: i.item.eventName })}>
-                                {i.item.startsAt?.toLocaleDateString()} {i.item.eventName}
-                            </a></li>;
+                            <EventTextLink event={{ id: i.item.eventId, name: i.item.eventName, startsAt: i.item.startsAt }} />
+                        </li>;
 
                     })}
                 </ul>

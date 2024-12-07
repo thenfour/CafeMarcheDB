@@ -1,19 +1,32 @@
 import React from "react";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { UserChip } from "./CMCoreComponents";
+import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, UserChip } from "./CMCoreComponents";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { gIconMap } from "../db3/components/IconMap";
 import { Prisma } from "db";
 import { Breadcrumbs, Button, Link, Tooltip } from "@mui/material";
 import { getURIForUser } from "../db3/clientAPILL";
-import { IsNullOrWhitespace } from "shared/utils";
+import { IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import HomeIcon from '@mui/icons-material/Home';
 import { useDashboardContext } from "./DashboardContext";
 import { useRouter } from "next/router";
 import { SortDirection } from "shared/rootroot";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
+import { EventTextLink, GoogleIconSmall, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
+import { CMChip, CMChipContainer, CMStandardDBChip } from "./CMChip";
+import { StandardVariationSpec } from "shared/color";
+import { CMTab, CMTabPanel } from "./TabPanel";
+import { useQuery } from "@blitzjs/rpc";
+import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
+import { API } from '../db3/clientAPI';
 
+
+
+export enum UserDetailTabSlug {
+    credits = "credits",
+    attendance = "attendance",
+};
 
 
 
@@ -136,7 +149,42 @@ export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
         ;
 };
 
-
+////////////////////////////////////////////////////////////////
+type UserAttendanceTabContentProps = {
+    user: db3.EnrichedVerboseUser;
+};
+export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) => {
+    const dashboardContext = useDashboardContext();
+    const [qr, refetch] = useQuery(getUserEventAttendance, { userId: props.user.id });
+    return <div>
+        <AdminInspectObject src={qr} label="results" />
+        <table>
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Instrument</th>
+                    <th>Response(s)</th>
+                    <th>Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {qr.events.map(event => {
+                    const inst = dashboardContext.instrument.getById(event.instrumentId);
+                    return <tr key={event.id}>
+                        <td><EventTextLink event={event} /></td>
+                        <td>{inst && <InstrumentChip value={inst} />}</td>
+                        <td><CMChipContainer>
+                            {event.segments.map(seg => {
+                                const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
+                                return <AttendanceChip size={"small"} fadeNoResponse={true} showLabel={false} value={att} tooltipOverride={db3.EventAPI.getLabel(seg)} />
+                            })}</CMChipContainer></td>
+                        <td>{event.userComment}</td>
+                    </tr>;
+                })}
+            </tbody>
+        </table>
+    </div>;
+};
 
 
 ////////////////////////////////////////////////////////////////
@@ -144,106 +192,105 @@ export interface UserDetailArgs {
     user: db3.EnrichedVerboseUser;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
+    initialTab?: UserDetailTabSlug;
 }
 
 export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
     const dashboardContext = useDashboardContext();
     const router = useRouter();
 
+    const [selectedTab, setSelectedTab] = React.useState<UserDetailTabSlug>(props.initialTab || UserDetailTabSlug.attendance);
+
     const refetch = () => {
         tableClient.refetch();
     };
 
-    //const fileInfo = GetSongFileInfo(song, dashboardContext);
+    const handleTabChange = (newId: string) => {
+        const slug = StringToEnumValue(UserDetailTabSlug, (newId || "").toString()) || UserDetailTabSlug.attendance;
+        setSelectedTab(slug);
+    }
 
-    //const [selectedTab, setSelectedTab] = React.useState<SongDetailTabSlug>(props.initialTab || ((IsNullOrWhitespace(song.description) && (fileInfo.enrichedFiles.length > 0)) ? SongDetailTabSlug.files : SongDetailTabSlug.info));
+    return <div className="EventDetail contentSection event">
+        <div className='content'>
 
-    // convert index to tab slug
-    //const songData = CalculateSongMetadata(song, selectedTab);
+            <div className='titleLine'>
+                <div className="titleText">
+                    <div className="titleLink">
+                        <span className='title'>{user.name}</span>
+                    </div>
+                </div>
 
-    // React.useEffect(() => {
-    //     void router.replace(songData.songURI, undefined, { shallow: true }); // shallow prevents annoying re-scroll behavior
-    // }, [songData.songURI]);
+                <CMChipContainer>
+                    <CMStandardDBChip
+                        size='small'
+                        shape="rectangle"
+                        model={user.role}
+                        variation={StandardVariationSpec.Strong}
+                        getTooltip={(_) => user.role?.description || null}
+                    />
+                </CMChipContainer>
 
-    // const handleTabChange = (newId: string) => {
-    //     const slug = StringToEnumValue(SongDetailTabSlug, (newId || "").toString()) || SongDetailTabSlug.info;
-    //     setSelectedTab(slug);
-    // }
+                <div className='flex-spacer'></div>
 
-    return <div>{user.name}</div>
+                {
+                    dashboardContext.isShowingAdminControls && <>
+                        <KeyValueTable
+                            data={{ userId: user.id }}
+                        />
+                        <InspectObject src={user} />
+                    </>
+                }
 
-    // return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} showVisibility={true}>
+            </div>{/* title line */}
 
-    //     <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
+            <CMChipContainer>
+                {user.tags.map(tag => <CMStandardDBChip
+                    key={tag.id}
+                    size='small'
+                    model={tag.userTag}
+                    variation={StandardVariationSpec.Weak}
+                    getTooltip={(_) => tag.userTag.description}
+                />)}
+            </CMChipContainer>
 
-    //     <CMTabPanel
-    //         selectedTabId={selectedTab}
-    //         handleTabChange={(e, newId) => handleTabChange(newId as string)}
-    //     >
-    //         <CMTab
-    //             thisTabId={SongDetailTabSlug.info}
-    //             summaryTitle={"Info"}
-    //             summaryIcon={gIconMap.Info()}
-    //             canBeDefault={!IsNullOrWhitespace(song.description)}
-    //         >
-    //             <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
-    //         </CMTab>
-    //         <CMTab
-    //             thisTabId={SongDetailTabSlug.parts}
-    //             summaryTitle={"Parts"}
-    //             summaryIcon={gIconMap.LibraryMusic()}
-    //             summarySubtitle={fileInfo.partitions.length}
-    //             canBeDefault={!!fileInfo.partitions.length}
-    //         >
-    //             <FilesTabContent
-    //                 fileTags={fileInfo.partitions}
-    //                 readonly={props.readonly}
-    //                 refetch={refetch}
-    //                 uploadTags={{
-    //                     taggedSongId: song.id,
-    //                     fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
-    //                 }}
-    //             />
-    //         </CMTab>
-    //         <CMTab
-    //             thisTabId={SongDetailTabSlug.recordings}
-    //             summaryTitle={"Recordings"}
-    //             summaryIcon={gIconMap.PlayCircleOutline()}
-    //             summarySubtitle={fileInfo.recordings.length}
-    //             canBeDefault={!!fileInfo.recordings.length}
-    //         >
-    //             <FilesTabContent
-    //                 fileTags={fileInfo.recordings}
-    //                 readonly={props.readonly}
-    //                 refetch={refetch}
-    //                 uploadTags={{
-    //                     taggedSongId: song.id,
-    //                     fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
-    //                 }}
-    //             />
-    //         </CMTab>
-    //         <CMTab
-    //             thisTabId={SongDetailTabSlug.files}
-    //             summaryTitle={"All files"}
-    //             summaryIcon={gIconMap.AttachFile()}
-    //             summarySubtitle={song.taggedFiles.length}
-    //             canBeDefault={!!song.taggedFiles.length}
-    //         >
-    //             <FilesTabContent fileTags={fileInfo.enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
-    //                 taggedSongId: song.id,
-    //             }} />
-    //         </CMTab>
-    //         <CMTab
-    //             thisTabId={SongDetailTabSlug.history}
-    //             summaryTitle={"Stats"}
-    //             summaryIcon={gIconMap.Equalizer()}
-    //         >
-    //             <SongHistory song={song} />
-    //         </CMTab>
-    //     </CMTabPanel>
+            <CMChipContainer>
+                {user.instruments.map(tag => <CMStandardDBChip
+                    key={tag.id}
+                    size='small'
+                    model={{ ...tag.instrument, color: tag.instrument.functionalGroup.color }}
+                    variation={StandardVariationSpec.Weak}
+                    getTooltip={(_) => tag.instrument.description}
+                />)}
+            </CMChipContainer>
 
+            <KeyValueTable data={{
+                phone: user.phone,
+                email: user.email,
+                identity: user.googleId ? <GoogleIconSmall /> : "Password"
+            }} />
 
-    // </SongDetailContainer>;
+            <CMTabPanel
+                selectedTabId={selectedTab}
+                handleTabChange={(e, newId) => handleTabChange(newId as string)}
+            >
+                <CMTab
+                    thisTabId={UserDetailTabSlug.attendance}
+                    summaryTitle={"Attendance"}
+                    summaryIcon={gIconMap.Check()}
+                //summarySubtitle={song.taggedFiles.length}
+                //canBeDefault={!!song.taggedFiles.length}
+                >
+                    <UserAttendanceTabContent user={user} />
+                </CMTab>
+                <CMTab
+                    thisTabId={UserDetailTabSlug.credits}
+                    summaryTitle={"Credits"}
+                    summaryIcon={gIconMap.Comment()}
+                >
+                    todo
+                </CMTab>
+            </CMTabPanel>
 
+        </div>
+    </div>;
 };
-

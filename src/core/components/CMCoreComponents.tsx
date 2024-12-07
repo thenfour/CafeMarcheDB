@@ -17,6 +17,7 @@ import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext } from "./DashboardContext";
+import { Icon } from "@mui/material";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -305,15 +306,28 @@ export const SongChip = (props: SongChipProps) => {
 
 export interface AttendanceChipProps {
     chipRef?: React.ForwardedRef<HTMLDivElement>;
+    showLabel?: boolean | undefined;
+    fadeNoResponse?: boolean | undefined;
     value: db3.EventAttendanceBasePayload | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
+    tooltipOverride?: string | undefined;
     //shape?: CMChipShapeOptions;
 };
 
-export const AttendanceChip = (props: AttendanceChipProps) => {
+export const AttendanceChip = ({ fadeNoResponse = false, showLabel = true, ...props }: AttendanceChipProps) => {
+    let label: React.ReactNode = showLabel && (props.value?.text || "No response");
+    if (!label && !props.value?.iconName) {
+        label = <Icon />;
+    }
+
+    const style: React.CSSProperties = {};
+    if (fadeNoResponse && !props.value) {
+        style.opacity = "40%";
+    }
+
     return <CMChip
         chipRef={props.chipRef}
         variation={props.variation}
@@ -323,10 +337,11 @@ export const AttendanceChip = (props: AttendanceChipProps) => {
         color={props.value?.color || null}
         //shape={props.shape}
         shape="rectangle"
-        tooltip={props.value?.description}
+        tooltip={props.tooltipOverride || props.value?.description}
+        style={style}
     >
         {RenderMuiIcon(props.value?.iconName)}
-        {props.value?.text || "No response"}
+        {label}
     </CMChip>
 }
 

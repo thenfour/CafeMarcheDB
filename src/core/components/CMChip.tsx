@@ -12,6 +12,7 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { Tooltip } from "@mui/material";
 import { gIconMap, RenderMuiIcon } from "../db3/components/IconMap";
 import { TAnyModel } from "../db3/shared/apiTypes";
+import React from "react";
 
 // but it means having a lot of color variations:
 // - main / contrast
@@ -33,6 +34,7 @@ export interface CMChipProps {
     border?: CMChipBorderOption;
     className?: string;
     tooltip?: React.ReactNode;
+    style?: React.CSSProperties | undefined;
 
     onDelete?: () => void;
     onClick?: () => void;
@@ -66,14 +68,16 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
         variant.selected ? "selected" : "notselected",
     ];
 
-    const chipNode = <div className={wrapperClasses.join(" ")} style={style.style} onClick={props.onClick} ref={props.chipRef}>
+    const computedStyle: React.CSSProperties = { ...style.style, ...props.style };
+
+    const chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick} ref={props.chipRef} >
         <div className={chipClasses.join(" ")}>
             <div className='content'>
                 {props.onDelete && <span className="CMChipDeleteButton interactable" onClick={props.onDelete}>{gIconMap.Cancel()}</span>}
                 {props.children}
             </div>
         </div>
-    </div>;
+    </div >;
 
     if (IsNullOrWhitespace(props.tooltip)) return chipNode;
 

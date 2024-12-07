@@ -1428,7 +1428,7 @@ export interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
 };
 
-export class DashboardContextDataBase {
+export abstract class DashboardContextDataBase {
     userTag: TableAccessor<Prisma.UserTagGetPayload<{}>>;
     eventType: TableAccessor<Prisma.EventTypeGetPayload<{}>>;
     eventStatus: TableAccessor<Prisma.EventStatusGetPayload<{}>>;
