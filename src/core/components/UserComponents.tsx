@@ -20,6 +20,7 @@ import { CMTab, CMTabPanel } from "./TabPanel";
 import { useQuery } from "@blitzjs/rpc";
 import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import { API } from '../db3/clientAPI';
+import getUserCredits from "../db3/queries/getUserCredits";
 
 
 
@@ -216,6 +217,20 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 
 
 ////////////////////////////////////////////////////////////////
+type UserCreditsTabContentProps = {
+    user: db3.EnrichedVerboseUser;
+};
+export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
+    const dashboardContext = useDashboardContext();
+    const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id });
+
+    return <div>
+        <AdminInspectObject src={qr} label="results" />
+    </div>;
+};
+
+
+////////////////////////////////////////////////////////////////
 export interface UserDetailArgs {
     user: db3.EnrichedVerboseUser;
     tableClient: DB3Client.xTableRenderClient;
@@ -305,8 +320,6 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     thisTabId={UserDetailTabSlug.attendance}
                     summaryTitle={"Attendance"}
                     summaryIcon={gIconMap.Check()}
-                //summarySubtitle={song.taggedFiles.length}
-                //canBeDefault={!!song.taggedFiles.length}
                 >
                     <Suspense fallback={<div className="lds-dual-ring"></div>}>
                         <UserAttendanceTabContent user={user} />
@@ -317,7 +330,9 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     summaryTitle={"Credits"}
                     summaryIcon={gIconMap.Comment()}
                 >
-                    todo
+                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                        <UserCreditsTabContent user={user} />
+                    </Suspense>
                 </CMTab>
             </CMTabPanel>
 
