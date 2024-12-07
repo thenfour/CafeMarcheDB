@@ -377,6 +377,17 @@ const SongListOuter = () => {
                                     setTagFilterWhenEnabled(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "tags")?.items || []}
+                                sanitize={x => {
+                                    if (!x.id) return x;
+                                    const tag = dashboardContext.songTag.getById(x.id)!;
+                                    return {
+                                        ...x,
+                                        color: tag.color,
+                                        label: tag.text,
+                                        shape: "rounded",
+                                        tooltip: tag.description,
+                                    };
+                                }}
                             />
 
                         </div>

@@ -139,6 +139,9 @@ interface TagsFilterGroupProps {
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     shape?: CMChipShapeOptions;
+
+    // gives callers the opportunity to transform or augment the facet info (chips)
+    sanitize?: (item: SearchResultsFacetOption) => SearchResultsFacetOption;
 };
 export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
     //const [enabled, setEnabled] = React.useState<boolean>(() => props.value.behavior !== DiscreteCriterionFilterType.alwaysMatch);
@@ -325,19 +328,21 @@ export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
                 const hasAnySelected = (props.value.behavior === DiscreteCriterionFilterType.hasAny);
                 const selected = ((isInOptions && !nullIsSelected && !hasAnySelected) || (item.id === null && nullIsSelected));
 
+                const sanitizedItem: SearchResultsFacetOption = props.sanitize ? props.sanitize(item) : item;
+
                 return <CMChip
-                    key={item.id}
-                    color={item.color}
-                    variation={{ ...variation, selected: enabled && selected, enabled: enabled && (item.rowCount > 0) }}
+                    key={sanitizedItem.id}
+                    color={sanitizedItem.color}
+                    variation={{ ...variation, selected: enabled && selected, enabled: enabled && (sanitizedItem.rowCount > 0) }}
                     size={props.size || "small"}
-                    shape={props.shape || 'rectangle'}
+                    shape={sanitizedItem.shape || props.shape || 'rectangle'}
                     border={'noBorder'}
-                    tooltip={item.tooltip}
-                    onClick={() => handleClickFacet(item)}
+                    tooltip={sanitizedItem.tooltip}
+                    onClick={() => handleClickFacet(sanitizedItem)}
                 >
                     <div className='filterChipLabelContainer'>
-                        <div className='label'>{item.label || "-"}</div>
-                        <div className='rowCount'>{item.rowCount}</div>
+                        <div className='label'>{sanitizedItem.label || "-"}</div>
+                        <div className='rowCount'>{sanitizedItem.rowCount}</div>
                     </div>
                 </CMChip>;
             })}

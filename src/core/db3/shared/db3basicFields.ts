@@ -1088,6 +1088,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
                     color: row.color,
                     iconName: row.iconName,
                     tooltip: row.tooltip,
+                    shape: undefined,
                 };
             },
         };
@@ -1381,6 +1382,8 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             order by
                 sortOrder asc
                 `,
+
+            // converts the query result to a styled chip
             transformResult: (row: { id: number, label: string | null, color: string | null, iconName: string | null, tooltip: string | null, rowCount: bigint }) => {
                 const rowCount = new Number(row.rowCount).valueOf();
                 return {
@@ -1390,6 +1393,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
                     color: row.color,
                     iconName: row.iconName,
                     tooltip: row.tooltip,
+                    shape: undefined,
                 };
             },
         }
@@ -1458,6 +1462,7 @@ export class EventStartsAtField extends FieldBase<Date> {
                         iconName: null,
                         rowCount: new Number(row.rowCount).valueOf(),
                         tooltip: `Select TBD events (with no date)`,
+                        shape: undefined,
                     };
                 }
                 return {
@@ -1467,6 +1472,7 @@ export class EventStartsAtField extends FieldBase<Date> {
                     iconName: null,
                     rowCount: new Number(row.rowCount).valueOf(),
                     tooltip: `Select year ${row.year}`,
+                    shape: undefined,
                 };
             },
             SqlMatch: (id: number) => {
@@ -1487,6 +1493,7 @@ export class EventStartsAtField extends FieldBase<Date> {
                 iconName: null,
                 rowCount: new Number(row.rowCount).valueOf(),
                 tooltip: `Past`,
+                shape: undefined,
             }),
             SqlMatch: () => EventPastFilterExpression({ startsAtExpr: this.member }),
         };
@@ -1502,6 +1509,7 @@ export class EventStartsAtField extends FieldBase<Date> {
                 iconName: null,
                 rowCount: new Number(row.rowCount).valueOf(),
                 tooltip: `Future`,
+                shape: undefined,
             }),
             SqlMatch: () => EventFutureFilterExpression({ startsAtExpr: this.member }),
         };
@@ -1516,6 +1524,7 @@ export class EventStartsAtField extends FieldBase<Date> {
                 iconName: null,
                 rowCount: new Number(row.rowCount).valueOf(),
                 tooltip: "Relevant (6 days ago and later)",
+                shape: undefined,
             }),
             SqlMatch: () => EventRelevantFilterExpression({ startsAtExpr: this.member }),
         };
@@ -1530,6 +1539,7 @@ export class EventStartsAtField extends FieldBase<Date> {
                 iconName: null,
                 rowCount: new Number(row.rowCount).valueOf(),
                 tooltip: "60 days ago until now",
+                shape: undefined,
             }),
             SqlMatch: () => EventPast60DaysFilterExpression({ startsAtExpr: this.member }),
         };

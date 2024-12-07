@@ -200,16 +200,6 @@ async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Authentica
     try {
         const rootsw = new Stopwatch();
         const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
-        //     facets: [],
-        //     results: [],
-        //     rowCount: 0,
-        //     customData: null,
-        //     queryMetrics: [],
-        //     filterQueryResult: {
-        //         errors: [],
-        //         sqlSelect: "",
-        //     }
-        // };
         const u = (await mutationCore.getCurrentUserCore(ctx))!;
         if (!u.role || u.role.permissions.length < 1) {
             return ret;

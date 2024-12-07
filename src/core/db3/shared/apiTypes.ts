@@ -718,6 +718,7 @@ export interface SearchResultsFacetOption {
     color: string | null;
     iconName: string | null;
     tooltip: string | null;
+    shape: "rounded" | "rectangle" | undefined;
 };
 
 export interface SearchResultsFacet {

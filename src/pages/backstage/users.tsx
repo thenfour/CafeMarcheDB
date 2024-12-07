@@ -38,10 +38,22 @@ const UserListItem = (props: UserListItemProps) => {
         <div className="titleLine">
             <div className="topTitleLine">
                 <a className="nameLink" href={getURIForUser(props.user)}>{props.user.name}</a>
-                <div style={{ flexGrow: 1 }}></div>
+                <div style={{ flexGrow: 1 }}>
+                    <AdminInspectObject src={props.user} label="Obj" />
+                </div>
                 <span className="resultIndex">#{props.index}</span>
             </div>
         </div>
+
+        <div className="credits">
+            <div className="credit row">
+                <div className="fieldItem">{props.user.email}</div>
+            </div>
+            <div className="credit row">
+                <div className="fieldItem">{props.user.phone}</div>
+            </div>
+        </div>
+
         <div className="searchBody">
             <CMChipContainer className="songTags">
                 {props.user.tags.map(tag => <CMStandardDBChip
@@ -51,7 +63,35 @@ const UserListItem = (props: UserListItemProps) => {
                     variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.userTagId) }}
                     getTooltip={(_) => tag.userTag.description}
                 />)}
+                {props.user.role &&
+                    <CMChip
+                        color={props.user.role.color}
+                        shape={"rectangle"}
+                        size="small"
+                    >
+                        {props.user.role.name}
+                    </CMChip>}
+                {props.user.googleId &&
+                    <CMChip
+                        color={null}
+                        shape={"rounded"}
+                        size="small"
+                        tooltip="Has google identity"
+                    >
+                        G
+                    </CMChip>}
             </CMChipContainer>
+
+            <CMChipContainer className="instruments">
+                {props.user.instruments.map(tag => <CMStandardDBChip
+                    key={tag.id}
+                    size='small'
+                    model={tag.instrument}
+                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.instrumentId) }}
+                    getTooltip={(_) => tag.instrument.description}
+                />)}
+            </CMChipContainer>
+
         </div>
     </div>;
 };
@@ -346,6 +386,17 @@ const UserListOuter = () => {
                                     setTagFilterWhenEnabled(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "tags")?.items || []}
+                                sanitize={x => {
+                                    if (!x.id) return x;
+                                    const tag = dashboardContext.userTag.getById(x.id)!;
+                                    return {
+                                        ...x,
+                                        color: tag.color || null,
+                                        label: tag.text,
+                                        shape: "rounded",
+                                        tooltip: tag.description,
+                                    };
+                                }}
                             />
 
                         </div>
