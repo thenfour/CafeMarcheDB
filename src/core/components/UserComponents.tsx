@@ -196,7 +196,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                         <td><CMChipContainer>
                             {sortedSegs.map(seg => {
                                 const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
-                                return <AttendanceChip size={"small"} fadeNoResponse={true} showLabel={false} value={att} tooltipOverride={db3.EventAPI.getLabel(seg)} />
+                                return <AttendanceChip key={seg.id} size={"small"} fadeNoResponse={true} showLabel={false} value={att} tooltipOverride={db3.EventAPI.getLabel(seg)} />
                             })}</CMChipContainer></td>
                         <td>{event.userComment}</td>
                     </tr>;
