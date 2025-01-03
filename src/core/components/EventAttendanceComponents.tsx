@@ -542,7 +542,11 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
     return <div className={`eventAttendanceControl minimalView`}>
       <CMChipContainer>
         <div className="caption">You responded</div>
-        {y.uncancelledSegmentUserResponses.map((r, i) => <AttendanceChip key={r.segment.id} value={dashboardContext.eventAttendance.getById(r.response.attendanceId)} />)}
+        {y.uncancelledSegmentUserResponses.map((r, i) => <AttendanceChip
+          key={r.segment.id}
+          value={dashboardContext.eventAttendance.getById(r.response.attendanceId)}
+          tooltipOverride={r.segment.name}
+        />)}
       </CMChipContainer>
     </div>;
   }
