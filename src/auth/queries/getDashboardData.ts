@@ -6,7 +6,7 @@ import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { getServerStartState } from "shared/serverStateBase";
 import { arraysContainSameValues } from "shared/utils";
-import { xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
+import { EventStatusSignificance, xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
@@ -88,7 +88,7 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
 
 
 
-async function getTopRelevantEvents(limit: number, db: TransactionalPrismaClient): Promise<number[]> {
+async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<{}>[], limit: number, db: TransactionalPrismaClient): Promise<number[]> {
     const now = new Date();
     const sevenDaysFromNow = new Date(now);
     sevenDaysFromNow.setDate(now.getDate() + 7);
@@ -103,6 +103,8 @@ async function getTopRelevantEvents(limit: number, db: TransactionalPrismaClient
     const sevenDaysFromNowFormatted = formatDate(sevenDaysFromNow);
     const twentyFourHoursAgoFormatted = formatDate(twentyFourHoursAgo);
 
+    const cancelledStatusIds = eventStatuses.filter(s => s.significance === EventStatusSignificance.Cancelled).map(s => s.id).join(", ");
+
     const query = `
     WITH ClassifiedEvents AS (
       SELECT
@@ -115,6 +117,7 @@ async function getTopRelevantEvents(limit: number, db: TransactionalPrismaClient
           ELSE 4 -- Default/Unclassified (optional, for events that don't fit the criteria)
         END AS relevance_class
       FROM Event
+      where statusId NOT IN (${cancelledStatusIds})
     )
     SELECT id
     FROM ClassifiedEvents
@@ -152,7 +155,9 @@ export default resolver.pipe(
                 orderBy: undefined,
             }, currentUser);
 
-            const relevantEventsCall = getTopRelevantEvents(5, db);
+            const eventStatus = await db.eventStatus.findMany();
+
+            const relevantEventsCall = getTopRelevantEvents(eventStatus, 5, db);
 
             const results = await Promise.all([
                 db.userTag.findMany(),
@@ -160,7 +165,7 @@ export default resolver.pipe(
                 db.role.findMany(),
                 db.rolePermission.findMany(),
                 db.eventType.findMany(),
-                db.eventStatus.findMany(),
+                //db.eventStatus.findMany(),
                 db.eventTag.findMany(),
                 db.eventAttendance.findMany(),
                 db.fileTag.findMany(),
@@ -182,7 +187,7 @@ export default resolver.pipe(
                 role,
                 rolePermission,
                 eventType,
-                eventStatus,
+                //eventStatus,
                 eventTag,
                 eventAttendance,
                 fileTag,
