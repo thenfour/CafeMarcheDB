@@ -197,6 +197,30 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         ]
     },
     {
+        label: "Hide rehearsals",
+        helpText: "",
+        "orderByColumn": "startsAt",
+        "orderByDirection": "asc",
+        "statusFilterEnabled": false,
+        "statusFilterBehavior": "hasNone" as any,
+        "statusFilterOptions": [
+            2
+        ],
+        "typeFilterEnabled": true,
+        "typeFilterBehavior": "doesntHaveAnyOf" as any,
+        "typeFilterOptions": [
+            3
+        ],
+        "tagFilterEnabled": false,
+        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterOptions": [],
+        "dateFilterEnabled": true,
+        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterOptions": [
+            10002
+        ]
+    },
+    {
         label: "Rehearsals since 60 days",
         helpText: "Searching rehearsals more recent than 60 days",
         "orderByColumn": "startsAt",
