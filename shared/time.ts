@@ -451,7 +451,11 @@ export class DateTimeRange {
         //const isSameDay = startDateDjs.isSame(endDateDjs, 'day');
         const isSameDay = this.getDurationDays() <= 1.00001;
 
-        if (this.isAllDay()) {
+        // treat non-same-day events the same as all-day. basically we don't want to show time when spanning days because it's too verbose.
+        // this scenario doesn't actually happen from user-input because non-all-day events don't span across days. but it does happen when
+        // joining dateranges.
+
+        if (this.isAllDay() || !isSameDay) {
             const lastDate = this.getLastDateTime()!;
             const lastDateDjs = dayjs(lastDate);
 
@@ -475,15 +479,13 @@ export class DateTimeRange {
 
         // for non-all-day events, we need to use "END" otherwise it shows as 1:59
         const endDate = this.getEndDateTime()!;
-        const endDateDjs = dayjs(endDate);
 
         // not all-day (time specified)
         if (isSameDay) {
             return `${startDateDjs.format(`dddd, D MMMM YYYY`)} @ ${formatTime(startDate)}-${formatTime(endDate)}h`;
         }
 
-        return `${startDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(startDate)} - ${endDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(endDate)}h`;
-
+        assert(false, "unreachable");
     }
 
     public toDisplayStrings(): {

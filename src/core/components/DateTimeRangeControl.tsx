@@ -6,7 +6,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { assert } from 'blitz';
 import dayjs, { Dayjs } from "dayjs";
 import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
-import { EventDateField, NameValuePair } from './CMCoreComponents2';
+import { EventDateField, KeyValueTable, NameValuePair } from './CMCoreComponents2';
 import { gIconMap } from '../db3/components/IconMap';
 
 interface CalendarEventSpec {
@@ -418,37 +418,56 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
 
 
 
-const DateViewer = (props: { caption: string, value: Date | null | undefined }) => {
-    return <NameValuePair
-        name={props.caption}
-        value={<div>
-            <div>
-                {props.value?.toISOString() || "--"} &lt;-- ISO
-            </div>
-            <div>
-                {props.value?.toString() || "--"} &lt;-- local (tz offset: {props.value?.getTimezoneOffset()})
-            </div>
-        </div>}
-    />;
-}
+// const DateViewer = (props: { caption: string, value: Date | null | undefined }) => {
+//     return <KeyValueTable
+//     data={{
+
+//     }}
+//     />
+//     return <NameValuePair
+//         name={props.caption}
+//         value={<div>
+//             <div>
+//                 {props.value?.toISOString() || "--"} &lt;-- ISO
+//             </div>
+//             {/* <div>
+//                 {props.value?.toString() || "--"} &lt;-- local (tz offset: {props.value?.getTimezoneOffset()})
+//             </div> */}
+//         </div>}
+//     />;
+// }
 
 const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
     const t = CalcRelativeTiming(new Date(), value);
 
-    return <div>
-        {/* <InspectObject src={value} /> */}
-        <DateViewer value={value.getStartDateTime()} caption='getStartDateTime'></DateViewer>
-        <DateViewer value={value.getLastDateTime()} caption='getLastDateTime'></DateViewer>
-        <DateViewer value={value.getEndDateTime()} caption='getEndDateTime'></DateViewer>
-        <div>duration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
-        <div><EventDateField dateRange={value} /></div>
-        <DateViewer value={value.getSpec().startsAtDateTime} caption='SPEC StartsAt'></DateViewer>
-        <div>spec duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
+    return <KeyValueTable
+        data={{
+            "Start": value.getStartDateTime()?.toISOString(),
+            "Last": value.getLastDateTime()?.toISOString(),
+            "End": value.getEndDateTime()?.toISOString(),
+            "Duration": `${formatMillisecondsToDHMS(value.getDurationMillis())} (${value.getDurationMillis()} ms)`,
+            //"Spec Start": value.getSpec().startsAtDateTime?.toISOString(),
+            //"Spec Duration": formatMillisecondsToDHMS(value.getSpec().durationMillis),
+            "Relative label": t.label,
+            "Relative Bucket": t.bucket,
+            "toString": value.toString(),
+        }}
+    />;
 
-        <span className="text">{t.label}</span>
-        <span className="text">{t.bucket}</span>
+    // return <div>
+    //     {/* <InspectObject src={value} /> */}
+    //     <DateViewer value={value.getStartDateTime()} caption='getStartDateTime'></DateViewer>
+    //     <DateViewer value={value.getLastDateTime()} caption='getLastDateTime'></DateViewer>
+    //     <DateViewer value={value.getEndDateTime()} caption='getEndDateTime'></DateViewer>
+    //     <div>duration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
+    //     <div><EventDateField dateRange={value} /></div>
+    //     <DateViewer value={value.getSpec().startsAtDateTime} caption='SPEC StartsAt'></DateViewer>
+    //     <div>spec duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
 
-    </div>;
+    //     <span className="text">{t.label}</span>
+    //     <span className="text">{t.bucket}</span>
+
+    // </div>;
 }
 
 export const DateTimeRangeControlExample = () => {
