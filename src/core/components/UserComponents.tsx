@@ -7,7 +7,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import { Prisma } from "db";
 import { Breadcrumbs, Button, Link, Tooltip } from "@mui/material";
 import { getURIForUser } from "../db3/clientAPILL";
-import { IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
+import { getHashedColor, IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import HomeIcon from '@mui/icons-material/Home';
 import { useDashboardContext } from "./DashboardContext";
 import { useRouter } from "next/router";
@@ -190,7 +190,11 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                 {sortedQr.map(event => {
                     const inst = dashboardContext.instrument.getById(event.instrumentId);
                     const sortedSegs = API.events.sortEvents(event.segments);
-                    return <tr key={event.id}>
+                    const year = event.startsAt ? new Date(event.startsAt).getFullYear() : 0;
+                    const month = event.startsAt ? new Date(event.startsAt).getMonth() : 0;
+                    const yearColorA = getHashedColor(`${year}`, { alpha: "5%" });
+                    const yearColorB = getHashedColor(`${year}`, { alpha: "15%" });
+                    return <tr key={event.id} style={{ backgroundColor: month % 2 === 0 ? yearColorA : yearColorB }}>
                         <td style={{ overflow: "hidden" }}><EventTextLink event={event} /></td>
                         <td>{inst && <InstrumentChip value={inst} />}</td>
                         <td><CMChipContainer>
