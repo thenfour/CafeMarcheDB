@@ -1,9 +1,9 @@
 import { ClientSession, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
-//import { Prisma } from "db";
+import { Prisma } from "db";
 import React from 'react';
 import { Permission, gPublicPermissions } from 'shared/permissions';
-import { TableAccessor } from 'shared/rootroot';
+import { partition, TableAccessor } from 'shared/rootroot';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
@@ -101,6 +101,20 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
 
     getRolesForPermission(permissionId) {
         return this.rolePermission.filter(rp => rp.permissionId === permissionId).map(rp => this.role.getById(rp.roleId));
+    }
+
+    getCancelledStatuses() {
+        return this.eventStatus
+            .filter(s => s.significance === db3.EventStatusSignificance.Cancelled);
+    }
+
+    partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]] {
+        const cancelledEventStatusIds = this.getCancelledStatuses().map(x => x.id);
+        const isCancelled = (seg: Tseg) => {
+            if (seg.statusId == null) return false;
+            return cancelledEventStatusIds.includes(seg.statusId);
+        }
+        return partition(segments, isCancelled);
     }
 };
 

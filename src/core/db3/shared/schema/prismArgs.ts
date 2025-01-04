@@ -1453,6 +1453,8 @@ export abstract class DashboardContextDataBase {
     serverStartupState: ServerStartInfo;
 
     relevantEventIds: number[];
+
+    abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
 }
 
 

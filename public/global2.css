@@ -1583,6 +1583,7 @@ in particular the date range picker is wide.*/
 .EventSegmentPanel.segment.statusSignificance_Cancelled>.header {
     background-color: #eee;
     color: #aaa;
+    text-decoration: line-through;
 }
 
 .EventSegmentPanel.segment.statusSignificance_Cancelled>.header>.dateRange {
@@ -1591,6 +1592,7 @@ in particular the date range picker is wide.*/
 
 .EventSegmentPanel.segment.statusSignificance_Cancelled>.content {
     opacity: 50%;
+    text-decoration: line-through;
 }
 
 .newSegmentButton {

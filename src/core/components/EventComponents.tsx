@@ -3,10 +3,10 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Checklist } from '@mui/icons-material';
+import { CheckBox, Checklist, Label } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Link, MenuItem, Select, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
@@ -568,14 +568,13 @@ export interface EventAttendanceDetailRowProps {
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
     userMap: db3.UserInstrumentList;
+    showCancelledSegments: boolean;
     refetch: () => void;
     readonly: boolean;
 };
 
-export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly, userMap }: EventAttendanceDetailRowProps) => {
+export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly, userMap, showCancelledSegments }: EventAttendanceDetailRowProps) => {
     const currentUser = useCurrentUser()[0]!;
-    //const publicData = useAuthenticatedSession();
-    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
     const dashboardContext = React.useContext(DashboardContext);
 
     const eventResponse = responseInfo.getEventResponseForUser(user, dashboardContext, userMap);
@@ -587,6 +586,9 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
 
     const authorizedForEdit = dashboardContext.isAuthorized(Permission.change_others_event_responses);
     const isYou = eventResponse.user.id === currentUser.id;
+
+    const [_, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
+    const shownSegments: (typeof event.segments[0])[] = showCancelledSegments ? event.segments : uncancelledSegments;
 
     const classes = [
         `nameCellContainer`,
@@ -603,7 +605,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
             </div>
         </td>
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
-        {event.segments.map((segment, iseg) => {
+        {shownSegments.map((segment, iseg) => {
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             assert(!!segmentResponse, "segmentResponse shouldn't be null.");
             const attendance = dashboardContext.eventAttendance.getById(segmentResponse.response.attendanceId);
@@ -648,12 +650,17 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
     const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
     const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegment | null>(null);
-    const user = useCurrentUser()[0]!;
-    // const publicData = useAuthenticatedSession();
-    // const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
+
+    const canAddUsers = dashboardContext.isAuthorized(Permission.manage_events);
+    const [cancelledSegments, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
+    const showCancelledSegmentsControls = canAddUsers && cancelledSegments.length > 0;
+
+    const shownSegments: (typeof event.segments[0])[] = showCancelledSegments ? event.segments : uncancelledSegments;
 
     React.useEffect(() => {
-        setSortSegment(event.segments.find(s => s.id === sortSegmentId) || null);
+        setSortSegment(shownSegments.find(s => s.id === sortSegmentId) || null);
     }, [sortSegmentId, event]);
 
     const onAddUser = (u: db3.UserPayload | null) => {
@@ -672,8 +679,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         });
     };
 
-    const canAddUsers = dashboardContext.isAuthorized(Permission.manage_events);
-    const isSingleSegment = eventData.event.segments.length === 1;
+    const isSingleSegment = shownSegments.length === 1;
 
     // sort rows
     const sortedUsers = [...responseInfo.distinctUsers];
@@ -710,7 +716,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         return a.name < b.name ? -1 : 1;
     });
 
-    const segAttendees = event.segments.map(seg => ({
+    const segAttendees = shownSegments.map(seg => ({
         segment: seg,
         attendeeCount: seg.responses.filter(resp => {
             const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
@@ -725,6 +731,13 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             isReadOnly={props.readonly}
         />
 
+        {showCancelledSegmentsControls && <FormControlLabel
+            control={
+                <Switch checked={showCancelledSegments} onChange={(e) => setShowCancelledSegments(e.target.checked)} />
+            }
+            label={`Show ${cancelledSegments.length} cancelled segments`}
+        />}
+
         <table className='attendanceDetailTable'>
             <thead>
                 <tr>
@@ -734,7 +747,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     <th>
                         <div className='interactable' onClick={() => setSortField('instrument')}>Instrument {sortField === 'instrument' && gCharMap.DownArrow()}</div>
                     </th>
-                    {event.segments.map(seg => {
+                    {shownSegments.map(seg => {
                         const status = dashboardContext.eventStatus.getById(seg.statusId);
                         return <React.Fragment key={seg.id}>
                             <th className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
@@ -753,7 +766,16 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             <tbody>
                 {
                     sortedUsers.map(user => {
-                        return <EventAttendanceDetailRow key={user.id} responseInfo={responseInfo} event={event} user={user} refetch={refetch} readonly={props.readonly} userMap={props.userMap} />
+                        return <EventAttendanceDetailRow
+                            key={user.id}
+                            responseInfo={responseInfo}
+                            event={event}
+                            user={user}
+                            refetch={refetch}
+                            readonly={props.readonly}
+                            userMap={props.userMap}
+                            showCancelledSegments={showCancelledSegments}
+                        />
                     })
                 }
             </tbody>
@@ -971,18 +993,18 @@ export interface EventCompletenessTabContentProps {
 
 export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: EventCompletenessTabContentProps) => {
     const dashboardContext = React.useContext(DashboardContext);
-
-    //const [minStrength, setMinStrength] = React.useState<number>(50);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const event = eventData.event;
     const responseInfo = eventData.responseInfo;
 
-    const [user] = useCurrentUser()!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
+    const [cancelledSegments, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
+    const showCancelledSegmentsControls = dashboardContext.isAuthorized(Permission.manage_events) && cancelledSegments.length > 0;
+    const shownSegments: (typeof event.segments[0])[] = showCancelledSegments ? event.segments : uncancelledSegments;
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
+        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xInstrumentFunctionalGroup,
             columns: [
@@ -995,7 +1017,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
 
     const isSingleSegment = eventData.event.segments.length === 1;
 
-    const segAttendees = event.segments.map(seg => ({
+    const segAttendees = shownSegments.map(seg => ({
         segment: seg,
         attendeeCount: seg.responses.filter(resp => {
             const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
@@ -1005,11 +1027,19 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
 
     return <div>
         {/* <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" /> */}
+
+        {showCancelledSegmentsControls && <FormControlLabel
+            control={
+                <Switch checked={showCancelledSegments} onChange={(e) => setShowCancelledSegments(e.target.checked)} />
+            }
+            label={`Show ${cancelledSegments.length} cancelled segments`}
+        />}
+
         <table className='EventCompletenessTabContent'>
             <tbody>
                 <tr>
                     <th>Instrument group</th>
-                    {isSingleSegment ? <th key="__">Response</th> : event.segments.map((seg) => {
+                    {isSingleSegment ? <th key="__">Response</th> : shownSegments.map((seg) => {
                         const status = dashboardContext.eventStatus.getById(seg.statusId);
                         return <th className={`segmentStatusSignificance_${status?.significance || "none"}`} key={seg.id}>
                             <div style={{ display: "flex", justifyContent: "center" }}>
@@ -1024,7 +1054,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                         <td className='instrumentFunctionalGroupTD'>
                             <InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} border={'noBorder'} shape='rectangle' />
                         </td>
-                        {event.segments.map((seg) => {
+                        {shownSegments.map((seg) => {
                             // come up with the icons per user responses
                             // either just sort segment responses by answer strength,
                             // or group by answer. not sure which is more useful probably the 1st.
@@ -1084,7 +1114,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                     <td>
                     </td>
                     {segAttendees.map(seg => {
-                        const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
+                        //const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
                         return <React.Fragment key={seg.segment.id}>
                             <td className={`responseCell`}>{seg.attendeeCount}</td>
                         </React.Fragment>

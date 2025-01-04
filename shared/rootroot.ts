@@ -159,3 +159,22 @@ export declare const exactType: <T, U>(
 
 export const AssertEqualTypes = <T, U>() => (true as IfEquals<T, U>);
 
+// like filter() but
+// returns both matching & nonmatching items.
+export function partition<TRow>(
+    array: TRow[],
+    predicate: (row: TRow) => boolean
+): [TRow[], TRow[]] {
+    const matching: TRow[] = [];
+    const notMatching: TRow[] = [];
+
+    for (const item of array) {
+        if (predicate(item)) {
+            matching.push(item);
+        } else {
+            notMatching.push(item);
+        }
+    }
+
+    return [matching, notMatching];
+}
