@@ -13,6 +13,7 @@ const GoogleAnalytics: React.FC<GoogleAnalyticsProps> = ({ trackingId }) => {
     if (IsNullOrWhitespace(trackingId)) {
       return;
     }
+    if (!!userId) return; // don't track our own users.
     // Load Google Analytics script dynamically
     const script = document.createElement("script");
     script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`;

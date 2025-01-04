@@ -1,3 +1,4 @@
+import { useSession } from "@blitzjs/auth";
 import { BlitzLayout } from "@blitzjs/next";
 import { Backdrop, CircularProgress } from "@mui/material";
 import Head from "next/head";
@@ -6,9 +7,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToBoolean } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import Dashboard2, { NavRealm } from "../components/Dashboard2";
-import GoogleAnalytics from "../components/GoogleAnalytics";
 import { LoginSignup } from "../components/LoginSignupForm";
-import { useSession } from "@blitzjs/auth";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
@@ -36,7 +35,7 @@ const DashboardLayout2 = ({ disableLoginRedirect, navRealm, basePermission, chil
     // }, [currentUser?.id]);
 
     return <Dashboard2 navRealm={navRealm} basePermission={basePermission}>
-        <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_BACKSTAGE} />
+        {/* <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_BACKSTAGE} /> */}
         {
             (!!currentUser || disableLoginRedirect) ? children : (<LoginSignup />)
         }
