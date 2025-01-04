@@ -333,6 +333,12 @@ export type InstrumentPayload = Prisma.InstrumentGetPayload<typeof InstrumentArg
 
 ////////////////////////////////////////////////////////////////
 export const InstrumentMinimumArgs = Prisma.validator<Prisma.InstrumentArgs>()({
+    select: {
+        id: true,
+        name: true,
+        sortOrder: true,
+        functionalGroupId: true,
+    }
 });
 
 export type InstrumentPayloadMinimum = Prisma.InstrumentGetPayload<typeof InstrumentMinimumArgs>;
@@ -1455,6 +1461,7 @@ export abstract class DashboardContextDataBase {
     relevantEventIds: number[];
 
     abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
+    abstract sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[];
 }
 
 

@@ -116,6 +116,20 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
         }
         return partition(segments, isCancelled);
     }
+
+    sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[] {
+        // sort first by functional group, then by instrument sort order.
+        const ret = [...instruments];
+        ret.sort((a, b) => {
+            const afg = this.instrumentFunctionalGroup.getById(a.functionalGroupId)?.sortOrder ?? 0;
+            const bfg = this.instrumentFunctionalGroup.getById(b.functionalGroupId)?.sortOrder ?? 0;
+            if (afg !== bfg) {
+                return afg - bfg;
+            }
+            return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+        });
+        return ret;
+    }
 };
 
 

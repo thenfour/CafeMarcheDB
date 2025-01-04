@@ -417,6 +417,8 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
     const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ selector: 'taggedSongs', foreignSelector: "song", fileTags: props.fileTags });
     const uniqueMimeTypes = CalculateUniqueMimeTypes({ fileTags: props.fileTags });
 
+    const sortedInstrumentTags = dashboardContext.sortInstruments(uniqueInstrumentTags.map(t => ({ count: t.count, ...t.tag })));
+
     const sortArrow = props.value.sortDirection === 'asc' ? gCharMap.DownArrow() : gCharMap.UpArrow();
 
     return <div className="contentSection filterControls">
@@ -472,17 +474,17 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
 
                             <div className={`EventsFilterControlsValue`}>
                                 <div className="row">
-                                    {uniqueInstrumentTags.length > 1 && <CMChipContainer>
-                                        {uniqueInstrumentTags.map(t => (
+                                    {sortedInstrumentTags.length > 1 && <CMChipContainer>
+                                        {sortedInstrumentTags.map(t => (
                                             <CMChip
-                                                key={t.tag.id}
-                                                color={getInstrumentColor(t.tag)}
-                                                tooltip={t.tag.description}
-                                                size='small'
-                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.tag.id) }}
-                                                onClick={() => props.onChange({ ...props.value, taggedInstrumentIds: toggleValueInArray(props.value.taggedInstrumentIds, t.tag.id) })}
+                                                key={t.id}
+                                                color={getInstrumentColor(t)}
+                                                //tooltip={t.description}
+                                                size={dashboardContext.currentUser?.instruments.some(yi => yi.instrumentId === t.id) ? 'big' : 'small'}
+                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.id) }}
+                                                onClick={() => props.onChange({ ...props.value, taggedInstrumentIds: toggleValueInArray(props.value.taggedInstrumentIds, t.id) })}
                                             >
-                                                {t.tag.name} ({t.count})
+                                                {t.name} ({t.count})
                                             </CMChip>))}
 
                                     </CMChipContainer>}
