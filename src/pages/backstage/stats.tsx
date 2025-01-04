@@ -154,7 +154,7 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
                 <ul>
                     {selectedBucket?.items.map(i => {
                         return <li key={i.item.eventId}>
-                            <EventTextLink event={{ id: i.item.eventId, name: i.item.eventName, startsAt: i.item.startsAt }} />
+                            <EventTextLink event={{ id: i.item.eventId, name: i.item.eventName, startsAt: i.item.startsAt, statusId: i.item.statusId, typeId: i.item.typeId }} />
                         </li>;
 
                     })}
@@ -268,9 +268,11 @@ const StatsPageInner = () => {
             <ul>
                 {selectedEventBucket?.items.map(i => {
                     return <li key={i.item.id}>
-                        <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
+                        <EventTextLink event={i.item} />
+                        {/* <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
                             {EventAPI.getLabel(i.item)}
-                        </a></li>;
+                        </a> */}
+                    </li>;
 
                 })}
             </ul>

@@ -660,6 +660,8 @@ export interface GetGlobalStatsRetEvent {
     durationMillis: bigint,
     isAllDay: boolean,
     endDateTime: null | Date,
+    typeId: number | null,
+    statusId: number | null,
 };
 
 export interface GetGlobalStatsRetPopularSongOccurrance {
@@ -667,6 +669,8 @@ export interface GetGlobalStatsRetPopularSongOccurrance {
     songName: string,
     eventId: number,
     eventName: string,
+    typeId: number | null,
+    statusId: number | null,
     startsAt: null | Date,
     durationMillis: bigint,
     isAllDay: boolean,

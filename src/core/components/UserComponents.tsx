@@ -175,9 +175,9 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 
     const sortedQr = API.events.sortEvents(qr.events);
 
-    return <div>
+    return <div className="UserAttendanceTabContent">
         <AdminInspectObject src={qr} label="results" />
-        <table>
+        <table className="userAttendanceTable">
             <thead>
                 <tr>
                     <th>Event</th>
@@ -191,7 +191,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                     const inst = dashboardContext.instrument.getById(event.instrumentId);
                     const sortedSegs = API.events.sortEvents(event.segments);
                     return <tr key={event.id}>
-                        <td><EventTextLink event={event} /></td>
+                        <td style={{ overflow: "hidden" }}><EventTextLink event={event} /></td>
                         <td>{inst && <InstrumentChip value={inst} />}</td>
                         <td><CMChipContainer>
                             {sortedSegs.map(seg => {

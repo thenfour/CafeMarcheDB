@@ -2,10 +2,8 @@ import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
-import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 import { toSorted } from "shared/utils";
+import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 
 type UserEventAttendanceQueryResult_EventSegment = Prisma.EventSegmentGetPayload<{
     select: {
@@ -25,6 +23,7 @@ type UserEventAttendanceQueryResult_Event = Prisma.EventGetPayload<{
         id: true,
         name: true,
         statusId: true,
+        typeId: true,
         startsAt: true,
         durationMillis: true,
         isAllDay: true,
@@ -123,6 +122,7 @@ export default resolver.pipe(
                         id: event.id,
                         name: event.name,
                         statusId: event.statusId,
+                        typeId: event.typeId,
                         startsAt: event.startsAt,
                         durationMillis: event.durationMillis,
                         isAllDay: event.isAllDay,

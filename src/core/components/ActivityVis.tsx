@@ -1,7 +1,7 @@
 
 import { Tooltip } from "@mui/material";
 import React from "react";
-import { Clamp, IsNullOrWhitespace, lerp } from 'shared/utils';
+import { IsNullOrWhitespace } from 'shared/utils';
 
 
 interface ActivityVisItemInfo {

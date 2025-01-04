@@ -128,7 +128,9 @@ export default resolver.pipe(
                 e.startsAt,
                 e.durationMillis,
                 e.isAllDay,
-                e.endDateTime    
+                e.endDateTime,
+                e.statusId,
+                e.typeId
             from
                 popularSongs as ps
                 inner join EventSongListSong esls on esls.songId = ps.id
@@ -163,7 +165,9 @@ export default resolver.pipe(
                 e.startsAt,
                 e.durationMillis,
                 e.isAllDay,
-                e.endDateTime    
+                e.endDateTime,
+                e.statusId,
+                e.typeId
             from
                 e
                 

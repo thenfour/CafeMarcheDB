@@ -1152,7 +1152,7 @@ export interface EventDetailContainerProps {
 
 export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
     const [currentUser] = useCurrentUser()!;
-    const router = useRouter();
+    //const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = React.useContext(DashboardContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
