@@ -1,12 +1,14 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Button, ButtonGroup, DialogContent, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, DialogContent, FormControlLabel, Switch, Tooltip } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
+import { ColorPaletteEntry, gGeneralPaletteList, gLightSwatchColors } from "shared/color";
 import { Permission } from "shared/permissions";
-import { clamp01, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { formatSongLength } from "shared/time";
+import { clamp01, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { CMChip } from "src/core/components/CMChip";
 import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
@@ -20,19 +22,21 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
+import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import * as db3 from "src/core/db3/db3";
 
 // songs = rows
 // segments = columns
 
 type Gradient = [string, string];
 
-const gColors: {
+interface SetlistPlannerColorScheme {
     songRequiredPoints: Gradient,
     songPointBalancePositive: Gradient,
     songPointBalanceNegative: Gradient,
@@ -44,12 +48,17 @@ const gColors: {
     segmentPointsAvailable: Gradient,
     totalSongBalancePositive: string,
     totalSongBalanceNegative: string,
-} = {
-    // Light orange -> orange
-    songRequiredPoints: ["#ff8", "#f90"],
+};
 
-    // Light green -> green
-    songSegmentPoints: ["#dfd", "#4a4"],
+const gDefaultColors: SetlistPlannerColorScheme = {
+    // Light orange -> orange
+    //songRequiredPoints: ["#ff8", "#f90"],
+    songRequiredPoints: ["#fef", "#b8c"],
+
+    //songSegmentPoints: ["#cce", "#88b"], // dark purplish gray is practical but ugly.
+    //songSegmentPoints: ["#fef", "#a4a"],
+    songSegmentPoints: ["#cff", "#699"],
+    //songSegmentPoints: ["#bdb", "#4a4"],
     // Light blue -> blue
     songTotalPoints: ["#8df", "#49f"],
     // Lighter green -> green
@@ -58,7 +67,8 @@ const gColors: {
     songPointBalanceNegative: ["#f44", "#eaa"],
 
     // Light orange -> orange
-    segmentPoints: ["#fe7", "#f90"],
+    //segmentPoints: ["#fe7", "#f90"],
+    segmentPoints: ["#8df", "#49f"], // blue
 
     // Light green -> green
     segmentBalancePositive: ["#dfd", "#4a4"],
@@ -66,12 +76,15 @@ const gColors: {
     segmentBalanceNegative: ["#f44336", "#ef9a9a"],
 
     // Light purple -> purple
-    segmentPointsAvailable: ["#f3e5f5", "#9c27b0"],
+    segmentPointsAvailable: ["#fef", "#b8c"],
 
     // Solid greens and reds
     totalSongBalancePositive: "#4caf50",
     totalSongBalanceNegative: "#f44336",
 };
+
+
+
 
 interface SetlistPlanMutator {
     setName: (name: string) => void;
@@ -97,6 +110,7 @@ interface SetlistPlanMutator {
 interface SetlistPlanStats {
     totalPointsRequired: number;
     totalPointsUsed: number;
+    totalPointsInThePool: number;
     totalPlanSongBalance: number;
     totalPlanSegmentBalance: number;
     songsPerSegment: number;
@@ -113,10 +127,14 @@ interface SetlistPlanStats {
     minSongRequiredPoints: number,
     maxSongTotalPoints: number,
     minSongTotalPoints: number,
+    totalSongLengthSeconds: number,
 
+    minCellAllocatedPoints: number,
+    maxCellAllocatedPoints: number,
 
     songStats: {
         rowId: string;
+        songId: number;
         requiredPoints: number | undefined;
         totalRehearsalPoints: number;
         balance: number | undefined;
@@ -128,11 +146,12 @@ interface SetlistPlanStats {
     }[];
 };
 
-function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
+function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPayload[]): SetlistPlanStats {
     const totalPointsRequired = doc.payload.rows.reduce((acc, song) => song.pointsRequired ? acc + song.pointsRequired : acc, 0);
     const totalPointsUsed = doc.payload.cells.reduce((acc, x) => acc + (x.pointsAllocated || 0), 0);
     const totalPlanBalance = totalPointsUsed - totalPointsRequired;
     const songsPerSegment = doc.payload.cells.filter(ss => !!ss.pointsAllocated).length / doc.payload.columns.length;
+    const totalPointsInThePool = doc.payload.columns.reduce((acc, x) => acc + (x.pointsAvailable || 0), 0);
 
     const songStats = doc.payload.rows.filter(song => song.type === "song").map(song => {
         const segMeasures = doc.payload.cells.filter((x) => x.rowId === song.rowId && !!x.pointsAllocated);
@@ -140,6 +159,7 @@ function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
         const balance = song.pointsRequired ? totalRehearsalPoints - song.pointsRequired : undefined;
         return {
             rowId: song.rowId,
+            songId: song.songId!,
             requiredPoints: song.pointsRequired,
             totalRehearsalPoints,
             balance,
@@ -157,9 +177,20 @@ function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
         };
     });
 
+    // maximum cell value points allocated
+    const maxSegmentPointsAllocated = doc.payload.cells.reduce((acc, x) => {
+        if (x.pointsAllocated == null) return acc;
+        return Math.max(acc, x.pointsAllocated);
+    }, 0);
+
+    const minSegmentPointsAllocated = doc.payload.cells.reduce((acc, x) => {
+        if (x.pointsAllocated == null) return acc;
+        return Math.min(acc, x.pointsAllocated);
+    }, maxSegmentPointsAllocated);
+
     const maxSegmentPointsAvailable = doc.payload.columns.reduce((acc, x) => {
         if (x.pointsAvailable == null) return acc;
-        return acc + x.pointsAvailable;
+        return Math.max(acc, x.pointsAvailable);
     }, 0);
 
     const minSegmentPointsAvailable = doc.payload.columns.reduce((acc, x) => {
@@ -218,7 +249,14 @@ function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
         return Math.min(x.totalRehearsalPoints, acc);
     }, maxSongTotalPoints);
 
+    const totalSongLengthSeconds = songStats.reduce((acc, x) => {
+        const song = allSongs.find(s => s.id === x.songId);
+        if (!song) return acc;
+        return acc + (song.lengthSeconds || 0);
+    }, 0);
+
     return {
+        totalSongLengthSeconds,
         totalPointsRequired,
         totalPointsUsed,
         totalPlanSegmentBalance: segmentStats.reduce((acc, x) => acc + x.balance, 0),
@@ -226,6 +264,10 @@ function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
         songsPerSegment,
         songStats,
         segmentStats,
+        totalPointsInThePool,
+
+        maxCellAllocatedPoints: maxSegmentPointsAllocated,
+        minCellAllocatedPoints: minSegmentPointsAllocated,
 
         minSegmentPointsAvailable,
         maxSegmentPointsAvailable,
@@ -456,32 +498,36 @@ type SetlistPlannerMatrixRowProps = {
     mutator: SetlistPlanMutator;
     rowId: string;
     stats: SetlistPlanStats;
+    colorScheme: SetlistPlannerColorScheme;
 };
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
     let songStats = props.stats.songStats.find((x) => x.rowId === props.rowId);
     if (!songStats) {
-        // in intermediate contexts this can happen; use an empty stat object
-        songStats = {
-            rowId: props.rowId,
-            requiredPoints: 0,
-            totalRehearsalPoints: 0,
-            balance: 0,
-        };
+        return null;
+        // // in intermediate contexts this can happen; use an empty stat object
+        // songStats = {
+        //     rowId: props.rowId,
+        //     requiredPoints: 0,
+        //     totalRehearsalPoints: 0,
+        //     songId: 0,
+        //     balance: 0,
+        // };
     };
 
     // if balance is negative, use a gradient.
     // if balance is 0 or positive, use a solid green.
     let balanceColor = "transparent";
     if (songStats.balance != null && songStats.balance < 0) {
-        balanceColor = LerpColor(songStats.balance, props.stats.minSongBalance, 0, gColors.songPointBalanceNegative);
+        balanceColor = LerpColor(songStats.balance, props.stats.minSongBalance, 0, props.colorScheme.songPointBalanceNegative);
     } else if (songStats.balance != null && songStats.balance >= 0) {
-        balanceColor = LerpColor(songStats.balance, props.stats.maxSongBalance, 0, gColors.songPointBalancePositive);
+        balanceColor = LerpColor(songStats.balance, props.stats.maxSongBalance, 0, props.colorScheme.songPointBalancePositive);
     }
 
     const songRow = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
     const song = allSongs.find((x) => x.id === songRow.songId!)!;
+    const songLengthFormatted = song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds);
 
     return <div className="tr">
         <div className="td songName">
@@ -491,7 +537,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             </div>
 
             <Tooltip title={`Amount of rehearsal points this song needs`} disableInteractive>
-                <div className="numberCell" style={{ backgroundColor: LerpColor(songStats.requiredPoints, props.stats.minSongRequiredPoints, props.stats.maxSongRequiredPoints, gColors.songRequiredPoints) }}>
+                <div className="numberCell" style={{ backgroundColor: LerpColor(songStats.requiredPoints, props.stats.minSongRequiredPoints, props.stats.maxSongRequiredPoints, props.colorScheme.songRequiredPoints) }}>
                     <NumberField
                         value={songStats.requiredPoints || null}
                         onChange={(e, newValue) => { props.mutator.setRowPointsRequired(props.rowId, newValue || undefined) }}
@@ -500,37 +546,47 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             </Tooltip>
 
             <div style={{ display: "flex", alignItems: "center" }}>
-                <Tooltip disableInteractive title={<Markdown markdown={songRow.commentMarkdown || ""} />}>
+                <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
                     <div>
                         <Led value={songRow.color || null} onChange={(newColor) => {
                             props.mutator.setRowColor(props.rowId, newColor || undefined);
                         }} />
                     </div>
                 </Tooltip>
-                <div>{song.name}</div>
+                <div>
+                    <a href={getURIForSong(song)} target="_blank" rel="noreferrer" style={{
+                        "--song-hash-color": getHashedColor(song.name),
+                        color: `var(--song-hash-color)`,
+                    } as any}>{song.name}</a>
+                </div>
             </div>
         </div>
-        {props.doc.payload.columns.map((segment, index) => {
-            // if no measureUsage, use transparent color
-            // otherwise 
-            const pointsAllocated = props.doc.payload.cells.find((x) => x.columnId === segment.columnId && x.rowId === props.rowId)?.pointsAllocated;
-            const bgColor = pointsAllocated ? LerpColor(
-                pointsAllocated,
-                props.stats.minSongTotalPoints,
-                props.stats.maxSongTotalPoints,
-                gColors.songSegmentPoints
-            ) : "white";
-            return <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
-                <NumberField
-                    value={pointsAllocated || null}
-                    onChange={(e, newValue) => {
-                        props.mutator.setCellPoints(props.rowId, segment.columnId, newValue || undefined);
-                    }}
-                />
-            </div>;
-        })}
+        <div className="td songLength">
+            {songLengthFormatted}
+        </div>
+        {
+            props.doc.payload.columns.map((segment, index) => {
+                // if no measureUsage, use transparent color
+                // otherwise 
+                const pointsAllocated = props.doc.payload.cells.find((x) => x.columnId === segment.columnId && x.rowId === props.rowId)?.pointsAllocated;
+                const bgColor = pointsAllocated ? LerpColor(
+                    pointsAllocated,
+                    props.stats.minCellAllocatedPoints,
+                    props.stats.maxCellAllocatedPoints,
+                    props.colorScheme.songSegmentPoints
+                ) : "white";
+                return <div key={index} className={`td segment numberCell ${pointsAllocated ? "" : "hatch"}`} style={{ backgroundColor: bgColor }}>
+                    <NumberField
+                        value={pointsAllocated || null}
+                        onChange={(e, newValue) => {
+                            props.mutator.setCellPoints(props.rowId, segment.columnId, newValue || undefined);
+                        }}
+                    />
+                </div>;
+            })
+        }
         <Tooltip title={`Total points this song will be rehearsed`} disableInteractive>
-            <div className="td rehearsalTime numberCell" style={{ backgroundColor: LerpColor(songStats.totalRehearsalPoints, props.stats.minSongTotalPoints, props.stats.maxSongTotalPoints, gColors.songTotalPoints) }}>
+            <div className="td rehearsalTime numberCell" style={{ backgroundColor: LerpColor(songStats.totalRehearsalPoints, props.stats.minSongTotalPoints, props.stats.maxSongTotalPoints, props.colorScheme.songTotalPoints) }}>
                 <NumberField inert value={songStats.totalRehearsalPoints} />
             </div>
         </Tooltip>
@@ -539,7 +595,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 <NumberField inert value={songStats.balance || null} showPositiveSign />
             </div>
         </Tooltip>
-    </div>;
+    </div >;
 }
 
 
@@ -588,6 +644,7 @@ type SetlistPlannerMatrixProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
     stats: SetlistPlanStats;
+    colorScheme: SetlistPlannerColorScheme;
 };
 
 const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
@@ -599,9 +656,11 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     return <div className="SetlistPlannerMatrix">
         <div className="tr header">
             <div className="td songName"></div>
+            <div className="td songLength">
+            </div>
             {props.doc.payload.columns.map((segment, index) => <div key={index} className="td segment">
                 <div>{segment.name}</div>
-                <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, gColors.segmentPointsAvailable) }}>
+                <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, props.colorScheme.segmentPointsAvailable) }}>
                     <NumberField
                         value={segment.pointsAvailable || null}
                         onChange={(e, newValue) => {
@@ -632,6 +691,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                             stats={props.stats}
                             key={index}
                             doc={props.doc}
+                            colorScheme={props.colorScheme}
                             rowId={song.rowId}
                         />
                     }
@@ -646,10 +706,15 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songName numberCell">
                     {/* <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} /> */}
                 </div>
+                <Tooltip disableInteractive title={`Total song length for all songs`}>
+                    <div className="td songLength">
+                        {formatSongLength(props.stats.totalSongLengthSeconds)}
+                    </div>
+                </Tooltip>
                 {/* </Tooltip> */}
                 {props.doc.payload.columns.map((segment, index) => {
                     const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
-                    const bgColor = LerpColor(segStats.totalPointsAllocatedToSongs, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, gColors.segmentPoints);
+                    const bgColor = LerpColor(segStats.totalPointsAllocatedToSongs, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, props.colorScheme.segmentPoints);
                     return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segment.name}`}>
                         <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
                             <NumberField inert value={segStats.totalPointsAllocatedToSongs} />
@@ -657,12 +722,12 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     </Tooltip>;
                 })}
                 <Tooltip disableInteractive title={`total rehearsal points allocated for the whole plan`}>
-                    <div className="td rehearsalTime numberCell" style={{ backgroundColor: gColors.songTotalPoints[1] }}>
+                    <div className="td rehearsalTime numberCell" style={{ backgroundColor: props.colorScheme.songTotalPoints[1] }}>
                         <NumberField inert value={props.stats.totalPointsUsed} />
                     </div>
                 </Tooltip>
                 <Tooltip disableInteractive title={`total song balance for the whole plan. ${props.stats.totalPlanSongBalance >= 0 ? `you have allocated enough to rehearse all songs fully` : `you need to allocate ${Math.abs(props.stats.totalPlanSongBalance)} more points to rehearse all songs`}`}>
-                    <div className="td balance numberCell totalPlanBalance" style={{ backgroundColor: props.stats.totalPlanSongBalance >= 0 ? gColors.totalSongBalancePositive : gColors.totalSongBalanceNegative }}>
+                    <div className="td balance numberCell totalPlanBalance" style={{ backgroundColor: props.stats.totalPlanSongBalance >= 0 ? props.colorScheme.totalSongBalancePositive : props.colorScheme.totalSongBalanceNegative }}>
                         <NumberField inert value={props.stats.totalPlanSongBalance} showPositiveSign />
                     </div>
                 </Tooltip>
@@ -670,11 +735,13 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
             <div className="tr footer">
                 <div className="td songName"></div>
+                <div className="td songLength">
+                </div>
                 {props.doc.payload.columns.map((segment, index) => {
                     const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
                     const balanceColor = segStats.balance >= 0 ?
-                        LerpColor(segStats.balance, 0, props.stats.maxSegmentBalance, gColors.segmentBalancePositive)
-                        : LerpColor(segStats.balance, props.stats.minSegmentBalance, 0, gColors.segmentBalanceNegative);
+                        LerpColor(segStats.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
+                        : LerpColor(segStats.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
                     return <Tooltip disableInteractive title={`Rehearsal points left unallocated ${segment.name}`}>
                         <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
                             <NumberField inert value={segStats.balance} showPositiveSign />
@@ -686,7 +753,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         <div>total rehearsal point balance for the whole plan</div>
                         <div>{props.stats.totalPlanSegmentBalance >= 0 ? `you have ${props.stats.totalPlanSegmentBalance} points left to allocate` : `you have over-allocated by ${-props.stats.totalPlanSegmentBalance} points.`}</div>
                     </div>}>
-                    <div className="td rehearsalTime" style={{ backgroundColor: props.stats.totalPlanSegmentBalance >= 0 ? gColors.segmentBalancePositive[1] : gColors.segmentBalanceNegative[0] }}>
+                    <div className="td rehearsalTime" style={{ backgroundColor: props.stats.totalPlanSegmentBalance >= 0 ? props.colorScheme.segmentBalancePositive[1] : props.colorScheme.segmentBalanceNegative[0] }}>
                         <NumberField inert value={props.stats.totalPlanSegmentBalance} showPositiveSign />
                     </div>
                 </Tooltip>
@@ -696,12 +763,15 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
         <KeyValueTable
             data={{
+                "required points to rehearse all songs": props.stats.totalPointsRequired,
+                "rehearsal points in the pool": props.stats.totalPointsInThePool,
+                "": (props.stats.totalPointsInThePool >= props.stats.totalPointsRequired ?
+                    <CMChip color={gLightSwatchColors.light_green}>You have enough rehearsal points to rehearse all songs</CMChip> :
+                    <CMChip color={gLightSwatchColors.light_orange}>You don't have enough rehearsal time to rehearse all songs ({props.stats.totalPointsRequired - props.stats.totalPointsInThePool} short)</CMChip>),
+                "Song points you still need to allocate": props.stats.totalPlanSongBalance,
+                //"total rehearsal points allocated": props.stats.totalPointsUsed,
+                "Rehearsal points still available": props.stats.totalPlanSegmentBalance,
                 "songs per rehearsal": props.stats.songsPerSegment.toFixed(2),
-                "total rehearsal points allocated": props.stats.totalPointsUsed,
-                "total required rehearsal points to rehearse all songs": props.stats.totalPointsRequired,
-                "total rehearsal points in the pool": props.doc.payload.columns.reduce((acc, x) => acc + (x.pointsAvailable || 0), 0),
-                "Rehearsal points required left to allocate": props.stats.totalPlanSongBalance,
-                "Rehearsal points left to use": props.stats.totalPlanSegmentBalance,
             }} />
 
         <div className="SetlistPlannerDocumentEditorAddSong">
@@ -728,6 +798,7 @@ type SetlistPlannerDocumentEditorProps = {
     isModified: boolean;
     initialValue: SetlistPlan;
     mutator: SetlistPlanMutator;
+    colorScheme: SetlistPlannerColorScheme;
     onSave: (doc: SetlistPlan) => void;
     onCancel: () => void;
     onDelete: () => void;
@@ -738,14 +809,14 @@ type TTabId = "plan" | "segments" | "songs" | "matrix";
 const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) => {
     const [doc, setDoc] = React.useState<SetlistPlan>(props.initialValue);
     const [selectedTab, setSelectedTab] = React.useState<TTabId>("matrix");
-    const [stats, setStats] = React.useState<SetlistPlanStats>(() => CalculateSetlistPlanStats(doc));
     const allSongs = useSongsContext().songs;
+    const [stats, setStats] = React.useState<SetlistPlanStats>(() => CalculateSetlistPlanStats(doc, allSongs));
     React.useEffect(() => {
         setDoc(props.initialValue);
     }, [props.initialValue]);
 
     React.useEffect(() => {
-        setStats(CalculateSetlistPlanStats(doc));
+        setStats(CalculateSetlistPlanStats(doc, allSongs));
     }, [doc]);
 
     return <div className="SetlistPlannerDocumentEditor">
@@ -773,7 +844,8 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                     Delete
                 </Button>
             </ButtonGroup>
-            <InspectObject src={doc} />
+            <InspectObject src={doc} label="doc" />
+            <InspectObject src={stats} label="stats" />
             <div className="nameHeader">{doc.name}</div>
         </div>
         <CMTabPanel
@@ -897,12 +969,217 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
             <CMTab thisTabId="matrix" summaryTitle={"Matrix"}>
                 <SetlistPlannerMatrix
                     stats={stats!}
+                    colorScheme={props.colorScheme}
                     doc={doc}
                     mutator={props.mutator}
                 />
             </CMTab>
         </CMTabPanel>
     </div>
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// a wrapper around <input type="color"> which accepts #rgb format in addition to #rrggbb.
+const ColorInput = (props: React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>) => {
+
+    const value = props.value;
+    let sanitizedValue = value as string;
+    if (value && (value as any).length === 4) {
+        const r = value[1];
+        const g = value[2];
+        const b = value[3];
+        sanitizedValue = `#${r}${r}${g}${g}${b}${b}`;
+    }
+
+    const parsed = parseRGBA(sanitizedValue);
+
+    let shownValue = sanitizedValue;
+    if (parsed) {
+        const { r, g, b, alpha } = parsed;
+        const isSingleDigit = (n: number) => ((n & 0xF0) >> 4) === (n & 0x0F);
+
+        if (alpha !== 255) {
+            if (isSingleDigit(r) && isSingleDigit(g) && isSingleDigit(b) && isSingleDigit(alpha)) {
+                shownValue = `#${(r >> 4).toString(16)}${(g >> 4).toString(16)}${(b >> 4).toString(16)}${(alpha >> 4).toString(16)}`;
+            } else {
+                shownValue = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}${alpha.toString(16).padStart(2, "0")}`;
+            }
+        } else {
+            if (isSingleDigit(r) && isSingleDigit(g) && isSingleDigit(b)) {
+                shownValue = `#${(r >> 4).toString(16)}${(g >> 4).toString(16)}${(b >> 4).toString(16)}`;
+            } else {
+                shownValue = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+            }
+        }
+    }
+
+    return <div className="ColorInputControl">
+        <div className="inputWrapper"><input {...props} value={sanitizedValue} type="color" /></div>
+        <div className="textValue"><CMTextInputBase
+            value={shownValue}
+            onChange={(e, newValue) => {
+                if (newValue) {
+                    props.onChange?.({ target: { value: newValue } } as any);
+                }
+            }}
+        /></div>
+    </div>;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+type ColorGradientEditorProps = {
+    value: Gradient;
+    onChange: (newValue: Gradient) => void;
+};
+
+const ColorGradientEditor = (props: ColorGradientEditorProps) => {
+    const gSampleSwatchCount = 4;
+    return <div className="ColorGradientEditor">
+        <ColorInput value={props.value[0]} onChange={(e) => {
+            props.onChange([e.target.value, props.value[1]]);
+        }} />
+        <div className="ColorGradientEditorSwatches">
+            {Array(gSampleSwatchCount).fill(0).map((_, i) => {
+                const lerpx = i / (gSampleSwatchCount - 1);
+                const color = LerpColor(lerpx, 0, 1, props.value);
+                return <div key={i} className="swatch" style={{ backgroundColor: color }}><div>{i}</div></div>;
+            })}
+        </div>
+        <ColorInput value={props.value[1]} onChange={(e) => {
+            props.onChange([props.value[0], e.target.value]);
+        }} />
+    </div>;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+type SetlistPlannerColorSchemeEditorProps = {
+    value: SetlistPlannerColorScheme;
+    onChange: (newColorScheme: SetlistPlannerColorScheme) => void;
+};
+
+const SetlistPlannerColorSchemeEditor = (props: SetlistPlannerColorSchemeEditorProps) => {
+    return <div className="SetlistPlannerColorSchemeEditor">
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>songRequiredPoints</div>
+            <ColorGradientEditor
+                value={props.value.songRequiredPoints}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        songRequiredPoints: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>songSegmentPoints</div>
+            <ColorGradientEditor
+                value={props.value.songSegmentPoints}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        songSegmentPoints: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>songTotalPoints</div>
+            <ColorGradientEditor
+                value={props.value.songTotalPoints}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        songTotalPoints: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>songPointBalancePositive</div>
+            <ColorGradientEditor
+                value={props.value.songPointBalancePositive}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        songPointBalancePositive: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>songPointBalanceNegative</div>
+            <ColorGradientEditor
+                value={props.value.songPointBalanceNegative}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        songPointBalanceNegative: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>segmentPoints</div>
+            <ColorGradientEditor
+                value={props.value.segmentPoints}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        segmentPoints: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>segmentBalancePositive</div>
+            <ColorGradientEditor
+                value={props.value.segmentBalancePositive}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        segmentBalancePositive: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>segmentBalanceNegative</div>
+            <ColorGradientEditor
+                value={props.value.segmentBalanceNegative}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        segmentBalanceNegative: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>segmentPointsAvailable</div>
+            <ColorGradientEditor
+                value={props.value.segmentPointsAvailable}
+                onChange={(newColor) => {
+                    props.onChange({
+                        ...props.value,
+                        segmentPointsAvailable: newColor,
+                    });
+                }}
+            />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>totalSongBalancePositive</div>
+            <ColorInput value={props.value.totalSongBalancePositive} onChange={(e) => {
+                props.onChange({ ...props.value, totalSongBalancePositive: e.target.value });
+            }} />
+        </div>
+        <div className="SetlistPlannerColorSchemeEditorRow">
+            <div>totalSongBalanceNegative</div>
+            <ColorInput value={props.value.totalSongBalanceNegative} onChange={(e) => {
+                props.onChange({ ...props.value, totalSongBalanceNegative: e.target.value });
+            }} />
+        </div>
+    </div>;
 };
 
 
@@ -940,11 +1217,14 @@ const SetlistPlannerPageContent = () => {
     const snackbar = useSnackbar();
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
     const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
+    const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
     const confirm = useConfirm();
 
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
     const [doc, setDoc] = React.useState<SetlistPlan | null>(null);
     const [modified, setModified] = React.useState(false);
+
+    const [colorScheme, setColorScheme] = React.useState<SetlistPlannerColorScheme>(gDefaultColors);
 
     const mutator = React.useMemo(() => {
         const ret: SetlistPlanMutator = {
@@ -1221,6 +1501,7 @@ const SetlistPlannerPageContent = () => {
         {doc ? <SetlistPlannerDocumentEditor
             initialValue={doc}
             mutator={mutator}
+            colorScheme={colorScheme}
             isModified={modified}
             onSave={async (doc) => {
                 snackbar.invokeAsync(async () => {
@@ -1261,6 +1542,13 @@ const SetlistPlannerPageContent = () => {
             }}>Create New Plan</Button>
         </div>
         }
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <FormControlLabel control={<Switch checked={showColorSchemeEditor} onChange={(e) => setShowColorSchemeEditor(e.target.checked)} />} label="Edit Color Scheme" />
+            {showColorSchemeEditor &&
+                <SetlistPlannerColorSchemeEditor value={colorScheme} onChange={(newScheme) => setColorScheme(newScheme)} />
+            }
+        </div>
     </div>
 };
 

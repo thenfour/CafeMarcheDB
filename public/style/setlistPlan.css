@@ -91,6 +91,7 @@
 .SetlistPlannerMatrix {
     --song-name-width: 300px;
     --segment-width: 80px;
+    --song-length-width: 50px;
     background-color: #eee;
 }
 
@@ -132,6 +133,17 @@
 .SetlistPlannerMatrix .td.songName {
     width: var(--song-name-width);
     white-space: nowrap;
+}
+
+.SetlistPlannerMatrix .td.songLength {
+    width: var(--song-length-width);
+    white-space: nowrap;
+    display: flex;
+    font-family: monospace;
+    justify-content: flex-end;
+    padding-right: 3px;
+    font-size: 14px;
+    opacity: 50%;
 }
 
 .SetlistPlannerMatrix .td.songName input {
@@ -180,4 +192,61 @@
 .SetlistPlannerMatrix .numberCell {
     display: flex;
     align-items: stretch;
+}
+
+
+
+.SetlistPlannerColorSchemeEditor {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.SetlistPlannerColorSchemeEditor .ColorGradientEditor {
+    display: flex;
+    flex-direction: row;
+}
+
+.SetlistPlannerColorSchemeEditor .ColorInputControl {
+    display: flex;
+    flex-direction: column;
+    /* background-color: #cfc; */
+    margin: 4px;
+    align-items: center;
+}
+
+.SetlistPlannerColorSchemeEditor .ColorInputControl .inputWrapper {}
+
+.SetlistPlannerColorSchemeEditor .ColorGradientEditor .ColorGradientEditorSwatches {
+    display: flex;
+    flex-direction: row;
+    font-family: monospace;
+    align-items: center;
+    justify-content: center;
+}
+
+.SetlistPlannerColorSchemeEditor .ColorGradientEditor .swatch {
+    --dim: 30px;
+    height: var(--dim);
+    width: var(--dim);
+    display: flex;
+    flex-direction: row;
+    font-family: monospace;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+.SetlistPlannerColorSchemeEditor .ColorInputControl .textValue,
+.SetlistPlannerColorSchemeEditor .ColorInputControl .textValue input {
+    font-size: 12px;
+    font-family: monospace;
+    width: 50px;
+    border-color: #0001;
+}
+
+.SetlistPlannerColorSchemeEditorRow:hover {
+    background-color: #eee;
+
 }
