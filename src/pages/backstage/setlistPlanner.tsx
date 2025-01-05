@@ -1,6 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Button, ButtonGroup, DialogContent, FormControlLabel, Switch, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, DialogContent, Divider, FormControlLabel, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
@@ -10,7 +10,7 @@ import { formatSongLength } from "shared/time";
 import { clamp01, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
 import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import { KeyValueTable } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { ColorPaletteListComponent, ColorPick, GetStyleVariablesForColor } from "src/core/components/Color";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
@@ -23,13 +23,14 @@ import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { getURIForSong } from "src/core/db3/clientAPILL";
-import { gIconMap } from "src/core/db3/components/IconMap";
+import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
-import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell } from "src/core/db3/shared/setlistPlanTypes";
+import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell, SetlistPlanColumn, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import * as db3 from "src/core/db3/db3";
+import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 
 // songs = rows
 // segments = columns
@@ -87,12 +88,17 @@ const gDefaultColors: SetlistPlannerColorScheme = {
 
 
 interface SetlistPlanMutator {
+    setDoc: (doc: SetlistPlan) => void;
+
     setName: (name: string) => void;
     setDescription: (description: string) => void;
 
     addSong: (songId: number) => void;
+    //addSongs: (songIds: number[]) => void;
+    addAndRemoveSongs: (add: number[], remove: number[]) => void;
     addDivider: () => void;
     deleteRow: (rowId: string) => void;
+    //removeSongs: (songIds: number[]) => void;
     setRowPointsRequired: (rowId: string, points: number | undefined) => void;
     setRowComment: (rowId: string, comment: string) => void;
     reorderRows: (args: ReactSmoothDnd.DropResult) => void;
@@ -103,6 +109,9 @@ interface SetlistPlanMutator {
     setColumnName: (columnId: string, name: string) => void;
     setColumnComment: (columnId: string, comment: string) => void;
     setColumnAvailablePoints: (columnId: string, total: number | undefined) => void;
+
+    clearColumnAllocation: (columnId: string) => void;
+    swapColumnAllocation: (columnId1: string, columnId2: string) => void;
 
     setCellPoints: (rowId: string, columnId: string, points: number | undefined) => void;
 }
@@ -505,15 +514,8 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
     let songStats = props.stats.songStats.find((x) => x.rowId === props.rowId);
     if (!songStats) {
+        // in intermediate contexts this can happen; use an empty stat object
         return null;
-        // // in intermediate contexts this can happen; use an empty stat object
-        // songStats = {
-        //     rowId: props.rowId,
-        //     requiredPoints: 0,
-        //     totalRehearsalPoints: 0,
-        //     songId: 0,
-        //     balance: 0,
-        // };
     };
 
     // if balance is negative, use a gradient.
@@ -640,6 +642,99 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+type ColumnHeaderDropdownMenuProps = {
+    columnId: string;
+    doc: SetlistPlan;
+    mutator: SetlistPlanMutator;
+};
+
+const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const column = props.doc.payload.columns.find((x) => x.columnId === props.columnId)!;
+    const allSongs = useSongsContext().songs;
+    const snackbar = useSnackbar();
+
+    const handleCopySongNames = async () => {
+        snackbar.invokeAsync(async () => {
+            const songNames = props.doc.payload.rows
+                .filter((x) => x.type === "song" && props.doc.payload.cells.some((c) => c.rowId === x.rowId && c.columnId === column.columnId && c.pointsAllocated))
+                .map((x) => allSongs.find((s) => s.id === x.songId)!.name);
+            await navigator.clipboard.writeText(songNames.join("\n"));
+            setAnchorEl(null);
+        }, "Copied song names to clipboard");
+    };
+
+    const handleClearAllocation = async () => {
+        snackbar.invokeAsync(async () => {
+            props.mutator.clearColumnAllocation(column.columnId);
+            setAnchorEl(null);
+        }, `Cleared allocation for ${column.name}`);
+    };
+
+    const handleSwapAllocationWith = async (otherColumnId: string) => {
+        snackbar.invokeAsync(async () => {
+            props.mutator.swapColumnAllocation(column.columnId, otherColumnId);
+            setAnchorEl(null);
+        }, `Swapped allocation with ${props.doc.payload.columns.find((x) => x.columnId === otherColumnId)!.name}`);
+    };
+
+    const columnToSetlist = (column: SetlistPlanColumn): PortableSongList => {
+        // ignores dividers, and picks only songs for which cells have allocated points.
+        const cells = props.doc.payload.cells.filter((x) => x.columnId === column.columnId && x.pointsAllocated).map((x) => x.rowId);
+        const songIds = props.doc.payload.rows.filter((x) => x.type === "song" && cells.includes(x.rowId)).map(row => row.songId);
+        const songs = allSongs.filter((x) => songIds.includes(x.id));
+        return songs.map((s, index) => ({
+            sortOrder: index,
+            comment: "",
+            song: s,
+            type: 'song',
+        }));
+    };
+
+    const handleCopyAsSetlist = async () => {
+        snackbar.invokeAsync(async () => {
+            const setlist = columnToSetlist(column);
+            await navigator.clipboard.writeText(JSON.stringify(setlist, null, 2));
+            setAnchorEl(null);
+        }, `Copied ${column.name} as setlist`);
+    };
+
+    return <>
+        <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{column.name}{gCharMap.VerticalEllipses()}</CMSmallButton>
+        <Menu
+            id="menu-setlistplannercolumn"
+            anchorEl={anchorEl}
+            keepMounted
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+        >
+            <MenuItem onClick={handleCopySongNames}>
+                Copy song names
+            </MenuItem>
+
+            <MenuItem onClick={handleCopyAsSetlist}>
+                Copy as setlist
+            </MenuItem>
+
+            <Divider />
+            <MenuItem onClick={handleClearAllocation}>
+                Clear allocation for {column.name}
+            </MenuItem>
+            <Divider />
+            {
+                props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c, index) => (
+                    <MenuItem key={index} onClick={() => handleSwapAllocationWith(c.columnId)}>
+                        Swap allocation with {c.name}
+                    </MenuItem>
+                ))
+            }
+        </Menu >
+    </>;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerMatrixProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
@@ -659,7 +754,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             <div className="td songLength">
             </div>
             {props.doc.payload.columns.map((segment, index) => <div key={index} className="td segment">
-                <div>{segment.name}</div>
+                <div><ColumnHeaderDropdownMenu columnId={segment.columnId} doc={props.doc} mutator={props.mutator} /></div>
                 <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, props.colorScheme.segmentPointsAvailable) }}>
                     <NumberField
                         value={segment.pointsAvailable || null}
@@ -713,7 +808,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </Tooltip>
                 {/* </Tooltip> */}
                 {props.doc.payload.columns.map((segment, index) => {
-                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
+                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0 };
                     const bgColor = LerpColor(segStats.totalPointsAllocatedToSongs, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, props.colorScheme.segmentPoints);
                     return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segment.name}`}>
                         <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
@@ -738,7 +833,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songLength">
                 </div>
                 {props.doc.payload.columns.map((segment, index) => {
-                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
+                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0 };
                     const balanceColor = segStats.balance >= 0 ?
                         LerpColor(segStats.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
                         : LerpColor(segStats.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
@@ -793,6 +888,149 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     </div >;
 }
 
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+type MainDropdownMenuProps = {
+    doc: SetlistPlan;
+    mutator: SetlistPlanMutator;
+};
+
+const MainDropdownMenu = (props: MainDropdownMenuProps) => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const allSongs = useSongsContext().songs;
+    const snackbar = useSnackbar();
+    const confirm = useConfirm();
+
+    const handleCopyToClipboard = () => {
+        snackbar.invokeAsync(async () => {
+            await navigator.clipboard.writeText(JSON.stringify(props.doc, null, 2));
+            setAnchorEl(null);
+        }, "Copied plan to clipboard");
+    };
+    const handlePasteFromClipboard = async () => {
+        const text = await navigator.clipboard.readText()
+        let newDoc: any
+
+        try {
+            newDoc = JSON.parse(text)
+        } catch (e) {
+            console.error(e)
+            snackbar.showError("Failed to parse clipboard contents")
+            return
+        }
+
+        if (await confirm({ title: "Paste from clipboard", description: "This will replace the current document. Are you sure?" })) {
+            snackbar.invokeAsync(async () => {
+                props.mutator.setDoc(newDoc)
+                setAnchorEl(null)
+            }, "Pasted from clipboard")
+        }
+    }
+
+    const handleAddSongsFromClipboardSetlist = async () => {
+        // deserialize the clipboard setlist.
+        const setlist = await getClipboardSongList();
+        if (!setlist) {
+            snackbar.showError("Clipboard does not contain a valid setlist");
+            return;
+        }
+        // find songs that are in the setlist but not in the current plan document.
+        const missingSongs = setlist
+            .filter(row => row.type === "song")
+            .map(x => x.song.id)
+            .filter(x => !props.doc.payload.rows.some(s => s.songId === x))
+            .map(songId => allSongs.find(s => s.id === songId));
+
+        // add these songs to the plan.
+        props.mutator.addAndRemoveSongs(missingSongs.map(x => x!.id), []);
+        setAnchorEl(null);
+        console.log(`Adding ${missingSongs.length} songs...`);
+        console.log(missingSongs.map(x => x?.name));
+        snackbar.showSuccess(`Added ${missingSongs.length} songs from clipboard setlist`);
+    };
+
+    const handleSyncWithClipboardSetlist = async () => {
+        // first gather lists of songs to be added & removed,
+        // use confirm() to ask the user if they want to proceed,
+        // then perform the operations and report the results to the console & snackbar.
+        const setlist = await getClipboardSongList();
+        if (!setlist) {
+            snackbar.showError("Clipboard does not contain a valid setlist");
+            return;
+        }
+        const existing = new Set<number>(
+            props.doc.payload.rows
+                .filter((r) => r.type === "song")
+                .map((r) => r.songId!)
+        );
+        const incoming = new Set<number>(
+            setlist
+                .filter((item) => item.type === "song")
+                .map((item) => item.song.id)
+        );
+        const toAdd = [...incoming].filter((id) => !existing.has(id));
+        const toRemove = [...existing].filter((id) => !incoming.has(id));
+
+        if (!toAdd.length && !toRemove.length) {
+            snackbar.showSuccess("Already synced with the setlist. No changes.");
+            setAnchorEl(null);
+            return;
+        }
+
+        console.log(toAdd);
+        console.log(toRemove);
+
+        const toAddComponents = toAdd.map((id) => <CMChip>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
+        const toRemoveComponents = toRemove.map((id) => <CMChip>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
+
+        if (await confirm({
+            title: "Sync with clipboard setlist", description: <div>
+                <div>{toAdd.length ? `Add: ${toAdd.length}` : null}</div>
+                <div>{toAddComponents}</div>
+                <div>{toRemove.length ? `Remove: ${toRemove.length}` : null}</div>
+                <div>{toRemoveComponents}</div>
+            </div>
+        })) {
+            props.mutator.addAndRemoveSongs(toAdd, toRemove);
+            //if (toRemove.length) props.mutator.removeSongs(toRemove);
+            snackbar.showSuccess(`Synced: ${toAdd.length} added, ${toRemove.length} removed`);
+            setAnchorEl(null);
+        }
+
+    };
+
+    return <>
+        <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
+        <Menu
+            id="menu-setlistplannermain"
+            anchorEl={anchorEl}
+            keepMounted
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+        >
+            <MenuItem
+                onClick={handleCopyToClipboard}
+            >
+                Copy plan to clipboard
+            </MenuItem>
+            <MenuItem
+                onClick={handlePasteFromClipboard}
+            >
+                Paste plan from clipboard
+            </MenuItem>
+            <MenuItem onClick={handleAddSongsFromClipboardSetlist}>
+                Add songs from copied setlist
+            </MenuItem>
+            <MenuItem onClick={handleSyncWithClipboardSetlist}>
+                Sync (add & remove) songs with clipboard setlist
+            </MenuItem>
+        </Menu >
+    </>;
+};
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerDocumentEditorProps = {
     isModified: boolean;
@@ -810,6 +1048,8 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
     const [doc, setDoc] = React.useState<SetlistPlan>(props.initialValue);
     const [selectedTab, setSelectedTab] = React.useState<TTabId>("matrix");
     const allSongs = useSongsContext().songs;
+    const snackbar = useSnackbar();
+    const confirm = useConfirm();
     const [stats, setStats] = React.useState<SetlistPlanStats>(() => CalculateSetlistPlanStats(doc, allSongs));
     React.useEffect(() => {
         setDoc(props.initialValue);
@@ -844,6 +1084,7 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                     Delete
                 </Button>
             </ButtonGroup>
+            <MainDropdownMenu doc={doc} mutator={props.mutator} />
             <InspectObject src={doc} label="doc" />
             <InspectObject src={stats} label="stats" />
             <div className="nameHeader">{doc.name}</div>
@@ -1228,6 +1469,12 @@ const SetlistPlannerPageContent = () => {
 
     const mutator = React.useMemo(() => {
         const ret: SetlistPlanMutator = {
+            setDoc: (newDoc: SetlistPlan) => {
+                // do not clobber the existing document's id.
+                setDoc({ ...newDoc, id: doc?.id || getUniqueNegativeID() });
+                //setDoc(newDoc);
+                setModified(true);
+            },
             setName: (name: string) => {
                 if (doc) {
                     setModified(true);
@@ -1264,6 +1511,44 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
+            // addSongs: (songIds: number[]) => {
+            //     if (doc) {
+            //         setModified(true);
+            //         const newRows: SetlistPlanRow[] = songIds.map(songId => ({
+            //             rowId: nanoid(),
+            //             songId,
+            //             commentMarkdown: "",
+            //             type: "song",
+            //             pointsRequired: 0,
+            //         }));
+            //         setDoc({
+            //             ...doc,
+            //             payload: {
+            //                 ...doc.payload,
+            //                 rows: [...doc.payload.rows, ...newRows],
+            //             },
+            //         });
+            //     }
+            // },
+            addAndRemoveSongs: (add: number[], remove: number[]) => {
+                if (doc) {
+                    setModified(true);
+                    const newRows: SetlistPlanRow[] = add.map(songId => ({
+                        rowId: nanoid(),
+                        songId,
+                        commentMarkdown: "",
+                        type: "song",
+                        pointsRequired: 0,
+                    }));
+                    setDoc({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rows: [...doc.payload.rows, ...newRows].filter((x) => !remove.includes(x.songId!)),
+                        },
+                    });
+                }
+            },
             addDivider: () => {
                 if (doc) {
                     setModified(true);
@@ -1291,6 +1576,18 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
+            // removeSongs: (songIds: number[]) => {
+            //     if (doc) {
+            //         setModified(true);
+            //         setDoc({
+            //             ...doc,
+            //             payload: {
+            //                 ...doc.payload,
+            //                 rows: doc.payload.rows.filter((x) => x.type === "divider" || !songIds.includes(x.songId!)),
+            //             },
+            //         });
+            //     }
+            // },
             setRowPointsRequired: (rowId: string, measure: number | undefined) => {
                 if (doc) {
                     setModified(true);
@@ -1487,6 +1784,47 @@ const SetlistPlannerPageContent = () => {
                                 }
                                 return x;
                             }),
+                        },
+                    });
+                }
+            },
+            clearColumnAllocation: (columnId: string) => {
+                if (doc) {
+                    setModified(true);
+                    setDoc({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            cells: doc.payload.cells.filter((x) => x.columnId !== columnId),
+                        },
+                    });
+                }
+            },
+            swapColumnAllocation: (columnId: string, otherColumnId: string) => {
+                if (doc) {
+                    setModified(true);
+                    //const columnSongs = doc.payload.cells.filter((x) => x.columnId === columnId);
+                    //const otherColumnSongs = doc.payload.cells.filter((x) => x.columnId === otherColumnId);
+                    const newCells = doc.payload.cells.map((x) => {
+                        if (x.columnId === columnId) {
+                            return {
+                                ...x,
+                                columnId: otherColumnId,
+                            };
+                        }
+                        if (x.columnId === otherColumnId) {
+                            return {
+                                ...x,
+                                columnId: columnId,
+                            };
+                        }
+                        return x;
+                    });
+                    setDoc({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            cells: newCells,
                         },
                     });
                 }

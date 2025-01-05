@@ -213,14 +213,14 @@ async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, s
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
-type PortableSongListSong = {
+export type PortableSongListSong = {
     sortOrder: number;
     comment: string;
     song: db3.SongPayload;
     type: 'song';
 };
 
-type PortableSongListDivider = {
+export type PortableSongListDivider = {
     sortOrder: number;
     comment: string;
     color: string | null;
@@ -229,7 +229,7 @@ type PortableSongListDivider = {
     type: 'divider';
 };
 
-type PortableSongList = (PortableSongListSong | PortableSongListDivider)[];
+export type PortableSongList = (PortableSongListSong | PortableSongListDivider)[];
 
 async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
     const obj: PortableSongList = value.songs.map((s, i): PortableSongListSong => ({
@@ -790,6 +790,29 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     </>;
 };
 
+
+export const getClipboardSongList = async (): Promise<PortableSongList | null> => {
+    let obj: undefined | PortableSongList = undefined;
+    try {
+        const txt = await navigator.clipboard.readText();
+        obj = JSON.parse(txt) as PortableSongList;
+        // sanity check.
+        if (!Array.isArray(obj)) throw "not an array";
+        if (obj.length < 1) {
+            //snackbarContext.showMessage({ severity: 'error', children: "Empty setlist; ignoring." });
+            return null;
+        }
+        if (!Number.isInteger(obj[0]!.sortOrder)) throw "no sort order";
+        if (typeof (obj[0]!.type) !== 'string') throw "no type";
+        return obj;
+    } catch (e) {
+        console.log(e);
+        console.log(obj);
+    }
+    return null;
+};
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // song list editor, but doesn't perform saving or db ops. parent component should handle that.
 interface EventSongListValueEditorProps {
@@ -873,25 +896,12 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         handleRowsUpdated(newItems);
     };
 
-    const getClipboardSongList = async (): Promise<PortableSongList | null> => {
-        let obj: undefined | PortableSongList = undefined;
-        try {
-            const txt = await navigator.clipboard.readText();
-            obj = JSON.parse(txt) as PortableSongList;
-            // sanity check.
-            if (!Array.isArray(obj)) throw "not an array";
-            if (obj.length < 1) {
-                snackbarContext.showMessage({ severity: 'error', children: "Empty setlist; ignoring." });
-                return null;
-            }
-            if (!Number.isInteger(obj[0]!.sortOrder)) throw "no sort order";
-            if (typeof (obj[0]!.type) !== 'string') throw "no type";
-            return obj;
-        } catch (e) {
-            console.log(e);
-            console.log(obj);
+    const getClipboardSongList2 = async (): Promise<PortableSongList | null> => {
+        const x = await getClipboardSongList();
+        if (!x) {
+            snackbarContext.showMessage({ severity: 'error', children: "broken setlist; ignoring." });
         }
-        return null;
+        return x;
     };
 
     const appendPortableSongList = (list: db3.EventSongListPayload, obj: PortableSongList) => {
@@ -934,7 +944,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     };
 
     const handlePasteAppend = async () => {
-        const obj = await getClipboardSongList();
+        const obj = await getClipboardSongList2();
         if (!obj) return;
         const newList = { ...value };
         appendPortableSongList(newList, obj);
@@ -942,9 +952,9 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     };
 
     const handlePasteReplace = async () => {
-        const obj = await getClipboardSongList();
+        const obj = await getClipboardSongList2();
         if (!obj) return;
-        const newList = { ...value };
+        const newList = { ...value, dividers: [], songs: [] };
         appendPortableSongList(newList, obj);
         //setValue(newList);
     };

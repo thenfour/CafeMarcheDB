@@ -250,3 +250,22 @@
     background-color: #eee;
 
 }
+
+.SetlistPlannerMatrix .freeButton.CMSmallButton.DotMenu {
+    color: black;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 14px;
+    /* background-color: #ccc; */
+    border-radius: 4px;
+    margin: 2px;
+    padding: 0 15px;
+}
+
+.SetlistPlannerMatrix .freeButton.CMSmallButton.DotMenu:hover {
+    background-color: #bbb;
+}
+
+.SetlistPlannerMatrix .footerContainer {
+    margin-bottom: 30px;
+}
