@@ -11,6 +11,12 @@
     color: var(--cm-red);
 }
 
+.SetlistPlannerPageContent .MuiAutocomplete-root input {
+    background-color: white;
+    text-align: left;
+    ;
+}
+
 .NumberField.readonly,
 .NumberField.inert {
     /* background-color: #00000008;
@@ -92,7 +98,7 @@
     border: 1px solid #ddd;
     font-family: monospace;
     text-align: center;
-    height: 28px;
+    /* height: 28px; */
     font-size: 16px;
     background-color: transparent;
 }
@@ -160,4 +166,13 @@
 .SetlistPlannerMatrix .footerContainer {
     padding-top: 15px;
     margin-top: 15px;
+}
+
+.SetlistPlannerMatrix .dragHandle {
+    padding: 4px;
+}
+
+.SetlistPlannerMatrix .numberCell {
+    display: flex;
+    align-items: stretch;
 }

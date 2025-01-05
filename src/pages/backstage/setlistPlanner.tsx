@@ -3,12 +3,12 @@ import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Button, ButtonGroup, Tooltip } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
+import * as ReactSmoothDnd from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
-import { Clamp, clamp01, getUniqueNegativeID, lerp, moveItemInArray } from "shared/utils";
-import { CMStandardDBChip } from "src/core/components/CMChip";
-import { InspectObject } from "src/core/components/CMCoreComponents";
+import { clamp01, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
-import { CMNumericTextField, CMTextInputBase } from "src/core/components/CMTextField";
+import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
@@ -21,10 +21,11 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
-import { CreateNewSetlistPlan, SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
+import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import * as ReactSmoothDnd from "react-smooth-dnd";
+
+// songs = rows
+// segments = columns
 
 type Gradient = [string, string];
 
@@ -74,18 +75,19 @@ interface SetlistPlanMutator {
     setDescription: (description: string) => void;
 
     addSong: (songId: number) => void;
-    deleteSong: (songId: number) => void;
-    setSongMeasureRequired: (songId: number, measure: number | undefined) => void;
-    setSongComment: (songId: number, comment: string) => void;
-    reorderSongs: (args: ReactSmoothDnd.DropResult) => void;
+    addDivider: () => void;
+    deleteRow: (rowId: string) => void;
+    setRowPointsRequired: (rowId: string, points: number | undefined) => void;
+    setRowComment: (rowId: string, comment: string) => void;
+    reorderRows: (args: ReactSmoothDnd.DropResult) => void;
 
-    addSegment: () => void;
-    deleteSegment: (segmentId: number) => void;
-    setSegmentName: (segmentId: number, name: string) => void;
-    setSegmentComment: (segmentId: number, comment: string) => void;
-    setSegmentMeasureTotal: (segmentId: number, total: number | undefined) => void;
+    addColumn: () => void;
+    deleteColumn: (columnId: string) => void;
+    setColumnName: (columnId: string, name: string) => void;
+    setColumnComment: (columnId: string, comment: string) => void;
+    setColumnAvailablePoints: (columnId: string, total: number | undefined) => void;
 
-    setSongSegmentMeasure: (songId: number, segmentId: number, measure: number | undefined) => void;
+    setCellPoints: (rowId: string, columnId: string, points: number | undefined) => void;
 }
 
 interface SetlistPlanStats {
@@ -94,47 +96,117 @@ interface SetlistPlanStats {
     totalPlanSongBalance: number;
     totalPlanSegmentBalance: number;
     songsPerSegment: number;
+
+    maxSegmentPointsAvailable: number,
+    maxSegPointsUsed: number,
+    minSegPointsUsed: number,
+    maxSegmentBalance: number,
+    minSegmentBalance: number,
+    maxSongBalance: number,
+    minSongBalance: number,
+    maxSongRequiredPoints: number,
+    minSongRequiredPoints: number,
+    maxSongTotalPoints: number,
+    minSongTotalPoints: number,
+
+
     songStats: {
-        songId: number;
+        rowId: string;
         requiredPoints: number | undefined;
         totalRehearsalPoints: number;
         balance: number | undefined;
     }[];
     segmentStats: {
-        segmentId: number;
-        totalPoints: number;
+        columnId: string;
+        totalPointsAllocatedToSongs: number;
         balance: number;
     }[];
 };
 
 function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
-    const totalPointsRequired = doc.payload.songs.reduce((acc, song) => song.measureRequired ? acc + song.measureRequired : acc, 0);
-    const totalPointsUsed = doc.payload.segmentSongs.reduce((acc, x) => acc + (x.measureUsage || 0), 0);
+    const totalPointsRequired = doc.payload.rows.reduce((acc, song) => song.pointsRequired ? acc + song.pointsRequired : acc, 0);
+    const totalPointsUsed = doc.payload.cells.reduce((acc, x) => acc + (x.pointsAllocated || 0), 0);
     const totalPlanBalance = totalPointsUsed - totalPointsRequired;
-    const songsPerSegment = doc.payload.segmentSongs.filter(ss => !!ss.measureUsage).length / doc.payload.segments.length;
+    const songsPerSegment = doc.payload.cells.filter(ss => !!ss.pointsAllocated).length / doc.payload.columns.length;
 
-    const songStats = doc.payload.songs.map(song => {
-        const segMeasures = doc.payload.segmentSongs.filter((x) => x.songId === song.songId && !!x.measureUsage);
-        const totalRehearsalPoints = segMeasures.reduce((acc, x) => acc + x.measureUsage!, 0);
-        const balance = song.measureRequired ? totalRehearsalPoints - song.measureRequired : undefined;
+    const songStats = doc.payload.rows.filter(song => song.type === "song").map(song => {
+        const segMeasures = doc.payload.cells.filter((x) => x.rowId === song.rowId && !!x.pointsAllocated);
+        const totalRehearsalPoints = segMeasures.reduce((acc, x) => acc + x.pointsAllocated!, 0);
+        const balance = song.pointsRequired ? totalRehearsalPoints - song.pointsRequired : undefined;
         return {
-            songId: song.songId,
-            requiredPoints: song.measureRequired,
+            rowId: song.rowId,
+            requiredPoints: song.pointsRequired,
             totalRehearsalPoints,
             balance,
         };
     });
 
-    const segmentStats = doc.payload.segments.map(segment => {
-        const segmentMeasureTotal = segment.measureTotal || 0;
-        const segmentMeasureUsed = doc.payload.segmentSongs.filter((x) => x.segmentId === segment.segmentId && !!x.measureUsage).reduce((acc, x) => acc + x.measureUsage!, 0);
+    const segmentStats = doc.payload.columns.map(segment => {
+        const segmentMeasureTotal = segment.pointsAvailable || 0;
+        const segmentMeasureUsed = doc.payload.cells.filter((x) => x.columnId === segment.columnId && !!x.pointsAllocated).reduce((acc, x) => acc + x.pointsAllocated!, 0);
         const balance = segmentMeasureTotal - segmentMeasureUsed;
         return {
-            segmentId: segment.segmentId,
-            totalPoints: segmentMeasureUsed,
+            columnId: segment.columnId,
+            totalPointsAllocatedToSongs: segmentMeasureUsed,
             balance,
         };
     });
+
+    const maxSegmentPointsAvailable = doc.payload.columns.reduce((acc, x) => {
+        if (x.pointsAvailable == null) return acc;
+        return acc + x.pointsAvailable;
+    }, 0);
+
+    const maxSegPointsUsed = segmentStats.reduce((acc, x) => {
+        if (x.totalPointsAllocatedToSongs == null) return acc;
+        return Math.max(x.totalPointsAllocatedToSongs, acc);
+    }, 0);
+
+    const minSegPointsUsed = segmentStats.reduce((acc, x) => {
+        if (x.totalPointsAllocatedToSongs == null) return acc;
+        return Math.min(x.totalPointsAllocatedToSongs, acc);
+    }, maxSegPointsUsed);
+
+    const maxSegmentBalance = segmentStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.max(x.balance, acc);
+    }, 0);
+
+    const minSegmentBalance = segmentStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.min(x.balance, acc);
+    }, maxSegmentBalance);
+
+
+    const maxSongBalance = songStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.max(x.balance, acc);
+    }, 0);
+
+    const minSongBalance = songStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.min(x.balance, acc);
+    }, maxSongBalance);
+
+    const maxSongRequiredPoints = songStats.reduce((acc, x) => {
+        if (x.requiredPoints == null) return acc;
+        return Math.max(x.requiredPoints, acc);
+    }, 0);
+
+    const minSongRequiredPoints = songStats.reduce((acc, x) => {
+        if (x.requiredPoints == null) return acc;
+        return Math.min(x.requiredPoints, acc);
+    }, maxSongRequiredPoints);
+
+    const maxSongTotalPoints = songStats.reduce((acc, x) => {
+        if (x.totalRehearsalPoints == null) return acc;
+        return Math.max(x.totalRehearsalPoints, acc);
+    }, 0);
+
+    const minSongTotalPoints = songStats.reduce((acc, x) => {
+        if (x.totalRehearsalPoints == null) return acc;
+        return Math.min(x.totalRehearsalPoints, acc);
+    }, maxSongTotalPoints);
 
     return {
         totalPointsRequired,
@@ -144,6 +216,18 @@ function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
         songsPerSegment,
         songStats,
         segmentStats,
+
+        maxSegmentPointsAvailable,
+        maxSegPointsUsed,
+        minSegPointsUsed,
+        maxSegmentBalance,
+        minSegmentBalance,
+        maxSongBalance,
+        minSongBalance,
+        maxSongRequiredPoints,
+        minSongRequiredPoints,
+        maxSongTotalPoints,
+        minSongTotalPoints,
     };
 };
 
@@ -316,64 +400,34 @@ function LerpColor(value: number | null | undefined, min: number | null | undefi
 type SetlistPlannerMatrixRowProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
-    songId: number;
+    rowId: string;
     stats: SetlistPlanStats;
 };
 
 const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
-    let songStats = props.stats.songStats.find((x) => x.songId === props.songId);
+    let songStats = props.stats.songStats.find((x) => x.rowId === props.rowId);
     if (!songStats) {
         // in intermediate contexts this can happen; use an empty stat object
         songStats = {
-            songId: props.songId,
+            rowId: props.rowId,
             requiredPoints: 0,
             totalRehearsalPoints: 0,
             balance: 0,
         };
     };
 
-    const maxSongBalance = props.stats.songStats.reduce((acc, x) => {
-        if (x.balance == null) return acc;
-        return Math.max(x.balance, acc);
-    }, 0);
-
-    const minSongBalance = props.stats.songStats.reduce((acc, x) => {
-        if (x.balance == null) return acc;
-        return Math.min(x.balance, acc);
-    }, maxSongBalance);
-
-    const maxSongRequiredPoints = props.stats.songStats.reduce((acc, x) => {
-        if (x.requiredPoints == null) return acc;
-        return Math.max(x.requiredPoints, acc);
-    }, 0);
-
-    const minSongRequiredPoints = props.stats.songStats.reduce((acc, x) => {
-        if (x.requiredPoints == null) return acc;
-        return Math.min(x.requiredPoints, acc);
-    }, maxSongRequiredPoints);
-
-    const maxSongTotalPoints = props.stats.songStats.reduce((acc, x) => {
-        if (x.totalRehearsalPoints == null) return acc;
-        return Math.max(x.totalRehearsalPoints, acc);
-    }, 0);
-
-    const minSongTotalPoints = props.stats.songStats.reduce((acc, x) => {
-        if (x.totalRehearsalPoints == null) return acc;
-        return Math.min(x.totalRehearsalPoints, acc);
-    }, maxSongTotalPoints);
-
-
     // if balance is negative, use a gradient.
     // if balance is 0 or positive, use a solid green.
     let balanceColor = "transparent";
     if (songStats.balance != null && songStats.balance < 0) {
-        balanceColor = LerpColor(songStats.balance, minSongBalance, 0, gColors.songPointBalanceNegative);
+        balanceColor = LerpColor(songStats.balance, props.stats.minSongBalance, 0, gColors.songPointBalanceNegative);
     } else if (songStats.balance != null && songStats.balance >= 0) {
-        balanceColor = LerpColor(songStats.balance, maxSongBalance, 0, gColors.songPointBalancePositive);
+        balanceColor = LerpColor(songStats.balance, props.stats.maxSongBalance, 0, gColors.songPointBalancePositive);
     }
 
-    const song = allSongs.find((x) => x.id === props.songId)!;
+    const songRow = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
+    const song = allSongs.find((x) => x.id === songRow.songId!)!;
 
     return <div className="tr">
         <div className="td songName">
@@ -383,36 +437,36 @@ const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
             </div>
 
             <Tooltip title={`Amount of rehearsal points this song needs`} disableInteractive>
-                <div className="numberCell" style={{ backgroundColor: LerpColor(songStats.requiredPoints, minSongRequiredPoints, maxSongRequiredPoints, gColors.songRequiredPoints) }}>
+                <div className="numberCell" style={{ backgroundColor: LerpColor(songStats.requiredPoints, props.stats.minSongRequiredPoints, props.stats.maxSongRequiredPoints, gColors.songRequiredPoints) }}>
                     <NumberField
                         value={songStats.requiredPoints || null}
-                        onChange={(e, newValue) => { props.mutator.setSongMeasureRequired(props.songId, newValue || undefined) }}
+                        onChange={(e, newValue) => { props.mutator.setRowPointsRequired(props.rowId, newValue || undefined) }}
                     />
                 </div>
             </Tooltip>
             <div>{song.name}</div>
         </div>
-        {props.doc.payload.segments.map((segment, index) => {
+        {props.doc.payload.columns.map((segment, index) => {
             // if no measureUsage, use transparent color
             // otherwise 
-            const measureUsage = props.doc.payload.segmentSongs.find((x) => x.segmentId === segment.segmentId && x.songId === props.songId)?.measureUsage;
-            const bgColor = measureUsage ? LerpColor(
-                measureUsage,
-                0,
-                maxSongTotalPoints,
+            const pointsAllocated = props.doc.payload.cells.find((x) => x.columnId === segment.columnId && x.rowId === props.rowId)?.pointsAllocated;
+            const bgColor = pointsAllocated ? LerpColor(
+                pointsAllocated,
+                props.stats.minSongTotalPoints,
+                props.stats.maxSongTotalPoints,
                 gColors.songSegmentPoints
             ) : "white";
             return <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
                 <NumberField
-                    value={measureUsage || null}
+                    value={pointsAllocated || null}
                     onChange={(e, newValue) => {
-                        props.mutator.setSongSegmentMeasure(props.songId, segment.segmentId, newValue || undefined);
+                        props.mutator.setCellPoints(props.rowId, segment.columnId, newValue || undefined);
                     }}
                 />
             </div>;
         })}
         <Tooltip title={`Total points this song will be rehearsed`} disableInteractive>
-            <div className="td rehearsalTime numberCell" style={{ backgroundColor: LerpColor(songStats.totalRehearsalPoints, minSongTotalPoints, maxSongTotalPoints, gColors.songTotalPoints) }}>
+            <div className="td rehearsalTime numberCell" style={{ backgroundColor: LerpColor(songStats.totalRehearsalPoints, props.stats.minSongTotalPoints, props.stats.maxSongTotalPoints, gColors.songTotalPoints) }}>
                 <NumberField inert value={songStats.totalRehearsalPoints} />
             </div>
         </Tooltip>
@@ -436,44 +490,19 @@ type SetlistPlannerMatrixProps = {
 const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
-        props.mutator.reorderSongs(args);
+        props.mutator.reorderRows(args);
     };
-
-    const maxSegmentPointsAvailable = props.doc.payload.segments.reduce((acc, x) => {
-        if (x.measureTotal == null) return acc;
-        return acc + x.measureTotal;
-    }, 0);
-
-    const maxSegPointsUsed = props.stats.segmentStats.reduce((acc, x) => {
-        if (x.totalPoints == null) return acc;
-        return Math.max(x.totalPoints, acc);
-    }, 0);
-
-    const minSegPointsUsed = props.stats.segmentStats.reduce((acc, x) => {
-        if (x.totalPoints == null) return acc;
-        return Math.min(x.totalPoints, acc);
-    }, maxSegPointsUsed);
-
-    const maxSegmentBalance = props.stats.segmentStats.reduce((acc, x) => {
-        if (x.balance == null) return acc;
-        return Math.max(x.balance, acc);
-    }, 0);
-
-    const minSegmentBalance = props.stats.segmentStats.reduce((acc, x) => {
-        if (x.balance == null) return acc;
-        return Math.min(x.balance, acc);
-    }, maxSegmentBalance);
 
     return <div className="SetlistPlannerMatrix">
         <div className="tr header">
             <div className="td songName"></div>
-            {props.doc.payload.segments.map((segment, index) => <div key={index} className="td segment">
+            {props.doc.payload.columns.map((segment, index) => <div key={index} className="td segment">
                 <div>{segment.name}</div>
-                <div className="numberCell" style={{ backgroundColor: LerpColor(segment.measureTotal, 0, maxSegmentPointsAvailable, gColors.segmentPointsAvailable) }}>
+                <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, 0, props.stats.maxSegmentPointsAvailable, gColors.segmentPointsAvailable) }}>
                     <NumberField
-                        value={segment.measureTotal || null}
+                        value={segment.pointsAvailable || null}
                         onChange={(e, newValue) => {
-                            props.mutator.setSegmentMeasureTotal(segment.segmentId, newValue || undefined);
+                            props.mutator.setColumnAvailablePoints(segment.columnId, newValue || undefined);
                         }}
                     />
                 </div>
@@ -487,14 +516,16 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 lockAxis="y"
                 onDrop={onDrop}
             >
-                {props.doc.payload.songs.map((song, index) => <ReactSmoothDndDraggable key={index}>
-                    <SetlistPlannerMatrixRow
-                        mutator={props.mutator}
-                        stats={props.stats}
-                        key={index}
-                        doc={props.doc}
-                        songId={song.songId}
-                    />
+                {props.doc.payload.rows.map((song, index) => <ReactSmoothDndDraggable key={index}>
+                    {song.type === "divider" ? <div className="tr divider">divider</div> :
+                        <SetlistPlannerMatrixRow
+                            mutator={props.mutator}
+                            stats={props.stats}
+                            key={index}
+                            doc={props.doc}
+                            rowId={song.rowId}
+                        />
+                    }
                 </ReactSmoothDndDraggable>
                 )}
             </ReactSmoothDndContainer>
@@ -507,12 +538,12 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} />
                     </div>
                 </Tooltip>
-                {props.doc.payload.segments.map((segment, index) => {
-                    const segStats = props.stats.segmentStats.find((x) => x.segmentId === segment.segmentId)!;
-                    const bgColor = LerpColor(segStats.totalPoints, minSegPointsUsed, maxSegPointsUsed, gColors.segmentPoints);
+                {props.doc.payload.columns.map((segment, index) => {
+                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
+                    const bgColor = LerpColor(segStats.totalPointsAllocatedToSongs, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, gColors.segmentPoints);
                     return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segment.name}`}>
                         <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
-                            <NumberField inert value={segStats.totalPoints} />
+                            <NumberField inert value={segStats.totalPointsAllocatedToSongs} />
                         </div>
                     </Tooltip>;
                 })}
@@ -530,11 +561,11 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
             <div className="tr footer">
                 <div className="td songName"></div>
-                {props.doc.payload.segments.map((segment, index) => {
-                    const segStats = props.stats.segmentStats.find((x) => x.segmentId === segment.segmentId)!;
+                {props.doc.payload.columns.map((segment, index) => {
+                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
                     const balanceColor = segStats.balance >= 0 ?
-                        LerpColor(segStats.balance, 0, maxSegmentBalance, gColors.segmentBalancePositive)
-                        : LerpColor(segStats.balance, minSegmentBalance, 0, gColors.segmentBalanceNegative);
+                        LerpColor(segStats.balance, 0, props.stats.maxSegmentBalance, gColors.segmentBalancePositive)
+                        : LerpColor(segStats.balance, props.stats.minSegmentBalance, 0, gColors.segmentBalanceNegative);
                     return <Tooltip disableInteractive title={`Rehearsal points left unallocated ${segment.name}`}>
                         <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
                             <NumberField inert value={segStats.balance} showPositiveSign />
@@ -557,6 +588,11 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         <KeyValueTable
             data={{
                 "songs per rehearsal": props.stats.songsPerSegment.toFixed(2),
+                "total rehearsal points allocated": props.stats.totalPointsUsed,
+                "total required rehearsal points to rehearse all songs": props.stats.totalPointsRequired,
+                "total rehearsal points in the pool": props.doc.payload.columns.reduce((acc, x) => acc + (x.pointsAvailable || 0), 0),
+                "Rehearsal points required left to allocate": props.stats.totalPlanSongBalance,
+                "Rehearsal points left to use": props.stats.totalPlanSegmentBalance,
             }} />
 
         <div className="SetlistPlannerDocumentEditorAddSong">
@@ -652,29 +688,29 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
             <CMTab thisTabId="segments" summaryTitle={"segments"}>
 
                 <div className="SetlistPlannerDocumentEditorSegments">
-                    {doc.payload.segments.map((segment) => {
-                        return <div key={segment.segmentId} className="SetlistPlannerDocumentEditorSegment">
+                    {doc.payload.columns.map((segment) => {
+                        return <div key={segment.columnId} className="SetlistPlannerDocumentEditorSegment">
                             <CMTextInputBase
                                 className="segmentName"
                                 value={segment.name}
                                 onChange={(e, newName) => {
-                                    props.mutator.setSegmentName(segment.segmentId, newName);
+                                    props.mutator.setColumnName(segment.columnId, newName);
                                 }}
                             />
                             <NumberField
-                                value={segment.measureTotal || null}
+                                value={segment.pointsAvailable || null}
                                 onChange={(e, newTotal) => {
-                                    props.mutator.setSegmentMeasureTotal(segment.segmentId, newTotal || undefined);
+                                    props.mutator.setColumnAvailablePoints(segment.columnId, newTotal || undefined);
                                 }} />
                             <Markdown3Editor
                                 onChange={(newMarkdown) => {
-                                    props.mutator.setSegmentComment(segment.segmentId, newMarkdown);
+                                    props.mutator.setColumnComment(segment.columnId, newMarkdown);
                                 }}
                                 value={segment.commentMarkdown || ""}
                                 beginInPreview={true}
                             />
                             <Button startIcon={gIconMap.Delete()} onClick={() => {
-                                props.mutator.deleteSegment(segment.segmentId);
+                                props.mutator.deleteColumn(segment.columnId);
                             }}
                             ></Button>
                         </div>
@@ -682,30 +718,30 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                 </div>
 
                 <Button startIcon={gIconMap.Add()} onClick={() => {
-                    props.mutator.addSegment();
+                    props.mutator.addColumn();
                 }}>Add Segment</Button>
 
             </CMTab>
             <CMTab thisTabId="songs" summaryTitle={"songs"}>
                 <div className="SetlistPlannerDocumentEditorSongs">
-                    {doc.payload.songs.map((song) => {
-                        return <div key={song.songId} className="SetlistPlannerDocumentEditorSong">
+                    {doc.payload.rows.map((song) => {
+                        return <div key={song.rowId} className="SetlistPlannerDocumentEditorSong">
                             <div className="name">{allSongs.find((x) => x.id === song.songId)?.name}</div>
                             <NumberField
-                                value={song.measureRequired || null}
+                                value={song.pointsRequired || null}
                                 onChange={(e, newMeasure) => {
-                                    props.mutator.setSongMeasureRequired(song.songId, newMeasure || undefined);
+                                    props.mutator.setRowPointsRequired(song.rowId, newMeasure || undefined);
                                 }}
                             />
                             <Markdown3Editor
                                 onChange={(newMarkdown) => {
-                                    props.mutator.setSongComment(song.songId, newMarkdown);
+                                    props.mutator.setRowComment(song.rowId, newMarkdown);
                                 }}
                                 value={song.commentMarkdown || ""}
                                 beginInPreview={true}
                             />
                             <Button startIcon={gIconMap.Delete()} onClick={() => {
-                                props.mutator.deleteSong(song.songId);
+                                props.mutator.deleteRow(song.rowId);
                             }}
                             ></Button>
                         </div>
@@ -804,39 +840,57 @@ const SetlistPlannerPageContent = () => {
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            songs: [...doc.payload.songs, {
+                            rows: [...doc.payload.rows, {
+                                rowId: nanoid(),
                                 songId,
-                                measureRequired: 0,
                                 commentMarkdown: "",
+                                type: "song",
+                                pointsRequired: 0,
                             }],
                         },
                     });
                 }
             },
-            deleteSong: (songId: number) => {
+            addDivider: () => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            songs: doc.payload.songs.filter((x) => x.songId !== songId),
+                            rows: [...doc.payload.rows, {
+                                rowId: nanoid(),
+                                type: "divider",
+                            }],
                         },
                     });
                 }
             },
-            setSongMeasureRequired: (songId: number, measure: number | undefined) => {
+            deleteRow: (rowId: string) => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            songs: doc.payload.songs.map((x) => {
-                                if (x.songId === songId) {
+                            rows: doc.payload.rows.filter((x) => x.rowId !== rowId),
+                        },
+                    });
+                }
+            },
+            setRowPointsRequired: (rowId: string, measure: number | undefined) => {
+                if (doc) {
+                    setModified(true);
+                    setDoc({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rows: doc.payload.rows.map((x) => {
+                                if (x.rowId === rowId) {
                                     return {
                                         ...x,
-                                        measureRequired: measure,
+                                        pointsRequired: measure,
+                                        //measureRequired: measure,
                                     };
                                 }
                                 return x;
@@ -845,15 +899,15 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            setSongComment: (songId: number, comment: string) => {
+            setRowComment: (rowId: string, comment: string) => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            songs: doc.payload.songs.map((x) => {
-                                if (x.songId === songId) {
+                            rows: doc.payload.rows.map((x) => {
+                                if (x.rowId === rowId) {
                                     return {
                                         ...x,
                                         commentMarkdown: comment,
@@ -865,16 +919,16 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            addSegment: () => {
+            addColumn: () => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            segments: [...doc.payload.segments, {
-                                segmentId: doc.payload.segments.length + 1,
-                                measureTotal: 0,
+                            columns: [...doc.payload.columns, {
+                                columnId: nanoid(),
+                                pointsAvailable: 0,
                                 name: `New Segment ${nanoid(3)}`,
                                 commentMarkdown: "",
                             }],
@@ -882,27 +936,27 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            deleteSegment: (segmentId: number) => {
+            deleteColumn: (columnId: string) => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            segments: doc.payload.segments.filter((x) => x.segmentId !== segmentId),
+                            columns: doc.payload.columns.filter((x) => x.columnId !== columnId),
                         },
                     });
                 }
             },
-            setSegmentName: (segmentId: number, name: string) => {
+            setColumnName: (columnId: string, name: string) => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            segments: doc.payload.segments.map((x) => {
-                                if (x.segmentId === segmentId) {
+                            columns: doc.payload.columns.map((x) => {
+                                if (x.columnId === columnId) {
                                     return {
                                         ...x,
                                         name,
@@ -914,15 +968,15 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            setSegmentComment: (segmentId: number, comment: string) => {
+            setColumnComment: (columnId: string, comment: string) => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            segments: doc.payload.segments.map((x) => {
-                                if (x.segmentId === segmentId) {
+                            columns: doc.payload.columns.map((x) => {
+                                if (x.columnId === columnId) {
                                     return {
                                         ...x,
                                         commentMarkdown: comment,
@@ -934,15 +988,16 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            setSongSegmentMeasure: (songId: number, segmentId: number, measure: number | undefined) => {
+            setCellPoints: (rowId: string, columnId: string, measure: number | undefined) => {
                 if (doc) {
                     setModified(true);
-                    const exists = doc.payload.segmentSongs.find((x) => x.segmentId === segmentId && x.songId === songId);
-                    const newSegmentSongs = doc.payload.segmentSongs.map((x) => {
-                        if (x.segmentId === segmentId && x.songId === songId) {
+                    const exists = doc.payload.cells.find((x) => x.columnId === columnId && x.rowId === rowId);
+                    const newSegmentSongs: SetlistPlanCell[] = doc.payload.cells.map((x) => {
+                        if (x.columnId === columnId && x.rowId === rowId) {
                             return {
                                 ...x,
-                                measureUsage: measure,
+                                //measureUsage: measure,
+                                pointsAllocated: measure,
                             };
                         }
                         return x;
@@ -951,9 +1006,9 @@ const SetlistPlannerPageContent = () => {
                     // if there's no entry in segmentSongs yet, create one.
                     if (!exists) {
                         newSegmentSongs.push({
-                            segmentId,
-                            songId,
-                            measureUsage: measure,
+                            columnId,
+                            rowId,
+                            pointsAllocated: measure,
                             commentMarkdown: "",
                         });
                     }
@@ -962,23 +1017,23 @@ const SetlistPlannerPageContent = () => {
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            segmentSongs: newSegmentSongs,
+                            cells: newSegmentSongs,
                         },
                     });
                 }
             },
-            setSegmentMeasureTotal: (segmentId: number, total: number | undefined) => {
+            setColumnAvailablePoints: (columnId: string, total: number | undefined) => {
                 if (doc) {
                     setModified(true);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            segments: doc.payload.segments.map((x) => {
-                                if (x.segmentId === segmentId) {
+                            columns: doc.payload.columns.map((x) => {
+                                if (x.columnId === columnId) {
                                     return {
                                         ...x,
-                                        measureTotal: total,
+                                        pointsAvailable: total,
                                     };
                                 }
                                 return x;
@@ -987,18 +1042,18 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            reorderSongs: (args: ReactSmoothDnd.DropResult) => {
+            reorderRows: (args: ReactSmoothDnd.DropResult) => {
                 if (doc) {
                     setModified(true);
                     // removedIndex is the previous index; the original item to be moved
                     // addedIndex is the new index where it should be moved to.
                     if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
-                    const newSongs = moveItemInArray(doc.payload.songs, args.removedIndex, args.addedIndex);
+                    const newSongs = moveItemInArray(doc.payload.rows, args.removedIndex, args.addedIndex);
                     setDoc({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            songs: newSongs,
+                            rows: newSongs,
                         },
                     });
                 }
