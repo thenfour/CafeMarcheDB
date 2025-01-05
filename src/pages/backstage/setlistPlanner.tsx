@@ -4,7 +4,7 @@ import { Button, ButtonGroup, Tooltip } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { Clamp, clamp01, getUniqueNegativeID, lerp, moveItemInArray } from "shared/utils";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { InspectObject } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
@@ -26,6 +26,49 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 
+type Gradient = [string, string];
+
+const gColors: {
+    songRequiredPoints: Gradient,
+    songPointBalancePositive: Gradient,
+    songPointBalanceNegative: Gradient,
+    songSegmentPoints: Gradient,
+    songTotalPoints: Gradient,
+    segmentPoints: Gradient,
+    segmentBalancePositive: Gradient,
+    segmentBalanceNegative: Gradient,
+    segmentPointsAvailable: Gradient,
+    totalSongBalancePositive: string,
+    totalSongBalanceNegative: string,
+} = {
+    // Light orange -> orange
+    songRequiredPoints: ["#ff8", "#f90"],
+
+    // Light green -> green
+    songSegmentPoints: ["#dfd", "#4a4"],
+    // Light blue -> blue
+    songTotalPoints: ["#8df", "#49f"],
+    // Lighter green -> green
+    songPointBalancePositive: ["#4a4", "#dfd"],
+    // red -> Light red (negative gradients go opposite)
+    songPointBalanceNegative: ["#f44", "#eaa"],
+
+    // Light orange -> orange
+    segmentPoints: ["#fe7", "#f90"],
+
+    // Light green -> green
+    segmentBalancePositive: ["#dfd", "#4a4"],
+    // red -> Light red (negative gradients go opposite)
+    segmentBalanceNegative: ["#f44336", "#ef9a9a"],
+
+    // Light purple -> purple
+    segmentPointsAvailable: ["#f3e5f5", "#9c27b0"],
+
+    // Solid greens and reds
+    totalSongBalancePositive: "#4caf50",
+    totalSongBalanceNegative: "#f44336",
+};
+
 interface SetlistPlanMutator {
     setName: (name: string) => void;
     setDescription: (description: string) => void;
@@ -44,6 +87,69 @@ interface SetlistPlanMutator {
 
     setSongSegmentMeasure: (songId: number, segmentId: number, measure: number | undefined) => void;
 }
+
+interface SetlistPlanStats {
+    totalPointsRequired: number;
+    totalPointsUsed: number;
+    totalPlanSongBalance: number;
+    totalPlanSegmentBalance: number;
+    songsPerSegment: number;
+    songStats: {
+        songId: number;
+        requiredPoints: number | undefined;
+        totalRehearsalPoints: number;
+        balance: number | undefined;
+    }[];
+    segmentStats: {
+        segmentId: number;
+        totalPoints: number;
+        balance: number;
+    }[];
+};
+
+function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
+    const totalPointsRequired = doc.payload.songs.reduce((acc, song) => song.measureRequired ? acc + song.measureRequired : acc, 0);
+    const totalPointsUsed = doc.payload.segmentSongs.reduce((acc, x) => acc + (x.measureUsage || 0), 0);
+    const totalPlanBalance = totalPointsUsed - totalPointsRequired;
+    const songsPerSegment = doc.payload.segmentSongs.filter(ss => !!ss.measureUsage).length / doc.payload.segments.length;
+
+    const songStats = doc.payload.songs.map(song => {
+        const segMeasures = doc.payload.segmentSongs.filter((x) => x.songId === song.songId && !!x.measureUsage);
+        const totalRehearsalPoints = segMeasures.reduce((acc, x) => acc + x.measureUsage!, 0);
+        const balance = song.measureRequired ? totalRehearsalPoints - song.measureRequired : undefined;
+        return {
+            songId: song.songId,
+            requiredPoints: song.measureRequired,
+            totalRehearsalPoints,
+            balance,
+        };
+    });
+
+    const segmentStats = doc.payload.segments.map(segment => {
+        const segmentMeasureTotal = segment.measureTotal || 0;
+        const segmentMeasureUsed = doc.payload.segmentSongs.filter((x) => x.segmentId === segment.segmentId && !!x.measureUsage).reduce((acc, x) => acc + x.measureUsage!, 0);
+        const balance = segmentMeasureTotal - segmentMeasureUsed;
+        return {
+            segmentId: segment.segmentId,
+            totalPoints: segmentMeasureUsed,
+            balance,
+        };
+    });
+
+    return {
+        totalPointsRequired,
+        totalPointsUsed,
+        totalPlanSegmentBalance: segmentStats.reduce((acc, x) => acc + x.balance, 0),
+        totalPlanSongBalance: totalPlanBalance,
+        songsPerSegment,
+        songStats,
+        segmentStats,
+    };
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // specific input control which
@@ -66,7 +172,9 @@ type NumberFieldProps = {
     onChange?: (e: React.ChangeEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>, newValue: number | null) => void;
     className?: string;
     readonly?: boolean;
+    inert?: boolean;
     style?: React.CSSProperties;
+    showPositiveSign?: boolean;
 };
 
 // Pre-generate Fibonacci numbers up to a certain max (adjust as needed)
@@ -122,20 +230,86 @@ const NumberField = (props: NumberFieldProps) => {
         props.onChange && props.onChange(e, isNaN(newValue as number) ? null : newValue);
     };
 
+    const valueAsText = props.value == null ? "" : (props.showPositiveSign && props.value > 0 ? `+${props.value}` : props.value.toString());
+
     return (
         <input
             type="text"
             ref={inputRef}
-            value={props.value === null ? "" : props.value}
+            value={valueAsText}
             onChange={handleChange}
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
-            className={`NumberField ${props.readonly ? "readonly" : "editable"} ${props.className}`}
+            className={`NumberField ${props.readonly ? "readonly" : "editable"} ${props.inert ? "inert" : "notinert"} ${props.className}`}
+            inert={props.inert}
             readOnly={props.readonly}
+            disabled={props.inert}
             style={props.style}
         />
     );
 };
+
+
+
+// colors can be in the following forms:
+// #rgb
+// #rgba
+// #rrggbb
+// #rrggbbaa
+function parseRGBA(str: string) {
+    if (str.length === 4) {
+        return {
+            r: parseInt(str[1]! + str[1]!, 16),
+            g: parseInt(str[2]! + str[2]!, 16),
+            b: parseInt(str[3]! + str[3]!, 16),
+            alpha: 255,
+        };
+    } else if (str.length === 5) {
+        return {
+            r: parseInt(str[1]! + str[1]!, 16),
+            g: parseInt(str[2]! + str[2]!, 16),
+            b: parseInt(str[3]! + str[3]!, 16),
+            alpha: parseInt(str[4]! + str[4]!, 16),
+        };
+    } else if (str.length === 7) {
+        return {
+            r: parseInt(str.slice(1, 3), 16),
+            g: parseInt(str.slice(3, 5), 16),
+            b: parseInt(str.slice(5, 7), 16),
+            alpha: 255,
+        };
+    } else if (str.length === 9) {
+        return {
+            r: parseInt(str.slice(1, 3), 16),
+            g: parseInt(str.slice(3, 5), 16),
+            b: parseInt(str.slice(5, 7), 16),
+            alpha: parseInt(str.slice(7, 9), 16),
+        };
+    }
+    return null;
+}
+
+// takes a value, input range, and output color range, and returns a lerp'd color.
+// colors should be exactly in the form #RGBA.
+function LerpColor(value: number | null | undefined, min: number | null | undefined, max: number | null | undefined, colorGradient: [string, string]): string {
+    if (value == null || min == null || max == null) return "transparent";
+    if (min === max) return "transparent";
+    const lerpx = clamp01((value - min) / (max - min));
+    //const lerpx = ((value - min) / (max - min));
+    //const lerpx = lerp(min, max, value);
+    const low = parseRGBA(colorGradient[0]);
+    const high = parseRGBA(colorGradient[1]);
+    if (!low || !high) return "transparent";
+    const r = Math.round(low.r + lerpx * (high.r - low.r));
+    const g = Math.round(low.g + lerpx * (high.g - low.g));
+    const b = Math.round(low.b + lerpx * (high.b - low.b));
+    const a = Math.round(low.alpha + lerpx * (high.alpha - low.alpha));
+    const ret = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}${a.toString(16).padStart(2, "0")}`;
+    //console.log(`lerp = ${lerp}, value=${value} min=${min} max:${max} low = ${lowColor}, high = ${highColor}, ret = ${ret}`);
+    //console.log(ret);
+    //return "#f80";
+    return ret;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,15 +317,64 @@ type SetlistPlannerMatrixRowProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
     songId: number;
+    stats: SetlistPlanStats;
 };
 
 const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
-    const dashboardContext = useDashboardContext();
-    const segMeasures = props.doc.payload.segmentSongs.filter((x) => x.songId === props.songId && !!x.measureUsage);
-    const totalRehearsalPoints = segMeasures.reduce((acc, x) => acc + x.measureUsage!, 0);
-    const song = props.doc.payload.songs.find((x) => x.songId === props.songId)!;
-    const balance = song.measureRequired ? totalRehearsalPoints - song.measureRequired : null;
+    let songStats = props.stats.songStats.find((x) => x.songId === props.songId);
+    if (!songStats) {
+        // in intermediate contexts this can happen; use an empty stat object
+        songStats = {
+            songId: props.songId,
+            requiredPoints: 0,
+            totalRehearsalPoints: 0,
+            balance: 0,
+        };
+    };
+
+    const maxSongBalance = props.stats.songStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.max(x.balance, acc);
+    }, 0);
+
+    const minSongBalance = props.stats.songStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.min(x.balance, acc);
+    }, maxSongBalance);
+
+    const maxSongRequiredPoints = props.stats.songStats.reduce((acc, x) => {
+        if (x.requiredPoints == null) return acc;
+        return Math.max(x.requiredPoints, acc);
+    }, 0);
+
+    const minSongRequiredPoints = props.stats.songStats.reduce((acc, x) => {
+        if (x.requiredPoints == null) return acc;
+        return Math.min(x.requiredPoints, acc);
+    }, maxSongRequiredPoints);
+
+    const maxSongTotalPoints = props.stats.songStats.reduce((acc, x) => {
+        if (x.totalRehearsalPoints == null) return acc;
+        return Math.max(x.totalRehearsalPoints, acc);
+    }, 0);
+
+    const minSongTotalPoints = props.stats.songStats.reduce((acc, x) => {
+        if (x.totalRehearsalPoints == null) return acc;
+        return Math.min(x.totalRehearsalPoints, acc);
+    }, maxSongTotalPoints);
+
+
+    // if balance is negative, use a gradient.
+    // if balance is 0 or positive, use a solid green.
+    let balanceColor = "transparent";
+    if (songStats.balance != null && songStats.balance < 0) {
+        balanceColor = LerpColor(songStats.balance, minSongBalance, 0, gColors.songPointBalanceNegative);
+    } else if (songStats.balance != null && songStats.balance >= 0) {
+        balanceColor = LerpColor(songStats.balance, maxSongBalance, 0, gColors.songPointBalancePositive);
+    }
+
+    const song = allSongs.find((x) => x.id === props.songId)!;
+
     return <div className="tr">
         <div className="td songName">
 
@@ -159,24 +382,45 @@ const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
                 ☰
             </div>
 
-            <NumberField
-                value={song.measureRequired || null}
-                onChange={(e, newValue) => { props.mutator.setSongMeasureRequired(props.songId, newValue || undefined) }}
-            />
-            {allSongs.find((x) => x.id === props.songId)?.name}
+            <Tooltip title={`Amount of rehearsal points this song needs`} disableInteractive>
+                <div className="numberCell" style={{ backgroundColor: LerpColor(songStats.requiredPoints, minSongRequiredPoints, maxSongRequiredPoints, gColors.songRequiredPoints) }}>
+                    <NumberField
+                        value={songStats.requiredPoints || null}
+                        onChange={(e, newValue) => { props.mutator.setSongMeasureRequired(props.songId, newValue || undefined) }}
+                    />
+                </div>
+            </Tooltip>
+            <div>{song.name}</div>
         </div>
         {props.doc.payload.segments.map((segment, index) => {
-            return <div key={index} className="td segment">
+            // if no measureUsage, use transparent color
+            // otherwise 
+            const measureUsage = props.doc.payload.segmentSongs.find((x) => x.segmentId === segment.segmentId && x.songId === props.songId)?.measureUsage;
+            const bgColor = measureUsage ? LerpColor(
+                measureUsage,
+                0,
+                maxSongTotalPoints,
+                gColors.songSegmentPoints
+            ) : "white";
+            return <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
                 <NumberField
-                    value={props.doc.payload.segmentSongs.find((x) => x.segmentId === segment.segmentId && x.songId === props.songId)?.measureUsage || null}
+                    value={measureUsage || null}
                     onChange={(e, newValue) => {
                         props.mutator.setSongSegmentMeasure(props.songId, segment.segmentId, newValue || undefined);
                     }}
                 />
             </div>;
         })}
-        <div className="td rehearsalTime"><NumberField readonly value={totalRehearsalPoints} /></div>
-        <div className="td balance"><NumberField readonly value={balance} /></div>
+        <Tooltip title={`Total points this song will be rehearsed`} disableInteractive>
+            <div className="td rehearsalTime numberCell" style={{ backgroundColor: LerpColor(songStats.totalRehearsalPoints, minSongTotalPoints, maxSongTotalPoints, gColors.songTotalPoints) }}>
+                <NumberField inert value={songStats.totalRehearsalPoints} />
+            </div>
+        </Tooltip>
+        <Tooltip title={`Rehearsal points remaining to finish rehearsing this song. ${(songStats.balance || 0) >= 0 ? `You have allocated enough time to rehearse this song` : `You need to allocate ${-(songStats.balance || 0)} more points to finish rehearsing ${song.name}`}`} disableInteractive>
+            <div className={`td balance numberCell`} style={{ backgroundColor: balanceColor }}>
+                <NumberField inert value={songStats.balance || null} showPositiveSign />
+            </div>
+        </Tooltip>
     </div>;
 }
 
@@ -186,58 +430,53 @@ const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
 type SetlistPlannerMatrixProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
+    stats: SetlistPlanStats;
 };
 
 const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
-    const allSongs = useSongsContext().songs;
-    const dashboardContext = useDashboardContext();
-
-    const getSegmentTotal = (segmentId: number) => {
-        const segMeasures = props.doc.payload.segmentSongs.filter((x) => x.segmentId === segmentId && !!x.measureUsage);
-        return segMeasures.reduce((acc, x) => acc + x.measureUsage!, 0);
-    };
-
-    // returns the measure/point balance for a segment (total minus points used for all songs in this segment)
-    const getSegmentBalance = (segmentId: number) => {//
-        const segmentMeasureTotal = props.doc.payload.segments.find((x) => x.segmentId === segmentId)?.measureTotal || 0;
-        const segmentMeasureUsed = props.doc.payload.segmentSongs.filter((x) => x.segmentId === segmentId && !!x.measureUsage).reduce((acc, x) => acc + x.measureUsage!, 0);
-        return segmentMeasureTotal - segmentMeasureUsed;
-    };
-
-    const songTotalPointsRequired = props.doc.payload.songs.reduce((acc, song) => song.measureRequired ? acc + song.measureRequired : acc, 0);
-
-    const getTotalPointsUsed = () => {
-        return props.doc.payload.segmentSongs.reduce((acc, x) => acc + (x.measureUsage || 0), 0);
-    };
-
-    // total point balance for the whole plan
-    const getTotalPlanBalance = () => {
-        // total points required
-        return getTotalPointsUsed() - songTotalPointsRequired;
-    };
-
-    // number of songs with non-zero measure points per segment.
-    const songsPerSegment = (() => {
-        const totalSongs = props.doc.payload.segmentSongs.filter(ss => !!ss.measureUsage).length;
-        return totalSongs / props.doc.payload.segments.length;
-    })();
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         props.mutator.reorderSongs(args);
     };
 
+    const maxSegmentPointsAvailable = props.doc.payload.segments.reduce((acc, x) => {
+        if (x.measureTotal == null) return acc;
+        return acc + x.measureTotal;
+    }, 0);
+
+    const maxSegPointsUsed = props.stats.segmentStats.reduce((acc, x) => {
+        if (x.totalPoints == null) return acc;
+        return Math.max(x.totalPoints, acc);
+    }, 0);
+
+    const minSegPointsUsed = props.stats.segmentStats.reduce((acc, x) => {
+        if (x.totalPoints == null) return acc;
+        return Math.min(x.totalPoints, acc);
+    }, maxSegPointsUsed);
+
+    const maxSegmentBalance = props.stats.segmentStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.max(x.balance, acc);
+    }, 0);
+
+    const minSegmentBalance = props.stats.segmentStats.reduce((acc, x) => {
+        if (x.balance == null) return acc;
+        return Math.min(x.balance, acc);
+    }, maxSegmentBalance);
 
     return <div className="SetlistPlannerMatrix">
         <div className="tr header">
             <div className="td songName"></div>
             {props.doc.payload.segments.map((segment, index) => <div key={index} className="td segment">
                 <div>{segment.name}</div>
-                <div><NumberField
-                    value={segment.measureTotal || null}
-                    onChange={(e, newValue) => {
-                        props.mutator.setSegmentMeasureTotal(segment.segmentId, newValue || undefined);
-                    }}
-                /></div>
+                <div className="numberCell" style={{ backgroundColor: LerpColor(segment.measureTotal, 0, maxSegmentPointsAvailable, gColors.segmentPointsAvailable) }}>
+                    <NumberField
+                        value={segment.measureTotal || null}
+                        onChange={(e, newValue) => {
+                            props.mutator.setSegmentMeasureTotal(segment.segmentId, newValue || undefined);
+                        }}
+                    />
+                </div>
             </div>)}
             <div className="td rehearsalTime">total</div>
             <div className="td balance">bal</div>
@@ -251,6 +490,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 {props.doc.payload.songs.map((song, index) => <ReactSmoothDndDraggable key={index}>
                     <SetlistPlannerMatrixRow
                         mutator={props.mutator}
+                        stats={props.stats}
                         key={index}
                         doc={props.doc}
                         songId={song.songId}
@@ -260,27 +500,63 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             </ReactSmoothDndContainer>
         </div>
 
-        <div className="tr footer">
-            <div className="td songName"><NumberField readonly value={songTotalPointsRequired} /></div>
-            {props.doc.payload.segments.map((segment, index) => <Tooltip disableInteractive title={`total points used for ${segment.name}`}><div key={index} className="td segment">
-                <NumberField value={getSegmentTotal(segment.segmentId)} readonly />
-            </div></Tooltip>)}
-            <Tooltip disableInteractive title={`total points used in the whole plan`}><div className="td rehearsalTime"><NumberField value={getTotalPointsUsed()} readonly /></div></Tooltip>
-            <Tooltip disableInteractive title={`total point balance for the whole plan`}><div className="td balance"><NumberField readonly value={getTotalPlanBalance()} /></div></Tooltip>
-        </div>
+        <div className="footerContainer">
+            <div className="tr footer">
+                <Tooltip disableInteractive title={`Total required rehearsal points for all songs`}>
+                    <div className="td songName numberCell">
+                        <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} />
+                    </div>
+                </Tooltip>
+                {props.doc.payload.segments.map((segment, index) => {
+                    const segStats = props.stats.segmentStats.find((x) => x.segmentId === segment.segmentId)!;
+                    const bgColor = LerpColor(segStats.totalPoints, minSegPointsUsed, maxSegPointsUsed, gColors.segmentPoints);
+                    return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segment.name}`}>
+                        <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
+                            <NumberField inert value={segStats.totalPoints} />
+                        </div>
+                    </Tooltip>;
+                })}
+                <Tooltip disableInteractive title={`total rehearsal points allocated for the whole plan`}>
+                    <div className="td rehearsalTime numberCell" style={{ backgroundColor: gColors.songTotalPoints[1] }}>
+                        <NumberField inert value={props.stats.totalPointsUsed} />
+                    </div>
+                </Tooltip>
+                <Tooltip disableInteractive title={`total song balance for the whole plan. ${props.stats.totalPlanSongBalance >= 0 ? `you have allocated enough to rehearse all songs fully` : `you need to allocate ${Math.abs(props.stats.totalPlanSongBalance)} more points to rehearse all songs`}`}>
+                    <div className="td balance numberCell totalPlanBalance" style={{ backgroundColor: props.stats.totalPlanSongBalance >= 0 ? gColors.totalSongBalancePositive : gColors.totalSongBalanceNegative }}>
+                        <NumberField inert value={props.stats.totalPlanSongBalance} showPositiveSign />
+                    </div>
+                </Tooltip>
+            </div>
 
-        <div className="tr footer">
-            <div className="td songName"></div>
-            {props.doc.payload.segments.map((segment, index) => <Tooltip disableInteractive title={`point balance for ${segment.name}`}><div key={index} className="td segment">
-                <NumberField readonly value={getSegmentBalance(segment.segmentId)} />
-            </div></Tooltip>)}
-            <div className="td rehearsalTime"></div>
-            <div className="td balance"></div>
-        </div>
+            <div className="tr footer">
+                <div className="td songName"></div>
+                {props.doc.payload.segments.map((segment, index) => {
+                    const segStats = props.stats.segmentStats.find((x) => x.segmentId === segment.segmentId)!;
+                    const balanceColor = segStats.balance >= 0 ?
+                        LerpColor(segStats.balance, 0, maxSegmentBalance, gColors.segmentBalancePositive)
+                        : LerpColor(segStats.balance, minSegmentBalance, 0, gColors.segmentBalanceNegative);
+                    return <Tooltip disableInteractive title={`Rehearsal points left unallocated ${segment.name}`}>
+                        <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
+                            <NumberField inert value={segStats.balance} showPositiveSign />
+                        </div>
+                    </Tooltip>;
+                })}
+                <Tooltip disableInteractive title={
+                    <div>
+                        <div>total rehearsal point balance for the whole plan</div>
+                        <div>{props.stats.totalPlanSegmentBalance >= 0 ? `you have ${props.stats.totalPlanSegmentBalance} points left to allocate` : `you have over-allocated by ${-props.stats.totalPlanSegmentBalance} points.`}</div>
+                    </div>}>
+                    <div className="td rehearsalTime" style={{ backgroundColor: props.stats.totalPlanSegmentBalance >= 0 ? gColors.segmentBalancePositive[1] : gColors.segmentBalanceNegative[0] }}>
+                        <NumberField inert value={props.stats.totalPlanSegmentBalance} showPositiveSign />
+                    </div>
+                </Tooltip>
+                <div className="td balance"></div>
+            </div>
+        </div >
 
         <KeyValueTable
             data={{
-                "songs per rehearsal": songsPerSegment,
+                "songs per rehearsal": props.stats.songsPerSegment.toFixed(2),
             }} />
 
         <div className="SetlistPlannerDocumentEditorAddSong">
@@ -295,7 +571,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             />
         </div>
 
-    </div>;
+    </div >;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -313,10 +589,16 @@ type TTabId = "plan" | "segments" | "songs" | "matrix";
 const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) => {
     const [doc, setDoc] = React.useState<SetlistPlan>(props.initialValue);
     const [selectedTab, setSelectedTab] = React.useState<TTabId>("matrix");
+    const [stats, setStats] = React.useState<SetlistPlanStats>(() => CalculateSetlistPlanStats(doc));
     const allSongs = useSongsContext().songs;
     React.useEffect(() => {
         setDoc(props.initialValue);
     }, [props.initialValue]);
+
+    React.useEffect(() => {
+        setStats(CalculateSetlistPlanStats(doc));
+    }, [doc]);
+
     return <div className="SetlistPlannerDocumentEditor">
         <div className="toolbar">
             <ButtonGroup>
@@ -379,6 +661,11 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                                     props.mutator.setSegmentName(segment.segmentId, newName);
                                 }}
                             />
+                            <NumberField
+                                value={segment.measureTotal || null}
+                                onChange={(e, newTotal) => {
+                                    props.mutator.setSegmentMeasureTotal(segment.segmentId, newTotal || undefined);
+                                }} />
                             <Markdown3Editor
                                 onChange={(newMarkdown) => {
                                     props.mutator.setSegmentComment(segment.segmentId, newMarkdown);
@@ -440,6 +727,7 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
             </CMTab>
             <CMTab thisTabId="matrix" summaryTitle={"Matrix"}>
                 <SetlistPlannerMatrix
+                    stats={stats!}
                     doc={doc}
                     mutator={props.mutator}
                 />

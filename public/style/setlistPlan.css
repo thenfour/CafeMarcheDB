@@ -11,9 +11,10 @@
     color: var(--cm-red);
 }
 
-.NumberField.readonly {
-    background-color: #00000008;
-    color: #aaa;
+.NumberField.readonly,
+.NumberField.inert {
+    /* background-color: #00000008;
+    color: #bbb; */
 }
 
 .SetlistPlannerDocumentOverviewItem {
@@ -76,13 +77,15 @@
     cursor: pointer;
 }
 
+/* 
 .SetlistPlannerDocumentEditorAddSong input {
     background-color: #fff;
-}
+} */
 
 .SetlistPlannerMatrix {
     --song-name-width: 300px;
     --segment-width: 80px;
+    background-color: #eee;
 }
 
 .SetlistPlannerMatrix input {
@@ -90,11 +93,15 @@
     font-family: monospace;
     text-align: center;
     height: 28px;
+    font-size: 16px;
+    background-color: transparent;
 }
 
 .SetlistPlannerMatrix .td input {
     width: var(--segment-width);
 }
+
+.SetlistPlannerMatrix .tr.header .td input {}
 
 .SetlistPlannerMatrix .td {
     overflow: hidden;
@@ -104,6 +111,16 @@
 .SetlistPlannerMatrix .tr {
     display: flex;
     flex-direction: row;
+}
+
+.SetlistPlannerMatrix .tr.header {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+}
+
+.SetlistPlannerMatrix .tr.header,
+.SetlistPlannerMatrix .tr.footer {
+    background-color: #eee;
 }
 
 .SetlistPlannerMatrix .td.songName {
@@ -122,13 +139,25 @@
 
 .SetlistPlannerMatrix .td.rehearsalTime {
     width: var(--segment-width);
+    margin-left: 30px;
 }
 
 .SetlistPlannerMatrix .td.balance {
     width: var(--segment-width);
 }
 
-.SetlistPlannerMatrix .header .td.segment {
+.SetlistPlannerMatrix .header .td {
     display: flex;
     flex-direction: column;
+    align-items: center;
+}
+
+.SetlistPlannerMatrix .td.totalPlanBalance input {
+    font-weight: bold;
+    font-size: 24px;
+}
+
+.SetlistPlannerMatrix .footerContainer {
+    padding-top: 15px;
+    margin-top: 15px;
 }
