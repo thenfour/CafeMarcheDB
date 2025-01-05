@@ -77,6 +77,12 @@ h1:first-child {
   padding: 1px 8px;
 }
 
+/* 
+this looks nice but gives the impression of a button that's not clickable.
+.MuiButton-startIcon {
+  opacity: 35%;
+} */
+
 .MuiDataGrid-columnHeaders {
   background-color: var(--data-grid-column-header-background-color);
 }

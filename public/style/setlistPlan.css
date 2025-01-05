@@ -1,0 +1,134 @@
+.SetlistPlannerPageContent {
+    display: flex;
+    padding: 10px;
+    background-color: white;
+}
+
+.SetlistPlannerPageContent .nameHeader {
+    font-size: 28px;
+    font-weight: bold;
+    padding-left: 10px;
+    color: var(--cm-red);
+}
+
+.NumberField.readonly {
+    background-color: #00000008;
+    color: #aaa;
+}
+
+.SetlistPlannerDocumentOverviewItem {
+    border: 1px solid #ddd;
+    margin: 10px 0;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.SetlistPlannerDocumentOverviewItem:hover {
+    border: 1px solid #000;
+    background-color: #eee;
+}
+
+.SetlistPlannerDocumentOverviewItem .name {
+    font-weight: bold;
+}
+
+.SetlistPlannerDocumentEditorTabPanel {
+    min-width: 900px;
+}
+
+.SetlistPlannerDocumentEditorSegment {
+    border: 1px solid #ddd;
+    margin: 10px 0;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.SetlistPlannerDocumentEditorSegment:hover {
+    border: 1px solid #000;
+    background-color: #eee;
+}
+
+.SetlistPlannerDocumentEditorSegment .segmentName,
+.SetlistPlannerPageContent .CMTextInputBase.name {
+    font-weight: bold;
+    font-size: 22px;
+    padding: 10px;
+}
+
+
+.SetlistPlannerDocumentEditorSong {
+    border: 1px solid #ddd;
+    margin: 10px 0;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.SetlistPlannerDocumentEditorSong:hover {
+    border: 1px solid #000;
+    background-color: #eee;
+}
+
+.SetlistPlannerDocumentEditorAddSong {
+    border: 1px solid #ddd;
+    background-color: #eee;
+    margin: 10px 0;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.SetlistPlannerDocumentEditorAddSong input {
+    background-color: #fff;
+}
+
+.SetlistPlannerMatrix {
+    --song-name-width: 300px;
+    --segment-width: 80px;
+}
+
+.SetlistPlannerMatrix input {
+    border: 1px solid #ddd;
+    font-family: monospace;
+    text-align: center;
+    height: 28px;
+}
+
+.SetlistPlannerMatrix .td input {
+    width: var(--segment-width);
+}
+
+.SetlistPlannerMatrix .td {
+    overflow: hidden;
+    display: flex;
+}
+
+.SetlistPlannerMatrix .tr {
+    display: flex;
+    flex-direction: row;
+}
+
+.SetlistPlannerMatrix .td.songName {
+    width: var(--song-name-width);
+    white-space: nowrap;
+}
+
+.SetlistPlannerMatrix .td.songName input {
+    width: 50px;
+}
+
+.SetlistPlannerMatrix .td.segment {
+    width: var(--segment-width);
+    white-space: nowrap;
+}
+
+.SetlistPlannerMatrix .td.rehearsalTime {
+    width: var(--segment-width);
+}
+
+.SetlistPlannerMatrix .td.balance {
+    width: var(--segment-width);
+}
+
+.SetlistPlannerMatrix .header .td.segment {
+    display: flex;
+    flex-direction: column;
+}

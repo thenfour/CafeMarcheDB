@@ -165,6 +165,8 @@ model User {
   workflowNodeInstanceLastAssignees WorkflowInstanceNodeLastAssignee[]
   workflowLogItems                  WorkflowInstanceLogItem[]
 
+  setlistPlans SetlistPlan[]
+
   @@unique([accessToken])
   @@unique([uid])
   @@index([name])
@@ -1258,4 +1260,18 @@ model WorkflowInstanceNodeAssignee {
 
   @@index([userId])
   @@index([instanceNodeId])
+}
+
+model SetlistPlan {
+  id          Int    @id @default(autoincrement())
+  name        String @db.VarChar(768)
+  description String @db.MediumText
+
+  createdByUserId Int
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+
+  payloadJson String @db.MediumText
+
+  @@index([name])
 }
