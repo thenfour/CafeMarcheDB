@@ -2,7 +2,6 @@ import { generateToken, hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
-import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { getServerStartState } from "shared/serverStateBase";
 import { arraysContainSameValues } from "shared/utils";

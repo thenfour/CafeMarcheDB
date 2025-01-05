@@ -1,21 +1,18 @@
 import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
-import { Suspense } from "react";
+import { GetServerSideProps } from 'next';
+import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, IsEntirelyIntegral, toSorted } from "shared/utils";
+import { CoerceToNumberOrNull, toSorted } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
+import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
+import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React from 'react';
-import { DashboardContext } from "src/core/components/DashboardContext";
-import { GetServerSideProps } from 'next';
-import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
-import { TableAccessor } from "shared/rootroot";
-import { Button } from "@mui/material";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();

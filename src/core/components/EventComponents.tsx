@@ -3,7 +3,7 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { CheckBox, Checklist, Label } from '@mui/icons-material';
+import { Checklist } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, MenuItem, Select, Switch, Tooltip } from "@mui/material";

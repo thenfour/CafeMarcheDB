@@ -2,15 +2,14 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import React from "react";
-import { gGeneralPaletteList, gSwatchColors } from "shared/color";
+import { gGeneralPaletteList } from "shared/color";
 import { sleep } from "shared/utils";
 import { CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
-import { ColorPick } from "src/core/components/Color";
+import { ColorPick } from "src/core/components/ColorPick";
 import { DB3MultiSelect, DB3SingleSelect } from "src/core/db3/components/db3Select";
 import * as db3 from "src/core/db3/db3";
-import { useInsertMutationClient, useTableRenderContext, xTableClientCaps, xTableClientSpec } from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 type Dataset = "numbers";

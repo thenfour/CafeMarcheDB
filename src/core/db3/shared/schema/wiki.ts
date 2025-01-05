@@ -1,11 +1,11 @@
 
 import { Prisma } from "db";
+import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { BoolField, ConstEnumStringField, ForeignSingleField, GenericStringField, GhostField, MakeCreatedAtField, MakeTitleField, PKField } from "../db3basicFields";
+import { AuxUserArgs } from "types";
+import { ForeignSingleField, GenericStringField, MakeCreatedAtField, MakeTitleField, PKField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
-import { gGeneralPaletteList } from "shared/color";
-import { AuxUserArgs } from "types";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.visibility_logged_in_users,

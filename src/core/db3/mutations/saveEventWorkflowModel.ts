@@ -1,7 +1,7 @@
 // saveEventWorkflowModel
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import { Prisma } from "db";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, ObjectDiff, passthroughWithoutTransaction, RegisterChange } from "shared/utils";

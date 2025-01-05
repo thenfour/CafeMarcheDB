@@ -1,12 +1,10 @@
 //import { LabeledTextField } from "src/core/components/LabeledTextField"
 //import { Form, FORM_ERROR } from "src/core/components/Form"
-import signup from "src/auth/mutations/signup"
-import { Signup } from "src/auth/schemas"
-import { useMutation } from "@blitzjs/rpc"
-import React, { Suspense } from "react";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { FormControlLabel } from "@mui/material";
+import { useMutation } from "@blitzjs/rpc";
+import React from "react";
+import signup from "src/auth/mutations/signup";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 
 type SignupFormProps = {
   onSuccess?: () => void

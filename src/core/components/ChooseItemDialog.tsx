@@ -8,7 +8,8 @@
 
 import {
     Box,
-    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Button, Dialog, DialogActions, DialogContent,
+    DialogTitle,
     Divider,
     FormHelperText,
     List,
@@ -18,7 +19,6 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
 import { CMDialogContentText } from "./CMCoreComponents2";
-import { CoalesceBool } from "shared/utils";
 
 
 

@@ -12,9 +12,11 @@ import { CMChip } from "src/core/components/CMChip";
 import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { ColorPaletteListComponent, ColorPick, GetStyleVariablesForColor } from "src/core/components/Color";
+import { ColorPaletteListComponent, GetStyleVariablesForColor } from "src/core/components/Color";
+import { ColorPick } from "src/core/components/ColorPick";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
+import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { Markdown } from "src/core/components/RichTextEditor";
@@ -24,13 +26,12 @@ import { SongsProvider, useSongsContext } from "src/core/components/SongsContext
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import * as db3 from "src/core/db3/db3";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell, SetlistPlanColumn, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import * as db3 from "src/core/db3/db3";
-import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 
 // songs = rows
 // segments = columns
@@ -655,7 +656,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
     const snackbar = useSnackbar();
 
     const handleCopySongNames = async () => {
-        snackbar.invokeAsync(async () => {
+        await snackbar.invokeAsync(async () => {
             const songNames = props.doc.payload.rows
                 .filter((x) => x.type === "song" && props.doc.payload.cells.some((c) => c.rowId === x.rowId && c.columnId === column.columnId && c.pointsAllocated))
                 .map((x) => allSongs.find((s) => s.id === x.songId)!.name);
@@ -665,14 +666,14 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
     };
 
     const handleClearAllocation = async () => {
-        snackbar.invokeAsync(async () => {
+        await snackbar.invokeAsync(async () => {
             props.mutator.clearColumnAllocation(column.columnId);
             setAnchorEl(null);
         }, `Cleared allocation for ${column.name}`);
     };
 
     const handleSwapAllocationWith = async (otherColumnId: string) => {
-        snackbar.invokeAsync(async () => {
+        await snackbar.invokeAsync(async () => {
             props.mutator.swapColumnAllocation(column.columnId, otherColumnId);
             setAnchorEl(null);
         }, `Swapped allocation with ${props.doc.payload.columns.find((x) => x.columnId === otherColumnId)!.name}`);
@@ -692,7 +693,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
     };
 
     const handleCopyAsSetlist = async () => {
-        snackbar.invokeAsync(async () => {
+        await snackbar.invokeAsync(async () => {
             const setlist = columnToSetlist(column);
             await navigator.clipboard.writeText(JSON.stringify(setlist, null, 2));
             setAnchorEl(null);
@@ -837,7 +838,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     const balanceColor = segStats.balance >= 0 ?
                         LerpColor(segStats.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
                         : LerpColor(segStats.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
-                    return <Tooltip disableInteractive title={`Rehearsal points left unallocated ${segment.name}`}>
+                    return <Tooltip key={index} disableInteractive title={`Rehearsal points left unallocated ${segment.name}`}>
                         <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
                             <NumberField inert value={segStats.balance} showPositiveSign />
                         </div>
@@ -904,7 +905,7 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
     const confirm = useConfirm();
 
     const handleCopyToClipboard = () => {
-        snackbar.invokeAsync(async () => {
+        void snackbar.invokeAsync(async () => {
             await navigator.clipboard.writeText(JSON.stringify(props.doc, null, 2));
             setAnchorEl(null);
         }, "Copied plan to clipboard");
@@ -922,7 +923,7 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
         }
 
         if (await confirm({ title: "Paste from clipboard", description: "This will replace the current document. Are you sure?" })) {
-            snackbar.invokeAsync(async () => {
+            void snackbar.invokeAsync(async () => {
                 props.mutator.setDoc(newDoc)
                 setAnchorEl(null)
             }, "Pasted from clipboard")
@@ -982,8 +983,8 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
         console.log(toAdd);
         console.log(toRemove);
 
-        const toAddComponents = toAdd.map((id) => <CMChip>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
-        const toRemoveComponents = toRemove.map((id) => <CMChip>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
+        const toAddComponents = toAdd.map((id) => <CMChip key={id}>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
+        const toRemoveComponents = toRemove.map((id) => <CMChip key={id}>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
 
         if (await confirm({
             title: "Sync with clipboard setlist", description: <div>
@@ -1842,7 +1843,7 @@ const SetlistPlannerPageContent = () => {
             colorScheme={colorScheme}
             isModified={modified}
             onSave={async (doc) => {
-                snackbar.invokeAsync(async () => {
+                void snackbar.invokeAsync(async () => {
                     const newDoc = await upsertSetlistPlanToken(doc);
                     // because PKs change
                     setDoc(newDoc);
@@ -1858,7 +1859,7 @@ const SetlistPlannerPageContent = () => {
             }}
             onDelete={async () => {
                 if (await confirm({ title: "Are you sure you want to delete this setlist plan?" })) {
-                    snackbar.invokeAsync(async () => {
+                    void snackbar.invokeAsync(async () => {
                         await deleteSetlistPlanToken({ id: doc.id });
                         setModified(false);
                         setDoc(null);

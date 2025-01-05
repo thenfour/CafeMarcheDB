@@ -1,6 +1,6 @@
-import Head from "next/head"
-import React, { FC } from "react"
-import { BlitzLayout } from "@blitzjs/next"
+import { BlitzLayout } from "@blitzjs/next";
+import Head from "next/head";
+import React from "react";
 
 const Layout: BlitzLayout<{ title?: string; children?: React.ReactNode }> = ({
   title,

@@ -2,27 +2,26 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
+import { useAuthenticatedSession } from "@blitzjs/auth";
+import { useMutation } from "@blitzjs/rpc";
 import { Button, Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
+import { Permission } from "shared/permissions";
+import { IsNullOrWhitespace, toSorted } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
-import { useAuthenticatedSession } from "@blitzjs/auth";
-import { Markdown } from "./RichTextEditor";
-import { SettingMarkdown } from "./SettingMarkdown";
-import { IsNullOrWhitespace, toSorted } from "shared/utils";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
-import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
-import { useDashboardContext } from "./DashboardContext";
-import { ConfirmationDialog } from "./ReactiveInputDialog";
-import { useConfirm } from "./ConfirmationDialog";
-import { useMutation } from "@blitzjs/rpc";
+import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../db3/mutations/clearEventSegmentResponses";
 import copyEventSegmentResponses from "../db3/mutations/copyEventSegmentResponses";
-import { Permission } from "shared/permissions";
+import { useConfirm } from "./ConfirmationDialog";
+import { useDashboardContext } from "./DashboardContext";
+import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
+import { Markdown } from "./RichTextEditor";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 
 

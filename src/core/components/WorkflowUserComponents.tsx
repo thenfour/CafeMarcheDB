@@ -20,10 +20,10 @@ import { SettingMarkdown } from "./SettingMarkdown";
 
 import { MoreHoriz } from '@mui/icons-material';
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
-import { Markdown3Editor } from './MarkdownControl3';
 import { WorkflowNodeProgressState } from '../db3/shared/apiTypes';
-import { Markdown } from './RichTextEditor';
+import { Markdown3Editor } from './MarkdownControl3';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
+import { Markdown } from './RichTextEditor';
 
 type CMXYPosition = {
     x: number;

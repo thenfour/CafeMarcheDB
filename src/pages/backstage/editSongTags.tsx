@@ -1,6 +1,5 @@
 
 import { BlitzPage } from "@blitzjs/next";
-import { GridFilterItem } from "@mui/x-data-grid";
 import { Permission } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";

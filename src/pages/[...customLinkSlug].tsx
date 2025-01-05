@@ -1,4 +1,4 @@
-import { BlitzPage, useParams } from "@blitzjs/next";
+import { BlitzPage } from "@blitzjs/next";
 import { NoSsr } from "@mui/material";
 import db from "db";
 import { useRouter } from "next/router";

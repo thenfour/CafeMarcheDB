@@ -1,6 +1,5 @@
 import { Mutex } from "async-mutex";
-import { AssertEqualTypes, exactType } from "shared/rootroot";
-import * as z from "zod"
+import * as z from "zod";
 
 export interface MockEvent {
     name: string;

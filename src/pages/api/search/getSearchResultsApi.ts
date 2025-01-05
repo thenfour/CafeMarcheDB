@@ -6,7 +6,7 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
-import { BigintToNumber, SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } from "shared/utils";
+import { SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";

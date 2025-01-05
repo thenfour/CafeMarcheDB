@@ -14,7 +14,7 @@ import { formatFileSize } from "shared/rootroot";
 import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
-import { KeyValueDisplay, KeyValueTable } from "src/core/components/CMCoreComponents2";
+import { KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/FileDrop";

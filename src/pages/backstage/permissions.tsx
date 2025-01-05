@@ -1,14 +1,12 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Tooltip } from "@mui/material";
-import { Suspense } from "react";
+import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
+import { DashboardContext } from "src/core/components/DashboardContext";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API } from "src/core/db3/clientAPI";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React from 'react';
-import { DashboardContext } from "src/core/components/DashboardContext";
 
 const Inner = () => {
     const dashboardContext = React.useContext(DashboardContext);

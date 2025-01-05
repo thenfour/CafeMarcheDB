@@ -5,12 +5,10 @@ import Link from "next/link"
 import login from "src/auth/mutations/login"
 //import { Login } from "src/auth/schemas"
 import { useMutation } from "@blitzjs/rpc"
-import { FormControlLabel } from "@mui/material"
 //import { Routes } from "@blitzjs/next"
-import React, { Suspense } from "react";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { Routes } from "@blitzjs/next";
+import React from "react"
 import { NameValuePair } from "src/core/components/CMCoreComponents2"
+import { SnackbarContext } from "src/core/components/SnackbarContext"
 
 type LoginFormProps = {
   onSuccess?: (user: PromiseReturnType<typeof login>) => void

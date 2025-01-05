@@ -1,6 +1,5 @@
 // src/auth/mutations/impersonateUser.ts
 import { resolver } from "@blitzjs/rpc"
-import db from "db"
 import { Permission } from "shared/permissions"
 import * as z from "zod"
 

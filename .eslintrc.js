@@ -1,5 +1,6 @@
 module.exports = {
     extends: ["./node_modules/@blitzjs/next/eslint"],
+    plugins: ["unused-imports"],
     rules: {
         "react-hooks/rules-of-hooks": "off",
         "react-hooks/exhaustive-deps": "off",
@@ -8,5 +9,6 @@ module.exports = {
         "@next/next/no-img-element": "off",
         "@next/next/no-css-tags": "off",
         "import/no-cycle": "error",
+        "unused-imports/no-unused-imports": "error",
     },
 }

@@ -1,5 +1,4 @@
 import React, { MouseEvent, TouchEvent, useEffect, useRef, useState } from 'react';
-import { lerp, mapRange } from 'shared/utils';
 
 interface KnobProps {
     min: number;

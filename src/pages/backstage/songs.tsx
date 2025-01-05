@@ -5,7 +5,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { IsNullOrWhitespace, LangSelectString, SelectEnglishNoun, arrayToTSV, arraysContainSameValues } from "shared/utils";
+import { IsNullOrWhitespace, SelectEnglishNoun, arrayToTSV, arraysContainSameValues } from "shared/utils";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";

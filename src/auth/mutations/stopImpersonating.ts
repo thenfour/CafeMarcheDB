@@ -1,7 +1,6 @@
 // src/auth/mutations/stopImpersonating.ts
-import { resolver } from "@blitzjs/rpc"
-import db from "db"
-import { Permission } from "shared/permissions";
+import { resolver } from "@blitzjs/rpc";
+import db from "db";
 import { CreatePublicData } from "types";
 
 export default resolver.pipe(

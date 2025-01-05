@@ -1,13 +1,13 @@
 // UnsavedChangesHandler.tsx
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { useRouter } from 'next/router';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from '@mui/material';
+import { useRouter } from 'next/router';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface UnsavedChangesHandlerProps {
   isDirty: boolean;

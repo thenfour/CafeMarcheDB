@@ -1,15 +1,14 @@
 import { BlitzPage } from "@blitzjs/next";
-import { Chip } from "@mui/material";
-import { Permission } from "shared/permissions";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
 import PageviewIcon from '@mui/icons-material/Pageview';
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
+import { Permission } from "shared/permissions";
 import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const InstrumentListContent = () => {
     const router = useRouter();

@@ -30,7 +30,7 @@ import { createRoot } from 'react-dom/client';
 
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
-import { CoalesceBool, IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
+import { IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
 import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
 

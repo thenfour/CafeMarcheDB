@@ -4,8 +4,8 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import { FormControlLabel, Tooltip } from "@mui/material";
-import { Permission } from "shared/permissions";
 import React from "react";
+import { Permission } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatrix";

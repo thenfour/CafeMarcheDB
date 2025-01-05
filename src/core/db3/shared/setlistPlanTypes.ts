@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "db";
+import { Prisma } from "db";
 import { z } from "zod";
 
 

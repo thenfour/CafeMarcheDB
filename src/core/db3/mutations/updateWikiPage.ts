@@ -1,12 +1,11 @@
 // updateWikiPage
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import db from "db";
 import { Permission } from "shared/permissions";
-import * as db3 from "../db3";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import * as mutationCore from "../server/db3mutationCore";
 import { TUpdateWikiPageArgs, ZTUpdateWikiPageArgs } from "../shared/apiTypes";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(

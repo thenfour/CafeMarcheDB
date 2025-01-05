@@ -6,13 +6,12 @@
 // (hover)
 // (focus)
 
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
-import { GetStyleVariablesForColor } from "./Color";
-import { IsNullOrWhitespace } from "shared/utils";
 import { Tooltip } from "@mui/material";
-import { gIconMap, RenderMuiIcon } from "../db3/components/IconMap";
-import { TAnyModel } from "../db3/shared/apiTypes";
 import React from "react";
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
+import { IsNullOrWhitespace } from "shared/utils";
+import { gIconMap, RenderMuiIcon } from "../db3/components/IconMap";
+import { GetStyleVariablesForColor } from "./Color";
 
 // but it means having a lot of color variations:
 // - main / contrast

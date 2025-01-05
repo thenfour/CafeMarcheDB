@@ -1,6 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { DeserializeSetlistPlan } from "../shared/setlistPlanTypes";

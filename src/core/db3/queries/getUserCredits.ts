@@ -1,9 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
-import { assert, AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 
 // type UserGetCreditsQueryResult = {

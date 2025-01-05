@@ -7,15 +7,15 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
-import { SettingKey, sleep } from "shared/utils";
+import { SettingKey } from "shared/utils";
+import { AdminInspectObject } from "src/core/components/CMCoreComponents";
 import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
-import * as DB3ClientCore from "./DB3ClientCore";
 import { TAnyModel } from "../shared/apiTypes";
-import { AdminInspectObject } from "src/core/components/CMCoreComponents";
+import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
-import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {

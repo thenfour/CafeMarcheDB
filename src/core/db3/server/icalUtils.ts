@@ -1,13 +1,11 @@
 import { hash256 } from "@blitzjs/auth";
 import { Prisma } from "db";
-import { convert } from 'html-to-text';
-import MarkdownIt from 'markdown-it';
+import { ICalEventStatus } from "ical-generator";
+import { markdownToPlainText } from "shared/markdownUtils";
+import { DateTimeRange } from "shared/time";
 import { CoalesceBool } from "shared/utils";
 import * as db3 from "../db3";
-import { DateTimeRange } from "shared/time";
-import { ICalEventStatus } from "ical-generator";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
-import { markdownToPlainText } from "shared/markdownUtils";
 
 
 export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({

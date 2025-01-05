@@ -115,13 +115,13 @@ EventAttendanceSummary (obsolete?)
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import React, { Suspense } from "react";
+import React from "react";
 import { Timing } from 'shared/time';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { AdminInspectObject, AttendanceChip } from './CMCoreComponents';
-import { AnimatedCircularProgress, CMSmallButton, NameValuePair } from "./CMCoreComponents2";
+import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
@@ -130,9 +130,9 @@ import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
-import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 
 const gCaptionMap = {};

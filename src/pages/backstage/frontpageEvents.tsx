@@ -1,18 +1,17 @@
 import { BlitzPage } from "@blitzjs/next";
-import { Suspense } from "react";
+import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventDetailContainer } from "src/core/components/EventComponents";
-import { CalculateEventMetadata, CalculateEventMetadata_Verbose } from "src/core/components/EventComponentsBase";
+import { CalculateEventMetadata_Verbose } from "src/core/components/EventComponentsBase";
 import { EventFrontpageTabContent } from "src/core/components/EventFrontpageComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React from 'react';
-import { DashboardContext } from "src/core/components/DashboardContext";
 
 const EventsList = () => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };

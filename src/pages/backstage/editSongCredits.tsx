@@ -1,4 +1,4 @@
-import { BlitzPage, useParam, useParams } from "@blitzjs/next";
+import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { parseIntOrNull } from "shared/utils";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";

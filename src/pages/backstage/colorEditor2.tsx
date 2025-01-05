@@ -161,7 +161,8 @@ import { ColorPaletteEntry, ColorPaletteEntryVariation, ColorVariationSpec, Stan
 import { lerp } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard, OpenCloseIcon } from "src/core/components/CMCoreComponents";
-import { ColorPaletteListComponent, ColorPick, GetStyleVariablesForColorVariation } from "src/core/components/Color";
+import { ColorPaletteListComponent, GetStyleVariablesForColorVariation } from "src/core/components/Color";
+import { ColorPick } from "src/core/components/ColorPick";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";

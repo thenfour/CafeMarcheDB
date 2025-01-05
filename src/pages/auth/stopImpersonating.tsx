@@ -1,12 +1,9 @@
-import { useRouter } from "next/router"
-import Layout from "src/core/layouts/Layout"
-import { SignupForm } from "src/auth/components/SignupForm"
-import { BlitzPage, Routes } from "@blitzjs/next"
-import { useMutation } from "@blitzjs/rpc"
-import stopImpersonating from "src/auth/mutations/stopImpersonating"
-import { Button } from "@mui/material"
 import { useSession } from "@blitzjs/auth"
+import { BlitzPage } from "@blitzjs/next"
+import { useMutation } from "@blitzjs/rpc"
+import { Button } from "@mui/material"
 import { Suspense } from "react"
+import stopImpersonating from "src/auth/mutations/stopImpersonating"
 
 const MainContent = () => {
     const session = useSession();

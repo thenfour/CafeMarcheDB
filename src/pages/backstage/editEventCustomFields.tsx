@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { moveItemInArray } from 'shared/utils';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from 'src/core/components/CMCoreComponents';
 import { CMTextInputBase } from 'src/core/components/CMTextField';
-import { ColorPick } from 'src/core/components/Color';
+import { ColorPick } from "src/core/components/ColorPick";
 import { useDashboardContext } from 'src/core/components/DashboardContext';
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { useSnackbar } from 'src/core/components/SnackbarContext';

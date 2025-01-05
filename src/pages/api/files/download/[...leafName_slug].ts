@@ -2,12 +2,8 @@
 // https://dev.to/victrexx2002/how-to-get-the-mime-type-of-a-file-in-nodejs-p6c
 // https://www.reddit.com/r/node/comments/ecjsg6/how_to_determine_file_mime_type_without_a/
 import { Ctx } from "@blitzjs/next";
-import { AuthenticatedCtx } from 'blitz';
-import db, { Prisma } from "db";
 import fs from "fs";
 import * as mime from 'mime';
-import path from "path";
-import { Permission } from "shared/permissions";
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';

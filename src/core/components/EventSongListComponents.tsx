@@ -5,6 +5,7 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
+import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import React from "react";
@@ -22,7 +23,8 @@ import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
 import { CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from './CMCoreComponents2';
-import { ColorPick, GetStyleVariablesForColor } from './Color';
+import { GetStyleVariablesForColor } from './Color';
+import { ColorPick } from './ColorPick';
 import { DashboardContext } from './DashboardContext';
 import { Markdown3Editor } from './MarkdownControl3';
 import { MetronomeButton } from './Metronome';
@@ -30,7 +32,6 @@ import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
-import { ArrowBack, ArrowForward, ArrowRight } from '@mui/icons-material';
 
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {

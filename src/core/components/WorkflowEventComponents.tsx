@@ -12,7 +12,6 @@ import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { AdminContainer, AdminInspectObject, InspectObject } from "./CMCoreComponents";
 import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
-import { ColorPick } from "./Color";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 
@@ -22,6 +21,7 @@ import insertOrUpdateEventWorkflowInstance from "../db3/mutations/insertOrUpdate
 import saveEventWorkflowModel from "../db3/mutations/saveEventWorkflowModel";
 import getWorkflowDefAndInstanceForEvent from "../db3/queries/getWorkflowDefAndInstanceForEvent";
 import { MockEvent, MockEventModel } from "../db3/server/eventWorkflow";
+import { ColorPick } from "./ColorPick";
 import { useSnackbar } from "./SnackbarContext";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { EventCustomFieldOptionsBindingOperand2Component, EventCustomFieldOptionsBindingValueComponent, MakeCustomFieldOptionsBinding } from "./WorkflowCustomFieldOptionsBinding";

@@ -3,10 +3,10 @@ import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { ColorPaletteEntry } from "shared/color";
 import { Permission, gPublicPermissions } from "shared/permissions";
+import { SortDirection } from "shared/rootroot";
 import { CalculateChanges, CalculateChangesResult, SqlCombineAndExpression, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
 import { PublicDataType } from "types";
-import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsInput, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SearchResultsRet, SortQueryElements, TAnyModel } from "./apiTypes";
-import { SortDirection } from "shared/rootroot";
+import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 
 
 // server-side code for db schema expression.

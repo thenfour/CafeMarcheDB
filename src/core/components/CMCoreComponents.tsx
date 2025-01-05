@@ -9,6 +9,7 @@ import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-
 import { ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
 import { Coalesce } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
+import { Prisma } from "db";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Permission } from "shared/permissions";
 import { Timing } from "shared/time";
@@ -16,8 +17,9 @@ import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMTextField } from "./CMTextField";
-import { DashboardContext } from "./DashboardContext";
-import { Icon } from "@mui/material";
+import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { Icon, Tooltip } from "@mui/material";
+import { getURIForEvent } from "../db3/clientAPILL";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -492,3 +494,39 @@ export const PermissionBoundary = (props: React.PropsWithChildren<PermissionBoun
     return <>{props.children}</>;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const EventTextLink = (props: {
+    event: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true, statusId: true, typeId: true } }>,
+    className?: string | undefined,
+}) => {
+    const dashboardContext = useDashboardContext();
+    const type = dashboardContext.eventType.getById(props.event.typeId);
+    const status = dashboardContext.eventStatus.getById(props.event.statusId);
+    const label = db3.EventAPI.getLabel(props.event);
+
+    const firstLetter = (s: string | null | undefined) => s ? s.substring(0, 1) : "";
+    const style: React.CSSProperties = {
+        height: "16px",
+        width: "16px",
+    };
+
+    return <a rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)}>
+        <CMChip
+            color={type?.color}
+            size="small"
+        >
+            <CMChip
+                color={status?.color}
+                tooltip={status?.label || ""}
+                className="attendanceResponseColorBarSegment"
+                style={style}
+                shape="rectangle"
+            >
+                {firstLetter(status?.label)}
+            </CMChip>
+            <Tooltip title={label} disableInteractive><span>
+                {label}</span></Tooltip>
+        </CMChip>
+    </a >;
+};

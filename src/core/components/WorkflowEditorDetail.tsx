@@ -1,20 +1,20 @@
 // the non-react-flow editing components of workflow. WorkflowVisualEditor depends on this.
 
-import { Button, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
-import React, { useContext } from "react";
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, sortBy } from "shared/utils";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
-import { ColorPick } from "./Color";
 
 import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
-import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
-import { Markdown3Editor } from "./MarkdownControl3";
 import { gIconMap } from "../db3/components/IconMap";
+import { ColorPick } from "./ColorPick";
 import { useConfirm } from "./ConfirmationDialog";
+import { Markdown3Editor } from "./MarkdownControl3";
+import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 
 
 interface DueDateDefControlProps {

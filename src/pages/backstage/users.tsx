@@ -5,7 +5,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { IsNullOrWhitespace, LangSelectString, SelectEnglishNoun, arrayToTSV, arraysContainSameValues } from "shared/utils";
+import { arrayToTSV, arraysContainSameValues } from "shared/utils";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, GoogleIconSmall, useURLState } from "src/core/components/CMCoreComponents2";
@@ -13,14 +13,13 @@ import { DashboardContext, useDashboardContext } from "src/core/components/Dashb
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
+import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "src/core/components/UserComponents";
+import { useUserListData } from "src/core/components/UserSearch";
+import { getURIForUser } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import * as DB3Client from "src/core/db3/DB3Client";
-import * as db3 from "src/core/db3/db3";
-import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "src/core/components/UserComponents";
-import { getURIForUser } from "src/core/db3/clientAPILL";
-import { useUserListData } from "src/core/components/UserSearch";
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 
 type UserListItemProps = {

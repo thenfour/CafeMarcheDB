@@ -1,8 +1,8 @@
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, SvgIcon, Tooltip, Typography } from "@mui/material";
-import React, { Suspense } from "react";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, SvgIcon, Typography } from "@mui/material";
+import React from "react";
 
 import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
@@ -10,12 +10,6 @@ import { CoalesceBool, IsNullOrWhitespace, arraysContainSameValues, isValidDate,
 import { UrlObject } from "url";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import * as db3 from "../db3/db3";
-import { getURIForEvent } from "../db3/clientAPILL";
-import { Prisma } from "db";
-import { ColorSwatch, GetStyleVariablesForColor } from "./Color";
-import { useDashboardContext } from "./DashboardContext";
-import { CMChip } from "./CMChip";
-import { url } from "inspector";
 
 export function GoogleIconSmall() {
     return <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /><path d="M1 1h22v22H1z" fill="none" /></svg>;
@@ -567,39 +561,4 @@ export const CMTextarea: React.FC<CMTextareaProps> = ({ autoHeight = true, autoF
     }, [props.value]);
 
     return <textarea ref={textareaRef} {...props} />;
-};
-
-export const EventTextLink = (props: {
-    event: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true, statusId: true, typeId: true } }>,
-    className?: string | undefined,
-}) => {
-    const dashboardContext = useDashboardContext();
-    const type = dashboardContext.eventType.getById(props.event.typeId);
-    const status = dashboardContext.eventStatus.getById(props.event.statusId);
-    const label = db3.EventAPI.getLabel(props.event);
-
-    const firstLetter = (s: string | null | undefined) => s ? s.substring(0, 1) : "";
-    const style: React.CSSProperties = {
-        height: "16px",
-        width: "16px",
-    };
-
-    return <a rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)}>
-        <CMChip
-            color={type?.color}
-            size="small"
-        >
-            <CMChip
-                color={status?.color}
-                tooltip={status?.label || ""}
-                className="attendanceResponseColorBarSegment"
-                style={style}
-                shape="rectangle"
-            >
-                {firstLetter(status?.label)}
-            </CMChip>
-            <Tooltip title={label} disableInteractive><span>
-                {label}</span></Tooltip>
-        </CMChip>
-    </a >;
 };

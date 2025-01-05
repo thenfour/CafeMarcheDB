@@ -1,12 +1,11 @@
 // src/pages/api/auth/[...auth].ts
-import { passportAuth } from "@blitzjs/auth"
-import { api } from "src/blitz-server"
-import db from "db"
-import { Strategy as GoogleStrategy } from "passport-google-oauth20"
-import { Strategy as Auth0Strategy } from 'passport-auth0';
-import signupMutation from "src/auth/mutations/signup"
+import { passportAuth } from "@blitzjs/auth";
+import db from "db";
+import { nanoid } from 'nanoid';
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import signupMutation from "src/auth/mutations/signup";
+import { api } from "src/blitz-server";
 import { CreatePublicData } from "types";
-import { nanoid } from 'nanoid'
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({

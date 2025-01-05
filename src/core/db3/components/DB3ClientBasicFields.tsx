@@ -17,7 +17,7 @@ import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
-import { ColorPick, ColorSwatch } from "src/core/components/Color";
+import { ColorSwatch } from "src/core/components/Color";
 import { Markdown } from "src/core/components/RichTextEditor";
 import * as db3 from "../db3";
 import * as db3fields from "../shared/db3basicFields";
@@ -31,6 +31,7 @@ import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { ColorPick } from "src/core/components/ColorPick";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {

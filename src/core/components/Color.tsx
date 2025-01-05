@@ -1,7 +1,6 @@
-import { DialogContent } from "@mui/material";
 import React from "react";
 import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationSpec, CreateNullPaletteEntry, GetColorPaletteEntryWithVariation, StandardVariationSpec, gGeneralPaletteList, gHiddenColorIds } from "shared/color";
-import { ReactiveInputDialog } from "./ReactiveInputDialog";
+//import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 // in total there are the following variations:
 // - strong - disabled - not selected
@@ -272,36 +271,4 @@ export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps)
             })
         }
     </div>;
-};
-
-export interface ColorPickProps {
-    value: ColorPaletteEntry | null | string;
-    readonly?: boolean;
-    allowNull?: boolean;
-    palettes?: ColorPaletteList;
-    onChange: (value: ColorPaletteEntry | null) => void;
-    size?: "normal" | "small";
-    className?: string;
-};
-
-// props.color can never be null.
-export const ColorPick = ({ allowNull = true, palettes = gGeneralPaletteList, className, ...props }: ColorPickProps) => {
-    const [open, setOpen] = React.useState<boolean>(false);
-    const entry = palettes.findEntry(props.value);
-
-    return <>
-        <ColorSwatch color={entry} variation={StandardVariationSpec.Strong} size={props.size} className={className} onClick={() => setOpen(true)} />
-        {open && (
-            <ReactiveInputDialog onCancel={() => setOpen(false)}>
-                <DialogContent>
-                    <ColorPaletteListComponent allowNull={allowNull} palettes={palettes} onClick={(e: ColorPaletteEntry | null) => {
-                        if (props.readonly) return;
-                        props.onChange(e);
-                        setOpen(false)
-                    }}
-                    />
-                </DialogContent>
-            </ReactiveInputDialog >
-        )}
-    </>;
 };

@@ -2,11 +2,11 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { gIconOptions } from "shared/utils";
+import { DynamicMenuLinkApplicationPage, DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
 import { ConstEnumStringField, GenericIntegerField, GenericStringField, MakeCreatedAtField, MakeIconField, PKField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { CreatedByUserField, VisiblePermissionField } from "./user";
-import { DynamicMenuLinkApplicationPage, DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
 import { UserMinimalSelect } from "./prismArgs";
+import { CreatedByUserField, VisiblePermissionField } from "./user";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.public,

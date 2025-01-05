@@ -2,7 +2,6 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
-import { Permission } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
