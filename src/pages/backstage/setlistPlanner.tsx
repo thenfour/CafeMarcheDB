@@ -1,17 +1,20 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Button, ButtonGroup, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, DialogContent, Tooltip } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
+import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { clamp01, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
+import { ColorPaletteListComponent, ColorPick, GetStyleVariablesForColor } from "src/core/components/Color";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
@@ -80,6 +83,7 @@ interface SetlistPlanMutator {
     setRowPointsRequired: (rowId: string, points: number | undefined) => void;
     setRowComment: (rowId: string, comment: string) => void;
     reorderRows: (args: ReactSmoothDnd.DropResult) => void;
+    setRowColor: (rowId: string, color: string | undefined) => void;
 
     addColumn: () => void;
     deleteColumn: (columnId: string) => void;
@@ -97,6 +101,7 @@ interface SetlistPlanStats {
     totalPlanSegmentBalance: number;
     songsPerSegment: number;
 
+    minSegmentPointsAvailable: number,
     maxSegmentPointsAvailable: number,
     maxSegPointsUsed: number,
     minSegPointsUsed: number,
@@ -156,6 +161,11 @@ function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
         if (x.pointsAvailable == null) return acc;
         return acc + x.pointsAvailable;
     }, 0);
+
+    const minSegmentPointsAvailable = doc.payload.columns.reduce((acc, x) => {
+        if (x.pointsAvailable == null) return acc;
+        return Math.min(acc, x.pointsAvailable);
+    }, maxSegmentPointsAvailable);
 
     const maxSegPointsUsed = segmentStats.reduce((acc, x) => {
         if (x.totalPointsAllocatedToSongs == null) return acc;
@@ -217,6 +227,7 @@ function CalculateSetlistPlanStats(doc: SetlistPlan): SetlistPlanStats {
         songStats,
         segmentStats,
 
+        minSegmentPointsAvailable,
         maxSegmentPointsAvailable,
         maxSegPointsUsed,
         minSegPointsUsed,
@@ -397,6 +408,49 @@ function LerpColor(value: number | null | undefined, min: number | null | undefi
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+interface LedProps {
+    value: string | null;
+    onChange: (newValue: string | null) => void;
+}
+const Led = (props: LedProps) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+
+    const style = GetStyleVariablesForColor({
+        color: props.value,
+        enabled: true,
+        fillOption: "filled",
+        selected: false,
+        variation: "strong",
+    });
+    return <>
+        <div
+            className={`applyColor interactable ${style.cssClass}`}
+            onClick={() => setOpen(true)}
+            style={{
+                ...style.style,
+                "--dim": "14px",
+                width: "var(--dim)",
+                height: "var(--dim)",
+                margin: "4px",
+            } as any}
+        >
+        </div>
+        {open && (
+            <ReactiveInputDialog onCancel={() => setOpen(false)}>
+                <DialogContent>
+                    <ColorPaletteListComponent allowNull={true} palettes={gGeneralPaletteList} onClick={(e: ColorPaletteEntry | null) => {
+                        props.onChange(e?.id || null);
+                        //props.onChange(e);
+                        setOpen(false);
+                    }}
+                    />
+                </DialogContent>
+            </ReactiveInputDialog >
+        )}
+    </>;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerMatrixRowProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
@@ -404,7 +458,7 @@ type SetlistPlannerMatrixRowProps = {
     stats: SetlistPlanStats;
 };
 
-const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
+const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
     let songStats = props.stats.songStats.find((x) => x.rowId === props.rowId);
     if (!songStats) {
@@ -444,7 +498,17 @@ const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
                     />
                 </div>
             </Tooltip>
-            <div>{song.name}</div>
+
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <Tooltip disableInteractive title={<Markdown markdown={songRow.commentMarkdown || ""} />}>
+                    <div>
+                        <Led value={songRow.color || null} onChange={(newColor) => {
+                            props.mutator.setRowColor(props.rowId, newColor || undefined);
+                        }} />
+                    </div>
+                </Tooltip>
+                <div>{song.name}</div>
+            </div>
         </div>
         {props.doc.payload.columns.map((segment, index) => {
             // if no measureUsage, use transparent color
@@ -481,6 +545,45 @@ const SetlistPlannerMatrixRow = (props: SetlistPlannerMatrixRowProps) => {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+type SetlistPlannerDividerRowProps = {
+    doc: SetlistPlan;
+    mutator: SetlistPlanMutator;
+    rowId: string;
+    stats: SetlistPlanStats;
+};
+
+const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
+
+    const row = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
+
+    return <div className="tr divider">
+        <div className="td songName">
+            <div className="dragHandle draggable">
+                ☰
+            </div>
+
+            <div className="numberCell">
+                <NumberField
+                    style={{ visibility: "hidden" }}
+                    value={0}
+                    onChange={(e, newValue) => { props.mutator.setRowPointsRequired(props.rowId, newValue || undefined) }}
+                />
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <div>
+                    <Led value={row.color || null} onChange={(newColor) => {
+                        props.mutator.setRowColor(props.rowId, newColor || undefined);
+                    }} />
+                </div>
+                <Markdown compact markdown={row.commentMarkdown || ""} />
+            </div>
+        </div>
+    </div>;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerMatrixProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
@@ -498,7 +601,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             <div className="td songName"></div>
             {props.doc.payload.columns.map((segment, index) => <div key={index} className="td segment">
                 <div>{segment.name}</div>
-                <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, 0, props.stats.maxSegmentPointsAvailable, gColors.segmentPointsAvailable) }}>
+                <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, gColors.segmentPointsAvailable) }}>
                     <NumberField
                         value={segment.pointsAvailable || null}
                         onChange={(e, newValue) => {
@@ -517,8 +620,14 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 onDrop={onDrop}
             >
                 {props.doc.payload.rows.map((song, index) => <ReactSmoothDndDraggable key={index}>
-                    {song.type === "divider" ? <div className="tr divider">divider</div> :
-                        <SetlistPlannerMatrixRow
+                    {song.type === "divider" ? <SetlistPlannerDividerRow
+                        mutator={props.mutator}
+                        stats={props.stats}
+                        key={index}
+                        doc={props.doc}
+                        rowId={song.rowId}
+                    /> :
+                        <SetlistPlannerMatrixSongRow
                             mutator={props.mutator}
                             stats={props.stats}
                             key={index}
@@ -533,11 +642,11 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
         <div className="footerContainer">
             <div className="tr footer">
-                <Tooltip disableInteractive title={`Total required rehearsal points for all songs`}>
-                    <div className="td songName numberCell">
-                        <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} />
-                    </div>
-                </Tooltip>
+                {/* <Tooltip disableInteractive title={`Total required rehearsal points for all songs`}> */}
+                <div className="td songName numberCell">
+                    {/* <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} /> */}
+                </div>
+                {/* </Tooltip> */}
                 {props.doc.payload.columns.map((segment, index) => {
                     const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
                     const bgColor = LerpColor(segStats.totalPointsAllocatedToSongs, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, gColors.segmentPoints);
@@ -605,6 +714,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     }
                 }}
             />
+
+            <Button startIcon={gIconMap.Add()} onClick={() => {
+                props.mutator.addDivider();
+            }}>Add Divider</Button>
         </div>
 
     </div >;
@@ -681,7 +794,8 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                         props.mutator.setDescription(newMarkdown);
                     }}
                     value={doc.description}
-                    beginInPreview={true}
+                    minHeight={75}
+                //beginInPreview={true}
                 />
             </CMTab>
 
@@ -707,7 +821,7 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                                     props.mutator.setColumnComment(segment.columnId, newMarkdown);
                                 }}
                                 value={segment.commentMarkdown || ""}
-                                beginInPreview={true}
+                            //beginInPreview={true}
                             />
                             <Button startIcon={gIconMap.Delete()} onClick={() => {
                                 props.mutator.deleteColumn(segment.columnId);
@@ -722,34 +836,49 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                 }}>Add Segment</Button>
 
             </CMTab>
-            <CMTab thisTabId="songs" summaryTitle={"songs"}>
+            <CMTab thisTabId="songs" summaryTitle={"Rows"}>
                 <div className="SetlistPlannerDocumentEditorSongs">
                     {doc.payload.rows.map((song) => {
                         return <div key={song.rowId} className="SetlistPlannerDocumentEditorSong">
-                            <div className="name">{allSongs.find((x) => x.id === song.songId)?.name}</div>
-                            <NumberField
-                                value={song.pointsRequired || null}
-                                onChange={(e, newMeasure) => {
-                                    props.mutator.setRowPointsRequired(song.rowId, newMeasure || undefined);
+                            <div style={{ display: "flex", alignItems: "center" }}>
+                                <div className="type">{song.type}</div>
+                                <ColorPick
+                                    value={song.color || null}
+
+                                    onChange={(newColor) => {
+                                        props.mutator.setRowColor(song.rowId, newColor?.id || undefined);
+                                    }}
+                                />
+                                <Button startIcon={gIconMap.Delete()} onClick={() => {
+                                    props.mutator.deleteRow(song.rowId);
                                 }}
-                            />
+                                ></Button>
+                            </div>
+
+                            {song.type === "song" && <>
+                                <div className="name">{allSongs.find((x) => x.id === song.songId)?.name}</div>
+                                <NumberField
+                                    value={song.pointsRequired || null}
+                                    onChange={(e, newMeasure) => {
+                                        props.mutator.setRowPointsRequired(song.rowId, newMeasure || undefined);
+                                    }}
+                                />
+                                <span>rehearsal points required</span>
+                            </>}
                             <Markdown3Editor
+                                minHeight={75}
                                 onChange={(newMarkdown) => {
                                     props.mutator.setRowComment(song.rowId, newMarkdown);
                                 }}
                                 value={song.commentMarkdown || ""}
-                                beginInPreview={true}
+                            //beginInPreview={true}
                             />
-                            <Button startIcon={gIconMap.Delete()} onClick={() => {
-                                props.mutator.deleteRow(song.rowId);
-                            }}
-                            ></Button>
                         </div>
                     })}
                 </div>
 
                 <div className="SetlistPlannerDocumentEditorAddSong">
-                    Add...
+                    Add a song...
                     <SongAutocomplete
                         value={null}
                         onChange={(newSong) => {
@@ -758,6 +887,10 @@ const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditorProps) 
                             }
                         }}
                     />
+
+                    <Button startIcon={gIconMap.Add()} onClick={() => {
+                        props.mutator.addDivider();
+                    }}>Add Divider</Button>
                 </div>
 
             </CMTab>
@@ -1054,6 +1187,26 @@ const SetlistPlannerPageContent = () => {
                         payload: {
                             ...doc.payload,
                             rows: newSongs,
+                        },
+                    });
+                }
+            },
+            setRowColor: (rowId: string, color: string) => {
+                if (doc) {
+                    setModified(true);
+                    setDoc({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rows: doc.payload.rows.map((x) => {
+                                if (x.rowId === rowId) {
+                                    return {
+                                        ...x,
+                                        color,
+                                    };
+                                }
+                                return x;
+                            }),
                         },
                     });
                 }
