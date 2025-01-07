@@ -278,6 +278,8 @@ type SetlistPlannerMatrixProps = {
 
 const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
+    const [showCostBreakdown, setShowCostBreakdown] = React.useState(false);
+
     const docOrTempDoc = props.tempDoc || props.doc;
     //const isTempDoc = !!props.tempDoc;
 
@@ -400,28 +402,32 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
         <table style={{ fontFamily: "monospace" }}>
             <tr>
-                <td>Cost</td>
+                <td className="interactable" onClick={() => {
+                    setShowCostBreakdown(!showCostBreakdown);
+                }}>Cost</td>
                 <td>{costResult.totalCost.toFixed(2)}</td>
             </tr>
-            <tr>
-                <td>Iterations</td>
-                <td>{docOrTempDoc.payload.autoCompleteIterations?.toLocaleString()}</td>
-            </tr>
-            <tr>
-                <td>Max depth</td>
-                <td>{docOrTempDoc.payload.autoCompleteDepth?.toLocaleString()}</td>
-            </tr>
-            <tr>
-                <td>Duration</td>
-                <td>{docOrTempDoc.payload.autoCompleteDurationSeconds?.toFixed(3)} seconds</td>
-            </tr>
-
-            {costResultBreakdown.map((x, index) => (
-                <tr key={index}>
-                    <td>{x.explanation}</td>
-                    <td>{x.cost}</td>
+            {showCostBreakdown && <>
+                <tr>
+                    <td>Iterations</td>
+                    <td>{docOrTempDoc.payload.autoCompleteIterations?.toLocaleString()}</td>
                 </tr>
-            ))}
+                <tr>
+                    <td>Max depth</td>
+                    <td>{docOrTempDoc.payload.autoCompleteDepth?.toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td>Duration</td>
+                    <td>{docOrTempDoc.payload.autoCompleteDurationSeconds?.toFixed(3)} seconds</td>
+                </tr>
+
+                {costResultBreakdown.map((x, index) => (
+                    <tr key={index}>
+                        <td>{x.explanation}</td>
+                        <td>{x.cost}</td>
+                    </tr>
+                ))}
+            </>}
         </table>
 
         <KeyValueTable

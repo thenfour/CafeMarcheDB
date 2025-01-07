@@ -309,6 +309,51 @@ export const NumberField = (props: NumberFieldProps) => {
 };
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+type AutoSelectingNumberFieldProps = {
+    value: number | null;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>, newValue: number | null) => void;
+    className?: string;
+    readonly?: boolean;
+    inert?: boolean;
+    style?: React.CSSProperties;
+};
+
+export const AutoSelectingNumberField = (props: AutoSelectingNumberFieldProps) => {
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const [internalValue, setInternalValue] = React.useState<string>(props.value == null ? "" : props.value.toString());
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        e.target.select();
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInternalValue(e.target.value);
+        const newValue = e.target.value ? parseFloat(e.target.value) : null;
+        props.onChange && props.onChange(e, isNaN(newValue as number) ? null : newValue);
+    };
+
+    return <div className="AutoSelectingNumberField">
+        <input
+            type="text"
+            ref={inputRef}
+            value={internalValue}
+            onChange={handleChange}
+            onFocus={handleFocus}
+            className={`NumberField ${props.readonly ? "readonly" : "editable"} ${props.inert ? "inert" : "notinert"} ${props.className}`}
+            inert={props.inert}
+            readOnly={props.readonly}
+            disabled={props.inert}
+            style={props.style}
+        />
+        <span>{props.value}</span>
+    </div>;
+};
+
+
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 interface LedProps {
     value: string | null;
@@ -362,6 +407,69 @@ type Penalty = {
     add: number;
 }
 
+export function GetSetlistPlanStats(plan: SetlistPlan) {
+
+    const songStats = plan.payload.rows
+        .filter(row => row.type === "song" && row.pointsRequired)
+        .map(row => {
+            const allRowCells = plan.payload.cells
+                .filter(cell => cell.rowId === row.rowId)
+                .map(cell => ({
+                    cell,
+                    columnIndex: plan.payload.columns.findIndex(col => col.columnId === cell.columnId),
+                    allocation: cell.pointsAllocated || 0, // coalesced for convenience.
+                }));
+            // match the sorting of plan.payload.columns.
+            allRowCells.sort((a, b) => a.columnIndex - b.columnIndex);
+
+            const occupiedRowCells = allRowCells.filter(cell => !!cell.cell.pointsAllocated);
+            const earliestAllocatedColumnIndex = occupiedRowCells[0]?.columnIndex;
+            const totalPointsAllocated = occupiedRowCells.reduce((acc, cell) => acc + cell.allocation, 0);
+            const pointsRequired = row.pointsRequired || 0;
+            const idealRehearsalCount = Math.max(1, Math.ceil(pointsRequired / MAX_POINTS_PER_REHEARSAL));
+            const pointsStillNeeded = pointsRequired - totalPointsAllocated;
+            return {
+                allRowCells,
+                occupiedRowCells,
+                rowId: row.rowId,
+                pointsRequired,
+                earliestAllocatedColumnIndex,
+                totalPointsAllocated,
+                idealRehearsalCount,
+                pointsStillNeeded,
+            };
+        });
+
+    const columnStats = plan.payload.columns.map(col => {
+        const totalPointsAllocated = plan.payload.cells
+            .filter(cell => cell.columnId === col.columnId)
+            .reduce((acc, cell) => acc + (cell.pointsAllocated || 0), 0);
+        const allocatedSongs = plan.payload.cells
+            .filter(cell => cell.columnId === col.columnId && cell.pointsAllocated)
+            .map(cell => {
+                const rowIndex = plan.payload.rows.findIndex(row => row.rowId === cell.rowId);
+                const row = plan.payload.rows[rowIndex]!;
+                return {
+                    cell,
+                    rowIndex,
+                    row,
+                };
+            });
+        // const colors = allocatedSongs.map(allocatedSong => allocatedSong.row.color!);
+        // const uniqueColors = new Set(colors);
+
+        return {
+            col,
+            allocatedSongs,
+            columnId: col.columnId,
+            pointsAvailable: col.pointsAvailable || 0,
+            totalPointsAllocated,
+            //uniqueColors,
+        };
+    });
+    return { songStats, columnStats };
+};
+
 export interface SetlistPlanCostPenalties {
     underRehearsedSong: Penalty; // 0-1 input
     overRehearsedSong: Penalty; // 0-1 input (could be >1 though for example if a song is rehearsed 3 points but only requires 1)
@@ -394,41 +502,14 @@ export const CalculateSetlistPlanCost = (plan: SetlistPlan, config: SetlistPlanC
         ret.totalCost += calculatedCost;
     };
 
+    const { songStats, columnStats } = GetSetlistPlanStats(plan);
+
     // in order to satisfy A* requirement that the cost function be admissible (never over-estimate the cost to reach the goal),
     // we need to:
     // - never reward (negative cost), always penalize.
     // - penalize for each point we have allocated, so even in e perfect scenario the cost will still be never less than the estimate.
     //const allocatedPoints = plan.payload.cells.reduce((acc, x) => acc + (x.pointsAllocated || 0), 0);
     //addCost(allocatedPoints, { mul: 1, add: 0 }, `Points allocated`);
-
-    const songStats = plan.payload.rows
-        .filter(row => row.type === "song" && row.pointsRequired)
-        .map(row => {
-            const allRowCells = plan.payload.cells
-                .filter(cell => cell.rowId === row.rowId)
-                .map(cell => ({
-                    cell,
-                    columnIndex: plan.payload.columns.findIndex(col => col.columnId === cell.columnId),
-                    allocation: cell.pointsAllocated || 0, // coalesced for convenience.
-                }));
-            // match the sorting of plan.payload.columns.
-            allRowCells.sort((a, b) => a.columnIndex - b.columnIndex);
-
-            const occupiedRowCells = allRowCells.filter(cell => !!cell.cell.pointsAllocated);
-            const earliestAllocatedColumnIndex = occupiedRowCells[0]?.columnIndex;
-            const totalPointsAllocated = occupiedRowCells.reduce((acc, cell) => acc + cell.allocation, 0);
-            const pointsRequired = row.pointsRequired || 0;
-            const idealRehearsalCount = Math.max(1, Math.ceil(pointsRequired / MAX_POINTS_PER_REHEARSAL));
-            return {
-                allRowCells,
-                occupiedRowCells,
-                rowId: row.rowId,
-                pointsRequired,
-                earliestAllocatedColumnIndex,
-                totalPointsAllocated,
-                idealRehearsalCount,
-            };
-        });
 
     // penalize for points required but not allocated, per song.
     songStats.forEach(songStat => {
@@ -531,34 +612,6 @@ export const CalculateSetlistPlanCost = (plan: SetlistPlan, config: SetlistPlanC
                 }
             }
         });
-
-    const columnStats = plan.payload.columns.map(col => {
-        const totalPointsAllocated = plan.payload.cells
-            .filter(cell => cell.columnId === col.columnId)
-            .reduce((acc, cell) => acc + (cell.pointsAllocated || 0), 0);
-        const allocatedSongs = plan.payload.cells
-            .filter(cell => cell.columnId === col.columnId && cell.pointsAllocated)
-            .map(cell => {
-                const rowIndex = plan.payload.rows.findIndex(row => row.rowId === cell.rowId);
-                const row = plan.payload.rows[rowIndex]!;
-                return {
-                    cell,
-                    rowIndex,
-                    row,
-                };
-            });
-        // const colors = allocatedSongs.map(allocatedSong => allocatedSong.row.color!);
-        // const uniqueColors = new Set(colors);
-
-        return {
-            col,
-            allocatedSongs,
-            columnId: col.columnId,
-            pointsAvailable: col.pointsAvailable || 0,
-            totalPointsAllocated,
-            //uniqueColors,
-        };
-    });
 
     // penalize for column under and over allocation.
     columnStats.forEach(colStat => {

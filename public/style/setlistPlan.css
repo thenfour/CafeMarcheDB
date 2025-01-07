@@ -279,3 +279,26 @@
     font-weight: bold;
     border-radius: 5px;
 }
+
+.CostConfigEditor,
+.RetainConfigEditor {
+    padding: 6px;
+    margin: 6px;
+    background-color: #eee;
+}
+
+.CostConfigEditor input,
+.RetainConfigEditor input {
+    font-family: monospace;
+    width: 100px;
+    text-align: center;
+    font-size: 16px;
+    /* padding: 2px; */
+    margin: 0 2px;
+}
+
+.SetlistPlannerPageContent .PenaltyEditor {
+    display: flex;
+}
+
+.SetlistPlannerPageContent .AutoSelectingNumberField {}

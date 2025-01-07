@@ -4,22 +4,22 @@ import { generateFibonacci, toSorted } from "shared/utils";
 import { AStarSearchProgressState, SetlistPlanGetNeighbors } from "./SetlistPlanAutocompleteAStar";
 import { Stopwatch } from "shared/rootroot";
 
+export interface SetlistPlanRetentionConfig {
+    minAmt: number; // always return at least this amount to retain.
+    maxAmt: number | undefined; // if defined, return at most this amount to retain. this is a way to prevent factor * count from getting too large.
+    factor: number | undefined; // if defined, use this factor to calculate the amount to retain.
+    // if factor & maxAmt are both defined, the amount to retain is min(maxAmt, factor * count).
+    // if factor & maxAmt are both undefined, the amount to retain is minAmt.
+};
 
-//const depthToRetainAmountMap = [9999]; // Define retain amounts for each depth
-
-function getRetainAmount(count: number, depth: number): number {
-    const baseAmt = 200;
-
+function getRetainAmount(count: number, depth: number, config: SetlistPlanRetentionConfig): number {
     if (depth < 2) return count; // first depth, retain all states. this allows for searching ANY 1st move.
-    //if (depth < 8) Math.max(baseAmt, Math.ceil(count * 0.75));
-    //if (depth < 8) return Math.max(baseAmt, Math.ceil(count * 0.5));
-    //if (depth < ) Math.max(baseAmt, Math.ceil(count * 0.25));
-    return baseAmt;
-    //return Math.max(1, Math.ceil(count * 0.25));
-    // Use the mapped value if within bounds; otherwise, use the last value
-    // return depth < depthToRetainAmountMap.length
-    //     ? depthToRetainAmountMap[depth]!
-    //     : depthToRetainAmountMap[depthToRetainAmountMap.length - 1]!;
+
+    if (config.factor === undefined && config.maxAmt === undefined) return config.minAmt;
+    if (config.factor === undefined) return Math.min(config.minAmt, config.maxAmt!);
+    const factoredAmt = Math.ceil(count * config.factor);
+    if (config.maxAmt === undefined) return Math.max(config.minAmt, factoredAmt);
+    return Math.min(config.maxAmt, factoredAmt);
 }
 
 
@@ -38,6 +38,8 @@ interface SearchConfig<T> {
 
     // returns a string that uniquely identifies the node
     getNodeHashKey: (node: T) => string;
+
+    retainConfig: SetlistPlanRetentionConfig;
 }
 
 
@@ -59,7 +61,7 @@ async function bestHalfSearch<T>(
     ]; // Start with the initial state
     let depth = 1;
     let iteration = 0;
-    const reportInterval = 25;
+    const reportInterval = 51;
     let bestGoalState: Node | null = null;
 
     while (currentStates.length > 0) {
@@ -109,18 +111,7 @@ async function bestHalfSearch<T>(
 
         allNeighbors.sort((a, b) => a.cost - b.cost);
 
-        // const retainFraction = 0.7 / depth; // Adjust fraction dynamically
-        // const retainMin = 10;
-        // const retainMax = 25;
-        // const retainAmount = Math.min(retainMax, Math.max(retainMin, Math.ceil(allNeighbors.length * retainFraction)));
-        // currentStates = allNeighbors.slice(0, retainAmount);
-
-        // const earlyDepthThreshold = 2; // First 5 depths allow more exploration
-        // const maxRetain = depth <= earlyDepthThreshold ? 200 : 10;
-        // const retainAmount = Math.min(maxRetain, allNeighbors.length);
-        // currentStates = allNeighbors.slice(0, retainAmount);
-
-        const retainAmount = getRetainAmount(allNeighbors.length, depth); // Get the retain amount for the current depth
+        const retainAmount = getRetainAmount(allNeighbors.length, depth, config.retainConfig); // Get the retain amount for the current depth
         currentStates = allNeighbors.slice(0, retainAmount); // Retain the top states based on cost        
 
         depth++;
@@ -139,13 +130,10 @@ async function bestHalfSearch<T>(
     return ret;
 }
 
-
-
-
-
 export async function AutoCompleteSetlistPlanFracturedBeam(
     initialPlan: SetlistPlan,
     costCalcConfig: SetlistPlanCostPenalties,
+    retainConfig: SetlistPlanRetentionConfig,
     cancellationTrigger: React.MutableRefObject<boolean>,
     reportProgress: (state: AStarSearchProgressState<SetlistPlan>) => void
 ): Promise<AStarSearchProgressState<SetlistPlan>> {
@@ -157,6 +145,7 @@ export async function AutoCompleteSetlistPlanFracturedBeam(
         calculateRealCost: plan => CalculateSetlistPlanCost(plan, costCalcConfig).totalCost,
         isGoal: plan => GetSetlistPlanPointsAllocated(plan) >= totalPointsRequired,
         getNodeHashKey: plan => GetSetlistPlanKey(plan),
+        retainConfig,
     };
 
     const result = await bestHalfSearch(initialPlan, config, cancellationTrigger, reportProgress);

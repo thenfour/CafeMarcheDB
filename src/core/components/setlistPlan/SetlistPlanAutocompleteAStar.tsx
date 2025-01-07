@@ -1,5 +1,5 @@
-import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { CalculateSetlistPlanCost, SetlistPlanCostPenalties } from "./SetlistPlanUtilityComponents";
+import { SetlistPlan, SetlistPlanCell, SetlistPlanColumn, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, GetSetlistPlanStats, SetlistPlanCostPenalties } from "./SetlistPlanUtilityComponents";
 import { generateFibonacci, toSorted } from "shared/utils";
 
 const MAX_POINTS_PER_REHEARSAL = 8;
@@ -65,11 +65,106 @@ export const SetlistPlanGetNeighbors = (plan: SetlistPlan, depth: number, allowN
     return neighbors;
 };
 
-// export interface SetlistPlanAutocompleteProgressState {
-//     iteration: number;
-//     bestPlan: SetlistPlan;
-//     bestCost: number;
+
+
+
+// type SetlistSongStat = ReturnType<typeof GetSetlistPlanStats>["songStats"][0];
+// type SetlistColumnStat = ReturnType<typeof GetSetlistPlanStats>["columnStats"][0];
+
+
+// function GetPossiblePointsToAllocateForCell(songStat: SetlistSongStat, colStat: SetlistColumnStat, rowId: string, columnId: string, onlyUseIdeal: boolean): number[] {
+//     //const colStat = stats.columnStats.find(col => col.columnId === columnId)!;
+//     //const songStat = stats.songStats.find(song => song.rowId === rowId)!;
+//     const songStillNeeds = songStat.pointsRequired - songStat.totalPointsAllocated;
+//     if (songStillNeeds <= 0 || colStat.pointsAvailable <= 0) {
+//         return []; // no points can be attempted.
+//     }
+
+//     const idealAllocation = Math.min(MAX_POINTS_PER_REHEARSAL, songStillNeeds, colStat.pointsAvailable);
+
+//     // add a neighbor for each fibonacci number of points to allocate up to stillNeeded.
+//     const pointsToTry = onlyUseIdeal ?
+//         new Set<number>([idealAllocation])
+//         : new Set<number>([...FIBONACCI_SEQUENCE.filter(fib => fib < songStillNeeds), songStillNeeds, colStat.pointsAvailable]);
+//     return [...pointsToTry];
+// }
+
+// export const SetlistPlanGetNeighbors = (plan: SetlistPlan, depth: number, allowNonOptimalAllocations: boolean): SetlistPlan[] => {
+//     const planJSON = JSON.stringify(plan); // the initial plan every neighbor is based on.
+//     const planStats = GetSetlistPlanStats(plan);
+
+//     // each neighbor will be the starting plan with a single cell allocation ADDED for each row.
+
+//     // let's go row-by-row. for each row, generate a list of mutations just for that row.
+//     const rowMutationMap = new Map<string, SetlistPlanCell[][]>(); // map of rowId -> list of all possible cell allocations for that row (these will include the existing allocations from incoming plan, plus 1 additional)
+
+//     // for each row, generate a list of mutations.
+//     for (const row of plan.payload.rows) {
+//         const cellsForThisRow: SetlistPlanCell[] = plan.payload.cells.filter(cell => cell.rowId === row.rowId);
+//         const songStat = planStats.songStats.find(song => song.rowId === row.rowId)!;
+//         if (songStat.pointsStillNeeded <= 0) {
+//             continue;
+//         }
+
+//         const onlyUseIdeal = true;//depth < plan.payload.rows.length;
+
+//         // generate a list of mutations for this row. that is, all possible combinations of point value assignments for all unallocated columns.
+//         // the possible combinations of point value assignments for a single cell is returned by GetPossiblePointsToAllocateForCell.
+//         const mutations: SetlistPlanCell[][] = [];
+//         const columnsWhichHaveNoAllocationForThisRow = plan.payload.columns.filter(col => !cellsForThisRow.some(cell => cell.columnId === col.columnId));
+//         //for (const cell of cellsForThisRow) {
+//         for (const col of columnsWhichHaveNoAllocationForThisRow) {
+//             const colstat = planStats.columnStats.find(c => c.columnId === col.columnId)!;
+//             const pointsToAllocate = GetPossiblePointsToAllocateForCell(songStat, colstat, row.rowId, col.columnId, onlyUseIdeal);
+//             if (pointsToAllocate.length === 0) {
+//                 continue;
+//             }
+
+//             pointsToAllocate.forEach(points => {
+//                 mutations.push([
+//                     ...cellsForThisRow.filter(c => c.columnId !== col.columnId),
+//                     {
+//                         rowId: row.rowId,
+//                         columnId: col.columnId,
+//                         pointsAllocated: points,
+//                     }
+//                 ]);
+//             });
+
+//             // add this row's mutations to the map.
+//             rowMutationMap.set(row.rowId, mutations);
+//         }
+//     };
+
+//     // let's generate all neighbors.
+//     // each row has been mapped to a list of mutations for that row.
+//     // using ONLY ideal values, in a 12 row by 13 column grid, each row has 13 possible mutations. that's 13^12 = 179,216,039,403 possible neighbors, which is a lot.
+//     const neighbors: SetlistPlan[] = [];
+
+//     // ... this is not practical.
+
+//     return neighbors;
 // };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export interface AStarSearchProgressState<T> {
     iteration: number;

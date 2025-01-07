@@ -6,7 +6,7 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Backdrop, Button, FormControlLabel, Switch } from "@mui/material";
+import { Backdrop, Button, ButtonGroup, FormControlLabel, Switch } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
@@ -17,10 +17,10 @@ import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { AStarSearchProgressState, SetlistPlanGetNeighbors } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
-import { AutoCompleteSetlistPlanFracturedBeam } from "src/core/components/setlistPlan/SetlistPlanAutocompleteBeamSearch";
+import { AutoCompleteSetlistPlanFracturedBeam, SetlistPlanRetentionConfig } from "src/core/components/setlistPlan/SetlistPlanAutocompleteBeamSearch";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
-import { CalculateSetlistPlanCost, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
+import { AutoSelectingNumberField, CalculateSetlistPlanCost, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongsProvider } from "src/core/components/SongsContext";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
@@ -35,6 +35,154 @@ function getId(prefix: string) {
 }
 
 const AutoCompleteSetlistPlan = AutoCompleteSetlistPlanFracturedBeam;
+
+type Penalty = {
+    mul: number;
+    add: number;
+}
+
+const PenaltyEditor = (props: { value: Penalty, onChange: (value: Penalty) => void }) => {
+    const { value, onChange } = props;
+    return <>
+        <td>
+            <AutoSelectingNumberField value={value.mul} onChange={(e, val) => onChange({ ...value, mul: val || 0 })} />
+        </td><td>
+            <AutoSelectingNumberField value={value.add} onChange={(e, val) => onChange({ ...value, add: val || 0 })} />
+        </td>
+    </>;
+};
+
+const CostConfigEditor = (props: { value: SetlistPlanCostPenalties, onChange: (value: SetlistPlanCostPenalties) => void }) => {
+    const snackbar = useSnackbar();
+    const { value, onChange } = props;
+    return <div className="CostConfigEditor">
+        <h2>Cost Configuration</h2>
+        <table>
+            <tbody>
+                <tr>
+                    <PenaltyEditor value={value.underRehearsedSong} onChange={val => props.onChange({ ...props.value, underRehearsedSong: val })} />
+                    <td>Under-rehearsed song</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.maxPointsPerRehearsal} onChange={val => props.onChange({ ...props.value, maxPointsPerRehearsal: val })} />
+                    <td>Max points per rehearsal</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.overAllocatedSegment} onChange={val => props.onChange({ ...props.value, overAllocatedSegment: val })} />
+                    <td>Over-allocated segment</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.nonClusteredAllocation} onChange={val => props.onChange({ ...props.value, nonClusteredAllocation: val })} />
+                    <td>Non-clustered allocation</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.increasingAllocation} onChange={val => props.onChange({ ...props.value, increasingAllocation: val })} />
+                    <td>Increasing allocation</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.delayedRehearsal} onChange={val => props.onChange({ ...props.value, delayedRehearsal: val })} />
+                    <td>Delayed rehearsal</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.overRehearsedSong} onChange={val => props.onChange({ ...props.value, overRehearsedSong: val })} />
+                    <td>Over-rehearsed song</td>
+
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.lighterSongRehearsedBeforeHeavierSong} onChange={val => props.onChange({ ...props.value, lighterSongRehearsedBeforeHeavierSong: val })} />
+                    <td>Lighter song rehearsed before heavier song</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.segmentUnderUtilized} onChange={val => props.onChange({ ...props.value, segmentUnderUtilized: val })} />
+                    <td>Segment under-utilized</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.fragmentedSong} onChange={val => props.onChange({ ...props.value, fragmentedSong: val })} />
+                    <td>Fragmented song</td>
+                </tr>
+                <tr>
+                    <PenaltyEditor value={value.underAllocatedSegment} onChange={val => props.onChange({ ...props.value, underAllocatedSegment: val })} />
+                    <td>Under-allocated segment</td>
+                </tr>
+
+            </tbody>
+        </table>
+        <Button onClick={() => onChange(gDefaultCostCalcConfig)}>Reset to Default</Button>
+        <Button
+            onClick={() => {
+                snackbar.invokeAsync(async () => {
+                    await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+                }, "Copied to clipboard");
+            }}
+        >Copy to clipboard</Button>
+        <Button
+            onClick={() => {
+                snackbar.invokeAsync(async () => {
+                    const text = await navigator.clipboard.readText();
+                    const parsed = JSON.parse(text);
+                    props.onChange(parsed);
+                }, "Pasted from clipboard");
+            }}
+        >
+            Paste from clipboard
+        </Button>
+    </div>;
+};
+
+
+const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
+    // hard requirements.
+    underRehearsedSong: { mul: 999, add: 999 },
+    maxPointsPerRehearsal: { mul: 899, add: 899 },
+    overAllocatedSegment: { mul: 799, add: 799 },
+
+    // to be avoided, when the above have been satisfied.
+    nonClusteredAllocation: { mul: 9, add: 9 },
+    increasingAllocation: { mul: 9, add: 9 },
+
+    delayedRehearsal: { mul: 1, add: 1 },
+    overRehearsedSong: { mul: 1, add: 1 },
+    lighterSongRehearsedBeforeHeavierSong: { mul: 1, add: 1 },
+
+    // trivial or non-existent penalties
+    segmentUnderUtilized: { mul: 0, add: 0 },
+    fragmentedSong: { mul: 0, add: 0 },
+    underAllocatedSegment: { mul: 0, add: 0 },
+};
+
+const gDefaultRetainConfig: SetlistPlanRetentionConfig = {
+    factor: 0.05,
+    minAmt: 150,
+    maxAmt: 300,
+};
+
+
+const RetainConfigEditor = (props: { value: SetlistPlanRetentionConfig, onChange: (value: SetlistPlanRetentionConfig) => void }) => {
+    const { value, onChange } = props;
+    return <div className="RetainConfigEditor">
+        <h2>Retain Configuration</h2>
+
+        <table>
+            <tbody>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.minAmt} onChange={(e, v) => onChange({ ...value, minAmt: v || 0 })} /></td>
+                    <td>min amount</td>
+                </tr>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.maxAmt || null} onChange={(e, v) => onChange({ ...value, maxAmt: (v === null) ? undefined : v })} /></td>
+                    <td>max amount</td>
+                </tr>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.factor || null} onChange={(e, v) => onChange({ ...value, factor: (v === null) ? undefined : v })} /></td>
+                    <td>factor</td>
+                </tr>
+
+            </tbody>
+        </table>
+
+        <Button onClick={() => onChange({ ...gDefaultRetainConfig })}>Reset to Default</Button>
+    </div>;
+}
 
 /*
 
@@ -78,40 +226,6 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
     </div>;
 };
 
-const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
-    // nearly hard requirements.
-    underRehearsedSong: { mul: 999, add: 999 },
-    maxPointsPerRehearsal: { mul: 899, add: 899 },
-    overAllocatedSegment: { mul: 799, add: 799 },
-
-    // // to be avoided, when the above have been satisfied.
-    // nonClusteredAllocation: { mul: 63, add: 50 },
-    // increasingAllocation: { mul: 61, add: 50 },
-
-    // // nudges
-    // delayedRehearsal: { mul: 9, add: 0 },
-    // overRehearsedSong: { mul: 9, add: 0 },
-    // lighterSongRehearsedBeforeHeavierSong: { mul: 9, add: 0 },
-    // segmentUnderUtilized: { mul: 9, add: 0 },
-    // underAllocatedSegment: { mul: 9, add: 0 },
-    // fragmentedSong: { mul: 9, add: 0 },
-
-
-
-    // to be avoided, when the above have been satisfied.
-    nonClusteredAllocation: { mul: 9, add: 9 },
-    increasingAllocation: { mul: 9, add: 9 },
-
-    delayedRehearsal: { mul: 1, add: 1 },
-    overRehearsedSong: { mul: 1, add: 1 },
-    lighterSongRehearsedBeforeHeavierSong: { mul: 1, add: 1 },
-
-    // trivial or non-existent penalties
-    segmentUnderUtilized: { mul: 0, add: 0 },
-    fragmentedSong: { mul: 0, add: 0 },
-    underAllocatedSegment: { mul: 0, add: 0 },
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SetlistPlannerPageContent = () => {
     const dashboardContext = useDashboardContext();
@@ -119,11 +233,13 @@ const SetlistPlannerPageContent = () => {
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
     const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
     const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
+    const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
 
     const [autocompleteProgressState, setAutocompleteProgressState] = React.useState<AStarSearchProgressState<SetlistPlan>>();
     const cancellationTrigger = React.useRef<boolean>(false);
 
     const [costCalcConfig, setCostCalcConfig] = React.useState<SetlistPlanCostPenalties>(gDefaultCostCalcConfig);
+    const [retainConfig, setRetainConfig] = React.useState<SetlistPlanRetentionConfig>(gDefaultRetainConfig);
 
     const confirm = useConfirm();
 
@@ -154,31 +270,31 @@ const SetlistPlannerPageContent = () => {
     const docOrTempDoc = tempDoc || doc;
     const isTempDoc = !!tempDoc;
 
-    const nullMutator: SetlistPlanMutator = {
-        addColumn: () => { },
-        addDivider: () => { },
-        addSong: () => { },
-        addAndRemoveSongs: () => { },
-        clearAllocation: () => { },
-        clearColumnAllocation: () => { },
-        deleteColumn: () => { },
-        deleteRow: () => { },
-        reorderRows: () => { },
-        setCellPoints: () => { },
-        setColumnName: () => { },
-        setColumnAvailablePoints: () => { },
-        setDoc: () => { },
-        setName: () => { },
-        setDescription: () => { },
-        setRowColor: () => { },
-        setRowComment: () => { },
-        setRowPointsRequired: () => { },
-        swapColumnAllocation: () => { },
-        autoCompletePlan: () => { },
-        setAutocompleteMaxPointsPerRehearsal: () => { },
-        setNotes: () => { },
-        setColumnComment: () => { },
-    };
+    // const nullMutator: SetlistPlanMutator = {
+    //     addColumn: () => { },
+    //     addDivider: () => { },
+    //     addSong: () => { },
+    //     addAndRemoveSongs: () => { },
+    //     clearAllocation: () => { },
+    //     clearColumnAllocation: () => { },
+    //     deleteColumn: () => { },
+    //     deleteRow: () => { },
+    //     reorderRows: () => { },
+    //     setCellPoints: () => { },
+    //     setColumnName: () => { },
+    //     setColumnAvailablePoints: () => { },
+    //     setDoc: () => { },
+    //     setName: () => { },
+    //     setDescription: () => { },
+    //     setRowColor: () => { },
+    //     setRowComment: () => { },
+    //     setRowPointsRequired: () => { },
+    //     swapColumnAllocation: () => { },
+    //     autoCompletePlan: () => { },
+    //     setAutocompleteMaxPointsPerRehearsal: () => { },
+    //     setNotes: () => { },
+    //     setColumnComment: () => { },
+    // };
 
     const mutator = React.useMemo(() => {
         const ret: SetlistPlanMutator = {
@@ -196,7 +312,7 @@ const SetlistPlannerPageContent = () => {
 
                     cancellationTrigger.current = false;
                     //const sw = new Stopwatch();
-                    const result = await AutoCompleteSetlistPlan(cleanedDoc, costCalcConfig, cancellationTrigger, (progressState) => {
+                    const result = await AutoCompleteSetlistPlan(cleanedDoc, costCalcConfig, retainConfig, cancellationTrigger, (progressState) => {
                         //console.log(` iteration: ${progressState.iteration} best cost: ${progressState.bestCost}`);
                         setTempDoc(progressState.bestPlan);
                         setAutocompleteProgressState(progressState);
@@ -617,44 +733,51 @@ const SetlistPlannerPageContent = () => {
                 <SetlistPlannerColorSchemeEditor value={colorScheme} onChange={(newScheme) => setColorScheme(newScheme)} />
             }
 
-            {isTempDoc && <h1>TEMP</h1>}
+            {isTempDoc && <h1>SHOWING TEMP VALUES</h1>}
 
-            {doc && <>
-                <Button onClick={() => {
-                    const n = SetlistPlanGetNeighbors(doc, 1, false);
-                    n.sort((a, b) => {
-                        const aCost = CalculateSetlistPlanCost(a, costCalcConfig);
-                        const bCost = CalculateSetlistPlanCost(b, costCalcConfig);
-                        return aCost.totalCost - bCost.totalCost;
-                    });
-                    setNeighbors([doc, ...n]);
-                    console.log(n);
-                }}>gen neighbors (depth=1)</Button>
+            {
+                doc && <FormControlLabel control={<Switch checked={showAutocompleteConfig} onChange={(e) => setShowAutocompleteConfig(e.target.checked)} />} label="Show autocomplete configs" />}
 
-                <Button onClick={() => {
-                    const n = SetlistPlanGetNeighbors(doc, doc.payload.rows.length, true);
-                    n.sort((a, b) => {
-                        const aCost = CalculateSetlistPlanCost(a, costCalcConfig);
-                        const bCost = CalculateSetlistPlanCost(b, costCalcConfig);
-                        return aCost.totalCost - bCost.totalCost;
-                    });
-                    setNeighbors([doc, ...n]);
-                    console.log(n);
-                }}>gen neighbors (depth=N)</Button>
-            </>
+            {showAutocompleteConfig && doc && <div>
+                <ButtonGroup>
+                    <Button onClick={() => {
+                        const n = SetlistPlanGetNeighbors(doc, 1, false);
+                        n.sort((a, b) => {
+                            const aCost = CalculateSetlistPlanCost(a, costCalcConfig);
+                            const bCost = CalculateSetlistPlanCost(b, costCalcConfig);
+                            return aCost.totalCost - bCost.totalCost;
+                        });
+                        setNeighbors([doc, ...n]);
+                        console.log(n);
+                    }}>gen neighbors (depth=1)</Button>
+
+                    <Button onClick={() => {
+                        const n = SetlistPlanGetNeighbors(doc, doc.payload.rows.length, true);
+                        n.sort((a, b) => {
+                            const aCost = CalculateSetlistPlanCost(a, costCalcConfig);
+                            const bCost = CalculateSetlistPlanCost(b, costCalcConfig);
+                            return aCost.totalCost - bCost.totalCost;
+                        });
+                        setNeighbors([doc, ...n]);
+                        console.log(n);
+                    }}>gen neighbors (depth=N)</Button>
+                    <Button onClick={() => setNeighbors([])}>clear neighbors</Button>
+                </ButtonGroup>
+                <ul>
+                    {neighbors.map((neighbor, index) => {
+                        const cost = CalculateSetlistPlanCost(neighbor, costCalcConfig);
+                        return <li className="interactable" key={neighbor.id} onClick={() => {
+                            setDoc(neighbor);
+                        }}>#{index}: {neighbor.name} cost:{cost.totalCost} key:{GetSetlistPlanKey(neighbor).substring(0, 100)}</li>;
+                    })}
+                </ul>
+            </div>
             }
-            <ul>
-                {neighbors.map((neighbor, index) => {
-                    const cost = CalculateSetlistPlanCost(neighbor, costCalcConfig);
-                    return <li className="interactable" key={neighbor.id} onClick={() => {
-                        setDoc(neighbor);
-                    }}>#{index}: {neighbor.name} cost:{cost.totalCost} key:{GetSetlistPlanKey(neighbor).substring(0, 100)}</li>;
-                })}
-            </ul>
+
+            {showAutocompleteConfig && doc && <CostConfigEditor value={costCalcConfig} onChange={setCostCalcConfig} />}
+            {showAutocompleteConfig && doc && <RetainConfigEditor value={retainConfig} onChange={setRetainConfig} />}
 
         </div>
-
-
 
         <Backdrop
             open={!!autocompleteProgressState}
@@ -667,9 +790,10 @@ const SetlistPlannerPageContent = () => {
                 <div>Iteration: {autocompleteProgressState?.iteration.toLocaleString()}</div>
                 <div>Best Cost: {autocompleteProgressState?.bestCost.toFixed(2)}</div>
                 <div>Depth: {autocompleteProgressState?.depth}</div>
+                <div>Duration: {autocompleteProgressState?.durationSeconds.toFixed(2)}</div>
             </div>
         </Backdrop>
-    </div>
+    </div >
 };
 
 const SetlistPlannerPage: BlitzPage = (props) => {
