@@ -426,12 +426,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
         <Markdown3Editor
             beginInPreview={true}
-            //markdown={docOrTempDoc.payload.notes || ""}
             value={docOrTempDoc.payload.notes || ""}
             onChange={(newMarkdown) => {
                 props.mutator.setNotes(newMarkdown);
             }}
-
         />
 
         <table style={{ fontFamily: "monospace" }}>

@@ -11,7 +11,6 @@ import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
-import { Stopwatch } from "shared/rootroot";
 import { getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
@@ -110,14 +109,14 @@ const CostConfigEditor = (props: { value: SetlistPlanCostPenalties, onChange: (v
         <Button onClick={() => onChange(gDefaultCostCalcConfig)}>Reset to Default</Button>
         <Button
             onClick={() => {
-                snackbar.invokeAsync(async () => {
+                void snackbar.invokeAsync(async () => {
                     await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
                 }, "Copied to clipboard");
             }}
         >Copy to clipboard</Button>
         <Button
             onClick={() => {
-                snackbar.invokeAsync(async () => {
+                void snackbar.invokeAsync(async () => {
                     const text = await navigator.clipboard.readText();
                     const parsed = JSON.parse(text);
                     props.onChange(parsed);
