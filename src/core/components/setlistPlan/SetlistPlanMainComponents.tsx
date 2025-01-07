@@ -148,7 +148,8 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
 
     return <div className="tr divider">
         <div className="td songName">
-            <div className="dragHandle draggable">
+            <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
+                #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")}
                 ☰
             </div>
 
@@ -377,7 +378,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songLength">
                 </div>
                 {docOrTempDoc.payload.columns.map((segment, index) => {
-                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0 };
+                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
                     const balanceColor = segStats.balance >= 0 ?
                         LerpColor(segStats.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
                         : LerpColor(segStats.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
@@ -405,8 +406,8 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </div>
                 {docOrTempDoc.payload.columns.map((segment, index) => {
                     //const cellsForThisColumn = docOrTempDoc.payload.cells.filter((x) => x.columnId === segment.columnId);
-                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
-                    const col = LerpColor(segStats?.countOfSongsAllocated, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
+                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
+                    const col = LerpColor(segStats.countOfSongsAllocated, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
                     return <Tooltip key={index} disableInteractive title={`Songs to rehearse in ${segment.name}`}>
                         <div key={index} className="td segment numberCell" style={{ backgroundColor: col }}>
                             <NumberField inert value={segStats.countOfSongsAllocated} />
@@ -422,6 +423,16 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             </div>
 
         </div >
+
+        <Markdown3Editor
+            beginInPreview={true}
+            //markdown={docOrTempDoc.payload.notes || ""}
+            value={docOrTempDoc.payload.notes || ""}
+            onChange={(newMarkdown) => {
+                props.mutator.setNotes(newMarkdown);
+            }}
+
+        />
 
         <table style={{ fontFamily: "monospace" }}>
             <tr>
@@ -766,6 +777,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                     props.mutator.setColumnComment(segment.columnId, newMarkdown);
                                 }}
                                 value={segment.commentMarkdown || ""}
+                                minHeight={75}
                             //beginInPreview={true}
                             />
                             <Button startIcon={gIconMap.Delete()} onClick={() => {
