@@ -245,6 +245,9 @@ const SetlistPlannerPageContent = () => {
 
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
     const [doc, setDoc] = React.useState<SetlistPlan | null>(null);
+    const [undoStack, setUndoStack] = React.useState<SetlistPlan[]>([]);
+    const [redoStack, setRedoStack] = React.useState<SetlistPlan[]>([]);
+
     const [tempDoc, setTempDoc] = React.useState<SetlistPlan>();
     const [modified, setModified] = React.useState(false);
 
@@ -262,6 +265,11 @@ const SetlistPlannerPageContent = () => {
     };
 
     const setDocWrapper = (newDoc: SetlistPlan, setModifiedValue: boolean = true) => {
+        if (doc) {
+            const maxUndoStack = 99;
+            setUndoStack([...undoStack, doc].slice(-maxUndoStack));
+            setRedoStack([]);
+        }
         setNeighbors([]);
         setDoc(cleanCells(newDoc));
         setModified(setModifiedValue);
@@ -298,6 +306,28 @@ const SetlistPlannerPageContent = () => {
 
     const mutator = React.useMemo(() => {
         const ret: SetlistPlanMutator = {
+            undo: () => {
+                if (doc) {
+                    const last = undoStack.pop();
+                    if (last) {
+                        setRedoStack([...redoStack, doc]);
+                        setDoc(last);
+                        setNeighbors([]);
+                        setModified(true);
+                    }
+                }
+            },
+            redo: () => {
+                if (doc) {
+                    const last = redoStack.pop();
+                    if (last) {
+                        setUndoStack([...undoStack, doc]);
+                        setDoc(last);
+                        setNeighbors([]);
+                        setModified(true);
+                    }
+                }
+            },
             autoCompletePlan: async () => {
                 if (doc) {
                     // remove all 0 allocation cells.
@@ -682,6 +712,8 @@ const SetlistPlannerPageContent = () => {
     return <div className="SetlistPlannerPageContent">
         {doc ? <SetlistPlannerDocumentEditor
             initialValue={doc}
+            canUndo={undoStack.length > 0}
+            canRedo={redoStack.length > 0}
             tempValue={tempDoc}
             costCalcConfig={costCalcConfig}
             mutator={mutator}

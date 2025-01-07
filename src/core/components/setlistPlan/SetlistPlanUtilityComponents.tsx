@@ -19,6 +19,9 @@ export interface SetlistPlanMutator {
     autoCompletePlan: () => void;
     clearAllocation: () => void;
 
+    undo: () => void;
+    redo: () => void;
+
     setName: (name: string) => void;
     setDescription: (description: string) => void;
     setAutocompleteMaxPointsPerRehearsal: (maxPoints: number) => void;

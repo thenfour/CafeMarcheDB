@@ -608,6 +608,8 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerDocumentEditorProps = {
     isModified: boolean;
+    canUndo: boolean;
+    canRedo: boolean;
     initialValue: SetlistPlan;
     tempValue: SetlistPlan | undefined;
     costCalcConfig: SetlistPlanCostPenalties;
@@ -678,6 +680,18 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     }}
                     disabled={isTempDoc}
                 >Clear allocation</Button>
+                <Button
+                    onClick={() => {
+                        props.mutator.undo();
+                    }}
+                    disabled={!props.canUndo}
+                >Undo</Button>
+                <Button
+                    disabled={!props.canRedo}
+                    onClick={() => {
+                        props.mutator.redo();
+                    }}
+                >Redo</Button>
             </ButtonGroup>
             <MainDropdownMenu doc={doc} mutator={props.mutator} />
             <InspectObject src={docOrTempDoc} label="doc" />
@@ -814,5 +828,5 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 />
             </CMTab>
         </CMTabPanel>
-    </div>
+    </div >
 };
