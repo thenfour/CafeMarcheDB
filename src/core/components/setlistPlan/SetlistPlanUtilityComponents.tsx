@@ -73,6 +73,9 @@ export interface SetlistPlanStats {
     minCellAllocatedPoints: number,
     maxCellAllocatedPoints: number,
 
+    maxSongsInSegment: number;
+    totalSongSegmentCells: number;
+
     songStats: {
         rowId: string;
         songId: number;
@@ -84,6 +87,7 @@ export interface SetlistPlanStats {
         columnId: string;
         totalPointsAllocatedToSongs: number;
         balance: number;
+        countOfSongsAllocated: number;
     }[];
 };
 
@@ -115,6 +119,7 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
             columnId: segment.columnId,
             totalPointsAllocatedToSongs: segmentMeasureUsed,
             balance,
+            countOfSongsAllocated: doc.payload.cells.filter((x) => x.columnId === segment.columnId && !!x.pointsAllocated).length,
         };
     });
 
@@ -196,6 +201,10 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
         return acc + (song.lengthSeconds || 0);
     }, 0);
 
+    const maxSongsInSegment = segmentStats.reduce((acc, x) => {
+        return Math.max(x.countOfSongsAllocated, acc);
+    }, 0);
+
     return {
         totalSongLengthSeconds,
         totalPointsRequired,
@@ -209,6 +218,9 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
 
         maxCellAllocatedPoints: maxSegmentPointsAllocated,
         minCellAllocatedPoints: minSegmentPointsAllocated,
+
+        maxSongsInSegment,
+        totalSongSegmentCells: doc.payload.cells.filter(cell => !!cell.pointsAllocated).length,
 
         minSegmentPointsAvailable,
         maxSegmentPointsAvailable,

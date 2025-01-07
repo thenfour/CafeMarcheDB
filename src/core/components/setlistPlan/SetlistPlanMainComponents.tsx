@@ -398,6 +398,29 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </Tooltip>
                 <div className="td balance"></div>
             </div>
+
+            <div className="tr footer">
+                <div className="td songName"></div>
+                <div className="td songLength">
+                </div>
+                {docOrTempDoc.payload.columns.map((segment, index) => {
+                    //const cellsForThisColumn = docOrTempDoc.payload.cells.filter((x) => x.columnId === segment.columnId);
+                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId)!;
+                    const col = LerpColor(segStats?.countOfSongsAllocated, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
+                    return <Tooltip key={index} disableInteractive title={`Songs to rehearse in ${segment.name}`}>
+                        <div key={index} className="td segment numberCell" style={{ backgroundColor: col }}>
+                            <NumberField inert value={segStats.countOfSongsAllocated} />
+                        </div>
+                    </Tooltip>;
+                })}
+                <Tooltip disableInteractive title={`total song-rehearsal things ${0}`}>
+                    <div className="td rehearsalTime" style={{ backgroundColor: props.colorScheme.songCountPerSegment[1] }}>
+                        <NumberField inert value={props.stats.totalSongSegmentCells} />
+                    </div>
+                </Tooltip>
+                <div className="td balance"></div>
+            </div>
+
         </div >
 
         <table style={{ fontFamily: "monospace" }}>
@@ -638,7 +661,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
 
     React.useEffect(() => {
         setStats(CalculateSetlistPlanStats(docOrTempDoc, allSongs));
-    }, [doc]);
+    }, [docOrTempDoc]);
 
     return <div className="SetlistPlannerDocumentEditor">
         <div className="toolbar">

@@ -20,6 +20,7 @@ export interface SetlistPlannerColorScheme {
     segmentBalancePositive: Gradient,
     segmentBalanceNegative: Gradient,
     segmentPointsAvailable: Gradient,
+    songCountPerSegment: Gradient,
     totalSongBalancePositive: string,
     totalSongBalanceNegative: string,
 };
@@ -51,6 +52,8 @@ export const gSetlistPlannerDefaultColorScheme: SetlistPlannerColorScheme = {
 
     // Light purple -> purple
     segmentPointsAvailable: ["#fef", "#b8c"],
+
+    songCountPerSegment: ["#fff", "#bbb"],
 
     // Solid greens and reds
     totalSongBalancePositive: "#4caf50",
