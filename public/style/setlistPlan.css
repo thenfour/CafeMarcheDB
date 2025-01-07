@@ -269,3 +269,13 @@
 .SetlistPlannerMatrix .footerContainer {
     margin-bottom: 30px;
 }
+
+.SetlistPlannerAutocompleteProgress {
+    padding: 30px;
+    background-color: white;
+    border: 7px solid #84f;
+    font-family: monospace;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 5px;
+}

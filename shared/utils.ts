@@ -1,11 +1,24 @@
 import { Ctx } from "@blitzjs/next";
-import { randomUUID } from "crypto";
-import db, { Prisma, PrismaClient } from "db"
-import { Size, TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { crc32 } from "@foxglove/crc";
+import { randomUUID } from "crypto";
+import db from "db";
+import { Size, TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
+
+
+// Pre-generate Fibonacci numbers up to a certain max (adjust as needed)
+export const generateFibonacci = (max: number): number[] => {
+    const fibs = [1, 2];
+    while (true) {
+        const next = fibs[fibs.length - 2]! + fibs[fibs.length - 1]!;
+        if (next > max) break;
+        fibs.push(next);
+    }
+    return fibs;
+};
+
 
 // allow serializing bigint to json.
 // https://github.com/GoogleChromeLabs/jsbi/issues/30

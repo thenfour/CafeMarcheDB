@@ -38,6 +38,11 @@ export const ZSetlistPlanPayload = z.object({
     rows: z.array(ZSetlistPlanRow),
     columns: z.array(ZSetlistPlanColumn),
     cells: z.array(ZSetlistPlanCell),
+    notes: z.string().optional(),
+    autoCompleteMaxPointsPerRehearsal: z.number().optional(),
+    autoCompleteIterations: z.number().optional(),
+    autoCompleteDepth: z.number().optional(),
+    autoCompleteDurationSeconds: z.number().optional(),
 });
 
 // corresponds to the payloadJson field in the db

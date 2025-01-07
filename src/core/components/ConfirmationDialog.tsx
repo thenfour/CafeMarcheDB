@@ -59,9 +59,6 @@ export const ConfirmProvider: React.FC<ConfirmProviderProps> = ({ children }) =>
     );
 };
 
-
-
-
 interface ConfirmDialogProps {
     open: boolean;
     title?: React.ReactNode;
@@ -75,17 +72,24 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     description = 'Are you sure?',
     onClose,
 }) => {
-    // in order to allow things like tables in the description, careful not to wrap in a <p> accidentally.
     let descElement = description;
-    if (typeof (description) === 'string') {
+    if (typeof description === 'string') {
         descElement = <DialogContentText>{description}</DialogContentText>;
     }
+
     return (
-        <Dialog open={open} onClose={() => onClose(false)}>
+        <Dialog
+            open={open}
+            onClose={() => onClose(false)}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onClose(true);
+                }
+            }}
+        >
             <DialogTitle>{title}</DialogTitle>
-            <DialogContent>
-                {descElement}
-            </DialogContent>
+            <DialogContent>{descElement}</DialogContent>
             <DialogActions>
                 <Button onClick={() => onClose(false)} color="primary">
                     Cancel
