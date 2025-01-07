@@ -86,6 +86,9 @@ export enum Permission {
 
     // ******************** menu customization
     customize_menu = "customize_menu",
+
+    // ******************** menu customization
+    setlist_planner_access = "setlist_planner_access",
 };
 
 export const gPermissionOrdered: (keyof typeof Permission)[] = [
@@ -131,6 +134,8 @@ export const gPermissionOrdered: (keyof typeof Permission)[] = [
     Permission.view_workflow_defs,
     Permission.edit_workflow_defs,
     Permission.admin_workflow_defs,
+
+    Permission.setlist_planner_access,
 ];
 
 // these are granted automatically to public.

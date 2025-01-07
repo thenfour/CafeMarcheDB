@@ -6,7 +6,7 @@ import { z } from "zod";
 import * as mutationCore from "../server/db3mutationCore";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.sysadmin),
+    resolver.authorize(Permission.setlist_planner_access),
     resolver.zod(z.object({ id: z.number() })),
     async (args, ctx: AuthenticatedCtx): Promise<void> => {
 

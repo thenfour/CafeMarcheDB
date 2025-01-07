@@ -6,7 +6,7 @@ import * as mutationCore from "../server/db3mutationCore";
 import { DeserializeSetlistPlan, SetlistPlan, ZSetlistPlan } from "../shared/setlistPlanTypes";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.sysadmin),
+    resolver.authorize(Permission.setlist_planner_access),
     resolver.zod(ZSetlistPlan),
     async (args, ctx: AuthenticatedCtx): Promise<SetlistPlan> => {
 
