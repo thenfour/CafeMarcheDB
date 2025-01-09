@@ -15,6 +15,7 @@ import * as db3 from "../db3";
 import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
+import { z } from "zod";
 
 var path = require('path');
 var fs = require('fs');
@@ -111,16 +112,47 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
     }
 };
 
-type EventSegmentChangeHookModelType = Prisma.EventSegmentUserResponseGetPayload<{
-    select: {
-        id: true,
-        eventSegment: {
-            select: {
-                eventId: true,
-            }
-        }
+
+
+// it's not clear to me when this actually fires.
+// type EventSegmentChangeHookModelType = Prisma.EventSegmentUserResponseGetPayload<{
+//     select: {
+//         id: true,
+//         eventSegment: {
+//             select: {
+//                 eventId: true,
+//             }
+//         }
+//     }
+// }>;
+const ZEventSegmentChangeHookModelType = z.object(
+    {
+        id: z.number(),
+        eventSegment: z.object({
+            eventId: z.number(),
+        }),
     }
-}>;
+);
+type EventSegmentChangeHookModelType = z.infer<typeof ZEventSegmentChangeHookModelType>;
+
+/* the actual model i receive, from the edit response dialog, is:
+{
+  id: 19337,
+  userId: 66,
+  eventSegmentId: 324,
+  attendanceId: 2,
+}
+
+*/
+const ZEventSegmentChangeHookModelType2 = z.object(
+    {
+        id: z.number(),
+        userId: z.number(),
+        eventSegmentId: z.number(),
+        attendanceId: z.number(),
+    }
+);
+type EventSegmentChangeHookModelType2 = z.infer<typeof ZEventSegmentChangeHookModelType2>;
 
 export const CallMutateEventHooks = async (args: {
     tableNameOrSpecialMutationKey: string,
@@ -142,7 +174,16 @@ export const CallMutateEventHooks = async (args: {
             eventIdToUpdate = (args.model as Prisma.EventSegmentGetPayload<{ select: { id: true, eventId: true } }>).eventId;
             break;
         case "eventsegmentuserresponse":
-            eventIdToUpdate = (args.model as EventSegmentChangeHookModelType).eventSegment.eventId;
+            if (ZEventSegmentChangeHookModelType2.safeParse(args.model).success) {
+                const segId = (args.model as EventSegmentChangeHookModelType2).eventSegmentId;
+                const eventIdHopefully = (await transactionalDb.eventSegment.findFirst({ where: { id: segId } }))?.eventId;
+                if (!eventIdHopefully) {
+                    throw new Error("event segment not found");
+                }
+                eventIdToUpdate = eventIdHopefully;
+            } else if (ZEventSegmentChangeHookModelType.safeParse(args.model).success) {
+                eventIdToUpdate = (args.model as EventSegmentChangeHookModelType).eventSegment.eventId;
+            }
             break;
         case "saveEventWorkflowModel":
         case "mutation:copyeventsegmentresponses":

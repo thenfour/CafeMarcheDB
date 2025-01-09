@@ -136,17 +136,17 @@ const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
     overAllocatedSegment: { mul: 799, add: 799 },
 
     // to be avoided, when the above have been satisfied.
-    nonClusteredAllocation: { mul: 9, add: 9 },
+    nonClusteredAllocation: { mul: 0, add: 0 }, // this is not good; see #363. there are good reasons to add spaces between rehearsals, and it COUNTERS the delayedRehearsal penalty.
     increasingAllocation: { mul: 9, add: 9 },
 
-    delayedRehearsal: { mul: 1, add: 1 },
+    delayedRehearsal: { mul: 5, add: 5 },
+    fragmentedSong: { mul: 5, add: 5 }, // this is necessary otherwise [1,1,1,1] is the same as [4] which is obviously not correct
     overRehearsedSong: { mul: 1, add: 1 },
-    lighterSongRehearsedBeforeHeavierSong: { mul: 1, add: 1 },
+    lighterSongRehearsedBeforeHeavierSong: { mul: 0, add: 0 },
 
     // trivial or non-existent penalties
-    segmentUnderUtilized: { mul: 0, add: 0 },
-    fragmentedSong: { mul: 0, add: 0 },
-    underAllocatedSegment: { mul: 0, add: 0 },
+    segmentUnderUtilized: { mul: 0, add: 1 },
+    underAllocatedSegment: { mul: 0, add: 1 },
 };
 
 const gDefaultRetainConfig: SetlistPlanRetentionConfig = {

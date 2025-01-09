@@ -408,6 +408,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const mutationToken = API.events.updateUserEventAttendance.useToken();
     const dashboardContext = React.useContext(DashboardContext);
+    const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
 
     const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventVerbose_EventUserResponse | null>(() => {
         return (props.responseInfo.getEventResponseForUser(props.user, dashboardContext, props.userMap)?.response) || null;
@@ -496,6 +497,9 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         setEventSegmentResponseValues(newval);
     };
 
+    const [cancelledSegments, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(props.event.segments);
+    const segmentsToShow = showCancelledSegments ? props.event.segments : uncancelledSegments;
+
     return <ReactiveInputDialog onCancel={props.onCancel}>
 
         <DialogTitle>
@@ -512,14 +516,26 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                 {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
                 {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
 
+                {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(Permission.manage_events) &&
+                    <FormControlLabel
+                        control={
+                            <Switch checked={showCancelledSegments} onChange={e => {
+                                setShowCancelledSegments(!showCancelledSegments);
+                            }} />
+                        }
+                        label="Show cancelled segments?"
+                    />
+                }
+
                 {
-                    props.event.segments.map(segment => {
+                    segmentsToShow.map(segment => {
                         const validationResult = eventSegmentValidationResults[segment.id]!;
                         const response = eventSegmentResponseValues[segment.id]!;
+                        const augmentedResponse = { ...response, attendance: dashboardContext.eventAttendance.getById(response.attendanceId) };
                         return <div key={segment.id} className='editSegmentResponse segment'>
                             <div>
                                 <div className='segmentName'>{segment.name}</div>
-                                {eventSegmentResponseTableSpec.renderEditor("attendance", response, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), clientIntention, false)}
+                                {eventSegmentResponseTableSpec.renderEditor("attendance", augmentedResponse, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), clientIntention, false)}
                             </div>
                         </div>;
                     })
@@ -1352,7 +1368,9 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
         props.setSelectedTab(newValue);
     };
 
-    const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => {
+    const [_, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(event.segments);
+
+    const segmentResponseCounts = !eventData.responseInfo ? [] : uncancelledSegments.map(seg => {
         return eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => {
             const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
             return acc + ((((att?.strength || 0) > 50) ? 1 : 0))
