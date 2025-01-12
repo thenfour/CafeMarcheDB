@@ -10,7 +10,7 @@ import { getHashedColor, IsNullOrWhitespace, StringToEnumValue } from "shared/ut
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { getURIForUser } from "../db3/clientAPILL";
+import { getURIForSong, getURIForUser } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import getUserCredits from "../db3/queries/getUserCredits";
 import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
@@ -21,6 +21,7 @@ import { GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
+import { SongsProvider, useSongsContext } from "./SongsContext";
 
 
 
@@ -226,10 +227,27 @@ type UserCreditsTabContentProps = {
 };
 export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const dashboardContext = useDashboardContext();
+    const allSongs = useSongsContext().songs;
     const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id });
 
     return <div>
-        <AdminInspectObject src={qr} label="results" />
+        <table className="songCreditTable">
+            <thead>
+                <tr>
+                    <th>Song</th>
+                    <th>Credit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {qr.songCredits.map(sc => {
+                    const song = allSongs.find(s => s.id === sc.songId)!;
+                    return <tr>
+                        <td><a href={getURIForSong(song || { id: sc.songId, name: `#${sc.songId}` })} target="_blank" rel="noreferrer">{song?.name || sc.songId}</a></td>
+                        <td>{dashboardContext.songCreditType.getById(sc.typeId)?.text}</td>
+                    </tr>
+                })}
+            </tbody>
+        </table>
     </div>;
 };
 
@@ -335,7 +353,9 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     summaryIcon={gIconMap.Comment()}
                 >
                     <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                        <UserCreditsTabContent user={user} />
+                        <SongsProvider>
+                            <UserCreditsTabContent user={user} />
+                        </SongsProvider>
                     </Suspense>
                 </CMTab>
             </CMTabPanel>

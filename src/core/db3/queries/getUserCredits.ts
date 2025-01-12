@@ -2,6 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
+import db, { Prisma } from "db";
 
 // type UserGetCreditsQueryResult = {
 //     songs: UserGetCreditsQueryResult_Song[];
@@ -11,11 +12,20 @@ import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 // };
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_events_nonpublic),
+    resolver.authorize(Permission.manage_users), // ?
     resolver.zod(ZGetUserEventAttendanceArgrs),
-    async (args, ctx: AuthenticatedCtx): Promise<null> => {
+    async (args, ctx: AuthenticatedCtx) => {
         try {
-            return null;
+
+            const songCredits = await db.songCredit.findMany({
+                where: {
+                    userId: args.userId,
+                },
+            });
+
+            return {
+                songCredits,
+            };
         } catch (e) {
             console.error(e);
             throw (e);

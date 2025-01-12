@@ -12,6 +12,7 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
+import { getURIForUser } from "src/core/db3/clientAPILL";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
@@ -64,9 +65,9 @@ const MainContent = () => {
                         size="small"
                         tooltip={`${user.name} #${user.id}`}
                     >
-                        <span style={{ color: getHashedColor(user.id.toString()) }}>
+                        <a href={getURIForUser(user)} target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.id.toString()) }}>
                             {user.name}
-                        </span>
+                        </a>
                     </CMChip>;
                 }
             }),
