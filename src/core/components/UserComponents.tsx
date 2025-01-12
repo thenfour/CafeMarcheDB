@@ -241,7 +241,7 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
             <tbody>
                 {qr.songCredits.map(sc => {
                     const song = allSongs.find(s => s.id === sc.songId)!;
-                    return <tr>
+                    return <tr key={sc.id}>
                         <td><a href={getURIForSong(song || { id: sc.songId, name: `#${sc.songId}` })} target="_blank" rel="noreferrer">{song?.name || sc.songId}</a></td>
                         <td>{dashboardContext.songCreditType.getById(sc.typeId)?.text}</td>
                     </tr>

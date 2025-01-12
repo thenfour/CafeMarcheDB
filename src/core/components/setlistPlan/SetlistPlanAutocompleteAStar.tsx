@@ -9,10 +9,10 @@
 // but yea this feels more like a knapsack problem than a pathfinding search; 
 
 //import { generateFibonacci } from "shared/utils";
-import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CostResult, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanStats } from "./SetlistPlanUtilities";
-import * as db3 from "src/core/db3/db3";
 import { Stopwatch } from "shared/rootroot";
+import * as db3 from "src/core/db3/db3";
+import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CostResult, SetlistPlanCostPenalties, SetlistPlanStats } from "./SetlistPlanUtilities";
 
 //const MAX_POINTS_PER_REHEARSAL = 8;
 

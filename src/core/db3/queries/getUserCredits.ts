@@ -1,8 +1,8 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
+import db from "db";
 import { Permission } from "shared/permissions";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
-import db, { Prisma } from "db";
 
 // type UserGetCreditsQueryResult = {
 //     songs: UserGetCreditsQueryResult_Song[];

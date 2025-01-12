@@ -1,9 +1,9 @@
 
 
 import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ComposedChart, YAxis, XAxis, CartesianGrid, Line, Bar, ResponsiveContainer, BarChart } from 'recharts';
+import { Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, Tooltip, XAxis, YAxis } from 'recharts';
+import { getHashedColor } from 'shared/utils';
 import { SetlistPlan } from 'src/core/db3/shared/setlistPlanTypes';
-import { getHashedColor, IsNullOrWhitespace, toSorted } from 'shared/utils';
 import { useSongsContext } from '../SongsContext';
 import { SetlistPlanStats } from './SetlistPlanUtilities';
 
@@ -155,7 +155,7 @@ const SongStackedBars: React.FC<SetlistPlannerVisualizationsProps> = (props) => 
 
     return <table>
         {songs.map(song => {
-            return <tr>
+            return <tr key={song.song.id}>
                 <td>{song.name}</td>
                 <td>
                     <div style={{ display: "flex", color: "#fff", fontFamily: "monospace" }}>
@@ -163,6 +163,7 @@ const SongStackedBars: React.FC<SetlistPlannerVisualizationsProps> = (props) => 
                             const isEmpty = columnValue.cell.pointsAllocated === 0;
                             const isInBounds = columnIndex >= song.firstAllocatedColumnIndex! && columnIndex <= song.lastAllocatedColumnIndex!;
                             return <div
+                                key={columnValue.column.columnId}
                                 style={{
                                     backgroundColor: isInBounds ? (isEmpty ? "#fa0" : "#8cc4") : "transparent",//getHashedColor(columnValue.column.name),
                                     width: 25,

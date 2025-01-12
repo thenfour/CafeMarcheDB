@@ -1,6 +1,6 @@
 
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { generateFibonacci, toSorted } from "shared/utils";
+import { generateFibonacci } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
 
