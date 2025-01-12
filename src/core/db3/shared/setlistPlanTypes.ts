@@ -29,6 +29,7 @@ export const ZSetlistPlanCell = z.object({
     rowId: z.string(),
     pointsAllocated: z.number().optional(),
     commentMarkdown: z.string().optional(),
+    autoFilled: z.boolean().optional(),
 });
 
 export type SetlistPlanCell = z.infer<typeof ZSetlistPlanCell>;
@@ -45,8 +46,8 @@ export const ZSetlistPlanPayload = z.object({
     autoCompleteDurationSeconds: z.number().optional(),
 
     // for getNeighbors' behavior, we need to track where autocomplete has been.
-    emptyTopRowIndex: z.number().optional(),
-    emptyLeftRowIndex: z.number().optional(),
+    //emptyTopRowIndex: z.number().optional(),
+    //emptyLeftRowIndex: z.number().optional(),
 });
 
 // corresponds to the payloadJson field in the db

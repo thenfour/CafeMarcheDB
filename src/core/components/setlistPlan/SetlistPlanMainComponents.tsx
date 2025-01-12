@@ -27,8 +27,9 @@ import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, NumberField, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlannerLed, SetlistPlanStats } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
+import { NumberField, SetlistPlannerLed } from "./SetlistPlanUtilityComponents";
 
 
 
@@ -121,8 +122,8 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             })
         }
         <Tooltip title={`Total points this song will be rehearsed`} disableInteractive>
-            <div className="td rehearsalTime numberCell" style={{ backgroundColor: LerpColor(songStats.totalRehearsalPoints, props.stats.minSongTotalPoints, props.stats.maxSongTotalPoints, props.colorScheme.songTotalPoints) }}>
-                <NumberField inert value={songStats.totalRehearsalPoints} />
+            <div className="td rehearsalTime numberCell" style={{ backgroundColor: LerpColor(songStats.totalPointsAllocated, props.stats.minSongTotalPoints, props.stats.maxSongTotalPoints, props.colorScheme.songTotalPoints) }}>
+                <NumberField inert value={songStats.totalPointsAllocated} />
             </div>
         </Tooltip>
         <Tooltip title={`Rehearsal points remaining to finish rehearsing this song. ${(songStats.balance || 0) >= 0 ? `You have allocated enough time to rehearse this song` : `You need to allocate ${-(songStats.balance || 0)} more points to finish rehearsing ${song.name}`}`} disableInteractive>
@@ -279,7 +280,7 @@ type SetlistPlannerMatrixProps = {
 };
 
 const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
-
+    const allSongs = useSongsContext().songs;
     const [showCostBreakdown, setShowCostBreakdown] = React.useState(false);
 
     const docOrTempDoc = props.tempDoc || props.doc;
@@ -289,7 +290,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         props.mutator.reorderRows(args);
     };
 
-    const costResult = CalculateSetlistPlanCost(docOrTempDoc, props.costCalcConfig);
+    const costResult = CalculateSetlistPlanCost({
+        plan: docOrTempDoc,
+        stats: props.stats,
+    }, props.costCalcConfig, allSongs);
     const costResultBreakdown = costResult.breakdown
         .sort((a, b) => b.cost - a.cost)
         .map((x) => ({ ...x, cost: x.cost.toFixed(2) }));
@@ -353,18 +357,19 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     </div>
                 </Tooltip>
                 {/* </Tooltip> */}
-                {docOrTempDoc.payload.columns.map((segment, index) => {
-                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0 };
-                    const bgColor = LerpColor(segStats.totalPointsAllocatedToSongs, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, props.colorScheme.segmentPoints);
-                    return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segment.name}`}>
-                        <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
-                            <NumberField inert value={segStats.totalPointsAllocatedToSongs} />
-                        </div>
-                    </Tooltip>;
-                })}
+                {//docOrTempDoc.payload.columns.map((segment, index) => {
+                    props.stats.segmentStats.map((segStat, index) => {
+                        //const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0 };
+                        const bgColor = LerpColor(segStat.totalPointsAllocated, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, props.colorScheme.segmentPoints);
+                        return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segStat.segment.name}`}>
+                            <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
+                                <NumberField inert value={segStat.totalPointsAllocated} />
+                            </div>
+                        </Tooltip>;
+                    })}
                 <Tooltip disableInteractive title={`total rehearsal points allocated for the whole plan`}>
                     <div className="td rehearsalTime numberCell" style={{ backgroundColor: props.colorScheme.songTotalPoints[1] }}>
-                        <NumberField inert value={props.stats.totalPointsUsed} />
+                        <NumberField inert value={props.stats.totalPointsAllocated} />
                     </div>
                 </Tooltip>
                 <Tooltip disableInteractive title={`total song balance for the whole plan. ${props.stats.totalPlanSongBalance >= 0 ? `you have allocated enough to rehearse all songs fully` : `you need to allocate ${Math.abs(props.stats.totalPlanSongBalance)} more points to rehearse all songs`}`}>
@@ -378,17 +383,18 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songName"></div>
                 <div className="td songLength">
                 </div>
-                {docOrTempDoc.payload.columns.map((segment, index) => {
-                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
-                    const balanceColor = segStats.balance >= 0 ?
-                        LerpColor(segStats.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
-                        : LerpColor(segStats.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
-                    return <Tooltip key={index} disableInteractive title={`Rehearsal points left unallocated ${segment.name}`}>
-                        <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
-                            <NumberField inert value={segStats.balance} showPositiveSign />
-                        </div>
-                    </Tooltip>;
-                })}
+                {//docOrTempDoc.payload.columns.map((segment, index) => {
+                    props.stats.segmentStats.map((segStat, index) => {
+                        //const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
+                        const balanceColor = (segStat.balance || 0) <= 0 ?
+                            LerpColor(segStat.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
+                            : LerpColor(segStat.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
+                        return <Tooltip key={index} disableInteractive title={`Rehearsal points left unallocated ${segStat.segment.name}`}>
+                            <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
+                                <NumberField inert value={segStat.balance || null} showPositiveSign />
+                            </div>
+                        </Tooltip>;
+                    })}
                 <Tooltip disableInteractive title={
                     <div>
                         <div>total rehearsal point balance for the whole plan</div>
@@ -405,16 +411,17 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songName"></div>
                 <div className="td songLength">
                 </div>
-                {docOrTempDoc.payload.columns.map((segment, index) => {
-                    //const cellsForThisColumn = docOrTempDoc.payload.cells.filter((x) => x.columnId === segment.columnId);
-                    const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
-                    const col = LerpColor(segStats.countOfSongsAllocated, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
-                    return <Tooltip key={index} disableInteractive title={`Songs to rehearse in ${segment.name}`}>
-                        <div key={index} className="td segment numberCell" style={{ backgroundColor: col }}>
-                            <NumberField inert value={segStats.countOfSongsAllocated} />
-                        </div>
-                    </Tooltip>;
-                })}
+                {//docOrTempDoc.payload.columns.map((segment, index) => {
+                    props.stats.segmentStats.map((segStat, index) => {
+                        //const cellsForThisColumn = docOrTempDoc.payload.cells.filter((x) => x.columnId === segment.columnId);
+                        //const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
+                        const col = LerpColor(segStat.segmentAllocatedCells.length, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
+                        return <Tooltip key={index} disableInteractive title={`Songs to rehearse in ${segStat.segment.name}`}>
+                            <div key={index} className="td segment numberCell" style={{ backgroundColor: col }}>
+                                <NumberField inert value={segStat.segmentAllocatedCells.length} />
+                            </div>
+                        </Tooltip>;
+                    })}
                 <Tooltip disableInteractive title={`total song-rehearsal things ${0}`}>
                     <div className="td rehearsalTime" style={{ backgroundColor: props.colorScheme.songCountPerSegment[1] }}>
                         <NumberField inert value={props.stats.totalSongSegmentCells} />
@@ -433,31 +440,42 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             }}
         />
 
-        <table style={{ fontFamily: "monospace" }}>
+        <table style={{ fontFamily: "monospace" }} className="cost-table">
             <tr>
                 <td className="interactable" onClick={() => {
                     setShowCostBreakdown(!showCostBreakdown);
                 }}>Cost</td>
                 <td>{costResult.totalCost.toFixed(2)}</td>
+                <td></td>
             </tr>
             {showCostBreakdown && <>
                 <tr>
                     <td>Iterations</td>
                     <td>{docOrTempDoc.payload.autoCompleteIterations?.toLocaleString()}</td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td>Max depth</td>
                     <td>{docOrTempDoc.payload.autoCompleteDepth?.toLocaleString()}</td>
+                    <td></td>
                 </tr>
                 <tr>
                     <td>Duration</td>
                     <td>{docOrTempDoc.payload.autoCompleteDurationSeconds?.toFixed(3)} seconds</td>
+                    <td></td>
                 </tr>
 
                 {costResultBreakdown.map((x, index) => (
                     <tr key={index}>
                         <td>{x.explanation}</td>
                         <td>{x.cost}</td>
+                        <td>
+                            <div>
+                                <span>{x.factor01.toFixed(2)}</span>
+                                {(x.beginRowIndex !== undefined) && <span> / {props.stats.songStats[x.beginRowIndex]?.song?.name}</span>}
+                                {(x.columnIndex !== undefined) && <span> / {props.stats.segmentStats[x.columnIndex]?.segment.name}</span>}
+                            </div>
+                        </td>
                     </tr>
                 ))}
             </>}
@@ -661,13 +679,14 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
     const allSongs = useSongsContext().songs;
     const snackbar = useSnackbar();
     const confirm = useConfirm();
-    const [stats, setStats] = React.useState<SetlistPlanStats>(() => CalculateSetlistPlanStats(doc, allSongs));
-    React.useEffect(() => {
-        setDoc(props.initialValue);
-    }, [props.initialValue]);
 
     const docOrTempDoc = props.tempValue || doc;
     const isTempDoc = !!props.tempValue;
+
+    const [stats, setStats] = React.useState<SetlistPlanStats>(() => CalculateSetlistPlanStats(docOrTempDoc, allSongs));
+    React.useEffect(() => {
+        setDoc(props.initialValue);
+    }, [props.initialValue]);
 
     React.useEffect(() => {
         setStats(CalculateSetlistPlanStats(docOrTempDoc, allSongs));
@@ -699,12 +718,12 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 >
                     Delete
                 </Button>
-                <Button
+                {/* <Button
                     onClick={() => {
                         props.mutator.autoCompletePlan();
                     }}
                     disabled={isTempDoc}
-                >Autocomplete plan</Button>
+                >Autocomplete plan</Button> */}
                 <Button
                     onClick={async () => {
                         if (await confirm({ title: "Clear allocation", description: "Are you sure?" })) {

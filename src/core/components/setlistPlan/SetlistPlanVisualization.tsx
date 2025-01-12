@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ComposedChart, YAxis, XAxis, CartesianGrid, Line, Bar, ResponsiveContainer, BarChart } from 'recharts';
-import { SetlistPlanStats } from './SetlistPlanUtilityComponents';
 import { SetlistPlan } from 'src/core/db3/shared/setlistPlanTypes';
 import { getHashedColor, IsNullOrWhitespace, toSorted } from 'shared/utils';
 import { useSongsContext } from '../SongsContext';
+import { SetlistPlanStats } from './SetlistPlanUtilities';
 
 interface SetlistPlannerVisualizationsProps {
     doc: SetlistPlan;
@@ -21,7 +21,7 @@ const SongPie: React.FC<SetlistPlannerVisualizationsProps> = (props) => {
             const song = allSongs.songs.find((x) => x.id === songStat.songId);
             return {
                 name: song?.name ?? "Unknown",
-                value: songStat.totalRehearsalPoints,
+                value: songStat.totalPointsAllocated,
             };
         });
     songs.sort((a, b) => a.value - b.value);
@@ -77,14 +77,14 @@ const UncertaintyOverTime: React.FC<SetlistPlannerVisualizationsProps> = (props)
     const data: { name: string, uncertainty: number, pointsAllocated: number, reference: number }[] = [];
 
     for (const segmentStat of props.stats.segmentStats) {
-        const column = props.doc.payload.columns.find((x) => x.columnId === segmentStat.columnId);
+        const column = props.doc.payload.columns.find((x) => x.columnId === segmentStat.segment.columnId);
         data.push({
             name: column?.name ?? "Unknown",
             uncertainty,
-            pointsAllocated: segmentStat.totalPointsAllocatedToSongs,
+            pointsAllocated: segmentStat.totalPointsAllocated,
             reference,
         });
-        uncertainty -= segmentStat.totalPointsAllocatedToSongs;
+        uncertainty -= segmentStat.totalPointsAllocated;
         reference -= referencePointsPerRehearsal;
     }
 

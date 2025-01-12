@@ -15,13 +15,13 @@ import { getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
-import { AStarSearchProgressState, SetlistPlanGetNeighbors } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
-import { AutoCompleteSetlistPlanFracturedBeam, SetlistPlanRetentionConfig } from "src/core/components/setlistPlan/SetlistPlanAutocompleteBeamSearch";
+import { AStarSearchProgressState, SetlistPlanAutoFillAStar, SetlistPlanGetNeighborsLinear, SetlistPlanSearchState } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
-import { AutoSelectingNumberField, CalculateSetlistPlanCost, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator } from "src/core/components/setlistPlan/SetlistPlanUtilities";
+import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { SongsProvider } from "src/core/components/SongsContext";
+import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
@@ -33,7 +33,7 @@ function getId(prefix: string) {
     return nanoid(4);
 }
 
-const AutoCompleteSetlistPlan = AutoCompleteSetlistPlanFracturedBeam;
+const AutoCompleteSetlistPlan = SetlistPlanAutoFillAStar;
 
 type Penalty = {
     mul: number;
@@ -70,10 +70,10 @@ const CostConfigEditor = (props: { value: SetlistPlanCostPenalties, onChange: (v
                     <PenaltyEditor value={value.overAllocatedSegment} onChange={val => props.onChange({ ...props.value, overAllocatedSegment: val })} />
                     <td>Over-allocated segment</td>
                 </tr>
-                <tr>
+                {/* <tr>
                     <PenaltyEditor value={value.nonClusteredAllocation} onChange={val => props.onChange({ ...props.value, nonClusteredAllocation: val })} />
                     <td>Non-clustered allocation</td>
-                </tr>
+                </tr> */}
                 <tr>
                     <PenaltyEditor value={value.increasingAllocation} onChange={val => props.onChange({ ...props.value, increasingAllocation: val })} />
                     <td>Increasing allocation</td>
@@ -136,7 +136,7 @@ const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
     overAllocatedSegment: { mul: 799, add: 799 },
 
     // to be avoided, when the above have been satisfied.
-    nonClusteredAllocation: { mul: 0, add: 0 }, // this is not good; see #363. there are good reasons to add spaces between rehearsals, and it COUNTERS the delayedRehearsal penalty.
+    //nonClusteredAllocation: { mul: 0, add: 0 }, // this is not good; see #363. there are good reasons to add spaces between rehearsals, and it COUNTERS the delayedRehearsal penalty.
     increasingAllocation: { mul: 9, add: 9 },
 
     delayedRehearsal: { mul: 5, add: 5 },
@@ -149,39 +149,39 @@ const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
     underAllocatedSegment: { mul: 0, add: 1 },
 };
 
-const gDefaultRetainConfig: SetlistPlanRetentionConfig = {
-    factor: 0.05,
-    minAmt: 150,
-    maxAmt: 300,
-};
+// const gDefaultRetainConfig: SetlistPlanRetentionConfig = {
+//     factor: 0.05,
+//     minAmt: 150,
+//     maxAmt: 300,
+// };
 
 
-const RetainConfigEditor = (props: { value: SetlistPlanRetentionConfig, onChange: (value: SetlistPlanRetentionConfig) => void }) => {
-    const { value, onChange } = props;
-    return <div className="RetainConfigEditor">
-        <h2>Retain Configuration</h2>
+// const RetainConfigEditor = (props: { value: SetlistPlanRetentionConfig, onChange: (value: SetlistPlanRetentionConfig) => void }) => {
+//     const { value, onChange } = props;
+//     return <div className="RetainConfigEditor">
+//         <h2>Retain Configuration</h2>
 
-        <table>
-            <tbody>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.minAmt} onChange={(e, v) => onChange({ ...value, minAmt: v || 0 })} /></td>
-                    <td>min amount</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.maxAmt || null} onChange={(e, v) => onChange({ ...value, maxAmt: (v === null) ? undefined : v })} /></td>
-                    <td>max amount</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.factor || null} onChange={(e, v) => onChange({ ...value, factor: (v === null) ? undefined : v })} /></td>
-                    <td>factor</td>
-                </tr>
+//         <table>
+//             <tbody>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.minAmt} onChange={(e, v) => onChange({ ...value, minAmt: v || 0 })} /></td>
+//                     <td>min amount</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.maxAmt || null} onChange={(e, v) => onChange({ ...value, maxAmt: (v === null) ? undefined : v })} /></td>
+//                     <td>max amount</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.factor || null} onChange={(e, v) => onChange({ ...value, factor: (v === null) ? undefined : v })} /></td>
+//                     <td>factor</td>
+//                 </tr>
 
-            </tbody>
-        </table>
+//             </tbody>
+//         </table>
 
-        <Button onClick={() => onChange({ ...gDefaultRetainConfig })}>Reset to Default</Button>
-    </div>;
-}
+//         <Button onClick={() => onChange({ ...gDefaultRetainConfig })}>Reset to Default</Button>
+//     </div>;
+// }
 
 /*
 
@@ -234,13 +234,14 @@ const SetlistPlannerPageContent = () => {
     const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
     const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
 
-    const [autocompleteProgressState, setAutocompleteProgressState] = React.useState<AStarSearchProgressState<SetlistPlan>>();
+    const [autocompleteProgressState, setAutocompleteProgressState] = React.useState<AStarSearchProgressState<SetlistPlanSearchState>>();
     const cancellationTrigger = React.useRef<boolean>(false);
 
     const [costCalcConfig, setCostCalcConfig] = React.useState<SetlistPlanCostPenalties>(gDefaultCostCalcConfig);
-    const [retainConfig, setRetainConfig] = React.useState<SetlistPlanRetentionConfig>(gDefaultRetainConfig);
+    //const [retainConfig, setRetainConfig] = React.useState<SetlistPlanRetentionConfig>(gDefaultRetainConfig);
 
     const confirm = useConfirm();
+    const allSongs = useSongsContext().songs;
 
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
     const [doc, setDoc] = React.useState<SetlistPlan | null>(null);
@@ -337,22 +338,19 @@ const SetlistPlannerPageContent = () => {
                             cells: doc.payload.cells.filter(x => !!x.pointsAllocated),
                         },
                     };
-                    console.log(cleanedDoc);
+                    //console.log(cleanedDoc);
 
                     cancellationTrigger.current = false;
-                    //const sw = new Stopwatch();
-                    const result = await AutoCompleteSetlistPlan(cleanedDoc, costCalcConfig, retainConfig, cancellationTrigger, (progressState) => {
-                        //console.log(` iteration: ${progressState.iteration} best cost: ${progressState.bestCost}`);
-                        setTempDoc(progressState.bestPlan);
+
+                    const result = await AutoCompleteSetlistPlan(cleanedDoc, costCalcConfig, allSongs, cancellationTrigger, (progressState) => {
+                        setTempDoc(progressState.bestState.plan);
                         setAutocompleteProgressState(progressState);
                     });
 
-                    const newDoc = result.bestPlan;
-                    newDoc.payload.autoCompleteDurationSeconds = result.durationSeconds;
+                    const newDoc = result.bestState.plan;
+                    newDoc.payload.autoCompleteDurationSeconds = result.elapsedMillis / 1000;
                     newDoc.payload.autoCompleteDepth = result.depth;
                     newDoc.payload.autoCompleteIterations = result.iteration;
-
-                    // console.log(`AutoCompleteSetlistPlan took ${sw.ElapsedMillis / 1000} seconds.`);
 
                     setAutocompleteProgressState(undefined);
                     setTempDoc(undefined);
@@ -661,8 +659,8 @@ const SetlistPlannerPageContent = () => {
                             cells: [],
                             rows: doc.payload.rows.map(x => ({ ...x, rowId: getId("row") })),
                             columns: doc.payload.columns.map(x => ({ ...x, columnId: getId("col") })),
-                            emptyLeftRowIndex: 0,
-                            emptyTopRowIndex: 0,
+                            //emptyLeftRowIndex: 0,
+                            //emptyTopRowIndex: 0,
                         },
                     });
                 }
@@ -774,31 +772,42 @@ const SetlistPlannerPageContent = () => {
             {showAutocompleteConfig && doc && <div>
                 <ButtonGroup>
                     <Button onClick={() => {
-                        const n = SetlistPlanGetNeighbors(doc, 1, false);
-                        n.sort((a, b) => {
-                            const aCost = CalculateSetlistPlanCost(a, costCalcConfig);
-                            const bCost = CalculateSetlistPlanCost(b, costCalcConfig);
-                            return aCost.totalCost - bCost.totalCost;
-                        });
-                        setNeighbors([doc, ...n]);
+                        const stats = CalculateSetlistPlanStats(doc, allSongs);
+                        const cost = CalculateSetlistPlanCost({
+                            plan: doc,
+                            stats,
+                        }, costCalcConfig, allSongs);
+                        const n = SetlistPlanGetNeighborsLinear({
+                            plan: doc,
+                            stats,
+                            cost
+                        }, costCalcConfig, allSongs);
+                        // const n = SetlistPlanGetNeighborsLinear({
+                        //     plan: doc,
+                        //     stats,
+                        //     cost: CalculateSetlistPlanCost({
+                        //         plan: doc,
+                        //         stats,
+                        //     }, costCalcConfig, allSongs),
+                        // });
+                        n.sort((a, b) => a.cost.totalCost - b.cost.totalCost);// {
+                        //const aCost = CalculateSetlistPlanCost(a, costCalcConfig, allSongs);
+                        // const bCost = CalculateSetlistPlanCost(b, costCalcConfig, allSongs);
+                        // return aCost.totalCost - bCost.totalCost;
+                        //});
+                        setNeighbors([doc, ...n.map(x => x.plan)]);
                         console.log(n);
                     }}>gen neighbors (depth=1)</Button>
 
-                    <Button onClick={() => {
-                        const n = SetlistPlanGetNeighbors(doc, doc.payload.rows.length, true);
-                        n.sort((a, b) => {
-                            const aCost = CalculateSetlistPlanCost(a, costCalcConfig);
-                            const bCost = CalculateSetlistPlanCost(b, costCalcConfig);
-                            return aCost.totalCost - bCost.totalCost;
-                        });
-                        setNeighbors([doc, ...n]);
-                        console.log(n);
-                    }}>gen neighbors (depth=N)</Button>
                     <Button onClick={() => setNeighbors([])}>clear neighbors</Button>
                 </ButtonGroup>
                 <ul>
                     {neighbors.map((neighbor, index) => {
-                        const cost = CalculateSetlistPlanCost(neighbor, costCalcConfig);
+                        const stats = CalculateSetlistPlanStats(neighbor, allSongs);
+                        const cost = CalculateSetlistPlanCost({
+                            plan: neighbor,
+                            stats,
+                        }, costCalcConfig, allSongs);
                         return <li className="interactable" key={neighbor.id} onClick={() => {
                             setDoc(neighbor);
                         }}>#{index}: {neighbor.name} cost:{cost.totalCost} key:{GetSetlistPlanKey(neighbor).substring(0, 100)}</li>;
@@ -808,7 +817,7 @@ const SetlistPlannerPageContent = () => {
             }
 
             {showAutocompleteConfig && doc && <CostConfigEditor value={costCalcConfig} onChange={setCostCalcConfig} />}
-            {showAutocompleteConfig && doc && <RetainConfigEditor value={retainConfig} onChange={setRetainConfig} />}
+            {/* {showAutocompleteConfig && doc && <RetainConfigEditor value={retainConfig} onChange={setRetainConfig} />} */}
 
         </div>
 
@@ -821,9 +830,9 @@ const SetlistPlannerPageContent = () => {
             <div className="SetlistPlannerAutocompleteProgress">
                 <div>Auto-allocating...</div>
                 <div>Iteration: {autocompleteProgressState?.iteration.toLocaleString()}</div>
-                <div>Best Cost: {autocompleteProgressState?.bestCost.toFixed(2)}</div>
+                <div>Best Cost: {autocompleteProgressState?.bestState.cost.totalCost.toFixed(2)}</div>
                 <div>Depth: {autocompleteProgressState?.depth}</div>
-                <div>Duration: {autocompleteProgressState?.durationSeconds.toFixed(2)}</div>
+                <div>Duration: {((autocompleteProgressState?.elapsedMillis || 0) / 1000).toFixed(2)}</div>
             </div>
         </Backdrop>
     </div >
