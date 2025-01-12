@@ -28,6 +28,7 @@ import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, NumberField, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlannerLed, SetlistPlanStats } from "./SetlistPlanUtilityComponents";
+import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
 
 
 
@@ -859,6 +860,9 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     doc={doc}
                     mutator={props.mutator}
                 />
+            </CMTab>
+            <CMTab thisTabId="graphs" summaryTitle={"Graphs"}>
+                <SetlistPlannerVisualizations doc={doc} stats={stats} />
             </CMTab>
         </CMTabPanel>
     </div >

@@ -139,6 +139,9 @@ export async function AutoCompleteSetlistPlanFracturedBeam(
 
     const totalPointsRequired = GetSetlistPlanPointsRequired(initialPlan);
 
+    initialPlan.payload.emptyLeftRowIndex = 0;
+    initialPlan.payload.emptyTopRowIndex = 0;
+
     const config: SearchConfig<SetlistPlan> = {
         getNeighbors: (plan, depth) => SetlistPlanGetNeighbors(plan, depth, depth > 1),
         calculateRealCost: plan => CalculateSetlistPlanCost(plan, costCalcConfig).totalCost,

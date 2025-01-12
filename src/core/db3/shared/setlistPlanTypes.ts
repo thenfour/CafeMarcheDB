@@ -43,6 +43,10 @@ export const ZSetlistPlanPayload = z.object({
     autoCompleteIterations: z.number().optional(),
     autoCompleteDepth: z.number().optional(),
     autoCompleteDurationSeconds: z.number().optional(),
+
+    // for getNeighbors' behavior, we need to track where autocomplete has been.
+    emptyTopRowIndex: z.number().optional(),
+    emptyLeftRowIndex: z.number().optional(),
 });
 
 // corresponds to the payloadJson field in the db

@@ -661,6 +661,8 @@ const SetlistPlannerPageContent = () => {
                             cells: [],
                             rows: doc.payload.rows.map(x => ({ ...x, rowId: getId("row") })),
                             columns: doc.payload.columns.map(x => ({ ...x, columnId: getId("col") })),
+                            emptyLeftRowIndex: 0,
+                            emptyTopRowIndex: 0,
                         },
                     });
                 }
