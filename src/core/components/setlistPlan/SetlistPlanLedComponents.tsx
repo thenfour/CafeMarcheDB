@@ -4,34 +4,17 @@
 // - break out all util components
 // - break out setlist planner client utils into a lib
 
-import { Button, ButtonGroup, DialogActions, DialogContent, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Button, DialogActions, DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { ColorPaletteEntry, gAppColors, gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
-import { formatSongLength } from "shared/time";
-import { getHashedColor } from "shared/utils";
-import { CMChip } from "src/core/components/CMChip";
-import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, KeyValueTable } from "src/core/components/CMCoreComponents2";
+import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
+import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { ColorPick } from "src/core/components/ColorPick";
-import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
-import { Markdown3Editor } from "src/core/components/MarkdownControl3";
-import { Markdown } from "src/core/components/RichTextEditor";
-import { useSnackbar } from "src/core/components/SnackbarContext";
-import { SongAutocomplete } from "src/core/components/SongAutocomplete";
-import { useSongsContext } from "src/core/components/SongsContext";
-import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
-import { getURIForSong } from "src/core/db3/clientAPILL";
-import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
-import { SetlistPlan, SetlistPlanColumn, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
-import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
-import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
-import { NumberField } from "./SetlistPlanUtilityComponents";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
+import { gIconMap } from "src/core/db3/components/IconMap";
+import { SetlistPlan, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
+import { ReactiveInputDialog } from "../ReactiveInputDialog";
+import { SetlistPlanMutator } from "./SetlistPlanUtilities";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +114,7 @@ interface SetlistPlannerLedDefProps {
     onDelete: (ledId: string) => void;
 }
 export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
-    const [open, setOpen] = React.useState<boolean>(false);
+    //const [open, setOpen] = React.useState<boolean>(false);
     return <div className="setlistPlanLedDef" style={{ display: "flex", alignItems: "center" }}>
         <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
             ☰
@@ -140,6 +123,7 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
             value={props.ledDef.name}
             onChange={(e) => props.onChange({ ...props.ledDef, name: e.target.value })}
         />
+        <Button onClick={() => props.onDelete(props.ledDef.ledId)}>{gIconMap.Delete()}</Button>
     </div>;
 };
 

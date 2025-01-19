@@ -1,10 +1,6 @@
 
-import { DialogContent } from "@mui/material";
 import React from "react";
-import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { generateFibonacci } from "shared/utils";
-import { ColorPaletteListComponent, GetStyleVariablesForColor } from "src/core/components/Color";
-import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 
 const FIBONACCI_SEQUENCE = [0, ...generateFibonacci(100)];
 
