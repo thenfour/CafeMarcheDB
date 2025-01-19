@@ -2,7 +2,7 @@
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { generateFibonacci } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
+import { SetlistPlan, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
 
 const FIBONACCI_SEQUENCE = [...generateFibonacci(100)]; // for calculating possibilities. don't include 0.
 const FIBONACCI_SEQUENCE_REVERSED = [...FIBONACCI_SEQUENCE].reverse();
@@ -29,7 +29,7 @@ export interface SetlistPlanMutator {
     setRowPointsRequired: (rowId: string, points: number | undefined) => void;
     setRowComment: (rowId: string, comment: string) => void;
     reorderRows: (args: ReactSmoothDnd.DropResult) => void;
-    setRowColor: (rowId: string, color: string | undefined) => void;
+    //setRowColor: (rowId: string, color: string | undefined) => void;
 
     addColumn: () => void;
     deleteColumn: (columnId: string) => void;
@@ -41,6 +41,18 @@ export interface SetlistPlanMutator {
     swapColumnAllocation: (columnId1: string, columnId2: string) => void;
 
     setCellPoints: (rowId: string, columnId: string, points: number | undefined) => void;
+
+    addRowLedDef: () => void;
+    updateRowLedDef: (ledId: string, def: SetlistPlanLedDef) => void;
+    deleteRowLedDef: (ledId: string) => void;
+    reorderRowLeds: (args: ReactSmoothDnd.DropResult) => void;
+    setRowLedValue: (rowId: string, ledId: string, val: SetlistPlanLedValue | null) => void;
+
+    addColumnLedDef: () => void;
+    updateColumnLedDef: (ledId: string, def: SetlistPlanLedDef) => void;
+    deleteColumnLedDef: (ledId: string) => void;
+    reorderColumnLeds: (args: ReactSmoothDnd.DropResult) => void;
+    setColumnLedValue: (rowId: string, ledId: string, val: SetlistPlanLedValue | null) => void;
 }
 
 export type SetlistPlanStats = ReturnType<typeof CalculateSetlistPlanStats>;

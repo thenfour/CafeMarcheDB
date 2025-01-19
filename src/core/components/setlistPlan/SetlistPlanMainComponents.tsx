@@ -7,14 +7,13 @@
 import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { gLightSwatchColors } from "shared/color";
+import { gLightSwatchColors, gSwatchColors } from "shared/color";
 import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
 import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { ColorPick } from "src/core/components/ColorPick";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
@@ -27,9 +26,10 @@ import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
-import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlanLedComponents";
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
-import { NumberField, SetlistPlannerLed } from "./SetlistPlanUtilityComponents";
+import { NumberField } from "./SetlistPlanUtilityComponents";
+import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
 
 
 
@@ -82,18 +82,18 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             </Tooltip>
 
             <div style={{ display: "flex", alignItems: "center" }}>
-                <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
-                    <div>
-                        <SetlistPlannerLed value={songRow.color || null} onChange={(newColor) => {
-                            props.mutator.setRowColor(props.rowId, newColor || undefined);
-                        }} />
-                    </div>
-                </Tooltip>
+                <SetlistPlannerLedArray
+                    ledDefs={props.doc.payload.rowLeds || []}
+                    ledValues={songRow.leds || []}
+                    onLedValueChanged={val => props.mutator.setRowLedValue(songRow.rowId, val.ledId, val)}
+                />
                 <div>
-                    <a href={getURIForSong(song)} target="_blank" rel="noreferrer" style={{
-                        "--song-hash-color": getHashedColor(song.name),
-                        color: `var(--song-hash-color)`,
-                    } as any}>{song.name}</a>
+                    <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
+                        <a href={getURIForSong(song)} target="_blank" rel="noreferrer" style={{
+                            "--song-hash-color": getHashedColor(song.name),
+                            color: `var(--song-hash-color)`,
+                        } as any}>{song.name}</a>
+                    </Tooltip>
                 </div>
             </div>
         </div>
@@ -164,11 +164,11 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
             </div>
 
             <div style={{ display: "flex", alignItems: "center" }}>
-                <div>
-                    <SetlistPlannerLed value={row.color || null} onChange={(newColor) => {
-                        props.mutator.setRowColor(props.rowId, newColor || undefined);
-                    }} />
-                </div>
+                <SetlistPlannerLedArray
+                    ledDefs={props.doc.payload.rowLeds || []}
+                    ledValues={row.leds || []}
+                    onLedValueChanged={val => props.mutator.setRowLedValue(row.rowId, val.ledId, val)}
+                />
                 <Markdown compact markdown={row.commentMarkdown || ""} />
             </div>
         </div>
@@ -304,7 +304,16 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             <div className="td songLength">
             </div>
             {docOrTempDoc.payload.columns.map((segment, index) => <div key={index} className="td segment">
-                <div><ColumnHeaderDropdownMenu columnId={segment.columnId} doc={docOrTempDoc} mutator={props.mutator} /></div>
+                <div>
+                    <ColumnHeaderDropdownMenu columnId={segment.columnId} doc={docOrTempDoc} mutator={props.mutator} />
+                </div>
+                <div>
+                    <SetlistPlannerLedArray
+                        ledDefs={props.doc.payload.columnLeds || []}
+                        ledValues={segment.leds || []}
+                        onLedValueChanged={val => props.mutator.setColumnLedValue(segment.columnId, val.ledId, val)}
+                    />
+                </div>
                 <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, props.colorScheme.segmentPointsAvailable) }}>
                     <NumberField
                         value={segment.pointsAvailable || null}
@@ -809,37 +818,41 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 <Button startIcon={gIconMap.Add()} onClick={() => {
                     props.mutator.addColumn();
                 }}>Add Segment</Button>
-
+            </CMTab>
+            <CMTab thisTabId="columnLeds" summaryTitle={"Column Leds"}>
+                <SetlistPlannerLedDefArray doc={doc} mutator={props.mutator} collection="column" />
             </CMTab>
             <CMTab thisTabId="songs" summaryTitle={"Rows"}>
                 <div className="SetlistPlannerDocumentEditorSongs">
                     {docOrTempDoc.payload.rows.map((song) => {
                         return <div key={song.rowId} className="SetlistPlannerDocumentEditorSong">
-                            <div style={{ display: "flex", alignItems: "center" }}>
-                                <div className="type">{song.type}</div>
-                                <ColorPick
+                            <div>
+
+                                {song.type === "song" && <div>
+                                    <h2 className="name">{allSongs.find((x) => x.id === song.songId)?.name}</h2>
+                                    <NumberField
+                                        value={song.pointsRequired || null}
+                                        onChange={(e, newMeasure) => {
+                                            props.mutator.setRowPointsRequired(song.rowId, newMeasure || undefined);
+                                        }}
+                                    />
+                                    <span>rehearsal points required</span>
+                                </div>}
+
+                                <div style={{ display: "flex", alignItems: "center" }}>
+                                    <Button onClick={() => {
+                                        props.mutator.deleteRow(song.rowId);
+                                    }}>{gIconMap.Delete()}</Button>
+                                    <div className="type"><CMChip color={song.type === "divider" ? gSwatchColors.brown : gSwatchColors.blue}>{song.type}</CMChip></div>
+                                    {/* <ColorPick
                                     value={song.color || null}
 
                                     onChange={(newColor) => {
                                         props.mutator.setRowColor(song.rowId, newColor?.id || undefined);
                                     }}
-                                />
-                                <Button startIcon={gIconMap.Delete()} onClick={() => {
-                                    props.mutator.deleteRow(song.rowId);
-                                }}
-                                ></Button>
+                                /> */}
+                                </div>
                             </div>
-
-                            {song.type === "song" && <>
-                                <div className="name">{allSongs.find((x) => x.id === song.songId)?.name}</div>
-                                <NumberField
-                                    value={song.pointsRequired || null}
-                                    onChange={(e, newMeasure) => {
-                                        props.mutator.setRowPointsRequired(song.rowId, newMeasure || undefined);
-                                    }}
-                                />
-                                <span>rehearsal points required</span>
-                            </>}
                             <Markdown3Editor
                                 minHeight={75}
                                 onChange={(newMarkdown) => {
@@ -869,6 +882,11 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 </div>
 
             </CMTab>
+
+            <CMTab thisTabId="songLeds" summaryTitle={"Song Leds"}>
+                <SetlistPlannerLedDefArray doc={doc} mutator={props.mutator} collection="row" />
+            </CMTab>
+
             <CMTab thisTabId="matrix" summaryTitle={"Matrix"}>
                 <SetlistPlannerMatrix
                     stats={stats!}

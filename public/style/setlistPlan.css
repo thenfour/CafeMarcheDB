@@ -302,3 +302,17 @@
 }
 
 .SetlistPlannerPageContent .AutoSelectingNumberField {}
+
+.setlistPlanLedArray {
+    display: flex;
+    flex-direction: row;
+}
+
+.setlistPlanLed {
+    margin: 1px;
+    font-family: monospace;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

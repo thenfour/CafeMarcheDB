@@ -4,6 +4,21 @@ import { z } from "zod";
 
 ///////////// setlist planning /////////////////////////////////////////////////////////////////
 
+export const ZSetlistPlanLedDef = z.object({
+    ledId: z.string(),
+    name: z.string(),
+});
+
+export type SetlistPlanLedDef = z.infer<typeof ZSetlistPlanLedDef>;
+
+export const ZSetlistPlanLedValue = z.object({
+    ledId: z.string(),
+    color: z.string().nullable().optional(),
+    text: z.string().optional(),
+});
+
+export type SetlistPlanLedValue = z.infer<typeof ZSetlistPlanLedValue>;
+
 export const ZSetlistPlanRow = z.object({
     rowId: z.string(),
     songId: z.number().optional(),
@@ -11,6 +26,7 @@ export const ZSetlistPlanRow = z.object({
     commentMarkdown: z.string().optional(),
     color: z.string().nullable().optional(),
     type: z.enum(["song", "divider"]),
+    leds: z.array(ZSetlistPlanLedValue).optional(),
 });
 
 export type SetlistPlanRow = z.infer<typeof ZSetlistPlanRow>;
@@ -20,6 +36,7 @@ export const ZSetlistPlanColumn = z.object({
     pointsAvailable: z.number().optional(),
     name: z.string(),
     commentMarkdown: z.string().optional(),
+    leds: z.array(ZSetlistPlanLedValue).optional(),
 });
 
 export type SetlistPlanColumn = z.infer<typeof ZSetlistPlanColumn>;
@@ -40,6 +57,10 @@ export const ZSetlistPlanPayload = z.object({
     columns: z.array(ZSetlistPlanColumn),
     cells: z.array(ZSetlistPlanCell),
     notes: z.string().optional(),
+
+    columnLeds: z.array(ZSetlistPlanLedDef).optional(),
+    rowLeds: z.array(ZSetlistPlanLedDef).optional(),
+
     autoCompleteMaxPointsPerRehearsal: z.number().optional(),
     autoCompleteIterations: z.number().optional(),
     autoCompleteDepth: z.number().optional(),

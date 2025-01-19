@@ -15,7 +15,7 @@ import { getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
-import { AStarSearchProgressState, SetlistPlanAutoFillAStar, SetlistPlanGetNeighborsLinear, SetlistPlanSearchState } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
+import { AStarSearchProgressState, SetlistPlanGetNeighborsLinear, SetlistPlanSearchState } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
 import { SetlistPlanAutoFillSA, SimulatedAnnealingConfig } from "src/core/components/setlistPlan/SetlistPlanAutofillSA";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
@@ -26,7 +26,7 @@ import { SongsProvider, useSongsContext } from "src/core/components/SongsContext
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
-import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
+import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 function getId(prefix: string) {
@@ -346,32 +346,6 @@ const SetlistPlannerPageContent = () => {
 
     const docOrTempDoc = tempDoc || doc;
     const isTempDoc = !!tempDoc;
-
-    // const nullMutator: SetlistPlanMutator = {
-    //     addColumn: () => { },
-    //     addDivider: () => { },
-    //     addSong: () => { },
-    //     addAndRemoveSongs: () => { },
-    //     clearAllocation: () => { },
-    //     clearColumnAllocation: () => { },
-    //     deleteColumn: () => { },
-    //     deleteRow: () => { },
-    //     reorderRows: () => { },
-    //     setCellPoints: () => { },
-    //     setColumnName: () => { },
-    //     setColumnAvailablePoints: () => { },
-    //     setDoc: () => { },
-    //     setName: () => { },
-    //     setDescription: () => { },
-    //     setRowColor: () => { },
-    //     setRowComment: () => { },
-    //     setRowPointsRequired: () => { },
-    //     swapColumnAllocation: () => { },
-    //     autoCompletePlan: () => { },
-    //     setAutocompleteMaxPointsPerRehearsal: () => { },
-    //     setNotes: () => { },
-    //     setColumnComment: () => { },
-    // };
 
     const mutator = React.useMemo(() => {
         const ret: SetlistPlanMutator = {
@@ -699,25 +673,34 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            setRowColor: (rowId: string, color: string) => {
+            reorderColumnLeds: (args: ReactSmoothDnd.DropResult) => {
                 if (doc) {
+                    if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+                    const newLeds = moveItemInArray(doc.payload.columnLeds || [], args.removedIndex, args.addedIndex);
                     setDocWrapper({
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            rows: doc.payload.rows.map((x) => {
-                                if (x.rowId === rowId) {
-                                    return {
-                                        ...x,
-                                        color,
-                                    };
-                                }
-                                return x;
-                            }),
+                            columnLeds: newLeds,
                         },
                     });
                 }
             },
+
+            reorderRowLeds: (args: ReactSmoothDnd.DropResult) => {
+                if (doc) {
+                    if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+                    const newLeds = moveItemInArray(doc.payload.rowLeds || [], args.removedIndex, args.addedIndex);
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rowLeds: newLeds,
+                        },
+                    });
+                }
+            },
+
             clearAllocation: () => {
                 if (doc) {
                     // Also re-generate IDs of rows and columns; when ID scheme changes this is a convenient way to update them.
@@ -773,6 +756,136 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
+
+            addRowLedDef: () => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rowLeds: [...(doc.payload.rowLeds || []), {
+                                ledId: getId("led"),
+                                name: ``,
+                                //sortOrder: (doc.payload.rowLeds || []).length + 1,
+                            }],
+                        },
+                    });
+                }
+            },
+            addColumnLedDef: () => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            columnLeds: [...(doc.payload.columnLeds || []), {
+                                ledId: getId("led"),
+                                name: ``,
+                                //sortOrder: (doc.payload.columnLeds || []).length + 1,
+                            }],
+                        },
+                    });
+                }
+            },
+            deleteRowLedDef: (ledId: string) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rowLeds: (doc.payload.rowLeds || []).filter(x => x.ledId !== ledId),
+                        },
+                    });
+                }
+            },
+            deleteColumnLedDef: (ledId: string) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            columnLeds: (doc.payload.columnLeds || []).filter(x => x.ledId !== ledId),
+                        },
+                    });
+                }
+            },
+            updateRowLedDef: (ledId: string, def: SetlistPlanLedDef) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rowLeds: (doc.payload.rowLeds || []).map(x => x.ledId === ledId ? def : x),
+                        },
+                    });
+                }
+            },
+            updateColumnLedDef: (ledId: string, def: SetlistPlanLedDef) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            columnLeds: (doc.payload.columnLeds || []).map(x => x.ledId === ledId ? def : x),
+                        },
+                    });
+                }
+            },
+            setRowLedValue: (rowId: string, ledId: string, val: SetlistPlanLedValue | null) => {
+                if (!doc) return;
+                // for the row specified by rowId,
+                // set its led value specified by ledId to the value.
+                // if the rowId - ledId mapping doesn't exist yet, create it. if it exists, update it.
+                // if val is null, remove it.
+
+                const newRows = doc.payload.rows.map(row => {
+                    if (row.rowId === rowId) {
+                        if (val === null) {
+                            const newLeds = (row.leds || []).filter(x => x.ledId !== ledId);
+                            return { ...row, leds: newLeds };
+                        }
+                        const existingLeds = row.leds || [];
+                        const existingMapping = existingLeds.find(x => x.ledId === ledId);
+                        const newLeds = existingMapping ? existingLeds.map(x => x.ledId === ledId ? val : x) : [...existingLeds, val];
+                        return { ...row, leds: newLeds };
+                    }
+                    return row;
+                });
+
+                setDocWrapper({
+                    ...doc,
+                    payload: {
+                        ...doc.payload,
+                        rows: newRows,
+                    },
+                });
+            },
+            setColumnLedValue: (columnId: string, ledId: string, val: SetlistPlanLedValue | null) => {
+                if (!doc) return;
+                const newColumns = doc.payload.columns.map(column => {
+                    if (column.columnId === columnId) {
+                        if (val === null) {
+                            const newLeds = (column.leds || []).filter(x => x.ledId !== ledId);
+                            return { ...column, leds: newLeds };
+                        }
+                        const existingLeds = column.leds || [];
+                        const existingMapping = existingLeds.find(x => x.ledId === ledId);
+                        const newLeds = existingMapping ? existingLeds.map(x => x.ledId === ledId ? val : x) : [...existingLeds, val];
+                        return { ...column, leds: newLeds };
+                    }
+                    return column;
+                });
+
+                setDocWrapper({
+                    ...doc,
+                    payload: {
+                        ...doc.payload,
+                        columns: newColumns,
+                    },
+                });
+            },
+
+
         };
         return ret;
     }, [doc]);

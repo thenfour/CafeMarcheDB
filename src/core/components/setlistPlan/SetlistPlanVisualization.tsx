@@ -124,6 +124,7 @@ const SongStackedBars: React.FC<SetlistPlannerVisualizationsProps> = (props) => 
 
     // gather the requisite info...
     const songs = props.stats.songStats
+        .filter(songStat => allSongs.songs.some((x) => x.id === songStat.songId))
         .map((songStat) => {
             const song = allSongs.songs.find((x) => x.id === songStat.songId);
             const allocatedCells = props.doc.payload.cells.filter((cell) => cell.rowId === songStat.rowId && (cell.pointsAllocated || 0) > 0);
