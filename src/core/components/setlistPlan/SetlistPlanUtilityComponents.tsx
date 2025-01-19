@@ -6,7 +6,7 @@ import { generateFibonacci } from "shared/utils";
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "src/core/components/Color";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 
-const FIBONACCI_SEQUENCE = [0, ...generateFibonacci(10000)];
+const FIBONACCI_SEQUENCE = [0, ...generateFibonacci(100)];
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // specific input control which

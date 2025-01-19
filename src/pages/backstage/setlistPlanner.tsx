@@ -12,6 +12,7 @@ import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
 import { getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { Pre } from "src/core/components/CMCoreComponents2";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
@@ -20,7 +21,7 @@ import { SetlistPlanAutoFillSA, SimulatedAnnealingConfig } from "src/core/compon
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator } from "src/core/components/setlistPlan/SetlistPlanUtilities";
-import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
+import { AutoSelectingNumberField, NumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
@@ -373,12 +374,12 @@ const SetlistPlannerPageContent = () => {
             },
             autoCompletePlan: async () => {
                 if (doc) {
-                    // remove all 0 allocation cells.
+                    // remove all null allocation cells.
                     const cleanedDoc = {
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            cells: doc.payload.cells.filter(x => !!x.pointsAllocated),
+                            cells: doc.payload.cells.filter(x => x.pointsAllocated !== undefined),
                         },
                     };
                     //console.log(cleanedDoc);
@@ -1042,10 +1043,19 @@ const SetlistPlannerPageContent = () => {
     </div >
 };
 
+// const NumberThingTester = () => {
+//     const [value, setValue] = React.useState<number | null>(null);
+//     return <div>
+//         <NumberField value={value} onChange={(e, val) => setValue(val)} />
+//         <Pre text={JSON.stringify(value)} />
+//     </div>;
+// };
+
 const SetlistPlannerPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Setlist Planner" basePermission={Permission.sysadmin}>
             <SongsProvider>
+                {/* <NumberThingTester /> */}
                 <SetlistPlannerPageContent />
             </SongsProvider>
         </DashboardLayout>

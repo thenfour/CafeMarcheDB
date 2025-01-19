@@ -106,7 +106,9 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             props.doc.payload.columns.map((segment, index) => {
                 // if no measureUsage, use transparent color
                 // otherwise 
-                const pointsAllocated = props.doc.payload.cells.find((x) => x.columnId === segment.columnId && x.rowId === props.rowId)?.pointsAllocated;
+                const cell = props.doc.payload.cells.find((x) => x.columnId === segment.columnId && x.rowId === props.rowId);
+                const pointsAllocated = cell?.pointsAllocated;
+                const hasPointsAllocated = pointsAllocated !== undefined;
                 let grad = props.colorScheme.songSegmentPoints;
                 const style: any = {
                 };
@@ -119,14 +121,14 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                             col.strong.backgroundColor,
                         ];
 
-                        if (pointsAllocated === undefined) {
+                        if (!hasPointsAllocated) {
                             style["--fc"] = LerpColor(0.12, 0, 1, ["#ffffff", col.strong.backgroundColor]);
                             style["--bc"] = LerpColor(0.25, 0, 1, ["#ffffff", col.strong.foregroundColor]);
                         }
                     }
                 }
 
-                let bgColor = pointsAllocated ? LerpColor(
+                let bgColor = hasPointsAllocated ? LerpColor(
                     pointsAllocated,
                     props.stats.minCellAllocatedPoints,
                     props.stats.maxCellAllocatedPoints,
@@ -135,11 +137,11 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
 
                 style["backgroundColor"] = bgColor;
 
-                return <div key={index} className={`td segment numberCell ${pointsAllocated ? "" : "hatch"}`} style={style}>
+                return <div key={index} className={`td segment numberCell ${hasPointsAllocated ? "" : "hatch"}`} data-cell={JSON.stringify(cell)} style={style}>
                     <NumberField
-                        value={pointsAllocated || null}
+                        value={hasPointsAllocated ? pointsAllocated : null}
                         onChange={(e, newValue) => {
-                            props.mutator.setCellPoints(props.rowId, segment.columnId, newValue || undefined);
+                            props.mutator.setCellPoints(props.rowId, segment.columnId, newValue == null ? undefined : newValue);
                         }}
                     />
                 </div>;
@@ -217,7 +219,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
     const handleCopySongNames = async () => {
         await snackbar.invokeAsync(async () => {
             const songNames = props.doc.payload.rows
-                .filter((x) => x.type === "song" && props.doc.payload.cells.some((c) => c.rowId === x.rowId && c.columnId === column.columnId && c.pointsAllocated))
+                .filter((x) => x.type === "song" && props.doc.payload.cells.some((c) => c.rowId === x.rowId && c.columnId === column.columnId && (c.pointsAllocated !== undefined)))
                 .map((x) => allSongs.find((s) => s.id === x.songId)!.name);
             await navigator.clipboard.writeText(songNames.join("\n"));
             setAnchorEl(null);
@@ -240,7 +242,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
 
     const columnToSetlist = (column: SetlistPlanColumn): PortableSongList => {
         // ignores dividers, and picks only songs for which cells have allocated points.
-        const cells = props.doc.payload.cells.filter((x) => x.columnId === column.columnId && x.pointsAllocated).map((x) => x.rowId);
+        const cells = props.doc.payload.cells.filter((x) => x.columnId === column.columnId && (x.pointsAllocated !== undefined)).map((x) => x.rowId);
         const songIds = props.doc.payload.rows.filter((x) => x.type === "song" && cells.includes(x.rowId)).map(row => row.songId);
         const songs = allSongs.filter((x) => songIds.includes(x.id));
         return songs.map((s, index) => ({
@@ -394,7 +396,6 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 {/* </Tooltip> */}
                 {//docOrTempDoc.payload.columns.map((segment, index) => {
                     props.stats.segmentStats.map((segStat, index) => {
-                        //const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0 };
                         const bgColor = LerpColor(segStat.totalPointsAllocated, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, props.colorScheme.segmentPoints);
                         return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segStat.segment.name}`}>
                             <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
@@ -420,7 +421,6 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </div>
                 {//docOrTempDoc.payload.columns.map((segment, index) => {
                     props.stats.segmentStats.map((segStat, index) => {
-                        //const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
                         const balanceColor = (segStat.balance || 0) <= 0 ?
                             LerpColor(segStat.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
                             : LerpColor(segStat.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
@@ -448,8 +448,6 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </div>
                 {//docOrTempDoc.payload.columns.map((segment, index) => {
                     props.stats.segmentStats.map((segStat, index) => {
-                        //const cellsForThisColumn = docOrTempDoc.payload.cells.filter((x) => x.columnId === segment.columnId);
-                        //const segStats = props.stats.segmentStats.find((x) => x.columnId === segment.columnId) || { totalPointsAllocatedToSongs: 0, balance: 0, countOfSongsAllocated: 0 };
                         const col = LerpColor(segStat.segmentAllocatedCells.length, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
                         return <Tooltip key={index} disableInteractive title={`Songs to rehearse in ${segStat.segment.name}`}>
                             <div key={index} className="td segment numberCell" style={{ backgroundColor: col }}>
