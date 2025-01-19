@@ -6,7 +6,7 @@
 import { Stopwatch } from "shared/rootroot";
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CostResult, SetlistPlanCostPenalties, SetlistPlanStats } from "./SetlistPlanUtilities";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, CostResult, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState, SetlistPlanStats } from "./SetlistPlanUtilities";
 
 /**
  * Returns N distinct random indices from [0, rowCount - 1].
@@ -83,11 +83,11 @@ export type SimulatedAnnealingConfig = {
     probabilityOfEmpty01: number;
 }
 
-export type SetlistPlanSearchState = {
-    plan: SetlistPlan;
-    stats: SetlistPlanStats;
-    cost: CostResult;
-};
+// export type SetlistPlanSearchState = {
+//     plan: SetlistPlan;
+//     stats: SetlistPlanStats;
+//     cost: CostResult;
+// };
 
 export const SetlistPlanGetRandomMutation = (saConfig: SimulatedAnnealingConfig, state: SetlistPlanSearchState, costCalcConfig: SetlistPlanCostPenalties, allSongs: db3.SongPayload[]): SetlistPlanSearchState | null => {
 
@@ -107,13 +107,13 @@ export const SetlistPlanGetRandomMutation = (saConfig: SimulatedAnnealingConfig,
 
     //const cellIndicesToMutate = getDistinctRandomIndices(cellCount, maxCellsToMutate);
 
-    const mutateCell = (columnIndex: number, rowIndex: number, possibilities: number[]) => {
+    const mutateCell = (columnIndex: number, rowIndex: number, points: number) => {
         const rowId = state.stats.songStats[rowIndex]!.rowId;
         const columnId = state.plan.payload.columns[columnIndex]!.columnId;
         //const points = possibilities[Math.floor(Math.random() * possibilities.length)];
 
         const makeItEmpty = Math.random() < saConfig.probabilityOfEmpty01;
-        const points = makeItEmpty ? 0 : possibilities[pickFavoringLateIndices(possibilities, saConfig.favorLateIndicesAlpha)];
+        //const points = makeItEmpty ? 0 : possibilities[pickFavoringLateIndices(possibilities, saConfig.favorLateIndicesAlpha)];
         //console.log(`:SetlistPlanGetRandomMutation: mutating cell ${rowIndex},${columnIndex} to ${points}.`)
         const existingCell = newState.plan.payload.cells.find((x) => x.rowId === rowId && x.columnId === columnId);
         if (existingCell) {
@@ -127,32 +127,47 @@ export const SetlistPlanGetRandomMutation = (saConfig: SimulatedAnnealingConfig,
                 autoFilled: true,
             });
         }
-        newState.stats = CalculateSetlistPlanStats(newState.plan, allSongs);
+        newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan);
         newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig, allSongs);
     };
+
+    // const mutateCell = (columnIndex: number, rowIndex: number, possibilities: number[]) => {
+    //     const rowId = state.stats.songStats[rowIndex]!.rowId;
+    //     const columnId = state.plan.payload.columns[columnIndex]!.columnId;
+    //     //const points = possibilities[Math.floor(Math.random() * possibilities.length)];
+
+    //     const makeItEmpty = Math.random() < saConfig.probabilityOfEmpty01;
+    //     const points = makeItEmpty ? 0 : possibilities[pickFavoringLateIndices(possibilities, saConfig.favorLateIndicesAlpha)];
+    //     //console.log(`:SetlistPlanGetRandomMutation: mutating cell ${rowIndex},${columnIndex} to ${points}.`)
+    //     const existingCell = newState.plan.payload.cells.find((x) => x.rowId === rowId && x.columnId === columnId);
+    //     if (existingCell) {
+    //         existingCell.pointsAllocated = points;
+    //         existingCell.autoFilled = true;
+    //     } else {
+    //         newState.plan.payload.cells.push({
+    //             rowId,
+    //             columnId,
+    //             pointsAllocated: points,
+    //             autoFilled: true,
+    //         });
+    //     }
+    //     newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan, allSongs);
+    //     newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig, allSongs);
+    // };
 
     for (let i = 0; i < maxIterations; ++i) {
         const rowIndex = Math.floor(Math.random() * rowCount);
         const columnIndex = Math.floor(Math.random() * columnCount);
-        const possibilities = state.stats.getPossibleValuesForCell(columnIndex, rowIndex);
-        if (possibilities.length > 0) {
-            mutateCell(columnIndex, rowIndex, possibilities);
-            cellsLeftToMutate--;
-        }
+        const idealVal = state.stats.getIdealValueForCell(columnIndex, rowIndex);
+        if (idealVal == null) continue;
+        mutateCell(columnIndex, rowIndex, idealVal);
+        // if (possibilities.length > 0) {
+        //     mutateCell(columnIndex, rowIndex, possibilities);
+        //     cellsLeftToMutate--;
+        // }
         if (cellsLeftToMutate === 0) break;
     }
     return newState;
-};
-
-
-
-
-
-export interface AStarSearchProgressState<T> {
-    iteration: number;
-    depth: number;
-    elapsedMillis: number;
-    bestState: T;
 };
 
 
@@ -162,8 +177,8 @@ export async function AutoCompleteSetlistPlanSA(
     costCalcConfig: SetlistPlanCostPenalties,
     allSongs: db3.SongPayload[],
     cancellationTrigger: React.MutableRefObject<boolean>,
-    reportProgress: (state: AStarSearchProgressState<SetlistPlanSearchState>) => void
-): Promise<AStarSearchProgressState<SetlistPlanSearchState>> {
+    reportProgress: (state: SetlistPlanSearchProgressState) => void
+): Promise<SetlistPlanSearchProgressState> {
 
     console.log(`AutoCompleteSetlistPlanSA...`);
 
@@ -171,7 +186,7 @@ export async function AutoCompleteSetlistPlanSA(
 
     const reportEveryNIterations = 15;
 
-    let currentProgress: AStarSearchProgressState<SetlistPlanSearchState> =
+    let currentProgress: SetlistPlanSearchProgressState =
     {
         iteration: 0,
         depth: 0,
@@ -229,10 +244,10 @@ export async function SetlistPlanAutoFillSA(
     costCalcConfig: SetlistPlanCostPenalties,
     allSongs: db3.SongPayload[],
     cancellationTrigger: React.MutableRefObject<boolean>,
-    reportProgress: (state: AStarSearchProgressState<SetlistPlanSearchState>) => void
-): Promise<AStarSearchProgressState<SetlistPlanSearchState>> {
+    reportProgress: (state: SetlistPlanSearchProgressState) => void
+): Promise<SetlistPlanSearchProgressState> {
 
-    const stats = CalculateSetlistPlanStats(initialState, allSongs);
+    const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
     const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig, allSongs);
     const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
 

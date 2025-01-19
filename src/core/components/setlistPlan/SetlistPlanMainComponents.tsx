@@ -1,9 +1,3 @@
-// todo
-// split into:
-// - SetlistPlannerComponents
-// - break out all util components
-// - break out setlist planner client utils into a lib
-
 import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
@@ -28,7 +22,7 @@ import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanT
 import { ColorPick } from "../ColorPick";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
 import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlanLedComponents";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
 
@@ -137,11 +131,11 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
 
                 style["backgroundColor"] = bgColor;
 
-                return <div key={index} className={`td segment numberCell ${hasPointsAllocated ? "" : "hatch"}`} data-cell={JSON.stringify(cell)} style={style}>
+                return <div key={index} className={`td segment numberCell pointAllocationCell ${cell?.autoFilled ? "autoFilled" : "notAutoFilled"} ${hasPointsAllocated ? "" : "hatch"}`} style={style}>
                     <NumberField
                         value={hasPointsAllocated ? pointsAllocated : null}
                         onChange={(e, newValue) => {
-                            props.mutator.setCellPoints(props.rowId, segment.columnId, newValue == null ? undefined : newValue);
+                            props.mutator.setManualCellPoints(props.rowId, segment.columnId, newValue == null ? undefined : newValue);
                         }}
                     />
                 </div>;
@@ -317,9 +311,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         props.mutator.reorderRows(args);
     };
 
+    const stats = CalculateSetlistPlanStatsForCostCalc(docOrTempDoc);
     const costResult = CalculateSetlistPlanCost({
         plan: docOrTempDoc,
-        stats: props.stats,
+        stats,
     }, props.costCalcConfig, allSongs);
     const costResultBreakdown = costResult.breakdown
         .sort((a, b) => b.cost - a.cost)
@@ -553,6 +548,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 type MainDropdownMenuProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
+    onDelete: () => void;
 };
 
 const MainDropdownMenu = (props: MainDropdownMenuProps) => {
@@ -668,6 +664,28 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
         >
+            <MenuItem onClick={() => {
+                setAnchorEl(null);
+                props.mutator.clearAllocation();
+            }}>clear</MenuItem>
+            <MenuItem onClick={() => {
+                setAnchorEl(null);
+                props.onDelete();
+            }}>delete this plan</MenuItem>
+            <Divider />
+            <MenuItem onClick={() => {
+                setAnchorEl(null);
+                props.mutator.autoCompletePlanSA();
+            }}>Auto-fill (Simulated annealing)</MenuItem>
+            <MenuItem onClick={() => {
+                setAnchorEl(null);
+                props.mutator.autoCompletePlanAStar();
+            }}>Auto-fill (A star)</MenuItem>
+            <MenuItem onClick={() => {
+                setAnchorEl(null);
+                props.mutator.autoCompletePlanBestFirst();
+            }}>Auto-fill (Best-N-First)</MenuItem>
+            <Divider />
             <MenuItem
                 onClick={handleCopyToClipboard}
             >
@@ -741,30 +759,8 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     disabled={isTempDoc}
                     startIcon={gIconMap.Cancel()} onClick={() => {
                         props.onCancel();
-                    }}>Cancel</Button>
-                <Button
-                    startIcon={gIconMap.Delete()}
-                    onClick={() => {
-                        props.onDelete();
-                    }}
-                    disabled={(doc.id < 0) || isTempDoc}
-                >
-                    Delete
-                </Button>
-                <Button
-                    onClick={() => {
-                        props.mutator.autoCompletePlan();
-                    }}
-                    disabled={isTempDoc}
-                >Autocomplete plan</Button>
-                <Button
-                    onClick={async () => {
-                        if (await confirm({ title: "Clear allocation", description: "Are you sure?" })) {
-                            props.mutator.clearAllocation();
-                        }
-                    }}
-                    disabled={isTempDoc}
-                >Clear allocation</Button>
+                    }}>Close</Button>
+
                 <Button
                     onClick={() => {
                         props.mutator.undo();
@@ -778,7 +774,34 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     }}
                 >Redo</Button>
             </ButtonGroup>
-            <MainDropdownMenu doc={doc} mutator={props.mutator} />
+            <MainDropdownMenu doc={doc} mutator={props.mutator} onDelete={props.onDelete} />
+            <ButtonGroup>
+                <Button
+                    onClick={() => {
+                        props.mutator.clearAllocation();
+                    }}
+                    disabled={isTempDoc}
+                >clear</Button>
+                <Divider />
+                <Button
+                    onClick={() => {
+                        props.mutator.autoCompletePlanSA();
+                    }}
+                    disabled={isTempDoc}
+                >SA</Button>
+                <Button
+                    onClick={() => {
+                        props.mutator.autoCompletePlanAStar();
+                    }}
+                    disabled={isTempDoc}
+                >A*</Button>
+                <Button
+                    onClick={() => {
+                        props.mutator.autoCompletePlanBestFirst();
+                    }}
+                    disabled={isTempDoc}
+                >BestFirst</Button>
+            </ButtonGroup>
             <InspectObject src={docOrTempDoc} label="doc" />
             <InspectObject src={stats} label="stats" />
             <div className="nameHeader">{docOrTempDoc.name}</div>

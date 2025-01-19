@@ -2,16 +2,33 @@
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { generateFibonacci } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { SetlistPlan, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
+import { SetlistPlan, SetlistPlanColumn, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
 
 const FIBONACCI_SEQUENCE = [...generateFibonacci(100)]; // for calculating possibilities. don't include 0.
 const FIBONACCI_SEQUENCE_REVERSED = [...FIBONACCI_SEQUENCE].reverse();
 
 const MAX_POINTS_PER_REHEARSAL = 8;
 
+export type SetlistPlanSearchState = {
+    plan: SetlistPlan;
+    stats: SetlistPlanStatsForCostCalc;
+    cost: CostResult;
+};
+
+export interface SetlistPlanSearchProgressState {
+    iteration: number;
+    depth: number;
+    elapsedMillis: number;
+    bestState: SetlistPlanSearchState;
+    iterationsPerSecond?: number | undefined;
+};
+
+
 export interface SetlistPlanMutator {
     setDoc: (doc: SetlistPlan) => void;
-    autoCompletePlan: () => void;
+    autoCompletePlanSA: () => void;
+    autoCompletePlanAStar: () => void;
+    autoCompletePlanBestFirst: () => void;
     clearAllocation: () => void;
 
     undo: () => void;
@@ -41,7 +58,7 @@ export interface SetlistPlanMutator {
     clearColumnAllocation: (columnId: string) => void;
     swapColumnAllocation: (columnId1: string, columnId2: string) => void;
 
-    setCellPoints: (rowId: string, columnId: string, points: number | undefined) => void;
+    setManualCellPoints: (rowId: string, columnId: string, points: number | undefined) => void;
 
     addRowLedDef: () => void;
     updateRowLedDef: (ledId: string, def: SetlistPlanLedDef) => void;
@@ -57,6 +74,270 @@ export interface SetlistPlanMutator {
 }
 
 export type SetlistPlanStats = ReturnType<typeof CalculateSetlistPlanStats>;
+
+
+interface SetlistPlanCellForCostCalc {
+    autoFilled: boolean;
+    pointsAllocated: number | undefined;
+    columnIndex: number;
+    rowIndex: number;
+};
+interface SetlistPlanStatsForCostCalcSongStat {
+    totalPointsAllocated: number;
+    requiredPoints: number;
+    rowIndex: number;
+    rowId: string;
+    firstAllocatedColumnIndex: number | undefined;
+    songAllocatedCells: SetlistPlanCellForCostCalc[];
+    idealRehearsalCount: number;
+    pointsStillNeeded: number;
+};
+interface SetlistPlanSegmentStatForCostCalc {
+    poolPointsAvailable: number;
+    segmentIndex: number;
+    totalPointsAllocated: number;
+    segmentAllocatedCells: SetlistPlanCellForCostCalc[];
+    pointsStillAvailable: number;
+    segment: SetlistPlanColumn;
+};
+interface SetlistPlanStatsForCostCalc {
+    songStats: SetlistPlanStatsForCostCalcSongStat[];
+    segmentStats: SetlistPlanSegmentStatForCostCalc[];
+    allocatedCells: SetlistPlanCellForCostCalc[];
+    totalPlanSongBalance: number;
+    totalPlanSegmentBalance: number;
+    getIdealValueForCell: (columnIndex: number, rowIndex: number) => number | undefined;
+};
+
+
+
+export function CalculateSetlistPlanStatsForCostCalc(doc: SetlistPlan): SetlistPlanStatsForCostCalc {
+    const totalPointsRequired = doc.payload.rows.reduce((acc, song) => song.pointsRequired ? acc + song.pointsRequired : acc, 0);
+    const planTotalPointsAllocated = doc.payload.cells.reduce((acc, x) => acc + (x.pointsAllocated || 0), 0);
+    const totalPlanBalance = planTotalPointsAllocated - totalPointsRequired;
+    // const songsPerSegment = doc.payload.cells.filter(ss => !!ss.pointsAllocated).length / doc.payload.columns.length;
+    // const totalPointsInThePool = doc.payload.columns.reduce((acc, x) => acc + (x.pointsAvailable || 0), 0);
+
+    const columnIdToColumnIndexMap = Object.fromEntries(doc.payload.columns.map((col, index) => [col.columnId, index]));
+    const rowIdToRowIndexMap = Object.fromEntries(doc.payload.rows.map((row, index) => [row.rowId, index]));
+
+    const allocatedCells = doc.payload.cells
+        .filter(cell => !!cell.pointsAllocated)
+        .map(cell => {
+            //const songId = doc.payload.rows.find(row => row.rowId === cell.rowId)?.songId;
+            //const song = allSongs.find(s => s.id === songId);
+            const rowIndex = rowIdToRowIndexMap[cell.rowId]!;
+            const columnIndex = columnIdToColumnIndexMap[cell.columnId]!;
+            return {
+                autoFilled: cell.autoFilled || false,
+                rowIndex,
+                columnIndex,
+                linearIndex: rowIndex * doc.payload.columns.length + columnIndex,
+                // songId,
+                // song,
+                pointsAllocated: cell.pointsAllocated,
+            }
+        });
+
+
+    // // make sure sorted in a way that makes linear access predictable.
+    // allocatedCells.sort((a, b) => {
+    //     if (a.rowIndex === b.rowIndex) {
+    //         return a.columnIndex - b.columnIndex;
+    //     }
+    //     return a.rowIndex - b.rowIndex;
+    // });
+
+    // const cellIndexToColumnRow = (index: number) => {
+    //     const columnIndex = index % doc.payload.columns.length;
+    //     const rowIndex = Math.floor(index / doc.payload.columns.length);
+    //     return { columnIndex, rowIndex };
+    // };
+
+    // // find the last cell that was auto-filled.
+    // const linearIndexOfLastAutoFillCell = allocatedCells.findLast(cell => cell.autoFilled)?.linearIndex;
+    // const firstAvailableAutoFillCellIndex = linearIndexOfLastAutoFillCell !== undefined ? linearIndexOfLastAutoFillCell + 1 : 0;
+    // //const firstAvailableAutoFillColumnIndex = firstAvailableAutoFillCellIndex % doc.payload.columns.length;
+    // //const firstAvailableAutoFillRowIndex = Math.floor(firstAvailableAutoFillCellIndex / doc.payload.columns.length);
+
+    const songStats = doc.payload.rows
+        .map((row, rowIndex) => {
+            const songAllocatedCells = allocatedCells
+                .filter(cell => cell.rowIndex === rowIndex);
+            // match the sorting of plan.payload.columns.
+            songAllocatedCells.sort((a, b) => a.columnIndex - b.columnIndex);
+            const totalPointsAllocated = songAllocatedCells.reduce((acc, cell) => acc + (cell.pointsAllocated || 0), 0);
+            return {
+
+                // row,
+                rowIndex,
+                rowId: row.rowId,
+                // songId: row.songId,
+                // song: allSongs.find(s => s.id === row.songId),
+                songAllocatedCells,
+                requiredPoints: row.pointsRequired || 0,
+                totalPointsAllocated,
+                // balance: row.pointsRequired ? totalPointsAllocated - row.pointsRequired : 0,
+                pointsStillNeeded: row.pointsRequired ? row.pointsRequired - totalPointsAllocated : 0,
+                firstAllocatedColumnIndex: songAllocatedCells[0]?.columnIndex,
+                // lastAllocatedColumnIndex: songAllocatedCells[songAllocatedCells.length - 1]?.columnIndex,
+                idealRehearsalCount: row.pointsRequired ? Math.max(1, Math.ceil(row.pointsRequired / MAX_POINTS_PER_REHEARSAL)) : 0,
+            };
+        });
+
+    const segmentStats = doc.payload.columns
+        .map((segment, segmentIndex) => {
+            const segmentAllocatedCells = allocatedCells.filter(cell => cell.columnIndex === segmentIndex);
+            const totalPointsAllocated = segmentAllocatedCells.reduce((acc, cell) => acc + (cell.pointsAllocated || 0), 0);
+            return {
+                segment,
+                segmentIndex,
+                segmentAllocatedCells,
+                poolPointsAvailable: segment.pointsAvailable || 0,
+                totalPointsAllocated,
+                balance: totalPointsAllocated - (segment.pointsAvailable || 0),
+                pointsStillAvailable: (segment.pointsAvailable || 0) - totalPointsAllocated,
+            };
+        });
+
+    // // maximum cell value points allocated
+    // const maxSegmentPointsAllocated = doc.payload.cells.reduce((acc, x) => {
+    //     if (x.pointsAllocated == null) return acc;
+    //     return Math.max(acc, x.pointsAllocated);
+    // }, 0);
+
+    // const minSegmentPointsAllocated = doc.payload.cells.reduce((acc, x) => {
+    //     if (x.pointsAllocated == null) return acc;
+    //     return Math.min(acc, x.pointsAllocated);
+    // }, maxSegmentPointsAllocated);
+
+    // const maxSegmentPointsAvailable = doc.payload.columns.reduce((acc, x) => {
+    //     if (x.pointsAvailable == null) return acc;
+    //     return Math.max(acc, x.pointsAvailable);
+    // }, 0);
+
+    // const minSegmentPointsAvailable = doc.payload.columns.reduce((acc, x) => {
+    //     if (x.pointsAvailable == null) return acc;
+    //     return Math.min(acc, x.pointsAvailable);
+    // }, maxSegmentPointsAvailable);
+
+    // const maxSegPointsUsed = segmentStats.reduce((acc, x) => {
+    //     if (x.totalPointsAllocated == null) return acc;
+    //     return Math.max(x.totalPointsAllocated, acc);
+    // }, 0);
+
+    // const minSegPointsUsed = segmentStats.reduce((acc, x) => {
+    //     if (x.totalPointsAllocated == null) return acc;
+    //     return Math.min(x.totalPointsAllocated, acc);
+    // }, maxSegPointsUsed);
+
+    // const maxSegmentBalance = segmentStats.reduce((acc, x) => {
+    //     if (x.balance == null) return acc;
+    //     return Math.max(x.balance, acc);
+    // }, 0);
+
+    // const minSegmentBalance = segmentStats.reduce((acc, x) => {
+    //     if (x.balance == null) return acc;
+    //     return Math.min(x.balance, acc);
+    // }, maxSegmentBalance);
+
+
+    // const maxSongBalance = songStats.reduce((acc, x) => {
+    //     if (x.balance == null) return acc;
+    //     return Math.max(x.balance, acc);
+    // }, 0);
+
+    // const minSongBalance = songStats.reduce((acc, x) => {
+    //     if (x.balance == null) return acc;
+    //     return Math.min(x.balance, acc);
+    // }, maxSongBalance);
+
+    // const maxSongRequiredPoints = songStats.reduce((acc, x) => {
+    //     if (x.requiredPoints == null) return acc;
+    //     return Math.max(x.requiredPoints, acc);
+    // }, 0);
+
+    // const minSongRequiredPoints = songStats.reduce((acc, x) => {
+    //     if (x.requiredPoints == null) return acc;
+    //     return Math.min(x.requiredPoints, acc);
+    // }, maxSongRequiredPoints);
+
+    // const maxSongTotalPoints = songStats.reduce((acc, x) => {
+    //     if (x.totalPointsAllocated == null) return acc;
+    //     return Math.max(x.totalPointsAllocated, acc);
+    // }, 0);
+
+    // const minSongTotalPoints = songStats.reduce((acc, x) => {
+    //     if (x.totalPointsAllocated == null) return acc;
+    //     return Math.min(x.totalPointsAllocated, acc);
+    // }, maxSongTotalPoints);
+
+    // const totalSongLengthSeconds = songStats.reduce((acc, x) => {
+    //     const song = allSongs.find(s => s.id === x.songId);
+    //     if (!song) return acc;
+    //     return acc + (song.lengthSeconds || 0);
+    // }, 0);
+
+    // const maxSongsInSegment = segmentStats.reduce((acc, x) => {
+    //     return Math.max(x.segmentAllocatedCells.length, acc);
+    // }, 0);
+
+    return {
+        allocatedCells,
+        // columnIdToColumnIndexMap,
+        // rowIdToRowIndexMap,
+
+        // totalSongLengthSeconds,
+        // totalPointsRequired,
+        // totalPointsAllocated,
+        totalPlanSegmentBalance: segmentStats.reduce((acc, x) => acc + (x.balance || 0), 0),
+        totalPlanSongBalance: totalPlanBalance,
+        // songsPerSegment,
+        songStats,
+        segmentStats,
+        // totalPointsInThePool,
+        // linearIndexOfLastAutoFillCell,
+        // firstAvailableAutoFillCellIndex,
+        // cellIndexToColumnRow,
+
+        // maxCellAllocatedPoints: maxSegmentPointsAllocated,
+        // minCellAllocatedPoints: minSegmentPointsAllocated,
+
+        // maxSongsInSegment,
+        // totalSongSegmentCells: doc.payload.cells.filter(cell => !!cell.pointsAllocated).length,
+
+        // minSegmentPointsAvailable,
+        // maxSegmentPointsAvailable,
+        // maxSegPointsUsed,
+        // minSegPointsUsed,
+        // maxSegmentBalance,
+        // minSegmentBalance,
+        // maxSongBalance,
+        // minSongBalance,
+        // maxSongRequiredPoints,
+        // minSongRequiredPoints,
+        // maxSongTotalPoints,
+        // minSongTotalPoints,
+
+        getIdealValueForCell: (columnIndex: number, rowIndex: number): number | undefined => {
+            const columnStat = segmentStats[columnIndex]!;
+            const rowStat = songStats[rowIndex]!;
+            const linearIndex = rowIndex * doc.payload.columns.length + columnIndex;
+            const cell = allocatedCells.find(cell => cell.linearIndex === linearIndex);
+            const isAlreadyOccupied = cell && (cell.pointsAllocated !== undefined) && !cell.autoFilled;
+            if (isAlreadyOccupied) {
+                return undefined;
+            }
+
+            // all fib numbers from 1 to either the max points available in the column, or the points still needed for the song.
+            const maxPointsAvailable = Math.min(Math.max(0, columnStat.pointsStillAvailable), Math.max(0, rowStat.pointsStillNeeded));
+            const maxPointsToAllocate = Math.min(MAX_POINTS_PER_REHEARSAL, maxPointsAvailable);
+            return FIBONACCI_SEQUENCE_REVERSED.find(fib => fib <= maxPointsToAllocate) || maxPointsToAllocate;
+        },
+    };
+};
+
+
 
 export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPayload[]) {
     const totalPointsRequired = doc.payload.rows.reduce((acc, song) => song.pointsRequired ? acc + song.pointsRequired : acc, 0);
@@ -82,7 +363,7 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
                 linearIndex: rowIndex * doc.payload.columns.length + columnIndex,
                 songId,
                 song,
-                pointsAllocated: cell.pointsAllocated || 0, // coalesced for convenience.
+                pointsAllocated: cell.pointsAllocated,
             }
         });
 
@@ -113,7 +394,7 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
                 .filter(cell => cell.rowIndex === rowIndex);
             // match the sorting of plan.payload.columns.
             songAllocatedCells.sort((a, b) => a.columnIndex - b.columnIndex);
-            const totalPointsAllocated = songAllocatedCells.reduce((acc, cell) => acc + cell.pointsAllocated, 0);
+            const totalPointsAllocated = songAllocatedCells.reduce((acc, cell) => acc + (cell.pointsAllocated || 0), 0);
             return {
                 row,
                 rowIndex,
@@ -123,8 +404,8 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
                 songAllocatedCells,
                 requiredPoints: row.pointsRequired || 0,
                 totalPointsAllocated,
-                balance: row.pointsRequired ? totalPointsAllocated - row.pointsRequired : undefined,
-                pointsStillNeeded: row.pointsRequired ? row.pointsRequired - totalPointsAllocated : undefined,
+                balance: row.pointsRequired ? totalPointsAllocated - row.pointsRequired : 0,
+                pointsStillNeeded: row.pointsRequired ? row.pointsRequired - totalPointsAllocated : 0,
                 firstAllocatedColumnIndex: songAllocatedCells[0]?.columnIndex,
                 lastAllocatedColumnIndex: songAllocatedCells[songAllocatedCells.length - 1]?.columnIndex,
                 idealRehearsalCount: row.pointsRequired ? Math.max(1, Math.ceil(row.pointsRequired / MAX_POINTS_PER_REHEARSAL)) : 0,
@@ -134,7 +415,7 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
     const segmentStats = doc.payload.columns
         .map((segment, segmentIndex) => {
             const segmentAllocatedCells = allocatedCells.filter(cell => cell.columnIndex === segmentIndex);
-            const totalPointsAllocated = segmentAllocatedCells.reduce((acc, cell) => acc + cell.pointsAllocated, 0);
+            const totalPointsAllocated = segmentAllocatedCells.reduce((acc, cell) => acc + (cell.pointsAllocated || 0), 0);
             return {
                 segment,
                 segmentIndex,
@@ -324,6 +605,21 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
             //console.log(`   possible values for ${rowIndex}/${columnIndex}: ${[...allValues]};`);
             //return [...allValues].sort();
         },
+        getIdealValueForCell: (columnIndex: number, rowIndex: number): number | undefined => {
+            const columnStat = segmentStats[columnIndex]!;
+            const rowStat = songStats[rowIndex]!;
+            const linearIndex = rowIndex * doc.payload.columns.length + columnIndex;
+            const cell = allocatedCells.find(cell => cell.linearIndex === linearIndex);
+            const isAlreadyOccupied = cell && (cell.pointsAllocated !== undefined) && !cell.autoFilled;
+            if (isAlreadyOccupied) {
+                return undefined;
+            }
+
+            // all fib numbers from 1 to either the max points available in the column, or the points still needed for the song.
+            const maxPointsAvailable = Math.min(Math.max(0, columnStat.pointsStillAvailable), Math.max(0, rowStat.pointsStillNeeded));
+            const maxPointsToAllocate = Math.min(MAX_POINTS_PER_REHEARSAL, maxPointsAvailable);
+            return FIBONACCI_SEQUENCE_REVERSED.find(fib => fib <= maxPointsToAllocate) || maxPointsToAllocate;
+        },
     };
 };
 
@@ -371,7 +667,9 @@ export interface SetlistPlanCostPenalties {
     //rehearsalSongColorDiversity: Penalty; // 0-1, can be >1 when you really violate this.. // absolute number of colors used in a segment minus 1.
 };
 
-export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, stats: SetlistPlanStats }, config: SetlistPlanCostPenalties, allSongs: db3.SongPayload[]): CostResult => {
+
+
+export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, stats: SetlistPlanStatsForCostCalc }, config: SetlistPlanCostPenalties, allSongs: db3.SongPayload[]): CostResult => {
     const ret: CostResult = {
         totalCost: 0,
         breakdown: [],
@@ -465,8 +763,8 @@ export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, s
     for (const songStat of stats.songStats) {
         for (let i = 1; i < songStat.songAllocatedCells.length; i++) {
             const thisCell = songStat.songAllocatedCells[i]!;
-            const thisAlloc = thisCell.pointsAllocated;
-            const prevAlloc = songStat.songAllocatedCells[i - 1]!.pointsAllocated;
+            const thisAlloc = thisCell.pointsAllocated || 0;
+            const prevAlloc = songStat.songAllocatedCells[i - 1]!.pointsAllocated || 0;
             const maxIncrease = songStat.requiredPoints - 2; // for example requiring 7 points, 1->6 is the max increase (diff of 5)
             if (thisAlloc > prevAlloc) {
                 // each instance of increasing allocation is penalized.
@@ -562,16 +860,18 @@ export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, s
  * can probably be optimized.
  */
 export function GetSetlistPlanKey(plan: SetlistPlan): string {
-    // prettier output:
-    const outpStructured: (number[])[] = [];
-    plan.payload.rows.filter(r => r.type === "song").forEach(r => {
-        const row = plan.payload.columns.map(c => {
-            const cell = plan.payload.cells.find(cell => cell.rowId === r.rowId && cell.columnId === c.columnId);
-            return cell?.pointsAllocated || 0;
+    // pretty output but slower:
+    // accounting for 0 vs. undefined.
+    const rowStrings = plan.payload.rows.filter(r => r.type === "song").map(row => {
+        const rowCellStrings = plan.payload.columns.map(c => {
+            const cell = plan.payload.cells.find(cell => cell.rowId === row.rowId && cell.columnId === c.columnId);
+            if (cell?.pointsAllocated === undefined) return "-";
+            return cell.pointsAllocated.toString();
         });
-        outpStructured.push(row);
+        return rowCellStrings.join(',');
     });
-    return JSON.stringify(outpStructured);
+    return rowStrings.join('|');
+
 
     // // less pretty output but faster:
     // const sortedCells = toSorted(plan.payload.cells.filter(x => !!x.pointsAllocated), (a, b) => {

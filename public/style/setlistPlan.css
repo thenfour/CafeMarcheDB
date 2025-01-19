@@ -155,6 +155,11 @@
     white-space: nowrap;
 }
 
+.SetlistPlannerMatrix .td.pointAllocationCell.autoFilled {
+    opacity: 50%;
+    ;
+}
+
 .SetlistPlannerMatrix .td.rehearsalTime {
     width: var(--segment-width);
     margin-left: 30px;
