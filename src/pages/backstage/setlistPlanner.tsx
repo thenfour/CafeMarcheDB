@@ -425,7 +425,7 @@ const SetlistPlannerPageContent = () => {
                 const iterationsPerSecond = iterationsSinceLast / ((now - lastFrameTime) / 1000);
                 lastIterations = progressState.iteration;
                 lastFrameTime = now;
-                setTempDoc(progressState.bestState.plan);
+                setTempDoc(progressState.currentState.plan);
                 setAutocompleteProgressState({
                     ...progressState,
                     iterationsPerSecond,
@@ -437,7 +437,7 @@ const SetlistPlannerPageContent = () => {
             // const result = await SetlistPlanAutoFillSA(saConfig, cleanedDoc, costCalcConfig, allSongs, cancellationTrigger, (progressState) => {
             // });
 
-            const newDoc = result.bestState.plan;
+            const newDoc = result.bestState?.plan || result.currentState.plan;
             newDoc.payload.autoCompleteDurationSeconds = result.elapsedMillis / 1000;
             newDoc.payload.autoCompleteDepth = result.depth;
             newDoc.payload.autoCompleteIterations = result.iteration;
@@ -1115,8 +1115,9 @@ const SetlistPlannerPageContent = () => {
             <div className="SetlistPlannerAutocompleteProgress">
                 <div>Auto-allocating...</div>
                 <div>Iteration: {autocompleteProgressState?.iteration.toLocaleString()}</div>
-                <div>Best Cost: {autocompleteProgressState?.bestState.cost.totalCost.toFixed(2)}</div>
                 <div>Depth: {autocompleteProgressState?.depth}</div>
+                <div>Current Cost: {autocompleteProgressState?.currentState.cost.totalCost.toFixed(2)}</div>
+                {autocompleteProgressState?.bestState && <div>Best Cost: {autocompleteProgressState?.bestState.cost.totalCost.toFixed(2)}</div>}
                 <div>Duration: {((autocompleteProgressState?.elapsedMillis || 0) / 1000).toFixed(2)}</div>
                 {autocompleteProgressState?.iterationsPerSecond && <div>Iterations/sec: {(autocompleteProgressState.iterationsPerSecond).toFixed(2)}</div>}
             </div>

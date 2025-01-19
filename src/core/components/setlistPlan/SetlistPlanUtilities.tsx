@@ -15,11 +15,19 @@ export type SetlistPlanSearchState = {
     cost: CostResult;
 };
 
-export interface SetlistPlanSearchProgressState {
-    iteration: number;
-    depth: number;
+export interface AStarSearchProgressState<S> {
     elapsedMillis: number;
-    bestState: SetlistPlanSearchState;
+    bestState?: S;
+    currentState: S;
+    depth: number;
+    iteration: number;
+}
+export interface SetlistPlanSearchProgressState extends AStarSearchProgressState<SetlistPlanSearchState> {
+    // iteration: number;
+    // depth: number;
+    // elapsedMillis: number;
+    // currentState: SetlistPlanSearchState;
+    // bestState?: SetlistPlanSearchState | undefined;
     iterationsPerSecond?: number | undefined;
 };
 
@@ -106,6 +114,7 @@ interface SetlistPlanStatsForCostCalc {
     allocatedCells: SetlistPlanCellForCostCalc[];
     totalPlanSongBalance: number;
     totalPlanSegmentBalance: number;
+    totalPointsAllocated: number;
     getIdealValueForCell: (columnIndex: number, rowIndex: number) => number | undefined;
 };
 
@@ -289,7 +298,7 @@ export function CalculateSetlistPlanStatsForCostCalc(doc: SetlistPlan): SetlistP
 
         // totalSongLengthSeconds,
         // totalPointsRequired,
-        // totalPointsAllocated,
+        totalPointsAllocated: planTotalPointsAllocated,
         totalPlanSegmentBalance: segmentStats.reduce((acc, x) => acc + (x.balance || 0), 0),
         totalPlanSongBalance: totalPlanBalance,
         // songsPerSegment,
@@ -713,7 +722,7 @@ export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, s
 
     //const stats = CalculateSetlistPlanStats(plan, allSongs);
 
-    //addCost(stats.totalPointsAllocated, { mul: 1, add: 0 }, { beginRowIndex: undefined, columnIndex: undefined }, `Point traversal penalty`);
+    addCost(stats.totalPointsAllocated, { mul: 1, add: 0 }, { beginRowIndex: undefined, columnIndex: undefined }, `Point traversal penalty`);
 
     //const { songStats, columnStats } = GetSetlistPlanStats(plan);
 

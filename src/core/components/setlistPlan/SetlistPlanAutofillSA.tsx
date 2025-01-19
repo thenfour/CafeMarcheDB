@@ -191,7 +191,7 @@ export async function AutoCompleteSetlistPlanSA(
         iteration: 0,
         depth: 0,
         elapsedMillis: 0,
-        bestState: initialState,
+        currentState: initialState,
     }
 
     let T = saConfig.initialTemp;
@@ -211,15 +211,15 @@ export async function AutoCompleteSetlistPlanSA(
             await new Promise(resolve => setTimeout(resolve, 0));
         }
 
-        const newSol = SetlistPlanGetRandomMutation(saConfig, currentProgress.bestState, costCalcConfig, allSongs);
+        const newSol = SetlistPlanGetRandomMutation(saConfig, currentProgress.currentState, costCalcConfig, allSongs);
         if (newSol === null) {
             console.log(`breaking because no mutation found.`);
             break;
         }
-        const delta = newSol.cost.totalCost - currentProgress.bestState.cost.totalCost;
+        const delta = newSol.cost.totalCost - currentProgress.currentState.cost.totalCost;
         if (delta < 0) {
             currentProgress.bestState = newSol;
-            if (newSol.cost.totalCost < bestProgress.bestState.cost.totalCost) {
+            if (newSol.cost.totalCost < bestProgress.currentState.cost.totalCost) {
                 bestProgress.bestState = newSol;
             }
         } else {

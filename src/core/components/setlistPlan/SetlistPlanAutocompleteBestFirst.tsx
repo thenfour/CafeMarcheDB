@@ -66,7 +66,7 @@ export async function AutoCompleteSetlistPlanBestFirst(
 
     const sw = new Stopwatch();
     return {
-        bestState: initialState,
+        currentState: initialState,
         depth: 0,
         elapsedMillis: 0,
         iteration: 0,

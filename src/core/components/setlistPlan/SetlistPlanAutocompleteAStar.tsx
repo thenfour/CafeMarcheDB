@@ -1,6 +1,6 @@
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
+import { AStarSearchProgressState, CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
 
 export interface AStarSearchConfig {
     depthsWithoutCulling: number;
@@ -122,12 +122,8 @@ function IsGoal(state: SetlistPlanSearchState): boolean {
     return state.stats.totalPlanSongBalance >= 0 || state.stats.totalPlanSegmentBalance >= 0;
 }
 
-interface AStarSearchProgressState<S> {
-    elapsedMillis: number;
-    bestState: S;
-    depth: number;
-    iteration: number;
-}
+
+
 /**
  * A generic A* function that doesn't know anything about your domain.
  *
@@ -141,7 +137,7 @@ interface AStarSearchProgressState<S> {
  * @param cancellationTrigger - Use this if you need to abort the search early.
  * @param reportProgress - A callback that receives intermediate progress updates.
  */
-async function AStarSearch<S>(
+export async function AStarSearch<S>(
     initialState: S,
     options: {
         getNeighbors: (state: S, depth: number) => S[] | Promise<S[]>;
@@ -154,8 +150,8 @@ async function AStarSearch<S>(
     reportProgress: (progress: AStarSearchProgressState<S>) => void
 ): Promise<AStarSearchProgressState<S>> {
     // Example stopwatch or timer utility
-    //console.log(`astar start`);
     const startTime = performance.now();
+    const reportEveryNSteps = 1;
 
     // For priority queue, you could use an external library or your own Min-Heap.
     // We'll assume MinPriorityQueue<T> has push(item, priority) and pop() => {element, priority}
@@ -176,7 +172,6 @@ async function AStarSearch<S>(
     let bestState = initialState;  // track the best state encountered
     let steps = 0;
     let iteration = 1;
-    const reportEveryNSteps = 1;
 
     // A small helper to compute elapsed time
     const getElapsedMillis = () => performance.now() - startTime;
@@ -188,21 +183,12 @@ async function AStarSearch<S>(
         const current = openSet.pop();
         if (!current) break;
 
-        const currentState = current.element.state;
-        const currentF = current.priority; // f = g + h
-        const currentId = options.getStateId(currentState);
-
-        // If we've already expanded this state, skip.
-        if (closedSet.has(currentId)) {
-            continue;
-        }
-        closedSet.add(currentId);
-
         // Report progress
         if (steps % reportEveryNSteps === 0) {
             reportProgress({
                 elapsedMillis: getElapsedMillis(),
-                bestState: currentState,
+                bestState,
+                currentState: current.element.state,
                 depth: steps,
                 iteration,
             });
@@ -213,11 +199,21 @@ async function AStarSearch<S>(
             return {
                 elapsedMillis: getElapsedMillis(),
                 bestState,
+                currentState: current.element.state,
                 depth: steps,
                 iteration,
             };
         }
 
+        const currentState = current.element.state;
+        const currentF = current.priority; // f = g + h
+        const currentId = options.getStateId(currentState);
+
+        // If we've already expanded this state, skip.
+        if (closedSet.has(currentId)) {
+            continue;
+        }
+        closedSet.add(currentId);
 
         // Check for goal
         if (options.isGoal(currentState)) {
@@ -226,6 +222,7 @@ async function AStarSearch<S>(
             const final = {
                 elapsedMillis: getElapsedMillis(),
                 bestState,
+                currentState: current.element.state,
                 depth: steps,
                 iteration,
             };
@@ -245,8 +242,6 @@ async function AStarSearch<S>(
             // If neighbor hasn't been visited or we found a cheaper path, update and push
             const knownG = gScore.get(neighborId);
             if (knownG === undefined || neighborG < knownG) {
-                //console.log(`pushing neighbor on to open set: ${neighborId}`);
-
                 gScore.set(neighborId, neighborG);
                 openSet.push({ state: neighbor, f: neighborF }, neighborF);
             }
@@ -262,12 +257,160 @@ async function AStarSearch<S>(
     const progress = {
         elapsedMillis: getElapsedMillis(),
         bestState,
+        currentState: bestState,
         depth: steps,
         iteration,
     };
     reportProgress(progress);
     return progress;
 }
+
+
+
+// // unfortunately it doesn't work ; this attempts to ONLY follow improving paths but either i messed up or it simply fails to find the best paths.
+// async function AStarSearch<S>(
+//     initialState: S,
+//     options: {
+//         getNeighbors: (state: S, depth: number) => S[] | Promise<S[]>;
+//         isGoal: (state: S) => boolean;
+//         getGCost: (state: S) => number;
+//         getHCost: (state: S) => number;
+//         getStateId: (state: S) => string;
+//     },
+//     cancellationTrigger: React.MutableRefObject<boolean>,
+//     reportProgress: (progress: AStarSearchProgressState<S>) => void
+// ): Promise<AStarSearchProgressState<S>> {
+//     // Example stopwatch or timer utility
+//     //console.log(`astar start`);
+//     const startTime = performance.now();
+
+//     // For priority queue, you could use an external library or your own Min-Heap.
+//     // We'll assume MinPriorityQueue<T> has push(item, priority) and pop() => {element, priority}
+//     const openSet = new MinPriorityQueue<{ state: S }>();
+//     const closedSet = new Set<string>();        // track visited/expanded states
+//     const gScore = new Map<string, number>();  // track lowest g cost found for a state
+
+//     // Initial costs
+//     const initialG = options.getGCost(initialState);
+//     const initialH = options.getHCost(initialState);
+//     //const initialF = initialG + initialH;
+//     const initialId = options.getStateId(initialState);
+
+//     // Initialize data structures
+//     gScore.set(initialId, initialG);
+//     openSet.push({ state: initialState }, initialG);
+
+//     let bestState = initialState;  // track the best state encountered
+//     let bestG = initialG;
+//     let steps = 0;
+//     let iteration = 1;
+//     const reportEveryNSteps = 1;
+
+//     // A small helper to compute elapsed time
+//     const getElapsedMillis = () => performance.now() - startTime;
+
+//     while (!openSet.isEmpty()) {
+//         steps++;
+
+//         // Pop the node with the smallest f
+//         const current = openSet.pop();
+//         if (!current) break;
+
+//         const currentState = current.element.state;
+//         //const currentF = current.priority; // f = g + h
+//         const currentId = options.getStateId(currentState);
+
+//         // If we've already expanded this state, skip.
+//         if (closedSet.has(currentId)) {
+//             continue;
+//         }
+//         closedSet.add(currentId);
+
+//         if (current.priority > bestG) continue;
+
+//         bestState = currentState;
+//         bestG = current.priority;
+
+//         // Report progress
+//         if (steps % reportEveryNSteps === 0) {
+//             reportProgress({
+//                 elapsedMillis: getElapsedMillis(),
+//                 bestState,
+//                 currentState,
+//                 depth: steps,
+//                 iteration,
+//             });
+//             await new Promise(resolve => setTimeout(resolve, 0));
+//         }
+//         // Allow async cancellation
+//         if (cancellationTrigger.current) {
+//             return {
+//                 elapsedMillis: getElapsedMillis(),
+//                 bestState,
+//                 currentState,
+//                 depth: steps,
+//                 iteration,
+//             };
+//         }
+
+//         // Check for goal
+//         if (options.isGoal(currentState)) {
+//             // Found the goal, return immediately (or reconstruct path if needed).
+//             bestState = currentState;
+//             const final = {
+//                 elapsedMillis: getElapsedMillis(),
+//                 bestState,
+//                 currentState,
+//                 depth: steps,
+//                 iteration,
+//             };
+//             reportProgress(final);
+//             return final;
+//         }
+
+//         // (Optional) You can track a "best" so far if you want the best f-scores or g-scores:
+//         // if (currentG < bestG) {
+//         //     bestState = currentState;
+//         //     bestG = currentG;
+//         // }
+
+//         // Expand neighbors
+//         const neighbors = await Promise.resolve(options.getNeighbors(currentState, steps));
+//         for (const neighbor of neighbors) {
+//             iteration++;
+//             const neighborG = options.getGCost(neighbor);
+//             const neighborH = options.getHCost(neighbor);
+//             //const neighborF = neighborG + neighborH;
+//             const neighborId = options.getStateId(neighbor);
+
+//             // If neighbor hasn't been visited or we found a cheaper path, update and push
+//             const knownG = gScore.get(neighborId);
+//             if (knownG) continue;
+//             // only push if we have a better g score than best
+//             if (neighborG <= bestG) {
+//                 gScore.set(neighborId, neighborG);
+//                 openSet.push({ state: neighbor }, neighborG);
+//             }
+//         }
+//     }
+
+//     // If the loop finishes without finding a goal, we return whatever "best" we have.
+//     const progress = {
+//         elapsedMillis: getElapsedMillis(),
+//         bestState,
+//         currentState: bestState,
+//         depth: steps,
+//         iteration,
+//     };
+//     reportProgress(progress);
+//     return progress;
+// }
+
+
+
+
+
+
 
 export async function SetlistPlanAutoFillAStar(
     aStarConfig: AStarSearchConfig,
