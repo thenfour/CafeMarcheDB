@@ -5,7 +5,7 @@
 
 import { Stopwatch } from "shared/rootroot";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
 
 /**
  * Returns N distinct random indices from [0, rowCount - 1].
@@ -166,7 +166,11 @@ export const SetlistPlanGetRandomMutation = (saConfig: SimulatedAnnealingConfig,
         // }
         if (cellsLeftToMutate === 0) break;
     }
-    return newState;
+    return {
+        ...newState,
+        totalCost: newState.cost.totalCost,
+        stateId: GetSetlistPlanKey(newState.plan),
+    };
 };
 
 
@@ -246,7 +250,7 @@ export async function SetlistPlanAutoFillSA(
 
     const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
     const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig);
-    const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
+    const state: SetlistPlanSearchState = { plan: initialState, stats, cost, totalCost: cost.totalCost, stateId: GetSetlistPlanKey(initialState), };
 
     return await AutoCompleteSetlistPlanSA(saConfig, state, costCalcConfig, cancellationTrigger, reportProgress);
 

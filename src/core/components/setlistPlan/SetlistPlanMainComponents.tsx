@@ -797,6 +797,12 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 >A*</Button>
                 <Button
                     onClick={() => {
+                        props.mutator.autoCompletePlanAStar2();
+                    }}
+                    disabled={isTempDoc}
+                >A*2</Button>
+                <Button
+                    onClick={() => {
                         props.mutator.autoCompletePlanDag();
                     }}
                     disabled={isTempDoc}

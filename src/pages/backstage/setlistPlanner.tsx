@@ -16,6 +16,7 @@ import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { AStarSearchConfig, SetlistPlanAutoFillAStar, SetlistPlanGetNeighborsForAStar } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
+import { SetlistPlanAutoFillAStar2 } from "src/core/components/setlistPlan/SetlistPlanAutoFillAStar2";
 import { SetlistPlanAutoFillDAG } from "src/core/components/setlistPlan/SetlistPlanAutoFillDAG";
 import { SetlistPlanAutoFillSA, SimulatedAnnealingConfig } from "src/core/components/setlistPlan/SetlistPlanAutofillSA";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
@@ -191,7 +192,7 @@ const gDefaultAStarConfig: AStarSearchConfig = {
     depthsWithoutCulling: 2,
     cullPercent01: undefined,
     cullClampMin: undefined,
-    cullClampMax: 10,
+    cullClampMax: 1,
 };
 
 const AStarConfigEditor = (props: { value: AStarSearchConfig, onChange: (value: AStarSearchConfig) => void }) => {
@@ -476,6 +477,12 @@ const SetlistPlannerPageContent = () => {
                 if (!doc) return;
                 await doAutoFill(async (progressHandler) => {
                     return await SetlistPlanAutoFillAStar(aStarConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
+                });
+            },
+            autoCompletePlanAStar2: async () => {
+                if (!doc) return;
+                await doAutoFill(async (progressHandler) => {
+                    return await SetlistPlanAutoFillAStar2(aStarConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
                 });
             },
             autoCompletePlanDag: async () => {
@@ -1073,7 +1080,9 @@ const SetlistPlannerPageContent = () => {
                         const n = SetlistPlanGetNeighborsForAStar(aStarConfig, 0, {
                             plan: doc,
                             stats,
-                            cost
+                            cost,
+                            totalCost: cost.totalCost,
+                            stateId: GetSetlistPlanKey(doc),
                         }, costCalcConfig);
                         n.sort((a, b) => a.cost.totalCost - b.cost.totalCost);// {
                         setNeighbors([doc, ...n.map(x => x.plan)]);
@@ -1119,7 +1128,7 @@ const SetlistPlannerPageContent = () => {
                 <div>Current Cost: {autocompleteProgressState?.currentState.cost.totalCost.toFixed(2)}</div>
                 {autocompleteProgressState?.bestState && <div>Best Cost: {autocompleteProgressState?.bestState.cost.totalCost.toFixed(2)}</div>}
                 <div>Duration: {((autocompleteProgressState?.elapsedMillis || 0) / 1000).toFixed(2)}</div>
-                {autocompleteProgressState?.iterationsPerSecond && <div>Iterations/sec: {(autocompleteProgressState.iterationsPerSecond).toFixed(2)}</div>}
+                <div>Iterations/sec: {((autocompleteProgressState?.iterationsPerSecond || 0) / (autocompleteProgressState?.elapsedMillis || 1) * 1000).toFixed(2)}</div>
             </div>
         </Backdrop>
     </div >

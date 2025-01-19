@@ -1,6 +1,6 @@
 
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { generateFibonacci } from "shared/utils";
+import { generateFibonacci, toSorted } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan, SetlistPlanColumn, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
 
@@ -9,10 +9,46 @@ const FIBONACCI_SEQUENCE_REVERSED = [...FIBONACCI_SEQUENCE].reverse();
 
 const MAX_POINTS_PER_REHEARSAL = 8;
 
+
+/**
+ * Priority Queue / Min-Heap interface:
+ * You can use a library like "mnemonist" or "fastpriorityqueue".
+ * For simplicity, a basic array-based approach is shown (not fully optimized).
+ */
+export class MinPriorityQueue<T> {
+    private data: { element: T; priority: number }[] = [];
+
+    push(element: T, priority: number) {
+        this.data.push({ element, priority });
+    }
+
+    pop(): { element: T; priority: number } | undefined {
+        if (this.isEmpty()) return undefined;
+        // Find the item with the smallest priority
+        let bestIndex = 0;
+        let bestPriority = this.data[0]!.priority;
+        for (let i = 1; i < this.data.length; i++) {
+            if (this.data[i]!.priority < bestPriority) {
+                bestIndex = i;
+                bestPriority = this.data[i]!.priority;
+            }
+        }
+        const [element] = this.data.splice(bestIndex, 1);
+        return element!;
+    }
+
+    isEmpty(): boolean {
+        return this.data.length === 0;
+    }
+}
+
+
 export type SetlistPlanSearchState = {
     plan: SetlistPlan;
     stats: SetlistPlanStatsForCostCalc;
     cost: CostResult;
+    totalCost: number;
+    stateId: string;
 };
 
 export interface AStarSearchProgressState<S> {
@@ -36,6 +72,7 @@ export interface SetlistPlanMutator {
     setDoc: (doc: SetlistPlan) => void;
     autoCompletePlanSA: () => void;
     autoCompletePlanAStar: () => void;
+    autoCompletePlanAStar2: () => void;
     autoCompletePlanDag: () => void;
     clearAllocation: () => void;
 
@@ -869,26 +906,26 @@ export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, s
  * can probably be optimized.
  */
 export function GetSetlistPlanKey(plan: SetlistPlan): string {
-    // pretty output but slower:
-    // accounting for 0 vs. undefined.
-    const rowStrings = plan.payload.rows.filter(r => r.type === "song").map(row => {
-        const rowCellStrings = plan.payload.columns.map(c => {
-            const cell = plan.payload.cells.find(cell => cell.rowId === row.rowId && cell.columnId === c.columnId);
-            if (cell?.pointsAllocated === undefined) return "-";
-            return cell.pointsAllocated.toString();
-        });
-        return rowCellStrings.join(',');
-    });
-    return rowStrings.join('|');
-
-
-    // // less pretty output but faster:
-    // const sortedCells = toSorted(plan.payload.cells.filter(x => !!x.pointsAllocated), (a, b) => {
-    //     if (a.rowId === b.rowId) {
-    //         return a.columnId.localeCompare(b.columnId);
-    //     }
-    //     return a.rowId.localeCompare(b.rowId);
+    // // pretty output but slower:
+    // // accounting for 0 vs. undefined.
+    // const rowStrings = plan.payload.rows.filter(r => r.type === "song").map(row => {
+    //     const rowCellStrings = plan.payload.columns.map(c => {
+    //         const cell = plan.payload.cells.find(cell => cell.rowId === row.rowId && cell.columnId === c.columnId);
+    //         if (cell?.pointsAllocated === undefined) return "-";
+    //         return cell.pointsAllocated.toString();
+    //     });
+    //     return rowCellStrings.join(',');
     // });
+    // return rowStrings.join('|');
 
-    // return sortedCells.map(cell => `${cell.rowId}/${cell.columnId}/${cell.pointsAllocated}`).join(',');
+
+    // less pretty output but faster:
+    const sortedCells = toSorted(plan.payload.cells.filter(x => !!x.pointsAllocated), (a, b) => {
+        if (a.rowId === b.rowId) {
+            return a.columnId.localeCompare(b.columnId);
+        }
+        return a.rowId.localeCompare(b.rowId);
+    });
+
+    return sortedCells.map(cell => `${cell.rowId}/${cell.columnId}/${cell.pointsAllocated}`).join(',');
 }

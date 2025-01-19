@@ -276,6 +276,7 @@
 }
 
 .SetlistPlannerAutocompleteProgress {
+    opacity: 40%;
     padding: 30px;
     background-color: white;
     border: 7px solid #84f;

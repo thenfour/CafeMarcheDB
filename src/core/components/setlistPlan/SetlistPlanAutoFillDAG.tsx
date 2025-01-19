@@ -54,7 +54,7 @@ export const SetlistPlanGetNeighborsForDAGMinCost = (state: SetlistPlanSearchSta
         newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan);
         newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig);
 
-        neighbors.push(newState);
+        neighbors.push({ ...newState, totalCost: newState.cost.totalCost, stateId: GetSetlistPlanKey(newState.plan) });
     }
 
     return neighbors;
@@ -100,7 +100,7 @@ export interface DAGSearchResult<S> {
      * this array will contain the sequence of nodes from `startNode` to the goal.
      * Otherwise it may be an empty array.
      */
-    path: S[];
+    //path: S[];
 }
 
 /**
@@ -129,7 +129,7 @@ export async function DAGMinCostSearch<S>(
     },
     cancellationTrigger: { current: boolean },
     reportProgress: (info: DAGSearchProgress<S>) => void
-): Promise<DAGSearchResult<S>> {
+): Promise<undefined> {
 
     const { isGoal, getChildren, getNodeId, enablePathReconstruction } = options;
 
@@ -265,10 +265,10 @@ export async function DAGMinCostSearch<S>(
 
     // The minimal cost from startNode to a goal is in memo.get(startId)
     const finalCost = memo.get(startId) ?? Infinity;
-    const result: DAGSearchResult<S> = {
-        cost: finalCost,
-        path: []
-    };
+    // const result: DAGSearchResult<S> = {
+    //     cost: finalCost,
+    //     //path: []
+    // };
 
     // If path reconstruction is enabled and we actually found a finite cost, reconstruct path:
     if (enablePathReconstruction && finalCost < Infinity) {
@@ -303,10 +303,10 @@ export async function DAGMinCostSearch<S>(
             // As a minimal demonstration, I'll assume the node *is* the ID (like a string or unique token).
             currentNode = currentId as unknown as S;
         }
-        result.path = path;
+        //result.path = path;
     }
 
-    return result;
+    //return result;
 }
 
 
@@ -329,7 +329,7 @@ export async function SetlistPlanAutoFillDAG(
 
     const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
     const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig);
-    const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
+    const state: SetlistPlanSearchState = { plan: initialState, stats, cost, totalCost: cost.totalCost, stateId: GetSetlistPlanKey(initialState) };
 
     let progress: SetlistPlanSearchProgressState;
     const reportProgressHook = (info: DAGSearchProgress<SetlistPlanSearchState>) => {

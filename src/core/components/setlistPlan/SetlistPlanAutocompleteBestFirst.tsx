@@ -1,7 +1,7 @@
 import { Stopwatch } from "shared/rootroot";
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
 
 export interface SetlistPlanBestFirstSearchConfig {
     maxIterations: number;
@@ -44,7 +44,7 @@ const GetNeighborsIdealValueOnly = (state: SetlistPlanSearchState, costCalcConfi
             newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan);
             newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig);
 
-            neighbors.push(newState);
+            neighbors.push({ ...newState, totalCost: newState.cost.totalCost, stateId: GetSetlistPlanKey(newState.plan) });
         }
     }
     return neighbors;
@@ -86,7 +86,7 @@ export async function SetlistPlanAutoFillBestFirst(
 
     const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
     const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig);
-    const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
+    const state: SetlistPlanSearchState = { plan: initialState, stats, cost, totalCost: cost.totalCost, stateId: GetSetlistPlanKey(initialState), };
     return await AutoCompleteSetlistPlanBestFirst(state, costCalcConfig, cancellationTrigger, reportProgress);
 
 }

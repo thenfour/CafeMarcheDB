@@ -1,5 +1,5 @@
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { AStarSearchProgressState, CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
+import { AStarSearchProgressState, CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, MinPriorityQueue, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
 
 export interface AStarSearchConfig {
     depthsWithoutCulling: number;
@@ -75,45 +75,13 @@ export const SetlistPlanGetNeighborsForAStar = (aStarConfig: AStarSearchConfig, 
         newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan);
         newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig);
 
-        neighbors.push(newState);
+        neighbors.push({ ...newState, totalCost: newState.cost.totalCost, stateId: GetSetlistPlanKey(newState.plan) });
     }
 
     return neighbors;
 }
 
 
-
-/**
- * Priority Queue / Min-Heap interface:
- * You can use a library like "mnemonist" or "fastpriorityqueue".
- * For simplicity, a basic array-based approach is shown (not fully optimized).
- */
-class MinPriorityQueue<T> {
-    private data: { element: T; priority: number }[] = [];
-
-    push(element: T, priority: number) {
-        this.data.push({ element, priority });
-    }
-
-    pop(): { element: T; priority: number } | undefined {
-        if (this.isEmpty()) return undefined;
-        // Find the item with the smallest priority
-        let bestIndex = 0;
-        let bestPriority = this.data[0]!.priority;
-        for (let i = 1; i < this.data.length; i++) {
-            if (this.data[i]!.priority < bestPriority) {
-                bestIndex = i;
-                bestPriority = this.data[i]!.priority;
-            }
-        }
-        const [element] = this.data.splice(bestIndex, 1);
-        return element!;
-    }
-
-    isEmpty(): boolean {
-        return this.data.length === 0;
-    }
-}
 
 function IsGoal(state: SetlistPlanSearchState): boolean {
     //return state.stats.totalPlanSegmentBalance >= 0;
@@ -150,7 +118,7 @@ export async function AStarSearch<S>(
 ): Promise<AStarSearchProgressState<S>> {
     // Example stopwatch or timer utility
     const startTime = performance.now();
-    const reportEveryNSteps = 1;
+    const reportEveryNSteps = 10;
 
     // For priority queue, you could use an external library or your own Min-Heap.
     // We'll assume MinPriorityQueue<T> has push(item, priority) and pop() => {element, priority}
@@ -421,7 +389,7 @@ export async function SetlistPlanAutoFillAStar(
 
     const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
     const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig);
-    const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
+    const state: SetlistPlanSearchState = { plan: initialState, stats, cost, totalCost: cost.totalCost, stateId: GetSetlistPlanKey(initialState), };
 
     const result = AStarSearch<SetlistPlanSearchState>(state, {
         getNeighbors: (state, depth) => SetlistPlanGetNeighborsForAStar(aStarConfig, depth, state, costCalcConfig),
