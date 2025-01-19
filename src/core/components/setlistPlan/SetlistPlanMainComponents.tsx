@@ -718,12 +718,12 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 >
                     Delete
                 </Button>
-                {/* <Button
+                <Button
                     onClick={() => {
                         props.mutator.autoCompletePlan();
                     }}
                     disabled={isTempDoc}
-                >Autocomplete plan</Button> */}
+                >Autocomplete plan</Button>
                 <Button
                     onClick={async () => {
                         if (await confirm({ title: "Clear allocation", description: "Are you sure?" })) {

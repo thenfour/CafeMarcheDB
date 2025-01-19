@@ -6,6 +6,7 @@ import { DateTimeRange } from "shared/time";
 import { CoalesceBool } from "shared/utils";
 import * as db3 from "../db3";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
+import { slugify } from "shared/rootroot";
 
 
 export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
@@ -123,6 +124,7 @@ export type EventCalendarInput = Pick<EventForCal,
     Pick<EventSegmentForCal, "isAllDay" | "uid"> &
 {
     description: string,
+    eventUri: string;
     name: string,
     statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance),
 
@@ -158,6 +160,8 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
         isAllDay: CoalesceBool(segment.isAllDay, true),
     });
 
+    const eventUri = process.env.CMDB_BASE_URL + `backstage/event/${event.id}/${slugify(event.name || "")}`; // 
+
     if (dateRange.isTBD()) {
         return null;
     }
@@ -187,6 +191,7 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
     const ret: EventCalendarInput = {
         // note: when calculating changes, we must ignore revision
         revision: 0,
+        eventUri,
 
         eventId: event.id!,
         segmentId: segment.id,

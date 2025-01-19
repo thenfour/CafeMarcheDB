@@ -74,8 +74,6 @@ export const addEventToCalendar2 = (
 
     const eventUserResponse = getEventUserResponse();
 
-    const eventURL = process.env.CMDB_BASE_URL + `backstage/event/${event.eventId}/${slugify(event.name)}`; // 
-
     let summary = `CM: ${event.name}`;
     if (user && isUserAttending(user.id)) {
         summary = `CM👍 ${event.name}`;
@@ -86,9 +84,9 @@ export const addEventToCalendar2 = (
         start: event.start,
         end: event.end,
         summary: summary,//`CM: ${event.name}`,
-        description: event.description,
+        description: `${event.eventUri}\n\n${event.description}`,
         location: event.locationDescription,
-        url: eventURL,
+        url: event.eventUri,
         status: event.calStatus,
         sequence: event.revision + (eventUserResponse?.revision || 0),
 

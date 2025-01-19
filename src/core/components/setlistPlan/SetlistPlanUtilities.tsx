@@ -4,8 +4,8 @@ import { generateFibonacci } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
 
-const FIBONACCI_SEQUENCE = [...generateFibonacci(10000)]; // for calculating possibilities. don't include 0.
-//const FIBONACCI_SEQUENCE_REVERSED = [...FIBONACCI_SEQUENCE].reverse();
+const FIBONACCI_SEQUENCE = [...generateFibonacci(100)]; // for calculating possibilities. don't include 0.
+const FIBONACCI_SEQUENCE_REVERSED = [...FIBONACCI_SEQUENCE].reverse();
 
 const MAX_POINTS_PER_REHEARSAL = 8;
 
@@ -254,22 +254,62 @@ export function CalculateSetlistPlanStats(doc: SetlistPlan, allSongs: db3.SongPa
         maxSongTotalPoints,
         minSongTotalPoints,
 
-        // for search
+        // // for search
+        // getPossibleValuesForCell: (columnIndex: number, rowIndex: number): number[] => {
+        //     const columnStat = segmentStats[columnIndex]!;
+        //     const rowStat = songStats[rowIndex]!;
+        //     const isAlreadyOccupied = rowStat?.songAllocatedCells.some(cell => cell.columnIndex === columnIndex && cell.pointsAllocated);
+        //     if (isAlreadyOccupied) return [];
+
+        //     // all fib numbers from 1 to either the max points available in the column, or the points still needed for the song.
+        //     const maxPointsAvailable = columnStat.pointsStillAvailable || 0;
+        //     const pointsStillNeeded = rowStat.pointsStillNeeded || 0;
+        //     //const maxAllocation = Math.min(maxPointsAvailable, pointsStillNeeded);
+        //     const maxAllocation = maxPointsAvailable;
+        //     if (maxAllocation < 1) return [];
+
+        //     const allValues = new Set<number>([...FIBONACCI_SEQUENCE.filter(fib => fib < maxAllocation), maxAllocation]);
+        //     return [...allValues];
+        // },
+
+        // allows overwriting cells 
         getPossibleValuesForCell: (columnIndex: number, rowIndex: number): number[] => {
             const columnStat = segmentStats[columnIndex]!;
             const rowStat = songStats[rowIndex]!;
-            const isAlreadyOccupied = rowStat?.songAllocatedCells.some(cell => cell.columnIndex === columnIndex && cell.pointsAllocated);
-            if (isAlreadyOccupied) return [];
+            const linearIndex = rowIndex * doc.payload.columns.length + columnIndex;
+            const cell = allocatedCells.find(cell => cell.linearIndex === linearIndex);
+            const isAlreadyOccupied = cell && cell.pointsAllocated && !cell.autoFilled;
+            if (isAlreadyOccupied) {
+                //console.log(`is already occupied: ${rowIndex}/${columnIndex}`);
+                return [];
+            }
+
+            // refund points allocated for this cell.
+            const pointsAllocated = cell?.pointsAllocated || 0;
+            const columnPointsAvailable = columnStat.pointsStillAvailable + pointsAllocated;
+            const songPointsRequired = (rowStat.pointsStillNeeded || 0) + pointsAllocated;
 
             // all fib numbers from 1 to either the max points available in the column, or the points still needed for the song.
-            const maxPointsAvailable = columnStat.pointsStillAvailable || 0;
-            const pointsStillNeeded = rowStat.pointsStillNeeded || 0;
-            //const maxAllocation = Math.min(maxPointsAvailable, pointsStillNeeded);
-            const maxAllocation = maxPointsAvailable;
-            if (maxAllocation < 1) return [];
+            const maxPointsAvailable = Math.min(columnPointsAvailable, songPointsRequired);
+            //const maxAllocation = maxPointsAvailable;
+            if (maxPointsAvailable < 1) {
+                //console.log(`maxAllocation < 1: ${rowIndex}/${columnIndex}; pointsallocated: ${pointsAllocated}; columnPointsAvailable: ${columnPointsAvailable}; songPointsRequired: ${songPointsRequired}`);
+                return [];
+            }
+            // console.log(`-> pointsAllocated:${pointsAllocated};  columnPointsAvailable: ${columnStat.pointsStillAvailable} => ${columnPointsAvailable}`);
+            // console.log(`   songPointsRequired: ${rowStat.pointsStillNeeded} => ${songPointsRequired}`);
+            // console.log(`   maxpointsavailable: ${maxPointsAvailable};`);
 
-            const allValues = new Set<number>([...FIBONACCI_SEQUENCE.filter(fib => fib < maxAllocation), maxAllocation]);
-            return [...allValues];
+            const maxPointsToAllocate = Math.min(MAX_POINTS_PER_REHEARSAL, maxPointsAvailable);
+            return [FIBONACCI_SEQUENCE_REVERSED.find(fib => fib <= maxPointsToAllocate) || maxPointsToAllocate];
+            //return [maxPointsToAllocate];
+            //const allValues = new Set<number>([...FIBONACCI_SEQUENCE.filter(fib => fib < maxPointsToAllocate), maxPointsToAllocate]);
+            //return [...allValues].sort();
+
+
+            //const allValues = new Set<number>([...FIBONACCI_SEQUENCE.filter(fib => fib < maxPointsAvailable), maxPointsAvailable]);
+            //console.log(`   possible values for ${rowIndex}/${columnIndex}: ${[...allValues]};`);
+            //return [...allValues].sort();
         },
     };
 };

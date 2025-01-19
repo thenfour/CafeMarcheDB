@@ -16,6 +16,7 @@ import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { AStarSearchProgressState, SetlistPlanAutoFillAStar, SetlistPlanGetNeighborsLinear, SetlistPlanSearchState } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
+import { SetlistPlanAutoFillSA, SimulatedAnnealingConfig } from "src/core/components/setlistPlan/SetlistPlanAutofillSA";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator } from "src/core/components/setlistPlan/SetlistPlanUtilities";
@@ -33,7 +34,7 @@ function getId(prefix: string) {
     return nanoid(4);
 }
 
-const AutoCompleteSetlistPlan = SetlistPlanAutoFillAStar;
+const AutoCompleteSetlistPlan = SetlistPlanAutoFillSA;// SetlistPlanAutoFillAStar;
 
 type Penalty = {
     mul: number;
@@ -129,6 +130,64 @@ const CostConfigEditor = (props: { value: SetlistPlanCostPenalties, onChange: (v
 };
 
 
+const SaConfigEditor = (props: { value: SimulatedAnnealingConfig, onChange: (value: SimulatedAnnealingConfig) => void }) => {
+    const snackbar = useSnackbar();
+    const { value, onChange } = props;
+    return <div className="CostConfigEditor">
+        <h2>Simulated Annealing Config</h2>
+        <table>
+            <tbody>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.initialTemp} onChange={(e, val) => onChange({ ...value, initialTemp: val || 0 })} /></td>
+                    <td>initial temp</td>
+                </tr>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.coolingRate} onChange={(e, val) => onChange({ ...value, coolingRate: val || 0 })} /></td>
+                    <td>coolingRate</td>
+                </tr>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.cellsToMutatePerIteration} onChange={(e, val) => onChange({ ...value, cellsToMutatePerIteration: val || 0 })} /></td>
+                    <td>cellsToMutatePerIteration</td>
+                </tr>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.maxIterations} onChange={(e, val) => onChange({ ...value, maxIterations: val || 0 })} /></td>
+                    <td>maxIterations</td>
+                </tr>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.favorLateIndicesAlpha} onChange={(e, val) => onChange({ ...value, favorLateIndicesAlpha: val || 0 })} /></td>
+                    <td>favorLateIndicesAlpha</td>
+                </tr>
+                <tr>
+                    <td><AutoSelectingNumberField value={value.probabilityOfEmpty01} onChange={(e, val) => onChange({ ...value, probabilityOfEmpty01: val || 0 })} /></td>
+                    <td>probabilityOfEmpty01</td>
+                </tr>
+            </tbody>
+        </table>
+        <Button onClick={() => onChange(gDefaultSaConfig)}>Reset to Default</Button>
+        <Button
+            onClick={() => {
+                void snackbar.invokeAsync(async () => {
+                    await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+                }, "Copied to clipboard");
+            }}
+        >Copy to clipboard</Button>
+        <Button
+            onClick={() => {
+                void snackbar.invokeAsync(async () => {
+                    const text = await navigator.clipboard.readText();
+                    const parsed = JSON.parse(text);
+                    props.onChange(parsed);
+                }, "Pasted from clipboard");
+            }}
+        >
+            Paste from clipboard
+        </Button>
+    </div>;
+};
+
+
+
+
 const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
     // hard requirements.
     underRehearsedSong: { mul: 999, add: 999 },
@@ -147,6 +206,15 @@ const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
     // trivial or non-existent penalties
     segmentUnderUtilized: { mul: 0, add: 1 },
     underAllocatedSegment: { mul: 0, add: 1 },
+};
+
+const gDefaultSaConfig: SimulatedAnnealingConfig = {
+    initialTemp: 9999,
+    coolingRate: 0.99,
+    maxIterations: 1000,
+    cellsToMutatePerIteration: 2,
+    favorLateIndicesAlpha: 1,
+    probabilityOfEmpty01: 0.5,
 };
 
 // const gDefaultRetainConfig: SetlistPlanRetentionConfig = {
@@ -238,6 +306,7 @@ const SetlistPlannerPageContent = () => {
     const cancellationTrigger = React.useRef<boolean>(false);
 
     const [costCalcConfig, setCostCalcConfig] = React.useState<SetlistPlanCostPenalties>(gDefaultCostCalcConfig);
+    const [saConfig, setSaConfig] = React.useState<SimulatedAnnealingConfig>(gDefaultSaConfig);
     //const [retainConfig, setRetainConfig] = React.useState<SetlistPlanRetentionConfig>(gDefaultRetainConfig);
 
     const confirm = useConfirm();
@@ -342,7 +411,7 @@ const SetlistPlannerPageContent = () => {
 
                     cancellationTrigger.current = false;
 
-                    const result = await AutoCompleteSetlistPlan(cleanedDoc, costCalcConfig, allSongs, cancellationTrigger, (progressState) => {
+                    const result = await AutoCompleteSetlistPlan(saConfig, cleanedDoc, costCalcConfig, allSongs, cancellationTrigger, (progressState) => {
                         setTempDoc(progressState.bestState.plan);
                         setAutocompleteProgressState(progressState);
                     });
@@ -816,7 +885,10 @@ const SetlistPlannerPageContent = () => {
             </div>
             }
 
-            {showAutocompleteConfig && doc && <CostConfigEditor value={costCalcConfig} onChange={setCostCalcConfig} />}
+            {showAutocompleteConfig && doc && <>
+                <CostConfigEditor value={costCalcConfig} onChange={setCostCalcConfig} />
+                <SaConfigEditor value={saConfig} onChange={setSaConfig} />
+            </>}
             {/* {showAutocompleteConfig && doc && <RetainConfigEditor value={retainConfig} onChange={setRetainConfig} />} */}
 
         </div>
