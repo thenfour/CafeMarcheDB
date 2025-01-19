@@ -7,7 +7,7 @@
 import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { gLightSwatchColors, gSwatchColors } from "shared/color";
+import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
 import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
@@ -30,6 +30,7 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { ColorPick } from "../ColorPick";
 
 
 
@@ -83,6 +84,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
 
             <div style={{ display: "flex", alignItems: "center" }}>
                 <SetlistPlannerLedArray
+                    direction="row"
                     ledDefs={props.doc.payload.rowLeds || []}
                     ledValues={songRow.leds || []}
                     onLedValueChanged={val => props.mutator.setRowLedValue(songRow.rowId, val.ledId, val)}
@@ -105,11 +107,21 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 // if no measureUsage, use transparent color
                 // otherwise 
                 const pointsAllocated = props.doc.payload.cells.find((x) => x.columnId === segment.columnId && x.rowId === props.rowId)?.pointsAllocated;
+                let grad = props.colorScheme.songSegmentPoints;
+                if (segment.color) {
+                    const col = gGeneralPaletteList.findEntry(segment.color);
+                    if (col) {
+                        grad = [
+                            col.strong.foregroundColor,
+                            col.strong.backgroundColor,
+                        ];
+                    }
+                }
                 const bgColor = pointsAllocated ? LerpColor(
                     pointsAllocated,
                     props.stats.minCellAllocatedPoints,
                     props.stats.maxCellAllocatedPoints,
-                    props.colorScheme.songSegmentPoints
+                    grad
                 ) : "white";
                 return <div key={index} className={`td segment numberCell ${pointsAllocated ? "" : "hatch"}`} style={{ backgroundColor: bgColor }}>
                     <NumberField
@@ -165,6 +177,7 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
 
             <div style={{ display: "flex", alignItems: "center" }}>
                 <SetlistPlannerLedArray
+                    direction="row"
                     ledDefs={props.doc.payload.rowLeds || []}
                     ledValues={row.leds || []}
                     onLedValueChanged={val => props.mutator.setRowLedValue(row.rowId, val.ledId, val)}
@@ -309,6 +322,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </div>
                 <div>
                     <SetlistPlannerLedArray
+                        direction="column"
                         ledDefs={props.doc.payload.columnLeds || []}
                         ledValues={segment.leds || []}
                         onLedValueChanged={val => props.mutator.setColumnLedValue(segment.columnId, val.ledId, val)}
@@ -799,13 +813,19 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                 onChange={(e, newTotal) => {
                                     props.mutator.setColumnAvailablePoints(segment.columnId, newTotal || undefined);
                                 }} />
+                            <ColorPick
+                                value={segment.color || null}
+                                onChange={(newColor) => {
+                                    props.mutator.setColumnColor(segment.columnId, newColor?.id || undefined);
+                                }}
+                                allowNull={true}
+                            />
                             <Markdown3Editor
                                 onChange={(newMarkdown) => {
                                     props.mutator.setColumnComment(segment.columnId, newMarkdown);
                                 }}
                                 value={segment.commentMarkdown || ""}
                                 minHeight={75}
-                            //beginInPreview={true}
                             />
                             <Button startIcon={gIconMap.Delete()} onClick={() => {
                                 props.mutator.deleteColumn(segment.columnId);

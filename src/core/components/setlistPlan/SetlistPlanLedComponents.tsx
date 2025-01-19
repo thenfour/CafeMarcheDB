@@ -100,6 +100,7 @@ interface SetlistPlannerLedArrayProps {
     ledDefs: SetlistPlanLedDef[];
     ledValues: SetlistPlanLedValue[];
     onLedValueChanged: (newValue: SetlistPlanLedValue) => void;
+    direction: "row" | "column";
 }
 export const SetlistPlannerLedArray = (props: SetlistPlannerLedArrayProps) => {
     const rowLedValues = props.ledDefs
@@ -111,7 +112,7 @@ export const SetlistPlannerLedArray = (props: SetlistPlannerLedArrayProps) => {
             }
         });
 
-    return <div className="setlistPlanLedArray">
+    return <div className="setlistPlanLedArray" style={{ display: "flex", flexDirection: props.direction }}>
         {rowLedValues.map((item, index) => <SetlistPlannerLed
             key={index}
             value={item.val}

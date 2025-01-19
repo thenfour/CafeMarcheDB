@@ -34,6 +34,7 @@ export type SetlistPlanRow = z.infer<typeof ZSetlistPlanRow>;
 export const ZSetlistPlanColumn = z.object({
     columnId: z.string(),
     pointsAvailable: z.number().optional(),
+    color: z.string().nullable().optional(),
     name: z.string(),
     commentMarkdown: z.string().optional(),
     leds: z.array(ZSetlistPlanLedValue).optional(),

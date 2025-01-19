@@ -34,6 +34,7 @@ export interface SetlistPlanMutator {
     addColumn: () => void;
     deleteColumn: (columnId: string) => void;
     setColumnName: (columnId: string, name: string) => void;
+    setColumnColor: (columnId: string, color: string | undefined | null) => void;
     setColumnComment: (columnId: string, comment: string) => void;
     setColumnAvailablePoints: (columnId: string, total: number | undefined) => void;
 

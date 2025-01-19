@@ -606,6 +606,25 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
+            setColumnColor: (columnId: string, color: string | undefined | null) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            columns: doc.payload.columns.map((x) => {
+                                if (x.columnId === columnId) {
+                                    return {
+                                        ...x,
+                                        color,
+                                    };
+                                }
+                                return x;
+                            }),
+                        },
+                    });
+                }
+            },
             setCellPoints: (rowId: string, columnId: string, measure: number | undefined) => {
                 if (doc) {
                     const exists = doc.payload.cells.find((x) => x.columnId === columnId && x.rowId === rowId);
