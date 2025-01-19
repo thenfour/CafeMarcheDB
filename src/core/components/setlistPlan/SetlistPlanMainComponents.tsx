@@ -108,6 +108,9 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 // otherwise 
                 const pointsAllocated = props.doc.payload.cells.find((x) => x.columnId === segment.columnId && x.rowId === props.rowId)?.pointsAllocated;
                 let grad = props.colorScheme.songSegmentPoints;
+                const style: any = {
+                };
+
                 if (segment.color) {
                     const col = gGeneralPaletteList.findEntry(segment.color);
                     if (col) {
@@ -115,15 +118,24 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                             col.strong.foregroundColor,
                             col.strong.backgroundColor,
                         ];
+
+                        if (pointsAllocated === undefined) {
+                            style["--fc"] = LerpColor(0.12, 0, 1, ["#ffffff", col.strong.backgroundColor]);
+                            style["--bc"] = LerpColor(0.25, 0, 1, ["#ffffff", col.strong.foregroundColor]);
+                        }
                     }
                 }
-                const bgColor = pointsAllocated ? LerpColor(
+
+                let bgColor = pointsAllocated ? LerpColor(
                     pointsAllocated,
                     props.stats.minCellAllocatedPoints,
                     props.stats.maxCellAllocatedPoints,
                     grad
                 ) : "white";
-                return <div key={index} className={`td segment numberCell ${pointsAllocated ? "" : "hatch"}`} style={{ backgroundColor: bgColor }}>
+
+                style["backgroundColor"] = bgColor;
+
+                return <div key={index} className={`td segment numberCell ${pointsAllocated ? "" : "hatch"}`} style={style}>
                     <NumberField
                         value={pointsAllocated || null}
                         onChange={(e, newValue) => {
@@ -796,7 +808,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 />
             </CMTab>
 
-            <CMTab thisTabId="segments" summaryTitle={"segments"}>
+            <CMTab thisTabId="segments" summaryTitle={"Columns"}>
 
                 <div className="SetlistPlannerDocumentEditorSegments">
                     {docOrTempDoc.payload.columns.map((segment) => {
@@ -842,7 +854,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
             <CMTab thisTabId="columnLeds" summaryTitle={"Column Leds"}>
                 <SetlistPlannerLedDefArray doc={doc} mutator={props.mutator} collection="column" />
             </CMTab>
-            <CMTab thisTabId="songs" summaryTitle={"Rows"}>
+            <CMTab thisTabId="songs" summaryTitle={"Songs"}>
                 <div className="SetlistPlannerDocumentEditorSongs">
                     {docOrTempDoc.payload.rows.map((song) => {
                         return <div key={song.rowId} className="SetlistPlannerDocumentEditorSong">
