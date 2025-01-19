@@ -42,7 +42,7 @@ const GetNeighborsIdealValueOnly = (state: SetlistPlanSearchState, costCalcConfi
             });
 
             newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan);
-            newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig, allSongs);
+            newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig);
 
             neighbors.push(newState);
         }
@@ -59,7 +59,6 @@ function IsGoal(state: SetlistPlanSearchState): boolean {
 export async function AutoCompleteSetlistPlanBestFirst(
     initialState: SetlistPlanSearchState,
     costCalcConfig: SetlistPlanCostPenalties,
-    allSongs: db3.SongPayload[],
     cancellationTrigger: React.MutableRefObject<boolean>,
     reportProgress: (state: SetlistPlanSearchProgressState) => void
 ): Promise<SetlistPlanSearchProgressState> {
@@ -81,15 +80,14 @@ export async function AutoCompleteSetlistPlanBestFirst(
 export async function SetlistPlanAutoFillBestFirst(
     initialState: SetlistPlan,
     costCalcConfig: SetlistPlanCostPenalties,
-    allSongs: db3.SongPayload[],
     cancellationTrigger: React.MutableRefObject<boolean>,
     reportProgress: (state: SetlistPlanSearchProgressState) => void
 ): Promise<SetlistPlanSearchProgressState> {
 
     const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
-    const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig, allSongs);
+    const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig);
     const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
-    return await AutoCompleteSetlistPlanBestFirst(state, costCalcConfig, allSongs, cancellationTrigger, reportProgress);
+    return await AutoCompleteSetlistPlanBestFirst(state, costCalcConfig, cancellationTrigger, reportProgress);
 
 }
 

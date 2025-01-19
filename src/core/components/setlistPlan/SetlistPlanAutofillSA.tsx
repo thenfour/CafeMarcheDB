@@ -4,9 +4,8 @@
 // the mutation function needs to be less random; it should at least attempt to favor ideal values.
 
 import { Stopwatch } from "shared/rootroot";
-import * as db3 from "src/core/db3/db3";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, CostResult, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState, SetlistPlanStats } from "./SetlistPlanUtilities";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
 
 /**
  * Returns N distinct random indices from [0, rowCount - 1].
@@ -89,7 +88,7 @@ export type SimulatedAnnealingConfig = {
 //     cost: CostResult;
 // };
 
-export const SetlistPlanGetRandomMutation = (saConfig: SimulatedAnnealingConfig, state: SetlistPlanSearchState, costCalcConfig: SetlistPlanCostPenalties, allSongs: db3.SongPayload[]): SetlistPlanSearchState | null => {
+export const SetlistPlanGetRandomMutation = (saConfig: SimulatedAnnealingConfig, state: SetlistPlanSearchState, costCalcConfig: SetlistPlanCostPenalties): SetlistPlanSearchState | null => {
 
     const planJSON = JSON.stringify(state.plan);
     const newState = {
@@ -128,7 +127,7 @@ export const SetlistPlanGetRandomMutation = (saConfig: SimulatedAnnealingConfig,
             });
         }
         newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan);
-        newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig, allSongs);
+        newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig);
     };
 
     // const mutateCell = (columnIndex: number, rowIndex: number, possibilities: number[]) => {
@@ -175,7 +174,6 @@ export async function AutoCompleteSetlistPlanSA(
     saConfig: SimulatedAnnealingConfig,
     initialState: SetlistPlanSearchState,
     costCalcConfig: SetlistPlanCostPenalties,
-    allSongs: db3.SongPayload[],
     cancellationTrigger: React.MutableRefObject<boolean>,
     reportProgress: (state: SetlistPlanSearchProgressState) => void
 ): Promise<SetlistPlanSearchProgressState> {
@@ -211,7 +209,7 @@ export async function AutoCompleteSetlistPlanSA(
             await new Promise(resolve => setTimeout(resolve, 0));
         }
 
-        const newSol = SetlistPlanGetRandomMutation(saConfig, currentProgress.currentState, costCalcConfig, allSongs);
+        const newSol = SetlistPlanGetRandomMutation(saConfig, currentProgress.currentState, costCalcConfig);
         if (newSol === null) {
             console.log(`breaking because no mutation found.`);
             break;
@@ -242,16 +240,15 @@ export async function SetlistPlanAutoFillSA(
     saConfig: SimulatedAnnealingConfig,
     initialState: SetlistPlan,
     costCalcConfig: SetlistPlanCostPenalties,
-    allSongs: db3.SongPayload[],
     cancellationTrigger: React.MutableRefObject<boolean>,
     reportProgress: (state: SetlistPlanSearchProgressState) => void
 ): Promise<SetlistPlanSearchProgressState> {
 
     const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
-    const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig, allSongs);
+    const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig);
     const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
 
-    return await AutoCompleteSetlistPlanSA(saConfig, state, costCalcConfig, allSongs, cancellationTrigger, reportProgress);
+    return await AutoCompleteSetlistPlanSA(saConfig, state, costCalcConfig, cancellationTrigger, reportProgress);
 
 }
 

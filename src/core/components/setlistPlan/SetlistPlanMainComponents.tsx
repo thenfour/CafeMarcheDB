@@ -315,7 +315,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     const costResult = CalculateSetlistPlanCost({
         plan: docOrTempDoc,
         stats,
-    }, props.costCalcConfig, allSongs);
+    }, props.costCalcConfig);
     const costResultBreakdown = costResult.breakdown
         .sort((a, b) => b.cost - a.cost)
         .map((x) => ({ ...x, cost: x.cost.toFixed(2) }));
@@ -683,8 +683,8 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
             }}>Auto-fill (A star)</MenuItem>
             <MenuItem onClick={() => {
                 setAnchorEl(null);
-                props.mutator.autoCompletePlanBestFirst();
-            }}>Auto-fill (Best-N-First)</MenuItem>
+                props.mutator.autoCompletePlanDag();
+            }}>Auto-fill (DAG)</MenuItem>
             <Divider />
             <MenuItem
                 onClick={handleCopyToClipboard}
@@ -797,10 +797,10 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                 >A*</Button>
                 <Button
                     onClick={() => {
-                        props.mutator.autoCompletePlanBestFirst();
+                        props.mutator.autoCompletePlanDag();
                     }}
                     disabled={isTempDoc}
-                >BestFirst</Button>
+                >DAG</Button>
             </ButtonGroup>
             <InspectObject src={docOrTempDoc} label="doc" />
             <InspectObject src={stats} label="stats" />

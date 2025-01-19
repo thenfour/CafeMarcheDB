@@ -1,4 +1,3 @@
-import * as db3 from "src/core/db3/db3";
 import { SetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
 import { AStarSearchProgressState, CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanSearchProgressState, SetlistPlanSearchState } from "./SetlistPlanUtilities";
 
@@ -12,7 +11,7 @@ export interface AStarSearchConfig {
 // let's try A* again, this time though we will imagine the "steps" as filling out cell by cell.
 // originall this was too large of a search space, now let's try ONLY filling in the <=1 ideal value per cell.
 // this still results in a too-large search space.
-export const SetlistPlanGetNeighborsForAStar = (aStarConfig: AStarSearchConfig, currentDepth: number, state: SetlistPlanSearchState, costCalcConfig: SetlistPlanCostPenalties, allSongs: db3.SongPayload[]): SetlistPlanSearchState[] => {
+export const SetlistPlanGetNeighborsForAStar = (aStarConfig: AStarSearchConfig, currentDepth: number, state: SetlistPlanSearchState, costCalcConfig: SetlistPlanCostPenalties): SetlistPlanSearchState[] => {
     const neighbors: SetlistPlanSearchState[] = [];
     const planJSON = JSON.stringify(state.plan);
 
@@ -74,7 +73,7 @@ export const SetlistPlanGetNeighborsForAStar = (aStarConfig: AStarSearchConfig, 
         });
 
         newState.stats = CalculateSetlistPlanStatsForCostCalc(newState.plan);
-        newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig, allSongs);
+        newState.cost = CalculateSetlistPlanCost(newState, costCalcConfig);
 
         neighbors.push(newState);
     }
@@ -416,17 +415,16 @@ export async function SetlistPlanAutoFillAStar(
     aStarConfig: AStarSearchConfig,
     initialState: SetlistPlan,
     costCalcConfig: SetlistPlanCostPenalties,
-    allSongs: db3.SongPayload[],
     cancellationTrigger: React.MutableRefObject<boolean>,
     reportProgress: (state: SetlistPlanSearchProgressState) => void
 ): Promise<SetlistPlanSearchProgressState> {
 
     const stats = CalculateSetlistPlanStatsForCostCalc(initialState);
-    const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig, allSongs);
+    const cost = CalculateSetlistPlanCost({ plan: initialState, stats }, costCalcConfig);
     const state: SetlistPlanSearchState = { plan: initialState, stats, cost };
 
     const result = AStarSearch<SetlistPlanSearchState>(state, {
-        getNeighbors: (state, depth) => SetlistPlanGetNeighborsForAStar(aStarConfig, depth, state, costCalcConfig, allSongs),
+        getNeighbors: (state, depth) => SetlistPlanGetNeighborsForAStar(aStarConfig, depth, state, costCalcConfig),
         isGoal: IsGoal,
         getGCost: (state) => state.cost.totalCost,
         getHCost: (state) => Math.abs(state.stats.totalPlanSongBalance),

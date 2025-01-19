@@ -16,11 +16,11 @@ import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { AStarSearchConfig, SetlistPlanAutoFillAStar, SetlistPlanGetNeighborsForAStar } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
-import { SetlistPlanAutoFillBestFirst } from "src/core/components/setlistPlan/SetlistPlanAutocompleteBestFirst";
-import { AutoCompleteSetlistPlanSA, SetlistPlanAutoFillSA, SimulatedAnnealingConfig } from "src/core/components/setlistPlan/SetlistPlanAutofillSA";
+import { SetlistPlanAutoFillDAG } from "src/core/components/setlistPlan/SetlistPlanAutoFillDAG";
+import { SetlistPlanAutoFillSA, SimulatedAnnealingConfig } from "src/core/components/setlistPlan/SetlistPlanAutofillSA";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanSearchProgressState } from "src/core/components/setlistPlan/SetlistPlanUtilities";
+import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanSearchProgressState } from "src/core/components/setlistPlan/SetlistPlanUtilities";
 import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
@@ -474,20 +474,20 @@ const SetlistPlannerPageContent = () => {
             },
             autoCompletePlanAStar: async () => {
                 if (!doc) return;
-                doAutoFill(async (progressHandler) => {
-                    return SetlistPlanAutoFillAStar(aStarConfig, doc, costCalcConfig, allSongs, cancellationTrigger, progressHandler);
+                await doAutoFill(async (progressHandler) => {
+                    return await SetlistPlanAutoFillAStar(aStarConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
                 });
             },
-            autoCompletePlanBestFirst: async () => {
+            autoCompletePlanDag: async () => {
                 if (!doc) return;
-                doAutoFill(async (progressHandler) => {
-                    return SetlistPlanAutoFillBestFirst(doc, costCalcConfig, allSongs, cancellationTrigger, progressHandler);
+                await doAutoFill(async (progressHandler) => {
+                    return await SetlistPlanAutoFillDAG(doc, costCalcConfig, cancellationTrigger, progressHandler);
                 });
             },
             autoCompletePlanSA: async () => {
                 if (!doc) return;
-                doAutoFill(async (progressHandler) => {
-                    return SetlistPlanAutoFillSA(saConfig, doc, costCalcConfig, allSongs, cancellationTrigger, progressHandler);
+                await doAutoFill(async (progressHandler) => {
+                    return await SetlistPlanAutoFillSA(saConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
                 });
             },
             setAutocompleteMaxPointsPerRehearsal: (maxPoints: number) => {
@@ -1069,12 +1069,12 @@ const SetlistPlannerPageContent = () => {
                         const cost = CalculateSetlistPlanCost({
                             plan: doc,
                             stats,
-                        }, costCalcConfig, allSongs);
+                        }, costCalcConfig);
                         const n = SetlistPlanGetNeighborsForAStar(aStarConfig, 0, {
                             plan: doc,
                             stats,
                             cost
-                        }, costCalcConfig, allSongs);
+                        }, costCalcConfig);
                         n.sort((a, b) => a.cost.totalCost - b.cost.totalCost);// {
                         setNeighbors([doc, ...n.map(x => x.plan)]);
                         console.log(n);
@@ -1088,7 +1088,7 @@ const SetlistPlannerPageContent = () => {
                         const cost = CalculateSetlistPlanCost({
                             plan: neighbor,
                             stats,
-                        }, costCalcConfig, allSongs);
+                        }, costCalcConfig);
                         return <li className="interactable" key={neighbor.id} onClick={() => {
                             setDoc(neighbor);
                         }}>#{index}: {neighbor.name} cost:{cost.totalCost} key:{GetSetlistPlanKey(neighbor).substring(0, 100)}</li>;

@@ -36,7 +36,7 @@ export interface SetlistPlanMutator {
     setDoc: (doc: SetlistPlan) => void;
     autoCompletePlanSA: () => void;
     autoCompletePlanAStar: () => void;
-    autoCompletePlanBestFirst: () => void;
+    autoCompletePlanDag: () => void;
     clearAllocation: () => void;
 
     undo: () => void;
@@ -678,7 +678,7 @@ export interface SetlistPlanCostPenalties {
 
 
 
-export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, stats: SetlistPlanStatsForCostCalc }, config: SetlistPlanCostPenalties, allSongs: db3.SongPayload[]): CostResult => {
+export const CalculateSetlistPlanCost = ({ plan, stats }: { plan: SetlistPlan, stats: SetlistPlanStatsForCostCalc }, config: SetlistPlanCostPenalties): CostResult => {
     const ret: CostResult = {
         totalCost: 0,
         breakdown: [],

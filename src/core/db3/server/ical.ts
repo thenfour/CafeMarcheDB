@@ -1,6 +1,5 @@
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
-import { slugify } from "shared/rootroot";
 import { floorLocalToLocalDay } from "shared/time";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
