@@ -35,7 +35,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 inte
 import { MatchingSlugItem } from "../../db3/shared/apiTypes"; // 0 internal refs
 
 import { NoSsr } from '@mui/material';
-import { getURLClass } from "../../db3/clientAPILL";
+import { fetchObjectQuery, getURLClass } from "../../db3/clientAPILL";
 import { CMDBUploadFile } from "../CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "../FileDrop";
 
@@ -411,17 +411,12 @@ async function fetchInlineClasses(keyword: string): Promise<string[]> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-async function fetchEventOrSongTagsAt(keyword: string): Promise<string[]> {
+async function fetchEventOrSongTagsAt(keyword: string): Promise<MatchingSlugItem[]> {
     // no prefix here.
     if (keyword.includes("]]")) return []; // make sure we don't autocomplete outside of the link syntax
-    const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
-
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
-    const ret = await response.json();
-    return ret;
+    return await fetchObjectQuery(keyword);
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownEditorProps {

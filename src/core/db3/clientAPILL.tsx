@@ -4,6 +4,7 @@ import { Prisma } from "db";
 import { slugify } from "shared/rootroot";
 
 import { IsNullOrWhitespace } from "shared/utils";
+import { MatchingSlugItem } from "./shared/apiTypes";
 
 export const getAbsoluteUrl = (slug: string): string => {
     if (!slug.startsWith('/')) {
@@ -70,3 +71,16 @@ export function getFormattedBPM(song: Prisma.SongGetPayload<{ select: { startBPM
     }
     return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export async function fetchObjectQuery(keyword: string): Promise<MatchingSlugItem[]> {
+    const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    const ret = await response.json() as MatchingSlugItem[];
+    return ret;
+}
+

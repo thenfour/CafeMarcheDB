@@ -123,7 +123,7 @@ export default api(async (req, res, ctx: Ctx) => {
 
         const { keyword } = req.query;
 
-        if (typeof keyword !== "string" || keyword.trim() === "") {
+        if (typeof keyword !== "string") {
             res.status(400).json({ error: "A valid keyword must be provided" });
             return;
         }

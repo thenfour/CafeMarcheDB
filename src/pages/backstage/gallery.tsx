@@ -24,9 +24,10 @@ import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
-import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
+import { AutoAssignInstrumentPartition, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
+import { fetchObjectQuery } from "src/core/db3/clientAPILL";
 
 interface FilterSpec {
     qfText: string;
@@ -285,6 +286,46 @@ const ActivityLogValueViewerTester = () => {
     </div>;
 };
 
+
+const AutoCompleteSongEventTester = () => {
+    const [query, setQuery] = React.useState<string>("");
+    const [results, setResults] = React.useState<MatchingSlugItem[]>([]);
+    const [loading, setLoading] = React.useState<boolean>(false);
+
+    const fetchResults = async (query: string) => {
+        setLoading(true);
+        const results = await fetchObjectQuery(query);
+        console.log(`Results for query: ${query}`);
+        console.log(results);
+        setResults(results);
+        setLoading(false);
+    };
+
+    React.useEffect(() => {
+        fetchResults(query);
+    }, [query]);
+
+    return <div>
+        <NameValuePair
+            name="Keyword search"
+            value={
+                <div>
+                    <CMTextInputBase
+                        value={query}
+                        onChange={(e, v) => setQuery(v)}
+                    />
+                    <div>
+                        {loading ? "Loading..." : (<div>
+                            {results.map((r, i) => (
+                                <div key={i}>{r.name} ({r.itemType})</div>
+                            ))}
+                        </div>)}
+                    </div>
+                </div>}
+        />
+    </div>;
+};
+
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
     const [slugOrNot, setSlugOrNot] = React.useState<string>("");
@@ -293,7 +334,9 @@ const MainContent = () => {
 
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
-    return <>
+    return <div>
+
+        <AutoCompleteSongEventTester />
 
         <a href="CMSelectTest">CMSelectTest.tsx</a>
 
@@ -382,8 +425,6 @@ const MainContent = () => {
             <CMChip color={"yes"} size="small" variation={{ enabled: false, selected: false, fillOption: "filled", variation: "strong" }}>(todo: all variations)</CMChip>
         </CMChipContainer>
 
-
-
         <h3>CMChip on surface </h3>
         <CMSinglePageSurfaceCard>
             <CMChipContainer>
@@ -409,7 +450,7 @@ const MainContent = () => {
             </div>}
         />
 
-    </>;
+    </div>;
 };
 
 const ComponentGalleryPage: BlitzPage = () => {
