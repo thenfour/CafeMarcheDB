@@ -7,7 +7,7 @@ import { DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { CMTable, EventDateField, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { Markdown } from "src/core/components/RichTextEditor";
+import { Markdown } from "src/core/components/markdown/RichTextEditor";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";

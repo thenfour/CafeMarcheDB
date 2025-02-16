@@ -4,7 +4,7 @@ import { EnNlFr, IsNullOrWhitespace, LangSelectString, modulo } from "shared/uti
 import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
 import { gIconMap } from '../db3/components/IconMap';
 import * as db3 from "../db3/db3";
-import { Markdown } from "./RichTextEditor";
+import { Markdown } from "./markdown/RichTextEditor";
 
 const gSettings = {
     backstageURL: `/backstage`,

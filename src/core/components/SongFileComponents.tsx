@@ -20,7 +20,7 @@ import { CMDBUploadFile } from './CMDBUploadFile';
 import { SearchInput } from './CMTextField';
 import { DashboardContext } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
-import { Markdown } from "./RichTextEditor";
+import { Markdown } from "./markdown/RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 

@@ -19,7 +19,7 @@ import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/FileDrop";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
-import { Markdown } from "src/core/components/RichTextEditor";
+import { Markdown } from "src/core/components/markdown/RichTextEditor";
 //import { Markdown2Control } from "src/core/components/MarkdownControl2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";

@@ -131,7 +131,7 @@ import { CMChip, CMChipContainer } from "./CMChip";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
-import { Markdown } from "./RichTextEditor";
+import { Markdown } from "./markdown/RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
 
 

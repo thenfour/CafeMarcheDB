@@ -37,7 +37,7 @@ import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from '.
 import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown3Editor } from './MarkdownControl3';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
-import { Markdown } from './RichTextEditor';
+import { Markdown } from './markdown/RichTextEditor';
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';
 import { CMTab, CMTabPanel } from './TabPanel';

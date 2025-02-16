@@ -32,12 +32,12 @@ import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
-import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
+import { MatchingSlugItem } from "../../db3/shared/apiTypes"; // 0 internal refs
 
 import { NoSsr } from '@mui/material';
-import { getURLClass } from "../db3/clientAPILL";
-import { CMDBUploadFile } from "./CMDBUploadFile";
-import { CollapsableUploadFileComponent, FileDropWrapper } from "./FileDrop";
+import { getURLClass } from "../../db3/clientAPILL";
+import { CMDBUploadFile } from "../CMDBUploadFile";
+import { CollapsableUploadFileComponent, FileDropWrapper } from "../FileDrop";
 
 const INDENT_SIZE = 4;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);

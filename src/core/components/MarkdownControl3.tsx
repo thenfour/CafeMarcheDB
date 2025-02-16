@@ -9,7 +9,7 @@ import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import { Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
-import { Markdown, MarkdownEditor } from "./RichTextEditor";
+import { Markdown, MarkdownEditor } from "./markdown/RichTextEditor";
 import { gIconMap } from '../db3/components/IconMap';
 import EmojiSymbolsIcon from '@mui/icons-material/EmojiSymbols';
 

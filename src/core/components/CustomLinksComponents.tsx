@@ -12,7 +12,7 @@ import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { DashboardContext } from "./DashboardContext";
-import { Markdown } from "./RichTextEditor";
+import { Markdown } from "./markdown/RichTextEditor";
 import { gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
 

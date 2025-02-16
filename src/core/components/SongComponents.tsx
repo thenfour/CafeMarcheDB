@@ -21,7 +21,7 @@ import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { Markdown3Editor } from './MarkdownControl3';
 import { MetronomeButton } from './Metronome';
-import { Markdown } from './RichTextEditor';
+import { Markdown } from './markdown/RichTextEditor';
 import { SearchableNameColumnClient } from './SearchableNameColumnClient';
 import { SettingMarkdown } from './SettingMarkdown';
 import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongWithMetadata } from './SongComponentsBase';

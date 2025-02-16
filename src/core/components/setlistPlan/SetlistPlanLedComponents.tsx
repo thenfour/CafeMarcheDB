@@ -16,7 +16,7 @@ import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";
 import { NameValuePair } from "../CMCoreComponents2";
-import { Markdown } from "../RichTextEditor";
+import { Markdown } from "../markdown/RichTextEditor";
 import { Markdown3Editor } from "../MarkdownControl3";
 
 

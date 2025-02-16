@@ -29,7 +29,7 @@ import { DashboardContext } from './DashboardContext';
 import { Markdown3Editor } from './MarkdownControl3';
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
-import { Markdown } from "./RichTextEditor";
+import { Markdown } from "./markdown/RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 

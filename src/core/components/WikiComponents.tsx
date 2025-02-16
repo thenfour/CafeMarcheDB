@@ -12,7 +12,7 @@ import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
-import { Markdown } from "./RichTextEditor";
+import { Markdown } from "./markdown/RichTextEditor";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
 
 
