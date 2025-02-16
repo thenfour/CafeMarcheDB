@@ -743,6 +743,10 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
         setStats(CalculateSetlistPlanStats(docOrTempDoc, allSongs));
     }, [docOrTempDoc]);
 
+    const onDropSegment = (args: ReactSmoothDnd.DropResult) => {
+        props.mutator.reorderColumns(args);
+    };
+
     return <div className="SetlistPlannerDocumentEditor">
         <div className="toolbar">
             <ButtonGroup>
@@ -836,42 +840,52 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
             </CMTab>
 
             <CMTab thisTabId="segments" summaryTitle={"Columns"}>
-
                 <div className="SetlistPlannerDocumentEditorSegments">
-                    {docOrTempDoc.payload.columns.map((segment) => {
-                        return <div key={segment.columnId} className="SetlistPlannerDocumentEditorSegment">
-                            <CMTextInputBase
-                                className="segmentName"
-                                value={segment.name}
-                                onChange={(e, newName) => {
-                                    props.mutator.setColumnName(segment.columnId, newName);
-                                }}
-                            />
-                            <NumberField
-                                value={segment.pointsAvailable || null}
-                                onChange={(e, newTotal) => {
-                                    props.mutator.setColumnAvailablePoints(segment.columnId, newTotal || undefined);
-                                }} />
-                            <ColorPick
-                                value={segment.color || null}
-                                onChange={(newColor) => {
-                                    props.mutator.setColumnColor(segment.columnId, newColor?.id || undefined);
-                                }}
-                                allowNull={true}
-                            />
-                            <Markdown3Editor
-                                onChange={(newMarkdown) => {
-                                    props.mutator.setColumnComment(segment.columnId, newMarkdown);
-                                }}
-                                value={segment.commentMarkdown || ""}
-                                minHeight={75}
-                            />
-                            <Button startIcon={gIconMap.Delete()} onClick={() => {
-                                props.mutator.deleteColumn(segment.columnId);
-                            }}
-                            ></Button>
-                        </div>
-                    })}
+                    <ReactSmoothDndContainer
+                        dragHandleSelector=".dragHandle"
+                        lockAxis="y"
+                        onDrop={onDropSegment}
+                    >
+                        {docOrTempDoc.payload.columns.map((segment) => {
+                            return <ReactSmoothDndDraggable key={segment.columnId}>
+                                <div key={segment.columnId} className="SetlistPlannerDocumentEditorSegment">
+                                    <div className="dragHandle draggable">
+                                        ☰
+                                    </div>
+                                    <CMTextInputBase
+                                        className="segmentName"
+                                        value={segment.name}
+                                        onChange={(e, newName) => {
+                                            props.mutator.setColumnName(segment.columnId, newName);
+                                        }}
+                                    />
+                                    <NumberField
+                                        value={segment.pointsAvailable || null}
+                                        onChange={(e, newTotal) => {
+                                            props.mutator.setColumnAvailablePoints(segment.columnId, newTotal || undefined);
+                                        }} />
+                                    <ColorPick
+                                        value={segment.color || null}
+                                        onChange={(newColor) => {
+                                            props.mutator.setColumnColor(segment.columnId, newColor?.id || undefined);
+                                        }}
+                                        allowNull={true}
+                                    />
+                                    <Markdown3Editor
+                                        onChange={(newMarkdown) => {
+                                            props.mutator.setColumnComment(segment.columnId, newMarkdown);
+                                        }}
+                                        value={segment.commentMarkdown || ""}
+                                        minHeight={75}
+                                    />
+                                    <Button startIcon={gIconMap.Delete()} onClick={() => {
+                                        props.mutator.deleteColumn(segment.columnId);
+                                    }}
+                                    ></Button>
+                                </div>
+                            </ReactSmoothDndDraggable>
+                        })}
+                    </ReactSmoothDndContainer>
                 </div>
 
                 <Button startIcon={gIconMap.Add()} onClick={() => {

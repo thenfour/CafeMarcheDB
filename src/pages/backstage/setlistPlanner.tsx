@@ -791,6 +791,19 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
+            reorderColumns: (args: ReactSmoothDnd.DropResult) => {
+                if (doc) {
+                    if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+                    const newSegments = moveItemInArray(doc.payload.columns, args.removedIndex, args.addedIndex);
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            columns: newSegments,
+                        },
+                    });
+                }
+            },
             reorderColumnLeds: (args: ReactSmoothDnd.DropResult) => {
                 if (doc) {
                     if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);

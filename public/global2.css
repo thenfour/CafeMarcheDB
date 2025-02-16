@@ -377,6 +377,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .draggable {
     cursor: move;
     cursor: grab;
+    font-family: monospace;
 }
 
 .header.draggable:hover {

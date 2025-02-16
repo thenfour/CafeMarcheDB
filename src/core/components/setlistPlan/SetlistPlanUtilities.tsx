@@ -99,6 +99,7 @@ export interface SetlistPlanMutator {
     setColumnColor: (columnId: string, color: string | undefined | null) => void;
     setColumnComment: (columnId: string, comment: string) => void;
     setColumnAvailablePoints: (columnId: string, total: number | undefined) => void;
+    reorderColumns: (args: ReactSmoothDnd.DropResult) => void;
 
     clearColumnAllocation: (columnId: string) => void;
     swapColumnAllocation: (columnId1: string, columnId2: string) => void;
