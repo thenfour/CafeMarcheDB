@@ -19,6 +19,7 @@ import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
+import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
@@ -27,7 +28,6 @@ import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChang
 import { AutoAssignInstrumentPartition, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
-import { AssociationSelect, AssociationValue, fetchObjectQuery } from "src/core/components/setlistPlan/ItemAssociation";
 
 interface FilterSpec {
     qfText: string;

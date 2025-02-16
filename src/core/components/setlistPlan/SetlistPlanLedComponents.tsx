@@ -13,7 +13,7 @@ import { CMTextInputBase } from "src/core/components/CMTextField";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
 import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
-import { KeyValueDisplay, NameValuePair } from "../CMCoreComponents2";
+import { NameValuePair } from "../CMCoreComponents2";
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
 import { useDashboardContext } from "../DashboardContext";
 import { Markdown } from "../markdown/RichTextEditor";
@@ -45,7 +45,7 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
         const eventId = associations.find((x) => x?.itemType === "event")?.id;
         const userId = associations.find((x) => x?.itemType === "user")?.id;
         if (props.def.autoColor && eventId && userId) {
-            fetch(`/api/event/getUserAttendance?userId=${userId}&eventId=${eventId}`)
+            void fetch(`/api/event/getUserAttendance?userId=${userId}&eventId=${eventId}`)
                 .then((res) => res.json())
                 .then((data: GetUserAttendanceRet) => {
                     setUserAttendance(data);

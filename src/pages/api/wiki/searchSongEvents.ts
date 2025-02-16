@@ -2,7 +2,7 @@
 
 import { Ctx } from "@blitzjs/next";
 import db, { Prisma } from "db";
-import { MakeWhereInputConditions, ParseQuickFilter, SplitQuickFilter } from "shared/utils";
+import { MakeWhereInputConditions, ParseQuickFilter } from "shared/utils";
 import { api } from "src/blitz-server";
 import { MakeMatchingSlugItem, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
 

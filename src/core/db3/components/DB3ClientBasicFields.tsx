@@ -1051,8 +1051,8 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
             value: <div>
                 <CMTextInputBase
                     onChange={(e, val) => {
-                        val = IsNullOrWhitespace(val) ? null : new Date(val); // convert to kosher value.
-                        params.api.setFieldValues({ [this.columnName]: val });
+                        const date = IsNullOrWhitespace(val) ? null : new Date(val); // convert to kosher value.
+                        params.api.setFieldValues({ [this.columnName]: date });
                     }}
                     initialValue={valueAsString}
                 />

@@ -4,7 +4,6 @@ import { Prisma } from "db";
 import { slugify } from "shared/rootroot";
 
 import { IsNullOrWhitespace } from "shared/utils";
-import { MatchingSlugItem } from "./shared/apiTypes";
 
 export const getAbsoluteUrl = (slug: string): string => {
     if (!slug.startsWith('/')) {

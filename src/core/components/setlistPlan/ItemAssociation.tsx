@@ -74,7 +74,7 @@ export const AssociationSelect = ({ allowNull = true, ...props }: AssociationSel
             setResults([]);
             return;
         }
-        fetchObjectQuery(query).then((response) => {
+        void fetchObjectQuery(query).then((response) => {
             setResults(response);
         });
     }, [query]);
@@ -93,6 +93,7 @@ export const AssociationSelect = ({ allowNull = true, ...props }: AssociationSel
                 </div>
                 <div className="autoCompleteResults">
                     {results.map((item, index) => <div
+                        key={index}
                         className="selectable"
                         onClick={() => {
                             props.onChange(item);
