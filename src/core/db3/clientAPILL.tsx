@@ -34,6 +34,13 @@ export const getURIForUser = (song: Prisma.UserGetPayload<{ select: { id: true, 
     return getAbsoluteUrl(`/backstage/user/${parts.join("/")}`);
 };
 
+// yea this is just for completeness so i don't miss something one day when i actually add an instrument landing page.
+export const getURIForInstrument = (instrument: Prisma.InstrumentGetPayload<{ select: { id: true, name: true } }>) => {
+    const parts: string[] = [instrument.id.toString()];
+    parts.push(slugify(instrument.name));
+    return getAbsoluteUrl(`/backstage/instrument/${parts.join("/")}`);
+};
+
 export function getURLClass(url: string, baseDomain: string = window.location.hostname): "internalPage" | "internalAPI" | "external" {
     try {
         const parsedUrl = new URL(url, window.location.origin);
@@ -70,17 +77,5 @@ export function getFormattedBPM(song: Prisma.SongGetPayload<{ select: { startBPM
         return `${song.startBPM}`; // both BPMs the same: just show 1.
     }
     return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export async function fetchObjectQuery(keyword: string): Promise<MatchingSlugItem[]> {
-    const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
-
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
-    const ret = await response.json() as MatchingSlugItem[];
-    return ret;
 }
 

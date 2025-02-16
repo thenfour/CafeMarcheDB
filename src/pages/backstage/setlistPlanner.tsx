@@ -28,7 +28,7 @@ import { SongsProvider, useSongsContext } from "src/core/components/SongsContext
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
-import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
+import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 function getId(prefix: string) {
@@ -714,6 +714,25 @@ const SetlistPlannerPageContent = () => {
                                     return {
                                         ...x,
                                         color,
+                                    };
+                                }
+                                return x;
+                            }),
+                        },
+                    });
+                }
+            },
+            setColumnAssociatedItem: (columnId: string, associatedItem: SetlistPlanAssociatedItem | null) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            columns: doc.payload.columns.map((x) => {
+                                if (x.columnId === columnId) {
+                                    return {
+                                        ...x,
+                                        associatedItem,
                                     };
                                 }
                                 return x;

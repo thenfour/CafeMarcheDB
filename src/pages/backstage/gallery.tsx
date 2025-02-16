@@ -27,7 +27,7 @@ import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChang
 import { AutoAssignInstrumentPartition, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
-import { fetchObjectQuery } from "src/core/db3/clientAPILL";
+import { AssociationSelect, AssociationValue, fetchObjectQuery } from "src/core/components/setlistPlan/ItemAssociation";
 
 interface FilterSpec {
     qfText: string;
@@ -287,44 +287,52 @@ const ActivityLogValueViewerTester = () => {
 };
 
 
+// const AutoCompleteSongEventTester = () => {
+//     const [query, setQuery] = React.useState<string>("");
+//     const [results, setResults] = React.useState<MatchingSlugItem[]>([]);
+//     const [loading, setLoading] = React.useState<boolean>(false);
+
+//     const fetchResults = async (query: string) => {
+//         setLoading(true);
+//         const results = await fetchObjectQuery(query);
+//         console.log(`Results for query: ${query}`);
+//         console.log(results);
+//         setResults(results);
+//         setLoading(false);
+//     };
+
+//     React.useEffect(() => {
+//         fetchResults(query);
+//     }, [query]);
+
+//     return <div>
+//         <NameValuePair
+//             name="Keyword search"
+//             value={
+//                 <div>
+//                     <CMTextInputBase
+//                         value={query}
+//                         onChange={(e, v) => setQuery(v)}
+//                     />
+//                     <div>
+//                         {loading ? "Loading..." : (<div>
+//                             {results.map((r, i) => (
+//                                 <AssociationValue key={i} value={r} />
+//                             ))}
+//                         </div>)}
+//                     </div>
+//                 </div>}
+//         />
+//     </div>;
+// };
+
+
 const AutoCompleteSongEventTester = () => {
-    const [query, setQuery] = React.useState<string>("");
-    const [results, setResults] = React.useState<MatchingSlugItem[]>([]);
-    const [loading, setLoading] = React.useState<boolean>(false);
-
-    const fetchResults = async (query: string) => {
-        setLoading(true);
-        const results = await fetchObjectQuery(query);
-        console.log(`Results for query: ${query}`);
-        console.log(results);
-        setResults(results);
-        setLoading(false);
-    };
-
-    React.useEffect(() => {
-        fetchResults(query);
-    }, [query]);
-
-    return <div>
-        <NameValuePair
-            name="Keyword search"
-            value={
-                <div>
-                    <CMTextInputBase
-                        value={query}
-                        onChange={(e, v) => setQuery(v)}
-                    />
-                    <div>
-                        {loading ? "Loading..." : (<div>
-                            {results.map((r, i) => (
-                                <div key={i}>{r.name} ({r.itemType})</div>
-                            ))}
-                        </div>)}
-                    </div>
-                </div>}
-        />
-    </div>;
+    const [result, setResult] = React.useState<MatchingSlugItem | null>(null);
+    return <AssociationSelect value={result} onChange={(v) => setResult(v)} />;
 };
+
+
 
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");

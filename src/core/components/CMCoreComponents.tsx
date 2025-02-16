@@ -310,7 +310,7 @@ export interface AttendanceChipProps {
     chipRef?: React.ForwardedRef<HTMLDivElement>;
     showLabel?: boolean | undefined;
     fadeNoResponse?: boolean | undefined;
-    value: db3.EventAttendanceBasePayload | null;
+    value: number | db3.EventAttendanceBasePayload | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -320,13 +320,18 @@ export interface AttendanceChipProps {
 };
 
 export const AttendanceChip = ({ fadeNoResponse = false, showLabel = true, ...props }: AttendanceChipProps) => {
-    let label: React.ReactNode = showLabel && (props.value?.text || "No response");
-    if (!label && !props.value?.iconName) {
+    let value = props.value;
+    const dashboardContext = useDashboardContext();
+    if (typeof value === "number") {
+        value = dashboardContext.eventAttendance.getById(value);
+    }
+    let label: React.ReactNode = showLabel && (value?.text || "No response");
+    if (!label && !value?.iconName) {
         label = <Icon />;
     }
 
     const style: React.CSSProperties = {};
-    if (fadeNoResponse && !props.value) {
+    if (fadeNoResponse && !value) {
         style.opacity = "40%";
     }
 
@@ -336,13 +341,13 @@ export const AttendanceChip = ({ fadeNoResponse = false, showLabel = true, ...pr
         size={props.size}
         onClick={props.onClick}
         className={`${props.className} AttendanceChip`}
-        color={props.value?.color || null}
+        color={value?.color || null}
         //shape={props.shape}
         shape="rectangle"
-        tooltip={props.tooltipOverride || props.value?.description}
+        tooltip={props.tooltipOverride || value?.description}
         style={style}
     >
-        {RenderMuiIcon(props.value?.iconName)}
+        {RenderMuiIcon(value?.iconName)}
         {label}
     </CMChip>
 }

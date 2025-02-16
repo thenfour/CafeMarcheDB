@@ -4,11 +4,22 @@ import { z } from "zod";
 
 ///////////// setlist planning /////////////////////////////////////////////////////////////////
 
+// matches MatchingSlugItem on purpose.
+export const ZSetlistPlanAssociatedItem = z.object({
+    itemType: z.enum(["song", "event", "user", "instrument"]),
+    name: z.string(),
+    id: z.number(),
+});
+
+export type SetlistPlanAssociatedItem = z.infer<typeof ZSetlistPlanAssociatedItem>;
+
 export const ZSetlistPlanLedDef = z.object({
     ledId: z.string(),
     name: z.string(),
     descriptionMarkdown: z.string().optional(),
     staticLabel: z.string().optional(), // for all instances of this LED, use this text caption always.
+    associatedItem: ZSetlistPlanAssociatedItem.optional().nullable(),
+    autoColor: z.boolean().optional(),
 });
 
 export type SetlistPlanLedDef = z.infer<typeof ZSetlistPlanLedDef>;
@@ -40,6 +51,7 @@ export const ZSetlistPlanColumn = z.object({
     name: z.string(),
     commentMarkdown: z.string().optional(),
     leds: z.array(ZSetlistPlanLedValue).optional(),
+    associatedItem: ZSetlistPlanAssociatedItem.optional().nullable(),
 });
 
 export type SetlistPlanColumn = z.infer<typeof ZSetlistPlanColumn>;

@@ -6,7 +6,7 @@ import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
 import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, KeyValueTable } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
@@ -25,6 +25,7 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { AssociationSelect, AssociationValue, AssociationValueLink } from "./ItemAssociation";
 
 
 
@@ -82,6 +83,11 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                     ledDefs={props.doc.payload.rowLeds || []}
                     ledValues={songRow.leds || []}
                     onLedValueChanged={val => props.mutator.setRowLedValue(songRow.rowId, val.ledId, val)}
+                    additionalAssociatedItems={[{
+                        itemType: "song",
+                        id: song.id,
+                        name: song.name,
+                    }]}
                 />
                 <div>
                     <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
@@ -189,6 +195,7 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
                     ledDefs={props.doc.payload.rowLeds || []}
                     ledValues={row.leds || []}
                     onLedValueChanged={val => props.mutator.setRowLedValue(row.rowId, val.ledId, val)}
+                    additionalAssociatedItems={[]}
                 />
                 <Markdown compact markdown={row.commentMarkdown || ""} />
             </div>
@@ -256,7 +263,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
     };
 
     return <>
-        <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{column.name}{gCharMap.VerticalEllipses()}</CMSmallButton>
+        <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
         <Menu
             id="menu-setlistplannercolumn"
             anchorEl={anchorEl}
@@ -264,6 +271,9 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
         >
+            {column.associatedItem && <MenuItem>
+                <AssociationValueLink value={column.associatedItem} />
+            </MenuItem>}
             <MenuItem onClick={handleCopySongNames}>
                 Copy song names
             </MenuItem>
@@ -326,8 +336,17 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             <div className="td songLength">
             </div>
             {docOrTempDoc.payload.columns.map((segment, index) => <div key={index} className="td segment">
-                <div>
-                    <ColumnHeaderDropdownMenu columnId={segment.columnId} doc={docOrTempDoc} mutator={props.mutator} />
+                <div style={{ display: "flex" }}>
+                    <Tooltip
+                        disableInteractive
+                        title={<div>
+                            <div>{segment.name}</div>
+                            {segment.associatedItem && <AssociationValueLink value={segment.associatedItem} />}
+                        </div>}
+                    >
+                        <div>{segment.name}</div>
+                    </Tooltip>
+                    <div><ColumnHeaderDropdownMenu columnId={segment.columnId} doc={docOrTempDoc} mutator={props.mutator} /></div>
                 </div>
                 <div>
                     <SetlistPlannerLedArray
@@ -335,6 +354,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         ledDefs={props.doc.payload.columnLeds || []}
                         ledValues={segment.leds || []}
                         onLedValueChanged={val => props.mutator.setColumnLedValue(segment.columnId, val.ledId, val)}
+                        additionalAssociatedItems={segment.associatedItem ? [segment.associatedItem] : []}
                     />
                 </div>
                 <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, props.colorScheme.segmentPointsAvailable) }}>
@@ -383,7 +403,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songName numberCell">
                     {/* <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} /> */}
                 </div>
-                <Tooltip disableInteractive title={`Total song length for all songs`}>
+                <Tooltip
+                    disableInteractive
+                    title={`Total song length for all songs`}
+                >
                     <div className="td songLength">
                         {formatSongLength(props.stats.totalSongLengthSeconds)}
                     </div>
@@ -398,12 +421,18 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                             </div>
                         </Tooltip>;
                     })}
-                <Tooltip disableInteractive title={`total rehearsal points allocated for the whole plan`}>
+                <Tooltip
+                    disableInteractive
+                    title={`total rehearsal points allocated for the whole plan`}
+                >
                     <div className="td rehearsalTime numberCell" style={{ backgroundColor: props.colorScheme.songTotalPoints[1] }}>
                         <NumberField inert value={props.stats.totalPointsAllocated} />
                     </div>
                 </Tooltip>
-                <Tooltip disableInteractive title={`total song balance for the whole plan. ${props.stats.totalPlanSongBalance >= 0 ? `you have allocated enough to rehearse all songs fully` : `you need to allocate ${Math.abs(props.stats.totalPlanSongBalance)} more points to rehearse all songs`}`}>
+                <Tooltip
+                    disableInteractive
+                    title={`total song balance for the whole plan. ${props.stats.totalPlanSongBalance >= 0 ? `you have allocated enough to rehearse all songs fully` : `you need to allocate ${Math.abs(props.stats.totalPlanSongBalance)} more points to rehearse all songs`}`}
+                >
                     <div className="td balance numberCell totalPlanBalance" style={{ backgroundColor: props.stats.totalPlanSongBalance >= 0 ? props.colorScheme.totalSongBalancePositive : props.colorScheme.totalSongBalanceNegative }}>
                         <NumberField inert value={props.stats.totalPlanSongBalance} showPositiveSign />
                     </div>
@@ -419,17 +448,24 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         const balanceColor = (segStat.balance || 0) <= 0 ?
                             LerpColor(segStat.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
                             : LerpColor(segStat.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
-                        return <Tooltip key={index} disableInteractive title={`Rehearsal points left unallocated ${segStat.segment.name}`}>
+                        return <Tooltip
+                            key={index}
+                            disableInteractive
+                            title={`Rehearsal points left unallocated ${segStat.segment.name}`}
+                        >
                             <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
                                 <NumberField inert value={segStat.balance || null} showPositiveSign />
                             </div>
                         </Tooltip>;
                     })}
-                <Tooltip disableInteractive title={
-                    <div>
-                        <div>total rehearsal point balance for the whole plan</div>
-                        <div>{props.stats.totalPlanSegmentBalance >= 0 ? `you have ${props.stats.totalPlanSegmentBalance} points left to allocate` : `you have over-allocated by ${-props.stats.totalPlanSegmentBalance} points.`}</div>
-                    </div>}>
+                <Tooltip
+                    disableInteractive
+                    title={
+                        <div>
+                            <div>total rehearsal point balance for the whole plan</div>
+                            <div>{props.stats.totalPlanSegmentBalance >= 0 ? `you have ${props.stats.totalPlanSegmentBalance} points left to allocate` : `you have over-allocated by ${-props.stats.totalPlanSegmentBalance} points.`}</div>
+                        </div>}
+                >
                     <div className="td rehearsalTime" style={{ backgroundColor: props.stats.totalPlanSegmentBalance >= 0 ? props.colorScheme.segmentBalancePositive[1] : props.colorScheme.segmentBalanceNegative[0] }}>
                         <NumberField inert value={props.stats.totalPlanSegmentBalance} showPositiveSign />
                     </div>
@@ -444,13 +480,20 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 {//docOrTempDoc.payload.columns.map((segment, index) => {
                     props.stats.segmentStats.map((segStat, index) => {
                         const col = LerpColor(segStat.segmentAllocatedCells.length, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
-                        return <Tooltip key={index} disableInteractive title={`Songs to rehearse in ${segStat.segment.name}`}>
+                        return <Tooltip
+                            key={index}
+                            disableInteractive
+                            title={`Songs to rehearse in ${segStat.segment.name}`}
+                        >
                             <div key={index} className="td segment numberCell" style={{ backgroundColor: col }}>
                                 <NumberField inert value={segStat.segmentAllocatedCells.length} />
                             </div>
                         </Tooltip>;
                     })}
-                <Tooltip disableInteractive title={`total song-rehearsal things ${0}`}>
+                <Tooltip
+                    disableInteractive
+                    title={`total song-rehearsal things ${0}`}
+                >
                     <div className="td rehearsalTime" style={{ backgroundColor: props.colorScheme.songCountPerSegment[1] }}>
                         <NumberField inert value={props.stats.totalSongSegmentCells} />
                     </div>
@@ -852,18 +895,22 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                     <div className="dragHandle draggable">
                                         ☰
                                     </div>
-                                    <CMTextInputBase
-                                        className="segmentName"
-                                        value={segment.name}
-                                        onChange={(e, newName) => {
-                                            props.mutator.setColumnName(segment.columnId, newName);
-                                        }}
-                                    />
-                                    <NumberField
-                                        value={segment.pointsAvailable || null}
-                                        onChange={(e, newTotal) => {
-                                            props.mutator.setColumnAvailablePoints(segment.columnId, newTotal || undefined);
-                                        }} />
+                                    <NameValuePair name="Name" value={
+                                        <CMTextInputBase
+                                            className="segmentName"
+                                            value={segment.name}
+                                            onChange={(e, newName) => {
+                                                props.mutator.setColumnName(segment.columnId, newName);
+                                            }}
+                                        />
+                                    } />
+                                    <NameValuePair name="Points available" value={
+                                        <NumberField
+                                            value={segment.pointsAvailable || null}
+                                            onChange={(e, newTotal) => {
+                                                props.mutator.setColumnAvailablePoints(segment.columnId, newTotal || undefined);
+                                            }} />
+                                    } />
                                     <ColorPick
                                         value={segment.color || null}
                                         onChange={(newColor) => {
@@ -878,6 +925,13 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                         value={segment.commentMarkdown || ""}
                                         minHeight={75}
                                     />
+                                    <AssociationSelect
+                                        value={segment.associatedItem || null}
+                                        onChange={(newAssociation) => {
+                                            props.mutator.setColumnAssociatedItem(segment.columnId, newAssociation);
+                                        }}
+                                    />
+
                                     <Button startIcon={gIconMap.Delete()} onClick={() => {
                                         props.mutator.deleteColumn(segment.columnId);
                                     }}

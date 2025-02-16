@@ -35,9 +35,10 @@ import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 inte
 import { MatchingSlugItem } from "../../db3/shared/apiTypes"; // 0 internal refs
 
 import { NoSsr } from '@mui/material';
-import { fetchObjectQuery, getURLClass } from "../../db3/clientAPILL";
+import { getURLClass } from "../../db3/clientAPILL";
 import { CMDBUploadFile } from "../CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "../FileDrop";
+import { fetchObjectQuery } from '../setlistPlan/ItemAssociation';
 
 const INDENT_SIZE = 4;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);

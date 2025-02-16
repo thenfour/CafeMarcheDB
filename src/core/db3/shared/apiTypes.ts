@@ -1134,3 +1134,26 @@ export interface TUpdateEventWorkflowInstanceArgs {
     instance: TUpdateEventWorkflowInstance;
     eventId: number;
 };
+
+
+export type GetUserAttendanceArgs = {
+    userId: number;
+    eventId: number;
+}
+
+export type GetUserAttendanceRet = {
+    userId: number;
+    eventId: number;
+    comment: string | null;
+    instrumentId: number | null;
+    segmentResponses: {
+        segmentId: number,
+        name: string,
+        attendanceId: number | null,
+        statusId: number | null,
+        startsAt: Date | null,
+        durationMillis: number | null,
+        isAllDay: boolean,
+    }[];
+
+};

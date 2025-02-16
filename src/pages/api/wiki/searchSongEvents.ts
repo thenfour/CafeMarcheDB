@@ -1,10 +1,19 @@
+// TODO: unify with the normal search api.
+
 import { Ctx } from "@blitzjs/next";
-import db from "db";
+import db, { Prisma } from "db";
+import { MakeWhereInputConditions, ParseQuickFilter, SplitQuickFilter } from "shared/utils";
 import { api } from "src/blitz-server";
 import { MakeMatchingSlugItem, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
 
-async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
-    keyword = keyword.toLowerCase();
+
+
+async function getMatchingSlugs(keyword__: string): Promise<MatchingSlugItem[]> {
+
+    //const keywords = SplitQuickFilter(keyword.toLowerCase());
+    const query = ParseQuickFilter(keyword__);
+    const itemsPerType = 5;
+
     const songSlugs = await db.song.findMany({
         where: {
             AND: [
@@ -17,9 +26,10 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
                 },
                 {
                     OR: [
-                        //{ slug: { contains: keyword } },
-                        { aliases: { contains: keyword } },
-                        { name: { contains: keyword } },
+                        { AND: MakeWhereInputConditions("aliases", query.keywords) },
+                        { AND: MakeWhereInputConditions("name", query.keywords) },
+                        //{ aliases: { contains: keyword } },
+                        //{ name: { contains: keyword } },
                     ]
                 },
             ],
@@ -30,8 +40,19 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
             introducedYear: true,
             //slug: true,
         },
-        take: 10,
+        take: itemsPerType,
     });
+
+    let eventAndCriteria: Prisma.EventWhereInput[] = MakeWhereInputConditions("name", query.keywordsWithoutDate);
+
+    if (query.dateRange) {
+        eventAndCriteria.push({
+            startsAt: {
+                gte: query.dateRange.start,
+                lt: query.dateRange.end,
+            },
+        });
+    }
 
     const eventSlugs = await db.event.findMany({
         where: {
@@ -43,21 +64,18 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
                     NOT: { visiblePermissionId: null }
                     // TODO: check actual perms.
                 },
-                {
-                    OR: [
-                        //{ slug: { contains: keyword } },
-                        { name: { contains: keyword } },
-                    ]
-                },
+                ...eventAndCriteria,
             ],
         },
         select: {
             id: true,
             name: true,
             startsAt: true,
-            //slug: true,
         },
-        take: 10,
+        orderBy: {
+            startsAt: "asc",
+        },
+        take: itemsPerType,
     });
 
     const userSlugs = await db.user.findMany({
@@ -66,25 +84,19 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
                 {
                     isDeleted: false,
                 },
-                {
-                    OR: [
-                        { name: { contains: keyword } },
-                    ],
-                },
+                ...MakeWhereInputConditions("name", query.keywords),
             ],
         },
         select: {
             id: true,
             name: true,
         },
-        take: 10,
+        take: itemsPerType,
     });
 
     const instrumentSlugs = await db.instrument.findMany({
         where: {
-            OR: [
-                { name: { contains: keyword } },
-            ],
+            AND: MakeWhereInputConditions("name", query.keywords),
         },
         select: {
             id: true,

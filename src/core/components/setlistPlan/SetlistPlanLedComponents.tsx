@@ -8,16 +8,20 @@ import { Button, DialogActions, DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
-import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
+import { AttendanceChip, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { gIconMap } from "src/core/db3/components/IconMap";
-import { SetlistPlan, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
+import { GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
+import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
+import { KeyValueDisplay, NameValuePair } from "../CMCoreComponents2";
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
-import { SetlistPlanMutator } from "./SetlistPlanUtilities";
-import { NameValuePair } from "../CMCoreComponents2";
+import { useDashboardContext } from "../DashboardContext";
 import { Markdown } from "../markdown/RichTextEditor";
 import { Markdown3Editor } from "../MarkdownControl3";
+import { ReactiveInputDialog } from "../ReactiveInputDialog";
+import { AssociationSelect, AssociationValueLink } from "./ItemAssociation";
+import { SetlistPlanMutator } from "./SetlistPlanUtilities";
+//import getUserEventAttendance from "src/core/db3/queries/getUserEventAttendance";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,12 +29,42 @@ interface SetlistPlannerLedProps {
     value: SetlistPlanLedValue | null;
     def: SetlistPlanLedDef;
     onChange: (newValue: SetlistPlanLedValue | null) => void;
+    additionalAssociatedItems: SetlistPlanAssociatedItem[]; // for auto color, pass associated item for the column / row / whatever.
 }
 export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
     const [open, setOpen] = React.useState<boolean>(false);
+    const [actualColor, setActualColor] = React.useState<string | null>(props.value?.color || null);
+    const [userAttendance, setUserAttendance] = React.useState<GetUserAttendanceRet | null>(null);
+    const dashboardContext = useDashboardContext();
+
+    React.useEffect(() => {
+        // unify list of associations.
+        const associations = [props.def.associatedItem, ...props.additionalAssociatedItems];
+        // if there are event <--> user associations, use the attendance color.
+        // so first find an eventId and a userId.
+        const eventId = associations.find((x) => x?.itemType === "event")?.id;
+        const userId = associations.find((x) => x?.itemType === "user")?.id;
+        if (props.def.autoColor && eventId && userId) {
+            fetch(`/api/event/getUserAttendance?userId=${userId}&eventId=${eventId}`)
+                .then((res) => res.json())
+                .then((data: GetUserAttendanceRet) => {
+                    setUserAttendance(data);
+                    // event ID has been specified, but what if there are multiple segments?
+                    // use the first one.
+                    const response = data.segmentResponses[0];
+                    const attendance = dashboardContext.eventAttendance.getById(response?.attendanceId);
+                    if (attendance) {
+                        setActualColor(attendance.color);
+                    }
+                })
+        } else {
+            setActualColor(props.value?.color || null);
+        }
+    },
+        [props.def.autoColor, JSON.stringify(props.def.associatedItem), JSON.stringify(props.additionalAssociatedItems)]);
 
     const style = GetStyleVariablesForColor({
-        color: props.value?.color,
+        color: actualColor,
         enabled: true,
         fillOption: "filled",
         selected: false,
@@ -40,8 +74,14 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
         <Tooltip title={
             <div>
                 <div>{props.def.name}: {props.value?.text || ""}</div>
+                {props.def.associatedItem && <AssociationValueLink value={props.def.associatedItem} />}
+                {userAttendance && <ul>
+                    {userAttendance.segmentResponses.map((x, i) => <li key={i}>{x.name}: <AttendanceChip value={x.attendanceId} /></li>)}
+                </ul>}
                 <Markdown markdown={props.def.descriptionMarkdown || ""} />
-            </div>} disableInteractive>
+            </div>}
+            disableInteractive
+        >
             <div
                 className={`applyColor interactable ${style.cssClass} setlistPlanLed`}
                 onClick={() => setOpen(true)}
@@ -91,6 +131,7 @@ interface SetlistPlannerLedArrayProps {
     ledValues: SetlistPlanLedValue[];
     onLedValueChanged: (newValue: SetlistPlanLedValue) => void;
     direction: "row" | "column";
+    additionalAssociatedItems: SetlistPlanAssociatedItem[];
 }
 export const SetlistPlannerLedArray = (props: SetlistPlannerLedArrayProps) => {
     const rowLedValues = props.ledDefs
@@ -108,6 +149,7 @@ export const SetlistPlannerLedArray = (props: SetlistPlannerLedArrayProps) => {
             value={item.val}
             def={item.def}
             onChange={props.onLedValueChanged}
+            additionalAssociatedItems={props.additionalAssociatedItems}
         />)}
     </div>;
 };
@@ -122,14 +164,15 @@ interface SetlistPlannerLedDefProps {
 }
 export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
     //const [open, setOpen] = React.useState<boolean>(false);
-    return <div className="SetlistPlannerDocumentEditorSegment setlistPlanLedDef" style={{ display: "flex", alignItems: "center" }}>
+    return <div className="SetlistPlannerDocumentEditorSegment setlistPlanLedDef">
         <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
             ☰
         </div>
-        <CMTextInputBase
-            value={props.ledDef.name}
-            onChange={(e) => props.onChange({ ...props.ledDef, name: e.target.value })}
-        />
+        <NameValuePair name="Name" value={
+            <CMTextInputBase
+                value={props.ledDef.name}
+                onChange={(e) => props.onChange({ ...props.ledDef, name: e.target.value })}
+            />} />
         <NameValuePair name="Static label" value={
             <CMTextInputBase
                 value={props.ledDef.staticLabel || ""}
@@ -141,6 +184,17 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
                 onChange={(newValue) => props.onChange({ ...props.ledDef, descriptionMarkdown: newValue })}
                 value={props.ledDef.descriptionMarkdown || ""}
                 minHeight={75}
+            />
+        } />
+        <AssociationSelect
+            value={props.ledDef.associatedItem || null}
+            onChange={(newValue) => props.onChange({ ...props.ledDef, associatedItem: newValue })}
+        />
+        <NameValuePair name="Auto color" description={`colors based on associated item. user + event = attendance for example.`} value={
+            <input
+                type="checkbox"
+                checked={props.ledDef.autoColor || false}
+                onChange={(e) => props.onChange({ ...props.ledDef, autoColor: e.target.checked })}
             />
         } />
         <Button onClick={() => props.onDelete(props.ledDef.ledId)}>{gIconMap.Delete()}</Button>

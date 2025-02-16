@@ -328,6 +328,30 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     border-color: #08f4;
 }
 
+.selectable {
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.selectable:hover {
+    background-color: #f8f8f8;
+    border: 1px solid #8888;
+}
+
+.deemphasizedWithHover {
+    opacity: 20%;
+}
+
+.deemphasizedWithHover:hover {
+    opacity: 100%;
+}
+
+/* add to <a> so it can contain flexy things */
+.flexLink {
+    display: flex;
+    align-items: center;
+}
+
 .iconButton,
 .freeButton {
     display: flex;

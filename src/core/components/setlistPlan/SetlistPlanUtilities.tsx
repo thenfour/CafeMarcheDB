@@ -2,7 +2,7 @@
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { generateFibonacci, toSorted } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { SetlistPlan, SetlistPlanColumn, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
+import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanColumn, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
 
 const FIBONACCI_SEQUENCE = [...generateFibonacci(100)]; // for calculating possibilities. don't include 0.
 const FIBONACCI_SEQUENCE_REVERSED = [...FIBONACCI_SEQUENCE].reverse();
@@ -98,6 +98,7 @@ export interface SetlistPlanMutator {
     setColumnName: (columnId: string, name: string) => void;
     setColumnColor: (columnId: string, color: string | undefined | null) => void;
     setColumnComment: (columnId: string, comment: string) => void;
+    setColumnAssociatedItem: (columnId: string, associatedItem: SetlistPlanAssociatedItem | null) => void;
     setColumnAvailablePoints: (columnId: string, total: number | undefined) => void;
     reorderColumns: (args: ReactSmoothDnd.DropResult) => void;
 

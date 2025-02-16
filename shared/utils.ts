@@ -904,6 +904,67 @@ export function SplitQuickFilter(quickFilter: string): string[] {
     return quickFilter.toLowerCase().split(/\s+/).filter(token => !IsNullOrWhitespace(token));
 }
 
+function parseDateRange(input) {
+    const regex = /^(\d{2,4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/;
+    const match = input.match(regex);
+    if (!match) return null; // not a date-like input
+
+    let year = parseInt(match[1], 10);
+    if (year < 2000) year += 2000;
+
+    const month = match[2] ? parseInt(match[2], 10) : null;
+    const day = match[3] ? parseInt(match[3], 10) : null;
+
+    if (year && !month && !day) {
+        // year only
+        return {
+            start: new Date(year, 0, 1),
+            end: new Date(year + 1, 0, 1)
+        };
+    } else if (year && month && !day) {
+        // year-month
+        return {
+            start: new Date(year, month - 1, 1),
+            end: new Date(year, month, 1)
+        }
+    } else if (year && month && day) {
+        // year-month-day
+        return {
+            start: new Date(year, month - 1, day),
+            end: new Date(year, month - 1, day + 1)
+        }
+    } else {
+        return null;
+    }
+}
+
+export function ParseQuickFilter(quickFilter: string) {
+    const keywords = SplitQuickFilter(quickFilter);
+    const keywordsWithoutDate: string[] = [];
+    let dateRange: { start: Date, end: Date } | undefined = undefined;
+    for (const keyword of keywords) {
+        const parsedDateRange = parseDateRange(keyword);
+        if (parsedDateRange) {
+            dateRange = parsedDateRange;
+        } else {
+            keywordsWithoutDate.push(keyword);
+        }
+    }
+    return {
+        keywords,
+        pkid: IsEntirelyIntegral(quickFilter) ? parseInt(quickFilter, 10) : null,
+        dateRange,
+        keywordsWithoutDate,
+    };
+};
+
+export function MakeWhereInputConditions(fieldName: string, keywords: string[]) {
+    return keywords.map(keyword => ({
+        [fieldName]: {
+            contains: keyword
+        }
+    }));
+}
 
 
 export function arrayToTSV(data: Record<string, string>[]): string {

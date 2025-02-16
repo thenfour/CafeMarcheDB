@@ -19,11 +19,12 @@ import { CoerceToNumberOrNull, parseFloatOrNull } from "shared/utils";
 export interface CMTextInputBaseProps {
     value?: string | null;
     initialValue?: string | null;
-    onChange: (e, value) => void;
+    onChange: (e, value: string) => void;
     autoFocus?: boolean;
     readOnly?: boolean;
     className?: string;
     type?: "password" | "text"; // "password" | "text" etc.
+    ref?: React.Ref<HTMLInputElement>;
 };
 
 // textfield for a string field on an object.
@@ -44,6 +45,7 @@ export function CMTextInputBase({ value, onChange, autoFocus, readOnly, ...props
     };
 
     return <input
+        ref={props.ref}
         type={props.type || "text"}
         disabled={!!readOnly}
         autoFocus={!!autoFocus}
