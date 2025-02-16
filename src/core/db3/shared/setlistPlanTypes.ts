@@ -7,6 +7,8 @@ import { z } from "zod";
 export const ZSetlistPlanLedDef = z.object({
     ledId: z.string(),
     name: z.string(),
+    descriptionMarkdown: z.string().optional(),
+    staticLabel: z.string().optional(), // for all instances of this LED, use this text caption always.
 });
 
 export type SetlistPlanLedDef = z.infer<typeof ZSetlistPlanLedDef>;
@@ -14,7 +16,7 @@ export type SetlistPlanLedDef = z.infer<typeof ZSetlistPlanLedDef>;
 export const ZSetlistPlanLedValue = z.object({
     ledId: z.string(),
     color: z.string().nullable().optional(),
-    text: z.string().optional(),
+    text: z.string().optional(), // per LED
 });
 
 export type SetlistPlanLedValue = z.infer<typeof ZSetlistPlanLedValue>;

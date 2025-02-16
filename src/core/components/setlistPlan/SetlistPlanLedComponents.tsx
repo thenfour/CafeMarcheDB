@@ -15,6 +15,9 @@ import { SetlistPlan, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";
+import { NameValuePair } from "../CMCoreComponents2";
+import { Markdown } from "../RichTextEditor";
+import { Markdown3Editor } from "../MarkdownControl3";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,18 +37,22 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
         variation: "strong",
     });
     return <>
-        <Tooltip title={`${props.def.name}: ${props.value?.text || ""}`} disableInteractive>
+        <Tooltip title={
+            <div>
+                <div>{props.def.name}: {props.value?.text || ""}</div>
+                <Markdown markdown={props.def.descriptionMarkdown || ""} />
+            </div>} disableInteractive>
             <div
                 className={`applyColor interactable ${style.cssClass} setlistPlanLed`}
                 onClick={() => setOpen(true)}
                 style={{
                     ...style.style,
                     "--dim": "15px",
-                    width: "var(--dim)",
+                    minWidth: "var(--dim)",
                     height: "var(--dim)",
                 } as any}
             >
-                {(props.value?.text || "").substring(0, 1)}
+                {`${props.def.staticLabel || ""}${props.value?.text || ""}`}
             </div>
         </Tooltip>
         {open && (
@@ -115,7 +122,7 @@ interface SetlistPlannerLedDefProps {
 }
 export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
     //const [open, setOpen] = React.useState<boolean>(false);
-    return <div className="setlistPlanLedDef" style={{ display: "flex", alignItems: "center" }}>
+    return <div className="SetlistPlannerDocumentEditorSegment setlistPlanLedDef" style={{ display: "flex", alignItems: "center" }}>
         <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
             ☰
         </div>
@@ -123,6 +130,19 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
             value={props.ledDef.name}
             onChange={(e) => props.onChange({ ...props.ledDef, name: e.target.value })}
         />
+        <NameValuePair name="Static label" value={
+            <CMTextInputBase
+                value={props.ledDef.staticLabel || ""}
+                onChange={(e) => props.onChange({ ...props.ledDef, staticLabel: e.target.value })}
+            />
+        } />
+        <NameValuePair name="Description" value={
+            <Markdown3Editor
+                onChange={(newValue) => props.onChange({ ...props.ledDef, descriptionMarkdown: newValue })}
+                value={props.ledDef.descriptionMarkdown || ""}
+                minHeight={75}
+            />
+        } />
         <Button onClick={() => props.onDelete(props.ledDef.ledId)}>{gIconMap.Delete()}</Button>
     </div>;
 };
