@@ -165,6 +165,13 @@ text.subtitle2SVG {
     fill: red;
 }
 
+text.repetitieInfo {
+    fill: var(--cm-red);
+    font-size: 26px;
+    font-style: italic;
+}
+
+
 text.langSelect {
     fill: var(--cm-red);
     font-size: 35px;
