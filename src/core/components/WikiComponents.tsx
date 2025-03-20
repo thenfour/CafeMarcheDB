@@ -86,6 +86,7 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
                         onChange={(v) => setContent(v)}
                         value={content}
                         autoFocus={true}
+                        minHeight={600}
                     />
                 </div>
 

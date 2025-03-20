@@ -133,6 +133,7 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
             onChange={(v) => setValue(v)}
             value={value}
             onSave={() => { void handleSave() }}
+            minHeight={300}
         />
 
         <div className="actionButtonsRow">

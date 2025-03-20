@@ -1314,6 +1314,7 @@ export const WFRichTextField = (props: FieldComponentProps<string>) => {
             <DialogContent dividers>
                 <Markdown3Editor
                     autoFocus
+                    minHeight={250}
                     value={value}
                     readonly={props.readonly}
                     onChange={(v) => {

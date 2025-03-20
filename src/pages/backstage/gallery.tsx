@@ -257,7 +257,7 @@ G A B c | d e f g |
 
     const [text, setText] = React.useState<string>(markdownContent);
     return <div>
-        <Markdown3Editor value={text} onChange={(v) => setText(v)} />
+        <Markdown3Editor value={text} onChange={(v) => setText(v)} minHeight={250} />
     </div>
 };
 

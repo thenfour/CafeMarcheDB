@@ -136,7 +136,7 @@ const EventCustomFieldValueValueEdit_RichText = (props: EventCustomFieldValueCon
     return <div><Markdown3Editor
         value={props.deserializedValue || ""}
         onChange={(v) => props.onChange(v)}
-        minHeight={100}
+        minHeight={250}
     /></div>
 }
 
@@ -866,6 +866,7 @@ export const EventDescriptionEditor = (props: EventDescriptionEditorProps) => {
             onChange={(v) => setValue(v)}
             value={value}
             onSave={() => { void handleSave() }}
+            minHeight={350}
         />
 
         <div className="actionButtonsRow">

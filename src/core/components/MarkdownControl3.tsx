@@ -89,7 +89,7 @@ interface Markdown3EditorProps {
     value: string;
     autoFocus?: boolean;
     beginInPreview?: boolean;
-    minHeight?: number;
+    minHeight: number;
     onChange: (v: string) => void;
     onSave?: () => void;
 };

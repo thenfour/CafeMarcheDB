@@ -424,7 +424,7 @@ interface MarkdownEditorProps {
     value: string | null, // value which may be coming from the database.
     onValueChanged: (val: string) => void, // caller can save the changed value to a db here.
     onSave?: () => void,
-    height?: number,
+    height: number,
     autoFocus?: boolean;
     displayUploadFileComponent?: boolean;
 
@@ -462,7 +462,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     };
 
     const style: React.CSSProperties = {
-        minHeight: props.height || 200,
+        minHeight: props.height,
     };
 
     const insertTextAtCursor = (textToInsert) => {
