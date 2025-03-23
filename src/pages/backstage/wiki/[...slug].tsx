@@ -1,8 +1,8 @@
-import { BlitzPage, useParams } from "@blitzjs/next";
+import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Suspense } from "react";
-import { slugify } from "shared/rootroot";
-import { IsNullOrWhitespace, SettingKey } from "shared/utils";
+import { SettingKey } from "shared/utils";
+import { wikiParsePathComponents, WikiPath } from "shared/wikiUtils";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
 import getWikiPage from "src/core/db3/queries/getWikiPage";
@@ -10,38 +10,34 @@ import { GetWikiPageCore } from "src/core/db3/server/wikiPage";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
-const WikiPageComponent = () => {
-    const params = useParams();
-    if (!params.slug) throw new Error(`no page specified`);
-    let [slug, ...extra] = params.slug as string[];
-    if (!slug) throw new Error(`no page specified`);
-    slug = slugify(slug);
-
+const WikiPageComponent = ({ wikiPath }: { wikiPath: WikiPath }) => {
     const [item, itemsExtra] = useQuery(getWikiPage, {
-        slug,
+        slug: wikiPath.canonicalWikiPath,
     });
 
     return <>
         <SettingMarkdown setting="GlobalWikiPage_Markdown"></SettingMarkdown>
-        <SettingMarkdown setting={`WikiPage_${slug}_Markdown` as SettingKey}></SettingMarkdown>
-        <WikiPageControl value={(item?.revisions[0]) || null} slug={slug} onUpdated={itemsExtra.refetch} />
+        <SettingMarkdown setting={`WikiPage_${wikiPath.canonicalWikiPath}_Markdown` as SettingKey}></SettingMarkdown>
+        <WikiPageControl wikiPageData={item} wikiPath={wikiPath} onUpdated={itemsExtra.refetch} />
     </>;
 };
 
 interface PageProps {
-    title: string,
+    title: string;
+    wikiPath: WikiPath;
 };
 
 export const getServerSideProps = async ({ params }) => {
-    const [slug] = params.slug as string[];
-    if (IsNullOrWhitespace(slug)) throw new Error(`no page specified`);
-
+    const wikiPath = wikiParsePathComponents(params.slug as string[]);
     const ret = await GetWikiPageCore({
-        slug: slug || "<never>",
+        slug: wikiPath.canonicalWikiPath || "<never>",
     });
 
     return {
-        props: { title: `${ret?.revisions[0]?.name || "<unknown>"} (wiki)` }
+        props: {
+            title: ret.latestRevision.name,
+            wikiPath,
+        }
     };
 }
 
@@ -49,7 +45,7 @@ const WikiPage: BlitzPage = (x: PageProps) => {
     return (
         <DashboardLayout title={x.title}>
             <Suspense>
-                <WikiPageComponent></WikiPageComponent>
+                <WikiPageComponent wikiPath={x.wikiPath}></WikiPageComponent>
             </Suspense>
         </DashboardLayout>
     )

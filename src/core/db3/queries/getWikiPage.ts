@@ -4,7 +4,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
 import { GetWikiPageCore } from "../server/wikiPage";
-import { TGetWikiPageArgs } from "../shared/apiTypes";
+import { TGetWikiPageArgs } from "shared/wikiUtils";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_wiki_pages),

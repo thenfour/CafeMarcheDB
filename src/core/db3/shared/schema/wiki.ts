@@ -85,11 +85,7 @@ export const xWikiPage = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 const WikiPageRevisionArgs = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
     include: {
-        wikiPage: {
-            include: {
-                visiblePermission: true,
-            }
-        },
+        wikiPage: true,
         createdByUser: AuxUserArgs,
     }
 });

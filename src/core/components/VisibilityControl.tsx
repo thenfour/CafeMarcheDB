@@ -58,21 +58,22 @@ export const VisibilityValue = ({ variant, onClick, ...props }: VisibilityValueP
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface VisibilityControlProps {
-    value: VisibilityControlValue;
+    value: VisibilityControlValue | number | null;
     variant?: "minimal" | "verbose";
     onChange: (value: VisibilityControlValue) => void;
     selectDialogTitle?: React.ReactNode;
 };
 export const VisibilityControl = (props: VisibilityControlProps) => {
     const dashboardContext = React.useContext(DashboardContext);
-    //const permissions = API.users.getAllPermissions();
+
     const variant = props.variant || "verbose";
-    const [currentUser] = useCurrentUser();
+    //const [currentUser] = useCurrentUser();
     const visibilityChoices = [null, ...(dashboardContext.permission.items).filter(p => {
         return p.isVisibility && dashboardContext.isAuthorized(p.name);
     })];
 
-    // value type is PermissionPayload
+    const heavyValue = typeof props.value === "number" ? dashboardContext.permission.getById(props.value) : props.value;
+
     return <div className={`VisibilityControl`}>
         <ChoiceEditCell
             isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
@@ -81,7 +82,7 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
             validationError={null}
             selectDialogTitle={props.selectDialogTitle || "Select who can see this"}
             //selectButtonLabel='change visibility'
-            value={props.value}
+            value={heavyValue}
             //dialogDescription={<>dialog description her99ee</>}
             dialogDescription={<SettingMarkdown setting="VisibilityControlSelectDialogDescription" />}
             renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {

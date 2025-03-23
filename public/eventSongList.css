@@ -273,7 +273,7 @@
 .freeButton.CMSmallButton.DotMenu {
     color: black;
     font-style: normal;
-    font-weight: bold;
+    /* font-weight: bold; */
     font-size: 20px;
     /* background-color: #ccc; */
     border-radius: 4px;

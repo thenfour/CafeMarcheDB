@@ -1,7 +1,7 @@
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, SvgIcon, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, Menu, SvgIcon, Typography } from "@mui/material";
 import React from "react";
 
 import { useRouter } from "next/router";
@@ -562,3 +562,25 @@ export const CMTextarea: React.FC<CMTextareaProps> = ({ autoHeight = true, autoF
 
     return <textarea ref={textareaRef} {...props} />;
 };
+
+
+
+export const DotMenu = (props: React.PropsWithChildren<{ setCloseMenuProc: (proc: () => void) => void }>) => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    return <>
+        <CMSmallButton className='DotMenu' onClick={(e) => {
+            props.setCloseMenuProc(() => setAnchorEl(null));
+            setAnchorEl(anchorEl ? null : e.currentTarget);
+        }}>{gCharMap.VerticalEllipses()}</CMSmallButton>
+        <Menu
+            id="menu-songlist"
+            anchorEl={anchorEl}
+            keepMounted
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+        >
+            {props.children}
+        </Menu >
+    </>;
+};
+

@@ -7,12 +7,34 @@ test cases:
 }
 
 /* -  --------------------------------- */
+.wikiPage .wikiNamespace {
+    opacity: 50%;
+}
+
+
 .wikiPage .wikiTitle {
-    color: var(--primary-color);
     font-size: 40px;
     font-weight: bold;
     border-bottom: 1px solid #8888;
 }
+
+
+.wikiPage .wikiTitle,
+.wikiPage .wikiTitle a {
+    color: var(--primary-color);
+}
+
+
+.wikiPage .wikiPageSpecialNamespaceSubtitle {
+    font-size: 16px;
+    font-weight: normal;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    padding-bottom: 4px;
+    opacity: 50%;
+}
+
 
 .wikiPage .BasicNameValuePairContainer input.CMTextInputBase.wikiTitle {
     font-size: 40px;

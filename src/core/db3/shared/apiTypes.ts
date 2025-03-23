@@ -1,6 +1,6 @@
 
 import { DefaultArgs } from "@prisma/client/runtime/library";
-import { Prisma, PrismaClient } from "db";
+import db, { Prisma, PrismaClient } from "db";
 import { z } from "zod";
 
 import { SortDirection } from "shared/rootroot";
@@ -533,28 +533,6 @@ export function GetICalRelativeURIForUserAndEvent(args: { userAccessToken: strin
 export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken: string | null }) {
     return `/api/ical/user/${args.userAccessToken || "public"}/upcoming`;
 }
-
-const ZWikiSlug = z.string().min(1).transform((str) => str.toLowerCase().trim());
-const ZWikiName = z.string().min(1);
-
-export interface TGetWikiPageArgs {
-    slug: string;
-};
-
-export interface TUpdateWikiPageArgs {
-    slug: string;
-    content: string;
-    name: string;
-    visiblePermissionId: number | null;
-};
-
-export const ZTUpdateWikiPageArgs = z.object({
-    slug: ZWikiSlug,
-    name: ZWikiName,
-    content: z.string(),
-    visiblePermissionId: z.number().nullable(),
-});
-
 
 
 export interface MatchingSlugItem {
@@ -1157,3 +1135,22 @@ export type GetUserAttendanceRet = {
     }[];
 
 };
+
+
+
+
+
+
+
+// PermissionSignificance.Visibility_Members
+export const GetPermissionIdBySignificance = async (significance: string): Promise<number | null> => {
+    const p = await db.permission.findFirst({
+        where: { significance }
+    });
+    return p?.id || null;
+};
+
+
+
+
+

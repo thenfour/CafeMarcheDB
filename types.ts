@@ -10,6 +10,7 @@ export const AuxUserArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
   select: {
     id: true,
     name: true,
+    cssClass: true,
   }
 });
 

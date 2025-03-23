@@ -5,7 +5,7 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import * as mutationCore from "../server/db3mutationCore";
-import { TUpdateWikiPageArgs, ZTUpdateWikiPageArgs } from "../shared/apiTypes";
+import { TUpdateWikiPageArgs, ZTUpdateWikiPageArgs } from "shared/wikiUtils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
