@@ -1,7 +1,7 @@
-import db, { Prisma } from "db";
-import { slugify } from "./rootroot";
-import { z } from "zod";
+import { Prisma } from "db";
 import { AuxUserArgs } from "types";
+import { z } from "zod";
+import { slugify } from "./rootroot";
 
 export const enum SpecialWikiNamespace {
     EventDescription = "EventDescription",

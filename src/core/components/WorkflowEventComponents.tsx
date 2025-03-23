@@ -593,18 +593,8 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         [props.initialValue]
     );
 
-    //useBeforeUnload(true, 'You have unsaved changes. Are you sure you want to leave?');
-    //useBeforeUnload(true);
-
     // The model is the external data source that the workflow engine can use to determine completeness of tasks.
     const [model, setModel] = React.useState<MockEventModel>(() => MakeEmptyModel(dashboardContext));
-
-    // const setOperand2 = (nodeDefId: number, newOperand: unknown) => {
-    //     const nd = workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
-    //     nd.fieldValueOperand2 = newOperand;
-    //     setWorkflowDef({ ...workflowDef });
-    //     setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
-    // };
 
     const setModelValue = (member: string, value: unknown) => {
         // here we don't use a real model.
@@ -618,9 +608,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         evaluationTrigger,
         instance: workflowInstance,
         setInstance: setWorkflowInstance,
-        //setEvaluationReason,
         setEvaluationTrigger,
-        //setModelValue,        
         resetModel: () => setModel(MakeEmptyModel(dashboardContext)),
         workflowDef,
         setModelValue,

@@ -16,6 +16,7 @@ import { Markdown3Editor } from "./MarkdownControl3";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { EventTextLink } from "./CMCoreComponents";
+import UnsavedChangesHandler from "./UnsavedChangesHandler";
 
 
 //////////////////////////////////////////////////
@@ -26,13 +27,17 @@ interface WikiTitleControlProps {
     wikiPageData: WikiPageData,
     wikiPath: WikiPath,
     isEditing: boolean;
+    potentiallyEditedTitle: string;
     onChange?: (v: string) => void;
 };
 const WikiTitleViewer = (props: WikiTitleControlProps) => {
     return <a href={getAbsoluteUrl(props.wikiPath.uriRelativeToHost)} rel="noreferrer"><span className="WikiTitleView">{props.wikiPageData.latestRevision.name}</span></a>;
 };
 const WikiTitleEditor = (props: WikiTitleControlProps) => {
-    return <CMTextInputBase onChange={(e, v) => props.onChange!(v)} value={props.wikiPageData.latestRevision.name} className="wikiTitle" />;
+    return <CMTextInputBase onChange={(e, v) => {
+        console.log(`title changing to ${v}`);
+        props.onChange!(v);
+    }} value={props.potentiallyEditedTitle} className="wikiTitle" />;
 };
 const WikiTitleControl = (props: WikiTitleControlProps) => {
     return props.isEditing && props.wikiPageData.titleIsEditable ? <WikiTitleEditor {...props} /> : <WikiTitleViewer {...props} />;
@@ -87,11 +92,12 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
         <div className="content">
 
             <VisibilityControl onChange={handleVisibilityChange} value={visibilityPermissionId} />
+            <UnsavedChangesHandler isDirty={hasEdits} />
 
             <NameValuePair
                 name="Title"
                 value={
-                    <WikiTitleControl wikiPath={props.wikiPath} wikiPageData={props.wikiPageData} isEditing={true} onChange={setTitle} />
+                    <WikiTitleControl wikiPath={props.wikiPath} wikiPageData={props.wikiPageData} isEditing={true} onChange={setTitle} potentiallyEditedTitle={title} />
                 }
             />
 
@@ -144,7 +150,7 @@ export const WikiPageViewMode = (props: WikiPageViewModeProps) => {
             <VisibilityValue permissionId={props.wikiPageData.wikiPage.visiblePermissionId} variant="minimal" />
             <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
                 <MenuItem onClick={async () => {
-                    snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
+                    await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
                     endMenuItemRef.current();
                 }}>
                     <ListItemIcon>
@@ -156,7 +162,7 @@ export const WikiPageViewMode = (props: WikiPageViewModeProps) => {
         </div>
         <div className="content">
             <div className="wikiTitle">
-                <WikiTitleControl wikiPath={props.wikiPath} wikiPageData={props.wikiPageData} isEditing={false} />
+                <WikiTitleControl wikiPath={props.wikiPath} wikiPageData={props.wikiPageData} isEditing={false} potentiallyEditedTitle={props.wikiPageData.latestRevision.name} />
 
                 {props.wikiPageData.specialWikiNamespace === "EventDescription" && <div className="wikiPageSpecialNamespaceSubtitle wikiPageEventDescription">
                     This is the description for <EventTextLink event={props.wikiPageData.eventContext!} />

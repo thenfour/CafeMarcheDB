@@ -509,6 +509,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             onChange={(newMarkdown) => {
                 props.mutator.setNotes(newMarkdown);
             }}
+            minHeight={300}
         />
 
         <table style={{ fontFamily: "monospace" }} className="cost-table">
