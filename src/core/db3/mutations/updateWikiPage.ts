@@ -4,7 +4,7 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
-import { TUpdateWikiPageArgs, ZTUpdateWikiPageArgs } from "src/core/db3/shared/wikiUtils";
+import { TUpdateWikiPageArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/db3/shared/wikiUtils";
 import * as mutationCore from "../server/db3mutationCore";
 
 // entry point ////////////////////////////////////////////////
@@ -32,6 +32,13 @@ export default resolver.pipe(
                 }
             });
 
+            await db.wikiPage.update({
+                where: { id: wikiPage.id },
+                data: {
+                    currentRevisionId: revision.id,
+                },
+            });
+
             if (visiblePermissionId) {
                 await db.wikiPage.update({
                     where: { id: wikiPage.id },
@@ -53,34 +60,41 @@ export default resolver.pipe(
             return revision;
         } else {
             // Page doesn't exist, create page and revision
+            const wikiPath = wikiParseCanonicalWikiPath(slug);
             const newWikiPage = await db.wikiPage.create({
                 data: {
                     slug,
-                    revisions: {
-                        create: {
-                            name,
-                            content,
-                            createdByUserId: currentUser.id,
-                        },
-                    },
+                    namespace: wikiPath.namespace,
                     visiblePermissionId,
                 },
-                include: {
-                    revisions: true,
-                    visiblePermission: true,
+            });
+
+            const revision = await db.wikiPageRevision.create({
+                data: {
+                    name,
+                    content,
+                    createdByUserId: currentUser.id,
+                    wikiPageId: newWikiPage.id,
+                }
+            });
+
+            await db.wikiPage.update({
+                where: { id: newWikiPage.id },
+                data: {
+                    currentRevisionId: revision.id,
                 },
-            })
+            });
 
             await RegisterChange({
                 action: ChangeAction.insert,
                 ctx,
                 changeContext,
-                pkid: newWikiPage.revisions[0]!.id,
+                pkid: revision.id,
                 table: "wikiPageRevision",
-                newValues: newWikiPage.revisions[0],
+                newValues: revision,
             });
 
-            return newWikiPage.revisions[0];
+            return revision;
         }
     }
 );

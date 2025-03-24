@@ -29,8 +29,6 @@ async function getMatchingSlugs(keyword__: string): Promise<MatchingSlugItem[]> 
                     OR: [
                         { AND: MakeWhereInputConditions("aliases", query.keywords) },
                         { AND: MakeWhereInputConditions("name", query.keywords) },
-                        //{ aliases: { contains: keyword } },
-                        //{ name: { contains: keyword } },
                     ]
                 },
             ],
@@ -102,9 +100,33 @@ async function getMatchingSlugs(keyword__: string): Promise<MatchingSlugItem[]> 
         select: {
             id: true,
             name: true,
-            //slug: true,
         },
-        take: 10,
+        take: itemsPerType,
+    });
+
+    const wikiWhereArgs: Prisma.WikiPageWhereInput = {
+        OR: [
+            { namespace: null },
+            {
+                namespace: {
+                    not: "EventDescription", // it's noisy to include this in search results
+                }
+            }
+        ],
+        currentRevision: {
+            OR: [
+                { AND: MakeWhereInputConditions("content", query.keywords) },
+                { AND: MakeWhereInputConditions("name", query.keywords) },
+            ]
+        }
+    };
+
+    const wikiPages = await db.wikiPage.findMany({
+        where: wikiWhereArgs,
+        include: {
+            currentRevision: true,
+        },
+        take: itemsPerType,
     });
 
     const makeEventInfo = (x: typeof eventSlugs[0]) => {
@@ -135,11 +157,28 @@ async function getMatchingSlugs(keyword__: string): Promise<MatchingSlugItem[]> 
         };
     };
 
+    const makeWikiPageInfo = (x: typeof wikiPages[0]) => {
+        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/wiki/${x.slug}`; // 
+        if (!x.currentRevision) {
+            return {
+                id: x.id,
+                absoluteUri,
+                name: `${x.slug}`
+            };
+        }
+        return {
+            id: x.id,
+            absoluteUri,
+            name: x.currentRevision.name,
+        };
+    };
+
     const ret: MatchingSlugItem[] = [
         ...songSlugs.map(s => MakeMatchingSlugItem({ ...s, ...makeSongInfo(s), itemType: "song" })),
         ...eventSlugs.map(s => MakeMatchingSlugItem({ ...s, ...makeEventInfo(s), itemType: "event" })),
         ...userSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "user", absoluteUri: undefined })),
         ...instrumentSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "instrument", absoluteUri: undefined })),
+        ...wikiPages.map(s => MakeMatchingSlugItem({ itemType: "wikiPage", ...makeWikiPageInfo(s) })),
     ];
 
     return ret;

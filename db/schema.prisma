@@ -1007,23 +1007,30 @@ model CustomLinkVisit {
 }
 
 model WikiPage {
-  id   Int    @id @default(autoincrement())
-  slug String @db.VarChar(768) // slugified name. name can be changed in Revision
+  id        Int     @id @default(autoincrement())
+  slug      String  @db.VarChar(768) // slugified name. actual display name can be changed in Revision
+  namespace String? @db.VarChar(768) // the namespace part of the slug; for example "EventDescription"
+
+  currentRevisionId Int?
+  currentRevision   WikiPageRevision? @relation(name: "CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: SetNull)
 
   visiblePermissionId Int?
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
-  revisions WikiPageRevision[]
+  revisions WikiPageRevision[] @relation(name: "AllRevisions")
 
   @@unique([slug])
+  @@unique([currentRevisionId])
   @@index([visiblePermissionId])
+  @@index([currentRevisionId])
 }
 
 model WikiPageRevision {
   id Int @id @default(autoincrement())
 
-  wikiPageId Int
-  wikiPage   WikiPage @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
+  wikiPageId    Int
+  wikiPage      WikiPage  @relation(name: "AllRevisions", fields: [wikiPageId], references: [id], onDelete: Cascade)
+  pageAsCurrent WikiPage? @relation(name: "CurrentRevision")
 
   name    String @db.VarChar(768)
   content String @db.MediumText

@@ -28,7 +28,8 @@ export const MainSiteSearch = () => {
             return;
         }
         void fetchObjectQuery(query).then((response) => {
-            setResults(response.filter(item => item.absoluteUri));
+            const filtered = response.filter(item => item.absoluteUri);
+            setResults(filtered);
         });
     }, [query]);
 
@@ -46,6 +47,7 @@ export const MainSiteSearch = () => {
             value={null}
             freeSolo
             inputValue={query}
+            filterOptions={(x) => x}
             onChange={(_event, newValue) => {
                 if (typeof newValue === "string") return;
                 if (newValue && newValue.absoluteUri) {
