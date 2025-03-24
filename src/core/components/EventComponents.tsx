@@ -6,7 +6,7 @@ import { useAuthenticatedSession } from '@blitzjs/auth';
 import { Checklist } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, MenuItem, Select, Switch, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
@@ -21,10 +21,10 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
-import { GetICalRelativeURIForUserAndEvent, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
+import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -46,6 +46,8 @@ import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { wikiMakeWikiPathFromEventDescription } from '../db3/shared/wikiUtils';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
+import { MenuLinkItem } from './MenuLinkComponents';
+import { getAbsoluteUrl } from '../db3/clientAPILL';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1121,6 +1123,81 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
     </div>;
 };
 
+const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimum, showVisibility: boolean }) => {
+    const endMenuItemRef = React.useRef<() => void>(() => { });
+    const dashboardContext = useDashboardContext();
+    const snackbar = useSnackbar();
+
+    const uriForThisEvent = dashboardContext.currentUser && GetICalRelativeURIForUserAndEvent({
+        userAccessToken: dashboardContext.currentUser?.accessToken || null,
+        eventUid: event.uid,
+        userUid: dashboardContext.currentUser.uid,
+    });
+    const uriForGlobalCalendar = dashboardContext.currentUser && getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: dashboardContext.currentUser!.accessToken }));
+
+    const closeMenu = () => {
+        endMenuItemRef.current();
+    };
+
+    return <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
+
+        {showVisibility && <>
+            <MenuItem>
+                <VisibilityValue permissionId={event.visiblePermissionId} variant='verbose' />
+            </MenuItem>
+            <Divider />
+        </>}
+
+
+        <MenuItem onClick={async () => {
+            const uri = API.events.getURIForEvent(event);
+            await navigator.clipboard.writeText(uri);
+            closeMenu();
+            snackbar.showSuccess("Link address copied");
+        }}>
+            <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
+            Copy event link to clipboard
+        </MenuItem>
+
+        <Divider />
+
+        {uriForThisEvent &&
+            <>
+                <MenuItem onClick={async () => {
+                    await navigator.clipboard.writeText(uriForThisEvent);
+                    closeMenu();
+                    snackbar.showSuccess("Link address copied");
+                }}>
+                    <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
+                    This event: Copy Calendar link
+                </MenuItem>
+                <MenuItem component={Link} href={uriForThisEvent} target="_blank" rel="noreferrer" onClick={closeMenu}>
+                    <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
+                    This event: iCal import
+                </MenuItem>
+            </>}
+
+        <Divider />
+
+        {uriForGlobalCalendar && <>
+            <MenuItem onClick={async () => {
+                await navigator.clipboard.writeText(uriForGlobalCalendar);
+                closeMenu();
+                snackbar.showSuccess("Link address copied");
+            }}>
+                <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
+                Global event calendar: Copy Calendar link
+            </MenuItem>
+            <MenuItem component={Link} href={uriForGlobalCalendar} target='_blank' rel="noreferrer" onClick={closeMenu}>
+                <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
+                Global event calendar: iCal import
+            </MenuItem>
+        </>
+        }
+    </DotMenu>;
+};
+
+
 // an list of slugs
 export const gEventDetailTabSlugIndices = {
     "none": "none",
@@ -1147,18 +1224,12 @@ export interface EventDetailContainerProps {
 }
 
 export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
-    const [currentUser] = useCurrentUser()!;
-    //const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = React.useContext(DashboardContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusId || [];
     const highlightTypeIds = props.highlightTypeId || [];
-
-    // const refetch = () => {
-    //     //tableClient?.refetch();
-    // };
 
     const visInfo = dashboardContext.getVisibilityInfo(eventData.event);
 
@@ -1265,18 +1336,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                 />
             }
 
-            <Tooltip title="Add to your calendar (iCal)">
-                <a href={GetICalRelativeURIForUserAndEvent({
-                    userAccessToken: currentUser?.accessToken || null,
-                    eventUid: eventData.event.uid,
-                    userUid: currentUser?.uid || null,
-                })}
-                    target='_blank'
-                    rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
-            </Tooltip>
-
-            {showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
-
+            <EventDotMenu event={eventData.event} showVisibility={!!showVisibility} />
         </div>
 
         <div className='content'>
@@ -1509,7 +1569,6 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     const eventTiming = dateRange.hitTestDateTime();
 
     const visInfo = dashboardContext.getVisibilityInfo(event);
-    const currentUser = useCurrentUser()[0]!;
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Weak,
         color: event.type?.color || null,
@@ -1570,18 +1629,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                 </>
             }
 
-            <Tooltip title="Add to your calendar (iCal)">
-                <a
-                    href={GetICalRelativeURIForUserAndEvent({
-                        userAccessToken: dashboardContext.currentUser?.accessToken || null,
-                        eventUid: event.uid,
-                        userUid: currentUser.uid,
-                    })}
-                    target='_blank'
-                    rel="noreferrer"
-                    className='HalfOpacity interactable shareCalendarButton'
-                >{gIconMap.Share()}</a>
-            </Tooltip>
+            <EventDotMenu event={event} showVisibility={false} />
         </div>
 
         <div className='content'>

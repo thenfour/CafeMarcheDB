@@ -45,7 +45,7 @@ export const VisibilityValue = ({ variant, onClick, ...props }: VisibilityValueP
         tooltipTitle = permission!.description || "";
     }
 
-    return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={style.style} onClick={onClick}>
+    return <Tooltip title={tooltipTitle} disableInteractive ><div className={classes.join(" ")} style={style.style} onClick={onClick}>
         {variant === "minimal" ? (
             permission === null ? <>{gIconMap.Lock()}</> : RenderMuiIcon(permission?.iconName)
         ) : (

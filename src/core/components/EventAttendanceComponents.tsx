@@ -297,11 +297,11 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
       <SettingMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />
 
       <Markdown3Editor
+        autoFocus={true} // why doesn't this work?
         onChange={(v) => setValue(v)}
         value={value}
         onSave={() => { void handleSave() }}
-        minHeight={140}
-      //enableSaveProgress={false}
+        minHeight={200}
       />
 
       <DialogActions className="actionButtonsRow">

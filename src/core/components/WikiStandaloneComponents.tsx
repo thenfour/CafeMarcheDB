@@ -15,6 +15,7 @@ import { useDashboardContext } from "./DashboardContext";
 import { Markdown } from "./markdown/RichTextEditor";
 import { Markdown3Editor } from "./MarkdownControl3";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
+import { AdminContainer } from "./CMCoreComponents";
 //import { VisibilityControlValue } from "./VisibilityControl";
 
 
@@ -121,18 +122,20 @@ const WikiStandaloneViewMode = (props: WikiStandaloneViewModeProps) => {
             <div className="flex-spacer"></div>
             {props.wikiPageData.isExisting && authorizedForEdit && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</Button>}
             {!props.wikiPageData.isExisting && authorizedForEdit && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.AutoAwesome()} Create</Button>}
-            {/* <VisibilityValue permissionId={props.wikiPageData.wikiPage.visiblePermissionId} variant="minimal" /> */}
-            <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
-                <MenuItem onClick={async () => {
-                    await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
-                    endMenuItemRef.current();
-                }}>
-                    <ListItemIcon>
-                        {gIconMap.Link()}
-                    </ListItemIcon>
-                    Copy Link to wiki page
-                </MenuItem>
-            </DotMenu>
+
+            <AdminContainer>
+                <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
+                    <MenuItem onClick={async () => {
+                        await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
+                        endMenuItemRef.current();
+                    }}>
+                        <ListItemIcon>
+                            {gIconMap.Link()}
+                        </ListItemIcon>
+                        Copy Link to wiki page
+                    </MenuItem>
+                </DotMenu>
+            </AdminContainer>
         </div>
         <div className="content">
             {/* <div className="wikiTitle">
