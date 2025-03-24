@@ -1,9 +1,9 @@
-import { Autocomplete, FormLabel, InputBase } from '@mui/material';
+import { Autocomplete, InputBase } from '@mui/material';
 import * as React from 'react';
 import { gIconMap } from "../db3/components/IconMap";
 import { MatchingSlugItem } from '../db3/shared/apiTypes';
-import { fetchObjectQuery } from './setlistPlan/ItemAssociation';
 import { CMSmallButton, simulateLinkClick } from './CMCoreComponents2';
+import { fetchObjectQuery } from './setlistPlan/ItemAssociation';
 
 export const MatchingSlugItemComponent = ({ item, selected }: { item: MatchingSlugItem, selected: boolean }) => {
 

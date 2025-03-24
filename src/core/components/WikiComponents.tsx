@@ -5,10 +5,9 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
-import { WikiPageData, WikiPath } from "src/core/db3/shared/wikiUtils";
+import { WikiPageData, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
-import updateWikiPage from "../db3/mutations/updateWikiPage";
 import { EventTextLink } from "./CMCoreComponents";
 import { DotMenu, NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
@@ -17,6 +16,7 @@ import { Markdown } from "./markdown/RichTextEditor";
 import { Markdown3Editor } from "./MarkdownControl3";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
+import updateWikiPage from "../wiki/mutations/updateWikiPage";
 
 
 //////////////////////////////////////////////////

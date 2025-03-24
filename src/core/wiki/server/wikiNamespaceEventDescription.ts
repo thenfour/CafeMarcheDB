@@ -1,5 +1,5 @@
 import db from "db";
-import { SpecialWikiNamespace, WikiNamespacePlugin, WikiPageData, WikiPageEventContext, WikiPageEventContextArgs } from "../shared/wikiUtils";
+import { SpecialWikiNamespace, WikiNamespacePlugin, WikiPageData, WikiPageEventContext, WikiPageEventContextArgs } from "../../wiki/shared/wikiUtils";
 import { IsEntirelyIntegral } from "shared/utils";
 
 export const ProcessEventDescriptionForWikiPage: WikiNamespacePlugin = async (namespace: string, slugWithoutNamespace: string, inp: WikiPageData): Promise<WikiPageData> => {

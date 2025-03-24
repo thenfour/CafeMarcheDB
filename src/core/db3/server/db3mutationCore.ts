@@ -16,7 +16,7 @@ import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat,
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { z } from "zod";
-import { getEventDescriptionInfoCore } from "./getWikiPageCore";
+import { getEventDescriptionInfoCore } from "src/core/wiki/server/getWikiPageCore";
 
 var path = require('path');
 var fs = require('fs');

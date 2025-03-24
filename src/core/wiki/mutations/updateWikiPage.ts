@@ -4,8 +4,8 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
-import { TUpdateWikiPageArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/db3/shared/wikiUtils";
-import * as mutationCore from "../server/db3mutationCore";
+import { TUpdateWikiPageArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
+import * as mutationCore from "src/core/db3/server/db3mutationCore";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(

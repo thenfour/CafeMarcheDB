@@ -1,9 +1,9 @@
 import db, { Prisma } from "db";
-import { wikiMakeWikiPathFromEventDescription, WikiPageArgsWithLatestRevision, WikiPageData, WikiPageRecordInfo, WikiPageRevisionInfo, wikiParseCanonicalWikiPath } from "../shared/wikiUtils";
-import { PermissionSignificance } from "../db3";
-import { GetPermissionIdBySignificance } from "../shared/db3Helpers";
+import { wikiMakeWikiPathFromEventDescription, WikiPageArgsWithLatestRevision, WikiPageData, WikiPageRecordInfo, WikiPageRevisionInfo, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { unslugify } from "shared/rootroot";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
+import { GetPermissionIdBySignificance } from "src/core/db3/shared/db3Helpers";
+import { PermissionSignificance } from "src/core/db3/db3";
 
 const MakeNewWikiPage = async (slug: string): Promise<WikiPageRecordInfo> => {
     return {

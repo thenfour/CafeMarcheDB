@@ -537,7 +537,7 @@ export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken:
 export interface MatchingSlugItem {
     id: number,
     name: string,
-    absoluteUri: string | undefined,
+    absoluteUri?: string | undefined,
     itemType: "event" | "song" | "user" | "instrument" | "wikiPage";
 };
 export const MakeMatchingSlugItem = (value: MatchingSlugItem) => ({ ...value });

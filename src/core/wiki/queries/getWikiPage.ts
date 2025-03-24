@@ -3,7 +3,7 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import { TGetWikiPageArgs } from "src/core/db3/shared/wikiUtils";
+import { TGetWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { GetWikiPageCore } from "../server/getWikiPageCore";
 
 export default resolver.pipe(

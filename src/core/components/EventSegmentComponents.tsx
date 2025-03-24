@@ -366,9 +366,9 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
         });
     };
 
-    const handleCopyAttendeeNames = (copyInstrumentNames: boolean) => {
+    const handleCopyAttendeeNames = async (copyInstrumentNames: boolean) => {
         const names = props.getAttendeeNames(copyInstrumentNames).join('\n');
-        navigator.clipboard.writeText(names);
+        await navigator.clipboard.writeText(names);
         snackbar.showMessage({ children: "Names copied to clipboard" });
         setAnchorEl(null);
     };
@@ -384,11 +384,11 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
         >
-            <MenuItem onClick={() => handleCopyAttendeeNames(false)}>
+            <MenuItem onClick={async () => await handleCopyAttendeeNames(false)}>
                 <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
                 Copy names of attendees to clipboard
             </MenuItem>
-            <MenuItem onClick={() => handleCopyAttendeeNames(true)}>
+            <MenuItem onClick={async () => await handleCopyAttendeeNames(true)}>
                 <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
                 Copy names of attendees (with instrument) to clipboard
             </MenuItem>

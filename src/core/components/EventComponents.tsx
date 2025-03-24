@@ -20,8 +20,10 @@ import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContex
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
+import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
 import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
+import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
 import { CMDialogContentText, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
@@ -37,17 +39,14 @@ import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from '.
 import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown3Editor } from './MarkdownControl3';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
-import { Markdown } from './markdown/RichTextEditor';
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';
 import { CMTab, CMTabPanel } from './TabPanel';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { EventWorkflowTabContent } from './WorkflowEventComponents';
-import { wikiMakeWikiPathFromEventDescription } from '../db3/shared/wikiUtils';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
-import { MenuLinkItem } from './MenuLinkComponents';
-import { getAbsoluteUrl } from '../db3/clientAPILL';
+import { EventWorkflowTabContent } from './WorkflowEventComponents';
+import { Markdown } from './markdown/RichTextEditor';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {

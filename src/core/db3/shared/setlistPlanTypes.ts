@@ -8,6 +8,7 @@ import { z } from "zod";
 export const ZSetlistPlanAssociatedItem = z.object({
     itemType: z.enum(["song", "event", "user", "instrument", "wikiPage"]),
     name: z.string(),
+    absoluteUri: z.string().optional(),
     id: z.number(),
 });
 

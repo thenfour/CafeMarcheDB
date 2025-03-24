@@ -4,8 +4,7 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "../shared/db3Helpers";
-import { getEventDescriptionInfoCore } from "../server/getWikiPageCore";
-//import { getEventDescriptionInfoCore } from "../server/serverEventUtils";
+import { getEventDescriptionInfoCore } from "src/core/wiki/server/getWikiPageCore";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_events),

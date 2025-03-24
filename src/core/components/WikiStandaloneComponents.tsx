@@ -5,20 +5,17 @@ import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
-import { WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/db3/shared/wikiUtils";
+import { WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
-import updateWikiPage from "../db3/mutations/updateWikiPage";
-import getWikiPage from "../db3/queries/getWikiPage";
 import { DotMenu } from "./CMCoreComponents2";
 import { useDashboardContext } from "./DashboardContext";
 import { Markdown } from "./markdown/RichTextEditor";
 import { Markdown3Editor } from "./MarkdownControl3";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { AdminContainer } from "./CMCoreComponents";
-//import { VisibilityControlValue } from "./VisibilityControl";
-
-
+import getWikiPage from "../wiki/queries/getWikiPage";
+import updateWikiPage from "../wiki/mutations/updateWikiPage";
 
 //////////////////////////////////////////////////
 interface WikiPageContentEditorValues {
@@ -190,7 +187,7 @@ const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
                 visiblePermissionId: wikiPageData.wikiPage.visiblePermissionId,
             });
             showSnackbar({ severity: "success", children: "success" });
-            wikiPageDataExtra.refetch();
+            void wikiPageDataExtra.refetch();
             props.onUpdated && props.onUpdated();
             return true;
         } catch (e) {
