@@ -1447,19 +1447,22 @@ in particular the date range picker is wide.*/
 }
 
 .attendanceResponseColorBarSegment {
-    height: 24px;
-    width: 18px;
+    height: 26px;
+    width: 26px;
     margin: 0 2px;
     font-family: monospace;
     font-size: 14px;
     display: flex;
     align-items: center;
-    justify-content: center;
     font-weight: bold;
-
+    -webkit-user-select: none;
+    -moz-user-select: none;
     user-select: none;
     cursor: pointer;
     overflow: hidden;
+    white-space: nowrap;
+    /* this just feels more comfortable*/
+    padding-left: 2px;
 }
 
 
@@ -1501,6 +1504,17 @@ in particular the date range picker is wide.*/
 .attendanceDetailTable .responseCell {
     min-width: 100px;
     text-align: center;
+}
+
+.EventSegmentAttendeeStat>div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.EventSegmentAttendeeStat>div svg {
+    opacity: 30%;
+    margin-right: 6px;
 }
 
 .EventCompletenessTabContent tfoot td,

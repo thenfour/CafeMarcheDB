@@ -130,6 +130,12 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
         });
         return ret;
     }
+
+    isAttendanceIdGoing(attendanceId: number | null) {
+        const attendance = this.eventAttendance.getById(attendanceId);
+        if (!attendance) return false;
+        return attendance.strength >= 50;
+    }
 };
 
 

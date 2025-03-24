@@ -1462,6 +1462,7 @@ export abstract class DashboardContextDataBase {
 
     abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
     abstract sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[];
+    abstract isAttendanceIdGoing(attendanceId: number | null): boolean;
 }
 
 

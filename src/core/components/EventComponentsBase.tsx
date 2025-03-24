@@ -68,12 +68,6 @@ export function CalculateEventMetadata<
     });
     const eventURI = API.events.getURIForEvent(event, tabSlug);
 
-    // let dateRange = new DateTimeRange({
-    //     startsAtDateTime: event.startsAt,
-    //     durationMillis: Number(event.durationMillis),
-    //     isAllDay: event.isAllDay,
-    // });
-
     const dateRange = API.events.getEventDateRange(event);
 
     return {
@@ -393,8 +387,6 @@ export interface EventsFilterSpec {
     statusFilter: DiscreteCriterion;
     dateFilter: DiscreteCriterion;
 };
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

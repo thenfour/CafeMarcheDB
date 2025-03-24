@@ -336,7 +336,7 @@ export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSeg
             props.refetch();
         }
     }}>
-        <ListItemIcon>{gIconMap.Delete()}</ListItemIcon>
+        <ListItemIcon>{gIconMap.AutoAwesome()}</ListItemIcon>
         Copy responses from {props.fromSegment.name}
     </MenuItem>;
 };
@@ -346,6 +346,7 @@ interface EventSegmentDotMenuProps {
     segment: db3.EventVerbose_EventSegment,
     readonly: boolean;
     refetch: () => void;
+    getAttendeeNames: (copyInstrumentNames: boolean) => string[];
 };
 
 export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
@@ -365,6 +366,13 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
         });
     };
 
+    const handleCopyAttendeeNames = (copyInstrumentNames: boolean) => {
+        const names = props.getAttendeeNames(copyInstrumentNames).join('\n');
+        navigator.clipboard.writeText(names);
+        snackbar.showMessage({ children: "Names copied to clipboard" });
+        setAnchorEl(null);
+    };
+
     return <>
         <div className="interactable freeButton dotMenuDots eventSegmentDotMenu" onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>
             <div>{gCharMap.VerticalEllipses()}</div>
@@ -376,6 +384,15 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
         >
+            <MenuItem onClick={() => handleCopyAttendeeNames(false)}>
+                <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
+                Copy names of attendees to clipboard
+            </MenuItem>
+            <MenuItem onClick={() => handleCopyAttendeeNames(true)}>
+                <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
+                Copy names of attendees (with instrument) to clipboard
+            </MenuItem>
+            <Divider />
             <MenuItem onClick={async () => {
                 setAnchorEl(null);
                 if (await confirm({

@@ -28,7 +28,7 @@ import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComp
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
-import { DashboardContext, useDashboardContext } from './DashboardContext';
+import { DashboardContext, DashboardContextData, useDashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
@@ -734,13 +734,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         return a.name < b.name ? -1 : 1;
     });
 
-    const segAttendees = shownSegments.map(seg => ({
-        segment: seg,
-        attendeeCount: seg.responses.filter(resp => {
-            const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
-            return att && (att.strength > 50)
-        }).length
-    }));
+    const segStats = GetSegmentResponseStats(shownSegments, dashboardContext);
 
     return <>
         <NameValuePair
@@ -773,7 +767,13 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                                     <div className='interactable' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
                                         {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
                                     </div>
-                                    <EventSegmentDotMenu event={event} refetch={refetch} readonly={props.readonly} segment={seg} />
+                                    <EventSegmentDotMenu
+                                        event={event}
+                                        refetch={refetch}
+                                        readonly={props.readonly}
+                                        segment={seg}
+                                        getAttendeeNames={(copyInstrumentNames) => GetSegmentAttendeeNames(copyInstrumentNames, seg.id, eventData, props.userMap, dashboardContext)}
+                                    />
                                 </div>
                             </th>
                         </React.Fragment>;
@@ -813,10 +813,12 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                             description={<SettingMarkdown setting='EventInviteUsersDialogDescriptionMarkdown' />}
                         />}
                     </td>
-                    {segAttendees.map(seg => {
+                    {segStats.map(seg => {
                         const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
                         return <React.Fragment key={seg.segment.id}>
-                            <td className={`responseCell segmentSignificance_${status?.significance || "none"}`}>{seg.attendeeCount}</td>
+                            <td className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
+                                <EventSegmentAttendeeStat stat={seg} />
+                            </td>
                         </React.Fragment>;
                     })}
                     <td>{/*Comments*/}</td>
@@ -935,14 +937,51 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
 };
 
 
+type SegmentResponseStat = {
+    segment: db3.EventVerbose_EventSegment;
+    notGoingCount: number;
+    goingCount: number;
+};
+
+const GetSegmentResponseStats = (segments: db3.EventVerbose_EventSegment[], dashboardContext: DashboardContextData): SegmentResponseStat[] => {
+    return segments.map(seg => ({
+        segment: seg,
+        notGoingCount: seg.responses.filter(resp => {
+            const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
+            return att && (att.strength < 50)
+        }).length,
+        goingCount: seg.responses.filter(resp => {
+            const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
+            return att && (att.strength >= 50)
+        }).length
+    }));
+};
+
+const EventSegmentAttendeeStat = (props: { stat: SegmentResponseStat }) => {
+    return <div className='EventSegmentAttendeeStat'>
+        <div>{gIconMap.ThumbUp()} {props.stat.goingCount}</div>
+        <div>{gIconMap.ThumbDown()} {props.stat.notGoingCount}</div>
+    </div>;
+};
+
+const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: number, eventData: VerboseEventWithMetadata, userMap: db3.UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
+    const responseInfo = eventData.responseInfo!;
+    const segmentResponses = responseInfo.getResponsesForSegment(segmentId)
+        .filter(r => dashboardContext.isAttendanceIdGoing(r.response.attendanceId));
+    const attendees = segmentResponses.map(sr => {
+        const user = sr.user;
+        const eventResponse = responseInfo.getEventResponseForUser(user, dashboardContext, userMap);
+        const instrumentStr = eventResponse?.instrument ? `(${eventResponse.instrument.name})` : "";
+        return copyInstrumentNames ? `${user.name} ${instrumentStr}` : user.name;
+    });
+    return toSorted(attendees);
+};
+
 export interface EventCompletenessTabContentProps {
-    //event: db3.EventClientPayload_Verbose;
-    //responseInfo: db3.EventResponseInfo;
     eventData: VerboseEventWithMetadata;
     userMap: db3.UserInstrumentList;
     readonly: boolean;
     refetch: () => void;
-    //functionalGroupsClient: DB3Client.xTableRenderClient;
 }
 
 export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: EventCompletenessTabContentProps) => {
@@ -971,13 +1010,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
 
     const isSingleSegment = eventData.event.segments.length === 1;
 
-    const segAttendees = shownSegments.map(seg => ({
-        segment: seg,
-        attendeeCount: seg.responses.filter(resp => {
-            const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
-            return att && (att.strength > 50)
-        }).length
-    }));
+    const segStats = GetSegmentResponseStats(shownSegments, dashboardContext);
 
     return <div>
         {/* <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" /> */}
@@ -998,7 +1031,13 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                         return <th className={`segmentStatusSignificance_${status?.significance || "none"}`} key={seg.id}>
                             <div style={{ display: "flex", justifyContent: "center" }}>
                                 <div>{seg.name}</div>
-                                <EventSegmentDotMenu event={event} readonly={props.readonly} refetch={props.refetch} segment={seg} />
+                                <EventSegmentDotMenu
+                                    event={event}
+                                    readonly={props.readonly}
+                                    refetch={props.refetch}
+                                    segment={seg}
+                                    getAttendeeNames={(copyInstrumentNames) => GetSegmentAttendeeNames(copyInstrumentNames, seg.id, eventData, userMap, dashboardContext)}
+                                />
                             </div>
                         </th>;
                     })}
@@ -1046,9 +1085,10 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                             const going = (((att?.strength) || 0) > 50);
                                             const color = going ? att?.color : null;
                                             const style = GetStyleVariablesForColor({ color, ...StandardVariationSpec.Strong });
-                                            return <Tooltip key={resp.response.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
+                                            return <Tooltip disableInteractive key={resp.response.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
                                                 <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass} ${((att?.strength) || 0) > 50 ? "going" : "notgoing"}`} style={style.style}>
-                                                    {resp.user.name.substring(0, 1).toLocaleUpperCase()}
+                                                    {/* {resp.user.name.substring(0, 1).toLocaleUpperCase()} */}
+                                                    {resp.user.name}
                                                 </div>
                                             </Tooltip>
                                         })}
@@ -1067,10 +1107,12 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                 <tr>
                     <td>
                     </td>
-                    {segAttendees.map(seg => {
+                    {segStats.map(seg => {
                         //const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
                         return <React.Fragment key={seg.segment.id}>
-                            <td className={`responseCell`}>{seg.attendeeCount}</td>
+                            <td className={`responseCell`}>
+                                <EventSegmentAttendeeStat stat={seg} />
+                            </td>
                         </React.Fragment>
                     })}
                 </tr>
