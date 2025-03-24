@@ -413,7 +413,7 @@ export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),
     name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
     dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
-    description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
+    //description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
     isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
     locationDescription: new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150, fieldCaption: "Location" }),
     locationURL: new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150, fieldCaption: "Location URL" }),

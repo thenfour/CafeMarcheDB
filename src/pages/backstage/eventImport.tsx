@@ -64,7 +64,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         setEventValue({
             ...eventValue,
             name: props.serverData?.event.name || "",
-            description: props.serverData?.event.description || "",
+            //description: props.serverData?.event.description || "",
             type: dashboardContext.eventType.getById(props.serverData?.event.typeId),
             typeId: props.serverData?.event.typeId || 1,
             status: dashboardContext.eventStatus.getById(props.serverData?.event.statusId),
@@ -83,7 +83,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         columns: [
             EventTableClientColumns.id,
             EventTableClientColumns.name,
-            EventTableClientColumns.description,
+            //EventTableClientColumns.description,
             //EventTableClientColumns.slug,
             EventTableClientColumns.type,
             EventTableClientColumns.status,

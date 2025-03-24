@@ -1,6 +1,5 @@
 
-import { DefaultArgs } from "@prisma/client/runtime/library";
-import db, { Prisma, PrismaClient } from "db";
+import { Prisma, PrismaClient } from "db";
 import { z } from "zod";
 
 import { SortDirection } from "shared/rootroot";
@@ -14,7 +13,7 @@ export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
 export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
 export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
 
-export type TransactionalPrismaClient = Omit<PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 
 export interface CMDBTableFilterItem { // from MUI GridFilterItem
     id?: number | string;
@@ -103,7 +102,7 @@ export interface TupdateEventBasicFieldsArgs {
     eventId: number;
     name?: string;
     //slug?: string;
-    description?: string;
+    //description?: string;
     typeId?: number;
     locationDescription?: string;
     locationURL?: string;
@@ -177,7 +176,7 @@ export interface TinsertEventResponse {
 export interface TinsertEventArgs {
     event: {
         name: string,
-        description: string,
+        //description: string,
         locationDescription: string | null,
         //slug: string,
         typeId: number | null,
@@ -671,7 +670,7 @@ export interface TGetImportEventDataRet {
     log: string[],
     event: {
         name: string,
-        description: string;
+        //description: string;
         typeId: number | null,
         statusId: number | null,
         tags: number[],
@@ -1136,19 +1135,6 @@ export type GetUserAttendanceRet = {
 
 };
 
-
-
-
-
-
-
-// PermissionSignificance.Visibility_Members
-export const GetPermissionIdBySignificance = async (significance: string): Promise<number | null> => {
-    const p = await db.permission.findFirst({
-        where: { significance }
-    });
-    return p?.id || null;
-};
 
 
 

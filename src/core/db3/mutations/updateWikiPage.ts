@@ -4,8 +4,8 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+import { TUpdateWikiPageArgs, ZTUpdateWikiPageArgs } from "src/core/db3/shared/wikiUtils";
 import * as mutationCore from "../server/db3mutationCore";
-import { TUpdateWikiPageArgs, ZTUpdateWikiPageArgs } from "shared/wikiUtils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -27,10 +27,10 @@ export default resolver.pipe(
                 data: {
                     name,
                     content,
-                    wikiPageId: wikiPage.id,
                     createdByUserId: currentUser.id,
-                },
-            })
+                    wikiPageId: wikiPage.id,
+                }
+            });
 
             if (visiblePermissionId) {
                 await db.wikiPage.update({

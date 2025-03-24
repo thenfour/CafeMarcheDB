@@ -84,6 +84,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
     });
     //console.log(`= ${eventRange.toString()}`);
 
+    const visibilityPermissionId = gState.randomVisibilityPermissionId();
     const event = await gState.prisma.event.create({
         data: {
             name: eventName,
@@ -91,9 +92,8 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
             expectedAttendanceUserTagId: faker.datatype.boolean(0.8) ? faker.helpers.arrayElement(gState.gAllUserTags).id : null,
             calendarInputHash: faker.string.uuid(),
             uid: faker.string.uuid(),
-            description: faker.datatype.boolean(0.4) ? "" : faker.lorem.paragraphs({ min: 1, max: 5 }),
             createdAt: new Date(),
-            visiblePermissionId: gState.randomVisibilityPermissionId(),
+            visiblePermissionId: visibilityPermissionId,
             typeId,//: faker.datatype.boolean(0.3) ? null : faker.helpers.arrayElement(gState.gAllEventTypes).id,
             statusId: faker.helpers.arrayElement([null, ...gState.gAllEventStatuses.map(i => i.id)]),
             locationDescription: faker.datatype.boolean(0.5) ? undefined : faker.location.streetAddress(),
@@ -106,6 +106,23 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
             frontpageVisible: faker.datatype.boolean(0.5),
         }
     });
+
+    // create description wiki
+    if (faker.datatype.boolean(0.5)) {
+        await gState.prisma.wikiPage.create({
+            data: {
+                slug: `EventDescription/${event.id}`,
+                visiblePermissionId: visibilityPermissionId,
+                revisions: {
+                    create: {
+                        content: faker.lorem.paragraphs(faker.number.int({ min: 1, max: 5 })),
+                        createdAt: new Date(),
+                        name: `(description for event #${event.id} ${event.name})`,
+                    }
+                }
+            }
+        });
+    }
 
     const tags = faker.helpers.arrayElements(gState.gAllEventTags);
     await tags.forEach(async (tag) => {

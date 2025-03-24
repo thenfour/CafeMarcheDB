@@ -865,7 +865,7 @@ const main = async () => {
     const uniqueValues = new Set<number>();
 
     while (uniqueValues.size < count) {
-      const randomValue = faker.datatype.number(userCount);
+      const randomValue = faker.number.int(userCount);
       uniqueValues.add(randomValue);
     }
 

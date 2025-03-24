@@ -5,6 +5,7 @@ import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
+import { getEventDescriptionInfoCore } from "./getWikiPageCore";
 
 interface CreateCalendarArgs {
     sourceURL: string;
@@ -106,15 +107,16 @@ export const addEventToCalendar2 = (
     return calEvent;
 };
 
-export const addEventToCalendar = (
+export const addEventToCalendar = async (
     calendar: ICalCalendar,
     user: null | Prisma.UserGetPayload<{}>,
     event: EventForCal,
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[],
     cancelledStatusIds: number[],
-): ICalEvent[] => {
-    const inputs = GetEventCalendarInput(event, cancelledStatusIds)!;
+): Promise<ICalEvent[]> => {
+    const eventDescriptionInfo = await getEventDescriptionInfoCore(event);
+    const inputs = GetEventCalendarInput(event, cancelledStatusIds, eventDescriptionInfo.latestRevision.content)!;
     return inputs
         .segments
         .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing))
@@ -185,7 +187,7 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
 
     for (let i = 0; i < events.length; ++i) {
         const event = events[i]!;
-        addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id), cancelledStatusIds);
+        await addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id), cancelledStatusIds);
     }
 
     return cal;

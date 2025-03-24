@@ -126,18 +126,18 @@ export function getMockEventBinding(args: {
 
     const field = args.nodeDef.fieldName as keyof MockEvent;
     switch (field) {
-        case "description":
-            return MakeRichTextBinding({
-                tidiedNodeInstance: args.tidiedNodeInstance,
-                flowDef: args.flowDef,
-                nodeDef: args.nodeDef,
-                fieldNameForDisplay: field,
-                setOperand2: args.setOperand2,
-                value: args.model[field] || "",
-                setValue: (val) => {
-                    args.setModelValue && args.setModelValue(field, val);
-                },
-            });
+        // case "description":
+        //     return MakeRichTextBinding({
+        //         tidiedNodeInstance: args.tidiedNodeInstance,
+        //         flowDef: args.flowDef,
+        //         nodeDef: args.nodeDef,
+        //         fieldNameForDisplay: field,
+        //         setOperand2: args.setOperand2,
+        //         value: args.model[field] || "",
+        //         setValue: (val) => {
+        //             args.setModelValue && args.setModelValue(field, val);
+        //         },
+        //     });
         case "locationDescription":
         case "name":
             return MakeSingleLineTextBinding({
@@ -762,7 +762,6 @@ interface EventWorkflowTabContentProps {
 
 function GetModelForEvent(dashboardContext: DashboardContextData, event: db3.EventClientPayload_Verbose): MockEventModel {
     const {
-        description,
         expectedAttendanceUserTagId,
         frontpageVisible,
         locationDescription,
@@ -772,7 +771,6 @@ function GetModelForEvent(dashboardContext: DashboardContextData, event: db3.Eve
     } = event;
 
     const ret: MockEventModel = {
-        description,
         expectedAttendanceUserTagId,
         frontpageVisible,
         locationDescription,

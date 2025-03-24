@@ -33,7 +33,7 @@ export default resolver.pipe(
                     const value = args.values[valueKey];
                     switch (member) {
                         case "name":
-                        case "description":
+                        //case "description":
                         case "locationDescription":
                         case "typeId":
                         case "statusId":

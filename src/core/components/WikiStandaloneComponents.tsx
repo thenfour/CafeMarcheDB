@@ -1,56 +1,31 @@
 
-import { useMutation } from "@blitzjs/rpc";
+import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Button, ListItemIcon, MenuItem } from "@mui/material";
-import React from "react";
+import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
-import { WikiPageData, WikiPath } from "src/core/db3/shared/wikiUtils";
+import { WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/db3/shared/wikiUtils";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import updateWikiPage from "../db3/mutations/updateWikiPage";
-import { EventTextLink } from "./CMCoreComponents";
-import { DotMenu, NameValuePair } from "./CMCoreComponents2";
-import { CMTextInputBase } from "./CMTextField";
-import { DashboardContext } from "./DashboardContext";
+import getWikiPage from "../db3/queries/getWikiPage";
+import { DotMenu } from "./CMCoreComponents2";
+import { useDashboardContext } from "./DashboardContext";
 import { Markdown } from "./markdown/RichTextEditor";
 import { Markdown3Editor } from "./MarkdownControl3";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
-import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
+//import { VisibilityControlValue } from "./VisibilityControl";
 
-
-//////////////////////////////////////////////////
-// - special namespaces like "EventDescription" don't allow changing titles; they are auto-generated.
-// - otherwise the title comes from the database field.
-// - otherwise the title comes from the slug.
-interface WikiTitleControlProps {
-    wikiPageData: WikiPageData,
-    wikiPath: WikiPath,
-    isEditing: boolean;
-    potentiallyEditedTitle: string;
-    onChange?: (v: string) => void;
-};
-const WikiTitleViewer = (props: WikiTitleControlProps) => {
-    return <a href={getAbsoluteUrl(props.wikiPath.uriRelativeToHost)} rel="noreferrer"><span className="WikiTitleView">{props.wikiPageData.latestRevision.name}</span></a>;
-};
-const WikiTitleEditor = (props: WikiTitleControlProps) => {
-    return <CMTextInputBase onChange={(e, v) => {
-        console.log(`title changing to ${v}`);
-        props.onChange!(v);
-    }} value={props.potentiallyEditedTitle} className="wikiTitle" />;
-};
-const WikiTitleControl = (props: WikiTitleControlProps) => {
-    return props.isEditing && props.wikiPageData.titleIsEditable ? <WikiTitleEditor {...props} /> : <WikiTitleViewer {...props} />;
-};
 
 
 //////////////////////////////////////////////////
 interface WikiPageContentEditorValues {
-    title: string,
+    //title: string,
     content: string;
-    visibilityPermissionId: number | null;//: VisibilityControlValue;
+    // visibilityPermissionId: number | null;//: VisibilityControlValue;
 };
-interface WikiPageContentEditorProps {
+interface WikiStandaloneContentEditorProps {
     onSave: (value: WikiPageContentEditorValues) => Promise<boolean>;
     onCancel: () => void;
     onClose: () => void;
@@ -60,16 +35,16 @@ interface WikiPageContentEditorProps {
 };
 
 
-export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
-    const [title, setTitle] = React.useState<string>(props.initialValue.title);
+export const WikiStandaloneContentEditor = (props: WikiStandaloneContentEditorProps) => {
+    //const [title, setTitle] = React.useState<string>(props.initialValue.title);
     const [content, setContent] = React.useState<string>(props.initialValue.content);
-    const [visibilityPermissionId, setVisibilityPermissionId] = React.useState<number | null>(props.initialValue.visibilityPermissionId);
+    //const [visibilityPermissionId, setVisibilityPermissionId] = React.useState<number | null>(props.initialValue.visibilityPermissionId);
 
     const handleSave = async () => {
         const success = await props.onSave({
             content,
-            title,
-            visibilityPermissionId,
+            //title,
+            //visibilityPermissionId,
         });
         return success;
     };
@@ -80,26 +55,25 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
         props.onClose();
     };
 
-    const handleVisibilityChange = (v: VisibilityControlValue) => {
-        setVisibilityPermissionId(v?.id || null);
-    };
+    // const handleVisibilityChange = (v: VisibilityControlValue) => {
+    //     setVisibilityPermissionId(v?.id || null);
+    // };
 
-    const hasEdits = (props.initialValue.title !== title) || (content !== props.initialValue.content) || (visibilityPermissionId !== props.initialValue.visibilityPermissionId);
+    //const hasEdits = (props.initialValue.title !== title) || (content !== props.initialValue.content) || (visibilityPermissionId !== props.initialValue.visibilityPermissionId);
+    const hasEdits = (content !== props.initialValue.content);
 
     return <>
-        <div className="header">
-        </div>
         <div className="content">
 
-            <VisibilityControl onChange={handleVisibilityChange} value={visibilityPermissionId} />
+            {/* <VisibilityControl onChange={handleVisibilityChange} value={visibilityPermissionId} /> */}
             <UnsavedChangesHandler isDirty={hasEdits} />
 
-            <NameValuePair
+            {/* <NameValuePair
                 name="Title"
                 value={
                     <WikiTitleControl wikiPath={props.wikiPath} wikiPageData={props.wikiPageData} isEditing={true} onChange={setTitle} potentiallyEditedTitle={title} />
                 }
-            />
+            /> */}
 
             <div className="wikiMarkdownEditorContainer">
 
@@ -126,28 +100,28 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
 
 
 //////////////////////////////////////////////////
-interface WikiPageViewModeProps {
+interface WikiStandaloneViewModeProps {
     onEnterEditMode: () => void;
     wikiPageData: WikiPageData,
     wikiPath: WikiPath,
 };
-export const WikiPageViewMode = (props: WikiPageViewModeProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
-    const authorizedForEdit = dashboardContext.isAuthorized(Permission.edit_wiki_pages);
+const WikiStandaloneViewMode = (props: WikiStandaloneViewModeProps) => {
+    const dashboardContext = useDashboardContext();
+    const authorizedForEdit = dashboardContext.isAuthorized(Permission.manage_events);
     const snackbar = useSnackbar();
     const endMenuItemRef = React.useRef<() => void>(() => { });
 
     return <>
         <div className="header">
-            {!IsNullOrWhitespace(props.wikiPath.namespace) &&
+            {/* {!IsNullOrWhitespace(props.wikiPath.namespace) &&
                 <div className="wikiNamespace">
                     <span>{props.wikiPath.namespace}/</span>
                 </div>
-            }
+            } */}
             <div className="flex-spacer"></div>
             {props.wikiPageData.isExisting && authorizedForEdit && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</Button>}
             {!props.wikiPageData.isExisting && authorizedForEdit && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.AutoAwesome()} Create</Button>}
-            <VisibilityValue permissionId={props.wikiPageData.wikiPage.visiblePermissionId} variant="minimal" />
+            {/* <VisibilityValue permissionId={props.wikiPageData.wikiPage.visiblePermissionId} variant="minimal" /> */}
             <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
                 <MenuItem onClick={async () => {
                     await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
@@ -156,12 +130,12 @@ export const WikiPageViewMode = (props: WikiPageViewModeProps) => {
                     <ListItemIcon>
                         {gIconMap.Link()}
                     </ListItemIcon>
-                    Copy Link
+                    Copy Link to wiki page
                 </MenuItem>
             </DotMenu>
         </div>
         <div className="content">
-            <div className="wikiTitle">
+            {/* <div className="wikiTitle">
                 <WikiTitleControl wikiPath={props.wikiPath} wikiPageData={props.wikiPageData} isEditing={false} potentiallyEditedTitle={props.wikiPageData.latestRevision.name} />
 
                 {props.wikiPageData.specialWikiNamespace === "EventDescription" && <div className="wikiPageSpecialNamespaceSubtitle wikiPageEventDescription">
@@ -169,41 +143,52 @@ export const WikiPageViewMode = (props: WikiPageViewModeProps) => {
                 </div>}
 
             </div>
-
+ */}
             <div className="wikiContentContainer">
                 {IsNullOrWhitespace(props.wikiPageData.latestRevision.content) ? <div className="unknownPage">This page dosen't exist (yet!)</div> : <Markdown markdown={props.wikiPageData.latestRevision.content} />}
             </div>
 
-            <div className="wikiPageFooterStats">
+            {/* <div className="wikiPageFooterStats">
                 Last edited by {props.wikiPageData.latestRevision.createdByUser?.name || "(unknown)"} on {props.wikiPageData.latestRevision.createdAt.toLocaleDateString()} at {props.wikiPageData.latestRevision.createdAt.toLocaleTimeString()}
-            </div>
+            </div> */}
         </div>
     </>;
 };
 
 
 
-//////////////////////////////////////////////////
-interface WikiPageControlProps {
-    wikiPageData: WikiPageData,
-    wikiPath: WikiPath,
-    onUpdated: () => void;
+
+
+
+
+// A standalone control to view / edit a wiki page.
+interface WikiStandaloneControlProps {
+    canonicalWikiPath: string; // with namespace if applicable
+    onUpdated?: () => void;
+    readonly?: boolean;
 };
-export const WikiPageControl = (props: WikiPageControlProps) => {
+
+const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
     const [editing, setEditing] = React.useState<boolean>(false);
     const [updateWikiPageMutation] = useMutation(updateWikiPage);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const wikiPath = wikiParseCanonicalWikiPath(props.canonicalWikiPath);
+
+    const [wikiPageData, wikiPageDataExtra] = useQuery(getWikiPage, {
+        slug: props.canonicalWikiPath,
+    });
 
     const handleSave = async (value: WikiPageContentEditorValues) => {
         try {
             const x = await updateWikiPageMutation({
-                slug: props.wikiPath.canonicalWikiPath,
+                slug: props.canonicalWikiPath,
                 content: value.content,
-                name: value.title,
-                visiblePermissionId: value.visibilityPermissionId,
+                name: wikiPageData.latestRevision.name,
+                visiblePermissionId: wikiPageData.wikiPage.visiblePermissionId,
             });
             showSnackbar({ severity: "success", children: "success" });
-            props.onUpdated();
+            wikiPageDataExtra.refetch();
+            props.onUpdated && props.onUpdated();
             return true;
         } catch (e) {
             showSnackbar({ severity: "error", children: "error" });
@@ -211,24 +196,31 @@ export const WikiPageControl = (props: WikiPageControlProps) => {
         }
     };
 
-    return <div className="wikiPage contentSection">
+    return <div className="wikiPage">
 
-        {editing ? <WikiPageContentEditor
+        {editing ? <WikiStandaloneContentEditor
             initialValue={{
-                content: props.wikiPageData.latestRevision.content,
-                title: props.wikiPageData.latestRevision.name,
-                visibilityPermissionId: props.wikiPageData.wikiPage.visiblePermissionId,
+                content: wikiPageData.latestRevision.content,
+                //title: wikiPageData.latestRevision.name,
+                //visibilityPermissionId: wikiPageData.wikiPage.visiblePermissionId,
             }}
             onSave={handleSave}
-            wikiPageData={props.wikiPageData}
-            wikiPath={props.wikiPath}
+            wikiPageData={wikiPageData}
+            wikiPath={wikiPath}
             onCancel={() => setEditing(false)}
             onClose={() => setEditing(false)}
         /> :
-            <WikiPageViewMode
+            <WikiStandaloneViewMode
                 onEnterEditMode={() => setEditing(true)}
-                wikiPageData={props.wikiPageData}
-                wikiPath={props.wikiPath}
+                wikiPageData={wikiPageData}
+                wikiPath={wikiPath}
             />}
     </div>;
 };
+
+export const WikiStandaloneControl = (props: WikiStandaloneControlProps) => {
+    return <Suspense fallback={<div className="lds-dual-ring"></div>}>
+        <WikiStandaloneControlInner {...props} />
+    </Suspense>;
+};
+

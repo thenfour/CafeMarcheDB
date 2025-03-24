@@ -3,7 +3,7 @@ import { Prisma } from "db";
 import { ICalEventStatus } from "ical-generator";
 import { markdownToPlainText } from "shared/markdownUtils";
 import { DateTimeRange } from "shared/time";
-import { CoalesceBool } from "shared/utils";
+import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
 import { slugify } from "shared/rootroot";
@@ -63,7 +63,7 @@ export const EventForCalArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
         id: true,
         name: true,
-        description: true,
+        //description: true,
         revision: true,
         calendarInputHash: true,
 
@@ -223,7 +223,7 @@ type GetEventCalendarInputResult = {
     inputHash: string;
     segments: EventCalendarInput[];
 };
-export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[]): GetEventCalendarInputResult | null => {
+export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[], eventDescription: string): GetEventCalendarInputResult | null => {
     // if you pass in something that is insufficient for using as an event.
     // it's theoretical because it's always going to be an event object.
     if (event.revision === undefined) return null;
@@ -234,7 +234,7 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStat
 
     // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
     // so just bake it, and keep the payload simple.
-    let descriptionText = event.description ? markdownToPlainText(event.description) : "";
+    let descriptionText = IsNullOrWhitespace(eventDescription) ? "" : markdownToPlainText(eventDescription);
     if (setLists.length) {
         descriptionText += "\n\n" + setLists.join(`\n\n`);
     }

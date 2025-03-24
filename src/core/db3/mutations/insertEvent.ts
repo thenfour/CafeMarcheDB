@@ -23,7 +23,7 @@ export default resolver.pipe(
                 createdByUserId: currentUser.id,
                 name: args.event.name,
                 locationDescription: args.event.locationDescription || "",
-                description: args.event.description || "",
+                //description: args.event.description || "",
                 //slug: args.event.slug,
                 typeId: args.event.typeId,
                 statusId: args.event.statusId,

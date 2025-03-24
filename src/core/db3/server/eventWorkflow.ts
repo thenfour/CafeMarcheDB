@@ -3,7 +3,6 @@ import * as z from "zod";
 
 export interface MockEvent {
     name: string;
-    description: string | null;
     locationDescription: string | null;
     typeId: number | null;
     statusId: number | null;
@@ -19,7 +18,6 @@ export type MockEventModel = MockEvent & Record<string, any>;
 // Base schema for MockEvent
 export const ZMockEventModel = z.object({
     name: z.string().optional(),
-    description: z.string().nullable().optional(),
     locationDescription: z.string().nullable().optional(),
     typeId: z.number().nullable().optional(),
     statusId: z.number().nullable().optional(),

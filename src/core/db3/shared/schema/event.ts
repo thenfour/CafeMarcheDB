@@ -469,7 +469,6 @@ export const xEventArgs_Base: db3.TableDesc = {
     getRowInfo: (row: EventPayloadClient) => ({
         pk: row.id,
         name: EventAPI.getLabel(row),
-        description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
         ownerUserId: row.createdByUserId,
     }),
@@ -575,7 +574,6 @@ export const xEventArgs_Base: db3.TableDesc = {
         new PKField({ columnName: "id" }),
         MakeTitleField("name", { authMap: xEventAuthMap_Homepage, }),
         //MakeSlugField("slug", "name", { authMap: xEventAuthMap_R_EAdmin, }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         MakePlainTextField("locationDescription", { authMap: xEventAuthMap_Homepage, }),
         //MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),

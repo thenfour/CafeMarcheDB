@@ -2,12 +2,12 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Suspense } from "react";
 import { SettingKey } from "shared/utils";
-import { wikiParsePathComponents, WikiPath } from "shared/wikiUtils";
+import { wikiParsePathComponents, WikiPath } from "src/core/db3/shared/wikiUtils";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
 import getWikiPage from "src/core/db3/queries/getWikiPage";
-import { GetWikiPageCore } from "src/core/db3/server/wikiPage";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { GetWikiPageCore } from "src/core/db3/server/getWikiPageCore";
 
 
 const WikiPageComponent = ({ wikiPath }: { wikiPath: WikiPath }) => {

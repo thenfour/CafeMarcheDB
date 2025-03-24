@@ -44,6 +44,8 @@ import { CMTab, CMTabPanel } from './TabPanel';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
+import { wikiMakeWikiPathFromEventDescription } from '../db3/shared/wikiUtils';
+import { WikiStandaloneControl } from './WikiStandaloneComponents';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -825,82 +827,17 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
 };
 
-interface EventDescriptionEditorProps {
-    event: db3.EventPayloadMinimum;
-    refetch: () => void;
-    onClose: () => void;
-};
 
-export const EventDescriptionEditor = (props: EventDescriptionEditorProps) => {
-    const [value, setValue] = React.useState<string>(props.event.description || "");
-
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    const handleSave = async (): Promise<boolean> => {
-        try {
-            await mutationToken.invoke({
-                eventId: props.event.id,
-                description: value,
-            });
-            showSnackbar({ severity: "success", children: "Success" });
-            props.refetch();
-            return true;
-        } catch (e) {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event description" });
-            return false;
-        }
-    };
-
-    const hasEdits = (props.event.description !== value);
-
-    const handleSaveAndClose = async (): Promise<boolean> => {
-        const r = await handleSave();
-        props.onClose();
-        return r;
-    };
-
-    return <>
-        <Markdown3Editor
-            onChange={(v) => setValue(v)}
-            value={value}
-            onSave={() => { void handleSave() }}
-            minHeight={350}
-        />
-
-        <div className="actionButtonsRow">
-            <div className={`freeButton cancelButton`} onClick={props.onClose}>{hasEdits ? "Cancel" : "Close"}</div>
-            <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div>
-            <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSaveAndClose : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
-        </div>
-    </>;
-};
 
 export const EventDescriptionControl = ({ event, refetch, readonly }: { event: db3.EventPayloadMinimum, refetch: () => void, readonly: boolean }) => {
-    const [editing, setEditing] = React.useState<boolean>(false);
-
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
-
-    const authorized = db3.xEvent.authorizeColumnForEdit({
-        model: null,
-        columnName: "description",
-        clientIntention,
-        publicData,
-        fallbackOwnerId: event.createdByUserId,
-    });
-
-    readonly = readonly && authorized;
-
-    return <div className='descriptionContainer'>
-        {!readonly && !editing && <Button onClick={() => setEditing(true)}>
-            {IsNullOrWhitespace(event.description) ? <>{gIconMap.Edit()}Add info</> : <>{gIconMap.Edit()}Edit info</>}
-        </Button>}
-        {editing ? <EventDescriptionEditor event={event} refetch={refetch} onClose={() => setEditing(false)} /> : <Markdown markdown={event.description} />}
-    </div>;
+    const wikiPath = wikiMakeWikiPathFromEventDescription(event);
+    return <WikiStandaloneControl
+        canonicalWikiPath={wikiPath.canonicalWikiPath}
+        readonly={readonly}
+        onUpdated={refetch}
+    />;
 };
+
 
 
 
@@ -1348,6 +1285,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
 
 export interface EventDetailFullProps {
     event: EventEnrichedVerbose_Event,
+    eventDescription: string,
     tableClient: DB3Client.xTableRenderClient;
     initialTabIndex?: string;
     readonly: boolean;
@@ -1357,12 +1295,13 @@ export interface EventDetailFullProps {
 
 type EventDetailFullTabAreaProps = EventDetailFullProps & {
     selectedTab: string;
+    eventDescription: string,
     setSelectedTab: (v: string) => void;
     eventData: VerboseEventWithMetadata;
     userMap: db3.UserInstrumentList;
 };
 
-export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
+export const EventDetailFullTab2Area = ({ eventData, eventDescription, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
     const handleTabChange = (_: undefined | React.SyntheticEvent, newValue: string) => {
@@ -1396,7 +1335,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryIcon={gIconMap.Info()}
             summaryTitle="Info"
             thisTabId={gEventDetailTabSlugIndices.info}
-            canBeDefault={!IsNullOrWhitespace(event.description)}
+            canBeDefault={!IsNullOrWhitespace(eventDescription)}
         >
             <div className='descriptionLine'>
                 <Suspense>
@@ -1470,9 +1409,9 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
 
 
 
-export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
+export const EventDetailFull = ({ event, eventDescription, tableClient, ...props }: EventDetailFullProps) => {
 
-    const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
+    const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(eventDescription) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
     const tabSlug = selectedTab;//Object.keys(gEventDetailTabSlugIndices)[selectedTab];
     const router = useRouter();
     const dashboardContext = React.useContext(DashboardContext);
@@ -1501,7 +1440,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         />
 
         <Suspense>
-            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={props.refetch} eventData={eventData} userMap={userMap} />
+            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={props.refetch} eventData={eventData} userMap={userMap} eventDescription={eventDescription} />
         </Suspense>
     </EventDetailContainer>;
 };

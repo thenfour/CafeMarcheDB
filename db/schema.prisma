@@ -462,13 +462,15 @@ model UserInstrument {
 // they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 model Event {
-  id                Int        @id @default(autoincrement())
+  id                Int     @id @default(autoincrement())
   revision          Int
-  calendarInputHash String?    @db.VarChar(200) // ical input payload, to know if revision should be updated.
-  name              String     @db.VarChar(768)
-  description       String     @db.MediumText // what's the diff between a description & comment? description is the pinned general description in markdown.
-  typeId            Int?
-  type              EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+  calendarInputHash String? @db.VarChar(200) // ical input payload, to know if revision should be updated.
+  name              String  @db.VarChar(768)
+
+  // description is now migrated to wiki
+
+  typeId Int?
+  type   EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
   locationDescription String       @default("") @db.VarChar(768)
   locationURL         String       @default("") @db.VarChar(768)

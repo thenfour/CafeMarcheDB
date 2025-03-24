@@ -274,3 +274,20 @@ notes:
 huge payloads because of all the features involved at the same time. Consider more customized handling of prisma objects.
 * I should also break components up into smaller files. Everything is monolithic so probably a lot of inefficiency.
 
+# Random vexing build errors
+
+```
+Type error: Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient'.
+```
+
+```
+Debug Failure. No error for last overload signature
+```
+
+I am not sure how to address these errors when they pop up. They both seem to arise in code unrelated to the feature being worked on. Likely just errors in the toolchain?
+
+The stack depth error can be worked around with `as any`.
+
+The `debug failure` is much more mysterious and i had to do a lot of narrowing down with `git stash` to even figure out what triggers it.
+It was triggered by making any queries to `db.event` from within wiki page fetching. No idea at all how that could cause an error, but again `as any` to bypass type checking resolved it.
+

@@ -1,4 +1,5 @@
 import { BlitzPage, useParams } from "@blitzjs/next";
+import { useQuery } from "@blitzjs/rpc";
 import db from "db";
 import { GetServerSideProps } from 'next';
 import React, { Suspense } from 'react';
@@ -12,6 +13,7 @@ import { EventTableClientColumns } from "src/core/components/EventComponentsBase
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import getEventDescription from "src/core/db3/queries/getEventDescription";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
@@ -67,6 +69,8 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
     const event = eventRaw ? db3.enrichSearchResultEvent(eventRaw, dashboardContext) : null;
 
+    const [eventDescriptionInfo] = useQuery(getEventDescription, { eventId });
+
     const refetch = () => {
         tableClient.refetch();
     };
@@ -79,7 +83,15 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
         <NewEventButton />
         {event ? <>
             <EventBreadcrumbs event={event} />
-            <EventDetailFull readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} workflowRefreshTrigger={workflowRefreshTrigger} refetch={refetch} />
+            <EventDetailFull
+                readonly={false}
+                event={event}
+                tableClient={tableClient}
+                initialTabIndex={initialTabIndex}
+                workflowRefreshTrigger={workflowRefreshTrigger}
+                refetch={refetch}
+                eventDescription={eventDescriptionInfo.latestRevision.content}
+            />
         </> : <>
             no event was found. some possibilities:
             <ul>

@@ -185,7 +185,7 @@ export default resolver.pipe(
             event: {
                 expectedAttendanceUserTagId: null,
                 name: "",
-                description: "",
+                //description: "",
                 statusId: null,
                 tags: [],
                 typeId: null,
@@ -213,7 +213,7 @@ export default resolver.pipe(
             const edr = ExtractDescription(args.text);
             const eventTxt = edr.beforeSeparator;
 
-            ret.event.description = edr.afterSeparator || "";
+            //ret.event.description = edr.afterSeparator || "";
 
             ret.event.statusId = (await db.eventStatus.findFirst({
                 where: {

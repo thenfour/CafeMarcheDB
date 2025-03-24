@@ -7,6 +7,7 @@ import { SortDirection } from "shared/rootroot";
 import { CalculateChanges, CalculateChangesResult, SqlCombineAndExpression, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
 import { PublicDataType } from "types";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
+import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
 
 
 // server-side code for db schema expression.
@@ -1101,7 +1102,7 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
 
 export const ApplySoftDeleteWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, isDeletedColumnName?: string) => {
     if (clientIntention.intention === "user") {
-        ret.push({ [isDeletedColumnName || "isDeleted"]: false });
+        ret.push(GetSoftDeleteWhereExpression(isDeletedColumnName));
     }
 }
 
@@ -1121,41 +1122,14 @@ export const ApplyVisibilityWhereClause = async (ret: Array<any>, clientIntentio
     // make user-looking functions operate as close to user as possible.
     //if (clientIntention.currentUser!.isSysAdmin) return; // sys admins can always see everything.
 
-    if (clientIntention.intention === "public") {
-        const publicRole = await db.role.findFirst({
-            where: {
-                isPublicRole: true,
-            },
-            include: {
-                permissions: true,
-            }
-        });
-        assert(!!publicRole, "expecting a public role to be assigned in the db");
-        const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
-            // current user has access to the specified visibile permission
-            visiblePermissionId: { in: publicRole.permissions.map(p => p.permissionId) }
-        };
-        ret.push(spec);
+    if (clientIntention.intention === "public" || !clientIntention.currentUser?.roleId) {
+        ret.push(GetPublicVisibilityWhereExpression());
     } else {
         // intention is user
         assert(clientIntention.intention === "user", "checking we're handling all cases");
         assert(!!clientIntention.currentUser, "current user is required in this line.");
 
-        ret.push({
-            OR: [
-                {
-                    // current user has access to the specified visibile permission
-                    visiblePermissionId: { in: clientIntention.currentUser?.role?.permissions.map(p => p.permissionId) }
-                },
-                {
-                    // private visibility and you are the creator
-                    AND: [
-                        { visiblePermissionId: null },
-                        { [createdByUserIDColumnName]: clientIntention.currentUser?.id }
-                    ]
-                }
-            ]
-        });
+        ret.push(await GetUserVisibilityWhereExpression(clientIntention.currentUser, createdByUserIDColumnName));
     }
 };
 

@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { AuxUserArgs } from "types";
 import { z } from "zod";
-import { slugify } from "./rootroot";
+import { slugify } from "../../../../shared/rootroot";
 
 export const enum SpecialWikiNamespace {
     EventDescription = "EventDescription",
@@ -14,13 +14,6 @@ export interface TGetWikiPageArgs {
     slug: string;
 };
 
-export interface TUpdateWikiPageArgs {
-    slug: string;
-    content: string;
-    name: string;
-    visiblePermissionId: number | null;
-};
-
 export const ZTUpdateWikiPageArgs = z.object({
     slug: ZWikiSlug,
     name: ZWikiName,
@@ -28,6 +21,7 @@ export const ZTUpdateWikiPageArgs = z.object({
     visiblePermissionId: z.number().nullable(),
 });
 
+export type TUpdateWikiPageArgs = z.infer<typeof ZTUpdateWikiPageArgs>;
 
 
 
@@ -181,8 +175,10 @@ export const wikiMakeWikiPathFromEventDescription = (event: Prisma.EventGetPaylo
 }
 
 // parses the "slug" database column which is really the canonicalWikiPath.
-export const wikiParseCanonicalWikiPath = (slug: string): WikiPath => {
-    const parts = slug.split('/');
+export const wikiParseCanonicalWikiPath = (canonicalWikiPath: string): WikiPath => {
+    const parts = canonicalWikiPath.split('/');
     return wikiParsePathComponents(parts);
 };
 
+
+export type WikiNamespacePlugin = (namespace: string, slugWithoutNamespace: string, inp: WikiPageData) => Promise<WikiPageData>;

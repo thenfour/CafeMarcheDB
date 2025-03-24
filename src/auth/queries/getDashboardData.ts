@@ -156,7 +156,7 @@ export default resolver.pipe(
 
             const eventStatus = await db.eventStatus.findMany();
 
-            const relevantEventsCall = getTopRelevantEvents(eventStatus, 5, db);
+            const relevantEventsCall = getTopRelevantEvents(eventStatus, 5, db as any /* Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient' */);
 
             const results = await Promise.all([
                 db.userTag.findMany(),

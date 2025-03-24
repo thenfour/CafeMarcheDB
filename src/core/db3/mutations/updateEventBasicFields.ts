@@ -16,7 +16,7 @@ export default resolver.pipe(
         const fields: Prisma.EventUncheckedUpdateInput = {
             name: args.name,
             //slug: args.slug,
-            description: args.description,
+            //description: args.description,
             typeId: args.typeId,
             visiblePermissionId: args.visiblePermissionId,
             locationDescription: args.locationDescription,
