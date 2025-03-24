@@ -6,7 +6,7 @@ import { z } from "zod";
 
 // matches MatchingSlugItem on purpose.
 export const ZSetlistPlanAssociatedItem = z.object({
-    itemType: z.enum(["song", "event", "user", "instrument"]),
+    itemType: z.enum(["song", "event", "user", "instrument", "wikiPage"]),
     name: z.string(),
     id: z.number(),
 });

@@ -44,6 +44,7 @@ import { DashboardContext, DashboardContextData, DashboardContextProvider } from
 import { LoginSignup } from "./LoginSignupForm";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
+import { MainSiteSearch } from "./MainSiteSearch";
 
 const drawerWidth = 260;
 
@@ -246,15 +247,8 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                     <MetronomeDialogButton />
 
-                    {/* {(session.userId != null) && <Search>
-                        <SearchIconWrapper>
-                            <SearchIcon />
-                        </SearchIconWrapper>
-                        <StyledInputBase
-                            placeholder="Search…"
-                            inputProps={{ 'aria-label': 'search' }}
-                        />
-                    </Search>} */}
+                    <MainSiteSearch />
+
                     <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
                     {(session.userId != null) && <>

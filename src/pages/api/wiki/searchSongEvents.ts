@@ -2,6 +2,7 @@
 
 import { Ctx } from "@blitzjs/next";
 import db, { Prisma } from "db";
+import { slugify } from "shared/rootroot";
 import { MakeWhereInputConditions, ParseQuickFilter } from "shared/utils";
 import { api } from "src/blitz-server";
 import { MakeMatchingSlugItem, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
@@ -106,25 +107,39 @@ async function getMatchingSlugs(keyword__: string): Promise<MatchingSlugItem[]> 
         take: 10,
     });
 
-    const makeEventName = (x: typeof eventSlugs[0]) => {
+    const makeEventInfo = (x: typeof eventSlugs[0]) => {
+        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/event/${x.id}/${slugify(x.name || "")}`; // 
         if (x.startsAt) {
-            return `${x.name} (${x.startsAt.toDateString()})`;
+            return {
+                absoluteUri,
+                name: `${x.name} (${x.startsAt.toDateString()})`
+            };
         }
-        return x.name;
+        return {
+            absoluteUri,
+            name: x.name,
+        };
     };
 
-    const makeSongName = (x: typeof songSlugs[0]) => {
+    const makeSongInfo = (x: typeof songSlugs[0]) => {
+        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/song/${x.id}/${slugify(x.name || "")}`; // 
         if (x.introducedYear) {
-            return `${x.name} (${x.introducedYear})`;
+            return {
+                absoluteUri,
+                name: `${x.name} (${x.introducedYear})`
+            };
         }
-        return x.name;
+        return {
+            absoluteUri,
+            name: x.name,
+        };
     };
 
     const ret: MatchingSlugItem[] = [
-        ...songSlugs.map(s => MakeMatchingSlugItem({ ...s, name: makeSongName(s), itemType: "song" })),
-        ...eventSlugs.map(s => MakeMatchingSlugItem({ ...s, name: makeEventName(s), itemType: "event" })),
-        ...userSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "user" })),
-        ...instrumentSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "instrument" })),
+        ...songSlugs.map(s => MakeMatchingSlugItem({ ...s, ...makeSongInfo(s), itemType: "song" })),
+        ...eventSlugs.map(s => MakeMatchingSlugItem({ ...s, ...makeEventInfo(s), itemType: "event" })),
+        ...userSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "user", absoluteUri: undefined })),
+        ...instrumentSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "instrument", absoluteUri: undefined })),
     ];
 
     return ret;

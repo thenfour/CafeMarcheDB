@@ -49,14 +49,16 @@ header .headerIndicatorBar.impersonating {
   background-color: #c44;
 }
 
-.NODE_ENV_development header {
-  background-color: #444;
+.NODE_ENV_development .logo {
+  /* background-color: #444; */
+  text-decoration: line-through;
 }
 
+/* 
 .NODE_ENV_development .headerIndicatorBar {
   background-color: #ffcc00;
   background-image: repeating-linear-gradient(-25deg, #ffcc00, #ffcc00 10px, #000000 10px, #000000 20px);
-}
+} */
 
 /* typically h1 at the top of a section doesn't need any padding or it looks awkwardly pushed down */
 h1:first-child {

@@ -2832,3 +2832,32 @@ textarea {
     resize: vertical;
     border: 1px solid #0001;
 }
+
+
+/* -  --------------------------------- */
+.MainSiteSearch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+.MainSiteSearch input {
+    background-color: #fff2;
+    color: #ccc;
+    border-radius: 4px;
+    padding: 8px 10px;
+    /* note this influences the width of the autocomplete too.*/
+    width: 300px;
+}
+
+.MainSiteSearch svg {
+    /* fill: #ede331; */
+    fill: #fff5;
+}
+
+.MainSiteSearch .freeButton {
+    opacity: 100%;
+    display: flex;
+}
