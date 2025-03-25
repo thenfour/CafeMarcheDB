@@ -90,7 +90,7 @@
 }
 
 .songListSongTable .td.songIndex {
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 .songListSongTable .td.icon,
@@ -166,7 +166,7 @@
 }
 
 .songListSongTable .td.songName .divider {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     color: #888;
     /* for vertically-centering color swatch */
     display: flex;
@@ -188,7 +188,7 @@
 }
 
 .songListSongTable .td.length {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     justify-content: flex-end;
 }
 
@@ -200,7 +200,7 @@
 }
 
 .songListSongTable .td.runningLength {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     color: #0004;
     font-size: 14px;
     justify-content: flex-end;
@@ -215,7 +215,7 @@
 }
 
 .songListSongTable .td.tempo {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     justify-content: space-between;
     color: blue;
 }
@@ -387,7 +387,7 @@ li.songDropdownOption {
 /* ----------------------------------------------------------------------------- */
 
 .songListSongTable .tr.item.type_divider.style_Title .dividerCommentText {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     text-transform: uppercase;
     font-size: 26px;
     font-weight: bold;

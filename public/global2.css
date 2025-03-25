@@ -401,7 +401,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .draggable {
     cursor: move;
     cursor: grab;
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 .header.draggable:hover {
@@ -524,7 +524,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 .uploadProgressModal .progressContainer .progressLabel {
     font-size: 40px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-weight: bold;
 }
 
@@ -599,7 +599,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .EventFileValue .stats {}
 
 .EventFileValue .stats .stat {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: small;
     color: #999;
     width: max-content;
@@ -613,7 +613,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 }
 
 .EventFileValue .stats .stat.externalURI {
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 
@@ -671,7 +671,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     font-size: 16px;
     white-space: nowrap;
     /* font-weight: bold; */
-    /* font-family: monospace; */
+    /* font-family: var(--ff-mono); */
     letter-spacing: -0.5px;
     margin: 0px 8px;
 }
@@ -686,7 +686,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     /* width: 180px; */
     font-size: 16px;
     /* font-weight: bold; */
-    /* font-family: monospace; */
+    /* font-family: var(--ff-mono); */
     margin: 0px 2px;
     border: 0;
     /* padding: 5px; */
@@ -990,7 +990,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 .EventFrontpageValuesTable th {
     width: 40px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     color: #0008;
 }
 
@@ -1092,7 +1092,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 .contentSection.GalleryItem .filesize {
     color: #888;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-weight: bold;
 }
 
@@ -1206,7 +1206,7 @@ in particular the date range picker is wide.*/
     white-space: nowrap;
     font-size: 11px;
     overflow: hidden;
-    font-family: monospace;
+    font-family: var(--ff-mono);
 
     color: var(--selected-border-color);
     border: var(--border-size) solid var(--swatch-color);
@@ -1232,7 +1232,7 @@ in particular the date range picker is wide.*/
     justify-content: center;
     white-space: nowrap;
     font-size: 19px;
-    /* font-family: monospace; */
+    /* font-family: var(--ff-mono); */
     margin: 12px;
     position: relative;
     border-radius: 7px;
@@ -1339,7 +1339,7 @@ in particular the date range picker is wide.*/
 
 .manualColorEntry {
     font-size: 13px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     width: 80px;
 }
 
@@ -1434,7 +1434,7 @@ in particular the date range picker is wide.*/
 
 
 .nameValueTable {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: 14px;
 }
 
@@ -1450,7 +1450,7 @@ in particular the date range picker is wide.*/
     height: 26px;
     width: 26px;
     margin: 0 2px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: 14px;
     display: flex;
     align-items: center;
@@ -1484,7 +1484,7 @@ in particular the date range picker is wide.*/
 .attendanceResponseColorBarText {
     display: flex;
     color: #bbb;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: 14px;
     /* display: flex; */
     align-items: center;
@@ -1521,7 +1521,7 @@ in particular the date range picker is wide.*/
 .attendanceDetailTable tfoot td {
     background-color: white;
     color: #aaa;
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 .attendanceDetailTable .responseCell .responseCellContents {
@@ -1806,7 +1806,7 @@ table.songMetadata th {
 }
 
 table.songMetadata td {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     color: #66e;
     text-align: right;
     padding: 2px 10px;
@@ -1871,7 +1871,7 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 .resetPasswordURLCopyButton {
     outline: 2px solid black;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     color: #64f;
     font-weight: bold;
     font-size: 20px;
@@ -1915,7 +1915,7 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 /* -  --------------------------------- */
 .songLengthInputContainer .preview {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: 20px;
     font-weight: bold;
     color: #20f4;
@@ -2086,7 +2086,7 @@ table.songMetadata tr:hover td .CMSmallButton {
     margin: 15px;
     font-size: 58px;
     font-weight: bold;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     text-align: center;
     width: 80%;
 }
@@ -2363,7 +2363,7 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     display: flex;
     align-items: flex-start;
     position: relative;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     flex-direction: column;
 }
 
@@ -2496,7 +2496,7 @@ table.activityVis {
     --dim: 30px;
     --yearWidth: 100px;
     --aggMonthHeight: 60px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: 14px;
 }
 
@@ -2727,7 +2727,7 @@ i.placeholder {
 }
 
 .ActivityLogKeyValueTable {
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 
@@ -2827,6 +2827,7 @@ table.TopAlignedCells td {
 }
 
 textarea {
+    font-family: var(--ff-mono);
     border-radius: 4px;
     padding: 6px;
     resize: vertical;

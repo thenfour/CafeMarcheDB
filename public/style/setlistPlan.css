@@ -97,7 +97,7 @@
 
 .SetlistPlannerMatrix input {
     border: 1px solid #ddd;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     text-align: center;
     /* height: 28px; */
     font-size: 16px;
@@ -139,7 +139,7 @@
     width: var(--song-length-width);
     white-space: nowrap;
     display: flex;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     justify-content: flex-end;
     padding-right: 3px;
     font-size: 14px;
@@ -225,7 +225,7 @@
 .SetlistPlannerColorSchemeEditor .ColorGradientEditor .ColorGradientEditorSwatches {
     display: flex;
     flex-direction: row;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     align-items: center;
     justify-content: center;
 }
@@ -236,7 +236,7 @@
     width: var(--dim);
     display: flex;
     flex-direction: row;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     align-items: center;
     justify-content: center;
 }
@@ -246,7 +246,7 @@
 .SetlistPlannerColorSchemeEditor .ColorInputControl .textValue,
 .SetlistPlannerColorSchemeEditor .ColorInputControl .textValue input {
     font-size: 12px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     width: 50px;
     border-color: #0001;
 }
@@ -280,7 +280,7 @@
     padding: 30px;
     background-color: white;
     border: 7px solid #84f;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: 24px;
     font-weight: bold;
     border-radius: 5px;
@@ -295,7 +295,7 @@
 
 .CostConfigEditor input,
 .RetainConfigEditor input {
-    font-family: monospace;
+    font-family: var(--ff-mono);
     width: 100px;
     text-align: center;
     font-size: 16px;
@@ -316,7 +316,7 @@
 
 .setlistPlanLed {
     margin: 1px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
     font-size: 11px;
     display: flex;
     align-items: center;

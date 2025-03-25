@@ -6,7 +6,7 @@
 
 .CustomFieldEditor .header {
     font-size: 18px;
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 .CustomFieldEditor .expandedBody {
@@ -14,7 +14,7 @@
 }
 
 .CustomFieldEditor .jsonPreview {
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 .CustomFieldEditor .CustomFieldValueEditor {

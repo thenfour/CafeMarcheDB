@@ -15,6 +15,8 @@
   --color-border-style: "dotted";
 
   --content-max-width: 750px;
+
+  --ff-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Liberation Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 a,
@@ -258,7 +260,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 .richTextContainer .editorContainer textarea {
   min-height: 400px;
-  font-family: monospace;
+  font-family: var(--ff-mono);
   background-color: white;
   flex: 1;
 }
@@ -689,7 +691,7 @@ table td {
 table tfoot td {
   background-color: transparent;
   font-weight: bold;
-  font-family: monospace;
+  font-family: var(--ff-mono);
 }
 
 .CMEditGrid2 .MuiDataGrid-virtualScroller {

@@ -350,7 +350,7 @@ test cases:
 .MD3Container.editor .formattingTipsContentRow pre {
     padding: 0;
     margin: 0;
-    font-family: monospace;
+    font-family: var(--ff-mono);
 }
 
 .MD3Container.editor .formattingTipsContentRow .highlight {
