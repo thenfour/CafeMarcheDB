@@ -145,16 +145,16 @@ test cases:
     border: 1px solid #ddd;
     border-radius: var(--radius);
     max-width: var(--content-max-width);
+    background-color: #eee;
 }
 
 .MD3Container.editor .header {
-    background-color: #eee;
+    /* background-color: #eee; */
     border-top-left-radius: var(--radius);
     border-top-right-radius: var(--radius);
     display: flex;
     flex-direction: column;
-    padding-left: 4px;
-    padding-right: 10px;
+    padding: 6px;
 }
 
 .MD3Container.editor .tab {
@@ -162,8 +162,6 @@ test cases:
     padding: 3px 13px;
     font-size: 15px;
     font-weight: normal;
-    margin: 4px;
-    margin-left: 0;
 
     border: 1px solid #ddd;
 }
@@ -176,6 +174,7 @@ test cases:
 .MD3Container.editor .toolbar {
     display: flex;
     align-items: center;
+    gap: 2px;
 }
 
 .MD3Container.editor .toolbar .toolItem {
@@ -200,8 +199,12 @@ test cases:
     fill: #00f;
 }
 
+.MD3Container.editor .editorContainer {
+    /* background-color: #eee; */
+}
+
 .MD3Container.editor .toolbar .divider {
-    --divider-size: 10px;
+    --divider-size: 15px;
     margin-left: var(--divider-size);
     margin-right: var(--divider-size);
     border-left: 1px solid #c7c7c7;
@@ -213,18 +216,43 @@ test cases:
     border-radius: var(--radius);
     padding: 10px;
     resize: vertical;
+    min-height: 80px;
+    /* with a lot of stuff on the screen this helps to show this a live editing field. */
+    border-color: #88f;
+    outline-color: #88f;
 }
 
 .MD3Container.editor .previewContainer {
-    padding: 10px;
-    background-color: white;
+    /* background-color: white; */
+    min-height: 70px;
 }
 
-.markdownSideBySideContainer {
+.MD3Container.editor .previewContainer .previewTitle {
+    text-transform: uppercase;
+    font-weight: bold;
+    opacity: 50%;
+    /* background-color: #eee; */
+    padding: 15px;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 1px solid #ddd;
+    font-size: 12px;
+}
+
+.MD3Container.editor .fileDropWrapper {
+    border: 0;
+}
+
+.MD3Container.editor .previewContainer .previewMarkdownContainer {
+    padding: 7px;
     background-color: white;
-    margin: 0px;
-    border: 1px solid #ddd;
-    padding: 10px;
+    /* for the hatch pattern */
+    --color-background: #ddd;
+}
+
+.MD3Container.editor .previewContainer .previewMarkdownContainer .markdown {
+    padding: 8px;
+    background-color: white;
 }
 
 .markdown blockquote {
@@ -274,4 +302,57 @@ test cases:
 .markdown .markdown-class-highlightblue {
     background-color: #00f6;
     padding: 3px 5px;
+}
+
+
+.MD3Container.editor .formattingTipsRow {
+    gap: 10px;
+    margin-top: 4px;
+    border-top: 1px solid #ddd;
+}
+
+.MD3Container.editor .formattingTipsRow svg {
+    opacity: 20%;
+}
+
+.MD3Container.editor .formattingTipsRow .freeButton {
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.MD3Container.editor .formattingTipsRow .freeButton.selected {
+    background-color: white;
+    border: 1px solid #888;
+}
+
+.MD3Container.editor .formattingTipsContentRow {
+    background-color: white;
+    padding: 8px;
+}
+
+.MD3Container.editor .formattingTipsContentRow dl {
+    margin: 0;
+}
+
+
+.MD3Container.editor .formattingTipsContentRow dt {
+    margin: 0;
+}
+
+.MD3Container.editor .formattingTipsContentRow dd {
+    padding: 0;
+    margin-bottom: 10px;
+}
+
+.MD3Container.editor .formattingTipsContentRow pre {
+    padding: 0;
+    margin: 0;
+    font-family: monospace;
+}
+
+.MD3Container.editor .formattingTipsContentRow .highlight {
+    font-weight: bold;
 }

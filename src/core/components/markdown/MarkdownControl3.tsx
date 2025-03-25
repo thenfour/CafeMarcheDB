@@ -3,15 +3,17 @@
 // "view" vs. "edit" modes, "save / close" etc should not be there yet.
 // file wrapper included.
 // think github's issue description editor.
+import EmojiSymbolsIcon from '@mui/icons-material/EmojiSymbols';
 import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
 import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
-import { Menu, MenuItem, Popover, Popper, Tooltip } from "@mui/material";
+import { Collapse, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
-import { Markdown, MarkdownEditor } from "./RichTextEditor";
+import { IsNullOrWhitespace } from 'shared/utils';
 import { gIconMap } from '../../db3/components/IconMap';
-import EmojiSymbolsIcon from '@mui/icons-material/EmojiSymbols';
+import { Markdown, MarkdownEditor } from "./RichTextEditor";
+import { Pre } from '../CMCoreComponents2';
 
 //////////////////////////////////////////////////
 interface SpecialCharacterDropdownProps {
@@ -96,9 +98,34 @@ interface Markdown3EditorProps {
 
 type M3Tab = "write" | "preview" | "sidebyside";
 
+// style
+// links
+// images
+// lists
+// tables
+// attachments
+//type M3TipsTab = "Style" | "Links" | "Images" | "Lists" | "Tables" | "Attachments";
+//const M3TipsTabValues = ["Style", "Links", "Images", "Lists", "Tables", "Attachments"];
+
+const M3TipsTabValues = [
+    "Character",
+    "Paragraph",
+    "Lists",
+    "Tables",
+    "Links",
+    "Images",
+    "Attachments",
+    "Music notation",
+] as const;
+
+// 2. Derive a type from that array
+type M3TipsTab = (typeof M3TipsTabValues)[number];
+
 export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props }: Markdown3EditorProps) => {
     const [tab, setTab] = React.useState<M3Tab>("sidebyside");
     const [popoverAnchorEl, setPopoverAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
+    const [tipsTab, setTipsTab] = React.useState<M3TipsTab | null>(null);
 
     const [headingTrig, setHeadingTrig] = React.useState<number>(0);
     const [boldTrig, setBoldTrig] = React.useState<number>(0);
@@ -313,11 +340,11 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
 
     return <div className="MD3 editor MD3Container">
         <div className="header">
-            <div className="toolbar">
+            {/* <div className="toolbar">
                 <div className={`tab write freeButton ${tab === "write" ? "selected" : "notselected"}`} onClick={() => changeTab("write")}>Write</div>
                 <div className={`tab preview freeButton ${tab === "preview" ? "selected" : "notselected"}`} onClick={() => changeTab("preview")}>Preview</div>
-                <div className={`tab preview freeButton ${tab === "sidebyside" ? "selected" : "notselected"}`} onClick={() => changeTab("sidebyside")}>Side-by-side</div>
-            </div>
+                <div className={`tab  freeButton ${tab === "sidebyside" ? "selected" : "notselected"}`} onClick={() => changeTab("sidebyside")}>Side-by-side</div>
+            </div> */}
             {editorIsVisible && <>
                 <div className='toolbar toolBarRow toolBarRow1'>
                     {toolItems.bold}
@@ -333,25 +360,364 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
                     {toolItems.outdent}
 
                     <div className="divider" />
+                    <div className='flex-spacer' />
+
+                    <div
+                        className={`tab preview freeButton ${showFormattingTips ? "selected" : "notselected"}`}
+                        onClick={() => setShowFormattingTips(!showFormattingTips)}
+                    >
+                        {showFormattingTips ? "Hide formatting tips" : "Show formatting tips"}
+                    </div>
+                    {/* <a href="/backstage/wiki/markdown-help" target="_blank">{gIconMap.Launch()} Formatting help</a> */}
+                </div>
+
+                <div className='toolbar toolBarRow'>
+
                     {toolItems.heading}
                     {toolItems.quote}
                     {toolItems.code}
-
                     <div className="divider" />
-                    <a href="/backstage/wiki/markdown-help" target="_blank">{gIconMap.Launch()} Formatting help</a>
-                </div>
-
-                <div className='toolbar toolBarRow toolBarRow2'>
 
                     {toolItems.abcjs}
                     {toolItems.specialCharacter}
                     <div className="divider" />
 
-                    {toolItems.link}
                     {toolItems.mention}
                     {toolItems.reference}
+                    {toolItems.link}
                     {toolItems.attachFiles}
                 </div>
+
+                <Collapse in={showFormattingTips}>
+                    <div className='toolbar toolBarRow formattingTipsRow'>
+                        {/* <Lightbulb /> */}
+                        {/* {gIconMap.Info()} */}
+                        {M3TipsTabValues.map((tabName) =>
+                            <div key={tabName}
+                                className={`freeButton ${tipsTab === tabName ? "selected" : "notselected"}`}
+                                onClick={() => setTipsTab(tipsTab === tabName ? null : tabName)}
+                            >
+                                {tabName}
+                            </div>)}
+                        <div className='flex-spacer' />
+                    </div>
+
+                    <Collapse in={tipsTab === "Character"}>
+                        <div className='toolbar toolBarRow formattingTipsContentRow'>
+                            <dl>
+                                <dt><span className='highlight'>Bold</span>: Use double asterisks or double underscores around the text</dt>
+                                <dd>
+                                    <Pre>**bold text** or __bold text__</Pre>
+                                </dd>
+
+                                <dt><span className='highlight'>Italic</span>: Use single asterisk or single underscore</dt>
+                                <dd>
+
+                                    <Pre>*italic text* or _italic text_</Pre>
+                                </dd>
+
+                                <dt><span className='highlight'>Headings</span>: Prefix a line with hashes (1–6)</dt>
+                                <dd>
+                                    <Pre># Heading 1</Pre>
+                                    <Pre>## Heading 2</Pre>
+                                    <Pre>### Heading 3</Pre>
+                                </dd>
+                                {/* 
+                                <dt><span className='highlight'>Bold &amp; Italic</span>: Use triple asterisks or triple underscores</dt>
+                                <dd>
+                                    <Pre>***bold &amp; italic*** or ___bold &amp; italic___</Pre>
+                                </dd>
+
+                                <dt><span className='highlight'>Strikethrough</span>: Use double tildes</dt>
+                                <dd>
+                                    <Pre>~~strikethrough~~</Pre>
+                                </dd> */}
+
+                                <dt><span className='highlight'>Highlight</span>: yellow, red, green, blue are supported</dt>
+                                <dd>
+                                    <Pre>{`{{highlight:this text is yellow}}`}</Pre>
+                                    <Pre>{`{{highlightgreen:this text is green}}`}</Pre>
+                                    <Pre>{`{{highlightblue:this text is blue}}`}</Pre>
+                                    <Pre>{`{{highlightred:this text is red}}`}</Pre>
+                                </dd>
+
+                                <dt><span className='highlight'>Enclosure</span></dt>
+                                <dd>
+                                    <Pre>Cut from rehearsal mark {`{{enclosed:D}}`} to {`{{enclosed:F}}`}</Pre>
+                                </dd>
+
+                            </dl>
+                        </div>
+                    </Collapse>
+
+
+                    <Collapse in={tipsTab === "Paragraph"}>
+                        <div className='toolbar toolBarRow formattingTipsContentRow'>
+                            <dl>
+                                <dt><span className='highlight'>Headings</span>: Prefix a line with hashes (1–6)</dt>
+                                <dd>
+                                    <Pre># Heading 1</Pre>
+                                    <Pre>## Heading 2</Pre>
+                                    <Pre>### Heading 3</Pre>
+                                </dd>
+
+                                {/* Inline Code */}
+                                <dt>
+                                    <span className="highlight">Code (Inline)</span>: Use single backticks
+                                </dt>
+                                <dd>
+                                    <Pre>`inline code`</Pre>
+                                </dd>
+
+                                {/* Block Code */}
+                                <dt>
+                                    <span className="highlight">Code (Block)</span>: Use triple backticks
+                                    on separate lines.
+                                </dt>
+                                <dd>
+                                    <Pre text={`\`\`\`
+const example = 'Hello, world!';
+console.log(example);
+\`\`\``} />
+                                </dd>
+
+                                {/* Block Quotes */}
+                                <dt>
+                                    <span className="highlight">Block Quotes</span>: Use the &quot;&gt;&quot;
+                                    character before each line
+                                </dt>
+                                <dd>
+                                    <Pre text={`> This is a quote
+> spanning multiple lines.`} />
+                                </dd>
+
+
+
+                                <dt>
+                                    <span className="highlight">Paragraphs</span>: Separate paragraphs with a blank line
+                                </dt>
+                                <dd>
+                                    <Pre
+                                        text={`This is paragraph one, and this
+continues to be paragraph one.
+
+But this is a new paragraph.`}
+                                    />
+                                </dd>
+
+                                <dt>
+                                    <span className="highlight">Horizontal Rule</span>: Use three or more dashes on a line by themselves
+                                </dt>
+                                <dd>
+                                    <Pre text="---" />
+                                </dd>
+
+
+                            </dl>
+                        </div>
+                    </Collapse>
+
+                    <Collapse in={tipsTab === "Lists"}>
+                        <div className="toolbar toolBarRow formattingTipsContentRow">
+                            <dl>
+                                {/* Unordered Lists */}
+                                <dt>
+                                    <span className="highlight">Unordered Lists</span>: Start each item with
+                                    <code> - </code>, <code> * </code>, or <code> + </code>
+                                </dt>
+                                <dd>
+                                    <Pre
+                                        text={`- First item
+- Second item
+- Third item`}
+                                    />
+                                </dd>
+
+                                {/* Ordered Lists */}
+                                <dt>
+                                    <span className="highlight">Ordered Lists</span>: Number each item in sequence
+                                </dt>
+                                <dd>
+                                    <Pre
+                                        text={`1. First item
+2. Second item
+3. Third item`}
+                                    />
+                                </dd>
+
+                                {/* Nested Lists */}
+                                <dt>
+                                    <span className="highlight">Nested Lists</span>: Indent sub-items
+                                </dt>
+                                <dd>
+                                    <Pre
+                                        text={`- Parent item
+  - Child item
+  - Child item
+- Parent item
+  - Child item`}
+                                    />
+                                </dd>
+                            </dl>
+                        </div>
+                    </Collapse>
+
+                    <Collapse in={tipsTab === "Tables"}>
+                        <div className="toolbar toolBarRow formattingTipsContentRow">
+                            <dl>
+                                {/* Basic Table */}
+                                <dt>
+                                    <span className="highlight">Tables</span>: Use the pipe <code>|</code>
+                                    and dash <code>-</code> characters to form a table
+                                </dt>
+                                <dd>
+                                    <Pre
+                                        text={`| Column A | Column B |
+|----------|----------|
+| Row 1A   | Row 1B   |
+| Row 2A   | Row 2B   |`}
+                                    />
+                                </dd>
+
+                                {/* Column Alignment */}
+                                <dt>
+                                    <span className="highlight">Column Alignment</span>: Use colons
+                                    (<code>:</code>) to align text in columns
+                                </dt>
+                                <dd>
+                                    <Pre
+                                        text={`| Left | Center | Right |
+|:-----|:------:|------:|
+| L1   | C1     | R1    |
+| L2   | C2     | R2    |`}
+                                    />
+                                </dd>
+                            </dl>
+                        </div>
+                    </Collapse>
+
+
+                    <Collapse in={tipsTab === "Links"}>
+                        <div className="toolbar toolBarRow formattingTipsContentRow">
+                            <dl>
+                                {/* Site Mentions */}
+                                <dt>
+                                    <span className="highlight">Link to Songs, Events, or Wiki Pages</span>:
+                                    Type <code>@</code> then start typing
+                                </dt>
+                                <dd>
+                                    When you type <code>@</code> in the editor and continue typing, you'll
+                                    see suggestions to link a song, event, or wiki page. Selecting one
+                                    inserts a link in this format:
+                                    <Pre text={`[[song:82|It's Now Or Never (2005)]]`} />
+                                </dd>
+
+                                {/* Wiki Pages */}
+                                <dt>
+                                    <span className="highlight">Wiki Pages (Manually)</span>: Use double
+                                    brackets
+                                </dt>
+                                <dd>
+                                    You can manually create wiki links with or without a custom caption:
+                                    <Pre
+                                        text={`[[my wiki page]]
+[[my wiki page|custom caption]]`}
+                                    />
+                                </dd>
+
+                                {/* Standard URLs */}
+                                <dt>
+                                    <span className="highlight">Regular URLs</span>
+                                </dt>
+                                <dd>
+                                    <Pre text="[Link Text](https://example.com)" />
+                                </dd>
+                            </dl>
+                        </div>
+                    </Collapse>
+
+
+                    <Collapse in={tipsTab === "Images"}>
+                        <div className="toolbar toolBarRow formattingTipsContentRow">
+                            <dl>
+                                {/* Insert Images */}
+                                <dt>
+                                    <span className="highlight">Inserting Images</span>: Drag &amp; drop or paste
+                                    images directly into the editor
+                                </dt>
+                                <dd>
+                                    <Pre
+                                        text={`![alt text](/path/to/image.jpg)`}
+                                    />
+                                </dd>
+
+                                {/* Resizing Images */}
+                                <dt>
+                                    <span className="highlight">Specify size</span>: Append a maximum dimension like <code>?300</code> to the URL
+                                </dt>
+                                <dd>
+                                    Set the image’s maximum dimension (width or height) in pixels in this way.
+                                    <Pre
+                                        text={`![alt text](/path/to/image.jpg?400)`}
+                                    />
+                                </dd>
+                            </dl>
+                        </div>
+                    </Collapse>
+
+
+
+                    <Collapse in={tipsTab === "Attachments"}>
+                        <div className="toolbar toolBarRow formattingTipsContentRow">
+                            <dl>
+                                {/* Insert Images */}
+                                <dt>
+                                    <span className="highlight">Inserting attachments</span>
+                                </dt>
+                                <dd>
+                                    Drag &amp; drop or paste
+                                    files directly into the editor. They will be made available as a clickable link to download.
+                                    The generated link will look like:
+                                    <Pre
+                                        text={`[Meeting notes.pdf](/api/files/download/EjuATs-a13.pdf)`}
+                                    />
+                                </dd>
+
+                            </dl>
+                        </div>
+                    </Collapse>
+
+
+
+                    <Collapse in={tipsTab === "Music notation"}>
+                        <div className="toolbar toolBarRow formattingTipsContentRow">
+                            <dl>
+                                {/* ABC Music Notation */}
+                                <dt>
+                                    <span className="highlight">ABC Notation</span>
+                                </dt>
+                                <dd>
+                                    You can write ABC music notation inside a code block labeled
+                                    with <code>abc</code>. For example:
+                                    <Pre
+                                        text={`\`\`\`abc
+M:4/4
+K:C#min
+C3D EF=G_A | ^Bc
+\`\`\``}
+                                    />
+                                    <div><img src="/images/abc_example_1.png" /></div>
+                                    For more info about ABC notation,&nbsp;
+                                    <a href="https://abcnotation.com/wiki/abc:standard" target='_blank' rel="noreferrer">
+                                        visit the specification</a>.
+                                </dd>
+                            </dl>
+                        </div>
+                    </Collapse>
+
+
+
+                </Collapse>
             </>
             }
         </div>
@@ -394,9 +760,12 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
                     <Markdown markdown={props.value} />
                 </div>
             }
-            {tab === "sidebyside" &&
+            {tab === "sidebyside" && !IsNullOrWhitespace(props.value) &&
                 <div className="previewContainer">
-                    <Markdown markdown={props.value} />
+                    <div className='previewTitle'>Preview</div>
+                    <div className='previewMarkdownContainer hatch'>
+                        <Markdown markdown={props.value} />
+                    </div>
                 </div>
                 // <Popper
                 //     open={true}

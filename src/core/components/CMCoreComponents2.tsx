@@ -27,23 +27,22 @@ export function SetlistBreakIcon(props) {
 
 
 type PreProps = {
-    text: string;
+    text?: string | undefined;
     className?: string;
     style?: React.CSSProperties;
     wrap?: boolean;
+    children?: React.ReactNode;
     //maxHeight?: string;
 };
 
-export const Pre: React.FC<PreProps> = ({ text, className, style, wrap = true }) => {
+export const Pre: React.FC<PreProps> = ({ text, className, style, children, wrap = true }) => {
     const preStyle = {
         whiteSpace: wrap ? 'pre-wrap' : 'pre',
-        //overflowY: maxHeight ? 'auto' : undefined,
-        //maxHeight,
         ...style,
     };
 
     return (
-        <pre className={className} style={preStyle}>{text}</pre>
+        <pre className={className} style={preStyle}>{text}{children}</pre>
     );
 };
 
