@@ -65,7 +65,7 @@ export function CMDBLinkMarkdownPlugin(md) {
         output = output.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, slug, caption) => {
             if (slug) {
                 caption = caption || slug;
-                return `<a href="/backstage/wiki/${slugify(slug)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
+                return `<a href="/backstage/wiki/${slug}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
             }
             return match;
         });
