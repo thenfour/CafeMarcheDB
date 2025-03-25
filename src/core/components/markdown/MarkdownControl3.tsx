@@ -11,7 +11,7 @@ import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import { Collapse, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from 'shared/utils';
-import { gIconMap } from '../../db3/components/IconMap';
+import { gCharMap, gIconMap } from '../../db3/components/IconMap';
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
 import { Pre } from '../CMCoreComponents2';
 
@@ -86,15 +86,27 @@ const SpecialCharacterDropdown: React.FC<SpecialCharacterDropdownProps> = ({ anc
 
 
 //////////////////////////////////////////////////
-interface Markdown3EditorProps {
+interface Markdown3EditorPropsBase {
     readonly?: boolean;
     value: string;
     autoFocus?: boolean;
-    //beginInPreview?: boolean;
     nominalHeight: number;
     onChange: (v: string) => void;
-    onSave?: () => void;
 };
+
+//////////////////////////////////////////////////
+type Markdown3EditorProps = (Markdown3EditorPropsBase & {
+    showActionButtons?: false | undefined;
+    handleSave?: () => void;
+}) | (Markdown3EditorPropsBase & {
+    showActionButtons: true;
+    hasEdits: boolean;
+    handleCancel: () => void;
+    handleSaveAndClose: () => void;
+    handleSave: () => void;
+});
+
+
 
 type M3Tab = "write" | "preview" | "sidebyside";
 
@@ -728,7 +740,7 @@ C3D EF=G_A | ^Bc
             <div className="editorContainer" style={editorContainerStyle}>
                 <MarkdownEditor
                     onValueChanged={props.onChange}
-                    onSave={props.onSave}
+                    onSave={props.handleSave}
                     nominalHeight={props.nominalHeight}
                     value={props.value}
                     autoFocus={autoFocus}
@@ -758,6 +770,14 @@ C3D EF=G_A | ^Bc
                     </span>
                 </div> */}
             </div>
+            {props.showActionButtons &&
+                <div className="actionButtonsRow">
+                    <div className={`freeButton cancelButton`} onClick={props.handleCancel}>{props.hasEdits ? "Cancel" : "Close"}</div>
+                    <div className={`saveButton saveProgressButton ${props.hasEdits ? "freeButton changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSave() } : undefined}>Save progress</div>
+                    <div className={`saveButton saveAndCloseButton ${props.hasEdits ? "freeButton changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
+                </div>
+            }
+
             {tab === "preview" &&
                 <div className="previewContainer">
                     <Markdown markdown={props.value} />
@@ -765,7 +785,7 @@ C3D EF=G_A | ^Bc
             }
             {tab === "sidebyside" && !IsNullOrWhitespace(props.value) &&
                 <div className="previewContainer">
-                    <div className='previewTitle'>Preview</div>
+                    <div className='previewTitle'>Preview {gCharMap.DownTriangle()}</div>
                     <div className='previewMarkdownContainer hatch'>
                         <Markdown markdown={props.value} />
                     </div>

@@ -81,16 +81,21 @@ export const WikiStandaloneContentEditor = (props: WikiStandaloneContentEditorPr
                         value={content}
                         autoFocus={true}
                         nominalHeight={600}
+                        showActionButtons={true}
+                        hasEdits={hasEdits}
+                        handleCancel={props.onCancel}
+                        handleSave={handleSave}
+                        handleSaveAndClose={handleSaveAndClose}
                     />
                 </div>
 
             </div>
-
+            {/* 
             <div className="actionButtonsRow">
                 <div className={`freeButton cancelButton`} onClick={props.onCancel}>{hasEdits ? "Cancel" : "Close"}</div>
                 <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? async () => { await handleSave() } : undefined}>Save progress</div>
                 <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? async () => { await handleSaveAndClose() } : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
-            </div>
+            </div> */}
         </div>
 
     </>;

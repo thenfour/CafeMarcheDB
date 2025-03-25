@@ -230,13 +230,13 @@ test cases:
 .MD3Container.editor .previewContainer .previewTitle {
     text-transform: uppercase;
     font-weight: bold;
-    opacity: 50%;
+    opacity: 40%;
     /* background-color: #eee; */
-    padding: 15px;
+    padding: 6px;
     padding-top: 0;
     padding-bottom: 0;
     border-bottom: 1px solid #ddd;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .MD3Container.editor .fileDropWrapper {

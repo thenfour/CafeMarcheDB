@@ -60,15 +60,19 @@ const SettingMarkdownEditor = (props: SettingMarkdownEditorProps) => {
         <Markdown3Editor
             onChange={(v) => setValue(v)}
             value={value}
-            onSave={() => { void handleSave() }}
             nominalHeight={300}
+            showActionButtons={true}
+            hasEdits={hasEdits}
+            handleCancel={props.onClose}
+            handleSave={handleSave}
+            handleSaveAndClose={handleSaveAndClose}
         />
-
+        {/* 
         <div className="actionButtonsRow">
             <div className={`freeButton cancelButton`} onClick={props.onClose}>{hasEdits ? "Cancel" : "Close"}</div>
             <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div>
             <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSaveAndClose : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
-        </div>
+        </div> */}
     </>;
 };
 

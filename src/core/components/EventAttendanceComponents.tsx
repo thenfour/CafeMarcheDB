@@ -300,7 +300,7 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
         autoFocus={true} // why doesn't this work?
         onChange={(v) => setValue(v)}
         value={value}
-        onSave={() => { void handleSave() }}
+        handleSave={() => { void handleSave() }}
         nominalHeight={200}
       />
 
