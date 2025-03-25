@@ -22,7 +22,6 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
-import * as abcjs from 'abcjs';
 import 'abcjs/abcjs-audio.css';
 import MarkdownIt from 'markdown-it';
 import React from "react";
@@ -39,199 +38,15 @@ import { getURLClass } from "../../db3/clientAPILL";
 import { CMDBUploadFile } from "../CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "../FileDrop";
 import { fetchObjectQuery } from '../setlistPlan/ItemAssociation';
+import { CMDBLinkMarkdownPlugin } from './CMDBLinkMarkdownPlugin';
+import { ImageDimensionsMarkdownPlugin } from './ImageDimensionsMarkdownPlugin';
+import { fetchInlineClasses, markdownReactPlugins } from './MarkdownReactPlugins';
+import { ReactBlockMarkdownPlugin } from './ReactBlockMarkdownPlugin';
+import { ReactInlineMarkdownPlugin } from './ReactInlineMarkdownPlugin';
 
-const INDENT_SIZE = 4;  // Number of spaces for one indent level
+const INDENT_SIZE = 2;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);
 
-interface MarkdownReactPlugin {
-    componentName: string;
-    render: (node: Element, componentName: string, propsString: string) => React.ReactNode;
-};
-
-const RenderMarkdownSpanWithClass = (node: Element, componentName: string, propsString: string) => {
-    return <span className={`markdown-class-${componentName}`}>{propsString}</span>
-};
-
-const spanClasses = [
-    "big",
-    "bigger",
-    "highlight",
-    "highlightred",
-    "highlightblue",
-    "highlightgreen",
-    "enclosed",
-] as const;
-
-interface ABCProps {
-    abcCode: string;
-};
-
-const ABCInlineComponent = (props: ABCProps) => {
-    const ref = React.useRef<HTMLSpanElement | null>(null);
-    React.useEffect(() => {
-        const result = abcjs.renderAbc(ref.current!, props.abcCode, {
-            staffwidth: 60, // this is a minimum width i guess? hard to understand what's going on here but it works
-            paddingbottom: 0,
-            paddingleft: 0,
-            paddingright: 0,
-            paddingtop: 0,
-        });
-    });
-    return <span ref={ref}></span>;
-};
-
-const ABCBlockComponent = (props: ABCProps) => {
-    const ref = React.useRef<HTMLDivElement | null>(null);
-    React.useEffect(() => {
-        const result = abcjs.renderAbc(ref.current!, props.abcCode, {
-            staffwidth: 690, // eh.
-        });
-    });
-    return <div ref={ref}></div>;
-};
-
-const ABCReactPlugin = (node: Element, componentName: string, propsString: string) => {
-    if (node.getAttribute("data-inline")) {
-        return <ABCInlineComponent abcCode={propsString} />;
-    }
-    return <ABCBlockComponent abcCode={propsString} />;
-};
-
-const markdownReactPlugins: MarkdownReactPlugin[] = [
-    ...spanClasses.map(className => ({
-        componentName: className,
-        render: RenderMarkdownSpanWithClass,
-    })),
-    {
-        componentName: "abc",
-        render: ABCReactPlugin
-    }
-];
-
-
-function markdownItReactInline(md: MarkdownIt, onComponentAdd: () => void) {
-    const defaultRender = md.renderer.rules.text || ((tokens, idx, options, env, self) => {
-        return self.renderToken(tokens, idx, options);
-    });
-
-    md.renderer.rules.text = (tokens, idx, options, env, self) => {
-        const token = tokens[idx];
-        const text = token.content as string;
-        // {{word:props}} or {{word}}
-        let newText = text.replace(/\{\{(\w+)(:.*?)?\}\}/g, (match, componentName, propsString = '') => {
-            if (propsString && propsString.length > 1) {
-                propsString = propsString.slice(1).replaceAll("\\}", "}"); // chop off the colon and allow escaping } with \}
-            }
-
-            const span = document.createElement('span');
-            span.setAttribute("data-component", componentName);
-            span.setAttribute("data-props", propsString);
-            span.setAttribute("data-inline", "true");
-            onComponentAdd();
-            return span.outerHTML;
-        });
-
-        // Call default renderer for any remaining text
-        return newText === text ? defaultRender(tokens, idx, options, env, self) : newText;
-    };
-}
-
-
-function markdownItReactBlock(md: MarkdownIt, onComponentAdd: () => void) {
-    function render(tag: string, content: string) {
-        const div = document.createElement("div");
-        div.setAttribute("data-component", tag);
-        div.setAttribute("data-props", content.trim());
-        onComponentAdd();
-        return div.outerHTML;
-    }
-
-    // Block ABCjs rule
-    md.core.ruler.after('block', 'abc', function (state) {
-        state.tokens.forEach(token => {
-            if (token.type !== 'fence') return;
-            // token.info is the little tag. like ```tag
-            if (!markdownReactPlugins.some(p => p.componentName === token.info)) return;
-            //if (token.info !== 'abc') return; 
-
-            token.type = 'html_block';
-            token.content = render(token.info, token.content);
-            token.tag = '';
-            token.nesting = 0;
-            token.attrs = null;
-            token.map = null;
-            token.children = null;
-        });
-    });
-}
-
-function markdownItImageDimensions(md) {
-    const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
-        return self.renderToken(tokens, idx, options);
-    };
-
-    md.renderer.rules.image = function (tokens, idx, options, env, self) {
-        const token = tokens[idx];
-        const srcIndex = token.attrIndex('src');
-
-        if (srcIndex >= 0) {
-            const srcAttr = token.attrs[srcIndex][1];
-            const dimensionMatch = srcAttr.match(/^(.*?)(\?\d+)$/);
-
-            if (dimensionMatch && dimensionMatch.length > 2) {
-                const url = dimensionMatch[1]; // The actual URL without the dimension part
-                const dimension = dimensionMatch[2].substring(1); // Remove the '?' to get the dimension
-
-                // Update the src attribute to the clean URL without the dimension query
-                token.attrs[srcIndex][1] = url;
-
-                // Apply the dimension as a style for both max-width and max-height
-                token.attrPush(['style', `max-width: ${dimension}px; max-height: ${dimension}px;`]);
-            }
-        }
-
-        return defaultRender(tokens, idx, options, env, self);
-    };
-};
-
-
-function cmLinkPlugin(md) {
-    const defaultRender = md.renderer.rules.html_inline || function (tokens, idx, options, env, self) {
-        return self.renderToken(tokens, idx, options);
-    };
-
-    md.renderer.rules.text = function (tokens, idx, options, env, self) {
-        const token = tokens[idx];
-        // Updated regex to capture both old and new link types
-        const linkRegex = /\[\[(event|song):(\d+)\|?(.*?)\]\]/g;
-
-        if (token.content.match(linkRegex)) {
-            token.content = token.content.replace(linkRegex, (match, type, id, caption) => {
-                if (id && type === 'event') {
-                    caption = caption || `Event ${id}`; // Default caption if none provided
-                    return `<a href="/backstage/event/${id}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
-                }
-                if (id && type === 'song') {
-                    caption = caption || `Song ${id}`; // Default caption if none provided
-                    return `<a href="/backstage/song/${id}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
-                }
-            });
-        }
-
-        const wikiRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-
-        if (token.content.match(wikiRegex)) {
-            token.content = token.content.replace(wikiRegex, (match, slug, caption) => {
-                if (slug) {
-                    caption = caption || slug;
-                    return `<a href="/backstage/wiki/${slugify(slug)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
-                }
-            });
-        }
-
-        return defaultRender(tokens, idx, options, env, self);
-    };
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownProps {
@@ -260,7 +75,9 @@ export const Markdown = (props: MarkdownProps) => {
             setHtml("");
             return;
         }
-        const md = new MarkdownIt();
+        const md = new MarkdownIt({
+            linkify: true,
+        });
 
         // https://github.com/markdown-it/markdown-it/blob/master/docs/architecture.md#renderer
         // this adds attribute target=_blank so links open in new tab.
@@ -318,15 +135,14 @@ export const Markdown = (props: MarkdownProps) => {
             return defaultRender(tokens, idx, options, env, self);
         };
 
-        md.use(cmLinkPlugin);
-        md.use(markdownItImageDimensions);
-
         const onComponentAdd = () => {
             expectedComponentCount.current++;
-            //console.log(`oncomponent add; ${expectedComponentCount.current}`);
         }
-        md.use(md => markdownItReactInline(md, onComponentAdd));
-        md.use(md => markdownItReactBlock(md, onComponentAdd));
+
+        md.use(md => ReactInlineMarkdownPlugin(md, onComponentAdd));
+        md.use(md => ReactBlockMarkdownPlugin(md, onComponentAdd));
+        md.use(ImageDimensionsMarkdownPlugin);
+        md.use(CMDBLinkMarkdownPlugin);
 
         setHtml(md.render(props.markdown));
 
@@ -365,7 +181,7 @@ export const Markdown = (props: MarkdownProps) => {
             });
 
             expectedComponentCount.current -= allNodes.length;
-            console.log(`unprocessed children: ${expectedComponentCount.current}`);
+            //console.log(`unprocessed children: ${expectedComponentCount.current}`);
         };
 
         componentMountTimer.current = setInterval(TimerProc, 33);
@@ -396,19 +212,6 @@ async function fetchWikiSlugs(keyword: string): Promise<string[]> {
         throw new Error('Network response was not ok');
     }
     return response.json();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-async function fetchInlineClasses(keyword: string): Promise<string[]> {
-    if (keyword.includes("}}")) return []; // make sure we don't autocomplete outside of the link syntax
-    if (!keyword.startsWith("{")) {
-        return []; // ensure this is a wiki link. you typed "[" to trigger the autocomplete. this is the 2nd '['
-    }
-    const ret = [
-        ...spanClasses,
-        "abc",
-    ].filter(x => x.toLowerCase().includes(keyword.slice(1).toLowerCase()));
-    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

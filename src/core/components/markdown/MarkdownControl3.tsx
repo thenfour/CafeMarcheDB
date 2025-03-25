@@ -630,6 +630,9 @@ But this is a new paragraph.`}
                                     <span className="highlight">Regular URLs</span>
                                 </dt>
                                 <dd>
+                                    Regular web URLs are automatically converted to links:
+                                    <Pre text="https://example.com" />
+                                    You can also customize the text to the link:
                                     <Pre text="[Link Text](https://example.com)" />
                                 </dd>
                             </dl>
@@ -708,8 +711,8 @@ C3D EF=G_A | ^Bc
                                     />
                                     <div><img src="/images/abc_example_1.png" /></div>
                                     For more info about ABC notation,&nbsp;
-                                    <a href="https://abcnotation.com/wiki/abc:standard" target='_blank' rel="noreferrer">
-                                        visit the specification</a>.
+                                    <a href="https://abcnotation.com/examples" target='_blank' rel="noreferrer">
+                                        visit the website</a>.
                                 </dd>
                             </dl>
                         </div>
