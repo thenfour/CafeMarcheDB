@@ -301,7 +301,7 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
         onChange={(v) => setValue(v)}
         value={value}
         onSave={() => { void handleSave() }}
-        minHeight={200}
+        nominalHeight={200}
       />
 
       <DialogActions className="actionButtonsRow">

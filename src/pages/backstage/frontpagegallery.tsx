@@ -168,21 +168,21 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
             onChange={(v) => setValueEn(v)}
             value={valueEn}
             onSave={() => { void handleSave() }}
-            minHeight={80}
+            nominalHeight={80}
         />
         <h3>Nederlands</h3>
         <Markdown3Editor
             onChange={(v) => setValueNl(v)}
             value={valueNl}
             onSave={() => { void handleSave() }}
-            minHeight={80}
+            nominalHeight={80}
         />
         <h3>Français</h3>
         <Markdown3Editor
             onChange={(v) => setValueFr(v)}
             value={valueFr}
             onSave={() => { void handleSave() }}
-            minHeight={80}
+            nominalHeight={80}
         />
 
         <div className="actionButtonsRow">

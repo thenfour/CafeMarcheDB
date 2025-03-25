@@ -7,7 +7,7 @@ import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
 import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
-import { Menu, MenuItem, Tooltip } from "@mui/material";
+import { Menu, MenuItem, Popover, Popper, Tooltip } from "@mui/material";
 import React from "react";
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
 import { gIconMap } from '../../db3/components/IconMap';
@@ -23,12 +23,12 @@ interface SpecialCharacterDropdownProps {
 const specialCharacters = [
     {
         category: 'Formats', symbols: [
-            '{{big:big text}}',
-            '{{bigger:Bigger text}}',
-            '{{highlight:Highlight yellow}}',
-            '{{highlightred:Highlight red}}',
-            '{{highlightgreen:Highlight green}}',
-            '{{highlightblue:Highlight blue}}',
+            '{{big:this text is big}}',
+            '{{bigger:this text is bigger}}',
+            '{{highlight:this text is yellow}}',
+            '{{highlightred:this text is red}}',
+            '{{highlightgreen:this text is green}}',
+            '{{highlightblue:this text is blue}}',
         ], display: [
             <span key={1} className='markdown-class-big'>Big text</span>,
             <span key={2} className='markdown-class-bigger'>Bigger text</span>,
@@ -88,16 +88,17 @@ interface Markdown3EditorProps {
     readonly?: boolean;
     value: string;
     autoFocus?: boolean;
-    beginInPreview?: boolean;
-    minHeight: number;
+    //beginInPreview?: boolean;
+    nominalHeight: number;
     onChange: (v: string) => void;
     onSave?: () => void;
 };
 
-type M3Tab = "write" | "preview";
+type M3Tab = "write" | "preview" | "sidebyside";
 
-export const Markdown3Editor = ({ readonly = false, beginInPreview = false, autoFocus = false, ...props }: Markdown3EditorProps) => {
-    const [tab, setTab] = React.useState<M3Tab>(beginInPreview ? "preview" : "write");
+export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props }: Markdown3EditorProps) => {
+    const [tab, setTab] = React.useState<M3Tab>("sidebyside");
+    const [popoverAnchorEl, setPopoverAnchorEl] = React.useState<null | HTMLElement>(null);
 
     const [headingTrig, setHeadingTrig] = React.useState<number>(0);
     const [boldTrig, setBoldTrig] = React.useState<number>(0);
@@ -147,30 +148,32 @@ export const Markdown3Editor = ({ readonly = false, beginInPreview = false, auto
         setTab(newTab);
     };
 
+    const editorIsVisible = tab === "write" || tab === "sidebyside";
+
     React.useEffect(() => {
 
-        if (tab === 'write') {
+        if (editorIsVisible) {
             //console.log(`refocus + 1 => ${refocusTrig + 1}`);
             setRefocusTrig(refocusTrig + 1); // tell the textarea to focus again.
         }
 
     }, [tab]);
 
-    React.useEffect(() => {
-        const handleKeyDown = (event) => {
-            // Check for the 'Ctrl+Shift+P'
-            if (event.ctrlKey && event.shiftKey && event.key.toUpperCase() === 'P') {
-                event.preventDefault();  // Prevent default to avoid any browser shortcut conflict
-                changeTab((tab === "preview") ? "write" : "preview");  // Toggle between edit and preview mode
-            }
-        };
+    // React.useEffect(() => {
+    //     const handleKeyDown = (event) => {
+    //         // Check for the 'Ctrl+Shift+P'
+    //         if (event.ctrlKey && event.shiftKey && event.key.toUpperCase() === 'P') {
+    //             event.preventDefault();  // Prevent default to avoid any browser shortcut conflict
+    //             changeTab((tab === "preview") ? "write" : "preview");  // Toggle between edit and preview mode
+    //         }
+    //     };
 
-        document.addEventListener('keydown', handleKeyDown);
+    //     document.addEventListener('keydown', handleKeyDown);
 
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [tab]); // Empty dependency array indicates this effect runs once on mount and cleanup on unmount
+    //     return () => {
+    //         document.removeEventListener('keydown', handleKeyDown);
+    //     };
+    // }, [tab]); // Empty dependency array indicates this effect runs once on mount and cleanup on unmount
 
     const toolItems = {
         heading: <Tooltip title={"Heading (ctrl+H)"} disableInteractive>
@@ -299,7 +302,7 @@ export const Markdown3Editor = ({ readonly = false, beginInPreview = false, auto
         </>,
     };
 
-    const editorContainerStyle: React.CSSProperties = tab === 'write' ? {} : {
+    const editorContainerStyle: React.CSSProperties = editorIsVisible ? {} : {
         visibility: "hidden",
         position: "absolute",
     }
@@ -310,52 +313,54 @@ export const Markdown3Editor = ({ readonly = false, beginInPreview = false, auto
 
     return <div className="MD3 editor MD3Container">
         <div className="header">
-            <div className="tabs">
-                <Tooltip title={"Ctrl+Shift+P to toggle modes"} disableInteractive>
-                    {tab === "write" ? (
-                        <div className={`tab preview selected freeButton`} onClick={() => changeTab("preview")}>Preview</div>
-                    ) : (
-                        <div className={`tab write selected freeButton`} onClick={() => changeTab("write")}>Continue editing</div>
-                    )}
-                </Tooltip>
+            <div className="toolbar">
+                <div className={`tab write freeButton ${tab === "write" ? "selected" : "notselected"}`} onClick={() => changeTab("write")}>Write</div>
+                <div className={`tab preview freeButton ${tab === "preview" ? "selected" : "notselected"}`} onClick={() => changeTab("preview")}>Preview</div>
+                <div className={`tab preview freeButton ${tab === "sidebyside" ? "selected" : "notselected"}`} onClick={() => changeTab("sidebyside")}>Side-by-side</div>
             </div>
-            {(tab === "write") && <div className="toolbar">
+            {editorIsVisible && <>
+                <div className='toolbar toolBarRow toolBarRow1'>
+                    {toolItems.bold}
+                    {toolItems.italic}
+                    {toolItems.underline}
+                    {toolItems.strikethrough}
 
-                {toolItems.bold}
-                {toolItems.italic}
-                {toolItems.underline}
-                {toolItems.strikethrough}
-                <div className="divider" />
+                    <div className="divider" />
 
-                {toolItems.heading}
-                {toolItems.quote}
-                {toolItems.code}
-                <div className="divider" />
+                    {toolItems.orderedList}
+                    {toolItems.unorderedList}
+                    {toolItems.indent}
+                    {toolItems.outdent}
 
-                {toolItems.orderedList}
-                {toolItems.unorderedList}
-                {toolItems.indent}
-                {toolItems.outdent}
-                <div className="divider" />
+                    <div className="divider" />
+                    {toolItems.heading}
+                    {toolItems.quote}
+                    {toolItems.code}
 
-                {toolItems.abcjs}
-                {toolItems.specialCharacter}
-                <div className="divider" />
+                    <div className="divider" />
+                    <a href="/backstage/wiki/markdown-help" target="_blank">{gIconMap.Launch()} Formatting help</a>
+                </div>
 
-                {toolItems.link}
-                {toolItems.mention}
-                {toolItems.reference}
-                {toolItems.attachFiles}
+                <div className='toolbar toolBarRow toolBarRow2'>
 
-            </div>
+                    {toolItems.abcjs}
+                    {toolItems.specialCharacter}
+                    <div className="divider" />
+
+                    {toolItems.link}
+                    {toolItems.mention}
+                    {toolItems.reference}
+                    {toolItems.attachFiles}
+                </div>
+            </>
             }
         </div>
-        <div className="content">
-            <div style={editorContainerStyle}>
+        <div className={`content tab_${tab}`} ref={setPopoverAnchorEl}>
+            <div className="editorContainer" style={editorContainerStyle}>
                 <MarkdownEditor
                     onValueChanged={props.onChange}
                     onSave={props.onSave}
-                    height={props.minHeight}
+                    nominalHeight={props.nominalHeight}
                     value={props.value}
                     autoFocus={autoFocus}
                     headingTrig={headingTrig}
@@ -378,19 +383,32 @@ export const Markdown3Editor = ({ readonly = false, beginInPreview = false, auto
                     specialCharacterTrig={specialCharacterTrig}
                     specialCharacter={specialCharacter}
                 />
-                <div>
+                {/* <div>
                     <span className="helpText">
                         <a href="/backstage/wiki/markdown-help" target="_blank">{gIconMap.Launch()} Formatting help</a>
-                        {/* |
-                        <a href="/backstage/wiki/abc-help" target="_blank">{gIconMap.Launch()} ABC formatting help</a> */}
                     </span>
-
-                </div>
+                </div> */}
             </div>
             {tab === "preview" &&
                 <div className="previewContainer">
                     <Markdown markdown={props.value} />
                 </div>
+            }
+            {tab === "sidebyside" &&
+                <div className="previewContainer">
+                    <Markdown markdown={props.value} />
+                </div>
+                // <Popper
+                //     open={true}
+                //     placement='right-start'
+                //     anchorEl={popoverAnchorEl}
+                // >
+                //     <div className="markdownSideBySideContainer">
+                //         <div className="previewContainer">
+                //             <Markdown markdown={props.value} />
+                //         </div>
+                //     </div>
+                // </Popper>
             }
         </div>
 

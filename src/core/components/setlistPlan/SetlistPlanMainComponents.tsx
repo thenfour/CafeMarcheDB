@@ -504,12 +504,12 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         </div >
 
         <Markdown3Editor
-            beginInPreview={true}
+            //beginInPreview={true}
             value={docOrTempDoc.payload.notes || ""}
             onChange={(newMarkdown) => {
                 props.mutator.setNotes(newMarkdown);
             }}
-            minHeight={300}
+            nominalHeight={300}
         />
 
         <table style={{ fontFamily: "monospace" }} className="cost-table">
@@ -878,7 +878,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                         props.mutator.setDescription(newMarkdown);
                     }}
                     value={doc.description}
-                    minHeight={75}
+                    nominalHeight={75}
                 //beginInPreview={true}
                 />
             </CMTab>
@@ -924,7 +924,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                             props.mutator.setColumnComment(segment.columnId, newMarkdown);
                                         }}
                                         value={segment.commentMarkdown || ""}
-                                        minHeight={75}
+                                        nominalHeight={75}
                                     />
                                     <AssociationSelect
                                         value={segment.associatedItem || null}
@@ -982,7 +982,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                 </div>
                             </div>
                             <Markdown3Editor
-                                minHeight={75}
+                                nominalHeight={75}
                                 onChange={(newMarkdown) => {
                                     props.mutator.setRowComment(song.rowId, newMarkdown);
                                 }}

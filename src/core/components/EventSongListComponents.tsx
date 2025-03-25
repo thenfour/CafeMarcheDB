@@ -71,7 +71,7 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
         <DialogContent style={{ width: "var(--content-max-width)" }}>
             <Markdown3Editor
                 onChange={(v) => setControlledValue({ ...controlledValue, subtitle: v })}
-                minHeight={100}
+                nominalHeight={100}
                 value={controlledValue.subtitle || ""}
                 autoFocus
                 onSave={() => onClick(controlledValue)}

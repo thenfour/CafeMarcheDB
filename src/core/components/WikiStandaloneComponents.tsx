@@ -80,7 +80,7 @@ export const WikiStandaloneContentEditor = (props: WikiStandaloneContentEditorPr
                         onChange={(v) => setContent(v)}
                         value={content}
                         autoFocus={true}
-                        minHeight={600}
+                        nominalHeight={600}
                     />
                 </div>
 

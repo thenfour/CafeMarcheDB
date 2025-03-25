@@ -61,7 +61,7 @@ const SettingMarkdownEditor = (props: SettingMarkdownEditorProps) => {
             onChange={(v) => setValue(v)}
             value={value}
             onSave={() => { void handleSave() }}
-            minHeight={300}
+            nominalHeight={300}
         />
 
         <div className="actionButtonsRow">

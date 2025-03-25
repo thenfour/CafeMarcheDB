@@ -318,7 +318,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
             validationResult: params.validationResult,
             value: <Markdown3Editor
                 value={params.value as string}
-                minHeight={120}
+                nominalHeight={120}
                 autoFocus={false}
                 onChange={async (val) => {
                     params.api.setFieldValues({ [this.columnName]: val });

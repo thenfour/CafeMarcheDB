@@ -282,7 +282,7 @@ const WorkflowDefRootDataEditor = () => {
                 value={
                     <Markdown3Editor
                         value={ctx.flowDef.description || ""}
-                        minHeight={200}
+                        nominalHeight={200}
                         onChange={(val) => {
                             ctx.chainDefMutations([
                                 { fn: (sourceDef) => ctx.flowDefMutator.setWorkflowDefDescription({ sourceDef, description: val }), wantsReevaluation: false },

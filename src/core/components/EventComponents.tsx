@@ -139,7 +139,7 @@ const EventCustomFieldValueValueEdit_RichText = (props: EventCustomFieldValueCon
     return <div><Markdown3Editor
         value={props.deserializedValue || ""}
         onChange={(v) => props.onChange(v)}
-        minHeight={250}
+        nominalHeight={250}
     /></div>
 }
 

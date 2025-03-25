@@ -183,7 +183,7 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
             <Markdown3Editor
                 onChange={(newValue) => props.onChange({ ...props.ledDef, descriptionMarkdown: newValue })}
                 value={props.ledDef.descriptionMarkdown || ""}
-                minHeight={75}
+                nominalHeight={75}
             />
         } />
         <AssociationSelect

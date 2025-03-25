@@ -234,8 +234,8 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
             value={
                 <Markdown3Editor
                     autoFocus={false}
-                    beginInPreview={true}
-                    minHeight={100}
+                    //beginInPreview={true}
+                    nominalHeight={100}
                     //readOnly={readonly} // todo?
                     value={props.nodeDef.descriptionMarkdown}
                     onChange={(v) => {

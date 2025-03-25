@@ -141,7 +141,7 @@ test cases:
 }
 
 .MD3Container.editor {
-    --radius: 8px;
+    --radius: 5px;
     border: 1px solid #ddd;
     border-radius: var(--radius);
     max-width: var(--content-max-width);
@@ -152,25 +152,25 @@ test cases:
     border-top-left-radius: var(--radius);
     border-top-right-radius: var(--radius);
     display: flex;
+    flex-direction: column;
     padding-left: 4px;
     padding-right: 10px;
-    justify-content: space-between;
 }
 
-.MD3Container.editor .tabs {
-    display: flex;
-}
-
-.MD3Container.editor .tabs .tab {
-    border-top-left-radius: var(--radius);
-    border-top-right-radius: var(--radius);
+.MD3Container.editor .tab {
+    border-radius: var(--radius);
     padding: 3px 13px;
     font-size: 15px;
     font-weight: normal;
+    margin: 4px;
+    margin-left: 0;
+
+    border: 1px solid #ddd;
 }
 
-.MD3Container.editor .tabs .tab.selected {
+.MD3Container.editor .tab.selected {
     background-color: white;
+    border: 1px solid #888;
 }
 
 .MD3Container.editor .toolbar {
@@ -180,7 +180,7 @@ test cases:
 
 .MD3Container.editor .toolbar .toolItem {
     padding: 4px 6px;
-    border-radius: 6px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -188,8 +188,8 @@ test cases:
 
 .MD3Container.editor .toolbar .toolItem svg {
     fill: #888;
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
 }
 
 .MD3Container.editor .toolbar .toolItem:hover {
@@ -201,8 +201,9 @@ test cases:
 }
 
 .MD3Container.editor .toolbar .divider {
-    margin-left: 5px;
-    margin-right: 5px;
+    --divider-size: 10px;
+    margin-left: var(--divider-size);
+    margin-right: var(--divider-size);
     border-left: 1px solid #c7c7c7;
     height: 50%;
 }
@@ -217,6 +218,13 @@ test cases:
 .MD3Container.editor .previewContainer {
     padding: 10px;
     background-color: white;
+}
+
+.markdownSideBySideContainer {
+    background-color: white;
+    margin: 0px;
+    border: 1px solid #ddd;
+    padding: 10px;
 }
 
 .markdown blockquote {
