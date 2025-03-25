@@ -17,7 +17,7 @@ import { NameValuePair } from "../CMCoreComponents2";
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
 import { useDashboardContext } from "../DashboardContext";
 import { Markdown } from "../markdown/RichTextEditor";
-import { Markdown3Editor } from "../MarkdownControl3";
+import { Markdown3Editor } from "../markdown/MarkdownControl3";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationSelect, AssociationValueLink } from "./ItemAssociation";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";

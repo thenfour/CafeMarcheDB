@@ -9,7 +9,7 @@ import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CMSmallButton } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
-import { Markdown3Editor } from "./MarkdownControl3";
+import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/RichTextEditor";
 import { gIconMap } from "../db3/components/IconMap";
 //import { API } from "../db3/clientAPI";

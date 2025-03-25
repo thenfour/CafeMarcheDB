@@ -37,7 +37,7 @@ import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, Ev
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
-import { Markdown3Editor } from './MarkdownControl3';
+import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';

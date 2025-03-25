@@ -11,7 +11,7 @@ import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/RichTextEditor";
-import { Markdown3Editor } from "src/core/components/MarkdownControl3";
+import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { useSongsContext } from "src/core/components/SongsContext";

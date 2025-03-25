@@ -13,7 +13,7 @@ import { DotMenu, NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown } from "./markdown/RichTextEditor";
-import { Markdown3Editor } from "./MarkdownControl3";
+import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
 import updateWikiPage from "../wiki/mutations/updateWikiPage";

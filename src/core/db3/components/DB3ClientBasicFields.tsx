@@ -24,7 +24,7 @@ import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
-import { Markdown3Editor } from "src/core/components/MarkdownControl3";
+import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { CMDBTableFilterModel, TAnyModel, gNullValue } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";

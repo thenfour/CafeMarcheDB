@@ -11,7 +11,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import { DotMenu } from "./CMCoreComponents2";
 import { useDashboardContext } from "./DashboardContext";
 import { Markdown } from "./markdown/RichTextEditor";
-import { Markdown3Editor } from "./MarkdownControl3";
+import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { AdminContainer } from "./CMCoreComponents";
 import getWikiPage from "../wiki/queries/getWikiPage";
@@ -145,7 +145,7 @@ const WikiStandaloneViewMode = (props: WikiStandaloneViewModeProps) => {
             </div>
  */}
             <div className="wikiContentContainer">
-                {IsNullOrWhitespace(props.wikiPageData.latestRevision.content) ? <div className="unknownPage">This page dosen't exist (yet!)</div> : <Markdown markdown={props.wikiPageData.latestRevision.content} />}
+                {IsNullOrWhitespace(props.wikiPageData.latestRevision.content) ? <div className="unknownPage">This article dosen't exist (yet!)</div> : <Markdown markdown={props.wikiPageData.latestRevision.content} />}
             </div>
 
             {/* <div className="wikiPageFooterStats">

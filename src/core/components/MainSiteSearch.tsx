@@ -4,6 +4,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import { MatchingSlugItem } from '../db3/shared/apiTypes';
 import { CMSmallButton, simulateLinkClick } from './CMCoreComponents2';
 import { fetchObjectQuery } from './setlistPlan/ItemAssociation';
+import { IsNullOrWhitespace } from 'shared/utils';
 
 export const MatchingSlugItemComponent = ({ item, selected }: { item: MatchingSlugItem, selected: boolean }) => {
 
@@ -70,7 +71,7 @@ export const MainSiteSearch = () => {
                     }}
                     onChange={(e) => setQuery(e.target.value)}
                     startAdornment={gIconMap.Search()}
-                    endAdornment={<CMSmallButton onClick={() => setQuery("")}>{gIconMap.Close()}</CMSmallButton>}
+                    endAdornment={IsNullOrWhitespace(query) ? undefined : <CMSmallButton onClick={() => setQuery("")}>{gIconMap.Close()}</CMSmallButton>}
                 />
             )}
         />

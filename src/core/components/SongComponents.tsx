@@ -19,7 +19,7 @@ import { InspectObject } from './CMCoreComponents';
 import { NameValuePair } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
-import { Markdown3Editor } from './MarkdownControl3';
+import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { MetronomeButton } from './Metronome';
 import { Markdown } from './markdown/RichTextEditor';
 import { SearchableNameColumnClient } from './SearchableNameColumnClient';

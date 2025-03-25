@@ -21,7 +21,7 @@ import { SettingMarkdown } from "./SettingMarkdown";
 import { MoreHoriz } from '@mui/icons-material';
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { WorkflowNodeProgressState } from '../db3/shared/apiTypes';
-import { Markdown3Editor } from './MarkdownControl3';
+import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown } from './markdown/RichTextEditor';
 

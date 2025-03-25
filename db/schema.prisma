@@ -165,7 +165,8 @@ model User {
   workflowNodeInstanceLastAssignees WorkflowInstanceNodeLastAssignee[]
   workflowLogItems                  WorkflowInstanceLogItem[]
 
-  setlistPlans SetlistPlan[]
+  setlistPlans    SetlistPlan[]
+  lockedWikiPages WikiPage[]
 
   @@unique([accessToken])
   @@unique([uid])
@@ -1019,10 +1020,16 @@ model WikiPage {
 
   revisions WikiPageRevision[] @relation(name: "AllRevisions")
 
+  lockedByUserId Int?
+  lockedByUser   User?     @relation(fields: [lockedByUserId], references: [id], onDelete: SetNull)
+  lockUntil      DateTime? // Time until which the lock is valid (or null if unlocked)
+
   @@unique([slug])
   @@unique([currentRevisionId])
   @@index([visiblePermissionId])
+  @@index([namespace])
   @@index([currentRevisionId])
+  @@index([lockedByUserId])
 }
 
 model WikiPageRevision {

@@ -13,7 +13,7 @@ import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator
 import { gIconMap } from "../db3/components/IconMap";
 import { ColorPick } from "./ColorPick";
 import { useConfirm } from "./ConfirmationDialog";
-import { Markdown3Editor } from "./MarkdownControl3";
+import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 
 

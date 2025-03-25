@@ -13,7 +13,7 @@ import { AdminContainer, AdminInspectObject, InspectObject } from "./CMCoreCompo
 import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
-import { Markdown3Editor } from "./MarkdownControl3";
+import { Markdown3Editor } from "./markdown/MarkdownControl3";
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWorkflowInstance, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowModelFieldSpec, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";

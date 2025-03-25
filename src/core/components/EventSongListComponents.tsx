@@ -26,7 +26,7 @@ import { CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from '.
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
 import { DashboardContext } from './DashboardContext';
-import { Markdown3Editor } from './MarkdownControl3';
+import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown } from "./markdown/RichTextEditor";

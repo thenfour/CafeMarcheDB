@@ -3,7 +3,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { ForeignSingleField, GenericStringField, MakeCreatedAtField, MakeTitleField, PKField } from "../db3basicFields";
+import { ForeignSingleField, GenericStringField, GhostField, MakeCreatedAtField, MakeTitleField, PKField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 
@@ -64,7 +64,22 @@ export const xWikiPage = new db3.xTable({
             format: "title",
             authMap: xAuthMap,
         }),
-
+        new GhostField({
+            authMap: xAuthMap,
+            memberName: "namespace",
+        }),
+        new GhostField({
+            authMap: xAuthMap,
+            memberName: "currentRevisionId",
+        }),
+        new GhostField({
+            authMap: xAuthMap,
+            memberName: "lockedByUserId",
+        }),
+        new GhostField({
+            authMap: xAuthMap,
+            memberName: "lockUntil",
+        }),
         new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",

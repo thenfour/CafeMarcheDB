@@ -16,7 +16,7 @@ import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
-import { Markdown3Editor } from "src/core/components/MarkdownControl3";
+import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
 import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
