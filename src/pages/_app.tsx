@@ -19,6 +19,7 @@ import '../../public/markdown.css';
 import '../../public/style/bigCalendar.css';
 import "../../public/style/color.css";
 import '../../public/style/customFieldEditor.css';
+import '../../public/style/events2.css';
 import '../../public/style/filterControls.css';
 import '../../public/style/ImportEvents.css';
 import '../../public/style/metronome.css';

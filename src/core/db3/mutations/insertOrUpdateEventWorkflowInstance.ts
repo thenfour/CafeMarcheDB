@@ -3,13 +3,13 @@ import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import { MutationArgsToWorkflowInstance, TWorkflowChange, TWorkflowInstanceMutationResult } from "shared/workflowEngine";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { gWorkflowMutex } from "../server/eventWorkflow";
 import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
 async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaClient, args: TUpdateEventWorkflowInstanceArgs): Promise<TWorkflowInstanceMutationResult> {
     const resultChanges: TWorkflowChange[] = [];

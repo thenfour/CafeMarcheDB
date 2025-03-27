@@ -271,7 +271,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     </div>;
 };
 
-export const BigEventCalendarInner = (props: { selectedEventId: undefined | number }) => {
+export const BigEventCalendarInner = (props: { selectedEventId?: undefined | number }) => {
     //const [selectedEvent, setSelectedEvent] = React.useState<EventWithSearchResult | null>(null);
     const [selectedEventId, setSelectedEventId] = React.useState<number | null>(props.selectedEventId || null);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
@@ -362,7 +362,7 @@ export const BigEventCalendarInner = (props: { selectedEventId: undefined | numb
 
 
 
-export const BigEventCalendar = (props: { selectedEventId: undefined | number }) => {
+export const BigEventCalendar = (props: { selectedEventId?: undefined | number }) => {
     // nossr to prevent using server's locale settings.
     return <NoSsr>
         <BigEventCalendarInner {...props} />

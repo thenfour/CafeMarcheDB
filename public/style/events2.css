@@ -1,0 +1,85 @@
+.SearchItemBigCardLinkContainer {
+    display: flex;
+    flex-direction: row;
+}
+
+.SearchItemBigCardLink {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px;
+    padding: 8px 24px;
+    border-radius: 6px;
+    border: 3px solid #ddd;
+}
+
+.SearchItemBigCardLink:hover {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+
+
+.SearchItemBigCardLink .SearchItemBigCardLinkText {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+
+
+.SearchItemBigCardLink .SearchItemBigCardLinkIcon svg {
+    width: 36px;
+    height: 36px;
+    opacity: 50%;
+}
+
+/* ------------------------------- */
+
+.SubtleEventCardContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 14px 0;
+    padding: 20px 20px;
+    padding-top: 0;
+    gap: 30px;
+    max-width: var(--content-max-width);
+    flex-wrap: wrap;
+}
+
+.SubtleEventCard {
+    box-shadow: var(--subtle-elevation);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 6px 18px;
+    border-radius: 4px;
+    width: unset;
+
+    background-color: white;
+
+    border-top: solid 8px var(--color-background);
+
+    /* link-like behavior */
+    cursor: pointer;
+    user-select: none;
+}
+
+.SubtleEventCard:hover {
+    /* background-color: #eee; */
+    border-color: blue;
+}
+
+.SubtleEventCardTitle {
+    color: var(--primary-color);
+    font-size: 22px;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+}
+
+.SubtleEventCardTitle svg {
+    margin-right: 8px;
+    opacity: 50%;
+    color: var(--color-foreground);
+}

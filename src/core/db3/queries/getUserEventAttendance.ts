@@ -1,8 +1,8 @@
 import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
+import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { toSorted } from "shared/utils";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
 
 type UserEventAttendanceQueryResult_EventSegment = Prisma.EventSegmentGetPayload<{

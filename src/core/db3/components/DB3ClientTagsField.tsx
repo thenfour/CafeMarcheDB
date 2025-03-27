@@ -17,7 +17,7 @@ import {
     ListItemButton
 } from "@mui/material";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
-import { SettingKey, gQueryOptions } from "shared/utils";
+import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
@@ -35,6 +35,7 @@ import { RenderMuiIcon } from './IconMap';
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
 import { ReactiveInputDialog } from 'src/core/components/ReactiveInputDialog';
 import { SplitQuickFilter } from 'shared/quickFilter';
+import { SettingKey } from 'shared/settings';
 
 
 const gMaxVisibleTags = 6;

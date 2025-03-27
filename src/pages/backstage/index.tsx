@@ -5,6 +5,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
+import { RelevantEvents } from "src/core/components/RelevantEvents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -14,7 +15,7 @@ const HomepageBigEventCalendar = () => {
   const dashboardContext = useDashboardContext();
   if (!dashboardContext) return null;
   //if (dashboardContext.relevantEventIds.length < 1) return null;
-  return <BigEventCalendar selectedEventId={dashboardContext.relevantEventIds[0]} />;
+  return <BigEventCalendar />;
 };
 
 const DynamicContent = () => {
@@ -41,7 +42,7 @@ const DynamicContent = () => {
     <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
 
     <PermissionBoundary permission={Permission.view_events_nonpublic}>
-
+      <RelevantEvents />
       <HomepageBigEventCalendar />
     </PermissionBoundary>
 

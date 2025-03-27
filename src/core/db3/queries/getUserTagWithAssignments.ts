@@ -1,0 +1,40 @@
+import { z } from "zod";
+import { resolver } from "@blitzjs/rpc";
+import { assert, AuthenticatedCtx } from "blitz";
+import db, { Prisma } from "db";
+import { toSorted } from "shared/arrayUtils";
+import { Permission } from "shared/permissions";
+import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
+
+const ZInp = z.object({
+    userTagIds: z.array(z.number()),
+});
+
+export default resolver.pipe(
+    resolver.authorize(Permission.public),
+    resolver.zod(ZInp),
+    async (args, ctx: AuthenticatedCtx) => {
+        try {
+            return await db.userTag.findMany({
+                where: {
+                    id: { in: args.userTagIds },
+                },
+                select: {
+                    id: true,
+                    text: true,
+                    userAssignments: {
+                        select: {
+                            userId: true,
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error(e);
+            throw (e);
+        }
+    }
+);
+
+
+

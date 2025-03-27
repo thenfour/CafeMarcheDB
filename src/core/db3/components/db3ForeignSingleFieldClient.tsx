@@ -16,7 +16,7 @@ import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid
 import { assert } from "blitz";
 import React, { Suspense } from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
-import { Coalesce, SettingKey, SplitQuickFilter, gQueryOptions, parseIntOrNull } from "shared/utils";
+import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { AdminInspectObject } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -32,6 +32,8 @@ import { TAnyModel } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer, CMChipSizeOptions } from "src/core/components/CMChip";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { SettingKey } from "shared/settings";
+import { SplitQuickFilter } from "shared/quickFilter";
 
 
 

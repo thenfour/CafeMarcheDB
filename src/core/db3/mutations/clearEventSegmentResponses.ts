@@ -5,8 +5,8 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import { z } from "zod";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
 const ZArgs = z.object({
     eventSegmentId: z.number(),

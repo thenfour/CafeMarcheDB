@@ -145,6 +145,7 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
                     filterSpec={filterSpec}
                     refetch={refetch}
                     results={results}
+                    showTabs={false}
                 />
             ))}
         </InfiniteScroll>

@@ -3,10 +3,10 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { CreateChangeContext } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
+import { CreateChangeContext } from "shared/activityLog";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),

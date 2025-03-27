@@ -4,10 +4,11 @@ import { AuthenticatedCtx } from "blitz";
 import { Prisma } from "db";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, ObjectDiff, passthroughWithoutTransaction, RegisterChange } from "shared/utils";
+import { ObjectDiff, passthroughWithoutTransaction } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { gWorkflowMutex, MockEvent, ZSaveModelMutationInput } from "../server/eventWorkflow";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
 export default resolver.pipe(
     resolver.zod(ZSaveModelMutationInput),

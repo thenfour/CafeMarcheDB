@@ -3,9 +3,10 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, assert } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange, moveItemInArray } from "shared/utils";
 import * as db3 from "../db3";
 import { TupdateGenericSortOrderArgs } from "../shared/apiTypes";
+import { moveItemInArray } from "shared/arrayUtils";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
 // ASSUMES that the table's sort order column is called "sortOrder"
 // ASSUMES that the table is not that big; we will update ALL sort orders here.

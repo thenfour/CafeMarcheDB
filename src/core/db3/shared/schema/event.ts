@@ -448,8 +448,19 @@ export interface EventTableParams {
     userIdForResponses?: number; // when searching for multiple events, include this to limit returned responses to this user. prevents huge bloat.
 };
 
+export type UserTagWithAssignmentPayload = Prisma.UserTagGetPayload<{
+    select: {
+        id: true,
+        userAssignments: {
+            select: {
+                userId: true,
+            }
+        }
+    }
+}>;
+
 export interface EventSearchCustomData {
-    userTags: unknown[],
+    userTags: UserTagWithAssignmentPayload[],
 };
 
 export const EventAPI = {
@@ -784,6 +795,7 @@ export const EventSearchArgsNP = Prisma.validator<Prisma.EventDefaultArgs>()({
     include: {
         tags: true,
         // NOTE: responses will be limited to only the current user! for efficiency.
+        songLists: true,
         responses: true, // instrument and isinvited are the only things we care about.
         segments: {
             include: {

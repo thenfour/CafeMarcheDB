@@ -3,7 +3,7 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Checklist } from '@mui/icons-material';
+import { Checklist, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Select, Switch, Tooltip } from "@mui/material";
@@ -26,7 +26,7 @@ import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEve
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, DotMenu, EventDateField, NameValuePair, simulateLinkClick } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -48,6 +48,7 @@ import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown } from './markdown/RichTextEditor';
 import { toSorted } from 'shared/arrayUtils';
+import { SearchItemBigCardLink } from './SearchItemBigCardLink';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1678,31 +1679,43 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     </div>;
 };
 
-
-
 export interface EventListItemProps {
     event: db3.EnrichedSearchEventPayload;
     results: SearchResultsRet;
     refetch: () => void;
-    filterSpec: EventsFilterSpec;
+    filterSpec?: EventsFilterSpec; // for highlighting matching fields
+    showTabs?: boolean;
+    showAttendanceControl?: boolean;
 };
 
-export const EventListItem = ({ event, ...props }: EventListItemProps) => {
+export const EventListItem = ({ showTabs = false, showAttendanceControl = true, event, ...props }: EventListItemProps) => {
 
     const { eventData, userMap } = CalculateEventSearchResultsMetadata({ event, results: props.results });
 
     return <EventSearchItemContainer
         event={event}
-        highlightTagIds={props.filterSpec.tagFilter.options as number[]}
-        highlightStatusIds={props.filterSpec.statusFilter.options as number[]}
-        highlightTypeIds={props.filterSpec.typeFilter.options as number[]}
+        highlightTagIds={props.filterSpec ? props.filterSpec.tagFilter.options as number[] : []}
+        highlightStatusIds={props.filterSpec ? props.filterSpec.statusFilter.options as number[] : []}
+        highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options as number[] : []}
     >
-        <EventAttendanceControl
-            eventData={eventData}
-            onRefetch={props.refetch}
-            userMap={userMap}
-            minimalWhenNotAlert={true}
-        />
+        {showAttendanceControl &&
+            <EventAttendanceControl
+                eventData={eventData}
+                onRefetch={props.refetch}
+                userMap={userMap}
+                minimalWhenNotAlert={true}
+            />
+        }
+        {showTabs && // gIconMap.Info()
+            <div className='SearchItemBigCardLinkContainer'>
+                {event.songLists.length > 0 && <SearchItemBigCardLink
+                    icon={<LibraryMusic />}
+                    title="View setlist"
+                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                />
+                }
+            </div>
+        }
     </EventSearchItemContainer>;
 };
 

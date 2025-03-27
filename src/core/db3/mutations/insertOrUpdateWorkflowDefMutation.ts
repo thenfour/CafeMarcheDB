@@ -4,12 +4,13 @@ import { assert, AuthenticatedCtx } from "blitz";
 import { Prisma } from "db";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, ObjectDiff, passthroughWithoutTransaction, RegisterChange } from "shared/utils";
+import { ObjectDiff, passthroughWithoutTransaction } from "shared/utils";
 import { mapWorkflowDef, TWorkflowChange, TWorkflowMutationResult, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { TinsertOrUpdateWorkflowDefArgs, TransactionalPrismaClient, WorkflowObjectType } from "../shared/apiTypes";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
 
 async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefArgs, transactionalDb: TransactionalPrismaClient): Promise<TWorkflowMutationResult> {

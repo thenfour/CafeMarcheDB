@@ -87,10 +87,10 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
 
 
 
-async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<{}>[], limit: number, db: TransactionalPrismaClient): Promise<number[]> {
+async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
     const now = new Date();
     const sevenDaysFromNow = new Date(now);
-    sevenDaysFromNow.setDate(now.getDate() + 7);
+    sevenDaysFromNow.setDate(now.getDate() + 6);
 
     const twentyFourHoursAgo = new Date(now);
     twentyFourHoursAgo.setDate(now.getDate() - 1);
@@ -124,7 +124,7 @@ async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<
     ORDER BY
       relevance_class ASC, -- Primary sorting by relevance
       startsAt ASC
-    LIMIT ${limit};
+    LIMIT ${5};
     
     `;
 
@@ -156,7 +156,7 @@ export default resolver.pipe(
 
             const eventStatus = await db.eventStatus.findMany();
 
-            const relevantEventsCall = getTopRelevantEvents(eventStatus, 5, db as any /* Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient' */);
+            const relevantEventsCall = getTopRelevantEvents(eventStatus, db as any /* Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient' */);
 
             const results = await Promise.all([
                 db.userTag.findMany(),
