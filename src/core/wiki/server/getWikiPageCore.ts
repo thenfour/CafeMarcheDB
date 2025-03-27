@@ -1,15 +1,29 @@
 import { Prisma } from "db";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { wikiMakeWikiPathFromEventDescription, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
+import { GetWikiPageUpdatability, wikiMakeWikiPathFromEventDescription, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
 
-export async function GetWikiPageCore({ canonicalWikiSlug, dbt }: { canonicalWikiSlug: string, dbt: TransactionalPrismaClient }): Promise<WikiPageData> {
+interface GetWikiPageCoreArgs {
+    canonicalWikiSlug: string;
+    currentUserId: number | null;
+    clientBaseRevisionId: number | null;
+    clientLockId: string | null;
+    dbt: TransactionalPrismaClient;
+};
+
+export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ...args }: GetWikiPageCoreArgs): Promise<WikiPageData> {
     const page = await dbt.wikiPage.findUnique({
         where: { slug: canonicalWikiSlug },
         ...WikiPageApiPayloadArgs,
     });
 
     const path = wikiParseCanonicalWikiPath(canonicalWikiSlug);
+    const lockStatus = GetWikiPageUpdatability({
+        currentPage: page,
+        currentUserId: args.currentUserId,
+        userClientLockId: args.clientLockId,
+        baseRevisionId: args.clientBaseRevisionId,
+    });
 
     let ret: WikiPageData = {
         eventContext: null,
@@ -17,6 +31,7 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt }: { canonicalWik
         titleIsEditable: true,
         specialWikiNamespace: null,
         isExisting: !!page && page.id > 0,
+        lockStatus,
     };
 
     // if the page is of a special namespace, the title should be calculated and uneditable.
@@ -28,9 +43,23 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt }: { canonicalWik
 };
 
 
-export async function getEventDescriptionInfoCore(event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>, dbt: TransactionalPrismaClient): Promise<WikiPageData> {
-    const path = wikiMakeWikiPathFromEventDescription(event);
-    const page = await GetWikiPageCore({ canonicalWikiSlug: path.canonicalWikiPath, dbt });
+interface GetEventDescriptionInfoCoreArgs {
+    event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>;
+    currentUserId: number | null;
+    clientBaseRevisionId: number | null;
+    clientLockId: string | null;
+    dbt: TransactionalPrismaClient;
+};
+
+export async function getEventDescriptionInfoCore(args: GetEventDescriptionInfoCoreArgs): Promise<WikiPageData> {
+    const path = wikiMakeWikiPathFromEventDescription(args.event);
+    const page = await GetWikiPageCore({
+        canonicalWikiSlug: path.canonicalWikiPath,
+        currentUserId: args.currentUserId,
+        clientBaseRevisionId: args.clientBaseRevisionId,
+        clientLockId: args.clientLockId,
+        dbt: args.dbt,
+    });
     return page;
 };
 

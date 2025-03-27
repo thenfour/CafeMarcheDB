@@ -75,6 +75,8 @@ const ZWikiTitle = z.string().min(1);
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
+    baseRevisionId: z.number().nullable(),
+    lockId: z.string().nullable(), // you should always have a lock, but some weird cases like admin forcibly removing locks may cancel them.
 });
 
 export type TGetWikiPageArgs = z.infer<typeof ZTGetWikiPageArgs>;
@@ -170,6 +172,7 @@ export type WikiPageData = {
     titleIsEditable: boolean;
     specialWikiNamespace: SpecialWikiNamespace | null;
     isExisting: boolean;
+    lockStatus: GetWikiPageUpdatabilityResult;
 }
 
 
@@ -235,3 +238,74 @@ export const wikiParseCanonicalWikiPath = (canonicalWikiPath: string): WikiPath 
 
 
 export type WikiNamespacePlugin = (namespace: string, slugWithoutNamespace: string, inp: WikiPageData) => Promise<WikiPageData>;
+
+
+
+export enum UpdateWikiPageResultOutcome {
+    success = "success",
+    lockConflict = "lockConflict",
+    revisionConflict = "revisionConflict",
+};
+
+type GetWikiPageLockStatusArgs = {
+    currentPage: WikiPageApiPayload | null;
+    currentUserId: number | null;
+    userClientLockId: string | null;
+    baseRevisionId: number | null;
+}
+
+export type GetWikiPageUpdatabilityResult = {
+    isLocked: boolean;
+    isLockExpired: boolean;
+    //isLockAbandoned: boolean;
+    isLockConflict: boolean;
+    isLockedInThisContext: boolean;
+    isRevisionConflict: boolean;
+    outcome: UpdateWikiPageResultOutcome;
+
+    lockExpiresAt: Date | null;
+    lockId: string | null;
+
+    currentPage: WikiPageApiPayload | null;
+};
+
+export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClientLockId, baseRevisionId }: GetWikiPageLockStatusArgs): GetWikiPageUpdatabilityResult => {
+    if (!currentPage || !currentUserId) {
+        // non-existent page
+        return {
+            isLocked: false,
+            isLockExpired: false,
+            //isLockAbandoned: false,
+            isLockConflict: false,
+            isLockedInThisContext: false,
+            isRevisionConflict: false,
+            lockId: userClientLockId,
+            outcome: UpdateWikiPageResultOutcome.success,
+
+            lockExpiresAt: null,
+            currentPage: null,
+        };
+    }
+
+    const isLockExpired = currentPage.lockExpiresAt != null && currentPage.lockExpiresAt < new Date();
+    const isLocked = currentPage.lockId != null && !isLockExpired;
+    const isLockedInThisContext = isLocked && currentPage.lockedByUser?.id == currentUserId && currentPage.lockId == userClientLockId;
+    const isLockAbandoned = isLocked && (!!currentPage.lastEditPingAt && (Date.now() - currentPage.lastEditPingAt.valueOf()) > gWikiEditAbandonedThresholdMilliseconds);
+    const isRevisionCompatible = currentPage.currentRevision?.id == baseRevisionId;
+    const isLockConflict = !isLockAbandoned && isLocked && !isLockedInThisContext;
+
+    return {
+        isLocked,
+        isLockExpired,
+        //isLockAbandoned,
+        isLockConflict,
+        isLockedInThisContext,
+        isRevisionConflict: !isRevisionCompatible,
+        outcome: isLockConflict ? UpdateWikiPageResultOutcome.lockConflict : (isRevisionCompatible ? UpdateWikiPageResultOutcome.success : UpdateWikiPageResultOutcome.revisionConflict),
+        lockId: userClientLockId,
+        lockExpiresAt: currentPage.lockExpiresAt,
+        currentPage,
+    };
+};
+
+

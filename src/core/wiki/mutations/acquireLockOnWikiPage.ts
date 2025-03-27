@@ -6,8 +6,7 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
-import { gWikiPageLockDurationSeconds, TAcquireLockOnWikiPageArgs, WikiPageApiPayload, WikiPageApiPayloadArgs, wikiParseCanonicalWikiPath, ZTAcquireLockOnWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
-import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult } from "../server/wikiServerCore";
+import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TAcquireLockOnWikiPageArgs, WikiPageApiPayload, WikiPageApiPayloadArgs, wikiParseCanonicalWikiPath, ZTAcquireLockOnWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(

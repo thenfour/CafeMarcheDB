@@ -312,14 +312,19 @@ input.CMTextInputBase.titleText {
 what's the diff between interactable, freeButton, and iconButton? so far not much...
 */
 .interactable,
-.freeButton {
+.freeButton,
+.iconButton {
     user-select: none;
+}
+
+.interactable:not(.disabled),
+.iconButton:not(.disabled),
+.freeButton:not(.disabled) {
     cursor: pointer;
 }
 
-.interactable:hover,
-.freeButton:hover {
-    /* background-color: rgb(75, 106, 138); */
+.interactable:not(.disabled):hover,
+.freeButton:not(.disabled):hover {
     color: #08f;
     text-decoration: underline;
 }
@@ -356,8 +361,6 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .freeButton {
     display: flex;
     align-items: center;
-    cursor: pointer;
-    user-select: none;
 }
 
 .CMSmallButton {
@@ -2587,6 +2590,7 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
 .actionButtonsRow {
     display: flex;
     justify-content: right;
+    align-items: center;
     padding: 0 10px;
 }
 
@@ -2597,11 +2601,10 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
     border-radius: 4px;
     margin-left: 10px;
     background-color: #eee;
+    white-space: nowrap;
 
     display: flex;
     align-items: center;
-    cursor: pointer;
-    user-select: none;
 }
 
 .actionButtonsRow>.freeButton.cancelButton {
@@ -2616,10 +2619,11 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
     border: 1px solid #0084;
 }
 
+/* 
 .actionButtonsRow>.freeButton.saveProgressButton.unchanged {
     opacity: 30%;
     filter: saturate(0);
-}
+} */
 
 .actionButtonsRow>.freeButton.saveAndCloseButton {
     color: #080;
@@ -2627,9 +2631,14 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
     border: 1px solid #0804;
 }
 
+.actionButtonsRow>.freeButton.saveProgressButton.unchanged,
 .actionButtonsRow>.freeButton.saveAndCloseButton.unchanged {
-    opacity: 30%;
-    filter: saturate(0);
+    /* opacity: 30%;
+    filter: saturate(0); */
+
+    color: #aaa;
+    background-color: transparent;
+    border-color: transparent;
 }
 
 

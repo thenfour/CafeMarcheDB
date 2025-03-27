@@ -10,8 +10,7 @@ import wikiEditPing from "src/core/wiki/mutations/wikiEditPing";
 import wikiReleaseYourLock from "src/core/wiki/mutations/wikiReleaseYourLock";
 import wikiRenewYourLock from "src/core/wiki/mutations/wikiRenewYourLock";
 import getWikiPage from "src/core/wiki/queries/getWikiPage";
-import { GetWikiPageUpdatabilityResult, UpdateWikiPageResultOutcome } from "src/core/wiki/server/wikiServerCore";
-import { gWikiEditPingIntervalMilliseconds, gWikiLockAutoRenewThrottleInterval, WikiPageApiPayload, WikiPageApiUpdatePayload, WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
+import { GetWikiPageUpdatabilityResult, gWikiEditPingIntervalMilliseconds, gWikiLockAutoRenewThrottleInterval, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiUpdatePayload, WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { v4 as uuidv4 } from "uuid";
 import { useDashboardContext } from "../DashboardContext";
 
@@ -68,6 +67,9 @@ export interface WikiPageApi {
     visiblePermissionId: number | null;
   };
 
+  lockStatus: GetWikiPageUpdatabilityResult,
+  networkPending: boolean;
+
   basePage: WikiPageApiPayload | null; // the revision we started editing from, or null if we haven't started editing yet.
   yourLockId: string | null; // kinda just for debugging purposes.
 
@@ -93,14 +95,21 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
 
   const [currentRevisionData, currentRevisionDataQueryExtras] = useQuery(getWikiPage, {
     canonicalWikiPath: args.canonicalWikiPath,
-  }, { refetchInterval: 5000 });
+    baseRevisionId: basePage?.currentRevision?.id ?? null,
+    lockId: lockUid,
+  }, {
+    refetchInterval: 5000,
+    onSuccess: (data) => {
+      console.log(`getWikiPage settled: (yourbaserevision ${basePage?.currentRevision?.id}, currentrevision ${data.wikiPage?.currentRevision?.id})`);
+    },
+  });
 
-  const [updateWikiPageMutation] = useMutation(updateWikiPage);
-  const [acquireLockOnWikiPageMutation] = useMutation(acquireLockOnWikiPage);
-  const [wikiAdminClearLockMutation] = useMutation(wikiAdminClearLock);
-  const [wikiReleaseYourLockMutation] = useMutation(wikiReleaseYourLock);
-  const [wikiRenewYourLockMutation] = useMutation(wikiRenewYourLock);
-  const [wikiEditPingMutation] = useMutation(wikiEditPing);
+  const [updateWikiPageMutation, updateWikiPageMutationExtras] = useMutation(updateWikiPage);
+  const [acquireLockOnWikiPageMutation, acquireLockOnWikiPageMutationExtras] = useMutation(acquireLockOnWikiPage);
+  const [wikiAdminClearLockMutation, wikiAdminClearLockMutationExtras] = useMutation(wikiAdminClearLock);
+  const [wikiReleaseYourLockMutation, wikiReleaseYourLockMutationExtras] = useMutation(wikiReleaseYourLock);
+  const [wikiRenewYourLockMutation, wikiRenewYourLockMutationExtras] = useMutation(wikiRenewYourLock);
+  const [wikiEditPingMutation, wikiEditPingMutationExtras] = useMutation(wikiEditPing);
 
   //////////////////////////////////
   async function beginEditing(): Promise<GetWikiPageUpdatabilityResult> {
@@ -118,8 +127,6 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       return lockResult;
     }
 
-    void currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
-
     setLockUid(newLockUid);
     setBasePage(lockResult.currentPage);
 
@@ -127,18 +134,33 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   }
 
   async function saveProgress(args: WikiApiUpdateArgs): Promise<GetWikiPageUpdatabilityResult> {
+    let lockIdToUse = lockUid;
+    if (!lockUid) {
+      // if you don't have a lock (did you manually release it?), acquire it new.
+      const newLockUid = uuidv4();
+      const baseRevisionId = currentRevisionData.wikiPage?.currentRevision?.id ?? null; // when you start editing, we fork the current revision.
+
+      const result = await acquireLockOnWikiPageMutation({
+        canonicalWikiPath: wikiPath.canonicalWikiPath,
+        lockId: newLockUid,
+        baseRevisionId,
+      });
+      lockIdToUse = newLockUid;
+      setLockUid(newLockUid);
+    }
+
     const result = await updateWikiPageMutation({
       canonicalWikiPath: wikiPath.canonicalWikiPath,
       baseRevisionId: currentRevisionData.wikiPage?.currentRevision?.id ?? null,
-      lockId: lockUid,
+      lockId: lockIdToUse,
       title: args.revisionData.name,
       content: args.revisionData.content,
     });
 
-    void currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
-
-    // when you save progress, we update the base revision to the latest revision.
-    setBasePage(result.currentPage);
+    if (result.outcome === UpdateWikiPageResultOutcome.success) {
+      // when you save progress, we update the base revision to the latest revision.
+      setBasePage(result.currentPage);
+    };
 
     return result;
   }
@@ -150,13 +172,10 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       lockId: lockUid,
     });
     setLockUid(null);
-    setBasePage(null);
-    void currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
   }
 
   async function adminClearLock(): Promise<void> {
     setLockUid(null);
-    setBasePage(null);
     const ret = await wikiAdminClearLockMutation({
       canonicalWikiPath: args.canonicalWikiPath,
     });
@@ -164,6 +183,25 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   }
 
   const renewYourLockThrottled = useThrottle(() => {
+
+    if (!lockUid) {
+      // if you don't have a lock (did you manually release it?), acquire it new.
+      const newLockUid = uuidv4();
+      const baseRevisionId = currentRevisionData.wikiPage?.currentRevision?.id ?? null; // when you start editing, we fork the current revision.
+
+      acquireLockOnWikiPageMutation({
+        canonicalWikiPath: args.canonicalWikiPath,
+        lockId: newLockUid,
+        baseRevisionId,
+      }).then(result => {
+        if (result.outcome === UpdateWikiPageResultOutcome.success) {
+          setLockUid(newLockUid);
+        }
+      });
+
+      return;
+    }
+
     void wikiRenewYourLockMutation({
       canonicalWikiPath: args.canonicalWikiPath,
       lockId: lockUid,
@@ -178,12 +216,20 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     });
   }, !!lockUid ? gWikiEditPingIntervalMilliseconds : null);
 
-
   React.useEffect(() => {
     return () => {
       void releaseYourLock();
     }
   }, []);
+
+
+  const networkPending = currentRevisionDataQueryExtras.isFetching ||
+    updateWikiPageMutationExtras.isLoading ||
+    acquireLockOnWikiPageMutationExtras.isLoading ||
+    wikiAdminClearLockMutationExtras.isLoading ||
+    wikiReleaseYourLockMutationExtras.isLoading ||
+    wikiRenewYourLockMutationExtras.isLoading ||
+    wikiEditPingMutationExtras.isLoading;
 
   const MakeApi = (): WikiPageApi => ({
     wikiPath,
@@ -195,6 +241,8 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     releaseYourLock,
     adminClearLock,
     renewYourLockThrottled,
+    lockStatus: currentRevisionData.lockStatus,
+    networkPending,
     refetch: currentRevisionDataQueryExtras.refetch,
     coalescedCurrentPageData: {
       title: currentRevisionData.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,

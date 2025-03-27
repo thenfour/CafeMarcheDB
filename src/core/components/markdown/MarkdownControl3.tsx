@@ -882,11 +882,11 @@ C3D EF=G_A | ^Bc
             </div>
             {props.showActionButtons &&
                 <div className="actionButtonsRow">
-                    <MarkdownLockIndicator wikiApi={wikiPageApi} />
                     <div className="flex-spacer" />
+                    <MarkdownLockIndicator wikiApi={wikiPageApi} />
                     <div className={`freeButton cancelButton`} onClick={props.handleCancel}>{props.hasEdits ? "Cancel" : "Close"}</div>
-                    <div className={`freeButton saveButton saveProgressButton ${props.hasEdits ? "changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSave() } : undefined}>Save progress</div>
-                    <div className={`freeButton saveButton saveAndCloseButton ${props.hasEdits ? "changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
+                    <div className={`freeButton saveButton saveProgressButton ${props.hasEdits ? "changed" : "unchanged disabled"}`} onClick={props.hasEdits ? async () => { await props.handleSave() } : undefined}>Save progress</div>
+                    <div className={`freeButton saveButton saveAndCloseButton ${props.hasEdits ? "changed" : "unchanged disabled"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>Save & close</div>
                 </div>
             }
 

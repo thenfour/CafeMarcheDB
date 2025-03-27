@@ -9,7 +9,6 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import wikiPageSetVisibility from "../wiki/mutations/wikiPageSetVisibility";
-import { UpdateWikiPageResultOutcome } from "../wiki/server/wikiServerCore";
 import { AdminContainer, AdminInspectObject, EventTextLink } from "./CMCoreComponents";
 import { DotMenu, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
@@ -22,6 +21,7 @@ import { WikiPageApi } from "./markdown/useWikiPageApi";
 import { AgeRelativeToNow } from "./RelativeTimeComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityValue } from "./VisibilityControl";
+import { UpdateWikiPageResultOutcome } from "../wiki/shared/wikiUtils";
 
 
 //////////////////////////////////////////////////
@@ -238,17 +238,19 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                 Copy link to wiki page
             </MenuItem>
 
-            <MenuItem onClick={async () => {
-                await snackbar.invokeAsync(async () => props.wikiPageApi.releaseYourLock(), "Lock cleared");
-                endMenuItemRef.current();
-            }}>
-                <ListItemIcon>
-                    {<LockOpen />}
-                </ListItemIcon>
-                Clear your lock
-            </MenuItem>
+            {props.wikiPageApi.lockStatus.isLockedInThisContext &&
+                <MenuItem onClick={async () => {
+                    await snackbar.invokeAsync(async () => props.wikiPageApi.releaseYourLock(), "Lock cleared");
+                    endMenuItemRef.current();
+                }}>
+                    <ListItemIcon>
+                        {<LockOpen />}
+                    </ListItemIcon>
+                    Clear your lock
+                </MenuItem>
+            }
 
-            {dashboardContext.isAuthorized(Permission.admin_wiki_pages) &&
+            {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && props.wikiPageApi.lockStatus.isLocked &&
                 <MenuItem onClick={async () => {
                     await snackbar.invokeAsync(async () => props.wikiPageApi.adminClearLock(), "Lock cleared");
                     endMenuItemRef.current();

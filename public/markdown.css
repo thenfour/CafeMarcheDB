@@ -361,8 +361,30 @@ test cases:
 }
 
 
-.MarkdownLockIndicator {}
-
 .wikiPage .header {
     display: flex;
+}
+
+
+.MarkdownLockIndicator,
+.MarkdownLockIndicator>* {
+    display: flex;
+    align-items: center;
+    opacity: 80%;
+}
+
+.MarkdownLockIndicator.notLocked {
+    color: black;
+}
+
+.MarkdownLockIndicator.revisionConflict {
+    color: red;
+}
+
+.MarkdownLockIndicator.lockedByDifferentContext {
+    color: red;
+}
+
+.MarkdownLockIndicator.lockedInThisContext {
+    color: green;
 }

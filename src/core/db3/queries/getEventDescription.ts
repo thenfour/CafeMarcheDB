@@ -28,7 +28,13 @@ export default resolver.pipe(
                 throw new Error("Event not found");
             }
 
-            return await getEventDescriptionInfoCore({ id: args.eventId, name: "" }, dbt);
+            return await getEventDescriptionInfoCore({
+                event: { id: args.eventId, name: "" },
+                clientBaseRevisionId: null,
+                clientLockId: null,
+                currentUserId: currentUser?.id || null,
+                dbt,
+            });
 
         });
 

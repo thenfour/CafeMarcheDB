@@ -8,8 +8,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
 import { getDefaultVisibilityPermission } from "src/core/db3/server/serverPermissionUtils";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { gWikiPageLockDurationSeconds, TUpdateWikiPageArgs, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
-import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, UpdateWikiPageResultOutcome } from "../server/wikiServerCore";
+import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 
 const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<GetWikiPageUpdatabilityResult> => {
 

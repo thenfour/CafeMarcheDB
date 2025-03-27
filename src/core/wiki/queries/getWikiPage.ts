@@ -11,7 +11,13 @@ export default resolver.pipe(
     resolver.authorize(Permission.view_wiki_pages),
     resolver.zod(ZTGetWikiPageArgs),
     async (args: TGetWikiPageArgs, ctx: AuthenticatedCtx) => {
-        const ret = await GetWikiPageCore({ canonicalWikiSlug: args.canonicalWikiPath, dbt: db });
+        const ret = await GetWikiPageCore({
+            canonicalWikiSlug: args.canonicalWikiPath,
+            currentUserId: ctx.session.userId,
+            clientBaseRevisionId: args.baseRevisionId,
+            clientLockId: args.lockId,
+            dbt: db
+        });
         return ret;
     }
 );

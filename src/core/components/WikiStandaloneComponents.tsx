@@ -2,11 +2,11 @@
 import React, { Suspense } from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { UpdateWikiPageResultOutcome } from "../wiki/server/wikiServerCore";
 import { Markdown } from "./markdown/RichTextEditor";
 import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { WikiDebugIndicator, WikiPageContentEditor, WikiPageHeader } from "./WikiComponents";
 import { AdminContainer } from "./CMCoreComponents";
+import { UpdateWikiPageResultOutcome } from "../wiki/shared/wikiUtils";
 
 //////////////////////////////////////////////////
 interface WikiStandaloneViewModeProps {
