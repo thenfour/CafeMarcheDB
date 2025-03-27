@@ -13,6 +13,7 @@ interface WikiStandaloneViewModeProps {
     readonly: boolean;
     onEnterEditMode: () => void;
     wikiPageApi: WikiPageApi,
+    renderCreateButton?: (onClick: () => void) => React.ReactNode;
 };
 const WikiStandaloneViewMode = (props: WikiStandaloneViewModeProps) => {
     return <>
@@ -22,12 +23,12 @@ const WikiStandaloneViewMode = (props: WikiStandaloneViewModeProps) => {
             showVisiblePermission={false}
             readonly={props.readonly}
             wikiPageApi={props.wikiPageApi}
+            renderCreateButton={props.renderCreateButton}
         />
         <div className="content">
             <div className="wikiContentContainer">
-                {IsNullOrWhitespace(props.wikiPageApi.coalescedCurrentPageData.content) ?
-                    <div className="unknownPage">This article dosen't exist (yet!)</div>
-                    : <Markdown markdown={props.wikiPageApi.coalescedCurrentPageData.content} />}
+                {!IsNullOrWhitespace(props.wikiPageApi.coalescedCurrentPageData.content) &&
+                    <Markdown markdown={props.wikiPageApi.coalescedCurrentPageData.content} />}
             </div>
         </div>
     </>;
@@ -38,6 +39,7 @@ interface WikiStandaloneControlProps {
     canonicalWikiPath: string; // with namespace if applicable
     onUpdated?: () => void;
     readonly?: boolean;
+    renderCreateButton?: (onClick: () => void) => React.ReactNode;
 };
 
 const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
@@ -86,6 +88,7 @@ const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
                 onEnterEditMode={handleEnterEditMode}
                 wikiPageApi={wikiPageApi}
                 readonly={props.readonly || false}
+                renderCreateButton={props.renderCreateButton}
             />}
     </div>;
 };

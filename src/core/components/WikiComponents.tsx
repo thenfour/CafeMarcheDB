@@ -194,6 +194,7 @@ interface WikiPageViewModeProps {
     showVisiblePermission?: boolean;
     onEnterEditMode: () => void;
     wikiPageApi: WikiPageApi,
+    renderCreateButton?: (onClick: () => void) => React.ReactNode;
 };
 //////////////////////////////////////////////////
 export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = true, ...props }: WikiPageViewModeProps) => {
@@ -207,15 +208,17 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
     const showEditButton = authorizedForEdit && pageData?.isExisting;
     const showCreateButton = authorizedForEdit && !(pageData?.isExisting);
 
+    const renderCreateButton = props.renderCreateButton || ((onClick) => <Button onClick={onClick}>{gIconMap.AutoAwesome()} Create</Button>);
+
     return <div className="header">
         {showNamespace && !IsNullOrWhitespace(props.wikiPageApi.wikiPath.namespace) &&
             <div className="wikiNamespace">
                 <span>{props.wikiPageApi.wikiPath.namespace}/</span>
             </div>
         }
+        {showCreateButton && renderCreateButton(() => props.onEnterEditMode())}
         <div className="flex-spacer"></div>
         {showEditButton && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</Button>}
-        {showCreateButton && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.AutoAwesome()} Create</Button>}
         <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
             {showVisiblePermission &&
                 <MenuItem>
@@ -230,9 +233,9 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                 endMenuItemRef.current();
             }}>
                 <ListItemIcon>
-                    {gIconMap.Link()}
+                    {gIconMap.Share()}
                 </ListItemIcon>
-                Copy Link
+                Copy link to wiki page
             </MenuItem>
 
             <MenuItem onClick={async () => {

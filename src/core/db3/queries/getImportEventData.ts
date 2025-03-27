@@ -221,11 +221,18 @@ export default resolver.pipe(
                 }
             }))!.id;
 
-            ret.event.expectedAttendanceUserTagId = (await db.userTag.findFirst({
+
+            const defaultInvitationUserTag = (await db.userTag.findFirst({
                 where: {
                     significance: db3.UserTagSignificance.DefaultInvitation,
                 }
-            }))!.id;
+            }));
+
+            if (!defaultInvitationUserTag) {
+                ret.log.push("No default invitation user tag found.");
+            }
+
+            ret.event.expectedAttendanceUserTagId = defaultInvitationUserTag?.id || null;
 
             // extract event type. either concert or rehearsal
             const concertPattern = /\bconcert|performance\b/i;

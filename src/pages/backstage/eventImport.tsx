@@ -4,7 +4,6 @@ import { Button } from "@mui/material";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { DateTimeRange, gMillisecondsPerDay } from "shared/time";
-import { useDebounce } from "shared/useDebounce";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -215,7 +214,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI, false)}
         {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI, false)}
         {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI, false)}
-        {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI, false)}
+        {/* {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI, false)} */}
 
         <Button onClick={handleSaveClick}>Save</Button>
 
@@ -230,8 +229,9 @@ interface QuerierProps {
     onReceive: (v: TGetImportEventDataRet) => void;
 };
 const Querier = (props: QuerierProps) => {
-    const [searchParams, setSearchParams] = useDebounce([props.text, props.config], 200);
-    const [serverData, dataInfo] = useQuery(getImportEventData, { text: searchParams[0]!, config: searchParams[1]! });
+    //const [searchParams, setSearchParams] = useDebounce([props.text, props.config], 200);
+    //const [searchParams, setSearchParams] = React.useState([props.text, props.config]);
+    const [serverData, dataInfo] = useQuery(getImportEventData, { text: props.text, config: props.config });
 
     React.useEffect(() => {
         console.log(serverData);
@@ -257,6 +257,8 @@ const ImportEventsPageContent = () => {
     const [eventSaveLog, setEventSaveLog] = React.useState<InsertResult[]>([]);
 
     const [serverData, setServerData] = React.useState<TGetImportEventDataRet | null>(null);
+
+    console.log(serverData);
 
     return <div className="ImportEventsPageContent">
         {/* <MechanicalSelector minValue={30} maxValue={280} value={value} onChange={setValue} /> */}

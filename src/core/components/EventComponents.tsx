@@ -838,6 +838,7 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
         canonicalWikiPath={wikiPath.canonicalWikiPath}
         readonly={readonly}
         onUpdated={refetch}
+        renderCreateButton={(onClick) => <Button onClick={onClick} startIcon={gIconMap.Edit()}>Add information</Button>}
     />;
 };
 
