@@ -45,6 +45,7 @@ import { LoginSignup } from "./LoginSignupForm";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
 import { MainSiteSearch } from "./MainSiteSearch";
+import { MessageBoxProvider } from "./context/MessageBoxContext";
 
 const drawerWidth = 260;
 
@@ -698,9 +699,11 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
             <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
                     <ConfirmProvider>
-                        <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
-                            {children}
-                        </Dashboard3>
+                        <MessageBoxProvider>
+                            <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
+                                {children}
+                            </Dashboard3>
+                        </MessageBoxProvider>
                     </ConfirmProvider>
                 </DashboardContextProvider>
             </Box>

@@ -9,6 +9,7 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import wikiPageSetVisibility from "../wiki/mutations/wikiPageSetVisibility";
+import { UpdateWikiPageResultOutcome, WikiPath } from "../wiki/shared/wikiUtils";
 import { AdminContainer, AdminInspectObject, EventTextLink } from "./CMCoreComponents";
 import { DotMenu, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
@@ -17,11 +18,10 @@ import { CMTextInputBase } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/RichTextEditor";
-import { WikiPageApi } from "./markdown/useWikiPageApi";
+import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { AgeRelativeToNow } from "./RelativeTimeComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityValue } from "./VisibilityControl";
-import { UpdateWikiPageResultOutcome } from "../wiki/shared/wikiUtils";
 
 
 //////////////////////////////////////////////////
@@ -327,24 +327,28 @@ export const WikiLockIndicator = ({ wikiPageApi }: { wikiPageApi: WikiPageApi })
 
 //////////////////////////////////////////////////
 interface WikiPageControlProps {
-    wikiPageApi: WikiPageApi,
+    wikiPath: WikiPath,
 };
 export const WikiPageControl = (props: WikiPageControlProps) => {
     const [editing, setEditing] = React.useState<boolean>(false);
     const snackbar = useSnackbar();
 
+    const wikiPageApi = useWikiPageApi({
+        canonicalWikiPath: props.wikiPath.canonicalWikiPath,
+    });
+
     const handleEnterEditMode = async () => {
         if (editing) return;
-        const result = await props.wikiPageApi.beginEditing();
+        const result = await wikiPageApi.beginEditing();
         switch (result.outcome) {
             case UpdateWikiPageResultOutcome.success:
                 setEditing(true);
                 break;
             case UpdateWikiPageResultOutcome.lockConflict:
-                snackbar.showError("Unable to edit: page is locked by another user");
+                snackbar.showError("Unable to edit: The article is being edited by another user");
                 break;
             case UpdateWikiPageResultOutcome.revisionConflict:
-                snackbar.showError("Unable to edit: page has been updated since you loaded it");
+                snackbar.showError("Unable to edit: There is a newer version of the article; please refresh the page.");
                 break;
             default:
                 snackbar.showError("Unable to edit: unknown error");
@@ -354,22 +358,22 @@ export const WikiPageControl = (props: WikiPageControlProps) => {
 
     const handleExitEditMode = async () => {
         if (!editing) return;
-        await props.wikiPageApi.releaseYourLock();
+        await wikiPageApi.releaseYourLock();
         setEditing(false);
     };
 
     return <div className="wikiPage contentSection">
         <AdminContainer>
-            <WikiDebugIndicator wikiPageApi={props.wikiPageApi} />
+            <WikiDebugIndicator wikiPageApi={wikiPageApi} />
         </AdminContainer>
 
         {editing ? <WikiPageContentEditor
-            wikiPageApi={props.wikiPageApi}
+            wikiPageApi={wikiPageApi}
             onClose={handleExitEditMode}
         /> :
             <WikiPageViewMode
                 onEnterEditMode={handleEnterEditMode}
-                wikiPageApi={props.wikiPageApi}
+                wikiPageApi={wikiPageApi}
                 readonly={false}
             />}
     </div>;

@@ -2,11 +2,11 @@
 import React, { Suspense } from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useSnackbar } from "src/core/components/SnackbarContext";
+import { UpdateWikiPageResultOutcome } from "../wiki/shared/wikiUtils";
+import { AdminContainer } from "./CMCoreComponents";
 import { Markdown } from "./markdown/RichTextEditor";
 import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { WikiDebugIndicator, WikiPageContentEditor, WikiPageHeader } from "./WikiComponents";
-import { AdminContainer } from "./CMCoreComponents";
-import { UpdateWikiPageResultOutcome } from "../wiki/shared/wikiUtils";
 
 //////////////////////////////////////////////////
 interface WikiStandaloneViewModeProps {
@@ -45,7 +45,9 @@ interface WikiStandaloneControlProps {
 const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
     const snackbar = useSnackbar();
     const [editing, setEditing] = React.useState<boolean>(false);
-    const wikiPageApi = useWikiPageApi({ canonicalWikiPath: props.canonicalWikiPath });
+    const wikiPageApi = useWikiPageApi({
+        canonicalWikiPath: props.canonicalWikiPath,
+    });
 
     const handleEnterEditMode = async () => {
         if (editing) return;

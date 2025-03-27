@@ -288,9 +288,9 @@ export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClient
     }
 
     const isLockExpired = currentPage.lockExpiresAt != null && currentPage.lockExpiresAt < new Date();
-    const isLocked = currentPage.lockId != null && !isLockExpired;
+    const isLockAbandoned = currentPage.lockId != null && (!!currentPage.lastEditPingAt && (Date.now() - currentPage.lastEditPingAt.valueOf()) > gWikiEditAbandonedThresholdMilliseconds);
+    const isLocked = currentPage.lockId != null && !isLockExpired && !isLockAbandoned;
     const isLockedInThisContext = isLocked && currentPage.lockedByUser?.id == currentUserId && currentPage.lockId == userClientLockId;
-    const isLockAbandoned = isLocked && (!!currentPage.lastEditPingAt && (Date.now() - currentPage.lastEditPingAt.valueOf()) > gWikiEditAbandonedThresholdMilliseconds);
     const isRevisionCompatible = currentPage.currentRevision?.id == baseRevisionId;
     const isLockConflict = !isLockAbandoned && isLocked && !isLockedInThisContext;
 

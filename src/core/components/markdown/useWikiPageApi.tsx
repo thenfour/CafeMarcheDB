@@ -13,6 +13,7 @@ import getWikiPage from "src/core/wiki/queries/getWikiPage";
 import { GetWikiPageUpdatabilityResult, gWikiEditPingIntervalMilliseconds, gWikiLockAutoRenewThrottleInterval, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiUpdatePayload, WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { v4 as uuidv4 } from "uuid";
 import { useDashboardContext } from "../DashboardContext";
+import { useMessageBox } from "../context/MessageBoxContext";
 
 // upon begin edit:
 //     - try to acquire lock (with your client-generated uid)
@@ -88,6 +89,7 @@ type UseWikiPageArgs = {
 //////////////////////////////////
 export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   const dashboardContext = useDashboardContext();
+  const messageBox = useMessageBox();
   const [wikiPath, setWikiPath] = React.useState<WikiPath>(() => wikiParseCanonicalWikiPath(args.canonicalWikiPath));
 
   const [lockUid, setLockUid] = React.useState<string | null>(null);
@@ -99,9 +101,6 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     lockId: lockUid,
   }, {
     refetchInterval: 5000,
-    onSuccess: (data) => {
-      console.log(`getWikiPage settled: (yourbaserevision ${basePage?.currentRevision?.id}, currentrevision ${data.wikiPage?.currentRevision?.id})`);
-    },
   });
 
   const [updateWikiPageMutation, updateWikiPageMutationExtras] = useMutation(updateWikiPage);
@@ -123,17 +122,39 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       baseRevisionId,
     });
 
-    if (lockResult.outcome !== UpdateWikiPageResultOutcome.success) {
-      return lockResult;
-    }
-
-    setLockUid(newLockUid);
-    setBasePage(lockResult.currentPage);
+    switch (lockResult.outcome) {
+      case UpdateWikiPageResultOutcome.success:
+        setLockUid(newLockUid);
+        setBasePage(lockResult.currentPage);
+        break;
+      case UpdateWikiPageResultOutcome.lockConflict:
+        if (lockResult.currentPage?.lockedByUser?.id === dashboardContext.currentUser?.id) {
+          await messageBox.showMessage({
+            title: "Unable to edit this article",
+            message: `You are already editing this article, mabye from another browser tab or device. Please close the other editor before continuing.`,
+            buttons: ["ok"],
+          });
+        } else {
+          await messageBox.showMessage({
+            title: "Unable to edit this article",
+            message: `This page is currently locked for editing by ${lockResult.currentPage?.lockedByUser?.name ?? "(unknown user)"}.`,
+            buttons: ["ok"],
+          });
+        }
+        break;
+      case UpdateWikiPageResultOutcome.revisionConflict:
+        await messageBox.showMessage({
+          title: "Unable to edit this article",
+          message: `There is a newer version of this article availble. Please refresh the page before you can edit.`,
+          buttons: ["ok"],
+        });
+        break;
+    };
 
     return lockResult;
   }
 
-  async function saveProgress(args: WikiApiUpdateArgs): Promise<GetWikiPageUpdatabilityResult> {
+  async function saveProgress(saveProgressArgs: WikiApiUpdateArgs): Promise<GetWikiPageUpdatabilityResult> {
     let lockIdToUse = lockUid;
     if (!lockUid) {
       // if you don't have a lock (did you manually release it?), acquire it new.
@@ -153,13 +174,37 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       canonicalWikiPath: wikiPath.canonicalWikiPath,
       baseRevisionId: currentRevisionData.wikiPage?.currentRevision?.id ?? null,
       lockId: lockIdToUse,
-      title: args.revisionData.name,
-      content: args.revisionData.content,
+      title: saveProgressArgs.revisionData.name,
+      content: saveProgressArgs.revisionData.content,
     });
 
-    if (result.outcome === UpdateWikiPageResultOutcome.success) {
-      // when you save progress, we update the base revision to the latest revision.
-      setBasePage(result.currentPage);
+    switch (result.outcome) {
+      case UpdateWikiPageResultOutcome.success:
+        // when you save progress, we update the base revision to the latest revision.
+        setBasePage(result.currentPage);
+        break;
+      case UpdateWikiPageResultOutcome.lockConflict:
+        if (result.currentPage?.lockedByUser?.id === dashboardContext.currentUser?.id) {
+          await messageBox.showMessage({
+            title: "Unable to save your edits",
+            message: `You are already editing this article from another browser tab or device. Please close the other editor before continuing.`,
+            buttons: ["ok"],
+          });
+        } else {
+          await messageBox.showMessage({
+            title: "Unable to save your edits",
+            message: `This article is currently locked for editing by ${result.currentPage?.lockedByUser?.name ?? "(unknown user)"}.`,
+            buttons: ["ok"],
+          });
+        }
+        break;
+      case UpdateWikiPageResultOutcome.revisionConflict:
+        await messageBox.showMessage({
+          title: "Unable to save your edits",
+          message: `A newer version of this article has been published since you began editing. You'll have to refresh the page and edit from the latest version.`,
+          buttons: ["ok"],
+        });
+        break;
     };
 
     return result;

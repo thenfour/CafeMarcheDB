@@ -2,7 +2,6 @@ import { BlitzPage } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
 import { SettingKey } from "shared/utils";
-import { useWikiPageApi } from "src/core/components/markdown/useWikiPageApi";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -12,12 +11,10 @@ import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtil
 
 const WikiPageComponent = ({ wikiPath }: { wikiPath: WikiPath }) => {
 
-    const wikiPageApi = useWikiPageApi({ canonicalWikiPath: wikiPath.canonicalWikiPath });
-
     return <>
         <SettingMarkdown setting="GlobalWikiPage_Markdown"></SettingMarkdown>
         <SettingMarkdown setting={`WikiPage_${wikiPath.canonicalWikiPath}_Markdown` as SettingKey}></SettingMarkdown>
-        <WikiPageControl wikiPageApi={wikiPageApi} />
+        <WikiPageControl wikiPath={wikiPath} />
     </>;
 };
 
@@ -31,6 +28,9 @@ export const getServerSideProps = async ({ params }) => {
     const ret = await GetWikiPageCore({
         canonicalWikiSlug: wikiPath.canonicalWikiPath || "<never>",
         dbt: db,
+        clientBaseRevisionId: null,
+        clientLockId: null,
+        currentUserId: null,
     });
 
     return {

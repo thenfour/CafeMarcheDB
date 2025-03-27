@@ -14,16 +14,17 @@ import { CMDialogContentText } from "./CMCoreComponents2";
 // wraps <Dialog> except with mobile responsiveness
 export interface ReactiveInputDialogProps {
     onCancel: () => void;
+    open?: boolean;
     className?: string;
     style?: React.CSSProperties;
 };
-export const ReactiveInputDialog = (props: React.PropsWithChildren<ReactiveInputDialogProps>) => {
+export const ReactiveInputDialog = ({ open = true, ...props }: React.PropsWithChildren<ReactiveInputDialogProps>) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     return (
         <Dialog
             className={`ReactiveInputDialog ${props.className} ${fullScreen ? "smallScreen" : "bigScreen"}`}
-            open={true}
+            open={open}
             style={props.style}
             onClose={props.onCancel}
             scroll="paper"
