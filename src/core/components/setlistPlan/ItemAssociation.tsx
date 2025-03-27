@@ -1,9 +1,8 @@
 import React from "react";
+import { QuickSearchItemMatch } from "shared/quickFilter";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { NameValuePair } from "../CMCoreComponents2";
 import { CMTextInputBase } from "../CMTextField";
-import { getURIForEvent, getURIForInstrument, getURIForSong, getURIForUser } from "src/core/db3/clientAPILL";
-import { QuickSearchItemMatch } from "shared/quickFilter";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

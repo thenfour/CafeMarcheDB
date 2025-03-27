@@ -15,7 +15,7 @@ import dayjs, { Dayjs } from "dayjs";
 import React, { Suspense } from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
-import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
+import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace } from "shared/utils";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorSwatch } from "src/core/components/Color";
 import { Markdown } from "src/core/components/markdown/RichTextEditor";
@@ -32,6 +32,7 @@ import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { ColorPick } from "src/core/components/ColorPick";
+import { SettingKey } from "shared/settings";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {

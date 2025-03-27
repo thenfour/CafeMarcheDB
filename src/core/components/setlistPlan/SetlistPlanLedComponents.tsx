@@ -74,7 +74,7 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
         <Tooltip title={
             <div>
                 <div>{props.def.name}: {props.value?.text || ""}</div>
-                {props.def.associatedItem && <AssociationValueLink value={props.def.associatedItem} />}
+                {props.def.associatedItem && <AssociationValueLink value={{ ...props.def.associatedItem, matchingField: undefined, matchStrength: 0 }} />}
                 {userAttendance && <ul>
                     {userAttendance.segmentResponses.map((x, i) => <li key={i}>{x.name}: <AttendanceChip value={x.attendanceId} /></li>)}
                 </ul>}
@@ -187,7 +187,7 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
             />
         } />
         <AssociationSelect
-            value={props.ledDef.associatedItem || null}
+            value={!props.ledDef.associatedItem ? null : { ...props.ledDef.associatedItem, matchStrength: 0, matchingField: undefined }}
             onChange={(newValue) => props.onChange({ ...props.ledDef, associatedItem: newValue })}
         />
         <NameValuePair name="Auto color" description={`colors based on associated item. user + event = attendance for example.`} value={

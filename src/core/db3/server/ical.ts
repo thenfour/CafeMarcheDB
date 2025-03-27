@@ -115,7 +115,7 @@ export const addEventToCalendar = async (
     eventAttendanceIdsRepresentingGoing: number[],
     cancelledStatusIds: number[],
 ): Promise<ICalEvent[]> => {
-    const eventDescriptionInfo = await getEventDescriptionInfoCore(event, db);
+    const eventDescriptionInfo = await getEventDescriptionInfoCore({ event, dbt: db, clientBaseRevisionId: null, clientLockId: null, currentUserId: null });
     const inputs = GetEventCalendarInput(event, cancelledStatusIds, eventDescriptionInfo.wikiPage?.currentRevision?.content || "")!;
     return inputs
         .segments

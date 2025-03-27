@@ -11,6 +11,7 @@ import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
+import { toSorted } from 'shared/arrayUtils';
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
@@ -26,7 +27,7 @@ import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEve
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, DotMenu, EventDateField, NameValuePair, simulateLinkClick } from './CMCoreComponents2';
+import { CMDialogContentText, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -37,8 +38,8 @@ import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, Ev
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
-import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
+import { SearchItemBigCardLink } from './SearchItemBigCardLink';
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';
 import { CMTab, CMTabPanel } from './TabPanel';
@@ -46,9 +47,8 @@ import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
+import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { Markdown } from './markdown/RichTextEditor';
-import { toSorted } from 'shared/arrayUtils';
-import { SearchItemBigCardLink } from './SearchItemBigCardLink';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {

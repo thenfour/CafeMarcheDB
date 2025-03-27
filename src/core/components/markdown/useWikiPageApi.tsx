@@ -234,7 +234,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       const newLockUid = uuidv4();
       const baseRevisionId = currentRevisionData.wikiPage?.currentRevision?.id ?? null; // when you start editing, we fork the current revision.
 
-      acquireLockOnWikiPageMutation({
+      void acquireLockOnWikiPageMutation({
         canonicalWikiPath: args.canonicalWikiPath,
         lockId: newLockUid,
         baseRevisionId,

@@ -1,10 +1,8 @@
-import { z } from "zod";
 import { resolver } from "@blitzjs/rpc";
-import { assert, AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
-import { toSorted } from "shared/arrayUtils";
+import { AuthenticatedCtx } from "blitz";
+import db from "db";
 import { Permission } from "shared/permissions";
-import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
+import { z } from "zod";
 
 const ZInp = z.object({
     userTagIds: z.array(z.number()),

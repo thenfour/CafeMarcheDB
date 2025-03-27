@@ -272,7 +272,7 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
             onClose={() => setAnchorEl(null)}
         >
             {column.associatedItem && <MenuItem>
-                <AssociationValueLink value={column.associatedItem} />
+                <AssociationValueLink value={{ ...column.associatedItem, matchingField: undefined, matchStrength: 0 }} />
             </MenuItem>}
             <MenuItem onClick={handleCopySongNames}>
                 Copy song names
@@ -341,7 +341,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         disableInteractive
                         title={<div>
                             <div>{segment.name}</div>
-                            {segment.associatedItem && <AssociationValueLink value={segment.associatedItem} />}
+                            {segment.associatedItem && <AssociationValueLink value={{ ...segment.associatedItem, matchingField: undefined, matchStrength: 0 }} />}
                         </div>}
                     >
                         <div>{segment.name}</div>
@@ -927,7 +927,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                         nominalHeight={75}
                                     />
                                     <AssociationSelect
-                                        value={segment.associatedItem || null}
+                                        value={!segment.associatedItem ? null : { ...segment.associatedItem, matchStrength: 0, matchingField: undefined }}
                                         onChange={(newAssociation) => {
                                             props.mutator.setColumnAssociatedItem(segment.columnId, newAssociation);
                                         }}

@@ -3,10 +3,10 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { assertIsNumberArray } from "shared/utils";
 import { GetBasicVisFilterExpressionForEvent, GetBasicVisFilterExpressionForSong } from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetSongActivityReportArgs, GetSongActivityReportRet, GetSongActivityReportRetEvent } from "../shared/apiTypes";
+import { assertIsNumberArray } from "shared/arrayUtils";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_songs),
