@@ -10,8 +10,9 @@ import { Backdrop, Button, ButtonGroup, FormControlLabel, Switch } from "@mui/ma
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
+import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { getUniqueNegativeID } from "shared/utils";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/markdown/RichTextEditor";

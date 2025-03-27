@@ -2,9 +2,9 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { SplitQuickFilter } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
+import { SplitQuickFilter } from "shared/quickFilter";
 
 interface TArgs {
     autocompleteQuery: string;

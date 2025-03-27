@@ -2,9 +2,9 @@
 
 import { resolver } from "@blitzjs/rpc";
 import { Permission } from "shared/permissions";
-import { SetSetting } from "shared/utils";
 import { z } from "zod";
 import { UpdateBulkSettingsSchema } from "../schemas";
+import { SetSetting } from "shared/settings";
 
 type InputType = z.infer<typeof UpdateBulkSettingsSchema>;
 

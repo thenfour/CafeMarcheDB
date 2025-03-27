@@ -31,7 +31,6 @@ import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
-import { MatchingSlugItem } from "../../db3/shared/apiTypes"; // 0 internal refs
 
 import { NoSsr } from '@mui/material';
 import { getURLClass } from "../../db3/clientAPILL";
@@ -43,6 +42,7 @@ import { ImageDimensionsMarkdownPlugin } from './ImageDimensionsMarkdownPlugin';
 import { fetchInlineClasses, markdownReactPlugins } from './MarkdownReactPlugins';
 import { ReactBlockMarkdownPlugin } from './ReactBlockMarkdownPlugin';
 import { ReactInlineMarkdownPlugin } from './ReactInlineMarkdownPlugin';
+import { QuickSearchItemMatch } from 'shared/quickFilter';
 
 const INDENT_SIZE = 2;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);
@@ -215,7 +215,7 @@ async function fetchWikiSlugs(keyword: string): Promise<string[]> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-async function fetchEventOrSongTagsAt(keyword: string): Promise<MatchingSlugItem[]> {
+async function fetchEventOrSongTagsAt(keyword: string): Promise<QuickSearchItemMatch[]> {
     // no prefix here.
     if (keyword.includes("]]")) return []; // make sure we don't autocomplete outside of the link syntax
     return await fetchObjectQuery(keyword);
@@ -836,14 +836,14 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     },
                     "@": {
                         dataProvider: token => fetchEventOrSongTagsAt(token),
-                        component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
+                        component: ({ entity, selected }: { entity: QuickSearchItemMatch, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
                             {entity.itemType === "event" && <CalendarMonthIcon />}
                             {entity.itemType === "song" && <MusicNoteIcon />}
                             {entity.itemType === "user" && <PersonIcon />}
                             {entity.itemType === "instrument" && <MusicNoteIcon />}
                             {entity.name}
                         </div>,
-                        output: (item: MatchingSlugItem) => `[[${item.itemType}:${item.id}|${item.name}]]`
+                        output: (item: QuickSearchItemMatch) => `[[${item.itemType}:${item.id}|${item.name}]]`
                     },
                 }}
             />

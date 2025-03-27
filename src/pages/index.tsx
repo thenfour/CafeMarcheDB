@@ -4,7 +4,7 @@ import { NoSsr } from "@mui/material";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
-import { EnNlFr, LangSelectString } from "shared/utils";
+import { EnNlFr, LangSelectString } from "shared/lang";
 import GoogleAnalytics from "src/core/components/GoogleAnalytics";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";

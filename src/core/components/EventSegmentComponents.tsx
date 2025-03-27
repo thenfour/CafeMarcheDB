@@ -7,7 +7,7 @@ import { useMutation } from "@blitzjs/rpc";
 import { Button, Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, toSorted } from "shared/utils";
+import { IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -22,6 +22,7 @@ import { useDashboardContext } from "./DashboardContext";
 import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
 import { Markdown } from "./markdown/RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
+import { toSorted } from "shared/arrayUtils";
 
 
 

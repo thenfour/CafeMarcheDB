@@ -533,17 +533,6 @@ export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken:
     return `/api/ical/user/${args.userAccessToken || "public"}/upcoming`;
 }
 
-
-export interface MatchingSlugItem {
-    id: number,
-    name: string,
-    absoluteUri?: string | undefined,
-    itemType: "event" | "song" | "user" | "instrument" | "wikiPage";
-};
-export const MakeMatchingSlugItem = (value: MatchingSlugItem) => ({ ...value });
-
-
-
 interface AutoAssignInstrumentPartitionArgs {
     allInstruments: Prisma.InstrumentGetPayload<{}>[];
     fileLeafWithoutExtension: string;

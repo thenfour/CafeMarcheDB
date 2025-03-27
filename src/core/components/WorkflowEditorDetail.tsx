@@ -3,7 +3,7 @@
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
-import { getHashedColor, sortBy } from "shared/utils";
+import { getHashedColor } from "shared/utils";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
@@ -15,6 +15,7 @@ import { ColorPick } from "./ColorPick";
 import { useConfirm } from "./ConfirmationDialog";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
+import { sortBy } from "shared/arrayUtils";
 
 
 interface DueDateDefControlProps {

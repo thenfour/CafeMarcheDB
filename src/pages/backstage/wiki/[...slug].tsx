@@ -1,7 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
-import { SettingKey } from "shared/utils";
+import { SettingKey } from "shared/settings";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
 import DashboardLayout from "src/core/layouts/DashboardLayout";

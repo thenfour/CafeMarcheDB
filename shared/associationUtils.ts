@@ -1,5 +1,14 @@
-import db, { Prisma } from "db";
-import { ChangeAction, ChangeContext } from "shared/utils";
+
+// Returns a partial extract of oldValues, where the fields appear in newObject
+export function getIntersectingFields(newValues: { [key: string]: any }, oldValues: { [key: string]: any }) {
+    return Object.keys(newValues).reduce((acc, key) => {
+        if (key in oldValues) {
+            acc[key] = oldValues[key];
+        }
+        return acc;
+    }, {} as { [key: string]: any });
+}
+
 
 function InAButNotB<T>(a: T[], b: T[], isEqualFn: (a: T, b: T) => boolean): T[] {
     return a.filter((item) => !b.some((element) => isEqualFn(item, element)));
@@ -28,3 +37,36 @@ export function ComputeChangePlan<T>(a: T[], b: T[], isEqualFn: (a: T, b: T) => 
     };
     return ret;
 };
+
+export type CalculateChangesResult = {
+    hasChanges: boolean;
+    oldValues: any,
+    newValues: any,
+};
+
+export const createEmptyCalculateChangesResult = (): CalculateChangesResult => ({
+    oldValues: {},
+    newValues: {},
+    hasChanges: false,
+});
+
+// return an obj of fields which exist in both inputs, and are different.
+export function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
+    const result: CalculateChangesResult = {
+        oldValues: {},
+        newValues: {},
+        hasChanges: false,
+    };
+
+    for (const prop in oldObj) {
+        if (oldObj.hasOwnProperty(prop) && newObj.hasOwnProperty(prop)) {
+            if (oldObj[prop] !== newObj[prop]) {
+                result.oldValues[prop] = oldObj[prop];
+                result.newValues[prop] = newObj[prop];
+                result.hasChanges = true;
+            }
+        }
+    }
+
+    return result;
+}

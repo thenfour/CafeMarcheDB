@@ -2,9 +2,9 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
 import { getDefaultVisibilityPermission } from "src/core/db3/server/serverPermissionUtils";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";

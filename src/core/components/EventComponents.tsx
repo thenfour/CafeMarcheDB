@@ -14,7 +14,7 @@ import React, { Suspense } from "react";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
-import { CoalesceBool, IsNullOrWhitespace, toSorted } from 'shared/utils';
+import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -47,6 +47,7 @@ import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown } from './markdown/RichTextEditor';
+import { toSorted } from 'shared/arrayUtils';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {

@@ -6,7 +6,7 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { Button, DialogActions, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, TextField, Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { DateTimeRange, DateToYYYYMMDDHHMMSS } from "shared/time";
-import { CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
+import { CoerceToString, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "../db3/DB3Client";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { DB3MultiSelect } from "../db3/components/db3Select";
@@ -24,6 +24,8 @@ import { WorkflowNodeProgressState } from '../db3/shared/apiTypes';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown } from './markdown/RichTextEditor';
+import { sortBy } from 'shared/arrayUtils';
+import { Setting } from 'shared/settings';
 
 type CMXYPosition = {
     x: number;

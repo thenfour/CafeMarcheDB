@@ -4,11 +4,14 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { assertIsNumberArray, IsNullOrWhitespace, MysqlEscape, SplitQuickFilter } from "shared/utils";
+import { IsNullOrWhitespace } from "shared/utils";
 import { GetBasicVisFilterExpressionForSong, SongPayload_Verbose, SongTableParams, xSong_Verbose } from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
+import { SplitQuickFilter } from "shared/quickFilter";
+import { assertIsNumberArray } from "shared/arrayUtils";
+import { MysqlEscape } from "shared/mysqlUtils";
 
 interface TArgs {
     filterSpec: {

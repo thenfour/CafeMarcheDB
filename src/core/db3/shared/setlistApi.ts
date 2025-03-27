@@ -7,9 +7,10 @@
 import { Prisma } from "db";
 import { markdownToPlainText } from "shared/markdownUtils";
 import { formatSongLength } from "shared/time";
-import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue, toSorted } from "shared/utils";
+import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import { getFormattedBPM } from "../clientAPILL";
 import { EventSongListDividerTextStyle } from "../db3";
+import { toSorted } from "shared/arrayUtils";
 //import * as db3 from "src/core/db3/db3";
 
 // type LocalSongPayload = Prisma.SongGetPayload<{

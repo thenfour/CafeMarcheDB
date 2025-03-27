@@ -5,7 +5,8 @@ import { CMSmallButton } from "./CMCoreComponents2";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { useDashboardContext } from "./DashboardContext";
 import { EvaluatedWorkflowContext, FieldComponentProps, WFFieldBinding } from "./WorkflowUserComponents";
-import { arraysContainSameValues, assertUnreachable } from "shared/utils";
+import { assertUnreachable } from "shared/utils";
+import { arraysContainSameValues } from "shared/arrayUtils";
 
 type TPK = number | null | undefined;
 

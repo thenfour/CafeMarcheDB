@@ -4,9 +4,9 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { gMillisecondsPerDay } from "shared/time";
-import { SplitQuickFilter } from "shared/utils";
 import * as db3 from "../db3";
 import { TGetImportEventDataArgs, TGetImportEventDataRet } from "../shared/apiTypes";
+import { SplitQuickFilter } from "shared/quickFilter";
 
 
 

@@ -6,13 +6,14 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
-import { SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { CalculateFilterQueryResult, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
 import superjson from "superjson";
 import * as db3 from "../../../core/db3/db3";
+import { SplitQuickFilter } from "shared/quickFilter";
+import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 
 async function GetCustomSearchResultsHook(currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
     const fullEvents = resultsSoFar.results as db3.EventSearch_Event[];

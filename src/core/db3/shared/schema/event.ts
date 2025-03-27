@@ -7,7 +7,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { assertIsNumberArray, assertIsStringArray, gIconOptions } from "shared/utils";
+import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, SearchCustomDataHookId, TAnyModel } from "../apiTypes";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
@@ -35,6 +35,7 @@ import {
 } from "./prismArgs";
 import { CreatedByUserField, EventResponses_ExpectedUserTag, VisiblePermissionField } from "./user";
 import { WorkflowDef_Minimum } from "./workflow";
+import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {

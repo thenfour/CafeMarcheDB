@@ -1,12 +1,12 @@
 import { Autocomplete, InputBase } from '@mui/material';
 import * as React from 'react';
 import { gIconMap } from "../db3/components/IconMap";
-import { MatchingSlugItem } from '../db3/shared/apiTypes';
 import { CMSmallButton, simulateLinkClick } from './CMCoreComponents2';
 import { fetchObjectQuery } from './setlistPlan/ItemAssociation';
 import { IsNullOrWhitespace } from 'shared/utils';
+import { QuickSearchItemMatch } from 'shared/quickFilter';
 
-export const MatchingSlugItemComponent = ({ item, selected }: { item: MatchingSlugItem, selected: boolean }) => {
+export const MatchingSlugItemComponent = ({ item, selected }: { item: QuickSearchItemMatch, selected: boolean }) => {
 
     return <div className={`autoCompleteCMLinkItem ${item.itemType} ${selected ? "selected" : "notSelected"}`}>
         {item.itemType === "event" && gIconMap.CalendarMonth()}
@@ -21,7 +21,7 @@ export const MatchingSlugItemComponent = ({ item, selected }: { item: MatchingSl
 
 export const MainSiteSearch = () => {
     const [query, setQuery] = React.useState<string>("");
-    const [results, setResults] = React.useState<MatchingSlugItem[]>([]);
+    const [results, setResults] = React.useState<QuickSearchItemMatch[]>([]);
 
     React.useEffect(() => {
         if (query.length < 1) {
@@ -56,8 +56,8 @@ export const MainSiteSearch = () => {
                 }
             }}
             options={results}
-            getOptionLabel={(option) => (option as MatchingSlugItem).name}
-            getOptionKey={(option) => `${(option as MatchingSlugItem).itemType}_${(option as MatchingSlugItem).id}`}
+            getOptionLabel={(option) => (option as QuickSearchItemMatch).name}
+            getOptionKey={(option) => `${(option as QuickSearchItemMatch).itemType}_${(option as QuickSearchItemMatch).id}`}
             renderOption={(props, option, { selected }) => (
                 <li {...props}><MatchingSlugItemComponent item={option} selected={selected} /></li>
             )}

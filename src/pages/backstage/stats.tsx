@@ -1,9 +1,10 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import React, { Suspense } from 'react';
+import { arraysContainSameValues } from "shared/arrayUtils";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { arraysContainSameValues, getEnumValues } from "shared/utils";
+import { getEnumValues } from "shared/utils";
 import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
 import { CMChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";

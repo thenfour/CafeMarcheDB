@@ -13,8 +13,7 @@ export const GetSoftDeleteWhereExpression = (isDeletedColumnName?: string | unde
     return { [isDeletedColumnName || "isDeleted"]: false };
 };
 
-// EventWhereInput for practical type checking.
-export const GetPublicVisibilityWhereExpression = async (): Promise<Prisma.EventWhereInput> => {
+export const GetPublicRole = async () => {
     const publicRole = await db.role.findFirst({
         where: {
             isPublicRole: true,
@@ -24,36 +23,43 @@ export const GetPublicVisibilityWhereExpression = async (): Promise<Prisma.Event
         }
     });
     assert(!!publicRole, "expecting a public role to be assigned in the db");
-    const spec: Prisma.EventWhereInput = {
+    return publicRole;
+}
+
+
+// EventWhereInput for practical type checking.
+export const GetPublicVisibilityWhereExpression2 = ({ publicRole }: { publicRole: Prisma.RoleGetPayload<{ include: { permissions: true } }> }) => {
+    const spec = {
         // current user has access to the specified visibile permission
         visiblePermissionId: { in: publicRole.permissions.map(p => p.permissionId) }
     };
+    const t: Prisma.EventWhereInput = spec; // check type.
     return spec;
 };
 
-export const GetUserVisibilityWhereExpression = async (user: { id: number, roleId: number | null } | null, createdByUserIDColumnName?: string | undefined | null) => {
-    if (!user || !user.roleId) {
-        return await GetPublicVisibilityWhereExpression();
+interface GetUserVisibilityWhereExpression2Args {
+    user: { id: number, roleId: number | null } | null;
+    createdByUserIDColumnName?: string | undefined | null;
+    publicRole: Prisma.RoleGetPayload<{ include: { permissions: true } }>;
+    userRole: Prisma.RoleGetPayload<{ include: { permissions: true } }> | null;
+};
+
+export const GetUserVisibilityWhereExpression2 = ({ user, userRole, createdByUserIDColumnName, publicRole }: GetUserVisibilityWhereExpression2Args) => {
+    if (!userRole || !user) {
+        return GetPublicVisibilityWhereExpression2({ publicRole });
     }
-    const role = await db.role.findUnique({
-        where: {
-            id: user.roleId,
-        },
-        include: {
-            permissions: true,
-        }
-    });
-    assert(!!role, "role not found in db");
     if (!createdByUserIDColumnName) {
-        return {
-            visiblePermissionId: { in: role.permissions.map(p => p.permissionId) }
+        const r = {
+            visiblePermissionId: { in: userRole.permissions.map(p => p.permissionId) }
         };
+        const tr: Prisma.EventWhereInput = r; // check type.
+        return r;
     }
-    return {
+    const ret = {
         OR: [
             {
                 // current user has access to the specified visibile permission
-                visiblePermissionId: { in: role.permissions.map(p => p.permissionId) }
+                visiblePermissionId: { in: userRole.permissions.map(p => p.permissionId) }
             },
             {
                 // private visibility and you are the creator
@@ -64,4 +70,30 @@ export const GetUserVisibilityWhereExpression = async (user: { id: number, roleI
             }
         ]
     };
+    const retCheck: Prisma.EventWhereInput = ret; // check type.
+    return ret;
+};
+
+
+// EventWhereInput for practical type checking.
+export const GetPublicVisibilityWhereExpression = async (): Promise<Prisma.EventWhereInput> => {
+    return GetPublicVisibilityWhereExpression2({ publicRole: await GetPublicRole() });
+};
+
+
+export const GetUserVisibilityWhereExpression = async (user: { id: number, roleId: number | null } | null, createdByUserIDColumnName?: string | undefined | null) => {
+    if (!user || !user.roleId) {
+        return await GetPublicVisibilityWhereExpression();
+    }
+    const userRole = await db.role.findUnique({
+        where: {
+            id: user.roleId,
+        },
+        include: {
+            permissions: true,
+        }
+    });
+    assert(!!userRole, "role not found in db");
+
+    return GetUserVisibilityWhereExpression2({ user, createdByUserIDColumnName, publicRole: await GetPublicRole(), userRole });
 };

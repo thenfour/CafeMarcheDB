@@ -4,10 +4,12 @@ import db, { Prisma } from "db";
 import { ColorPaletteEntry } from "shared/color";
 import { Permission, gPublicPermissions } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { CalculateChanges, CalculateChangesResult, SqlCombineAndExpression, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
 import { PublicDataType } from "types";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
+import { CalculateChanges, CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
+import { SqlCombineAndExpression } from "shared/mysqlUtils";
+import { isEmptyArray } from "shared/arrayUtils";
 
 
 // server-side code for db schema expression.
@@ -1100,6 +1102,7 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
     }
 };
 
+// TODO: see db3Helpers and unify with GetSoftDeleteWhereExpression
 export const ApplySoftDeleteWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, isDeletedColumnName?: string) => {
     if (clientIntention.intention === "user") {
         ret.push(GetSoftDeleteWhereExpression(isDeletedColumnName));
@@ -1109,6 +1112,8 @@ export const ApplySoftDeleteWhereClause = (ret: Array<any>, clientIntention: xTa
 ////////////////////////////////////////////////////////////////
 // apply conditions for visibility. usually columns visiblePermissionId + createdByUserId.
 // NOT applying a clause means always visible.
+
+// TODO: See db3Helpers and GetUserVisibilityWhereExpression; best to unify this.
 export const ApplyVisibilityWhereClause = async (ret: Array<any>, clientIntention: xTableClientUsageContext, createdByUserIDColumnName: string) => {
     // for admin grids, always show admins the items. they see the IsDeleted / visibility columns there.
     if (clientIntention.intention === "admin") {

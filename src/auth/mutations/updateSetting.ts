@@ -1,8 +1,8 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import { UpdateSettingSchema } from "../schemas";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
 // set a setting by name.
 // args is { name, value }

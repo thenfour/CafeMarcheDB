@@ -8,7 +8,7 @@ import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { slugifyWithDots } from "shared/rootroot";
 import { DateTimeRange } from "shared/time";
-import { Clamp, CoerceToNumberOr, EnNlFr, LangSelectString, SettingKey, gMinImageDimension, gQueryOptions } from "shared/utils";
+import { Clamp, CoerceToNumberOr, gMinImageDimension, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
@@ -26,6 +26,8 @@ import updateSongBasicFields from "./mutations/updateSongBasicFields";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, TAnyModel, getFileCustomData } from "./shared/apiTypes";
+import { EnNlFr, LangSelectString } from "shared/lang";
+import { SettingKey } from "shared/settings";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {

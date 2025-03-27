@@ -1,11 +1,12 @@
 import React, { useContext } from "react";
-import { arraysContainSameValues, assertUnreachable } from "shared/utils";
+import { assertUnreachable } from "shared/utils";
 import { WorkflowDef, WorkflowFieldValueOperator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { z } from "zod";
 import { CMSmallButton } from "./CMCoreComponents2";
 import { CMMultiSelect, CMSelectDisplayStyle } from "./CMSelect";
 import { useDashboardContext } from "./DashboardContext";
 import { EvaluatedWorkflowContext, FieldComponentProps, WFFieldBinding } from "./WorkflowUserComponents";
+import { arraysContainSameValues } from "shared/arrayUtils";
 
 
 type TPK = number;

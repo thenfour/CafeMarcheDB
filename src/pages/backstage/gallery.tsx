@@ -7,7 +7,7 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import { slugify, unslugify } from "shared/rootroot";
 import { Timing } from "shared/time";
-import { IsNullOrWhitespace, arraysContainSameValues, getEnumValues, parseMimeType } from "shared/utils";
+import { IsNullOrWhitespace, getEnumValues, parseMimeType } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -25,9 +25,11 @@ import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
-import { AutoAssignInstrumentPartition, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
+import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
+import { arraysContainSameValues } from "shared/arrayUtils";
+import { QuickSearchItemMatch } from "shared/quickFilter";
 
 interface FilterSpec {
     qfText: string;
@@ -328,7 +330,7 @@ const ActivityLogValueViewerTester = () => {
 
 
 const AutoCompleteSongEventTester = () => {
-    const [result, setResult] = React.useState<MatchingSlugItem | null>(null);
+    const [result, setResult] = React.useState<QuickSearchItemMatch | null>(null);
     return <AssociationSelect value={result} onChange={(v) => setResult(v)} />;
 };
 

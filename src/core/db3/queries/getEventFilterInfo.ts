@@ -4,11 +4,12 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
-import { assertIsNumberArray, IsNullOrWhitespace, MysqlEscape, SplitQuickFilter } from "shared/utils";
+import { assertIsNumberArray, IsNullOrWhitespace, MysqlEscape } from "shared/utils";
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
+import { SplitQuickFilter } from "shared/quickFilter";
 
 interface TArgs {
     filterSpec: {

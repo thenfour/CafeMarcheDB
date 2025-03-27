@@ -3,7 +3,8 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import { ChangeAction, CreateChangeContext, RegisterChange, getIntersectingFields } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { getIntersectingFields } from "shared/associationUtils";
 
 type CreateInput = Prisma.UserUncheckedCreateInput & {
   password?: string;

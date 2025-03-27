@@ -1,8 +1,6 @@
-import { Ctx } from "@blitzjs/next";
 import { crc32 } from "@foxglove/crc";
-import { randomUUID } from "crypto";
 import db from "db";
-import { Size, TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { Size } from "src/core/db3/shared/apiTypes";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
@@ -49,270 +47,6 @@ export function concatenateUrlParts(...parts: string[]): string {
         .join('/');  // Join parts with a single slash
 }
 
-
-// CHANGES /////////////////////////////////////////////////////////////////////////////////////////////////////////
-export enum ChangeAction {
-    insert = "insert",
-    update = "update",
-    delete = "delete",
-}
-
-export interface ChangeContext {
-    operationId: string, // when null, will be auto-populated
-    changedAt: Date,// when null, will be auto-populated
-    contextDescription: string,
-};
-
-export const CreateChangeContext = (contextDescription: string): ChangeContext => {
-    return {
-        operationId: randomUUID(),
-        changedAt: new Date(),
-        contextDescription,
-    };
-};
-
-export type RegisterChangeOptions = {
-    dontCalculateChanges?: boolean;
-};
-
-export type RegisterChangeArgs = {
-    action: ChangeAction, // database operation
-    changeContext: ChangeContext,
-    table: string,
-    pkid: number,
-    oldValues?: any,
-    newValues?: any,
-    ctx: Ctx,
-    options?: RegisterChangeOptions,
-    db?: TransactionalPrismaClient,
-}
-
-export type CalculateChangesResult = {
-    hasChanges: boolean;
-    oldValues: any,
-    newValues: any,
-};
-
-export const createEmptyCalculateChangesResult = (): CalculateChangesResult => ({
-    oldValues: {},
-    newValues: {},
-    hasChanges: false,
-});
-
-// return an obj of fields which exist in both inputs, and are different.
-export function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
-    const result: CalculateChangesResult = {
-        oldValues: {},
-        newValues: {},
-        hasChanges: false,
-    };
-
-    for (const prop in oldObj) {
-        if (oldObj.hasOwnProperty(prop) && newObj.hasOwnProperty(prop)) {
-            if (oldObj[prop] !== newObj[prop]) {
-                result.oldValues[prop] = oldObj[prop];
-                result.newValues[prop] = newObj[prop];
-                result.hasChanges = true;
-            }
-        }
-    }
-
-    return result;
-}
-
-export async function RegisterChange(args: RegisterChangeArgs) {
-    let oldValues: any = null;
-    let newValues: any = null;
-
-    const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
-
-    if (CoalesceBool(args.options?.dontCalculateChanges, false)) {
-        // used by custom change objects like song lists
-        oldValues = args.oldValues || {};
-        newValues = args.newValues || {};
-    } else {
-        switch (args.action) {
-            case ChangeAction.insert:
-                newValues = args.newValues;
-                break;
-            case ChangeAction.delete:
-                oldValues = args.oldValues;
-                break;
-            case ChangeAction.update:
-                const changes = CalculateChanges(args.oldValues, args.newValues);
-                if (Object.keys(changes.oldValues).length < 1) {
-                    // you didn't change anything.
-                    return;
-                }
-                oldValues = changes.oldValues;
-                newValues = changes.newValues;
-                break;
-            default:
-                throw new Error(`unknown change action ${args?.action || "<null>"}`);
-        }
-    }
-
-    try {
-
-        await transactionalDb.change.create({
-            data: {
-                operationId: args.changeContext.operationId,
-                sessionHandle: args.ctx?.session?.$handle || null,
-                changedAt: args.changeContext.changedAt,
-                context: args.changeContext.contextDescription,
-                table: args.table,
-                recordId: args.pkid,
-                action: args.action,
-                userId: args.ctx?.session?.userId || null,
-                oldValues: JSON.stringify(oldValues),
-                newValues: JSON.stringify(newValues),
-            }
-
-        });
-
-    } catch (e) {
-        debugger;
-        throw e;
-    }
-
-}
-
-// SETTINGS /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// for use on the server only.
-// if you need to get / set settings on client, useQuery is required.
-
-export enum Setting {
-    // event dialog text
-    EditEventDialogDescription = "EditEventDialogDescription",
-    NewEventSegmentDialogTitle = "NewEventSegmentDialogTitle",
-    EditEventSegmentDialogTitle = "EditEventSegmentDialogTitle",
-    NewEventSegmentDialogDescription = "NewEventSegmentDialogDescription",
-    EditEventSegmentDialogDescription = "EditEventSegmentDialogDescription",
-    NewEventDialogDescription = "NewEventDialogDescription",
-    EditSongDialogDescription = "EditSongDialogDescription",
-    IconEditCellDialogDescription = "IconEditCellDialogDescription",
-    VisibilityControlSelectDialogDescription = "VisibilityControlSelectDialogDescription",
-    EventInviteUsersDialogDescriptionMarkdown = "EventInviteUsersDialogDescriptionMarkdown",
-    EventAttendanceEditDialog_TitleMarkdown = "EventAttendanceEditDialog_TitleMarkdown",
-    EventAttendanceEditDialog_DescriptionMarkdown = "EventAttendanceEditDialog_DescriptionMarkdown",
-    EditEventSongListDialogDescription = "EditEventSongListDialogDescription",
-    EditEventSongListDialogTitle = "EditEventSongListDialogTitle",
-    EventAttendanceCommentDialog_TitleMarkdown = "EventAttendanceCommentDialog_TitleMarkdown",
-    EventAttendanceCommentDialog_DescriptionMarkdown = "EventAttendanceCommentDialog_DescriptionMarkdown",
-
-    // mostly pages or sections of pages...
-    HomeDescription = "HomeDescription",
-    event_description_mockup_markdown = "event_description_mockup_markdown",
-    EditEventAttendancesPage_markdown = "EditEventAttendancesPage_markdown",
-    editEvents_markdown = "editEvents_markdown",
-    EditEventSegmentsPage_markdown = "EditEventSegmentsPage_markdown",
-    EventSegmentUserResponsePage_markdown = "EventSegmentUserResponsePage_markdown",
-    EditEventSongListsPage_markdown = "EditEventSongListsPage_markdown",
-    EditEventSongListSongsPage_markdown = "EditEventSongListSongsPage_markdown",
-    EditEventStatusesPage_markdown = "EditEventStatusesPage_markdown",
-    EditEventTagsPage_markdown = "EditEventTagsPage_markdown",
-    EditEventTypesPage_markdown = "EditEventTypesPage_markdown",
-    EventUserResponsePage_markdown = "EventUserResponsePage_markdown",
-    EditFilesPage_markdown = "EditFilesPage_markdown",
-    EditFileTagsPage_markdown = "EditFileTagsPage_markdown",
-    EditFrontpageGalleryItemsPage_markdown = "EditFrontpageGalleryItemsPage_markdown",
-    EditSongCreditsPage_markdown = "EditSongCreditsPage_markdown",
-    editSongCreditTypes_markdown = "editSongCreditTypes_markdown",
-    editSongs_markdown = "editSongs_markdown",
-    editSongTags_markdown = "editSongTags_markdown",
-    EditUserTagsPage_markdown = "EditUserTagsPage_markdown",
-    events_markdown = "events_markdown",
-    frontpage_gallery_markdown = "frontpage_gallery_markdown",
-    info_text = "info_text",
-    InstrumentFunctionalGroupList_markdown = "InstrumentFunctionalGroupList_markdown",
-    instrumentList_markdown = "instrumentList_markdown",
-    instrumentTagList_markdown = "instrumentTagList_markdown",
-    profile_markdown = "profile_markdown",
-    rolePermissionsMatrixPage_markdown = "rolePermissionsMatrixPage_markdown",
-    RolesAdminPage_markdown = "RolesAdminPage_markdown",
-    settings_markdown = "settings_markdown",
-    songs_markdown = "songs_markdown",
-    usersearch_markdown = "usersearch_markdown",
-    AdminLogsPage_markdown = "AdminLogsPage_markdown",
-    UserInstrumentsPage_markdown = "UserInstrumentsPage_markdown",
-    EventSongListTabDescription = "EventSongListTabDescription",
-    EventAttendanceDetailMarkdown = "EventAttendanceDetailMarkdown",
-    EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
-    FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
-    BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
-    BackstageFrontpageHeaderMarkdown = "BackstageFrontpageHeaderMarkdown",
-    DashboardStats_SongsMarkdown = "DashboardStats_SongsMarkdown",
-    DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
-    CustomLinksPageMarkdown = "CustomLinksPageMarkdown",
-    MenuLinksPageMarkdown = "MenuLinksPageMarkdown",
-    GlobalWikiPage_Markdown = "GlobalWikiPage_Markdown",
-    SongHistoryTabDescription = "SongHistoryTabDescription",
-    StatsPage_markdown = "StatsPage_markdown",
-    Workflow_SelectAssigneesDialogDescription = "Workflow_SelectAssigneesDialogDescription",
-    EditEventCustomFieldsPage_markdown = "EditEventCustomFieldsPage_markdown",
-    EventEditCustomFieldValuesDialog_TitleMarkdown = "EventEditCustomFieldValuesDialog_TitleMarkdown",
-    EventEditCustomFieldValuesDialog_DescriptionMarkdown = "EventEditCustomFieldValuesDialog_DescriptionMarkdown",
-
-    // not markdown....
-
-    // on the backstage home dashboard, which events to display
-    BackstageFrontpageEventMaxAgeDays = "BackstageFrontpageEventMaxAgeDays",
-
-    // on the backstage home dashboard, a song is considered "current" if it's at MOST this long since playing it.
-    BackstageFrontpageCurrentSongMaxAgeDays = "BackstageFrontpageCurrentSongMaxAgeDays",
-
-    textPalette = "textPalette",
-    //EnableOldPublicHomepageBackstageLink = "EnableOldPublicHomepageBackstageLink",
-    //EnableNewPublicHomepageBackstageLink = "EnableNewPublicHomepageBackstageLink",
-
-    // for markdown editor drop images
-    maxImageDimension = "maxImageDimension",
-};
-
-export type SettingKey = keyof typeof Setting;
-
-export interface SetSettingArgs {
-    ctx: Ctx,
-    setting: Setting | string,
-    value?: any,
-};
-
-export async function SetSetting(args: SetSettingArgs) {
-    const settingName = args.setting as string;
-    if (args.value === null || args.value === undefined) {
-        const existing = await db.setting.findFirst({ where: { name: settingName, } });
-        if (!existing) return;
-
-        await db.setting.deleteMany({ where: { name: settingName, } });
-
-        await RegisterChange({
-            action: ChangeAction.delete,
-            ctx: args.ctx,
-            changeContext: CreateChangeContext("SetSetting"),
-            table: "setting",
-            pkid: existing.id,
-            oldValues: existing,
-        });
-
-        return;
-    }
-
-    const obj = await db.setting.create({
-        data: {
-            name: settingName,
-            value: JSON.stringify(args.value),
-        }
-    });
-
-    await RegisterChange({
-        action: ChangeAction.delete,
-        ctx: args.ctx,
-        changeContext: CreateChangeContext("SetSetting"),
-        table: "setting",
-        pkid: obj.id,
-        newValues: obj,
-    });
-}
 
 export const CoerceToNumberOr = <Tfallback,>(value, fallbackValue: Tfallback): number | Tfallback => {
     if (value === null) return fallbackValue;
@@ -417,14 +151,6 @@ export const IsNullOrWhitespace = (s) => {
     if (typeof (s) !== 'string') return false;
     return (s.trim() === "");
 };
-
-// utility type to allow strict selection of the keys of a const object
-export type KeysOf<T extends Record<string, unknown>> = keyof T;
-
-
-// utility type
-// to make all fields nullable
-export type Nullable<T> = { [K in keyof T]: T[K] | null };
 
 // https://stackoverflow.com/questions/58278652/generic-enum-type-guard
 // export const isSomeEnum = <T>(e: T) => (token: any): token is T[keyof T] =>
@@ -573,114 +299,6 @@ export const gQueryOptions = {
 };
 
 
-export function assertIsNumberArray(value: any): asserts value is number[] {
-    if (!Array.isArray(value) || !value.every((item) => typeof item === 'number')) {
-        console.log(`{ the following value is not a number array`);
-        console.log(value);
-        console.log(`}`);
-        throw new Error('Value is not a number array; see console');
-    }
-}
-
-export function assertIsStringArray(value: any): asserts value is string[] {
-    if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
-        console.log(`{ the following value is not a string array`);
-        console.log(value);
-        console.log(`}`);
-        throw new Error('Value is not a string array');
-    }
-}
-
-export function isEmptyArray(obj: any) {
-    if (!Array.isArray(obj)) return false;
-    return 0 === ((obj as any[]).length);
-}
-
-export function moveItemInArray<T>(array: T[], oldIndex: number, newIndex: number): T[] {
-    if (oldIndex === newIndex) {
-        return array; // No need to move if oldIndex and newIndex are the same
-    }
-
-    if (oldIndex < 0 || oldIndex >= array.length || newIndex < 0 || newIndex >= array.length) {
-        throw new Error("Invalid oldIndex or newIndex");
-    }
-
-    const itemToMove = array[oldIndex]!;
-    const newArray = [...array]; // Create a copy of the original array
-
-    // Remove the item from the old position
-    newArray.splice(oldIndex, 1);
-
-    // Insert the item at the new position
-    newArray.splice(newIndex, 0, itemToMove);
-
-    return newArray;
-}
-
-export function existsInArray<T>(
-    array: T[],
-    id: T,
-    compareFn: (a: T, b: T) => boolean = (a, b) => a === b
-): boolean {
-    const index = array.findIndex(item => compareFn(item, id));
-    return (index !== -1);
-}
-
-// adds or removes a value in an array. ordering is assumed to not matter.
-// returns a new array with the change made.
-export function toggleValueInArray<T>(
-    array: T[],
-    id: T,
-    compareFn: (a: T, b: T) => boolean = (a, b) => a === b
-): T[] {
-    const index = array.findIndex(item => compareFn(item, id));
-    const newArray = [...array];  // Create a copy of the array to avoid mutating the original array
-
-    if (index === -1) {
-        newArray.push(id);
-    } else {
-        newArray.splice(index, 1);
-    }
-
-    return newArray;
-};
-
-
-export function distinctValuesOfArray<T>(items: T[], areEqual: (a: T, b: T) => boolean): T[] {
-    return items.reduce<T[]>((acc, current) => {
-        if (!acc.some(item => areEqual(item, current))) {
-            acc.push(current);
-        }
-        return acc;
-    }, []);
-};
-
-
-export function arraysContainSameValues<T>(arr1: T[], arr2: T[]): boolean {
-    if (arr1.length !== arr2.length) {
-        return false;
-    }
-
-    const sortFunc = (a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    };
-
-    const sortedArr1 = [...arr1].sort(sortFunc);
-    const sortedArr2 = [...arr2].sort(sortFunc);
-
-    for (let i = 0; i < sortedArr1.length; i++) {
-        if (sortedArr1[i] !== sortedArr2[i]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-
-
 export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTimeout(() => {
     resolve(`you slept for ${ms} millis with seed ${seed}`);
 }, ms));
@@ -688,9 +306,9 @@ export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTim
 
 
 
-export function pickFromObject<T extends object, K extends keyof T>(obj: T, keys: K[]): T[K][] {
-    return keys.map(key => obj[key]);
-}
+// export function pickFromObject<T extends object, K extends keyof T>(obj: T, keys: K[]): T[K][] {
+//     return keys.map(key => obj[key]);
+// }
 
 
 
@@ -872,101 +490,6 @@ export function getExcelColumnName(index: number): string {
     return columnName;
 }
 
-// https://stackoverflow.com/questions/7744912/making-a-javascript-string-sql-friendly
-export function MysqlEscape(str) {
-    return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
-        switch (char) {
-            case "\0":
-                return "\\0";
-            case "\x08":
-                return "\\b";
-            case "\x09":
-                return "\\t";
-            case "\x1a":
-                return "\\z";
-            case "\n":
-                return "\\n";
-            case "\r":
-                return "\\r";
-            case "\"":
-            case "'":
-            case "\\":
-            case "%":
-                return "\\" + char; // prepends a backslash to backslash, percent,
-            // and double/single quotes
-            default:
-                return char;
-        }
-    });
-}
-
-export function SplitQuickFilter(quickFilter: string): string[] {
-    return quickFilter.toLowerCase().split(/\s+/).filter(token => !IsNullOrWhitespace(token));
-}
-
-function parseDateRange(input) {
-    const regex = /^(\d{2,4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/;
-    const match = input.match(regex);
-    if (!match) return null; // not a date-like input
-
-    let year = parseInt(match[1], 10);
-    if (year < 2000) year += 2000;
-
-    const month = match[2] ? parseInt(match[2], 10) : null;
-    const day = match[3] ? parseInt(match[3], 10) : null;
-
-    if (year && !month && !day) {
-        // year only
-        return {
-            start: new Date(year, 0, 1),
-            end: new Date(year + 1, 0, 1)
-        };
-    } else if (year && month && !day) {
-        // year-month
-        return {
-            start: new Date(year, month - 1, 1),
-            end: new Date(year, month, 1)
-        }
-    } else if (year && month && day) {
-        // year-month-day
-        return {
-            start: new Date(year, month - 1, day),
-            end: new Date(year, month - 1, day + 1)
-        }
-    } else {
-        return null;
-    }
-}
-
-export function ParseQuickFilter(quickFilter: string) {
-    const keywords = SplitQuickFilter(quickFilter);
-    const keywordsWithoutDate: string[] = [];
-    let dateRange: { start: Date, end: Date } | undefined = undefined;
-    for (const keyword of keywords) {
-        const parsedDateRange = parseDateRange(keyword);
-        if (parsedDateRange) {
-            dateRange = parsedDateRange;
-        } else {
-            keywordsWithoutDate.push(keyword);
-        }
-    }
-    return {
-        keywords,
-        pkid: IsEntirelyIntegral(quickFilter) ? parseInt(quickFilter, 10) : null,
-        dateRange,
-        keywordsWithoutDate,
-    };
-};
-
-export function MakeWhereInputConditions(fieldName: string, keywords: string[]) {
-    return keywords.map(keyword => ({
-        [fieldName]: {
-            contains: keyword
-        }
-    }));
-}
-
-
 export function arrayToTSV(data: Record<string, string>[]): string {
     if (data.length === 0) {
         return "";
@@ -999,30 +522,6 @@ export function getEnumValues<E extends { [key: string]: any }>(enumObject: E): 
     return Object.values(enumObject).filter(value => typeof value === 'string') as string[];
 }
 
-export function SqlCombineAndExpression(expressions: string[]): string {
-    if (expressions.length === 0) return "(true)";
-    if (expressions.length === 1) return expressions[0]!;
-    return `(${expressions.join(`\n    AND `)})`;
-};
-
-export function SqlCombineOrExpression(expressions: string[]): string {
-    if (expressions.length === 0) return "(true)";
-    if (expressions.length === 1) return expressions[0]!;
-    return `(${expressions.join(`\n    OR `)})`;
-};
-
-
-// Returns a partial extract of oldValues, where the fields appear in newObject
-export function getIntersectingFields(newValues: { [key: string]: any }, oldValues: { [key: string]: any }) {
-    return Object.keys(newValues).reduce((acc, key) => {
-        if (key in oldValues) {
-            acc[key] = oldValues[key];
-        }
-        return acc;
-    }, {} as { [key: string]: any });
-}
-
-
 const str2ab = function (str: string): ArrayBufferView {
     const array = new Uint8Array(str.length)
     for (let i = 0; i < str.length; i++) {
@@ -1038,83 +537,15 @@ export function hashString(inp: string) {
 export const getHashedColor = (text: string, options?: { saturation?: string, luminosity?: string, alpha?: string }): string => {
     let hash = hashString(text);
     const color = `hsla(${hash % 360}, ${options?.saturation || '100%'}, ${options?.luminosity || "35%"}, ${options?.alpha || "100%"})`;
-    //console.log(color);
     return color;
 };
 
 
-// array sort by selector
-export function sortBy<T, U>(array: T[], selector: (item: T) => U): T[] {
-    return array.slice().sort((a, b) => {
-        const aValue = selector(a);
-        const bValue = selector(b);
-
-        if (aValue < bValue) {
-            return -1;
-        }
-        if (aValue > bValue) {
-            return 1;
-        }
-        return 0;
-    });
-}
 
 // https://stackoverflow.com/questions/39419170/how-do-i-check-that-a-switch-block-is-exhaustive-in-typescript
 export function assertUnreachable(x: never, msg?: string | undefined): never {
     throw new Error(msg || "Didn't expect to get here");
 }
-
-
-export type EnNlFr = "en" | "nl" | "fr";
-
-type LangSelectStringWithDetailResult<T extends string | null | undefined> = {
-    result: T extends string ? string : string | null | undefined,
-    preferredLangWasChosen: boolean;
-    chosenLang: EnNlFr | null;
-};
-
-export function LangSelectStringWithDetail<
-    T extends string | null | undefined
->(
-    preferredLang: EnNlFr,
-    value_en: T,
-    value_nl: T,
-    value_fr: T
-): LangSelectStringWithDetailResult<T> {
-    switch (preferredLang) {
-        case "en":
-            if (!IsNullOrWhitespace(value_en)) return { chosenLang: preferredLang, preferredLangWasChosen: true, result: value_en! };
-            break;
-        case "nl":
-            if (!IsNullOrWhitespace(value_nl)) return { chosenLang: preferredLang, preferredLangWasChosen: true, result: value_nl! };
-            break;
-        case "fr":
-            if (!IsNullOrWhitespace(value_fr)) return { chosenLang: preferredLang, preferredLangWasChosen: true, result: value_fr! };
-            break;
-    }
-
-    // Fallback to any available value
-    if (!IsNullOrWhitespace(value_en)) return { chosenLang: "en", preferredLangWasChosen: false, result: value_en! };
-    if (!IsNullOrWhitespace(value_nl)) return { chosenLang: "nl", preferredLangWasChosen: false, result: value_nl! };
-    if (!IsNullOrWhitespace(value_fr)) return { chosenLang: "fr", preferredLangWasChosen: false, result: value_fr! };
-
-    // If all values are nullish, return null
-    return { chosenLang: null, preferredLangWasChosen: false, result: "" }; // return an empty string because we dont know if null is allowed.
-}
-
-export const SelectEnglishNoun = (quantity: number, singular: string, plural: string) => Math.abs(quantity) === 1 ? singular : plural;
-
-export function LangSelectString<
-    T extends string | null | undefined
->(
-    preferredLang: EnNlFr,
-    value_en: T,
-    value_nl: T,
-    value_fr: T
-): T extends string ? string : string | null | undefined {
-    return LangSelectStringWithDetail(preferredLang, value_en, value_nl, value_fr).result;
-}
-
 
 
 export type ObjectDiffResult<T extends Object> = {
@@ -1193,12 +624,6 @@ export function sanitize<T>(inp: any, keys: (keyof T)[]): T {
 //     }
 //     return result;
 // }
-
-// uberspace cannot do toSorted. use this.
-export function toSorted<T>(array: T[], compareFn?: (a: T, b: T) => number): T[] {
-    return array.slice().sort(compareFn);
-}
-
 
 // allows calling an async function from a non-async function.
 // like

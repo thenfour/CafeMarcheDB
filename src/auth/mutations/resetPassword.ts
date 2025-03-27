@@ -4,7 +4,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { ResetPassword } from "../schemas"
 import login from "./login"
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog"
 
 export class ResetPasswordError extends Error {
   name = "ResetPasswordError"

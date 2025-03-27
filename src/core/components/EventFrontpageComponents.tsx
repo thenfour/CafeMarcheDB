@@ -4,7 +4,6 @@ import { Button, DialogActions, DialogContent, DialogTitle, FormControlLabel, Sw
 import { Prisma } from "db";
 import React from "react";
 import { DateTimeRange } from "shared/time";
-import { EnNlFr, LangSelectStringWithDetail } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
@@ -19,6 +18,7 @@ import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 import { AgendaItem } from './homepageComponents';
 import { SettingMarkdown } from "./SettingMarkdown";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
+import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
 
 
 

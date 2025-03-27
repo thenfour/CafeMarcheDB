@@ -5,7 +5,7 @@ import React from "react";
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { SortDirection, formatFileSize } from 'shared/rootroot';
-import { IsNullOrWhitespace, SplitQuickFilter, existsInArray, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
+import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -23,6 +23,8 @@ import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { Markdown } from "./markdown/RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
+import { SplitQuickFilter } from 'shared/quickFilter';
+import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

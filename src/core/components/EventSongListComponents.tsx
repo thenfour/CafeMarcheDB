@@ -12,7 +12,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { gSwatchColors } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { CoalesceBool, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -32,6 +32,7 @@ import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown } from "./markdown/RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
+import { moveItemInArray } from 'shared/arrayUtils';
 
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {

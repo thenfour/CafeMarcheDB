@@ -5,7 +5,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import * as React from 'react';
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { arraysContainSameValues, callAsync, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
+import { callAsync, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
@@ -29,6 +29,7 @@ import { EventStatusBindingOperand2Component, EventStatusBindingValueComponent, 
 import { EventTagsBindingOperand2Component, EventTagsBindingValueComponent, MakeDB3TagsBinding } from "./WorkflowDB3TagsBinding";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowRenderer } from "./WorkflowUserComponents";
+import { arraysContainSameValues } from "shared/arrayUtils";
 
 const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
     const ret: MockEventModel = {

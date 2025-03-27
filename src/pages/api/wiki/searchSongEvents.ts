@@ -1,75 +1,63 @@
-// TODO: unify with the normal search api.
+// consider unifying with the normal search api for consistency and simplicity.
 
 import { Ctx } from "@blitzjs/next";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
+import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
-import { MakeWhereInputConditions, ParseQuickFilter } from "shared/utils";
 import { api } from "src/blitz-server";
-import { MakeMatchingSlugItem, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
+import * as db3 from "src/core/db3/db3";
+import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression2 } from "src/core/db3/shared/db3Helpers";
+import * as mutationCore from 'src/core/db3/server/db3mutationCore';
+import { MakeWhereCondition, ParseQuickFilter, QuickSearchItemMatch } from "shared/quickFilter";
+import { toSorted } from "shared/arrayUtils";
 
+async function getQuickSearchResults(keyword__: string, user: db3.UserWithRolesPayload): Promise<QuickSearchItemMatch[]> {
 
-
-async function getMatchingSlugs(keyword__: string): Promise<MatchingSlugItem[]> {
-
-    //const keywords = SplitQuickFilter(keyword.toLowerCase());
+    const publicRole = await GetPublicRole();
     const query = ParseQuickFilter(keyword__);
     const itemsPerType = 5;
+    const itemsToReturn = 15;
 
-    const songSlugs = await db.song.findMany({
+    const songs = await db.song.findMany({
         where: {
             AND: [
-                {
-                    isDeleted: false,
-                },
-                {
-                    NOT: { visiblePermissionId: null }
-                    // TODO: check actual perms.
-                },
-                {
-                    OR: [
-                        { AND: MakeWhereInputConditions("aliases", query.keywords) },
-                        { AND: MakeWhereInputConditions("name", query.keywords) },
-                    ]
-                },
+                GetSoftDeleteWhereExpression(),
+                GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
+                MakeWhereCondition([
+                    { fieldName: "id", fieldType: "pk" },
+                    { fieldName: "aliases", fieldType: "string" },
+                    { fieldName: "name", fieldType: "string" },
+                ], query),
             ],
         },
         select: {
             id: true,
-            name: true,
             introducedYear: true,
-            //slug: true,
+            name: true,
+            aliases: true,
         },
         take: itemsPerType,
     });
 
-    let eventAndCriteria: Prisma.EventWhereInput[] = MakeWhereInputConditions("name", query.keywordsWithoutDate);
-
-    if (query.dateRange) {
-        eventAndCriteria.push({
-            startsAt: {
-                gte: query.dateRange.start,
-                lt: query.dateRange.end,
-            },
-        });
-    }
-
-    const eventSlugs = await db.event.findMany({
+    const events = await db.event.findMany({
         where: {
             AND: [
-                {
-                    isDeleted: false,
-                },
-                {
-                    NOT: { visiblePermissionId: null }
-                    // TODO: check actual perms.
-                },
-                ...eventAndCriteria,
+                GetSoftDeleteWhereExpression(),
+                GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
+                MakeWhereCondition([
+                    { fieldName: "id", fieldType: "pk" },
+                    { fieldName: "name", fieldType: "string" },
+                    { fieldName: "locationDescription", fieldType: "string" },
+                    { fieldName: "startsAt", fieldType: "date" },
+                ], query),
             ],
         },
         select: {
             id: true,
             name: true,
             startsAt: true,
+            locationDescription: true,
         },
         orderBy: {
             startsAt: "asc",
@@ -77,115 +65,110 @@ async function getMatchingSlugs(keyword__: string): Promise<MatchingSlugItem[]> 
         take: itemsPerType,
     });
 
-    const userSlugs = await db.user.findMany({
+    const wikiPages = await db.wikiPage.findMany({
         where: {
             AND: [
+                { namespace: { not: "EventDescription" } },
+                GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
                 {
-                    isDeleted: false,
-                },
-                ...MakeWhereInputConditions("name", query.keywords),
-            ],
-        },
-        select: {
-            id: true,
-            name: true,
-        },
-        take: itemsPerType,
-    });
-
-    const instrumentSlugs = await db.instrument.findMany({
-        where: {
-            AND: MakeWhereInputConditions("name", query.keywords),
-        },
-        select: {
-            id: true,
-            name: true,
-        },
-        take: itemsPerType,
-    });
-
-    const wikiWhereArgs: Prisma.WikiPageWhereInput = {
-        OR: [
-            { namespace: null },
-            {
-                namespace: {
-                    not: "EventDescription", // it's noisy to include this in search results
+                    OR: [
+                        ...MakeWhereCondition([{ fieldName: "slug", fieldType: "string" }], query).OR,
+                        {
+                            currentRevision: MakeWhereCondition([
+                                { fieldName: "content", fieldType: "string" },
+                                { fieldName: "name", fieldType: "string" },
+                            ], query),
+                        }
+                    ]
                 }
-            }
-        ],
-        currentRevision: {
-            OR: [
-                { AND: MakeWhereInputConditions("content", query.keywords) },
-                { AND: MakeWhereInputConditions("name", query.keywords) },
             ]
-        }
-    };
-
-    const wikiPages = await db.wikiPage.findMany({
-        where: wikiWhereArgs,
-        include: {
-            currentRevision: true,
+        },
+        select: {
+            id: true,
+            slug: true,
+            currentRevision: {
+                select: {
+                    name: true,
+                    content: true,
+                }
+            },
         },
         take: itemsPerType,
     });
 
-    const makeEventInfo = (x: typeof eventSlugs[0]) => {
-        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/event/${x.id}/${slugify(x.name || "")}`; // 
-        if (x.startsAt) {
-            return {
-                absoluteUri,
-                name: `${x.name} (${x.startsAt.toDateString()})`
-            };
-        }
+    const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch => {
+        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/event/${x.id}/${slugify(x.name || "")}`;
+
         return {
             absoluteUri,
-            name: x.name,
+            name: `${x.name}${x.startsAt ? ` (${x.startsAt.toLocaleDateString()})` : ""}`,
+            id: x.id,
+            matchStrength: 1,
+            itemType: "event",
         };
     };
 
-    const makeSongInfo = (x: typeof songSlugs[0]) => {
-        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/song/${x.id}/${slugify(x.name || "")}`; // 
-        if (x.introducedYear) {
-            return {
-                absoluteUri,
-                name: `${x.name} (${x.introducedYear})`
-            };
-        }
-        return {
-            absoluteUri,
-            name: x.name,
-        };
-    };
-
-    const makeWikiPageInfo = (x: typeof wikiPages[0]) => {
-        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/wiki/${x.slug}`; // 
-        if (!x.currentRevision) {
-            return {
-                id: x.id,
-                absoluteUri,
-                name: `${x.slug}`
-            };
-        }
+    const makeSongInfo = (x: typeof songs[0]): QuickSearchItemMatch => {
+        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/song/${x.id}/${slugify(x.name || "")}`;
         return {
             id: x.id,
             absoluteUri,
-            name: x.currentRevision.name,
+            name: `${x.name}${x.introducedYear ? ` (${x.introducedYear})` : ""}`,
+            matchStrength: 1,
+            itemType: "song",
         };
     };
 
-    const ret: MatchingSlugItem[] = [
-        ...songSlugs.map(s => MakeMatchingSlugItem({ ...s, ...makeSongInfo(s), itemType: "song" })),
-        ...eventSlugs.map(s => MakeMatchingSlugItem({ ...s, ...makeEventInfo(s), itemType: "event" })),
-        ...userSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "user", absoluteUri: undefined })),
-        ...instrumentSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "instrument", absoluteUri: undefined })),
-        ...wikiPages.map(s => MakeMatchingSlugItem({ itemType: "wikiPage", ...makeWikiPageInfo(s) })),
+    const makeWikiPageInfo = (x: typeof wikiPages[0]): QuickSearchItemMatch => {
+        const absoluteUri = process.env.CMDB_BASE_URL + `backstage/wiki/${x.slug}`; // 
+        return {
+            id: x.id,
+            absoluteUri,
+            name: x.currentRevision ? `${x.currentRevision.name} (${x.slug})` : x.slug,
+            matchStrength: 1,
+            itemType: "wikiPage",
+        };
+    };
+
+    // const makeUserInfo = (x: typeof userSlugs[0]): QuickSearchItemMatch => {
+    //     return {
+    //         id: x.id,
+    //         name: x.name,
+    //         itemType: "user",
+    //         absoluteUri: undefined,
+    //     };
+    // };
+
+    // const makeInstrumentInfo = (x: typeof instrumentSlugs[0]): QuickSearchItemMatch => {
+    //     return {
+    //         id: x.id,
+    //         name: x.name,
+    //         itemType: "instrument",
+    //         absoluteUri: undefined,
+    //     };
+    // };
+
+    let ret: QuickSearchItemMatch[] = [
+        ...songs.map(s => makeSongInfo(s)),
+        ...events.map(s => makeEventInfo(s)),
+        ...wikiPages.map(s => makeWikiPageInfo(s)),
     ];
 
+    ret = toSorted(ret, (a, b) => a.matchStrength - b.matchStrength);
+    //ret = ret.slice(0, itemsToReturn);
     return ret;
 }
 
-export default api(async (req, res, ctx: Ctx) => {
+
+
+
+
+export default api(async (req, res, origCtx: Ctx) => {
     return new Promise(async (resolve, reject) => {
+        origCtx.session.$authorize(Permission.visibility_public);
+        const ctx: AuthenticatedCtx = origCtx as any; // authorize ensures this.
+        const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
+        if (!currentUser) throw new Error(`not authorized`);
 
         const { keyword } = req.query;
 
@@ -195,7 +178,7 @@ export default api(async (req, res, ctx: Ctx) => {
         }
 
         try {
-            const slugs = await getMatchingSlugs(keyword);
+            const slugs = await getQuickSearchResults(keyword, currentUser);
             res.status(200).json(slugs);
         } catch (error) {
             console.error("Failed to fetch slugs", error);

@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { SettingKey, gQueryOptions } from "shared/utils";
+import { gQueryOptions } from "shared/utils";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -11,6 +11,7 @@ import { CMSmallButton } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/RichTextEditor";
+import { SettingKey } from "shared/settings";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;

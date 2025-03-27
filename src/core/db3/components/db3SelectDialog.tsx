@@ -2,7 +2,7 @@ import React from "react";
 
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
-import { CoalesceBool, SplitQuickFilter } from "shared/utils";
+import { CoalesceBool } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMDialogContentText } from "src/core/components/CMCoreComponents2";
 import * as db3 from "src/core/db3/db3";
@@ -15,6 +15,7 @@ import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { SplitQuickFilter } from "shared/quickFilter";
 
 type Tnull = undefined | null;
 
