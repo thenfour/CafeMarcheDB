@@ -33,6 +33,8 @@ const RenderMarkdownSpanWithClass = (node: Element, componentName: string, props
 };
 
 const spanClasses = [
+    "small",
+    "smaller",
     "big",
     "bigger",
     "highlight",

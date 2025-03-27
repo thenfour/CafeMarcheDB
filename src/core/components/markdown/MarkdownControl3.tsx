@@ -8,44 +8,76 @@ import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
 import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
-import { Collapse, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Collapse, Menu, MenuItem, SvgIcon, Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from 'shared/utils';
 import { gCharMap, gIconMap } from '../../db3/components/IconMap';
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
 import { Pre } from '../CMCoreComponents2';
+import { WikiPageApi } from './useWikiPageApi';
+import { MarkdownLockIndicator } from './MarkdownLockIndicator';
+import { FormatSize, Title } from '@mui/icons-material';
 
-//////////////////////////////////////////////////
-interface SpecialCharacterDropdownProps {
-    anchorEl: HTMLElement | null;
-    onSelect: (character: string) => void;
-    onClose: () => void;
+function HighlightIcon(props) {
+    return (
+        <SvgIcon {...props} viewBox="0 0 24 24">
+            <path d="M20.707 5.826l-3.535-3.533a.999.999 0 0 0-1.408-.006L7.096 10.82a1.01 1.01 0 0 0-.273.488l-1.024 4.437L4 18h2.828l1.142-1.129 3.588-.828c.18-.042.345-.133.477-.262l8.667-8.535a1 1 0 0 0 .005-1.42ZM11.338 13.659l-2.121-2.12 7.243-7.131 2.12 2.12-7.242 7.131ZM4 20h16v2H4z" />
+        </SvgIcon>
+    );
 }
 
-const specialCharacters = [
+const gHighlightOptions = [
     {
-        category: 'Formats', symbols: [
-            '{{big:this text is big}}',
-            '{{bigger:this text is bigger}}',
+        category: 'Highlights', symbols: [
             '{{highlight:this text is yellow}}',
             '{{highlightred:this text is red}}',
             '{{highlightgreen:this text is green}}',
             '{{highlightblue:this text is blue}}',
         ], display: [
-            <span key={1} className='markdown-class-big'>Big text</span>,
-            <span key={2} className='markdown-class-bigger'>Bigger text</span>,
             <span key={3} className='markdown-class-highlight'>Highlight yellow</span>,
             <span key={4} className='markdown-class-highlightred'>Highlight red</span>,
             <span key={5} className='markdown-class-highlightgreen'>Highlight green</span>,
             <span key={6} className='markdown-class-highlightblue'>Highlight blue</span>,
         ]
     },
-    { category: 'Musical Symbols', symbols: ['♪', '♫', '♩', '♬', '♭', '♮', '♯', '𝄞', '𝄢', '𝄡'], display: undefined },
-    //{ category: 'Rehearsal marks', symbols: ['Ⓐ', 'Ⓑ', 'Ⓒ', 'Ⓓ', 'Ⓔ', 'Ⓕ', 'Ⓖ', 'Ⓗ', 'Ⓘ', 'Ⓙ', 'Ⓚ', 'Ⓛ', 'Ⓜ', 'Ⓝ', 'Ⓞ', 'Ⓟ', 'Ⓠ', 'Ⓡ', 'Ⓢ', 'Ⓣ', 'Ⓤ', 'Ⓥ', 'Ⓦ', 'Ⓧ', 'Ⓨ', 'Ⓩ', '⓪', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'] },
-    //{ category: 'Math Symbols', symbols: ['∞', '√', '∑', 'π', '∆', '≈', '≠', '≤', '≥', '∫', '∂', '∇', '∈', '∉', '∪', '∩', '⊂', '⊃', '⊆', '⊇'] },
-    //{ category: 'Currency Symbols', symbols: ['$', '€', '£', '¥', '₩', '₽', '₹', '₺', '₿'] },
-    //{ category: 'Rehearsal marks', symbols: ['🄰', '🄱', '🄲', '🄳', '🄴', '🄵', '🄶', '🄷', '🄸', '🄹', '🄺', '🄻', '🄼', '🄽', '🄾', '🄿', '🅀', '🅁', '🅂', '🅃', '🅄', '🅅', '🅆', '🅇', '🅈', '🅉', '🅊', '🅋', '🅌', '🅍', '🅎', '🅏', '🅐', '🅑', '🅒', '🅓', '🅔', '🅕', '🅖', '🅗', '🅘', '🅙', '🅚', '🅛', '🅜', '🅝', '🅞', '🅟', '🅠', '🅡', '🅢', '🅣', '🅤', '🅥', '🅦', '🅧', '🅨', '🅩'] },
-    //{ category: 'Rehearsal marks', symbols: ['{{enclosed:A}}'], display:["A"] },
+];
+
+const gCharacterSize = [
+    {
+        category: '', symbols: [
+            '{{smaller:this text is smaller}}',
+            '{{small:this text is small}}',
+            '',
+            '{{big:this text is big}}',
+            '{{bigger:this text is bigger}}',
+        ], display: [
+            <span key={1} className='markdown-class-smaller'>Smaller text</span>,
+            <span key={2} className='markdown-class-small'>Small text</span>,
+            <span key={3} style={{ fontSize: "16px", opacity: "50%" }}>(Normal)</span>,
+            <span key={4} className='markdown-class-big'>Big text</span>,
+            <span key={5} className='markdown-class-bigger'>Bigger text</span>,
+        ]
+    },
+];
+
+const gSpecialCharacters = [
+    // {
+    //     category: 'Formats', symbols: [
+    //         '{{big:this text is big}}',
+    //         '{{bigger:this text is bigger}}',
+    //         '{{highlight:this text is yellow}}',
+    //         '{{highlightred:this text is red}}',
+    //         '{{highlightgreen:this text is green}}',
+    //         '{{highlightblue:this text is blue}}',
+    //     ], display: [
+    //         <span key={1} className='markdown-class-big'>Big text</span>,
+    //         <span key={2} className='markdown-class-bigger'>Bigger text</span>,
+    //         <span key={3} className='markdown-class-highlight'>Highlight yellow</span>,
+    //         <span key={4} className='markdown-class-highlightred'>Highlight red</span>,
+    //         <span key={5} className='markdown-class-highlightgreen'>Highlight green</span>,
+    //         <span key={6} className='markdown-class-highlightblue'>Highlight blue</span>,
+    //     ]
+    // },
     {
         category: 'Rehearsal marks', symbols: [
             '{{enclosed:A}}', '{{enclosed:B}}', '{{enclosed:C}}', '{{enclosed:D}}', '{{enclosed:E}}', '{{enclosed:F}}', '{{enclosed:G}}', '{{enclosed:1}}', '{{enclosed:2}}', '{{enclosed:3}}'],
@@ -62,16 +94,31 @@ const specialCharacters = [
             <span key={20} className='markdown-class-enclosed'>3</span>,
         ]
     },
+    { category: 'Musical Symbols', symbols: ['♪', '♫', '♩', '♬', '♭', '♮', '♯', '𝄞', '𝄢', '𝄡'], display: undefined },
+    //{ category: 'Rehearsal marks', symbols: ['Ⓐ', 'Ⓑ', 'Ⓒ', 'Ⓓ', 'Ⓔ', 'Ⓕ', 'Ⓖ', 'Ⓗ', 'Ⓘ', 'Ⓙ', 'Ⓚ', 'Ⓛ', 'Ⓜ', 'Ⓝ', 'Ⓞ', 'Ⓟ', 'Ⓠ', 'Ⓡ', 'Ⓢ', 'Ⓣ', 'Ⓤ', 'Ⓥ', 'Ⓦ', 'Ⓧ', 'Ⓨ', 'Ⓩ', '⓪', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'] },
+    //{ category: 'Math Symbols', symbols: ['∞', '√', '∑', 'π', '∆', '≈', '≠', '≤', '≥', '∫', '∂', '∇', '∈', '∉', '∪', '∩', '⊂', '⊃', '⊆', '⊇'] },
+    //{ category: 'Currency Symbols', symbols: ['$', '€', '£', '¥', '₩', '₽', '₹', '₺', '₿'] },
+    //{ category: 'Rehearsal marks', symbols: ['🄰', '🄱', '🄲', '🄳', '🄴', '🄵', '🄶', '🄷', '🄸', '🄹', '🄺', '🄻', '🄼', '🄽', '🄾', '🄿', '🅀', '🅁', '🅂', '🅃', '🅄', '🅅', '🅆', '🅇', '🅈', '🅉', '🅊', '🅋', '🅌', '🅍', '🅎', '🅏', '🅐', '🅑', '🅒', '🅓', '🅔', '🅕', '🅖', '🅗', '🅘', '🅙', '🅚', '🅛', '🅜', '🅝', '🅞', '🅟', '🅠', '🅡', '🅢', '🅣', '🅤', '🅥', '🅦', '🅧', '🅨', '🅩'] },
+    //{ category: 'Rehearsal marks', symbols: ['{{enclosed:A}}'], display:["A"] },
+
     { category: 'Arrows', symbols: ['→', '←', '↑', '↓', '↔', '↕', '⇒', '⇐', '⇑', '⇓', '⇔', '⇕'], display: undefined },
     { category: 'Miscellaneous', symbols: ['©', '®', '™', '✓', '✗', '★', '☆', '♠', '♣', '♥', '♦', '☀', '☁', '☂', '☃', '☎', '✉', '✂', '✍', '✏'], display: undefined },
 ];
 
-const SpecialCharacterDropdown: React.FC<SpecialCharacterDropdownProps> = ({ anchorEl, onSelect, onClose }) => {
+//////////////////////////////////////////////////
+interface SpecialCharacterDropdownProps {
+    anchorEl: HTMLElement | null;
+    onSelect: (character: string) => void;
+    onClose: () => void;
+    options: typeof gSpecialCharacters;
+}
+
+const SpecialCharacterDropdown: React.FC<SpecialCharacterDropdownProps> = ({ anchorEl, onSelect, onClose, options }) => {
 
     return <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={onClose} className='markdown'>
-        {specialCharacters.map((category) => (
+        {options.map((category) => (
             <div key={category.category}>
-                <MenuItem disabled dense>{category.category}</MenuItem>
+                {!IsNullOrWhitespace(category.category) && <MenuItem disabled dense>{category.category}</MenuItem>}
                 {category.symbols.map((symbol, i) => (
                     <MenuItem key={i} onClick={() => onSelect(symbol)} dense>
                         {category.display ? category.display[i] : symbol}
@@ -92,6 +139,7 @@ interface Markdown3EditorPropsBase {
     autoFocus?: boolean;
     nominalHeight: number;
     onChange: (v: string) => void;
+    wikiPageApi?: WikiPageApi | null;
 };
 
 //////////////////////////////////////////////////
@@ -133,11 +181,12 @@ const M3TipsTabValues = [
 // 2. Derive a type from that array
 type M3TipsTab = (typeof M3TipsTabValues)[number];
 
-export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props }: Markdown3EditorProps) => {
+export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageApi = null, ...props }: Markdown3EditorProps) => {
     const [tab, setTab] = React.useState<M3Tab>("sidebyside");
     const [popoverAnchorEl, setPopoverAnchorEl] = React.useState<null | HTMLElement>(null);
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [tipsTab, setTipsTab] = React.useState<M3TipsTab | null>(null);
+    const [showPreview, setShowPreview] = React.useState<boolean>(true);
 
     const [headingTrig, setHeadingTrig] = React.useState<number>(0);
     const [boldTrig, setBoldTrig] = React.useState<number>(0);
@@ -155,7 +204,11 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
     const [underlineTrig, setUnderlineTrig] = React.useState<number>(0);
     const [strikethroughTrig, setStrikethroughTrig] = React.useState<number>(0);
     const [abcjsTrig, setAbcjsTrig] = React.useState<number>(0);
+
     const [specialCharacterMenuOpen, setSpecialCharacterMenuOpen] = React.useState<boolean>(false);
+    const [characterSizeMenuOpen, setCharacterSizeMenuOpen] = React.useState<boolean>(false);
+    const [highlightMenuOpen, setHighlightMenuOpen] = React.useState<boolean>(false);
+
     const [specialCharacterTrig, setSpecialCharacterTrig] = React.useState<number>(0);
     const [specialCharacter, setSpecialCharacter] = React.useState<string>("");
     const [specialCharacterMenuAnchorEl, setSpecialCharacterMenuAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -217,10 +270,14 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
     const toolItems = {
         heading: <Tooltip title={"Heading (ctrl+H)"} disableInteractive>
             <div className="toolItem heading" onClick={() => setHeadingTrig(headingTrig + 1)}>
+                <Title />
+            </div>
+
+            {/* <div className="toolItem heading" onClick={() => setHeadingTrig(headingTrig + 1)}>
                 <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-heading Button-visual">
                     <path d="M3.75 2a.75.75 0 0 1 .75.75V7h7V2.75a.75.75 0 0 1 1.5 0v10.5a.75.75 0 0 1-1.5 0V8.5h-7v4.75a.75.75 0 0 1-1.5 0V2.75A.75.75 0 0 1 3.75 2Z"></path>
                 </svg>
-            </div>
+            </div> */}
         </Tooltip>,
         bold: <Tooltip title={"Bold (ctrl+B)"} disableInteractive>
             <div className="toolItem bold" onClick={() => setBoldTrig(boldTrig + 1)}>
@@ -335,10 +392,61 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
                     setSpecialCharacter(ch);
                     setSpecialCharacterTrig(specialCharacterTrig + 1);
                 }}
+                options={gSpecialCharacters}
                 anchorEl={specialCharacterMenuAnchorEl}
                 onClose={() => setSpecialCharacterMenuOpen(false)}
             />}
         </>,
+
+
+        characterSize: <>
+            <Tooltip title={"Character size options"} disableInteractive>
+                <div
+                    className="toolItem characterSize"
+                    onClick={(event: React.MouseEvent<HTMLElement>) => {
+                        setCharacterSizeMenuOpen(!characterSizeMenuOpen);
+                        setSpecialCharacterMenuAnchorEl(event.currentTarget);
+                    }}
+                >
+                    <FormatSize />
+                </div>
+            </Tooltip>
+            {characterSizeMenuOpen && <SpecialCharacterDropdown
+                onSelect={(ch) => {
+                    setCharacterSizeMenuOpen(false);
+                    setSpecialCharacter(ch);
+                    setSpecialCharacterTrig(specialCharacterTrig + 1);
+                }}
+                options={gCharacterSize}
+                anchorEl={specialCharacterMenuAnchorEl}
+                onClose={() => setCharacterSizeMenuOpen(false)}
+            />}
+        </>,
+
+        highlight: <>
+            <Tooltip title={"Highlight text"} disableInteractive>
+                <div
+                    className="toolItem highlight"
+                    onClick={(event: React.MouseEvent<HTMLElement>) => {
+                        setHighlightMenuOpen(!highlightMenuOpen);
+                        setSpecialCharacterMenuAnchorEl(event.currentTarget);
+                    }}
+                >
+                    <HighlightIcon />
+                </div>
+            </Tooltip>
+            {highlightMenuOpen && <SpecialCharacterDropdown
+                onSelect={(ch) => {
+                    setHighlightMenuOpen(false);
+                    setSpecialCharacter(ch);
+                    setSpecialCharacterTrig(specialCharacterTrig + 1);
+                }}
+                options={gHighlightOptions}
+                anchorEl={specialCharacterMenuAnchorEl}
+                onClose={() => setHighlightMenuOpen(false)}
+            />}
+        </>,
+
     };
 
     const editorContainerStyle: React.CSSProperties = editorIsVisible ? {} : {
@@ -363,6 +471,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
                     {toolItems.italic}
                     {toolItems.underline}
                     {toolItems.strikethrough}
+                    {toolItems.highlight}
 
                     <div className="divider" />
 
@@ -388,6 +497,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, ...props 
                     {toolItems.heading}
                     {toolItems.quote}
                     {toolItems.code}
+                    {toolItems.characterSize}
                     <div className="divider" />
 
                     {toolItems.abcjs}
@@ -772,9 +882,11 @@ C3D EF=G_A | ^Bc
             </div>
             {props.showActionButtons &&
                 <div className="actionButtonsRow">
+                    <MarkdownLockIndicator wikiApi={wikiPageApi} />
+                    <div className="flex-spacer" />
                     <div className={`freeButton cancelButton`} onClick={props.handleCancel}>{props.hasEdits ? "Cancel" : "Close"}</div>
-                    <div className={`saveButton saveProgressButton ${props.hasEdits ? "freeButton changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSave() } : undefined}>Save progress</div>
-                    <div className={`saveButton saveAndCloseButton ${props.hasEdits ? "freeButton changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
+                    <div className={`freeButton saveButton saveProgressButton ${props.hasEdits ? "changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSave() } : undefined}>Save progress</div>
+                    <div className={`freeButton saveButton saveAndCloseButton ${props.hasEdits ? "changed" : "unchanged"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
                 </div>
             }
 
@@ -785,22 +897,13 @@ C3D EF=G_A | ^Bc
             }
             {tab === "sidebyside" && !IsNullOrWhitespace(props.value) &&
                 <div className="previewContainer">
-                    <div className='previewTitle'>Preview {gCharMap.DownTriangle()}</div>
-                    <div className='previewMarkdownContainer hatch'>
-                        <Markdown markdown={props.value} />
-                    </div>
+                    <div className='previewTitle freeButton' onClick={() => setShowPreview(!showPreview)}>Preview {showPreview ? gCharMap.DownTriangle() : gCharMap.UpTriangle()}</div>
+                    <Collapse in={showPreview}>
+                        <div className='previewMarkdownContainer hatch'>
+                            <Markdown markdown={props.value} />
+                        </div>
+                    </Collapse>
                 </div>
-                // <Popper
-                //     open={true}
-                //     placement='right-start'
-                //     anchorEl={popoverAnchorEl}
-                // >
-                //     <div className="markdownSideBySideContainer">
-                //         <div className="previewContainer">
-                //             <Markdown markdown={props.value} />
-                //         </div>
-                //     </div>
-                // </Popper>
             }
         </div>
 

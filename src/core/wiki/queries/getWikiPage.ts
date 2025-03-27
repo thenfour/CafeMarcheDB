@@ -3,13 +3,15 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import { TGetWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
+import { TGetWikiPageArgs, ZTGetWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { GetWikiPageCore } from "../server/getWikiPageCore";
+import db from "db";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_wiki_pages),
+    resolver.zod(ZTGetWikiPageArgs),
     async (args: TGetWikiPageArgs, ctx: AuthenticatedCtx) => {
-        const ret = await GetWikiPageCore({ slug: args.slug });
+        const ret = await GetWikiPageCore({ canonicalWikiSlug: args.canonicalWikiPath, dbt: db });
         return ret;
     }
 );

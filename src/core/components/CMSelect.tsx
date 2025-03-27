@@ -167,6 +167,7 @@ interface CMSingleSelectBaseProps<Toption> {
     value: Toption | Tnull;
     onChange: (option: Toption | Tnull) => void;
     renderOption: (item: Toption) => React.ReactNode;
+    renderNullOption?: () => React.ReactNode;
     customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
     getOptionInfo: (item: Toption) => ItemInfo;
 
@@ -251,7 +252,7 @@ export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) =>
             variation={{ ...StandardVariationSpec.Strong, selected: ssl.isNullSelected }}
             onClick={onClick()}
         >
-            {"<null>"}
+            {props.renderNullOption ? props.renderNullOption() : "<none>"}
         </CMChip>
     };
 
@@ -281,6 +282,7 @@ export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) =>
                 <CMSingleSelectDialog
                     nullBehavior={props.nullBehavior}
                     renderOption={props.renderOption}
+                    renderNullOption={props.renderNullOption}
                     onCancel={() => setSingleSelectDialogOpen(false)}
                     onOK={option => {
                         props.onChange(option as any); // ugh

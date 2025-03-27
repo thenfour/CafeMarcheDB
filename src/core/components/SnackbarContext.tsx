@@ -28,6 +28,7 @@ export const SnackbarProvider = ({ children }) => {
     const [snackbar, setSnackbar] = React.useState<SnackbarProps>(null);
 
     const showMessage = (props: SnackbarProps) => {
+        console.log(`Snackbar message [${props?.severity || "-"}]: ${props?.children}`);
         setSnackbar(props);
     };
 

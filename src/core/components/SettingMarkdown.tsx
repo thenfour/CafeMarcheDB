@@ -11,7 +11,6 @@ import { CMSmallButton } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/RichTextEditor";
-import { gIconMap } from "../db3/components/IconMap";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;
@@ -67,12 +66,6 @@ const SettingMarkdownEditor = (props: SettingMarkdownEditorProps) => {
             handleSave={handleSave}
             handleSaveAndClose={handleSaveAndClose}
         />
-        {/* 
-        <div className="actionButtonsRow">
-            <div className={`freeButton cancelButton`} onClick={props.onClose}>{hasEdits ? "Cancel" : "Close"}</div>
-            <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div>
-            <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSaveAndClose : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
-        </div> */}
     </>;
 };
 

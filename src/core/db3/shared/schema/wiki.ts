@@ -78,7 +78,19 @@ export const xWikiPage = new db3.xTable({
         }),
         new GhostField({
             authMap: xAuthMap,
-            memberName: "lockUntil",
+            memberName: "lockAcquiredAt",
+        }),
+        new GhostField({
+            authMap: xAuthMap,
+            memberName: "lockExpiresAt",
+        }),
+        new GhostField({
+            authMap: xAuthMap,
+            memberName: "lastEditPingAt",
+        }),
+        new GhostField({
+            authMap: xAuthMap,
+            memberName: "lockId",
         }),
         new VisiblePermissionField({
             columnName: "visiblePermission",

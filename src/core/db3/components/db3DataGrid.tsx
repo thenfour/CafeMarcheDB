@@ -25,7 +25,6 @@ import {
 } from '@mui/x-data-grid';
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
-import { formatMillisecondsToDHMS } from 'shared/time';
 import { CoerceToBoolean } from 'shared/utils';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { KeyValueTable } from 'src/core/components/CMCoreComponents2';
@@ -36,37 +35,10 @@ import * as db3 from '../db3';
 import { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
+import { AgeRelativeToNow } from 'src/core/components/RelativeTimeComponents';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
-
-
-
-const AgeRelativeTo = ({ value1, value2 }: { value1: Date; value2: Date }) => {
-    const delta = value1.valueOf() - value2.valueOf();
-    const isPast = delta < 0;
-    const formattedDuration = formatMillisecondsToDHMS(delta);
-
-    if (formattedDuration === "--") {
-        return <>now</>;
-    }
-
-    return <>{isPast ? `${formattedDuration} ago` : `in ${formattedDuration}`}</>;
-};
-
-const AgeRelativeToNow = ({ value }: { value: Date }) => {
-    const [now, setNow] = React.useState<Date>(new Date());
-
-    React.useEffect(() => {
-        const interval = setInterval(() => {
-            setNow(new Date());
-        }, 1000); // Update every second
-        return () => clearInterval(interval);
-    }, []);
-
-    return <AgeRelativeTo value1={value} value2={now} />;
-};
-
 
 interface ClipboardControlsProps {
     client: DB3Client.xTableRenderClient;

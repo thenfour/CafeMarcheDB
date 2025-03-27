@@ -222,11 +222,6 @@ test cases:
     outline-color: #88f;
 }
 
-.MD3Container.editor .previewContainer {
-    /* background-color: white; */
-    min-height: 70px;
-}
-
 .MD3Container.editor .previewContainer .previewTitle {
     text-transform: uppercase;
     font-weight: bold;
@@ -244,6 +239,7 @@ test cases:
 }
 
 .MD3Container.editor .previewContainer .previewMarkdownContainer {
+    min-height: 70px;
     padding: 7px;
     background-color: white;
     /* for the hatch pattern */
@@ -273,10 +269,17 @@ test cases:
     justify-content: center;
 }
 
-.markdown .markdown-class-big {
-    font-size: 20px;
+.markdown .markdown-class-smaller {
+    font-size: 10px;
 }
 
+.markdown .markdown-class-small {
+    font-size: 13px;
+}
+
+.markdown .markdown-class-big {
+    font-size: 24px;
+}
 
 .markdown .markdown-class-bigger {
     font-size: 30px;
@@ -355,4 +358,11 @@ test cases:
 
 .MD3Container.editor .formattingTipsContentRow .highlight {
     font-weight: bold;
+}
+
+
+.MarkdownLockIndicator {}
+
+.wikiPage .header {
+    display: flex;
 }

@@ -1022,7 +1022,10 @@ model WikiPage {
 
   lockedByUserId Int?
   lockedByUser   User?     @relation(fields: [lockedByUserId], references: [id], onDelete: SetNull)
-  lockUntil      DateTime? // Time until which the lock is valid (or null if unlocked)
+  lockAcquiredAt DateTime?
+  lockExpiresAt  DateTime?
+  lockId         String? // users can open a pagk more than once; this is associated to the specific rendering tree of this editing page.
+  lastEditPingAt DateTime? // last time the page automatically sent an "I'm editing" ping. used to detect stale locks early.
 
   @@unique([slug])
   @@unique([currentRevisionId])

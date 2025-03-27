@@ -175,12 +175,6 @@ const MainContent = () => {
             new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
             new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.PKColumnClient({ columnName: "id" }),
-
-            //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
-            //new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
-            //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
-            //new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
-            //new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, clientIntention }),
         ],
     });
 
@@ -221,8 +215,7 @@ const MainContent = () => {
 
                 {client.items.length === 1 && (
                     <>
-                        <DB3EditRowButton row={client.items[0]!} tableRenderClient={client} onSave={handleSave} label={"Edit your profile data"} />
-                        {/* <DB3EditObjectDialog table={spec} clientIntention={clientIntention} initialValue={client.items[0]!} onOK={handleOk} onCancel={() => { }} /> */}
+                        <DB3EditRowButton row={client.items[0]!} tableRenderClient={client} onSave={handleSave} label={"Edit your profile"} />
                         <DB3RowViewer tableRenderClient={client} row={client.items[0]!} />
                     </>
                 )}

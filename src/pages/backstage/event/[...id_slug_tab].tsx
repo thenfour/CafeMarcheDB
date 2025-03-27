@@ -90,7 +90,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
                 initialTabIndex={initialTabIndex}
                 workflowRefreshTrigger={workflowRefreshTrigger}
                 refetch={refetch}
-                eventDescription={eventDescriptionInfo.latestRevision.content}
+                eventDescription={eventDescriptionInfo.wikiPage?.currentRevision?.content || ""}
             />
         </> : <>
             no event was found. some possibilities:

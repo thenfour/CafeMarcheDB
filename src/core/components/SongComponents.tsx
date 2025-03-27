@@ -140,11 +140,6 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
             hasEdits={hasEdits}
         />
 
-        {/* <div className="actionButtonsRow">
-            <div className={`freeButton cancelButton`} onClick={props.onClose}>{hasEdits ? "Cancel" : "Close"}</div>
-            <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div>
-            <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSaveAndClose : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
-        </div> */}
     </>;
 };
 

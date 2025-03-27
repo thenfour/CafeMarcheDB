@@ -1,24 +1,23 @@
 import { BlitzPage } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
+import db from "db";
 import { Suspense } from "react";
 import { SettingKey } from "shared/utils";
-import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
+import { useWikiPageApi } from "src/core/components/markdown/useWikiPageApi";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import getWikiPage from "src/core/wiki/queries/getWikiPage";
 import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
+import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
 
 
 const WikiPageComponent = ({ wikiPath }: { wikiPath: WikiPath }) => {
-    const [item, itemsExtra] = useQuery(getWikiPage, {
-        slug: wikiPath.canonicalWikiPath,
-    });
+
+    const wikiPageApi = useWikiPageApi({ canonicalWikiPath: wikiPath.canonicalWikiPath });
 
     return <>
         <SettingMarkdown setting="GlobalWikiPage_Markdown"></SettingMarkdown>
         <SettingMarkdown setting={`WikiPage_${wikiPath.canonicalWikiPath}_Markdown` as SettingKey}></SettingMarkdown>
-        <WikiPageControl wikiPageData={item} wikiPath={wikiPath} onUpdated={itemsExtra.refetch} />
+        <WikiPageControl wikiPageApi={wikiPageApi} />
     </>;
 };
 
@@ -30,12 +29,13 @@ interface PageProps {
 export const getServerSideProps = async ({ params }) => {
     const wikiPath = wikiParsePathComponents(params.slug as string[]);
     const ret = await GetWikiPageCore({
-        slug: wikiPath.canonicalWikiPath || "<never>",
+        canonicalWikiSlug: wikiPath.canonicalWikiPath || "<never>",
+        dbt: db,
     });
 
     return {
         props: {
-            title: ret.latestRevision.name,
+            title: ret.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
             wikiPath,
         }
     };

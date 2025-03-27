@@ -1,5 +1,3 @@
-import { slugify } from "shared/rootroot";
-
 
 // export function CMDBLinkMarkdownPlugin(md) {
 //     const defaultRender = md.renderer.rules.html_inline || function (tokens, idx, options, env, self) {

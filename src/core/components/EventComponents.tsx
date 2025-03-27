@@ -1140,12 +1140,14 @@ const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimu
 
     return <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
 
-        {showVisibility && <>
-            <MenuItem>
+        {showVisibility &&
+            <MenuItem disabled={true}>
                 <VisibilityValue permissionId={event.visiblePermissionId} variant='verbose' />
             </MenuItem>
+        }
+        {showVisibility &&
             <Divider />
-        </>}
+        }
 
 
         <MenuItem onClick={async () => {
@@ -1161,24 +1163,26 @@ const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimu
         <Divider />
 
         {uriForThisEvent &&
-            <>
-                <MenuItem onClick={async () => {
-                    await navigator.clipboard.writeText(uriForThisEvent);
-                    closeMenu();
-                    snackbar.showSuccess("Link address copied");
-                }}>
-                    <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
-                    This event: Copy Calendar link
-                </MenuItem>
-                <MenuItem component={Link} href={uriForThisEvent} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                    <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
-                    This event: iCal import
-                </MenuItem>
-            </>}
+            <MenuItem onClick={async () => {
+                await navigator.clipboard.writeText(uriForThisEvent);
+                closeMenu();
+                snackbar.showSuccess("Link address copied");
+            }}>
+                <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
+                This event: Copy Calendar link
+            </MenuItem>
+        }
+        {uriForThisEvent &&
+
+            <MenuItem component={Link} href={uriForThisEvent} target="_blank" rel="noreferrer" onClick={closeMenu}>
+                <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
+                This event: iCal import
+            </MenuItem>
+        }
 
         <Divider />
 
-        {uriForGlobalCalendar && <>
+        {uriForGlobalCalendar &&
             <MenuItem onClick={async () => {
                 await navigator.clipboard.writeText(uriForGlobalCalendar);
                 closeMenu();
@@ -1187,11 +1191,12 @@ const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimu
                 <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
                 Global event calendar: Copy Calendar link
             </MenuItem>
+        }
+        {uriForGlobalCalendar &&
             <MenuItem component={Link} href={uriForGlobalCalendar} target='_blank' rel="noreferrer" onClick={closeMenu}>
                 <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
                 Global event calendar: iCal import
             </MenuItem>
-        </>
         }
     </DotMenu>;
 };

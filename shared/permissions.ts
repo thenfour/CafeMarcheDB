@@ -76,6 +76,7 @@ export enum Permission {
     // ******************** wiki
     view_wiki_pages = "view_wiki_pages",
     edit_wiki_pages = "edit_wiki_pages",
+    admin_wiki_pages = "admin_wiki_pages", // for things like forcibly unlocking a page, manipulating revisions , etc
 
     // ******************** workflow
     view_workflow_instances = "view_workflow_instances", // you can view the workflows tab

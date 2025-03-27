@@ -5,7 +5,7 @@ import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
-import { getEventDescriptionInfoCore } from "src/core/wiki/server/getWikiPageCore";
+import { getEventDescriptionInfoCore } from "src/core/wiki/server/wikiNamespaceEventDescription";
 
 interface CreateCalendarArgs {
     sourceURL: string;
@@ -115,8 +115,8 @@ export const addEventToCalendar = async (
     eventAttendanceIdsRepresentingGoing: number[],
     cancelledStatusIds: number[],
 ): Promise<ICalEvent[]> => {
-    const eventDescriptionInfo = await getEventDescriptionInfoCore(event);
-    const inputs = GetEventCalendarInput(event, cancelledStatusIds, eventDescriptionInfo.latestRevision.content)!;
+    const eventDescriptionInfo = await getEventDescriptionInfoCore(event, db);
+    const inputs = GetEventCalendarInput(event, cancelledStatusIds, eventDescriptionInfo.wikiPage?.currentRevision?.content || "")!;
     return inputs
         .segments
         .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing))

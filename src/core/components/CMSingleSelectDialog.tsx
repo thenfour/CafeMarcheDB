@@ -124,6 +124,7 @@ export interface CMSingleSelectDialogBaseProps<T> {
     getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
     getOptionInfo: (item: T) => ItemInfo;
     renderOption: (value: T) => React.ReactNode;
+    renderNullOption?: () => React.ReactNode;
 
     closeOnSelect?: boolean;
 
@@ -189,6 +190,8 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
 
     const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && ssl.allOptions.some(item => props.doesItemExactlyMatchText!(item.option, filterText));
 
+    const renderNullOption = () => props.renderNullOption ? props.renderNullOption() : "<none>";
+
     const onNewClicked = async () => {
         try {
             const newObj = await props.doInsertFromString!(filterText);
@@ -205,7 +208,7 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
             {props.title}
             {ssl.isLoading && <CircularProgress />}
             <Box sx={{ p: 0 }}>
-                Selected: {ssl.isNullSelected ? "<none>" : renderChip(0, selectedOption!, ssl.selectedItemInfo!, undefined, () => setSelectedOption(ssl.nullValue))}
+                Selected: {ssl.isNullSelected ? renderNullOption() : renderChip(0, selectedOption!, ssl.selectedItemInfo!, undefined, () => setSelectedOption(ssl.nullValue))}
             </Box>
         </DialogTitle>
         <DialogContent dividers>

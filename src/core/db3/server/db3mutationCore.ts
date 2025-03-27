@@ -11,12 +11,12 @@ import { DateTimeRange } from "shared/time";
 import { ChangeAction, ChangeContext, CoalesceBool, CreateChangeContext, ObjectDiff, RegisterChange, getIntersectingFields, sanitize } from "shared/utils";
 import { TWorkflowChange } from "shared/workflowEngine";
 import sharp from "sharp";
+import { z } from "zod";
 import * as db3 from "../db3";
 import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
-import { z } from "zod";
-import { getEventDescriptionInfoCore } from "src/core/wiki/server/getWikiPageCore";
+import { getEventDescriptionInfoCore } from "src/core/wiki/server/wikiNamespaceEventDescription";
 
 var path = require('path');
 var fs = require('fs');
@@ -96,9 +96,9 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
         const existingRevision = existingEvent.revision;
         if (existingRevision === undefined) return;
 
-        const eventDescriptionInfo = await getEventDescriptionInfoCore({ id: args.eventId, name: existingEvent.name || "" });
+        const eventDescriptionInfo = await getEventDescriptionInfoCore({ id: args.eventId, name: existingEvent.name || "" }, transactionalDb);
 
-        const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds, eventDescriptionInfo.latestRevision.content)!;
+        const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds, eventDescriptionInfo.wikiPage?.currentRevision?.content || "")!;
         const newHash = calInp.inputHash || "-";
         const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 

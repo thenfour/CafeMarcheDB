@@ -11,6 +11,14 @@ export const gMillisecondsPerHour = 60 * gMillisecondsPerMinute;
 export const gMillisecondsPerDay = 24 * gMillisecondsPerHour;
 
 
+export function GetDateMinutesFromNow(minutes: number): Date {
+    return new Date(Date.now() + minutes * gMillisecondsPerMinute);
+};
+
+export function GetDateSecondsFromNow(seconds: number): Date {
+    return new Date(Date.now() + seconds * 1000);
+};
+
 // tests >= start and < end. start and end can be swapped
 const isInRange = (number: number, a: number, b: number): boolean => {
     return number >= Math.min(a, b) && number < Math.max(a, b);
@@ -177,10 +185,10 @@ export function getTimeOfDayInMinutes(date: Date) {
 
 
 // formats a single date; date must be valid.
-function formatDate(date: Date): string {
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-    return date.toLocaleDateString(undefined, options);
-}
+// function formatDate(date: Date): string {
+//     const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+//     return date.toLocaleDateString(undefined, options);
+// }
 
 // like a datediff or whatever to calculate age, measured in days.
 export function DateSubtractInDays(a: Date, b: Date) {

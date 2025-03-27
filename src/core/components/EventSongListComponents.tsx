@@ -74,7 +74,7 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                 nominalHeight={100}
                 value={controlledValue.subtitle || ""}
                 autoFocus
-                onSave={() => onClick(controlledValue)}
+                handleSave={() => onClick(controlledValue)}
             />
             <NameValuePair
                 name={"Color"}

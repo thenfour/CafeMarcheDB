@@ -1,5 +1,4 @@
 import { Prisma } from "db";
-import { AuxUserArgs } from "types";
 import { z } from "zod";
 import { slugify } from "../../../../shared/rootroot";
 
@@ -7,64 +6,119 @@ export const enum SpecialWikiNamespace {
     EventDescription = "EventDescription",
 };
 
-const ZWikiSlug = z.string().min(1).transform((str) => str.toLowerCase().trim());
-const ZWikiName = z.string().min(1);
+// lock refreshing is not a perfect science.
+// it's tempting to have a kind of auto-renewal, but it defeats the purpose
+// of expiration (auto renewal when you forget about a background tab would hold the lock forever).
+//
+// but on the other hand we wish to detect the scenario where the user innocently navigates away and their lock
+// didn't have a chance to release. they come back to the edit the page again and they locked themselves out.
+// it's too cumbersome to track that scenario; stick with the lock expiration and manual refresh (like dokuwiki)
+// and in the "lock yourself out" scenario, make an exception and just give it up.
+export const gWikiPageLockDurationSeconds = 15 * 60; // 15 minutes
+export const gWikiEditPingIntervalMilliseconds = 10 * 1000;
+export const gWikiEditAbandonedThresholdMilliseconds = 15 * 1000; // this should be longer than the ping interval
+export const gWikiLockAutoRenewThrottleInterval = 60 * 1000; // renew at most once every 1 minute
 
-export interface TGetWikiPageArgs {
-    slug: string;
-};
-
-export const ZTUpdateWikiPageArgs = z.object({
-    slug: ZWikiSlug,
-    name: ZWikiName,
-    content: z.string(),
-    visiblePermissionId: z.number().nullable(),
-});
-
-export type TUpdateWikiPageArgs = z.infer<typeof ZTUpdateWikiPageArgs>;
-
-
-
-
-export const WikiPageRevisionArgs = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
+////////////////////////////////////////////////////////////////
+export const WikiPageApiRevisionPayloadArgs = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs>()({
     select: {
         id: true,
         name: true,
         content: true,
         createdAt: true,
-        createdByUserId: true,
-        createdByUser: AuxUserArgs,
-        wikiPageId: true,
-    },
-});
-
-
-export type WikiPageRevisionInfo = Prisma.WikiPageRevisionGetPayload<typeof WikiPageRevisionArgs>;
-
-export const WikiPageArgs = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
-    select: {
-        slug: true,
-        id: true,
-        visiblePermissionId: true,
-    },
-});
-
-export type WikiPageRecordInfo = Prisma.WikiPageGetPayload<typeof WikiPageArgs>;
-
-export const WikiPageArgsWithLatestRevision = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
-    select: {
-        ...WikiPageArgs.select,
-        revisions: { // take only the 1st most recent revision
-            take: 1,
-            orderBy: {
-                createdAt: 'desc'
-            },
-            ...WikiPageRevisionArgs,
+        createdByUser: {
+            select: {
+                id: true,
+                name: true,
+            }
         },
     },
 });
+export type WikiPageApiRevisionPayload = Prisma.WikiPageRevisionGetPayload<typeof WikiPageApiRevisionPayloadArgs>;
 
-//export type WikiPageRecordInfoWithLatestRevision = Prisma.WikiPageGetPayload<typeof WikiPageArgs>;
+export const WikiPageApiPayloadArgs = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
+    select: {
+        slug: true,
+        namespace: true,
+        visiblePermissionId: true,
+        id: true,
+        lockId: true,
+        lockAcquiredAt: true,
+        lockExpiresAt: true,
+        lastEditPingAt: true,
+        lockedByUser: {
+            select: {
+                id: true,
+                name: true,
+            }
+        },
+        currentRevision: {
+            ...WikiPageApiRevisionPayloadArgs,
+        }
+    }
+});
+export type WikiPageApiPayload = Prisma.WikiPageGetPayload<typeof WikiPageApiPayloadArgs>;
+
+////////////////////////////////////////////////////////////////
+export type WikiPageApiUpdatePayload = Prisma.WikiPageRevisionGetPayload<{
+    select: {
+        name: true,
+        content: true,
+    }
+}>;
+
+
+////////////////////////////////////////////////////////////////
+const ZWikiSlug = z.string().min(1).transform((str) => str.toLowerCase().trim());
+const ZWikiTitle = z.string().min(1);
+
+////////////////////////////////////////////////////////////////
+export const ZTGetWikiPageArgs = z.object({
+    canonicalWikiPath: ZWikiSlug,
+});
+
+export type TGetWikiPageArgs = z.infer<typeof ZTGetWikiPageArgs>;
+
+////////////////////////////////////////////////////////////////
+export const ZTSetWikiPageVisibilityArgs = z.object({
+    canonicalWikiPath: ZWikiSlug,
+    visiblePermissionId: z.number().nullable(),
+});
+
+export type TSetWikiPageVisibilityArgs = z.infer<typeof ZTSetWikiPageVisibilityArgs>;
+
+////////////////////////////////////////////////////////////////
+export const ZTUpdateWikiPageArgs = z.object({
+    canonicalWikiPath: ZWikiSlug,
+    title: ZWikiTitle,
+    content: z.string(),
+    baseRevisionId: z.number().nullable(),
+    lockId: z.string().nullable(), // you should always have a lock, but some weird cases like admin forcibly removing locks may cancel them.
+});
+
+export type TUpdateWikiPageArgs = z.infer<typeof ZTUpdateWikiPageArgs>;
+
+////////////////////////////////////////////////////////////////
+export const ZTAcquireLockOnWikiPageArgs = z.object({
+    canonicalWikiPath: ZWikiSlug,
+    baseRevisionId: z.number().nullable(),
+    lockId: z.string(),
+});
+export type TAcquireLockOnWikiPageArgs = z.infer<typeof ZTAcquireLockOnWikiPageArgs>;
+
+////////////////////////////////////////////////////////////////
+export const ZTWikiReleaseYourLockArgs = z.object({
+    canonicalWikiPath: ZWikiSlug,
+    lockId: z.string(),
+});
+export type TWikiReleaseYourLockArgs = z.infer<typeof ZTWikiReleaseYourLockArgs>;
+
+
+////////////////////////////////////////////////////////////////
+export const ZTAdminClearPageLockArgs = z.object({
+    canonicalWikiPath: ZWikiSlug,
+});
+export type TAdminClearPageLockArgs = z.infer<typeof ZTAdminClearPageLockArgs>;
 
 export const WikiPageEventContextArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
@@ -103,7 +157,7 @@ export type WikiPageEventContext = Prisma.EventGetPayload<typeof WikiPageEventCo
 
 export type WikiPath = {
     namespace: string | null,
-    slug: string, // without namespace
+    slugWithoutNamespace: string, // without namespace
     aestheticSlug: string | null; // valid if the slug has an aesthetic slug after it, like /wiki/event/123/the-big-festival
     canonicalWikiPath: string; // combined slug + namespace
     uriRelativeToHost: string;
@@ -112,8 +166,7 @@ export type WikiPath = {
 
 export type WikiPageData = {
     eventContext: WikiPageEventContext | null,
-    wikiPage: WikiPageRecordInfo;
-    latestRevision: WikiPageRevisionInfo;
+    wikiPage: WikiPageApiPayload | null; // new pages = null
     titleIsEditable: boolean;
     specialWikiNamespace: SpecialWikiNamespace | null;
     isExisting: boolean;
@@ -150,7 +203,7 @@ export const wikiParsePathComponents = (components: string[]): WikiPath => {
 
     return {
         namespace,
-        slug,
+        slugWithoutNamespace: slug,
         canonicalWikiPath,
         uriRelativeToHost: `/backstage/wiki/${canonicalWikiPath}`,
         aestheticSlug,
@@ -167,7 +220,7 @@ export const wikiMakeWikiPathFromEventDescription = (event: Prisma.EventGetPaylo
     const aestheticSlug = slugify(event.name);
     return {
         namespace: "EventDescription",
-        slug: `${event.id}`,
+        slugWithoutNamespace: `${event.id}`,
         canonicalWikiPath,
         aestheticSlug,
         uriRelativeToHost: wikiMakeRelativeURI(canonicalWikiPath),

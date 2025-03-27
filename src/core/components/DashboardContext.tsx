@@ -136,6 +136,10 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
         if (!attendance) return false;
         return attendance.strength >= 50;
     }
+
+    getVisibilityPermissions(): Prisma.PermissionGetPayload<{}>[] {
+        return this.permission.filter(p => p.isVisibility);
+    }
 };
 
 

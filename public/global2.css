@@ -2587,10 +2587,11 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
 .actionButtonsRow {
     display: flex;
     justify-content: right;
+    padding: 0 10px;
 }
 
 
-.actionButtonsRow>* {
+.actionButtonsRow>.freeButton {
     padding: 3px 13px;
     border: 1px solid #666;
     border-radius: 4px;
@@ -2603,30 +2604,30 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
     user-select: none;
 }
 
-.actionButtonsRow>*.cancelButton {
-    color: #a00;
-    background-color: #a002;
-    border: 1px solid #a00;
+.actionButtonsRow>.freeButton.cancelButton {
+    color: #444;
+    background-color: #ddd;
+    border: 1px solid #888;
 }
 
-.actionButtonsRow>*.saveProgressButton {
+.actionButtonsRow>.freeButton.saveProgressButton {
     color: #008;
     background-color: #0082;
-    border: 1px solid #008;
+    border: 1px solid #0084;
 }
 
-.actionButtonsRow>*.saveProgressButton.unchanged {
+.actionButtonsRow>.freeButton.saveProgressButton.unchanged {
     opacity: 30%;
     filter: saturate(0);
 }
 
-.actionButtonsRow>*.saveAndCloseButton {
+.actionButtonsRow>.freeButton.saveAndCloseButton {
     color: #080;
     background-color: #0801;
-    border: 1px solid #080;
+    border: 1px solid #0804;
 }
 
-.actionButtonsRow>*.saveAndCloseButton.unchanged {
+.actionButtonsRow>.freeButton.saveAndCloseButton.unchanged {
     opacity: 30%;
     filter: saturate(0);
 }
