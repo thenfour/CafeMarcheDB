@@ -1,5 +1,6 @@
+import { Prisma } from "db";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
+import { wikiMakeWikiPathFromEventDescription, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
 
 export async function GetWikiPageCore({ canonicalWikiSlug, dbt }: { canonicalWikiSlug: string, dbt: TransactionalPrismaClient }): Promise<WikiPageData> {
@@ -25,3 +26,11 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt }: { canonicalWik
 
     return ret;
 };
+
+
+export async function getEventDescriptionInfoCore(event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>, dbt: TransactionalPrismaClient): Promise<WikiPageData> {
+    const path = wikiMakeWikiPathFromEventDescription(event);
+    const page = await GetWikiPageCore({ canonicalWikiSlug: path.canonicalWikiPath, dbt });
+    return page;
+};
+

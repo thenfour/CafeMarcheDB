@@ -2,9 +2,9 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
+import { getEventDescriptionInfoCore } from "src/core/wiki/server/getWikiPageCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "../shared/db3Helpers";
-import { getEventDescriptionInfoCore } from "src/core/wiki/server/wikiNamespaceEventDescription";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_events),

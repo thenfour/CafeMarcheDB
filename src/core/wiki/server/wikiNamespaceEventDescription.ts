@@ -1,8 +1,6 @@
-import db, { Prisma } from "db";
+import db from "db";
 import { IsEntirelyIntegral } from "shared/utils";
-import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { SpecialWikiNamespace, wikiMakeWikiPathFromEventDescription, WikiNamespacePlugin, WikiPageData, WikiPageEventContext, WikiPageEventContextArgs } from "../../wiki/shared/wikiUtils";
-import { GetWikiPageCore } from "./getWikiPageCore";
+import { SpecialWikiNamespace, WikiNamespacePlugin, WikiPageData, WikiPageEventContext, WikiPageEventContextArgs } from "../../wiki/shared/wikiUtils";
 
 export const ProcessEventDescriptionForWikiPage: WikiNamespacePlugin = async (namespace: string, slugWithoutNamespace: string, inp: WikiPageData): Promise<WikiPageData> => {
     if (namespace.toLowerCase() !== SpecialWikiNamespace.EventDescription.toLowerCase()) {
@@ -29,10 +27,3 @@ export const ProcessEventDescriptionForWikiPage: WikiNamespacePlugin = async (na
 
     return inp;
 };
-
-export async function getEventDescriptionInfoCore(event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>, dbt: TransactionalPrismaClient): Promise<WikiPageData> {
-    const path = wikiMakeWikiPathFromEventDescription(event);
-    const page = await GetWikiPageCore({ canonicalWikiSlug: path.canonicalWikiPath, dbt });
-    return page;
-};
-

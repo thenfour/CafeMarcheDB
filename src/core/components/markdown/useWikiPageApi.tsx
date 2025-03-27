@@ -1,7 +1,8 @@
 // a react hook that manages accessing & editing wiki pages
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import React, { use } from "react";
+import React from "react";
+import { useInterval, useThrottle } from "shared/useGeneral";
 import acquireLockOnWikiPage from "src/core/wiki/mutations/acquireLockOnWikiPage";
 import updateWikiPage from "src/core/wiki/mutations/updateWikiPage";
 import wikiAdminClearLock from "src/core/wiki/mutations/wikiAdminClearLock";
@@ -13,7 +14,6 @@ import { GetWikiPageUpdatabilityResult, UpdateWikiPageResultOutcome } from "src/
 import { gWikiEditPingIntervalMilliseconds, gWikiLockAutoRenewThrottleInterval, WikiPageApiPayload, WikiPageApiUpdatePayload, WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { v4 as uuidv4 } from "uuid";
 import { useDashboardContext } from "../DashboardContext";
-import { useInterval, useThrottle } from "shared/useGeneral";
 
 // upon begin edit:
 //     - try to acquire lock (with your client-generated uid)
@@ -118,7 +118,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       return lockResult;
     }
 
-    currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
+    void currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
 
     setLockUid(newLockUid);
     setBasePage(lockResult.currentPage);
@@ -135,7 +135,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       content: args.revisionData.content,
     });
 
-    currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
+    void currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
 
     // when you save progress, we update the base revision to the latest revision.
     setBasePage(result.currentPage);
@@ -151,7 +151,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     });
     setLockUid(null);
     setBasePage(null);
-    currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
+    void currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
   }
 
   async function adminClearLock(): Promise<void> {
@@ -160,7 +160,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     const ret = await wikiAdminClearLockMutation({
       canonicalWikiPath: args.canonicalWikiPath,
     });
-    currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
+    void currentRevisionDataQueryExtras.refetch(); // refresh lock status et al
   }
 
   const renewYourLockThrottled = useThrottle(() => {
