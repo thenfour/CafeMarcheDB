@@ -482,6 +482,9 @@ model Event {
   statusId            Int?
   status              EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
+  descriptionWikiPageId Int?
+  descriptionWikiPage   WikiPage? @relation(fields: [descriptionWikiPageId], references: [id], onDelete: SetNull, name: "eventDescriptionWikiPage")
+
   // sets vs. options vs . ???
   segmentBehavior String?
 
@@ -554,6 +557,7 @@ model Event {
   customFieldValues EventCustomFieldValue[]
 
   @@unique([uid])
+  @@unique([descriptionWikiPageId])
   @@index([name])
   @@index([typeId])
   @@index([isDeleted])
@@ -1026,6 +1030,8 @@ model WikiPage {
   lockExpiresAt  DateTime?
   lockId         String? // users can open a pagk more than once; this is associated to the specific rendering tree of this editing page.
   lastEditPingAt DateTime? // last time the page automatically sent an "I'm editing" ping. used to detect stale locks early.
+
+  events Event? @relation("eventDescriptionWikiPage")
 
   @@unique([slug])
   @@unique([currentRevisionId])

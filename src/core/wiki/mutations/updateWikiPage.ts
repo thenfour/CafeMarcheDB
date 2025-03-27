@@ -1,14 +1,15 @@
 // updateWikiPage
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import { assert, AuthenticatedCtx } from "blitz";
 import db from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
+import { IsEntirelyIntegral } from "shared/utils";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
 import { getDefaultVisibilityPermission } from "src/core/db3/server/serverPermissionUtils";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
+import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 
 const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<GetWikiPageUpdatabilityResult> => {
 
@@ -57,6 +58,21 @@ const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: Wi
             },
             ...WikiPageApiPayloadArgs,
         });
+    }
+
+    const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
+    if (wikiPath.namespace?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()) {
+        // for safety, now make sure the event is linked to this page. yes it's redundant, but safe.
+        assert(currentPage.id === updatedPage.id, "Wiki page ID mismatch after update.");
+        if (IsEntirelyIntegral(wikiPath.slugWithoutNamespace)) {
+            const eventId = parseInt(wikiPath.slugWithoutNamespace);
+            await dbt.event.update({
+                where: { id: eventId },
+                data: {
+                    descriptionWikiPageId: currentPage.id,
+                },
+            });
+        }
     }
 
     return {

@@ -714,6 +714,8 @@ export const xEventArgs_Base: db3.TableDesc = {
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "updatedAt", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "descriptionWikiPageId", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "descriptionWikiPage", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
         new GhostField({ memberName: "workflowInstanceId", authMap: xEventAuthMap_R_EOwn_EManagers }),
         //new GhostField({ memberName: "workflowDefId", authMap: xEventAuthMap_R_EOwn_EManagers }),
@@ -802,6 +804,11 @@ export const EventSearchArgsNP = Prisma.validator<Prisma.EventDefaultArgs>()({
                 responses: true,
             }
         },
+        descriptionWikiPage: {
+            include: {
+                currentRevision: true,
+            }
+        }
     },
 });
 

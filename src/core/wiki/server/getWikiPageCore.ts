@@ -1,6 +1,5 @@
-import { Prisma } from "db";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { GetWikiPageUpdatability, wikiMakeWikiPathFromEventDescription, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
+import { GetWikiPageUpdatability, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
 
 interface GetWikiPageCoreArgs {
@@ -40,26 +39,5 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ...args }: GetWi
     }
 
     return ret;
-};
-
-
-interface GetEventDescriptionInfoCoreArgs {
-    event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>;
-    currentUserId: number | null;
-    clientBaseRevisionId: number | null;
-    clientLockId: string | null;
-    dbt: TransactionalPrismaClient;
-};
-
-export async function getEventDescriptionInfoCore(args: GetEventDescriptionInfoCoreArgs): Promise<WikiPageData> {
-    const path = wikiMakeWikiPathFromEventDescription(args.event);
-    const page = await GetWikiPageCore({
-        canonicalWikiSlug: path.canonicalWikiPath,
-        currentUserId: args.currentUserId,
-        clientBaseRevisionId: args.clientBaseRevisionId,
-        clientLockId: args.clientLockId,
-        dbt: args.dbt,
-    });
-    return page;
 };
 

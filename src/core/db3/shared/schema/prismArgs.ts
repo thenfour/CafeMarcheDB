@@ -891,7 +891,6 @@ export const compareEventSegments = (
 export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
     include: {
         status: true,
-        //visiblePermission: VisiblePermissionInclude,
         createdByUser: AuxUserArgs,
         songLists: { ...EventSongListArgs, orderBy: EventSongListNaturalOrderBy },
         expectedAttendanceUserTag: {
@@ -900,14 +899,6 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
             }
         },
         tags: true,
-        // {
-        //     orderBy: EventTagAssignmentNaturalOrderBy,
-        //     include: {
-        //         eventTag: true,
-        //     }
-        // },
-        //type: true,
-        //comments: EventCommentArgs,
         fileTags: {
             include: {
                 file: FileWithTagsArgs,
@@ -916,26 +907,17 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         },
         segments: {
             orderBy: EventSegmentNaturalOrderBy,
-            //include: EventSegmentArgs.include,
             include: {
-                //event: true,
                 responses: true,
             }
-
         },
-        // responses: {
-        //     include: EventUserResponseArgs.include,
-        // }
         responses: true,
         workflowDef: true,
-        customFieldValues: {
-            // include: {
-            //     customField: true,
-            // },
-            // include: {
-
-            // }
-            // orderBy: EventCustomFieldNaturalOrderBy,
+        customFieldValues: true,
+        descriptionWikiPage: {
+            include: {
+                currentRevision: true,
+            }
         }
     }
 });

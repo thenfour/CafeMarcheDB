@@ -3,7 +3,7 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Checklist, LibraryMusic } from '@mui/icons-material';
+import { Checklist, EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Select, Switch, Tooltip } from "@mui/material";
@@ -1394,7 +1394,6 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
 
 export interface EventDetailFullProps {
     event: EventEnrichedVerbose_Event,
-    eventDescription: string,
     tableClient: DB3Client.xTableRenderClient;
     initialTabIndex?: string;
     readonly: boolean;
@@ -1404,13 +1403,12 @@ export interface EventDetailFullProps {
 
 type EventDetailFullTabAreaProps = EventDetailFullProps & {
     selectedTab: string;
-    eventDescription: string,
     setSelectedTab: (v: string) => void;
     eventData: VerboseEventWithMetadata;
     userMap: db3.UserInstrumentList;
 };
 
-export const EventDetailFullTab2Area = ({ eventData, eventDescription, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
+export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
     const handleTabChange = (_: undefined | React.SyntheticEvent, newValue: string) => {
@@ -1444,7 +1442,7 @@ export const EventDetailFullTab2Area = ({ eventData, eventDescription, refetch, 
             summaryIcon={gIconMap.Info()}
             summaryTitle="Info"
             thisTabId={gEventDetailTabSlugIndices.info}
-            canBeDefault={!IsNullOrWhitespace(eventDescription)}
+            canBeDefault={!IsNullOrWhitespace(eventData.event.descriptionWikiPage?.currentRevision?.content)}
         >
             <div className='descriptionLine'>
                 <Suspense>
@@ -1518,9 +1516,9 @@ export const EventDetailFullTab2Area = ({ eventData, eventDescription, refetch, 
 
 
 
-export const EventDetailFull = ({ event, eventDescription, tableClient, ...props }: EventDetailFullProps) => {
+export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
 
-    const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(eventDescription) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
+    const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
     const tabSlug = selectedTab;//Object.keys(gEventDetailTabSlugIndices)[selectedTab];
     const router = useRouter();
     const dashboardContext = React.useContext(DashboardContext);
@@ -1549,7 +1547,7 @@ export const EventDetailFull = ({ event, eventDescription, tableClient, ...props
         />
 
         <Suspense>
-            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={props.refetch} eventData={eventData} userMap={userMap} eventDescription={eventDescription} />
+            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={props.refetch} eventData={eventData} userMap={userMap} />
         </Suspense>
     </EventDetailContainer>;
 };
@@ -1708,6 +1706,12 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         }
         {showTabs && // gIconMap.Info()
             <div className='SearchItemBigCardLinkContainer'>
+                {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <SearchItemBigCardLink
+                    icon={<EditNote />}
+                    title="View info"
+                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                />
+                }
                 {event.songLists.length > 0 && <SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="View setlist"

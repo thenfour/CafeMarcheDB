@@ -2,7 +2,6 @@ import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
 import { floorLocalToLocalDay } from "shared/time";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
-import { getEventDescriptionInfoCore } from "src/core/wiki/server/getWikiPageCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
@@ -115,8 +114,7 @@ export const addEventToCalendar = async (
     eventAttendanceIdsRepresentingGoing: number[],
     cancelledStatusIds: number[],
 ): Promise<ICalEvent[]> => {
-    const eventDescriptionInfo = await getEventDescriptionInfoCore({ event, dbt: db, clientBaseRevisionId: null, clientLockId: null, currentUserId: null });
-    const inputs = GetEventCalendarInput(event, cancelledStatusIds, eventDescriptionInfo.wikiPage?.currentRevision?.content || "")!;
+    const inputs = GetEventCalendarInput(event, cancelledStatusIds)!;
     return inputs
         .segments
         .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing))

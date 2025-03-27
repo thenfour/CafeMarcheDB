@@ -81,6 +81,11 @@ export const EventForCalArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
                 sortOrder: "asc",
             }
         },
+        descriptionWikiPage: {
+            include: {
+                currentRevision: true,
+            }
+        }
     }
 });
 
@@ -223,7 +228,7 @@ type GetEventCalendarInputResult = {
     inputHash: string;
     segments: EventCalendarInput[];
 };
-export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[], eventDescription: string): GetEventCalendarInputResult | null => {
+export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[]): GetEventCalendarInputResult | null => {
     // if you pass in something that is insufficient for using as an event.
     // it's theoretical because it's always going to be an event object.
     if (event.revision === undefined) return null;
@@ -234,7 +239,7 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStat
 
     // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
     // so just bake it, and keep the payload simple.
-    let descriptionText = IsNullOrWhitespace(eventDescription) ? "" : markdownToPlainText(eventDescription);
+    let descriptionText = IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) ? "" : markdownToPlainText(event.descriptionWikiPage?.currentRevision?.content || "");
     if (setLists.length) {
         descriptionText += "\n\n" + setLists.join(`\n\n`);
     }

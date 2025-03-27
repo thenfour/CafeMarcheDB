@@ -107,7 +107,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
 
     // create description wiki
     if (faker.datatype.boolean(0.5)) {
-        await gState.prisma.wikiPage.create({
+        const wp = await gState.prisma.wikiPage.create({
             data: {
                 slug: `EventDescription/${event.id}`,
                 visiblePermissionId: visibilityPermissionId,
@@ -118,6 +118,13 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
                         name: `(description for event #${event.id} ${event.name})`,
                     }
                 }
+            }
+        });
+
+        await gState.prisma.event.update({
+            where: { id: event.id },
+            data: {
+                descriptionWikiPageId: wp.id,
             }
         });
     }

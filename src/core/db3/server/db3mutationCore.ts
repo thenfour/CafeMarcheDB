@@ -11,7 +11,6 @@ import { DateTimeRange } from "shared/time";
 import { CoalesceBool, ObjectDiff, sanitize } from "shared/utils";
 import { TWorkflowChange } from "shared/workflowEngine";
 import sharp from "sharp";
-import { getEventDescriptionInfoCore } from "src/core/wiki/server/getWikiPageCore";
 import { z } from "zod";
 import * as db3 from "../db3";
 import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType, getFileCustomData } from "../shared/apiTypes";
@@ -97,9 +96,7 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
         const existingRevision = existingEvent.revision;
         if (existingRevision === undefined) return;
 
-        const eventDescriptionInfo = await getEventDescriptionInfoCore({ event: { id: args.eventId, name: existingEvent.name || "" }, dbt: transactionalDb, clientBaseRevisionId: null, clientLockId: null, currentUserId: null });
-
-        const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds, eventDescriptionInfo.wikiPage?.currentRevision?.content || "")!;
+        const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds)!;
         const newHash = calInp.inputHash || "-";
         const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 

@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `wikipage` ADD COLUMN `namespace` VARCHAR(768) NULL;
+ALTER TABLE `WikiPage` ADD COLUMN `namespace` VARCHAR(768) NULL;
 
 
 -- 2) Set `namespace` to the portion before the first slash (if any).

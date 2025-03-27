@@ -1,5 +1,4 @@
 import { BlitzPage, useParams } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
 import db from "db";
 import { GetServerSideProps } from 'next';
 import React, { Suspense } from 'react';
@@ -14,7 +13,6 @@ import { EventTableClientColumns } from "src/core/components/EventComponentsBase
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import getEventDescription from "src/core/db3/queries/getEventDescription";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
@@ -41,10 +39,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
             columns: [
                 EventTableClientColumns.id,
                 EventTableClientColumns.name,
-                //EventTableClientColumns.slug,
                 EventTableClientColumns.locationDescription,
-                //EventTableClientColumns.locationURL,
-                //EventTableClientColumns.segmentBehavior,
                 EventTableClientColumns.type,
                 EventTableClientColumns.status,
                 EventTableClientColumns.tags,
@@ -70,8 +65,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
     const event = eventRaw ? db3.enrichSearchResultEvent(eventRaw, dashboardContext) : null;
 
-    const [eventDescriptionInfo] = useQuery(getEventDescription, { eventId });
-
     const refetch = () => {
         tableClient.refetch();
     };
@@ -91,7 +84,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
                 initialTabIndex={initialTabIndex}
                 workflowRefreshTrigger={workflowRefreshTrigger}
                 refetch={refetch}
-                eventDescription={eventDescriptionInfo.wikiPage?.currentRevision?.content || ""}
             />
         </> : <>
             no event was found. some possibilities:
@@ -139,7 +131,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params, req }) =>
     });
 
     const statuses = await db.eventStatus.findMany();
-    //const eventStatusAccessor = new TableAccessor(statuses);
     const cancelledStatusIds = db3.getCancelledStatusIds(statuses);
     const isCancelled = (statusId: number | null) => {
         if (!statusId) return false;
