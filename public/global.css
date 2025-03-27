@@ -732,3 +732,19 @@ span.verified {
 span.songListVerified {
   font-size: 18px;
 }
+
+
+.test_quickSearchResultItem {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  margin: 4px;
+  border-radius: 4px;
+  background-color: white;
+  border: 1px solid #ddd;
+}
+
+.test_quickSearchResultItem:hover {
+  background-color: #f8f8f8;
+  border: 1px solid blue;
+}

@@ -346,9 +346,14 @@ const MainContent = () => {
 
     return <div>
 
-        <AutoCompleteSongEventTester />
+        <div>
+            <a href="test/CMSelectTest">CMSelectTest.tsx</a>
+        </div>
+        <div>
+            <a href="test/quickSearchTest">quickSearchTest.tsx</a>
+        </div>
 
-        <a href="CMSelectTest">CMSelectTest.tsx</a>
+        <AutoCompleteSongEventTester />
 
         <ActivityLogValueViewerTester />
 

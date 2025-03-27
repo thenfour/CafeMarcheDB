@@ -178,3 +178,53 @@ export function partition<TRow>(
 
     return [matching, notMatching];
 }
+
+export function calculateMatchStrength(text: string, keyword: string): number {
+    // Return 0 for empty or whitespace-only keywords.
+    if (!keyword.trim()) return 0;
+
+    const lowerText = text.toLowerCase();
+    const lowerKeyword = keyword.toLowerCase();
+    const index = lowerText.indexOf(lowerKeyword);
+    if (index === -1) return 0;
+
+    // Base score: 1 for at least one match.
+    let score = 1;
+
+    // Bonus if the match occurs at the beginning or at a word boundary.
+    if (index === 0 || /\W/.test(lowerText.charAt(index - 1))) {
+        score += 1;
+    }
+
+    // Bonus for additional occurrences (each extra occurrence adds 0.5).
+    const occurrences = lowerText.split(lowerKeyword).length - 1;
+    score += (occurrences - 1) * 0.5;
+
+    // scale by keyword length. short keywords (1 & 2 chars) are less strong
+    if (keyword.length < 3) {
+        score *= 0.5; // reduce score for short keywords
+    }
+    else if (keyword.length > 5) {
+        score *= 1.3; // increase score for long keywords
+    }
+    return score;
+}
+
+export function calculateMatchStrengthAllKeywordsRequired(text: string, keywords: string[]): number {
+    let score = 0;
+    for (const keyword of keywords) {
+        const matchStrength = calculateMatchStrength(text, keyword);
+        if (matchStrength === 0) return 0; // if any keyword doesn't match, return 0
+        score += matchStrength;
+    }
+    return score;
+}
+
+export function calculateMatchStrengthAnyKeyword(text: string, keywords: string[]): number {
+    let score = 0;
+    for (const keyword of keywords) {
+        const matchStrength = calculateMatchStrength(text, keyword);
+        score += matchStrength;
+    }
+    return score;
+}

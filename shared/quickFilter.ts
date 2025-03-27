@@ -1,3 +1,4 @@
+import { calculateMatchStrengthAllKeywordsRequired } from "./rootroot";
 import { IsEntirelyIntegral, IsNullOrWhitespace } from "./utils";
 
 // TODO: remove this in favor of better quick search stuff below.
@@ -52,6 +53,7 @@ export interface QuickSearchItemMatch {
     name: string,
     absoluteUri?: string | undefined,
     matchStrength: number;
+    matchingField: string | undefined;
     itemType: "event" | "song" | "user" | "instrument" | "wikiPage";
 
     // here give context on the match. a snippet of the matching text with highlights
@@ -104,11 +106,12 @@ function MakeWhereInputConditionRequiringAllKeywords(fieldName: string, keywords
 //     return { OR: fieldNames.map(fieldName => MakeWhereInputConditionRequiringAllKeywords(fieldName, keywords)) };
 // }
 
-type SearchableTableFieldType = "string" | "pk" | "date";
+export type SearchableTableFieldType = "string" | "pk" | "date";
 
-interface SearchableTableFieldSpec {
+export interface SearchableTableFieldSpec {
     fieldName: string;
     fieldType: SearchableTableFieldType;
+    strengthMultiplier: number; // tweak matches
 }
 
 // given a list of db field info, and parsed query, return a single prisma condition to find matches
@@ -141,4 +144,73 @@ export function MakeWhereCondition(fields: SearchableTableFieldSpec[], keywords:
     }
 
     return { OR: conditions };
+};
+
+
+
+interface CalculateMatchStrengthResult {
+    fieldName: string;
+    matchStrength: number;
+}
+
+
+const gPkMatchStrength = 3;
+const gDateRangeMatchStrength = 3;
+
+function CalculateMatchStrengthForField(field: SearchableTableFieldSpec, value: any, filter: ParseQuickFilterResult): CalculateMatchStrengthResult {
+    const NoMatch = {
+        fieldName: field.fieldName,
+        matchStrength: 0,
+    };
+    switch (field.fieldType) {
+        case "string":
+            return {
+                fieldName: field.fieldName,
+                matchStrength: field.strengthMultiplier * calculateMatchStrengthAllKeywordsRequired(value, filter.keywords),
+            };
+        case "pk":
+            if (!filter.pkid || filter.pkid !== value) {
+                return NoMatch;
+            }
+            return {
+                fieldName: field.fieldName,
+                matchStrength: field.strengthMultiplier * gPkMatchStrength,
+            };
+        case "date":
+            if (!filter.dateRange) {
+                return NoMatch;
+            }
+            const dateMatches = value >= filter.dateRange.start && value < filter.dateRange.end;
+            if (!dateMatches) {
+                return NoMatch;
+            }
+            return {
+                fieldName: field.fieldName,
+                matchStrength: field.strengthMultiplier * gDateRangeMatchStrength,
+            };
+    };
+}
+
+export function CalculateMatchStrength(fields: SearchableTableFieldSpec[], values: Record<string, any>, filter: ParseQuickFilterResult): CalculateMatchStrengthResult {
+    // calculate a result for all fields, then return the best match.
+    let results: CalculateMatchStrengthResult[] = [];
+    for (const field of fields) {
+        const value = values[field.fieldName];
+        if (!value) continue;
+        results.push(CalculateMatchStrengthForField(field, value, filter));
+    }
+
+    // filter out 0-strength matches.
+    results = results.filter(result => result.matchStrength > 0);
+    if (results.length === 0) return {
+        fieldName: "",
+        matchStrength: 0,
+    }; // no matches found.
+
+    // return the best match.
+    const bestMatch = results.reduce((prev, current) => {
+        return (prev.matchStrength > current.matchStrength) ? prev : current;
+    });
+
+    return bestMatch;
 };
