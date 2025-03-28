@@ -17,10 +17,36 @@
     ;
 }
 
-.NumberField.readonly,
-.NumberField.inert {
-    /* background-color: #00000008;
-    color: #bbb; */
+.SetlistPlannerDocumentOverviewList {
+    margin: 15px;
+    padding: 10px;
+}
+
+.SetlistPlannerDocumentOverviewGroupItemList {
+    display: flex;
+    flex-wrap: wrap;
+    width: 900px;
+    gap: 7px;
+    padding: 10px;
+}
+
+.SetlistPlannerDocumentOverviewGroupHeader .MuiAccordionSummary-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.SetlistPlannerDocumentOverviewGroupHeader .title {
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--primary-color);
+}
+
+.SetlistPlannerDocumentOverviewGroupHeader .subtitle {
+    font-size: 14px;
+    color: #888;
 }
 
 .SetlistPlannerDocumentOverviewItem {

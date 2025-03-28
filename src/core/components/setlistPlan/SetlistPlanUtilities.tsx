@@ -81,6 +81,7 @@ export interface SetlistPlanMutator {
     redo: () => void;
 
     setName: (name: string) => void;
+    setGroupName: (groupName: string) => void;
     setDescription: (description: string) => void;
     setAutocompleteMaxPointsPerRehearsal: (maxPoints: number) => void;
     setNotes: (notes: string) => void;

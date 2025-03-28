@@ -30,6 +30,7 @@ export default resolver.pipe(
                 },
                 data: {
                     name: args.name,
+                    groupName: args.groupName || "",
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),
                 },
@@ -38,6 +39,7 @@ export default resolver.pipe(
             newObj = await db.setlistPlan.create({
                 data: {
                     name: args.name,
+                    groupName: args.groupName || "",
                     createdByUserId: currentUser.id,
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),

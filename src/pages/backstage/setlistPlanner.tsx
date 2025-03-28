@@ -6,13 +6,13 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Backdrop, Button, ButtonGroup, FormControlLabel, Switch } from "@mui/material";
+import { Accordion, AccordionSummary, Backdrop, Button, ButtonGroup, FormControlLabel, Switch } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { getUniqueNegativeID } from "shared/utils";
+import { getUniqueNegativeID, groupBy } from "shared/utils";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/markdown/RichTextEditor";
@@ -26,6 +26,7 @@ import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetl
 import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
+import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
@@ -329,23 +330,52 @@ type SetlistPlannerDocumentOverviewProps = {
 };
 
 const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewProps) => {
+    const [expandedGroup, setExpandedGroup] = React.useState<string | false>(false);
+
+
     const dashboardContext = useDashboardContext();
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
 
     const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.id });
 
+    // group by groupName
+    const groupedPlans = groupBy(plans, (x) => x.groupName || "Ungrouped");
+
     return <div className="SetlistPlannerDocumentOverviewList">
-        {plans.map((dbPlan) => {
-            return <div
-                key={dbPlan.id}
-                className="SetlistPlannerDocumentOverviewItem"
-                onClick={() => {
-                    props.onSelect(dbPlan);
-                }}
-            >
-                <div className="name">{dbPlan.name}</div>
-                <Markdown markdown={dbPlan.description} />
-            </div>
+
+        {Object.keys(groupedPlans).map((groupName) => {
+            const groupPlans = groupedPlans[groupName]!;
+            return <Accordion key={groupName} expanded={expandedGroup === groupName} onChange={() => setExpandedGroup(expandedGroup === groupName ? false : groupName)}>
+                <AccordionSummary
+                    expandIcon={gIconMap.ExpandMore()}
+                    className="SetlistPlannerDocumentOverviewGroupHeader"
+                >
+                    <span className="title">{groupName}</span>
+                    <span className="subtitle">{groupPlans.length} plan(s)</span>
+                </AccordionSummary>
+                <div className="SetlistPlannerDocumentOverviewGroupItemList">
+                    {groupPlans.map((dbPlan) => {
+                        return <div
+                            key={dbPlan.id}
+                            className="SetlistPlannerDocumentOverviewItem"
+                            onClick={() => {
+                                props.onSelect(dbPlan);
+                            }}
+                        >
+                            <div className="name">{dbPlan.name}</div>
+                            <Markdown markdown={dbPlan.description} />
+                        </div>;
+                    })}
+                </div>
+                <div className="actionButtons">
+                    <Button
+                        onClick={() => {
+                            const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", groupName, dashboardContext.currentUser!.id);
+                            props.onSelect(newDoc);
+                        }}
+                    >Create new "{groupName}"</Button>
+                </div>
+            </Accordion>;
         })}
     </div>;
 };
@@ -529,6 +559,14 @@ const SetlistPlannerPageContent = () => {
                     setDocWrapper({
                         ...doc,
                         name,
+                    });
+                }
+            },
+            setGroupName: (groupName: string | null) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        groupName,
                     });
                 }
             },
@@ -1086,7 +1124,7 @@ const SetlistPlannerPageContent = () => {
             />
             <Button onClick={() => {
                 setModified(true);
-                setDoc(CreateNewSetlistPlan(getUniqueNegativeID(), `Setlist plan ${nanoid(3)}`, dashboardContext.currentUser!.id));
+                setDoc(CreateNewSetlistPlan(getUniqueNegativeID(), `Setlist plan ${nanoid(3)}`, "", dashboardContext.currentUser!.id));
             }}>Create New Plan</Button>
         </div>
         }

@@ -867,13 +867,24 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
             selectedTabId={selectedTab}
         >
             <CMTab thisTabId="plan" summaryTitle={"plan"}>
-                <CMTextInputBase
-                    className="name"
-                    value={doc.name}
-                    onChange={(e, newName) => {
-                        props.mutator.setName(newName);
-                    }}
-                />
+                <NameValuePair name="Name" value={
+                    <CMTextInputBase
+                        className="name"
+                        value={doc.name}
+                        onChange={(e, newName) => {
+                            props.mutator.setName(newName);
+                        }}
+                    />
+                } />
+                <NameValuePair name="Group" value={
+                    <CMTextInputBase
+                        className="group"
+                        value={doc.groupName}
+                        onChange={(e, newGroup) => {
+                            props.mutator.setGroupName(newGroup);
+                        }}
+                    />
+                } />
                 <Markdown3Editor
                     onChange={(newMarkdown) => {
                         props.mutator.setDescription(newMarkdown);
