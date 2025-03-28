@@ -3,6 +3,7 @@
 // ConfirmContext.tsx
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { DialogActionsCM } from './CMCoreComponents2';
 
 interface ConfirmOptions {
     title?: React.ReactNode;
@@ -91,15 +92,18 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             }}
         >
             <DialogTitle>{title}</DialogTitle>
-            <DialogContent>{descElement}</DialogContent>
-            <DialogActions>
-                <Button onClick={() => onClose(false)} color="primary">
-                    Cancel
-                </Button>
-                <Button onClick={() => onClose(true)} color="primary" autoFocus>
-                    OK
-                </Button>
-            </DialogActions>
+            <DialogContent>
+                {descElement}
+                <DialogActionsCM>
+                    <Button onClick={() => onClose(false)} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={() => onClose(true)} color="primary" autoFocus>
+                        OK
+                    </Button>
+                </DialogActionsCM>
+
+            </DialogContent>
         </Dialog>
     );
 };

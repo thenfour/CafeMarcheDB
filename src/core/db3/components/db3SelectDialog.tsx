@@ -4,7 +4,7 @@ import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitl
 import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
-import { CMDialogContentText } from "src/core/components/CMCoreComponents2";
+import { CMDialogContentText, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import * as db3 from "src/core/db3/db3";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -277,11 +277,11 @@ export function DB3SingleSelectDialog<T extends TAnyModel>(props: Db3SingleSelec
                 </CMChipContainer>
             )}
 
+            <DialogActionsCM>
+                <Button onClick={props.onCancel}>Cancel</Button>
+                <Button onClick={() => { props.onOK(selectedOption as any); }} disabled={!ssl.allowNull && !selectedOption}>OK</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={props.onCancel}>Cancel</Button>
-            <Button onClick={() => { props.onOK(selectedOption as any); }} disabled={!ssl.allowNull && !selectedOption}>OK</Button>
-        </DialogActions>
 
     </ReactiveInputDialog>
 }
@@ -506,11 +506,11 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
                         {msl.allOptionsX.map(x => renderChip(x))}
                     </CMChipContainer>
                 )}
+                <DialogActionsCM>
+                    <Button onClick={props.onCancel}>Cancel</Button>
+                    <Button onClick={() => { props.onOK(selectedOptions); }}>OK</Button>
+                </DialogActionsCM>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={props.onCancel}>Cancel</Button>
-                <Button onClick={() => { props.onOK(selectedOptions); }}>OK</Button>
-            </DialogActions>
         </ReactiveInputDialog>
     );
 }

@@ -7,7 +7,7 @@ import { useTheme } from "@mui/material/styles";
 //import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
-import { CMDialogContentText } from "./CMCoreComponents2";
+import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
 
 
 ////////////////////////////////////////////////////////////////
@@ -59,11 +59,11 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
             <CMDialogContentText>
                 {(props.description !== undefined) && ((typeof props.description === 'string' ? props.description : props.description()))}
             </CMDialogContentText>
+            <DialogActionsCM>
+                <Button onClick={props.onCancel}>{props.cancelLabel || "Cancel"}</Button>
+                <Button onClick={props.onConfirm}>{props.confirmLabel || "OK"}</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={props.onCancel}>{props.cancelLabel || "Cancel"}</Button>
-            <Button onClick={props.onConfirm}>{props.confirmLabel || "OK"}</Button>
-        </DialogActions>
     </ReactiveInputDialog>;
 };
 

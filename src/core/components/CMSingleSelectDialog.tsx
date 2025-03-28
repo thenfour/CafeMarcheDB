@@ -3,7 +3,7 @@ import React from "react";
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
-import { CMDialogContentText } from "./CMCoreComponents2";
+import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
 import { SearchInput } from "./CMTextField";
 import { useSnackbar } from "./SnackbarContext";
@@ -250,11 +250,11 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
                 </CMChipContainer>
             )}
 
+            <DialogActionsCM>
+                <Button onClick={() => { props.onOK(selectedOption as any); }} disabled={!ssl.allowNull && !selectedOption}>OK</Button>
+                <Button onClick={props.onCancel}>Cancel</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={() => { props.onOK(selectedOption as any); }} disabled={!ssl.allowNull && !selectedOption}>OK</Button>
-            <Button onClick={props.onCancel}>Cancel</Button>
-        </DialogActions>
 
     </ReactiveInputDialog>
 }

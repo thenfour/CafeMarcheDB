@@ -18,7 +18,7 @@ import React, { Suspense } from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { AdminInspectObject } from 'src/core/components/CMCoreComponents';
-import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
+import { CMDialogContentText, CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import updateSetting from "src/auth/mutations/updateSetting";
@@ -677,11 +677,11 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
                         }
                     </List>
             }
+            <DialogActionsCM>
+                <Button onClick={props.onCancel}>Cancel</Button>
+                <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={props.onCancel}>Cancel</Button>
-            <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
-        </DialogActions>
     </>;
 };
 

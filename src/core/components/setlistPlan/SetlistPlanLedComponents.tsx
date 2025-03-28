@@ -13,7 +13,7 @@ import { CMTextInputBase } from "src/core/components/CMTextField";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
 import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
-import { NameValuePair } from "../CMCoreComponents2";
+import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
 import { useDashboardContext } from "../DashboardContext";
 import { Markdown } from "../markdown/RichTextEditor";
@@ -114,10 +114,10 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
                             color: e?.id || null
                         });
                     }} />
+                    <DialogActionsCM>
+                        <Button onClick={() => setOpen(false)}>Close</Button>
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpen(false)}>Close</Button>
-                </DialogActions>
             </ReactiveInputDialog >
         )}
     </>;

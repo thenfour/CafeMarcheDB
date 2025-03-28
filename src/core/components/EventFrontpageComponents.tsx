@@ -80,11 +80,11 @@ export const EditTextDialog = (props: EditTextDialogProps) => {
                 onChange={(newValue) => { setValueFr(newValue) }}
                 value={valueFr}
             />
+            <DialogActionsCM>
+                <Button onClick={props.onCancel}>Cancel</Button>
+                <Button onClick={() => { props.onOK(valueEn, valueNl, valueFr) }}>OK</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={props.onCancel}>Cancel</Button>
-            <Button onClick={() => { props.onOK(valueEn, valueNl, valueFr) }}>OK</Button>
-        </DialogActions>
     </ReactiveInputDialog>;
 };
 

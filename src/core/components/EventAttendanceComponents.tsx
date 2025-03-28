@@ -121,10 +121,10 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { AdminInspectObject, AttendanceChip } from './CMCoreComponents';
-import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
+import { CMSmallButton, DialogActionsCM, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
-import { CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { Prisma } from "db";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
@@ -304,11 +304,10 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
         nominalHeight={200}
       />
 
-      <DialogActions className="actionButtonsRow">
-        <div className={`freeButton cancelButton`} onClick={props.onClose}>Cancel</div>
-        {/* <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div> */}
-        <div className={`saveButton saveAndCloseButton freeButton changed`} onClick={handleSaveAndClose}>{gIconMap.CheckCircleOutline()}Save</div>
-      </DialogActions>
+      <DialogActionsCM>
+        <Button className={`freeButton cancelButton`} onClick={props.onClose}>Cancel</Button>
+        <Button className={`saveButton saveAndCloseButton freeButton changed`} onClick={handleSaveAndClose}>{gIconMap.CheckCircleOutline()}Save</Button>
+      </DialogActionsCM>
 
     </DialogContent>
   </ReactiveInputDialog>;

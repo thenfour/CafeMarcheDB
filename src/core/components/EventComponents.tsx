@@ -27,7 +27,7 @@ import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEve
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -271,11 +271,11 @@ const EventCustomFieldEditDialog = (props: EventCustomFieldEditDialogProps) => {
                 />)
             }
 
+            <DialogActionsCM>
+                <Button onClick={() => props.onOK(currentValue)} startIcon={gIconMap.Save()}>OK</Button>
+                <Button onClick={props.onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={() => props.onOK(currentValue)} startIcon={gIconMap.Save()}>OK</Button>
-            <Button onClick={props.onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
-        </DialogActions>
 
     </ReactiveInputDialog>;
 }
@@ -548,11 +548,11 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                 {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
 
             </div>
+            <DialogActionsCM>
+                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
+                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
-            <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
-        </DialogActions>
 
     </ReactiveInputDialog>;
 };

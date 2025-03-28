@@ -8,7 +8,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
 import { AdminInspectObject } from "src/core/components/CMCoreComponents";
-import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { CMDialogContentText, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
@@ -113,11 +113,11 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                         }
 
                     </FormControl>
+                    <DialogActionsCM>
+                        <Button onClick={onCancel} disabled={grayed}>Cancel</Button>
+                        <Button onClick={handleOK} disabled={grayed}>OK</Button>
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={onCancel} disabled={grayed}>Cancel</Button>
-                    <Button onClick={handleOK} disabled={grayed}>OK</Button>
-                </DialogActions>
             </ReactiveInputDialog>
         </Suspense>
     );
@@ -239,11 +239,11 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                         }
 
                     </FormControl>
+                    <DialogActionsCM>
+                        <Button onClick={onCancel}>Cancel</Button>
+                        <Button onClick={handleOK}>OK</Button>
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={onCancel}>Cancel</Button>
-                    <Button onClick={handleOK}>OK</Button>
-                </DialogActions>
             </Dialog>
         </Suspense >
     );

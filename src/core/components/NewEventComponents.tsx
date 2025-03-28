@@ -11,7 +11,7 @@ import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../db3/components/IconMap";
-import { simulateLinkClick } from "./CMCoreComponents2";
+import { DialogActionsCM, simulateLinkClick } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
@@ -157,11 +157,11 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                 {renderColumn(eventTableSpec, "workflowDef", eventValue, eventValidationResult, eventAPI, false)}
 
             </div>
+            <DialogActionsCM>
+                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
+                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
-            <Button onClick={handleSaveClick} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
-        </DialogActions>
 
     </ReactiveInputDialog>;
 };

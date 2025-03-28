@@ -12,7 +12,7 @@ import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import * as db3 from "../db3/db3";
 import { AdminInspectObject } from "./CMCoreComponents";
-import { AnimatedCircularProgress, CMSmallButton, EventDateField, Pre } from "./CMCoreComponents2";
+import { AnimatedCircularProgress, CMSmallButton, DialogActionsCM, EventDateField, Pre } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle } from "./CMSelect";
 import { CMTextField } from "./CMTextField";
 import { GetStyleVariablesForColor } from "./Color";
@@ -226,12 +226,12 @@ export const WorkflowDueDateMenuItem = (props: WorkflowDueDateMenuItemProps) => 
 
                 <WorkflowDueDateValue dueDate={chosenValue} />
 
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpen(false)} startIcon={gIconMap.Cancel()}>Cancel</Button>
-                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
-            </DialogActions>
+                <DialogActionsCM>
+                    <Button onClick={() => setOpen(false)} startIcon={gIconMap.Cancel()}>Cancel</Button>
+                    <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+                </DialogActionsCM>
 
+            </DialogContent>
 
         </ReactiveInputDialog >}
         <MenuItem
@@ -1283,14 +1283,17 @@ export const WFSingleLineTextField = (props: FieldComponentProps<string>) => {
                     onChange={(e) => {
                         //props.binding.setValue(e.target.value);
                         setValue(e.target.value);
-                    }} />            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={() => {
-                    props.binding.setValue(value);
-                    setOpen(false);
-                }}>OK</Button>
-            </DialogActions>
+                    }} />
+
+                <DialogActionsCM>
+                    <Button onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                        props.binding.setValue(value);
+                        setOpen(false);
+                    }}>OK</Button>
+                </DialogActionsCM>
+
+            </DialogContent>
         </ReactiveInputDialog>}
     </>;
 }
@@ -1322,14 +1325,14 @@ export const WFRichTextField = (props: FieldComponentProps<string>) => {
                     onChange={(v) => {
                         setValue(v);
                     }} />
+                <DialogActionsCM>
+                    <Button onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                        props.binding.setValue(value);
+                        setOpen(false);
+                    }}>OK</Button>
+                </DialogActionsCM>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={() => {
-                    props.binding.setValue(value);
-                    setOpen(false);
-                }}>OK</Button>
-            </DialogActions>
         </ReactiveInputDialog>}
     </>;
 }

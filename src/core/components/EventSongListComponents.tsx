@@ -105,11 +105,11 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                     </div>
                 }
             />
+            <DialogActionsCM>
+                <Button onClick={() => { onClick(controlledValue); onClose(); }} startIcon={gIconMap.Save()}>Ok</Button>
+                <Button onClick={onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
+            </DialogActionsCM>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={() => { onClick(controlledValue); onClose(); }} startIcon={gIconMap.Save()}>Ok</Button>
-            <Button onClick={onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
-        </DialogActions>
     </ReactiveInputDialog >
 };
 

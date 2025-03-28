@@ -21,7 +21,7 @@ import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
-import { CMSmallButton, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
+import { CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
 import { SearchInput } from 'src/core/components/CMTextField';
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -216,18 +216,15 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
                     //onNewClicked={onNewClicked}
                     />
                 </Suspense>
+                <DialogActionsCM>
+                    <Button onClick={props.onClose}>Cancel</Button>
+                    <Button onClick={() => {
+                        props.onChange(value);
+                        props.onClose();
+                    }}>OK</Button>
+                </DialogActionsCM>
 
             </DialogContent>
-            <DialogActions>
-                <Button onClick={() => {
-                    //props.onChange(originalValue);
-                    props.onClose();
-                }}>Cancel</Button>
-                <Button onClick={() => {
-                    props.onChange(value);
-                    props.onClose();
-                }}>OK</Button>
-            </DialogActions>
         </>
     );
 }

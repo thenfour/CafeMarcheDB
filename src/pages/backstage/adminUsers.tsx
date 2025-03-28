@@ -8,7 +8,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import impersonateUser from "src/auth/mutations/impersonateUser";
-import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
+import { DialogActionsCM, simulateLinkClick } from "src/core/components/CMCoreComponents2";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -54,11 +54,11 @@ const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {
                 <DialogContent dividers>
                     This will generate a temporary URL which can be used to reset a user's password.
                     Send it to the user so they can restore their password.
+                    <DialogActionsCM>
+                        <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
+                        <Button autoFocus={true} onClick={handleConfirmClick}>Continue</Button>
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
-                    <Button autoFocus={true} onClick={handleConfirmClick}>Continue</Button>
-                </DialogActions>
             </Dialog>
         }
         {resetURL &&

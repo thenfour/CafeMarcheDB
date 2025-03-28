@@ -2,7 +2,7 @@ import React from "react";
 
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
-import { CMDialogContentText } from "./CMCoreComponents2";
+import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
 import { SearchInput } from "./CMTextField";
 import { gIconMap } from "../db3/components/IconMap";
@@ -204,11 +204,11 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
                         {msl.allOptionsX.map(x => renderChip(x))}
                     </CMChipContainer>
                 )}
+                <DialogActionsCM>
+                    <Button onClick={() => { props.onOK(selectedOptions); }}>OK</Button>
+                    <Button onClick={props.onCancel}>Cancel</Button>
+                </DialogActionsCM>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={() => { props.onOK(selectedOptions); }}>OK</Button>
-                <Button onClick={props.onCancel}>Cancel</Button>
-            </DialogActions>
         </ReactiveInputDialog>
     );
 }

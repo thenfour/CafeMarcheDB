@@ -27,7 +27,7 @@ import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
-import { KeyValueTable } from 'src/core/components/CMCoreComponents2';
+import { DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { API } from '../clientAPI';
@@ -249,11 +249,11 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 <DialogTitle>Delete row (this is a HARD delete)?</DialogTitle>
                 <DialogContent dividers>
                     confirm delete
+                    <DialogActionsCM>
+                        <Button onClick={handleClose}>No</Button>
+                        <Button onClick={handleYes}>Yes</Button>
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>No</Button>
-                    <Button onClick={handleYes}>Yes</Button>
-                </DialogActions>
             </Dialog>
         );
     };
@@ -274,14 +274,14 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 <DialogTitle>{explicitSave ? "Are you sure?" : "Save your changes?"}</DialogTitle>
                 <DialogContent dividers>
                     confirm update...
+                    <DialogActionsCM>
+                        <Button onClick={handleNo}>No</Button>
+                        {/* type=submit doesn't seem to work. why? */}
+                        <Button
+                            autoFocus={true}
+                            type="submit" onClick={handleYes}>Yes</Button>
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleNo}>No</Button>
-                    {/* type=submit doesn't seem to work. why? */}
-                    <Button
-                        autoFocus={true}
-                        type="submit" onClick={handleYes}>Yes</Button>
-                </DialogActions>
             </Dialog>
         );
     };

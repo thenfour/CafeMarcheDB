@@ -1,6 +1,7 @@
 import React from 'react';
 import { ReactiveInputDialog } from '../ReactiveInputDialog';
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { DialogActionsCM } from '../CMCoreComponents2';
 
 
 export type MessageBoxButton = "ok" | "cancel" | "yes" | "no";
@@ -61,14 +62,14 @@ export const MessageBoxProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 {title && <DialogTitle>{title}</DialogTitle>}
                 <DialogContent dividers>
                     <DialogContentText>{message}</DialogContentText>
+                    <DialogActionsCM>
+                        {buttons.map((btn) => (
+                            <Button key={btn} onClick={() => handleClose(btn)}>
+                                {btn.toUpperCase()}
+                            </Button>
+                        ))}
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    {buttons.map((btn) => (
-                        <Button key={btn} onClick={() => handleClose(btn)}>
-                            {btn.toUpperCase()}
-                        </Button>
-                    ))}
-                </DialogActions>
             </ReactiveInputDialog>
         </MessageBoxContext.Provider>
     );

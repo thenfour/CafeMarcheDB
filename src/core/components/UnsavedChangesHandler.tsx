@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
+import { DialogActionsCM } from './CMCoreComponents2';
 
 interface UnsavedChangesHandlerProps {
   isDirty: boolean;
@@ -77,13 +78,13 @@ const UnsavedChangesHandler: React.FC<UnsavedChangesHandlerProps> = ({
     <DialogTitle>Unsaved Changes</DialogTitle>
     <DialogContent>
       You have unsaved changes. Are you sure you want to leave?
+      <DialogActionsCM>
+        <Button onClick={cancelNavigation}>Stay</Button>
+        <Button onClick={confirmNavigation} color="primary">
+          Leave
+        </Button>
+      </DialogActionsCM>
     </DialogContent>
-    <DialogActions>
-      <Button onClick={cancelNavigation}>Stay</Button>
-      <Button onClick={confirmNavigation} color="primary">
-        Leave
-      </Button>
-    </DialogActions>
   </Dialog>;
 };
 
