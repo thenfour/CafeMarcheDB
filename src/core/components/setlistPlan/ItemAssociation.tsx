@@ -8,7 +8,12 @@ import { CMTextInputBase } from "../CMTextField";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for allowed item types best to use QuickSearchItemTypeSets
 export async function fetchObjectQuery(keyword: string, allowedItemTypes: QuickSearchItemType[]): Promise<QuickSearchItemMatch[]> {
-    const response = await fetch(`/api/wiki/quickSearch?keyword=${keyword}&allowedItemTypes=${JSON.stringify(allowedItemTypes)}`);
+    const params = new URLSearchParams({
+        keyword,
+        allowedItemTypes: JSON.stringify(allowedItemTypes),
+    });
+    //const response = await fetch(`/api/wiki/quickSearch?keyword=${keyword}&allowedItemTypes=${JSON.stringify(allowedItemTypes)}`);
+    const response = await fetch(`/api/wiki/quickSearch?${params.toString()}`);
 
     if (!response.ok) {
         throw new Error('Network response was not ok');

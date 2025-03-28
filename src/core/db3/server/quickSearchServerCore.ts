@@ -2,14 +2,15 @@
 
 import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
-import { CalculateMatchStrength, MakeWhereCondition, ParseQuickFilter, ParseQuickFilterResult, QuickSearchItemMatch, QuickSearchItemType, SearchableTableFieldSpec } from "shared/quickFilter";
+import { CalculateMatchStrength, CalculateMatchStrengthForTags, MakeWhereCondition, MakeWhereConditionForTags, ParseQuickFilter, ParseQuickFilterResult, QuickSearchItemMatch, QuickSearchItemType, SearchableTableFieldSpec } from "shared/quickFilter";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression2 } from "src/core/db3/shared/db3Helpers";
 
-
-const kItemsPerType = 15;
+// per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
+// this just sets a practical limit.
+const kItemsPerType = 100;
 
 interface QuickSearchPlugin {
     getMatches: (args: {
@@ -29,12 +30,25 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
             { fieldName: "description", fieldType: "string", strengthMultiplier: 0.5 },
         ];
 
-        const songs = await db.song.findMany({
+        const songTagField: SearchableTableFieldSpec = { fieldName: "text", fieldType: "string", strengthMultiplier: 1 };
+
+        const songArgs = {
             where: {
                 AND: [
                     GetSoftDeleteWhereExpression(),
                     GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
-                    MakeWhereCondition(songFields, query),
+                    {
+                        OR: [
+                            ...MakeWhereCondition(songFields, query).OR,
+                            {
+                                tags: {
+                                    some: { // this doesn't quite work the way i wish; when trying to match multiple tags it will OR them. but "every" won't work either so... it's a compromise.
+                                        tag: MakeWhereConditionForTags(songTagField, query),
+                                    }
+                                },
+                            }
+                        ]
+                    }
                 ],
             },
             select: {
@@ -43,13 +57,41 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
                 name: true,
                 aliases: true,
                 description: true,
+                tags: {
+                    select: {
+                        tag: {
+                            select: {
+                                text: true,
+                            }
+                        }
+                    }
+                }
             },
             take: kItemsPerType,
-        });
+        };
+
+        let songs = await db.song.findMany(songArgs);
+
+        // filter items:
+        // keep only items that contain ALL tags the user is requesting. this would be a decent reason to migrate to using similar system to the more detailed search.
+        if (query.tags.length > 0) {
+            const queryableTagNames = query.tags.map(t => t.toLowerCase());
+            songs = songs.filter(s => {
+                const tagNames = s.tags.map(st => st.tag.text.toLowerCase()); // array of tag names.
+                // return true if all queryable tags are represented in tagNames. that means at least 1 tagName must contain the queryable tag text.
+                return queryableTagNames.every(qt => tagNames.some(tn => tn.includes(qt)));
+            });
+        }
 
         const makeSongInfo = (x: typeof songs[0]): QuickSearchItemMatch => {
             const absoluteUri = process.env.CMDB_BASE_URL + `backstage/song/${x.id}/${slugify(x.name || "")}`;
-            const bestMatch = CalculateMatchStrength(songFields, x, query);
+            let bestMatch = CalculateMatchStrength(songFields, x, query);
+
+            const bestMatchForTags = CalculateMatchStrengthForTags(songTagField, x.tags.map(st => st.tag), query);
+            if (bestMatchForTags.matchStrength > bestMatch.matchStrength) {
+                bestMatch = bestMatchForTags;
+            }
+
             return {
                 id: x.id,
                 absoluteUri,
@@ -80,7 +122,9 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
             { fieldName: "content", fieldType: "string", strengthMultiplier: 1 },
         ];
 
-        const events = await db.event.findMany({
+        const eventTagField: SearchableTableFieldSpec = { fieldName: "text", fieldType: "string", strengthMultiplier: 1 };
+
+        let events = await db.event.findMany({
             where: {
                 AND: [
                     GetSoftDeleteWhereExpression(),
@@ -92,6 +136,13 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
                                 descriptionWikiPage: {
                                     currentRevision: MakeWhereCondition(eventDescriptionFields, query),
                                 }
+                            },
+                            {
+                                tags: {
+                                    some: { // this doesn't quite work the way i wish; when trying to match multiple tags it will OR them. but "every" won't work either so... it's a compromise.
+                                        eventTag: MakeWhereConditionForTags(eventTagField, query),
+                                    }
+                                },
                             }
                         ]
                     }
@@ -111,22 +162,46 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
                         }
                     }
                 },
+                tags: {
+                    select: {
+                        eventTag: {
+                            select: {
+                                text: true,
+                            }
+                        }
+                    }
+                }
             },
             orderBy: {
-                startsAt: "asc",
+                startsAt: "asc", // simple way of trying to keep most relevant in the results
             },
             take: kItemsPerType,
         });
 
+        // filter items:
+        if (query.tags.length > 0) {
+            const queryableTagNames = query.tags.map(t => t.toLowerCase());
+            events = events.filter(s => {
+                const tagNames = s.tags.map(st => st.eventTag.text.toLowerCase()); // array of tag names.
+                // return true if all queryable tags are represented in tagNames. that means at least 1 tagName must contain the queryable tag text.
+                return queryableTagNames.every(qt => tagNames.some(tn => tn.includes(qt)));
+            });
+        }
         const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch => {
             const absoluteUri = process.env.CMDB_BASE_URL + `backstage/event/${x.id}/${slugify(x.name || "")}`;
 
             let bestMatch = CalculateMatchStrength(eventFields, x, query);
+
             if (!IsNullOrWhitespace(x.descriptionWikiPage?.currentRevision?.content)) {
                 const bestMatchForRevision = CalculateMatchStrength(eventDescriptionFields, x.descriptionWikiPage!.currentRevision!, query);
                 if (bestMatchForRevision.matchStrength > bestMatch.matchStrength) {
                     bestMatch = bestMatchForRevision;
                 }
+            }
+
+            const bestMatchForTags = CalculateMatchStrengthForTags(eventTagField, x.tags.map(st => st.eventTag), query);
+            if (bestMatchForTags.matchStrength > bestMatch.matchStrength) {
+                bestMatch = bestMatchForTags;
             }
 
             return {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { calculateMatchStrengthAllKeywordsRequired } from "./rootroot";
+import { calculateMatchStrengthAllKeywordsRequired, calculateMatchStrengthAnyKeyword, partition } from "./rootroot";
 import { IsEntirelyIntegral, IsNullOrWhitespace } from "./utils";
 
 // TODO: remove this in favor of better quick search stuff below.
@@ -83,27 +83,28 @@ export type QuickSearchItemTypeArray = z.infer<typeof ZQuickSearchItemTypeArray>
 
 export interface ParseQuickFilterResult {
     keywords: string[];
+    tags: string[];
     pkid: number | null;
     dateRange: { start: Date, end: Date } | undefined;
 };
 
 export function ParseQuickFilter(quickFilter: string): ParseQuickFilterResult {
     const keywords = SplitQuickFilter(quickFilter);
-    //const keywordsWithoutDate: string[] = [];
     let dateRange: { start: Date, end: Date } | undefined = undefined;
     for (const keyword of keywords) {
         const parsedDateRange = parseDateRange(keyword);
         if (parsedDateRange) {
             dateRange = parsedDateRange;
-        } else {
-            //keywordsWithoutDate.push(keyword);
         }
     }
+
+    const [tagKeywords, nonTagKeywords] = partition(keywords, (keyword) => keyword.startsWith("#"));
+
     return {
-        keywords,
+        keywords: nonTagKeywords,
+        tags: tagKeywords.map(tag => tag.substring(1)), // remove the # from the tag
         pkid: IsEntirelyIntegral(quickFilter) ? parseInt(quickFilter, 10) : null,
         dateRange,
-        //keywordsWithoutDate,
     };
 };
 
@@ -165,6 +166,11 @@ export function MakeWhereCondition(fields: SearchableTableFieldSpec[], keywords:
     }
 
     return { OR: conditions };
+};
+
+
+export function MakeWhereConditionForTags(field: SearchableTableFieldSpec, keywords: ParseQuickFilterResult) {
+    return { OR: [...MakeWhereInputConditions(field.fieldName, keywords.tags)] };
 };
 
 
@@ -234,4 +240,41 @@ export function CalculateMatchStrength(fields: SearchableTableFieldSpec[], value
     });
 
     return bestMatch;
+};
+
+
+
+function CalculateMatchStrengthForTagField(field: SearchableTableFieldSpec, value: any, filter: ParseQuickFilterResult): CalculateMatchStrengthResult {
+    return {
+        fieldName: field.fieldName,
+        matchStrength: field.strengthMultiplier * calculateMatchStrengthAnyKeyword(value, filter.tags),
+    };
+}
+
+export function CalculateMatchStrengthForTags(tagNameFieldSpec: SearchableTableFieldSpec, tagRecords: Record<string, string>[], filter: ParseQuickFilterResult): CalculateMatchStrengthResult {
+
+    // calculate a result for all tags, then return the best match.
+    let results: CalculateMatchStrengthResult[] = [];
+    for (const tagRecord of tagRecords) {
+        const tagName = tagRecord[tagNameFieldSpec.fieldName];
+        if (!tagName) continue;
+        results.push(CalculateMatchStrengthForTagField(tagNameFieldSpec, tagName, filter));
+    }
+
+    // filter out 0-strength matches.
+    results = results.filter(result => result.matchStrength > 0);
+    if (results.length === 0) return {
+        fieldName: "",
+        matchStrength: 0,
+    }; // no matches found.
+
+    // matching multiple tags yields a very strong match. sum and return.
+    const totalMatchStrength = results.reduce((prev, current) => {
+        return prev + current.matchStrength;
+    }, 0);
+
+    return {
+        fieldName: tagNameFieldSpec.fieldName,
+        matchStrength: totalMatchStrength,
+    };
 };
