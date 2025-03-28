@@ -42,7 +42,7 @@ import { ImageDimensionsMarkdownPlugin } from './ImageDimensionsMarkdownPlugin';
 import { fetchInlineClasses, markdownReactPlugins } from './MarkdownReactPlugins';
 import { ReactBlockMarkdownPlugin } from './ReactBlockMarkdownPlugin';
 import { ReactInlineMarkdownPlugin } from './ReactInlineMarkdownPlugin';
-import { QuickSearchItemMatch } from 'shared/quickFilter';
+import { QuickSearchItemMatch, QuickSearchItemTypeSets } from 'shared/quickFilter';
 
 const INDENT_SIZE = 2;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);
@@ -218,7 +218,7 @@ async function fetchWikiSlugs(keyword: string): Promise<string[]> {
 async function fetchEventOrSongTagsAt(keyword: string): Promise<QuickSearchItemMatch[]> {
     // no prefix here.
     if (keyword.includes("]]")) return []; // make sure we don't autocomplete outside of the link syntax
-    return await fetchObjectQuery(keyword);
+    return await fetchObjectQuery(keyword, QuickSearchItemTypeSets.Everything!);
 }
 
 
@@ -840,7 +840,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                             {entity.itemType === "event" && <CalendarMonthIcon />}
                             {entity.itemType === "song" && <MusicNoteIcon />}
                             {entity.itemType === "user" && <PersonIcon />}
-                            {entity.itemType === "instrument" && <MusicNoteIcon />}
+                            {/* {entity.itemType === "instrument" && <MusicNoteIcon />} */}
                             {entity.name}
                         </div>,
                         output: (item: QuickSearchItemMatch) => `[[${item.itemType}:${item.id}|${item.name}]]`

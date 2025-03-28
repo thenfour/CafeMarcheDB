@@ -1,9 +1,32 @@
 import { crc32 } from "@foxglove/crc";
 import db from "db";
 import { Size } from "src/core/db3/shared/apiTypes";
+import z from "zod";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
+
+
+
+// Function that takes a JSON string, parses it, and validates it with Zod
+export function ZodJsonParseAndValidate<T>(jsonString: string, schema: z.ZodSchema<T>): T {
+    let parsedData;
+    try {
+        parsedData = JSON.parse(jsonString);
+    } catch (error) {
+        throw new Error(`Invalid JSON format: ${error}`);
+    }
+
+    const validation = schema.safeParse(parsedData);
+    if (!validation.success) {
+        // Log or handle the error as necessary
+        console.error(validation.error.format());
+        throw new Error('Schema validation failed.');
+    }
+    return validation.data;
+}
+
+
 
 
 // Pre-generate Fibonacci numbers up to a certain max (adjust as needed)

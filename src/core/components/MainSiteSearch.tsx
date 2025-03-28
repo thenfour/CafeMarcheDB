@@ -4,7 +4,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import { CMSmallButton, simulateLinkClick } from './CMCoreComponents2';
 import { fetchObjectQuery } from './setlistPlan/ItemAssociation';
 import { IsNullOrWhitespace } from 'shared/utils';
-import { QuickSearchItemMatch } from 'shared/quickFilter';
+import { QuickSearchItemMatch, QuickSearchItemType } from 'shared/quickFilter';
 
 export const MatchingSlugItemComponent = ({ item, selected }: { item: QuickSearchItemMatch, selected: boolean }) => {
 
@@ -12,7 +12,7 @@ export const MatchingSlugItemComponent = ({ item, selected }: { item: QuickSearc
         {item.itemType === "event" && gIconMap.CalendarMonth()}
         {item.itemType === "song" && gIconMap.MusicNote()}
         {item.itemType === "user" && gIconMap.Person()}
-        {item.itemType === "instrument" && gIconMap.MusicNote()}
+        {/* {item.itemType === "instrument" && gIconMap.MusicNote()} */}
         {item.itemType === "wikiPage" && gIconMap.EditNote()}
         {item.name}
     </div>;
@@ -28,7 +28,7 @@ export const MainSiteSearch = () => {
             setResults([]);
             return;
         }
-        void fetchObjectQuery(query).then((response) => {
+        void fetchObjectQuery(query, [QuickSearchItemType.event, QuickSearchItemType.song, QuickSearchItemType.wikiPage]).then((response) => {
             const filtered = response.filter(item => item.absoluteUri);
             setResults(filtered);
         });

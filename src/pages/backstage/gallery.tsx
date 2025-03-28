@@ -29,7 +29,7 @@ import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
 import { arraysContainSameValues } from "shared/arrayUtils";
-import { QuickSearchItemMatch } from "shared/quickFilter";
+import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 
 interface FilterSpec {
     qfText: string;
@@ -331,7 +331,7 @@ const ActivityLogValueViewerTester = () => {
 
 const AutoCompleteSongEventTester = () => {
     const [result, setResult] = React.useState<QuickSearchItemMatch | null>(null);
-    return <AssociationSelect value={result} onChange={(v) => setResult(v)} />;
+    return <AssociationSelect value={result} onChange={(v) => setResult(v)} allowedItemTypes={QuickSearchItemTypeSets.Everything!} />;
 };
 
 

@@ -1,13 +1,14 @@
 import React from "react";
-import { QuickSearchItemMatch } from "shared/quickFilter";
+import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { NameValuePair } from "../CMCoreComponents2";
 import { CMTextInputBase } from "../CMTextField";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export async function fetchObjectQuery(keyword: string): Promise<QuickSearchItemMatch[]> {
-    const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
+// for allowed item types best to use QuickSearchItemTypeSets
+export async function fetchObjectQuery(keyword: string, allowedItemTypes: QuickSearchItemType[]): Promise<QuickSearchItemMatch[]> {
+    const response = await fetch(`/api/wiki/quickSearch?keyword=${keyword}&allowedItemTypes=${JSON.stringify(allowedItemTypes)}`);
 
     if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -29,8 +30,8 @@ export const AssociationValueLink = (props: { value: QuickSearchItemMatch | null
             return <div className={className}><a className="flexLink" target="_blank" rel="noreferrer" href={props.value.absoluteUri}>{gIconMap.CalendarMonth()} {props.value?.name}</a></div>;
         case "user":
             return <div className={className}><a className="flexLink" target="_blank" rel="noreferrer" href={props.value.absoluteUri}>{gIconMap.Person()} {props.value?.name}</a></div>;
-        case "instrument":
-            return <div className={className}><a className="flexLink" target="_blank" rel="noreferrer" href={props.value.absoluteUri}>{gIconMap.Trumpet()} {props.value?.name}</a></div>;
+        // case "instrument":
+        //     return <div className={className}><a className="flexLink" target="_blank" rel="noreferrer" href={props.value.absoluteUri}>{gIconMap.Trumpet()} {props.value?.name}</a></div>;
         case "wikiPage":
             return <div className={className}><a className="flexLink" target="_blank" rel="noreferrer" href={props.value.absoluteUri}>{gIconMap.EditNote()} {props.value?.name}</a></div>;
         default:
@@ -51,8 +52,8 @@ export const AssociationValue = (props: { value: QuickSearchItemMatch | null, cl
             return <div className={className}>{gIconMap.CalendarMonth()} {props.value?.name}</div>;
         case "user":
             return <div className={className}>{gIconMap.Person()} {props.value?.name}</div>;
-        case "instrument":
-            return <div className={className}>{gIconMap.Trumpet()} {props.value?.name}</div>;
+        // case "instrument":
+        //     return <div className={className}>{gIconMap.Trumpet()} {props.value?.name}</div>;
         case "wikiPage":
             return <div className={className}>{gIconMap.EditNote()} {props.value?.name}</div>;
         default:
@@ -64,6 +65,7 @@ export const AssociationValue = (props: { value: QuickSearchItemMatch | null, cl
 export interface AssociationSelectProps {
     value: QuickSearchItemMatch | null;
     onChange: (newValue: QuickSearchItemMatch | null) => void;
+    allowedItemTypes: QuickSearchItemType[];
     allowNull?: boolean;
 };
 
@@ -77,7 +79,7 @@ export const AssociationSelect = ({ allowNull = true, ...props }: AssociationSel
             setResults([]);
             return;
         }
-        void fetchObjectQuery(query).then((response) => {
+        void fetchObjectQuery(query, props.allowedItemTypes).then((response) => {
             setResults(response);
         });
     }, [query]);

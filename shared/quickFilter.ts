@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { calculateMatchStrengthAllKeywordsRequired } from "./rootroot";
 import { IsEntirelyIntegral, IsNullOrWhitespace } from "./utils";
 
@@ -45,8 +46,12 @@ function parseDateRange(input) {
     }
 }
 
-
-
+export enum QuickSearchItemType {
+    "event" = "event",
+    "song" = "song",
+    "user" = "user",
+    "wikiPage" = "wikiPage",
+};
 
 export interface QuickSearchItemMatch {
     id: number,
@@ -54,13 +59,29 @@ export interface QuickSearchItemMatch {
     absoluteUri?: string | undefined,
     matchStrength: number;
     matchingField: string | undefined;
-    itemType: "event" | "song" | "user" | "instrument" | "wikiPage";
+    itemType: QuickSearchItemType;
 
     // here give context on the match. a snippet of the matching text with highlights
 };
 
 
-interface ParseQuickFilterResult {
+export const QuickSearchItemTypeSets: { [k: string]: QuickSearchItemType[] } = {
+    Songs: [QuickSearchItemType.song],
+    Everything: [
+        QuickSearchItemType.event,
+        QuickSearchItemType.song,
+        QuickSearchItemType.user,
+        QuickSearchItemType.wikiPage
+    ],
+} as const;
+
+export const ZQuickSearchItemTypeArray = z.array(
+    z.enum(["event", "song", "user", "wikiPage"])
+).transform((value) => value as QuickSearchItemType[]);
+
+export type QuickSearchItemTypeArray = z.infer<typeof ZQuickSearchItemTypeArray>;
+
+export interface ParseQuickFilterResult {
     keywords: string[];
     pkid: number | null;
     dateRange: { start: Date, end: Date } | undefined;

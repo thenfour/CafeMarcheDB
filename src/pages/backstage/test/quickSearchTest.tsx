@@ -1,7 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { ParseQuickFilter, QuickSearchItemMatch } from "shared/quickFilter";
+import { ParseQuickFilter, QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { calculateMatchStrength } from "shared/rootroot";
 import { AdminInspectObject } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -41,7 +41,7 @@ const MainContent = () => {
     const [results, setResults] = React.useState<QuickSearchItemMatch[]>([]);
 
     React.useEffect(() => {
-        fetchObjectQuery(queryText).then((res) => {
+        fetchObjectQuery(queryText, QuickSearchItemTypeSets.Everything!).then((res) => {
             setResults(res);
         }).catch((err) => {
             console.error("Error fetching results:", err);
