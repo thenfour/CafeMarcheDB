@@ -33,6 +33,7 @@ import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
+import { useMessageBox } from './context/MessageBoxContext';
 
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
@@ -928,7 +929,6 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const snackbarContext = React.useContext(SnackbarContext);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-    //const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
     const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
 
     const rowItems = SetlistAPI.GetRowItems(value);
@@ -1182,30 +1182,29 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
 
 
 export const EventSongListValueEditorDialog = (props: EventSongListValueEditorProps) => {
-    //const snackbarContext = React.useContext(SnackbarContext);
     const [grayed, setGrayed] = React.useState<boolean>(false);
     const [preview, setPreview] = React.useState<boolean>(false);
-    const currentUser = useCurrentUser()[0]!;
-    // const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-    const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
-    // const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
+    const messageBox = useMessageBox();
     const [value, setValue] = React.useState<db3.EventSongListPayload>(JSON.parse(JSON.stringify(props.initialValue)));
 
     const rowItems = SetlistAPI.GetRowItems(value);
 
     const stats = API.events.getSongListStats(value);
 
+    const handleDeleteClick = async () => {
+        if (!props.onDelete) return;
+        const result = await messageBox.showMessage({
+            title: "Delete setlist?",
+            message: "Are you sure you want to delete this setlist?",
+            buttons: ['yes', 'cancel'],
+        });
+        if (result === 'yes') {
+            props.onDelete();
+        }
+    };
+
     return <>
         <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor" style={{ minHeight: "100vh" }}>
-
-            {props.onDelete && showingDeleteConfirmation && (<div className="deleteConfirmationControl">Are you sure you want to delete this setlist?
-                <Button onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</Button>
-                <Button onClick={() => {
-                    if (!props.onDelete) return;
-                    setShowingDeleteConfirmation(false);
-                    props.onDelete();
-                }}>yes</Button>
-            </div>)}
 
             <DialogTitle>
                 <div>Edit setlist</div>
@@ -1214,7 +1213,10 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
                     {preview ? (<Button onClick={() => setPreview(false)} startIcon={<ArrowBack />}>Continue editing</Button>)
                         : (<Button onClick={() => setPreview(true)} startIcon={gIconMap.Visibility()}>Preview</Button>)}
                     <div className='flex-spacer'></div>
-                    {props.onDelete && <Button onClick={() => setShowingDeleteConfirmation(true)}>{gIconMap.Delete()}Delete</Button>}
+                    {props.onDelete && <Button onClick={handleDeleteClick}>
+                        {gIconMap.Delete()}
+                        Delete
+                    </Button>}
                 </div>
             </DialogTitle>
             <DialogContent dividers>
