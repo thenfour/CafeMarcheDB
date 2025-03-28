@@ -17,11 +17,8 @@
 
 // image dimensions
 
-import "@webscopeio/react-textarea-autocomplete/style.css";
-import 'abcjs/abcjs-audio.css';
+//import "@webscopeio/react-textarea-autocomplete/style.css";
 import React from "react";
-import { ABCReactPlugin } from './ABCReactPlugin';
-
 
 interface MarkdownReactPlugin {
     componentName: string;
@@ -49,10 +46,6 @@ export const markdownReactPlugins: MarkdownReactPlugin[] = [
         componentName: className,
         render: RenderMarkdownSpanWithClass,
     })),
-    {
-        componentName: "abc",
-        render: ABCReactPlugin
-    }
 ];
 
 
@@ -64,7 +57,6 @@ export async function fetchInlineClasses(keyword: string): Promise<string[]> {
     }
     const ret = [
         ...spanClasses,
-        "abc",
     ].filter(x => x.toLowerCase().includes(keyword.slice(1).toLowerCase()));
     return ret;
 }

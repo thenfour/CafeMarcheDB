@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import { QuickSearchItemType } from "shared/quickFilter";
 import { z } from "zod";
 
 
@@ -6,7 +7,7 @@ import { z } from "zod";
 
 // matches MatchingSlugItem on purpose.
 export const ZSetlistPlanAssociatedItem = z.object({
-    itemType: z.enum(["song", "event", "user", "instrument", "wikiPage"]),
+    itemType: z.enum(["song", "event", "user", "wikiPage"]).transform((val) => val as QuickSearchItemType),
     name: z.string(),
     absoluteUri: z.string().optional(),
     id: z.number(),

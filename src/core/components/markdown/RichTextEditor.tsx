@@ -22,7 +22,6 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
-import 'abcjs/abcjs-audio.css';
 import MarkdownIt from 'markdown-it';
 import React from "react";
 import { createRoot } from 'react-dom/client';
@@ -249,7 +248,6 @@ interface MarkdownEditorProps {
     underlineTrig?: undefined | number;
     strikethroughTrig?: undefined | number;
     refocusTrig?: undefined | number;
-    abcjsTrig?: undefined | number;
     specialCharacterTrig?: undefined | number;
     specialCharacter?: string;
 }
@@ -599,8 +597,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 fileInputRef.current.click();
             }
         },
-        //abcjs: () => insertABCjsBlock(),
-        abcjs: () => formatText("\n```abc\n", "\n```\n"),
     };
 
     React.useEffect(() => {
@@ -623,11 +619,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
 
 
     // Add an effect for the new trigger, similar to others
-    React.useEffect(() => {
-        if ((props.abcjsTrig || 0) > 0) {
-            ToolbarActions.abcjs();
-        }
-    }, [props.abcjsTrig]);
 
     React.useEffect(() => {
         if ((props.underlineTrig || 0) > 0) {

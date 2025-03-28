@@ -761,7 +761,10 @@ model EventSongListDivider {
   subtitle       String? @db.MediumText // could be a small comment like "15 min break"
   sortOrder      Int     @default(0)
   color          String?
-  isInterruption Boolean @default(true) // either interruption or comment.
+  isInterruption Boolean @default(true) // interruption in song list ordinal
+  isSong Boolean @default(false) // if true, then consider this a song (and give it a number)
+  lengthSeconds Int? // length of the interruption in seconds.
+
   textStyle      String? // EventSongListDividerTextStyle
 
   eventSongListId Int
@@ -1291,6 +1294,7 @@ model SetlistPlan {
   id          Int    @id @default(autoincrement())
   name        String @db.VarChar(768)
   description String @db.MediumText
+  groupName String @db.VarChar(768) // arbitrary text we can group setlists by.
 
   createdByUserId Int
   createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)

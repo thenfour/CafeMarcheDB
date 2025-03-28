@@ -3,6 +3,7 @@
 // "view" vs. "edit" modes, "save / close" etc should not be there yet.
 // file wrapper included.
 // think github's issue description editor.
+import { FormatSize, Title } from '@mui/icons-material';
 import EmojiSymbolsIcon from '@mui/icons-material/EmojiSymbols';
 import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
 import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
@@ -11,12 +12,11 @@ import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
 import { Collapse, Menu, MenuItem, SvgIcon, Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from 'shared/utils';
-import { gCharMap, gIconMap } from '../../db3/components/IconMap';
-import { Markdown, MarkdownEditor } from "./RichTextEditor";
+import { gCharMap } from '../../db3/components/IconMap';
 import { Pre } from '../CMCoreComponents2';
-import { WikiPageApi } from './useWikiPageApi';
 import { MarkdownLockIndicator } from './MarkdownLockIndicator';
-import { FormatSize, Title } from '@mui/icons-material';
+import { Markdown, MarkdownEditor } from "./RichTextEditor";
+import { WikiPageApi } from './useWikiPageApi';
 
 function HighlightIcon(props) {
     return (
@@ -175,7 +175,6 @@ const M3TipsTabValues = [
     "Links",
     "Images",
     "Attachments",
-    "Music notation",
 ] as const;
 
 // 2. Derive a type from that array
@@ -203,7 +202,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [outdentTrig, setOutdentTrig] = React.useState<number>(0);
     const [underlineTrig, setUnderlineTrig] = React.useState<number>(0);
     const [strikethroughTrig, setStrikethroughTrig] = React.useState<number>(0);
-    const [abcjsTrig, setAbcjsTrig] = React.useState<number>(0);
 
     const [specialCharacterMenuOpen, setSpecialCharacterMenuOpen] = React.useState<boolean>(false);
     const [characterSizeMenuOpen, setCharacterSizeMenuOpen] = React.useState<boolean>(false);
@@ -226,7 +224,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         setLinkTrig(0);
         setOrderedListTrig(0);
         setUnorderedListTrig(0);
-        setAbcjsTrig(0);
         setAttachFilesTrig(0);
         setMentionTrig(0);
         setReferenceTrig(0);
@@ -369,11 +366,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                 <StrikethroughSIcon />
             </div>
         </Tooltip>,
-        abcjs: <Tooltip title={"Insert ABC music notation"} disableInteractive>
-            <div className="toolItem abcjs" onClick={() => setAbcjsTrig(abcjsTrig + 1)}>
-                {gIconMap.MusicNote()}
-            </div>
-        </Tooltip>,
         specialCharacter: <>
             <Tooltip title={"Insert special character"} disableInteractive>
                 <div
@@ -500,7 +492,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                     {toolItems.characterSize}
                     <div className="divider" />
 
-                    {toolItems.abcjs}
                     {toolItems.specialCharacter}
                     <div className="divider" />
 
@@ -813,35 +804,6 @@ But this is a new paragraph.`}
                     </Collapse>
 
 
-
-                    <Collapse in={tipsTab === "Music notation"}>
-                        <div className="toolbar toolBarRow formattingTipsContentRow">
-                            <dl>
-                                {/* ABC Music Notation */}
-                                <dt>
-                                    <span className="highlight">ABC Notation</span>
-                                </dt>
-                                <dd>
-                                    You can write ABC music notation inside a code block labeled
-                                    with <code>abc</code>. For example:
-                                    <Pre
-                                        text={`\`\`\`abc
-M:4/4
-K:C#min
-C3D EF=G_A | ^Bc
-\`\`\``}
-                                    />
-                                    <div><img src="/images/abc_example_1.png" /></div>
-                                    For more info about ABC notation,&nbsp;
-                                    <a href="https://abcnotation.com/examples" target='_blank' rel="noreferrer">
-                                        visit the website</a>.
-                                </dd>
-                            </dl>
-                        </div>
-                    </Collapse>
-
-
-
                 </Collapse>
             </>
             }
@@ -870,7 +832,6 @@ C3D EF=G_A | ^Bc
                     underlineTrig={underlineTrig}
                     strikethroughTrig={strikethroughTrig}
                     refocusTrig={refocusTrig}
-                    abcjsTrig={abcjsTrig}
                     specialCharacterTrig={specialCharacterTrig}
                     specialCharacter={specialCharacter}
                 />

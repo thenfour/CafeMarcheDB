@@ -8,6 +8,7 @@ import { Button, DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
+import { QuickSearchItemTypeSets } from "shared/quickFilter";
 import { AttendanceChip, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { gIconMap } from "src/core/db3/components/IconMap";
@@ -187,6 +188,7 @@ export const SetlistPlannerLedDef = (props: SetlistPlannerLedDefProps) => {
             />
         } />
         <AssociationSelect
+            allowedItemTypes={QuickSearchItemTypeSets.Everything!}
             value={!props.ledDef.associatedItem ? null : { ...props.ledDef.associatedItem, matchStrength: 0, matchingField: undefined }}
             onChange={(newValue) => props.onChange({ ...props.ledDef, associatedItem: newValue })}
         />

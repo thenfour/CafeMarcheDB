@@ -2,6 +2,7 @@ import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/mate
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
+import { QuickSearchItemType, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
@@ -10,8 +11,8 @@ import { CMSmallButton, KeyValueTable, NameValuePair } from "src/core/components
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
-import { Markdown } from "src/core/components/markdown/RichTextEditor";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
+import { Markdown } from "src/core/components/markdown/RichTextEditor";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { useSongsContext } from "src/core/components/SongsContext";
@@ -84,7 +85,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                     ledValues={songRow.leds || []}
                     onLedValueChanged={val => props.mutator.setRowLedValue(songRow.rowId, val.ledId, val)}
                     additionalAssociatedItems={[{
-                        itemType: "song",
+                        itemType: QuickSearchItemType.song,
                         id: song.id,
                         name: song.name,
                     }]}
@@ -927,6 +928,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                         nominalHeight={75}
                                     />
                                     <AssociationSelect
+                                        allowedItemTypes={QuickSearchItemTypeSets.Everything!}
                                         value={!segment.associatedItem ? null : { ...segment.associatedItem, matchStrength: 0, matchingField: undefined }}
                                         onChange={(newAssociation) => {
                                             props.mutator.setColumnAssociatedItem(segment.columnId, newAssociation);

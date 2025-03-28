@@ -2,36 +2,6 @@ import MarkdownIt from 'markdown-it';
 import { markdownReactPlugins } from './MarkdownReactPlugins';
 
 
-// export function ReactBlockMarkdownPlugin(md: MarkdownIt, onComponentAdd: () => void) {
-//     function render(tag: string, content: string) {
-//         const div = document.createElement("div");
-//         div.setAttribute("data-component", tag);
-//         div.setAttribute("data-props", content.trim());
-//         onComponentAdd();
-//         return div.outerHTML;
-//     }
-
-//     // Block ABCjs rule
-//     md.core.ruler.after('block', 'abc', function (state) {
-//         state.tokens.forEach(token => {
-//             if (token.type !== 'fence') return;
-//             // token.info is the little tag. like ```tag
-//             if (!markdownReactPlugins.some(p => p.componentName === token.info)) return;
-//             //if (token.info !== 'abc') return; 
-
-//             token.type = 'html_block';
-//             token.content = render(token.info, token.content);
-//             token.tag = '';
-//             token.nesting = 0;
-//             token.attrs = null;
-//             token.map = null;
-//             token.children = null;
-//         });
-//     });
-// }
-
-
-
 export function ReactBlockMarkdownPlugin(md: MarkdownIt, onComponentAdd: () => void) {
     // Store the original fence renderer, or use a default
     const originalFenceRule = md.renderer.rules.fence ||
