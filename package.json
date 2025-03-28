@@ -46,7 +46,6 @@
     "@types/react-dom": "^18.2.7",
     "@webscopeio/react-textarea-autocomplete": "4.9.2",
     "@xyflow/react": "12.0.4",
-    "abcjs": "6.4.1",
     "async-mutex": "0.5.0",
     "blitz": "2.0.2",
     "dayjs": "1.11.9",
