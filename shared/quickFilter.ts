@@ -234,12 +234,21 @@ export function CalculateMatchStrength(fields: SearchableTableFieldSpec[], value
         matchStrength: 0,
     }; // no matches found.
 
-    // return the best match.
-    const bestMatch = results.reduce((prev, current) => {
-        return (prev.matchStrength > current.matchStrength) ? prev : current;
-    });
+    // // return the best match.
+    // const bestMatch = results.reduce((prev, current) => {
+    //     return (prev.matchStrength > current.matchStrength) ? prev : current;
+    // });
+    //return bestMatch;
 
-    return bestMatch;
+    // return combined match
+    const totalMatchStrength = results.reduce((prev, current) => {
+        return prev + current.matchStrength;
+    }, 0);
+
+    return {
+        fieldName: results.map(r => r.fieldName).join(","), // results[0]!.fieldName,
+        matchStrength: totalMatchStrength,
+    };
 };
 
 

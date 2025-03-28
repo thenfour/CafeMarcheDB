@@ -202,10 +202,10 @@ export function calculateMatchStrength(text: string, keyword: string): number {
 
     // scale by keyword length. short keywords (1 & 2 chars) are less strong
     if (keyword.length < 3) {
-        score *= 0.5; // reduce score for short keywords
+        score *= 0.7; // reduce score for short keywords
     }
     else if (keyword.length > 5) {
-        score *= 1.3; // increase score for long keywords
+        score *= 1.5; // increase score for long keywords
     }
     return score;
 }
