@@ -11,7 +11,7 @@ import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { EditTextField } from "./CMCoreComponents";
-import { CMDialogContentText } from "./CMCoreComponents2";
+import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
 import { useConfirm } from "./ConfirmationDialog";
 import { DashboardContext } from "./DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
