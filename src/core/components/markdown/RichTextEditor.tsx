@@ -61,6 +61,8 @@ export const Markdown = (props: MarkdownProps) => {
     const expectedComponentCount = React.useRef<number>(0);
     const componentMountTimer = React.useRef<NodeJS.Timer | null>(null);
 
+    if (IsNullOrWhitespace(props.markdown)) return null;
+
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {

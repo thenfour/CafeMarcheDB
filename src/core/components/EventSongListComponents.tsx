@@ -758,7 +758,10 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 </>
             ) : (
                 <>
-                    <div className={`td songName ${props.value.type === 'song' && "dragHandle draggable"}`}>
+                    {/* while it's tempting to make song names draggable themselves for very fast sorting, it interferes with
+                pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad. 
+                ${props.value.type === 'song' && "dragHandle draggable"}*/}
+                    <div className={`td songName `}>
                         {props.value.type === 'song' && <div>{props.value.song.name}</div>}
                         {/* value used to be props.value.song || null */}
                         {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
