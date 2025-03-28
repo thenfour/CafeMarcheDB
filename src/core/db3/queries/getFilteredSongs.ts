@@ -1,10 +1,11 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import db from "db";
 import { Permission } from "shared/permissions";
+import { QuickSearchItemType } from "shared/quickFilter";
 import { getCurrentUserCore } from "../server/db3mutationCore";
+import { getQuickSearchResults } from "../server/quickSearchServerCore";
 import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
-import { SplitQuickFilter } from "shared/quickFilter";
 
 interface TArgs {
     autocompleteQuery: string;
@@ -20,42 +21,19 @@ export default resolver.pipe(
                 return { matchingItems: [] };
             }
 
-            const tokens = SplitQuickFilter(args.autocompleteQuery);
-            // any tokens starting with "#" are tags
-            const songTokens = tokens.filter(t => !t.startsWith("#") && (t.length > 1));
-
-            const songFilterAnded: Prisma.SongWhereInput[] = songTokens.map((t): Prisma.SongWhereInput => ({
-                OR: [
-                    { name: { contains: t, } },
-                    { aliases: { contains: t, } }
-                ]
-            }));
-
-            const tagTokens = tokens.filter(t => t.startsWith("#")).map(t => t.substring(1));
-            tagTokens.forEach(t => {
-                songFilterAnded.push({ tags: { some: { tag: { text: { contains: t } } } } });
-            });
+            const results = await getQuickSearchResults(args.autocompleteQuery, u, [QuickSearchItemType.song]);
 
             const qr = await db.song.findMany({
                 select: GetFilteredSongsItemSongSelect,
                 where: {
-                    AND: [
-                        {
-                            isDeleted: false,
-                        },
-                        {
-                            // don't show any private items; they're not useful in song lists anyway.
-                            visiblePermissionId: { not: null }
-                        },
-                        ...songFilterAnded,
-                    ]
+                    id: { in: results.map(r => r.id) },
                 },
-                take: 10,
             });
 
             return {
                 matchingItems: qr,
             };
+
 
         } catch (e) {
             console.error(e);
