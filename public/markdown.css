@@ -307,6 +307,15 @@ test cases:
     padding: 3px 5px;
 }
 
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+    color: var(--primary-color)
+}
+
 
 .MD3Container.editor .formattingTipsRow {
     gap: 10px;

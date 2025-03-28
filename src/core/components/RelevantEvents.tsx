@@ -74,6 +74,8 @@ function MakeMockSearchResultsRetFromEvents(events: db3.EnrichedSearchEventPaylo
     };
 }
 
+const gHighlightEvent = false;
+
 export const RelevantEvents = () => {
     const [now, setNow] = React.useState<Date>(new Date());
     const dashboardContext = useDashboardContext();
@@ -128,12 +130,17 @@ export const RelevantEvents = () => {
     // extract a single event to highlight, if there's one happening now or today.
     eventsWithTiming = toSorted(eventsWithTiming, (a, b) => a.sortValue - b.sortValue);
     let highlightedEvent: typeof eventsWithTiming[0] | undefined;
-    if (eventsWithTiming[0]?.worthyOfHighlight) {
-        highlightedEvent = eventsWithTiming[0];
-        eventsWithTiming = eventsWithTiming.slice(1); // remove the highlighted event from the list.
+    if (gHighlightEvent) {
+        if (eventsWithTiming[0]?.worthyOfHighlight) {
+            highlightedEvent = eventsWithTiming[0];
+            eventsWithTiming = eventsWithTiming.slice(1); // remove the highlighted event from the list.
+        }
     }
 
     return <div className="RelevantEvents">
+        <div className="RelevantEventsHeader">
+            Current Events
+        </div>
         {highlightedEvent && <div>
             <EventListItem
                 event={highlightedEvent.event}

@@ -14,8 +14,8 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 const HomepageBigEventCalendar = () => {
   const dashboardContext = useDashboardContext();
   if (!dashboardContext) return null;
-  //if (dashboardContext.relevantEventIds.length < 1) return null;
   return <BigEventCalendar />;
+  //return <BigEventCalendar selectedEventId={dashboardContext.relevantEventIds[0]} />;
 };
 
 const DynamicContent = () => {
