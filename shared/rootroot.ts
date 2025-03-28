@@ -191,9 +191,14 @@ export function calculateMatchStrength(text: string, keyword: string): number {
     // Base score: 1 for at least one match.
     let score = 1;
 
-    // Bonus if the match occurs at the beginning or at a word boundary.
-    if (index === 0 || /\W/.test(lowerText.charAt(index - 1))) {
+    // Bonus if the match occurs at a word boundary.
+    if (/\W/.test(lowerText.charAt(index - 1))) {
         score += 1;
+    }
+
+    // bonus if the match occurs at the start of the text.
+    if (index === 0) {
+        score += 2;
     }
 
     // Bonus for additional occurrences (each extra occurrence adds 0.5).

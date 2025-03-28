@@ -26,7 +26,7 @@ import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetl
 import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
-import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";

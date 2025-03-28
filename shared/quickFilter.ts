@@ -85,10 +85,20 @@ export interface ParseQuickFilterResult {
     keywords: string[];
     tags: string[];
     pkid: number | null;
+    typeFilter: string | null; // prefix a query with a type to filter by. e.g. "event:foo" or "song:foo"
     dateRange: { start: Date, end: Date } | undefined;
 };
 
 export function ParseQuickFilter(quickFilter: string): ParseQuickFilterResult {
+
+    // first extract the type filter, if any.
+    const typeFilterMatch = quickFilter.match(/^([a-zA-Z]+):/);
+    let typeFilter: string | null = null;
+    if (typeFilterMatch) {
+        typeFilter = typeFilterMatch[1]!.toLowerCase();
+        quickFilter = quickFilter.substring(typeFilterMatch[0].length); // remove the type filter from the query
+    }
+
     const keywords = SplitQuickFilter(quickFilter);
     let dateRange: { start: Date, end: Date } | undefined = undefined;
     for (const keyword of keywords) {
@@ -105,6 +115,7 @@ export function ParseQuickFilter(quickFilter: string): ParseQuickFilterResult {
         tags: tagKeywords.map(tag => tag.substring(1)), // remove the # from the tag
         pkid: IsEntirelyIntegral(quickFilter) ? parseInt(quickFilter, 10) : null,
         dateRange,
+        typeFilter,
     };
 };
 

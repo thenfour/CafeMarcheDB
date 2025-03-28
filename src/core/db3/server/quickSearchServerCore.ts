@@ -13,6 +13,8 @@ import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpr
 const kItemsPerType = 100;
 
 interface QuickSearchPlugin {
+    // return true if this plugin can handle the type of item.
+    matchesTypeFilter: (type: string) => boolean;
     getMatches: (args: {
         user: db3.UserWithRolesPayload,
         query: ParseQuickFilterResult,
@@ -22,6 +24,7 @@ interface QuickSearchPlugin {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const SongQuickSearchPlugin: QuickSearchPlugin = {
+    matchesTypeFilter: (type: string) => type === QuickSearchItemType.song || type == "s",
     getMatches: async ({ user, query, publicRole }) => {
         const songFields: SearchableTableFieldSpec[] = [
             { fieldName: "id", fieldType: "pk", strengthMultiplier: 1 },
@@ -109,6 +112,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const EventQuickSearchPlugin: QuickSearchPlugin = {
+    matchesTypeFilter: (type: string) => type === QuickSearchItemType.event || type == "e",
     getMatches: async ({ user, query, publicRole }) => {
 
         const eventFields: SearchableTableFieldSpec[] = [
@@ -220,6 +224,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const UserQuickSearchPlugin: QuickSearchPlugin = {
+    matchesTypeFilter: (type: string) => type === QuickSearchItemType.user || type == "u",
     getMatches: async ({ user, query, publicRole }) => {
         const userFields: SearchableTableFieldSpec[] = [
             { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
@@ -259,6 +264,7 @@ const UserQuickSearchPlugin: QuickSearchPlugin = {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
+    matchesTypeFilter: (type: string) => type === QuickSearchItemType.wikiPage || type == "w",
     getMatches: async ({ user, query, publicRole }) => {
         const wikiPageFields: SearchableTableFieldSpec[] = [
             { fieldName: "slug", fieldType: "string", strengthMultiplier: 1 },
@@ -335,9 +341,12 @@ export async function getQuickSearchResults(keyword__: string, user: db3.UserWit
         [QuickSearchItemType.event]: EventQuickSearchPlugin,
         [QuickSearchItemType.user]: UserQuickSearchPlugin,
         [QuickSearchItemType.wikiPage]: WikiPageQuickSearchPlugin,
-    } as const;
+    };
 
-    const pluginsToUse = allowedItemTypes.map(type => plugins[type]).filter(plugin => plugin !== undefined);
+    const pluginsToUse = allowedItemTypes
+        .map(type => plugins[type])
+        .filter(plugin => plugin !== undefined)
+        .filter(plugin => !query.typeFilter || plugin.matchesTypeFilter(query.typeFilter));
 
     let allCalls = pluginsToUse.map(plugin => plugin.getMatches({ user, query, publicRole }));
     let ret = (await Promise.all(allCalls))
