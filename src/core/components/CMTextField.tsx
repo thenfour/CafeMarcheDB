@@ -24,6 +24,7 @@ export interface CMTextInputBaseProps {
     className?: string;
     type?: "password" | "text"; // "password" | "text" etc.
     ref?: React.Ref<HTMLInputElement>;
+    style?: React.CSSProperties | undefined;
 };
 
 // textfield for a string field on an object.
@@ -53,6 +54,7 @@ export function CMTextInputBase({ value, onChange, autoFocus, readOnly, ...props
         className={`CMTextInputBase ${props.className}`}
         autoComplete="off"
         data-lpignore="true"
+        style={props.style}
     />;
 };
 
@@ -400,6 +402,7 @@ export interface SongLengthInputProps {
     initialValue: string | number | null;
     onChange: (value: number | null) => void;
     readonly?: boolean;
+    inputStyle?: React.CSSProperties | undefined;
 };
 export const SongLengthInput = (props: SongLengthInputProps) => {
     const [controlledValue, setControlledValue] = React.useState<string>(() => {
@@ -417,7 +420,7 @@ export const SongLengthInput = (props: SongLengthInputProps) => {
     }, [lengthSeconds]);
 
     return <div className="songLengthInputContainer">
-        <CMTextInputBase value={controlledValue} onChange={(e, v) => { setControlledValue(v); }} />
+        <CMTextInputBase value={controlledValue} onChange={(e, v) => { setControlledValue(v); }} style={props.inputStyle} />
         <div className="preview">{previewLength}</div>
     </div>
         ;

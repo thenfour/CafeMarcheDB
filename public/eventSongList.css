@@ -123,6 +123,11 @@
     border-bottom: 1px solid transparent;
 }
 
+.songListSongTable .tr.item.type_divider .td.songName {
+    font-style: italic;
+    color: var(--color-foreground);
+}
+
 .songListSongTable .tr.item.type_divider,
 .hatch {
     /* mimicing vs code diff diagonal-fill. very clean and pretty, only limitation is it's locked to 45 degrees. */
@@ -206,6 +211,7 @@
     font-family: var(--ff-mono);
     justify-content: flex-end;
     color: var(--deemphasized-color);
+    padding-right: 8px;
 }
 
 

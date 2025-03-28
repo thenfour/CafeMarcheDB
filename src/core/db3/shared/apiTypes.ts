@@ -238,6 +238,9 @@ export interface TinsertOrUpdateEventSongListDivider {
     sortOrder: number;
     color: string | null | undefined;
     isInterruption: boolean;
+    subtitleIfSong: string | null;
+    isSong: boolean;
+    lengthSeconds: number | null;
     textStyle: null | string; // EventSongListDividerTextStyle
     subtitle: string;
 };

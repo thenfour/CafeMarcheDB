@@ -140,6 +140,7 @@ interface Markdown3EditorPropsBase {
     nominalHeight: number;
     onChange: (v: string) => void;
     wikiPageApi?: WikiPageApi | null;
+    startWithPreviewOpen?: boolean;
 };
 
 //////////////////////////////////////////////////
@@ -180,12 +181,12 @@ const M3TipsTabValues = [
 // 2. Derive a type from that array
 type M3TipsTab = (typeof M3TipsTabValues)[number];
 
-export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageApi = null, ...props }: Markdown3EditorProps) => {
+export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageApi = null, startWithPreviewOpen = true, ...props }: Markdown3EditorProps) => {
     const [tab, setTab] = React.useState<M3Tab>("sidebyside");
     const [popoverAnchorEl, setPopoverAnchorEl] = React.useState<null | HTMLElement>(null);
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [tipsTab, setTipsTab] = React.useState<M3TipsTab | null>(null);
-    const [showPreview, setShowPreview] = React.useState<boolean>(true);
+    const [showPreview, setShowPreview] = React.useState<boolean>(startWithPreviewOpen);
 
     const [headingTrig, setHeadingTrig] = React.useState<number>(0);
     const [boldTrig, setBoldTrig] = React.useState<number>(0);

@@ -269,6 +269,9 @@ type ActivityLogSongListDividerPayload = {
     subtitle: string,
     color: string | null | undefined,
     isInterruption: boolean,
+    subtitleIfSong: string | null | undefined,
+    isSong: boolean | undefined,
+    lengthSeconds: number | null | undefined,
     textStyle: null | string,
     type: "div",
 };

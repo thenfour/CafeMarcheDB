@@ -6,7 +6,7 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
-import { Button, Checkbox, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
+import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
@@ -24,6 +24,7 @@ import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
 import { CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
+import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
 import { DashboardContext } from './DashboardContext';
@@ -70,27 +71,79 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
     >
         <DialogTitle style={{ display: "flex", alignItems: "center" }}>Setlist <ArrowForward /> Edit setlist divider</DialogTitle>
         <DialogContent style={{ width: "var(--content-max-width)" }}>
-            <Markdown3Editor
+            {/* <Markdown3Editor
                 onChange={(v) => setControlledValue({ ...controlledValue, subtitle: v })}
                 nominalHeight={100}
                 value={controlledValue.subtitle || ""}
                 autoFocus
                 handleSave={() => onClick(controlledValue)}
-            />
+                startWithPreviewOpen={false}
+            /> */}
             <NameValuePair
-                name={"Color"}
-                value={<ColorPick
-                    onChange={(value) => setControlledValue({ ...controlledValue, color: value?.id || null })}
-                    value={controlledValue.color}
-                    allowNull
-                />}
-            />
-            <NameValuePair
-                name={"Is a break / Resets running time?"}
-                value={<Checkbox
-                    checked={controlledValue.isInterruption}
-                    onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
-                />}
+                name={"Options"}
+                value={
+                    <>
+                        <FormControlLabel
+                            label={"Text"}
+                            control={
+                                <CMTextInputBase
+                                    style={{ backgroundColor: "white", margin: "8px" }}
+                                    onChange={(e) => setControlledValue({ ...controlledValue, subtitle: e.target.value })}
+                                    value={controlledValue.subtitle || ""}
+                                />
+                            } />
+
+                        <div>
+                            <FormControlLabel
+                                label={"Color"}
+                                control={
+                                    <ColorPick
+                                        onChange={(value) => setControlledValue({ ...controlledValue, color: value?.id || null })}
+                                        value={controlledValue.color}
+                                        allowNull
+                                    />} />
+                        </div>
+                        <FormControlLabel
+                            label={"This is a break, and resets the running time"}
+                            control={
+                                <Switch
+                                    checked={controlledValue.isInterruption}
+                                    onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
+                                />
+                            } />
+                        <FormControlLabel
+                            label={"This is considered a song, with ordinal number"}
+                            control={
+                                <Switch
+                                    checked={controlledValue.isSong}
+                                    onChange={(e) => setControlledValue({ ...controlledValue, isSong: e.target.checked })}
+                                />
+                            } />
+
+                        {controlledValue.isSong && <>
+
+                            <FormControlLabel
+                                label={"Subtitle"}
+                                control={
+                                    <CMTextInputBase
+                                        style={{ backgroundColor: "white", margin: "8px" }}
+                                        onChange={(e) => setControlledValue({ ...controlledValue, subtitleIfSong: e.target.value })}
+                                        value={controlledValue.subtitleIfSong || ""}
+                                    />
+                                } />
+
+
+                            <FormControlLabel
+                                label={"Length / duration"}
+                                control={
+                                    <SongLengthInput
+                                        inputStyle={{ backgroundColor: "white", margin: "8px" }}
+                                        initialValue={controlledValue.lengthSeconds || null}
+                                        onChange={(v) => setControlledValue({ ...controlledValue, lengthSeconds: v })}
+                                    />
+                                } />
+                        </>}
+                    </>}
             />
             <NameValuePair
                 name={"Style"}
@@ -116,7 +169,6 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
 
 const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { sortOrder: number, value: SetlistAPI.EventSongListDividerItem, onClick: (x: SetlistAPI.EventSongListDividerItem) => void, songList: db3.EventSongListPayload }) => {
     const [open, setOpen] = React.useState<boolean>(false);
-    //const [controlledValue, setControlledValue] = React.useState<SetlistAPI.EventSongListDividerItem>({ ...value });
 
     return <>
         <div
@@ -154,13 +206,12 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
     return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${colorInfo.cssClass} ${styleClasses}`} style={colorInfo.style}>
         <div className='divBreak'></div>
         <div className="td songIndex">
+            {/* {props.value.index != null && props.value.index + 1} */}
         </div>
         <div className="td comment dividerCommentCell">
             <div className='comment dividerCommentContainer'>
-                {/* <div className='dividerBreakDiv before'></div> */}
                 <div className='dividerBreakDiv'></div>
-                <Markdown markdown={props.value.subtitle} className='comment dividerCommentText' compact />
-                {/* <div className='dividerBreakDiv after'></div> */}
+                <div className='comment dividerCommentText' >{props.value.subtitle}</div>
             </div>
             <div className='dividerButtonGroup'></div>
         </div>
@@ -168,8 +219,40 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
 
 };
 
+export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongListValueViewerRowProps, "value">) => {
+    if (props.value.type !== 'divider') throw new Error(`wrongtype`);
+
+    const colorInfo = GetStyleVariablesForColor({
+        color: props.value.color || gSwatchColors.lighter_gray,// gAppColors.attendance_yes,
+        enabled: true,
+        fillOption: 'filled',
+        selected: false,
+        variation: 'strong',
+    });
+
+    return <div className={`SongListValueViewerRow tr existingItem item validItem type_divider ${colorInfo.cssClass}`} style={colorInfo.style}>
+        <div className="td songIndex">
+            {props.value.index != null && props.value.index + 1}
+        </div>
+        <div className="td songName">{props.value.subtitle}</div>
+        <div className="td length">{props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds)}</div>
+        <div className="td runningLength">{props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
+        <div className="td tempo">
+        </div>
+        <div className="td comment">{props.value.subtitleIfSong}</div>
+    </div>
+
+};
+
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
-    if (props.value.type === 'divider') return <EventSongListValueViewerDividerRow {...props} />;
+    if (props.value.type === 'divider') {
+        if (props.value.isSong) {
+            return <EventSongListValueViewerDividerSongRow {...props} />;
+        }
+        else {
+            return <EventSongListValueViewerDividerRow {...props} />;
+        }
+    }
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
     // const formattedBPM = props.value.type === 'song' ? API.songs.getFormattedBPM(props.value.song) : "";
@@ -226,6 +309,9 @@ export type PortableSongListDivider = {
     comment: string;
     color: string | null;
     isInterruption: boolean;
+    isSong: boolean;
+    subtitleIfSong: string | null;
+    lengthSeconds: number | null;
     textStyle: string | null;
     type: 'divider';
 };
@@ -245,6 +331,9 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
             type: 'divider',
             color: d.color,
             isInterruption: d.isInterruption,
+            isSong: d.isSong,
+            subtitleIfSong: d.subtitleIfSong,
+            lengthSeconds: d.lengthSeconds,
             textStyle: d.textStyle,
             sortOrder: d.sortOrder,
             comment: d.subtitle || "",
@@ -708,6 +797,12 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             id: getUniqueNegativeID(),
             textStyle: db3.EventSongListDividerTextStyle.Default,
             isInterruption: true,
+            runningTimeSeconds: null,
+            songsWithUnknownLength: 0,
+            index: -1,
+            isSong: false,
+            subtitleIfSong: null,
+            lengthSeconds: null,
             sortOrder: props.value.sortOrder,
             subtitle: "",
         });
@@ -919,10 +1014,16 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         id: getUniqueNegativeID(),
                         color: p.color,
                         isInterruption: p.isInterruption,
+                        isSong: p.isSong,
+                        subtitleIfSong: p.subtitleIfSong,
+                        lengthSeconds: p.lengthSeconds,
                         textStyle: p.textStyle,
                         eventSongListId: list.id,
                         sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
                         subtitle: p.comment,
+                        runningTimeSeconds: null, // populated later
+                        songsWithUnknownLength: -1, // populated later
+                        index: -1, // populated later
                     };
                     return div;
                 case 'song':
@@ -1203,6 +1304,9 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
             dividers: newValue.dividers.map(d => ({
                 sortOrder: d.sortOrder,
                 isInterruption: d.isInterruption,
+                subtitleIfSong: d.subtitleIfSong,
+                isSong: d.isSong,
+                lengthSeconds: d.lengthSeconds,
                 textStyle: d.textStyle,
                 color: d.color,
                 subtitle: d.subtitle || "",
@@ -1290,6 +1394,9 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
                 sortOrder: d.sortOrder,
                 color: d.color,
                 isInterruption: d.isInterruption,
+                subtitleIfSong: d.subtitleIfSong,
+                isSong: d.isSong,
+                lengthSeconds: d.lengthSeconds,
                 textStyle: d.textStyle,
                 subtitle: d.subtitle || "",
             })),

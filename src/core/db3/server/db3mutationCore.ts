@@ -684,6 +684,9 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         sortOrder: a.sortOrder,
         color: a.color,
         isInterruption: a.isInterruption,
+        subtitleIfSong: a.subtitleIfSong,
+        isSong: a.isSong,
+        lengthSeconds: a.lengthSeconds,
         textStyle: a.textStyle,
         subtitle: a.subtitle || "",
     }));
@@ -698,6 +701,9 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         id: a.id,
         sortOrder: a.sortOrder,
         isInterruption: a.isInterruption,
+        subtitleIfSong: a.subtitleIfSong,
+        isSong: a.isSong,
+        lengthSeconds: a.lengthSeconds,
         textStyle: a.textStyle,
         color: a.color,
         subtitle: a.subtitle || "",
@@ -730,6 +736,9 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
 
                 sortOrder: item.sortOrder,
                 isInterruption: item.isInterruption,
+                isSong: item.isSong,
+                subtitleIfSong: item.subtitleIfSong,
+                lengthSeconds: item.lengthSeconds,
                 textStyle: item.textStyle,
                 color: item.color,
                 subtitle: item.subtitle,
@@ -750,7 +759,10 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         checkChangedColumn("sortOrder");
         checkChangedColumn("subtitle");
         checkChangedColumn("color");
+        checkChangedColumn("subtitleIfSong");
         checkChangedColumn("isInterruption");
+        checkChangedColumn("isSong");
+        checkChangedColumn("lengthSeconds");
         checkChangedColumn("textStyle");
 
         if (Object.entries(data).length < 1) {

@@ -67,11 +67,19 @@ export type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{
         eventSongListId: true,
         subtitle: true,
         isInterruption: true,
+        isSong: true,
+        subtitleIfSong: true,
+        lengthSeconds: true,
         textStyle: true,
         color: true,
         sortOrder: true,
     }
-}> & { type: "divider" };
+}> & {
+    type: "divider"
+    index?: number | null;
+    runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
+    songsWithUnknownLength: number;
+};
 
 export type EventSongListNewItem = {
     eventSongListId: number,
@@ -107,6 +115,9 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
                 id: true,
                 eventSongListId: true,
                 isInterruption: true,
+                subtitleIfSong: true,
+                isSong: true,
+                lengthSeconds: true,
                 textStyle: true,
                 subtitle: true,
                 color: true,
@@ -119,17 +130,20 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
 export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[] {
     // row items are a combination of songs + dividers, with a new blank row at the end
     // NB: toSorted() is not supported on uberspace server code.
-    const rowItems: EventSongListItem[] = toSorted(songList.songs, (a, b) => a.sortOrder - b.sortOrder).map((s, index) => ({
+    const rowItems: EventSongListItem[] = songList.songs.map((s) => ({
         ...s,
         type: "song",
-        index,
+        index: -1, // populated later
         runningTimeSeconds: null, // populated later
-        songsWithUnknownLength: 0,
+        songsWithUnknownLength: 0, // populated later
     }));
     rowItems.push(...songList.dividers.map(s => {
         const x: EventSongListDividerItem = {
             ...s,
             type: 'divider',
+            index: -1, // populated later
+            runningTimeSeconds: null, // populated later
+            songsWithUnknownLength: 0, // populated later
         };
         return x;
     }));
@@ -143,30 +157,40 @@ export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[]
     let songsWithUnknownLength: number = 0;
     for (let i = 0; i < rowItems.length; ++i) {
         const item = rowItems[i]!;
+        if (item.type !== 'divider' && item.type !== 'song') throw new Error(`unknown type at this moment`);
+
+        let songLengthSeconds: number | null = null;
+        let incrementSongIndex = false;
+
         if (item.type === 'divider') {
-            // reset!
             if (item.isInterruption) {
                 songIndex = 0;
                 runningTimeSeconds = null;
-                //songsWithUnknownLength = 0;
             }
-            continue;
+
+            if (item.isSong) {
+                songLengthSeconds = item.lengthSeconds;
+                incrementSongIndex = true;
+            }
         }
-        if (item.type !== 'song') throw new Error(`unknown type at this moment`);
+        if (item.type === 'song') {
+            songLengthSeconds = item.song.lengthSeconds;
+            incrementSongIndex = true;
+        }
 
-        item.index = songIndex;
-
-        if (item.song.lengthSeconds) {
-            runningTimeSeconds = item.song.lengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
+        if (songLengthSeconds) {
+            runningTimeSeconds = songLengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
         } else {
-            // don't inc runtime
             songsWithUnknownLength++;
         }
 
+        item.index = songIndex;
         item.runningTimeSeconds = runningTimeSeconds;
         item.songsWithUnknownLength = songsWithUnknownLength;
 
-        songIndex++;
+        if (incrementSongIndex) {
+            songIndex++;
+        }
     }
 
     return rowItems;
@@ -187,7 +211,11 @@ export function SongListNamesToString(setlist: LocalSongListPayload): string {
 
     const txt = rowItems.map(item => {
         if (item.type === 'divider') {
-            return DividerToString(item.subtitle);
+            if (item.isSong) {
+                return item.subtitle;
+            } else {
+                return DividerToString(item.subtitle);
+            }
         } else if (item.type === 'song') {
             return item.song.name;
         }
@@ -200,16 +228,18 @@ export function SongListNamesToString(setlist: LocalSongListPayload): string {
 export function SongListIndexAndNamesToString(setlist: LocalSongListPayload): string {
     const rowItems = GetRowItems(setlist);
 
-    let index = 1;
     const lines: string[] = [];
 
     for (const item of rowItems) {
         if (item.type === 'divider') {
-            index = 1;
-            lines.push(DividerToString(item.subtitle));
+            if (item.isSong) {
+                lines.push(`${(item.index || 0) + 1}. ${item.subtitle}`);
+            }
+            else {
+                lines.push(DividerToString(item.subtitle));
+            }
         } else if (item.type === 'song') {
-            lines.push(`${index}. ${item.song.name}`);
-            index++;
+            lines.push(`${item.index + 1}. ${item.song.name}`);
         }
         // Ignore other item types (e.g., 'new')
     }
@@ -223,28 +253,36 @@ export function SongListToCSV(setlist: LocalSongListPayload): string {
     // Get the combined list of songs and dividers in order
     const rowItems = GetRowItems(setlist);
 
-    let index = 1;
     const csvRows: any[] = [];
 
     for (const item of rowItems) {
         if (item.type === 'divider') {
-            index = 1;
-            csvRows.push({
-                Index: '',
-                Song: DividerToString(item.subtitle),
-                Length: '',
-                Tempo: '',
-                Comment: '',
-            });
+            if (item.isSong) {
+                csvRows.push({
+                    Index: ((item.index || 0) + 1).toString(),
+                    Song: item.subtitle,
+                    Length: item.lengthSeconds ? formatSongLength(item.lengthSeconds) : '',
+                    Tempo: "",
+                    Comment: item.subtitleIfSong || '',
+                });
+
+            } else {
+                csvRows.push({
+                    Index: '',
+                    Song: DividerToString(item.subtitle),
+                    Length: '',
+                    Tempo: '',
+                    Comment: '',
+                });
+            }
         } else if (item.type === 'song') {
             csvRows.push({
-                Index: index.toString(),
+                Index: (item.index + 1).toString(),
                 Song: item.song.name,
                 Length: item.song.lengthSeconds ? formatSongLength(item.song.lengthSeconds) : '',
                 Tempo: getFormattedBPM(item.song),
                 Comment: item.subtitle || '',
             });
-            index++;
         }
     }
 
@@ -255,22 +293,23 @@ export function SongListToCSV(setlist: LocalSongListPayload): string {
 export function SongListToMarkdown(setlist: LocalSongListPayload) {
     const rowItems = GetRowItems(setlist);
 
-    let index = 1;
     const lines: string[] = [];
-
     for (const item of rowItems) {
         if (item.type === 'divider') {
-            index = 1;
             // not sure the best way to format this but this feels practical.
-            if (item.subtitle) {
-                lines.push(`\n-----\n\n### ${item.subtitle}\n`);
+            if (item.isSong) {
+                const commentTxt = IsNullOrWhitespace(item.subtitleIfSong) ? '' : ` *${item.subtitleIfSong}*`;
+                lines.push(`${(item.index || 0) + 1}. **${item.subtitle}**${commentTxt}`);
             } else {
-                lines.push(`\n-----\n`);
+                if (item.subtitle) {
+                    lines.push(`\n-----\n\n### ${item.subtitle}\n`);
+                } else {
+                    lines.push(`\n-----\n`);
+                }
             }
         } else if (item.type === 'song') {
             const commentTxt = IsNullOrWhitespace(item.subtitle) ? '' : ` *${item.subtitle}*`;
-            lines.push(`${index}. **${item.song.name}**${commentTxt}`);
-            index++;
+            lines.push(`${item.index + 1}. **${item.song.name}**${commentTxt}`);
         }
     }
 
