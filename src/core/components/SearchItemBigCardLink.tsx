@@ -9,12 +9,16 @@ interface SearchItemBigCardLinkProps {
 };
 
 export const SearchItemBigCardLink = (props: SearchItemBigCardLinkProps) => {
-    return <div className='SearchItemBigCardLink interactable' onClick={() => simulateLinkClick(props.uri)}>
-        <div className='SearchItemBigCardLinkText'>
-            {props.title}
-        </div>
+    return <div className='SearchItemBigCardLink interactable' onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        simulateLinkClick(props.uri);
+    }}>
         <div className='SearchItemBigCardLinkIcon'>
             {props.icon}
+        </div>
+        <div className='SearchItemBigCardLinkText'>
+            {props.title}
         </div>
     </div>;
 };

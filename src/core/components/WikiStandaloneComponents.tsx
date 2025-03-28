@@ -39,6 +39,7 @@ interface WikiStandaloneControlProps {
     canonicalWikiPath: string; // with namespace if applicable
     onUpdated?: () => void;
     readonly?: boolean;
+    className?: string | undefined;
     renderCreateButton?: (onClick: () => void) => React.ReactNode;
 };
 
@@ -74,7 +75,7 @@ const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
         setEditing(false);
     };
 
-    return <div className="wikiPage standaloneEditor">
+    return <div className={`wikiPage standaloneEditor ${props.className || ""}`}>
         <AdminContainer>
             <WikiDebugIndicator wikiPageApi={wikiPageApi} />
         </AdminContainer>

@@ -40,7 +40,7 @@ test cases:
     font-size: 40px;
 }
 
-.wikiPage .wikiContentContainer {
+.wikiPage:not(.standaloneEditor) .wikiContentContainer {
     margin-bottom: 60px;
 }
 

@@ -11,8 +11,11 @@ import getUserTagWithAssignments from "../db3/queries/getUserTagWithAssignments"
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../db3/shared/apiTypes";
 import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
-import { EventListItem } from "./EventComponents";
+import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { simulateLinkClick } from "./CMCoreComponents2";
+import { IsNullOrWhitespace } from "shared/utils";
+import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
+import { EditNote, Info, InfoOutlined, LibraryMusic } from "@mui/icons-material";
 
 // events happening TODAY can be a search result card, maximum 1.
 // but all other events should be in a list of smaller cards.
@@ -50,7 +53,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
 
     return <div className={classes.join(" ")} style={typeStyle.style} onClick={() => simulateLinkClick(API.events.getURIForEvent(event))} >
         <div className="SubtleEventCardTitle">
-            {gIconMap.CalendarMonth()}
+            {/* {gIconMap.CalendarMonth()} */}
             <div>{event.name}</div>
         </div>
         {event.startsAt &&
@@ -59,6 +62,22 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
                 <span className={`EventDateField container ${props.relativeTiming.bucket}`}><span className="RelativeIndicator">{props.relativeTiming.label}</span></span>
             </div>
         }
+        <div className='SearchItemBigCardLinkContainer'>
+            {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <SearchItemBigCardLink
+                icon={<InfoOutlined />}
+                title="Info"
+                uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+            />
+            }
+            {event.songLists.length > 0 && <SearchItemBigCardLink
+                icon={<LibraryMusic />}
+                title="Setlist"
+                uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+            />
+            }
+        </div>
+
+
     </div>;
 };
 

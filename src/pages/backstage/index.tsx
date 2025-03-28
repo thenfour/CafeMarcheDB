@@ -7,6 +7,7 @@ import { useDashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { RelevantEvents } from "src/core/components/RelevantEvents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { WikiStandaloneControl } from "src/core/components/WikiStandaloneComponents";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -39,7 +40,14 @@ const DynamicContent = () => {
       </div>
     </CMSinglePageSurfaceCard>}
 
-    <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
+    <div className="DashboardHeader">
+      <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
+    </div>
+
+    <WikiStandaloneControl
+      canonicalWikiPath="special/announcements"
+      className="contentSection"
+    />
 
     <PermissionBoundary permission={Permission.view_events_nonpublic}>
       <RelevantEvents />
