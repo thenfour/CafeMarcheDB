@@ -100,7 +100,7 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
                 <DialogContent>
                     <CMTextInputBase
                         value={props.value?.text || ""}
-                        autoFocus={true}
+                        //autoFocus={true}
                         onChange={(e) => props.onChange({
                             ledId: props.def.ledId,
                             ...props.value,

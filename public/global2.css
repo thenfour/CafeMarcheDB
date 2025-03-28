@@ -2859,8 +2859,7 @@ textarea {
     color: #ccc;
     border-radius: 4px;
     padding: 8px 10px;
-    /* note this influences the width of the autocomplete too.*/
-    width: 300px;
+    width: 200px;
 }
 
 .MainSiteSearch svg {

@@ -201,7 +201,7 @@ function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3Sele
                     <SearchInput
                         onChange={(v) => setFilterText(v)}
                         value={filterText}
-                        autoFocus={true}
+                    //autoFocus={true} // see #408
                     />
 
                 </Box>

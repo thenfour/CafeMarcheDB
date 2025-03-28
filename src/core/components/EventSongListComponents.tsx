@@ -736,7 +736,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                         <div className='comment dividerCommentContainer'>
                             <div className='dividerBreakDiv before'></div>
                             <CMTextarea
-                                autoFocus={true}
+                                //autoFocus={true} // see #408
                                 className="cmdbSimpleInput dividerCommentText"
                                 placeholder="Comment"
                                 // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.

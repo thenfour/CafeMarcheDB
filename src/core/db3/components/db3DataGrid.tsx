@@ -278,7 +278,9 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 <DialogActions>
                     <Button onClick={handleNo}>No</Button>
                     {/* type=submit doesn't seem to work. why? */}
-                    <Button autoFocus={true} type="submit" onClick={handleYes}>Yes</Button>
+                    <Button
+                        autoFocus={true}
+                        type="submit" onClick={handleYes}>Yes</Button>
                 </DialogActions>
             </Dialog>
         );

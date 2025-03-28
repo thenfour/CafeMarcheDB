@@ -220,7 +220,7 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
                 <SearchInput
                     onChange={(v) => setFilterText(v)}
                     value={filterText}
-                    autoFocus={true}
+                //autoFocus={true} // see #408
                 />
             </Box>}
 

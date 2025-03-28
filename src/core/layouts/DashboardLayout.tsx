@@ -62,6 +62,12 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
             <Head>
                 <title>{`CM: ${title}`}</title>
                 <meta charSet="utf-8" /> { /* needed for Draft.js */}
+
+                {/* for mobile, this sets the initial zoom for the page, so
+                basically this should be the width of your page for mobile in project/local coords.
+                about 400px is comfortable, 500px would be fine for this site, but we're not ready
+                for that yet.
+                */}
                 <meta name="viewport" content="width=750" />
                 <link rel="icon" type="image/png" href="/favicon.png" />
             </Head>

@@ -247,7 +247,7 @@ export function DB3SingleSelectDialog<T extends TAnyModel>(props: Db3SingleSelec
                 <SearchInput
                     onChange={(v) => setFilterText(v)}
                     value={filterText}
-                    autoFocus={true}
+                //autoFocus={true} // see #408
                 />
             </Box>}
 
@@ -483,7 +483,7 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
                     <SearchInput
                         onChange={(v) => setFilterText(v)}
                         value={filterText}
-                        autoFocus={true}
+                    //autoFocus={true} // see #408
                     />
                 </Box>
                 {

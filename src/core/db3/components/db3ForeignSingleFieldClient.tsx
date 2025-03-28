@@ -642,7 +642,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
                 <SearchInput
                     onChange={(v) => setFilterText(v)}
                     value={filterText}
-                    autoFocus={true}
+                //autoFocus={true} // see #408
                 />
             </Box>
 

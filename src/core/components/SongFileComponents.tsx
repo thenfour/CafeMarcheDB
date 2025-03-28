@@ -435,7 +435,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                 <SearchInput
                                     onChange={(value) => props.onChange({ ...props.value, quickFilter: value })}
                                     value={props.value.quickFilter}
-                                    autoFocus={true}
+                                //autoFocus={true} // see #408
                                 />
                             </div>
 

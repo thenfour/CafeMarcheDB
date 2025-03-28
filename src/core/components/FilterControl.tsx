@@ -40,7 +40,7 @@ export const FilterControls = (props: FilterControlsProps) => {
                             <SearchInput
                                 onChange={props.onQuickFilterChange!}
                                 value={props.quickFilterText}
-                                autoFocus={true}
+                            //autoFocus={true} // see #408
                             />
                         }
                         {(props.hasAnyFilters) && <Button onClick={props.onResetFilter}>Reset filter</Button>}

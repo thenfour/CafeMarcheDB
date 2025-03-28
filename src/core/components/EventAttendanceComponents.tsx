@@ -297,7 +297,7 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
       <SettingMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />
 
       <Markdown3Editor
-        autoFocus={true} // why doesn't this work?
+        //autoFocus={true} // see #408
         onChange={(v) => setValue(v)}
         value={value}
         handleSave={() => { void handleSave() }}

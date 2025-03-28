@@ -100,7 +100,7 @@ export const EditTextField = (props: EditTextFieldProps) => {
         row: { [props.columnSpec.member]: props.value }
     });
     return <CMTextField
-        autoFocus={true}
+        autoFocus={false} // see #408
         onChange={(e, value) => { props.onChange(value) }}
         validationError={validationResult.errorMessage || null}
         value={props.value}

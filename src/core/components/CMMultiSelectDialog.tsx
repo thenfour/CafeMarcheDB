@@ -181,7 +181,7 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
                     <SearchInput
                         onChange={(v) => setFilterText(v)}
                         value={filterText}
-                        autoFocus={true}
+                    //autoFocus={true} // see #408
                     />
                 </Box>
                 {
