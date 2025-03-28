@@ -158,7 +158,7 @@ export const RelevantEvents = () => {
 
     return <div className="RelevantEvents">
         <div className="RelevantEventsHeader">
-            Current Events
+            <a href="/backstage/events" rel="noreferrer">            Current Events</a>
         </div>
         {highlightedEvent && <div>
             <EventListItem

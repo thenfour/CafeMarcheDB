@@ -86,10 +86,16 @@
 
 /* ------------------------------- */
 .RelevantEventsHeader {
-    font-size: 22px;
+    font-size: 19px;
     font-weight: bold;
-    color: var(--primary-color);
+    /* color: var(--primary-color); */
     text-transform: uppercase;
     display: flex;
     align-items: center;
+}
+
+.RelevantEventsHeader,
+.RelevantEventsHeader a {
+    color: #888;
+
 }

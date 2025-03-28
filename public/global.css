@@ -19,6 +19,11 @@
   --ff-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Liberation Mono", Menlo, Monaco, Consolas, monospace;
 }
 
+body {
+  line-height: unset;
+  letter-spacing: unset;
+}
+
 a,
 a:link,
 a:hover,
