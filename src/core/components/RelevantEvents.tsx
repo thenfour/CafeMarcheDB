@@ -140,6 +140,7 @@ export const RelevantEvents = () => {
                 refetch={tableClient.refetch}
                 results={MakeMockSearchResultsRetFromEvents([highlightedEvent.event], userTagWithAssignments)}
                 showTabs={true}
+                reducedInfo={true}
             /></div>}
         {eventsWithTiming.length > 0 && <div>
             <div className="RelevantEventsList SubtleEventCardContainer">

@@ -7,6 +7,7 @@ import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CalculateMatchStrength, MakeWhereCondition, ParseQuickFilter, QuickSearchItemMatch, SearchableTableFieldSpec } from "shared/quickFilter";
 import { slugify } from "shared/rootroot";
+import { IsNullOrWhitespace } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as db3 from "src/core/db3/db3";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
@@ -58,6 +59,40 @@ async function getQuickSearchResults(keyword__: string, user: db3.UserWithRolesP
         };
     };
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    const userFields: SearchableTableFieldSpec[] = [
+        { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
+    ];
+
+    const users = await db.user.findMany({
+        where: {
+            AND: [
+                GetSoftDeleteWhereExpression(),
+                MakeWhereCondition(userFields, query),
+            ],
+        },
+        select: {
+            id: true,
+            name: true,
+        },
+        take: itemsPerType,
+    });
+
+    const makeUserInfo = (x: typeof users[0]): QuickSearchItemMatch => {
+        //const absoluteUri = process.env.CMDB_BASE_URL + `backstage/song/${x.id}/${slugify(x.name || "")}`;
+        const bestMatch = CalculateMatchStrength(userFields, x, query);
+        return {
+            id: x.id,
+            absoluteUri: undefined,
+            name: x.name,
+            matchStrength: bestMatch.matchStrength,
+            matchingField: bestMatch.fieldName,
+            itemType: "user",
+        };
+    };
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     const eventFields: SearchableTableFieldSpec[] = [
         { fieldName: "id", fieldType: "pk", strengthMultiplier: 1 },
@@ -66,12 +101,25 @@ async function getQuickSearchResults(keyword__: string, user: db3.UserWithRolesP
         { fieldName: "startsAt", fieldType: "date", strengthMultiplier: 1 },
     ];
 
+    const eventDescriptionFields: SearchableTableFieldSpec[] = [
+        { fieldName: "content", fieldType: "string", strengthMultiplier: 1 },
+    ];
+
     const events = await db.event.findMany({
         where: {
             AND: [
                 GetSoftDeleteWhereExpression(),
                 GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
-                MakeWhereCondition(eventFields, query),
+                {
+                    OR: [
+                        ...MakeWhereCondition(eventFields, query).OR,
+                        {
+                            descriptionWikiPage: {
+                                currentRevision: MakeWhereCondition(eventDescriptionFields, query),
+                            }
+                        }
+                    ]
+                }
             ],
         },
         select: {
@@ -79,6 +127,15 @@ async function getQuickSearchResults(keyword__: string, user: db3.UserWithRolesP
             name: true,
             startsAt: true,
             locationDescription: true,
+            descriptionWikiPage: {
+                select: {
+                    currentRevision: {
+                        select: {
+                            content: true,
+                        }
+                    }
+                }
+            },
         },
         orderBy: {
             startsAt: "asc",
@@ -89,7 +146,13 @@ async function getQuickSearchResults(keyword__: string, user: db3.UserWithRolesP
     const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch => {
         const absoluteUri = process.env.CMDB_BASE_URL + `backstage/event/${x.id}/${slugify(x.name || "")}`;
 
-        const bestMatch = CalculateMatchStrength(eventFields, x, query);
+        let bestMatch = CalculateMatchStrength(eventFields, x, query);
+        if (!IsNullOrWhitespace(x.descriptionWikiPage?.currentRevision?.content)) {
+            const bestMatchForRevision = CalculateMatchStrength(eventDescriptionFields, x.descriptionWikiPage!.currentRevision!, query);
+            if (bestMatchForRevision.matchStrength > bestMatch.matchStrength) {
+                bestMatch = bestMatchForRevision;
+            }
+        }
 
         return {
             absoluteUri,
@@ -160,29 +223,12 @@ async function getQuickSearchResults(keyword__: string, user: db3.UserWithRolesP
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // const makeUserInfo = (x: typeof userSlugs[0]): QuickSearchItemMatch => {
-    //     return {
-    //         id: x.id,
-    //         name: x.name,
-    //         itemType: "user",
-    //         absoluteUri: undefined,
-    //     };
-    // };
-
-    // const makeInstrumentInfo = (x: typeof instrumentSlugs[0]): QuickSearchItemMatch => {
-    //     return {
-    //         id: x.id,
-    //         name: x.name,
-    //         itemType: "instrument",
-    //         absoluteUri: undefined,
-    //     };
-    // };
-
     let ret: QuickSearchItemMatch[] = [
-        ...songs.map(s => makeSongInfo(s)).filter(s => s.matchStrength > 0),
-        ...events.map(s => makeEventInfo(s)).filter(s => s.matchStrength > 0),
-        ...wikiPages.map(s => makeWikiPageInfo(s)).filter(s => s.matchStrength > 0),
-    ];
+        ...songs.map(s => makeSongInfo(s)),
+        ...events.map(s => makeEventInfo(s)),
+        ...wikiPages.map(s => makeWikiPageInfo(s)),
+        ...users.map(s => makeUserInfo(s)),
+    ].filter(s => s.matchStrength > 0);
 
     ret = toSorted(ret, (a, b) => b.matchStrength - a.matchStrength);
     ret = ret.slice(0, itemsToReturn);

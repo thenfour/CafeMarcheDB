@@ -1559,9 +1559,10 @@ export interface EventSearchItemContainerProps {
     highlightTagIds?: number[];
     highlightStatusIds?: number[];
     highlightTypeIds?: number[];
+    reducedInfo?: boolean; // show less info
 }
 
-export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
+export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = React.useContext(DashboardContext);
     const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
 
@@ -1592,16 +1593,18 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
 
     return <div style={typeStyle.style} className={classes.join(" ")}>
         <div className='header applyColor'>
-            <CMChipContainer>
-                {event.status && <CMStandardDBChip
-                    variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(event.statusId!) }}
-                    border='border'
-                    shape="rectangle"
-                    model={event.status}
-                    //getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
-                    getTooltip={_ => event.status?.description || null}
-                />}
-            </CMChipContainer>
+            {!reducedInfo &&
+                <CMChipContainer>
+                    {event.status && <CMStandardDBChip
+                        variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(event.statusId!) }}
+                        border='border'
+                        shape="rectangle"
+                        model={event.status}
+                        //getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
+                        getTooltip={_ => event.status?.description || null}
+                    />}
+                </CMChipContainer>
+            }
 
             <div className='flex-spacer'></div>
 
@@ -1634,7 +1637,8 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                 </>
             }
 
-            <EventDotMenu event={event} showVisibility={false} />
+            {!reducedInfo &&
+                <EventDotMenu event={event} showVisibility={false} />}
         </div>
 
         <div className='content'>
@@ -1659,7 +1663,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                     </div>
                 </div>}
 
-            {event.status?.significance !== db3.EventStatusSignificance.Cancelled &&
+            {(event.status?.significance !== db3.EventStatusSignificance.Cancelled) &&
                 <CMChipContainer>
                     {event.tags.map(tag => <CMStandardDBChip
                         key={tag.id}
@@ -1684,9 +1688,10 @@ export interface EventListItemProps {
     filterSpec?: EventsFilterSpec; // for highlighting matching fields
     showTabs?: boolean;
     showAttendanceControl?: boolean;
+    reducedInfo?: boolean; // show less info, like in the event list.
 };
 
-export const EventListItem = ({ showTabs = false, showAttendanceControl = true, event, ...props }: EventListItemProps) => {
+export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
 
     const { eventData, userMap } = CalculateEventSearchResultsMetadata({ event, results: props.results });
 
@@ -1695,6 +1700,7 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         highlightTagIds={props.filterSpec ? props.filterSpec.tagFilter.options as number[] : []}
         highlightStatusIds={props.filterSpec ? props.filterSpec.statusFilter.options as number[] : []}
         highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options as number[] : []}
+        reducedInfo={reducedInfo}
     >
         {showAttendanceControl &&
             <EventAttendanceControl
