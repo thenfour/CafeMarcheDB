@@ -106,6 +106,7 @@
 
 .songListSongTable .tr.item {
     border-bottom: 1px dotted #0002;
+    --song-hash-color: var(--primary-color);
 }
 
 .songListSongTable .tr.item.nodividers {
@@ -156,13 +157,21 @@
 
 .songListSongTable .td.songName,
 .songListSongTable .th.songName {
-    width: 260px;
+    width: 300px;
     display: flex;
     justify-content: flex-start;
     font-weight: bold;
     color: var(--song-hash-color);
+}
+
+.songListSongTable .td.songName {
+    font-size: 22px;
     letter-spacing: -.3px;
     overflow: hidden;
+}
+
+.songListSongTable .td.songName a {
+    color: var(--song-hash-color);
 }
 
 .songListSongTable .td.songName .divider {
@@ -211,12 +220,12 @@
 
 .songListSongTable .td.tempo,
 .songListSongTable .th.tempo {
-    width: 104px;
+    width: 50px;
+    /* background-color: #0004; */
 }
 
 .songListSongTable .td.tempo {
     font-family: var(--ff-mono);
-    justify-content: space-between;
     color: blue;
 }
 
@@ -342,16 +351,17 @@
 .EventSongListValue {
     /*allow the header to touch edges*/
     padding: 0;
-    border-radius: 8px;
+    border-radius: 5px;
     /*fea*/
     border: 2px solid #eee;
-    border-left: 8px solid #ccc;
+    /* border-left: 8px solid #ccc; */
     margin: 0;
     margin-bottom: 19px;
 }
 
 .EventSongListValue:hover {
-    border-left: 8px solid #88f;
+    /* border-left: 8px solid #88f; */
+    border-color: #88f;
 }
 
 /* in song list editor dialog, don't display the left border.*/

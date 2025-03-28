@@ -172,7 +172,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     if (props.value.type === 'divider') return <EventSongListValueViewerDividerRow {...props} />;
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
-    const formattedBPM = props.value.type === 'song' ? API.songs.getFormattedBPM(props.value.song) : "";
+    // const formattedBPM = props.value.type === 'song' ? API.songs.getFormattedBPM(props.value.song) : "";
 
     return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type}`}>
 
@@ -185,8 +185,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
         <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
         <div className="td tempo">
-            <div>{enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}</div>
-            <div>{formattedBPM}</div>
+            {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
         </div>
 
         <div className="td comment">
@@ -696,8 +695,6 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     }
     const isDupeWarning = occurrences > 1;
 
-    const formattedBPM = enrichedSong ? API.songs.getFormattedBPM(enrichedSong) : "";
-
     const style = {
         "--song-hash-color": getHashedColor(props.value.type === "song" ? props.value.song.name : ""),
         ...colorInfo.style,
@@ -761,14 +758,15 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 </>
             ) : (
                 <>
-                    <div className="td songName">
+                    <div className={`td songName ${props.value.type === 'song' && "dragHandle draggable"}`}>
                         {props.value.type === 'song' && <div>{props.value.song.name}</div>}
                         {/* value used to be props.value.song || null */}
                         {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
                     </div>
                     <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
-                    <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>            <div className="td tempo">
-                        {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}
+                    <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
+                    <div className="td tempo">
+                        {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
                         {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
                     </div>
                     <div className="td comment">

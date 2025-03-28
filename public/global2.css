@@ -1967,7 +1967,7 @@ table.songMetadata tr:hover td .CMSmallButton {
     border: 0;
     background-color: transparent;
     margin: 0;
-    margin-right: 10px;
+    /* margin-right: 10px; */
 }
 
 

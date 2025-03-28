@@ -294,7 +294,7 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
 
     return <div className={`metronomeButtonContainer ${variant}`}>
         <div onClick={() => setPlaying(!playing)} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"}`}>
-            {playing ? (variant === "normal" && gIconMap.VolumeUp()) : gIconMap.VolumeOff()}
+            {playing ? (variant === "normal" && gIconMap.VolumeUp()) : bpm}
             {playing && <MetronomePlayer bpm={bpm} syncTrigger={tapTrigger + beatSyncTrigger} mute={isTapping} running={!isTapping} />}
         </div>
         {playing && (variant === "normal") && <div className="metronomeSyncButton freeButton" onClick={(e) => {
