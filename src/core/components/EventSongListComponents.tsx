@@ -6,17 +6,18 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
-import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
+import { Button, Checkbox, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
+import { moveItemInArray } from 'shared/arrayUtils';
 import { gSwatchColors } from 'shared/color';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
-import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
@@ -27,12 +28,11 @@ import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
 import { DashboardContext } from './DashboardContext';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
+import { Markdown } from "./markdown/RichTextEditor";
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
-import { Markdown } from "./markdown/RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
-import { moveItemInArray } from 'shared/arrayUtils';
 
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {

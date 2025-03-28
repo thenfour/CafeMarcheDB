@@ -1,7 +1,7 @@
-import { Button, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Button, DialogContent, DialogTitle } from "@mui/material";
 import React from "react";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { Permission } from "shared/permissions";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";

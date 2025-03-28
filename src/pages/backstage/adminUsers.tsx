@@ -1,7 +1,7 @@
 
 import { BlitzPage, Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
+import { Button, Dialog, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useRouter } from "next/router";
 import * as React from 'react';
@@ -75,10 +75,10 @@ const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {
                         <div className="emphasizedURL">{resetURL}</div>
                     </div>
                     {showCopied && <div className="copiedIndicator">Copied!</div>}
+                    <DialogActionsCM>
+                        <Button autoFocus={true} onClick={() => { setShowCopied(false); setResetURL(null) }}>Close</Button>
+                    </DialogActionsCM>
                 </DialogContent>
-                <DialogActions>
-                    <Button autoFocus={true} onClick={() => { setShowCopied(false); setResetURL(null) }}>Close</Button>
-                </DialogActions>
             </Dialog>
         }
     </>;

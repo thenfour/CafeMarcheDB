@@ -4,7 +4,7 @@
 // - break out all util components
 // - break out setlist planner client utils into a lib
 
-import { Button, DialogActions, DialogContent, Tooltip } from "@mui/material";
+import { Button, DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
@@ -16,8 +16,8 @@ import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanLedDef, SetlistPlanL
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
 import { useDashboardContext } from "../DashboardContext";
-import { Markdown } from "../markdown/RichTextEditor";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
+import { Markdown } from "../markdown/RichTextEditor";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationSelect, AssociationValueLink } from "./ItemAssociation";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";

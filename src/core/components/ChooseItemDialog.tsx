@@ -8,7 +8,8 @@
 
 import {
     Box,
-    Button, Dialog, DialogActions, DialogContent,
+    Button, Dialog,
+    DialogContent,
     DialogTitle,
     Divider,
     FormHelperText,

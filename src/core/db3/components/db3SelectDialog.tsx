@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Box, Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";

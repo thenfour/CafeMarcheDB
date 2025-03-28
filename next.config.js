@@ -9,18 +9,18 @@ const config = {
 
   // uncomment this to analyze bundle:
 
-  // webpack(config, { isServer }) {
-  //   if (!isServer) {
-  //     config.plugins.push(
-  //       new BundleAnalyzerPlugin({
-  //         analyzerMode: 'static',
-  //         reportFilename: 'bundle-report.html',
-  //         openAnalyzer: true
-  //       })
-  //     );
-  //   }
-  //   return config;
-  // },
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: 'bundle-report.html',
+          openAnalyzer: true
+        })
+      );
+    }
+    return config;
+  },
 
 
   reactStrictMode: true,

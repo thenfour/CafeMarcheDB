@@ -1,8 +1,9 @@
 
 import { useAuthenticatedSession } from "@blitzjs/auth";
-import { Button, DialogActions, DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
+import { Button, DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
 import { Prisma } from "db";
 import React from "react";
+import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
 import { DateTimeRange } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -16,9 +17,8 @@ import { useConfirm } from "./ConfirmationDialog";
 import { DashboardContext } from "./DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 import { AgendaItem } from './homepageComponents';
-import { SettingMarkdown } from "./SettingMarkdown";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
-import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 
 

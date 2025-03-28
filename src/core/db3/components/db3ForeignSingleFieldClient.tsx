@@ -7,7 +7,8 @@ import {
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import {
-    Box, Button, DialogActions, DialogContent, DialogTitle,
+    Box, Button,
+    DialogContent, DialogTitle,
     Divider,
     List,
     ListItemButton
@@ -16,24 +17,24 @@ import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid
 import { assert } from "blitz";
 import React, { Suspense } from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
+import { SplitQuickFilter } from "shared/quickFilter";
+import { SettingKey } from "shared/settings";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
-import { AdminInspectObject } from 'src/core/components/CMCoreComponents';
-import { CMDialogContentText, CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
-import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
 import updateSetting from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
+import { CMChip, CMChipContainer, CMChipSizeOptions } from "src/core/components/CMChip";
+import { AdminInspectObject } from 'src/core/components/CMCoreComponents';
+import { CMDialogContentText, CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { TAnyModel } from "../shared/apiTypes";
+import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconMap";
-import { CMChip, CMChipContainer, CMChipSizeOptions } from "src/core/components/CMChip";
-import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
-import { SettingKey } from "shared/settings";
-import { SplitQuickFilter } from "shared/quickFilter";
 
 
 

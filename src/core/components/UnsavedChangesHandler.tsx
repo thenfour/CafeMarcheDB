@@ -2,9 +2,8 @@
 import {
   Button,
   Dialog,
-  DialogActions,
   DialogContent,
-  DialogTitle,
+  DialogTitle
 } from '@mui/material';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';

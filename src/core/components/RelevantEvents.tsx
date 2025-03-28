@@ -1,21 +1,20 @@
 import { useQuery } from "@blitzjs/rpc";
+import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
 import React from "react";
 import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
 import { StandardVariationSpec } from 'shared/color';
 import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo } from "shared/time";
+import { IsNullOrWhitespace } from "shared/utils";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
-import { gIconMap } from "../db3/components/IconMap";
 import { useDb3Query } from "../db3/DB3Client";
 import getUserTagWithAssignments from "../db3/queries/getUserTagWithAssignments";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../db3/shared/apiTypes";
+import { simulateLinkClick } from "./CMCoreComponents2";
 import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
-import { simulateLinkClick } from "./CMCoreComponents2";
-import { IsNullOrWhitespace } from "shared/utils";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
-import { EditNote, Info, InfoOutlined, LibraryMusic } from "@mui/icons-material";
 
 // events happening TODAY can be a search result card, maximum 1.
 // but all other events should be in a list of smaller cards.
@@ -158,7 +157,9 @@ export const RelevantEvents = () => {
 
     return <div className="RelevantEvents">
         <div className="RelevantEventsHeader">
-            <a href="/backstage/events" rel="noreferrer">            Current Events</a>
+            <a href="/backstage/events" rel="noreferrer">
+                Current Events
+            </a>
         </div>
         {highlightedEvent && <div>
             <EventListItem

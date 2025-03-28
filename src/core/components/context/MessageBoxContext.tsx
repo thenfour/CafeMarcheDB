@@ -1,7 +1,7 @@
+import { Button, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import React from 'react';
-import { ReactiveInputDialog } from '../ReactiveInputDialog';
-import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { DialogActionsCM } from '../CMCoreComponents2';
+import { ReactiveInputDialog } from '../ReactiveInputDialog';
 
 
 export type MessageBoxButton = "ok" | "cancel" | "yes" | "no";

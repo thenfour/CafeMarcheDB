@@ -124,14 +124,14 @@ import { AdminInspectObject, AttendanceChip } from './CMCoreComponents';
 import { CMSmallButton, DialogActionsCM, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
-import { Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
 import { Prisma } from "db";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
-import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { Markdown } from "./markdown/RichTextEditor";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
 
 

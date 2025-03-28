@@ -1,14 +1,14 @@
 import React from "react";
 
-import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Box, Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
-import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
-import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
-import { SearchInput } from "./CMTextField";
-import { useSnackbar } from "./SnackbarContext";
 import { gIconMap } from "../db3/components/IconMap";
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
+import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
+import { SearchInput } from "./CMTextField";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
+import { useSnackbar } from "./SnackbarContext";
 
 export enum CMSelectNullBehavior {
     NonNullable = "NonNullable",

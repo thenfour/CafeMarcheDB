@@ -10,32 +10,32 @@ import {
 } from '@mui/icons-material';
 import {
     Box,
-    DialogActions, DialogContent,
+    DialogContent,
     DialogTitle,
     Divider,
     List,
     ListItemButton
 } from "@mui/material";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { SplitQuickFilter } from 'shared/quickFilter';
+import { SettingKey } from 'shared/settings';
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
+import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
 import { CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
 import { SearchInput } from 'src/core/components/CMTextField';
+import { ReactiveInputDialog } from 'src/core/components/ReactiveInputDialog';
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
+import { TAnyModel } from '../shared/apiTypes';
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
-import { TAnyModel } from '../shared/apiTypes';
 import { RenderMuiIcon } from './IconMap';
-import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
-import { ReactiveInputDialog } from 'src/core/components/ReactiveInputDialog';
-import { SplitQuickFilter } from 'shared/quickFilter';
-import { SettingKey } from 'shared/settings';
 
 
 const gMaxVisibleTags = 6;
