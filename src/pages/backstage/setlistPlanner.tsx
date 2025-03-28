@@ -12,7 +12,7 @@ import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { getUniqueNegativeID, groupBy } from "shared/utils";
+import { getUniqueNegativeID, groupBy, IsNullOrWhitespace } from "shared/utils";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/markdown/RichTextEditor";
@@ -339,7 +339,7 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
     const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.id });
 
     // group by groupName
-    const groupedPlans = groupBy(plans, (x) => x.groupName || "Ungrouped");
+    const groupedPlans = groupBy(plans, (x) => x.groupName || "");
 
     return <div className="SetlistPlannerDocumentOverviewList">
 
@@ -350,7 +350,7 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                     expandIcon={gIconMap.ExpandMore()}
                     className="SetlistPlannerDocumentOverviewGroupHeader"
                 >
-                    <span className="title">{groupName}</span>
+                    <span className="title">{IsNullOrWhitespace(groupName) ? "Ungrouped" : groupName}</span>
                     <span className="subtitle">{groupPlans.length} plan(s)</span>
                 </AccordionSummary>
                 <div className="SetlistPlannerDocumentOverviewGroupItemList">
@@ -367,14 +367,14 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                         </div>;
                     })}
                 </div>
-                <div className="actionButtons">
+                {!IsNullOrWhitespace(groupName) && <div className="actionButtons">
                     <Button
                         onClick={() => {
                             const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", groupName, dashboardContext.currentUser!.id);
                             props.onSelect(newDoc);
                         }}
                     >Create new "{groupName}"</Button>
-                </div>
+                </div>}
             </Accordion>;
         })}
     </div>;
