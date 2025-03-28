@@ -22,7 +22,7 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
-import { CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
 import { DashboardContext } from './DashboardContext';
@@ -1133,14 +1133,19 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
                     <EventSongListValueEditor {...props} value={value} setValue={setValue} />
                 )}
 
+
+
+                <DialogActionsCM>
+
+                    <Button onClick={() => {
+                        setGrayed(true);
+                        props.onSave(value);
+                    }} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
+                    <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
+
+                </DialogActionsCM>
+
             </DialogContent>
-            <DialogActions>
-                <Button onClick={() => {
-                    setGrayed(true);
-                    props.onSave(value);
-                }} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
-                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
-            </DialogActions>
 
         </ReactiveInputDialog>
     </>;

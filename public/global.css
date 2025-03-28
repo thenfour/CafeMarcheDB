@@ -753,3 +753,49 @@ span.songListVerified {
   background-color: #f8f8f8;
   border: 1px solid blue;
 }
+
+
+
+.MuiDialog-container {
+  height: 100%;
+}
+
+/* #409 on mobile, OK and Cancel buttons become very small; force them to a comfortable size,
+and make sure the action buttons area is tall enough so safari's bottom menu doesn't obscure it.
+https://stackoverflow.com/questions/23657943/buttons-aligned-to-bottom-of-page-conflict-with-mobile-safaris-menu-bar
+
+safari's zooming, text field focusing, on screen keyboard, and bottom menu bar all cause
+issues with accessing the bottom of the dialog (the most important buttons heh).
+
+solution is to
+1.) NOT use <DialogActions>. It's a nice feature on desktop but suffers mostly from this problem.
+    instead use <DialogActionsCM> which implements corrections.
+
+ */
+
+.CMDialogActions.MuiDialogActions-root {
+  margin: 10px 0;
+  padding: 15px 0;
+  border-top: 1px solid #eee;
+  margin-bottom: 100px;
+  display: flex;
+  flex-direction: column;
+}
+
+.CMDialogActions.MuiDialogActions-root .CMDialogActionsButtonContainer {
+  margin-bottom: 100px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.CMDialogActions.MuiDialogActions-root .CMDialogActionsFooter {
+  color: #0001;
+  user-select: none;
+}
+
+.MuiDialogActions-root .MuiButton-root {
+  font-size: 20px;
+  min-width: 100px;
+  min-height: 40px;
+}

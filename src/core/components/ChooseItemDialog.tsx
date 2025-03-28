@@ -18,7 +18,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { CMDialogContentText } from "./CMCoreComponents2";
+import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
 
 
 
@@ -112,11 +112,11 @@ export function ChooseItemDialog<T>(props: ChooseItemDialogProps<T>) {
                         </List>
                 }
 
+                <DialogActionsCM>
+                    <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
+                    <Button onClick={props.onCancel}>Cancel</Button>
+                </DialogActionsCM>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
-                <Button onClick={props.onCancel}>Cancel</Button>
-            </DialogActions>
         </Dialog>
     );
 }

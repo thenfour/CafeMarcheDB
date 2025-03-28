@@ -93,7 +93,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             width: args.cellWidth,
             visible: true,
             className: args.className,
-            isAutoFocusable: true,
+            isAutoFocusable: false, // on mobile this causes on screen keyboard display and zoom which is disruptive because this field may not be that important. case in point: setlist name.
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
@@ -121,7 +121,8 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
                 return <CMTextField
                     key={params.key}
                     className={`columnName-${this.columnName}`}
-                    autoFocus={params.hasFocus}
+                    //autoFocus={params.hasFocus}
+                    autoFocus={false}
                     label={this.headerName}
                     validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
                     value={params.value as string}
@@ -146,7 +147,8 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         isReadOnly: false,
         value: <CMTextInputBase
             onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
-            autoFocus={params.autoFocus}
+            //autoFocus={params.autoFocus}
+            autoFocus={false}
             value={params.value as string}
             className={this.className}
         />
