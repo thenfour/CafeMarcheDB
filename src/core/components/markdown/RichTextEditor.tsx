@@ -60,8 +60,6 @@ export const Markdown = (props: MarkdownProps) => {
     const expectedComponentCount = React.useRef<number>(0);
     const componentMountTimer = React.useRef<NodeJS.Timer | null>(null);
 
-    if (IsNullOrWhitespace(props.markdown)) return null;
-
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
@@ -190,9 +188,11 @@ export const Markdown = (props: MarkdownProps) => {
     }, [props.markdown]);
 
     return <NoSsr>
-        <div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
-            <div className='extraContainerDiv' ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
-        </div >
+        {IsNullOrWhitespace(props.markdown) ? null :
+            <div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
+                <div className='extraContainerDiv' ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
+            </div>
+        }
     </NoSsr>;
 };
 
