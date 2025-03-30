@@ -2,12 +2,18 @@ interface ReplaceSelectionWithTextOptions {
     select: "change" | "afterChange",
 }
 
+export interface ListAtCaretInfo {
+    isList: boolean; // true if the caret is inside a list item
+    prefix: string; // the prefix of the list item (e.g. "- ", "1. ", "[ ] ")
+}
+
 export interface ControlledTextAreaAPI {
     selectionStart: number;
     selectionEnd: number;
     scrollTop: number; // scrollTop is the vertical scroll position of the textarea
 
     getText: () => string;
+    getListAtCaretInfo: () => ListAtCaretInfo;
 
     setSelectionRange: (start: number, end: number) => void;
 
@@ -90,6 +96,7 @@ export function useControlledTextArea(
     ) {
         if (!textArea) return;
 
+        const isLineBasedSelection = textArea.selectionEnd - textArea.selectionStart > 0; // if you have a selected range, consider it line based.
         const selectedLineRange = getLineRangeForCharRange(textValue, textArea.selectionStart, textArea.selectionEnd);
 
         // split into lines.
@@ -132,7 +139,12 @@ export function useControlledTextArea(
 
         onTextChange(newText);
 
-        await setSelectionRangeAsync(newSelectionStart, newSelectionEnd);
+        if (isLineBasedSelection) {
+            await setSelectionRangeAsync(newSelectionStart, newSelectionEnd);
+        } else {
+            // if the selection is not line based, just set a caret at the end of the transformed area.
+            await setSelectionRangeAsync(newSelectionEnd, newSelectionEnd);
+        }
     }
 
     const isLineBasedSelection = () => {
@@ -142,11 +154,74 @@ export function useControlledTextArea(
         return selectedLineRange.lineCount > 1;
     };
 
+    // const getListAtCaretInfo = (): ListAtCaretInfo => {
+    //     if (!textArea) return { isList: false, prefix: "" };
+    //     const selectedLineRange = getLineRangeForCharRange(textValue, textArea.selectionStart, textArea.selectionEnd);
+    //     const selectedLines = textValue.split('\n').slice(selectedLineRange.startLineIndex, selectedLineRange.startLineIndex + selectedLineRange.lineCount);
+    //     const firstLine = selectedLines[0]!;
+    //     // get the prefix of the list. could be any amount of indentation,
+    //     // for ordered lists could be any number,
+    //     // and checkbox lists could be [ ] or [x] or [X].
+    //     const listPrefixRegex = /^( *)([\d]+\.|[-*]|[ ]?\[[ xX]?\] )/;
+    //     const match = firstLine.match(listPrefixRegex);
+    //     if (!match) return { isList: false, prefix: "" };
+    //     const prefix = match[2] || ""; // the prefix is the 2nd group.
+    //     const isList = match[0].length > 0; // if the prefix is empty, it's not a list.
+    //     console.log(`prefix: '${prefix}'`);
+    //     return { isList, prefix };
+    // };
+
+    /**
+     * Attempts to detect if the caret is on a line that is recognized
+     * as a Markdown list (unordered, ordered, or task list).
+     * Returns the entire list prefix if it matches, otherwise { isList: false, prefix: "" }.
+     */
+    function getListAtCaretInfo(): ListAtCaretInfo {
+        if (!textArea) {
+            return { isList: false, prefix: "" };
+        }
+
+        // Get the relevant line(s) where the selection starts
+        const selectedLineRange = getLineRangeForCharRange(
+            textValue,
+            textArea.selectionStart,
+            textArea.selectionEnd
+        );
+        const selectedLines = textValue
+            .split("\n")
+            .slice(
+                selectedLineRange.startLineIndex,
+                selectedLineRange.startLineIndex + selectedLineRange.lineCount
+            );
+
+        // We'll just inspect the first line for determining list prefix
+        const firstLine = selectedLines[0] || "";
+
+        // A more robust pattern for Markdown list lines:
+        // 1) Optional indentation: ^(\s*)
+        // 2) Either (number + dot) or (bullet symbol)
+        // 3) Optional [x]/[ ] for tasks, with optional spaces before it
+        // 4) At least one space after
+        const listPrefixRegex = /^(\s*(?:\d+\.|[+\-\*])(?:\s*\[[ xX]\])?\s+)/;
+
+        // If it doesn't match, it's not recognized as a list
+        const match = firstLine.match(listPrefixRegex);
+        if (!match) {
+
+            return { isList: false, prefix: "" };
+        }
+
+        // Group 1 is the entire matched prefix
+        const prefix = match[1]!;
+        return { isList: true, prefix };
+    }
+
     return {
         selectionStart: textArea?.selectionStart ?? 0,
         selectionEnd: textArea?.selectionEnd ?? 0,
         setSelectionRange,
         getText: () => textValue,
+        getListAtCaretInfo,
         scrollTop: textArea?.scrollTop ?? 0,
         transformSelectedLines,
         replaceRange,

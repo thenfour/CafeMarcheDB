@@ -1,21 +1,3 @@
-// <Markdown> = rendered markdown text (simple read only html)
-// <MarkdownEditor> = just the text editor which outputs markdown
-// <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
-
-// syntax updates:
-// ```abc
-// ```
-
-// inline ABC:
-// {{abc:...}}
-
-// rehearsal mark:
-// {{enclosed:...}}
-
-// references?
-// wiki, song, event, ...?
-
-// image dimensions
 
 import React from "react";
 
