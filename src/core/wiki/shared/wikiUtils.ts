@@ -201,7 +201,7 @@ export const wikiParsePathComponents = (components: string[]): WikiPath => {
         slug = components[0]!;
     }
 
-    const canonicalWikiPath = `${namespace ? `${namespace}/` : ''}${slug}`; // like "event/123" or "top-level-thing"
+    const canonicalWikiPath = slugify(`${namespace ? `${namespace}/` : ''}${slug}`); // like "event/123" or "top-level-thing"
     const aestheticSlug = components.length > 2 ? components.slice(2).join('/') : null;
 
     return {

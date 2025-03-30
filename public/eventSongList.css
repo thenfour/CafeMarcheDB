@@ -458,11 +458,7 @@ li.songDropdownOption {
 .songListSongTable .tr.item.type_divider.style_BreakBefore .dividerBreakDiv,
 .songListSongTable .tr.item.type_divider.style_BreakAfter .dividerBreakDiv,
 .songListSongTable .tr.item.type_divider.style_Break .dividerBreakDiv {
-    position: absolute;
-    /* z-index: 0; */
-    /* background-color: var(--color-foreground); */
-    border-top: var(--divider-height) var(--divider-style) var(--color-foreground);
-    width: calc(100% - 60px);
+    /* used to be a line in the middle but it's a very hacky way to acheive a kinda ugly effect. find something else (someday)*/
 }
 
 

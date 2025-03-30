@@ -7,8 +7,6 @@ export function OpposingSortDirection(x: SortDirection) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// slug field is calculated from another field.
-// it is calculated live during creation, but afterwards it's user-editable.
 // https://gist.github.com/codeguy/6684588
 // this function must be idempotent for wikis in order to support slugifying user-input URLs.
 export const slugify = (...args: (string | number)[]): string => {
@@ -19,7 +17,7 @@ export const slugify = (...args: (string | number)[]): string => {
         .replace(/[\u0300-\u036f]/g, '') // Remove all previously split accents
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9 _-]/g, '') // Allow single hyphens and spaces, disallow other characters
+        .replace(/[^a-z0-9 /_-]/g, '') // Allow forward slash, single hyphens and spaces, disallow other characters
         .replace(/[\s_-]+/g, '-') // Replace spaces, underscores, and hyphens with a single hyphen
         .replace(/-+/g, '-'); // Replace multiple hyphens with a single hyphen
 }
