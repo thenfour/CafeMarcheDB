@@ -4,11 +4,14 @@ import PersonIcon from '@mui/icons-material/Person';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import React from "react";
+import TurndownService from 'turndown';
 
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from 'shared/quickFilter';
 import { CollapsableUploadFileComponent, FileDropWrapper } from "../FileDrop";
 import { fetchObjectQuery } from '../setlistPlan/ItemAssociation';
 import { fetchInlineClasses } from './MarkdownReactPlugins';
+
+var turndownService = new TurndownService();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TODO: use association search / quick search
@@ -41,6 +44,7 @@ interface MarkdownEditorProps {
     displayUploadFileComponent?: boolean;
     onFileSelect: (files: FileList) => void;
     uploadProgress: number | null;
+    onCustomPaste?: (pastedHtml: string) => void;
 
     textAreaRef: (ref: HTMLTextAreaElement | null) => void; // ref to the textarea element.
     nativeFileInputRef: (ref: HTMLInputElement | null) => void; // ref to the native file input element.
@@ -62,6 +66,14 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             e.preventDefault();
         }
         // TODO: rich text paste handling via turndown.
+        // if text/html, then use turndown
+        const pastedHtml = e.clipboardData?.getData('text/html');
+        if (pastedHtml) {
+            const turndownResult = turndownService.turndown(pastedHtml);
+            //props.onValueChanged(turndownResult);
+            props.onCustomPaste?.(turndownResult); // call the custom paste handler.
+            e.preventDefault(); // prevent the default paste action.
+        }
     };
 
     return (<div className="FileUploadWrapperContainer">

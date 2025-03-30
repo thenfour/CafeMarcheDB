@@ -194,6 +194,9 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                     textAreaRef={setTextAreaRef}
                     nativeFileInputRef={setNativeFileInputRef}
                     onFileSelect={handleFileSelect}
+                    onCustomPaste={(pastedHtml) => {
+                        controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
+                    }}
                 />
             </div>
             {props.showActionButtons &&
