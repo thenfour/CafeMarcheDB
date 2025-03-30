@@ -108,6 +108,14 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     // listen for key events to invoke commands.
     React.useEffect(() => {
         const handleKeyDown = (event) => {
+            if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+                event.preventDefault();
+                const cta = apiRef.current.controlledTextArea;
+                const listInfo = cta.getListAtCaretInfo();
+                void cta.replaceSelectionWithText("\n" + listInfo.prefix);
+                return;
+            }
+
             // find a command matching this event.
             const command = gMarkdownEditorCommandGroups.flatMap(g => g).find(c => {
                 if (!c.keyboardShortcutCondition) return false;
@@ -137,29 +145,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
             capturedTextArea && capturedTextArea.removeEventListener('keydown', handleKeyDown);
         };
     }, [textAreaRef]);
-
-    // QOL editing featuers
-    React.useEffect(() => {
-        const handleKeyDown = (event) => {
-            console.log(`sel: [${apiRef.current.controlledTextArea.selectionStart}, ${apiRef.current.controlledTextArea.selectionEnd}] [key:${event.key}]`);
-            // when hitting Enter while in a list, prefix the new line with the same prefix as the previous line.
-            if (event.key === "Enter") {
-                event.preventDefault();
-                const cta = apiRef.current.controlledTextArea;
-                const listInfo = cta.getListAtCaretInfo();
-                cta.replaceSelectionWithText("\n" + listInfo.prefix);
-            }
-        };
-
-        const capturedTextArea = textAreaRef;
-        capturedTextArea && capturedTextArea.addEventListener('keydown', handleKeyDown);
-
-        return () => {
-            capturedTextArea && capturedTextArea.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [textAreaRef]);
-
-
 
     if (readonly) {
         return <pre>{props.value}</pre>
