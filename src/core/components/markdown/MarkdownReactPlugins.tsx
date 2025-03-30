@@ -1,15 +1,4 @@
 
-import React from "react";
-
-interface MarkdownReactPlugin {
-    componentName: string;
-    render: (node: Element, componentName: string, propsString: string) => React.ReactNode;
-};
-
-const RenderMarkdownSpanWithClass = (node: Element, componentName: string, propsString: string) => {
-    return <span className={`markdown-class-${componentName}`}>{propsString}</span>
-};
-
 const spanClasses = [
     "small",
     "smaller",
@@ -21,14 +10,6 @@ const spanClasses = [
     "highlightgreen",
     "enclosed",
 ] as const;
-
-export const markdownReactPlugins: MarkdownReactPlugin[] = [
-    ...spanClasses.map(className => ({
-        componentName: className,
-        render: RenderMarkdownSpanWithClass,
-    })),
-];
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export async function fetchInlineClasses(keyword: string): Promise<string[]> {

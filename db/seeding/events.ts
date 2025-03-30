@@ -189,6 +189,9 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
                         eventSongListId: songList.id,
                         sortOrder: sortOrder++,
                         subtitle: faker.datatype.boolean(0.5) ? faker.lorem.words() : '', // Optional subtitle
+                        isSong: faker.datatype.boolean(),
+                        lengthSeconds: faker.datatype.boolean() ? null : faker.number.int({ min: 30, max: 300 }),
+                        subtitleIfSong: faker.datatype.boolean(0.5) ? faker.lorem.sentence({ min: 1, max: 5 }) : undefined,
                     }
                 });
             }
@@ -213,6 +216,9 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
                     eventSongListId: songList.id,
                     sortOrder: sortOrder++,
                     subtitle: faker.datatype.boolean(0.5) ? faker.lorem.words() : '',
+                    isSong: faker.datatype.boolean(),
+                    lengthSeconds: faker.datatype.boolean() ? null : faker.number.int({ min: 30, max: 300 }),
+                    subtitleIfSong: faker.datatype.boolean(0.5) ? faker.lorem.sentence({ min: 1, max: 5 }) : undefined,
                 }
             });
         }

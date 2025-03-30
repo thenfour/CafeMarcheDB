@@ -5,10 +5,10 @@
 
 */
 -- AlterTable
-ALTER TABLE `event` ADD COLUMN `descriptionWikiPageId` INTEGER NULL;
+ALTER TABLE `Event` ADD COLUMN `descriptionWikiPageId` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `wikipage` ADD COLUMN `lastEditPingAt` DATETIME(3) NULL,
+ALTER TABLE `WikiPage` ADD COLUMN `lastEditPingAt` DATETIME(3) NULL,
     ADD COLUMN `lockAcquiredAt` DATETIME(3) NULL,
     ADD COLUMN `lockExpiresAt` DATETIME(3) NULL,
     ADD COLUMN `lockId` VARCHAR(191) NULL,

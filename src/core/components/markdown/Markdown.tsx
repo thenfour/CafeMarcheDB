@@ -20,7 +20,6 @@
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import MarkdownIt from 'markdown-it';
 import React from "react";
-import { createRoot } from 'react-dom/client';
 
 import { IsNullOrWhitespace } from "shared/utils";
 
@@ -28,8 +27,6 @@ import { NoSsr } from '@mui/material';
 import { getURLClass } from "../../db3/clientAPILL";
 import { CMDBLinkMarkdownPlugin } from './CMDBLinkMarkdownPlugin';
 import { ImageDimensionsMarkdownPlugin } from './ImageDimensionsMarkdownPlugin';
-import { markdownReactPlugins } from './MarkdownReactPlugins';
-import { ReactBlockMarkdownPlugin } from './ReactBlockMarkdownPlugin';
 import { ReactInlineMarkdownPlugin } from './ReactInlineMarkdownPlugin';
 
 
@@ -43,19 +40,9 @@ interface MarkdownProps {
 }
 export const Markdown = (props: MarkdownProps) => {
     const [html, setHtml] = React.useState('');
-    const expectedComponentCount = React.useRef<number>(0);
-    const componentMountTimer = React.useRef<NodeJS.Timer | null>(null);
-
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
-        //if (!containerRef.current) return;
-        if (componentMountTimer.current) {
-            clearInterval(componentMountTimer.current);
-            componentMountTimer.current = null;
-        }
-        expectedComponentCount.current = 0; // make sure we're counting from 0
-
         if (IsNullOrWhitespace(props.markdown)) {
             setHtml("");
             return;
@@ -120,56 +107,11 @@ export const Markdown = (props: MarkdownProps) => {
             return defaultRender(tokens, idx, options, env, self);
         };
 
-        const onComponentAdd = () => {
-            expectedComponentCount.current++;
-        }
-
-        md.use(md => ReactInlineMarkdownPlugin(md, onComponentAdd));
-        md.use(md => ReactBlockMarkdownPlugin(md, onComponentAdd));
+        md.use(md => ReactInlineMarkdownPlugin(md));
         md.use(ImageDimensionsMarkdownPlugin);
         md.use(CMDBLinkMarkdownPlugin);
 
         setHtml(md.render(props.markdown));
-
-        // mount embedded react components. we have to wait for the browser to get this mounted and it's not possible to know when it will be.
-        // careful also to consider multiple markdown components on the page at the same time so global flags will break.
-        // how to accomplish this? we want to choose an interval carefully, polling for readiness. maybe set an expected component value somehow?
-        const TimerProc = () => {
-            if (!containerRef.current) {
-                return; // i guess wait longer? honestly i don't expect this to happen.
-            }
-            if (expectedComponentCount.current < 1) {
-                if (componentMountTimer.current) clearInterval(componentMountTimer.current);
-                return;
-            }
-            const allNodes = containerRef.current.querySelectorAll('[data-component]');
-            const nodes = Array.from(allNodes).filter(el => !el.getAttribute('data-rendered'));
-
-            // count all nodes in case of weird reloads; expected component count bases itself on the TOTAL
-
-            nodes.forEach(node => {
-                const componentName = node.getAttribute('data-component');
-                if (!componentName) return;
-                node.setAttribute("data-rendered", "true");
-
-                const lowercaseComponentName = componentName.toLowerCase();
-                for (let i = 0; i < markdownReactPlugins.length; ++i) {
-                    const plugin = markdownReactPlugins[i]!;
-                    if (plugin.componentName === lowercaseComponentName) {
-                        const root = createRoot(node);
-                        const renderedComponent = plugin.render(node, lowercaseComponentName, node.getAttribute('data-props') || "");
-                        root.render(renderedComponent);
-                        node.setAttribute("data-rendered-with-plugin", plugin.componentName);
-                        break;
-                    }
-                }
-            });
-
-            expectedComponentCount.current -= allNodes.length;
-            //console.log(`unprocessed children: ${expectedComponentCount.current}`);
-        };
-
-        componentMountTimer.current = setInterval(TimerProc, 33);
 
     }, [props.markdown]);
 
