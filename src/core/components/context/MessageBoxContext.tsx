@@ -11,6 +11,8 @@ export interface MessageBoxOptions {
     title?: string;
     message: string;
     buttons?: MessageBoxButton[];
+    defaultButton?: MessageBoxButton;
+    cancelButton?: MessageBoxButton;
 }
 
 interface MessageBoxContextValue {
@@ -29,18 +31,21 @@ export function useMessageBox(): MessageBoxContextValue {
     return context;
 }
 
-
 export const MessageBoxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [open, setOpen] = React.useState(false);
     const [title, setTitle] = React.useState("");
     const [message, setMessage] = React.useState("");
     const [buttons, setButtons] = React.useState<MessageBoxButton[]>(["ok"]);
+    const [defaultButton, setDefaultButton] = React.useState<MessageBoxButton>("ok");
+    const [cancelButton, setCancelButton] = React.useState<MessageBoxButton>("cancel");
     const [resolveCallback, setResolveCallback] = React.useState<((result: MessageBoxResult) => void) | null>(null);
 
-    const showMessage = (options: MessageBoxOptions): Promise<MessageBoxResult> => {
+    const showMessage = ({ defaultButton = "ok", cancelButton = "cancel", ...options }: MessageBoxOptions): Promise<MessageBoxResult> => {
         setTitle(options.title || "");
         setMessage(options.message);
         setButtons(options.buttons ?? ["ok"]);
+        setDefaultButton(defaultButton);
+        setCancelButton(cancelButton);
         setOpen(true);
         return new Promise<MessageBoxResult>((resolve) => {
             setResolveCallback(() => resolve);
@@ -55,10 +60,18 @@ export const MessageBoxProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
     };
 
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "Enter") {
+            handleClose(defaultButton); // Default to "ok" on Enter key press
+        } else if (event.key === "Escape") {
+            handleClose(cancelButton); // Default to "cancel" on Escape key press
+        }
+    };
+
     return (
         <MessageBoxContext.Provider value={{ showMessage }}>
             {children}
-            <ReactiveInputDialog open={open} onCancel={() => handleClose("cancel")}>
+            <ReactiveInputDialog open={open} onCancel={() => handleClose("cancel")} onKeyDown={handleKeyDown}>
                 {title && <DialogTitle>{title}</DialogTitle>}
                 <DialogContent dividers>
                     <DialogContentText>{message}</DialogContentText>

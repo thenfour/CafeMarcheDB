@@ -25,7 +25,7 @@ import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCr
 import { WorkflowNodeProgressState } from '../db3/shared/apiTypes';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
-import { Markdown } from './markdown/RichTextEditor';
+import { Markdown } from './markdown/Markdown';
 
 type CMXYPosition = {
     x: number;

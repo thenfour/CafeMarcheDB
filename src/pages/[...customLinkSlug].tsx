@@ -3,7 +3,7 @@ import { NoSsr } from "@mui/material";
 import db from "db";
 import { useRouter } from "next/router";
 import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
-import { Markdown } from "src/core/components/markdown/RichTextEditor";
+import { Markdown } from "src/core/components/markdown/Markdown";
 //import { CustomLinkRedirectType } from "src/core/db3/db3";
 import * as db3 from "src/core/db3/db3";
 

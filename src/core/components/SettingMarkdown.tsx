@@ -10,7 +10,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CMSmallButton } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
-import { Markdown } from "./markdown/RichTextEditor";
+import { Markdown } from "./markdown/Markdown";
 import { SettingKey } from "shared/settings";
 //import { API } from "../db3/clientAPI";
 

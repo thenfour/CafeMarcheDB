@@ -4,9 +4,7 @@
 
 import { Button, Dialog, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-//import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
-//import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
 
 
@@ -17,10 +15,33 @@ export interface ReactiveInputDialogProps {
     open?: boolean;
     className?: string;
     style?: React.CSSProperties;
+    onKeyDown?: React.KeyboardEventHandler<HTMLDivElement> | undefined;
+
+    defaultAction?: () => void; // this is the default action when Enter is pressed
 };
 export const ReactiveInputDialog = ({ open = true, ...props }: React.PropsWithChildren<ReactiveInputDialogProps>) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        props.onKeyDown?.(event);
+        if (event.isPropagationStopped()) {
+            return;
+        }
+        if (event.key === 'Enter') {
+            event.preventDefault(); // prevent form submission
+            event.stopPropagation(); // stop propagation to parent elements
+            if (props.defaultAction) {
+                props.defaultAction();
+            }
+        }
+        else if (event.key === 'Escape') {
+            event.preventDefault(); // prevent form submission
+            event.stopPropagation(); // stop propagation to parent elements
+            props.onCancel();
+        }
+    };
+
     return (
         <Dialog
             className={`ReactiveInputDialog ${props.className} ${fullScreen ? "smallScreen" : "bigScreen"}`}
@@ -30,6 +51,7 @@ export const ReactiveInputDialog = ({ open = true, ...props }: React.PropsWithCh
             scroll="paper"
             fullScreen={fullScreen}
             disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
+            onKeyDown={handleKeyDown}
         >
             <Suspense>
                 {props.children}

@@ -145,14 +145,18 @@ export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => 
     const items = songsClient.items as db3.SongPayload_Verbose[];
     const hasMatch = items.length > 0;
     const item = items[0];
-    const matchValue = item && item[props.columnName];
+    const matchValue = (item && (item[props.columnName] as string)) || "";
 
     return <div className="searchableValueContainer">
         <CMTextInputBase {...props} />
         <div className="searchableValueResult">
-            {matchValue === props.value ? (<div>✅</div>) :
-                (<><div className="existingMatchLabel">No matching existing page found; best match: </div>
-                    <div className="existingMatchValue">{matchValue}</div></>)}
+            {matchValue === props.value ?
+                (<div>✅</div>)
+                : (((props.value || "").length > 1) && (<>
+                    <div className="existingMatchLabel">No matching existing page found; best match: </div>
+                    <div className="existingMatchValue">{matchValue}</div>
+                </>))
+            }
         </div>
     </div>;
 };

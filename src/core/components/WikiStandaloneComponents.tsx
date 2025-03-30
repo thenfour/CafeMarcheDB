@@ -4,7 +4,7 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { UpdateWikiPageResultOutcome } from "../wiki/shared/wikiUtils";
 import { AdminContainer } from "./CMCoreComponents";
-import { Markdown } from "./markdown/RichTextEditor";
+import { Markdown } from "./markdown/Markdown";
 import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { WikiDebugIndicator, WikiPageContentEditor, WikiPageHeader } from "./WikiComponents";
 

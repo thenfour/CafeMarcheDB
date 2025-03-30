@@ -75,6 +75,7 @@
     "secure-password": "4.0.0",
     "sharp": "0.32.6",
     "superjson": "2.2.1",
+    "turndown": "7.2.0",
     "wavesurfer.js": "7.3.8",
     "zod": "3.20.2"
   },

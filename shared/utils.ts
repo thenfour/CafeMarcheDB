@@ -244,7 +244,7 @@ export const gIconOptions = {
     GraphicEq: "GraphicEq",
     Group: "Group",
     Groups: "Groups",
-    // do not use drag handle; users will never need it. use "☰" instead.
+    // do not use drag handle; users will never need it. use "☰" instead (in gChars)
     HighlightOff: "HighlightOff",
     Help: "Help",
     Home: "Home",

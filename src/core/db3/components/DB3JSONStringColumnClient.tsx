@@ -9,7 +9,7 @@ import { formatFileSize } from "shared/rootroot";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSmallButton, CMTable, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
 import { useDashboardContext } from "src/core/components/DashboardContext";
-import { Markdown } from "src/core/components/markdown/RichTextEditor";
+import { Markdown } from "src/core/components/markdown/Markdown";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { getURIForEvent } from "../clientAPILL";
 import { EventAPI } from "../db3";

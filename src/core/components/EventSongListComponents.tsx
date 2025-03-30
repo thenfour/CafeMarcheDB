@@ -28,7 +28,7 @@ import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
 import { DashboardContext } from './DashboardContext';
-import { Markdown } from "./markdown/RichTextEditor";
+import { Markdown } from "./markdown/Markdown";
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';

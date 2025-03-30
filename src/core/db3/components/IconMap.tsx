@@ -94,6 +94,7 @@ const TrumpetIcon = ({ color = 'currentColor', size = 24, ...props }) => (
 );
 
 
+
 // keep in sync with export const gIconOptions = 
 export const gIconMap /*: IIconMap*/ = {
     AccountTree: () => <AccountTree />,

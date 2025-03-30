@@ -15,7 +15,7 @@ import { Permission } from "shared/permissions";
 import { getUniqueNegativeID, groupBy, IsNullOrWhitespace } from "shared/utils";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
-import { Markdown } from "src/core/components/markdown/RichTextEditor";
+import { Markdown } from "src/core/components/markdown/Markdown";
 import { AStarSearchConfig, SetlistPlanAutoFillAStar, SetlistPlanGetNeighborsForAStar } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
 import { SetlistPlanAutoFillAStar2 } from "src/core/components/setlistPlan/SetlistPlanAutoFillAStar2";
 import { SetlistPlanAutoFillDAG } from "src/core/components/setlistPlan/SetlistPlanAutoFillDAG";

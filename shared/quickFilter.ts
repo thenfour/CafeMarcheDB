@@ -61,19 +61,27 @@ export interface QuickSearchItemMatch {
     matchingField: string | undefined;
     itemType: QuickSearchItemType;
 
+    canonicalWikiSlug?: string | undefined, // for wiki pages return this.
+
     // here give context on the match. a snippet of the matching text with highlights
 };
 
 
-export const QuickSearchItemTypeSets: { [k: string]: QuickSearchItemType[] } = {
+export const QuickSearchItemTypeSets /*: { [k: string]: QuickSearchItemType[] }*/ = {
     Songs: [QuickSearchItemType.song],
+    WikiPages: [QuickSearchItemType.wikiPage],
     Everything: [
         QuickSearchItemType.event,
         QuickSearchItemType.song,
         QuickSearchItemType.user,
         QuickSearchItemType.wikiPage
     ],
-} as const;
+    ForMarkdownReference: [
+        QuickSearchItemType.event,
+        QuickSearchItemType.song,
+        QuickSearchItemType.user,
+    ],
+};
 
 export const ZQuickSearchItemTypeArray = z.array(
     z.enum(["event", "song", "user", "wikiPage"])

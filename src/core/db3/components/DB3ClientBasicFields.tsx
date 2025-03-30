@@ -18,7 +18,7 @@ import { formatTimeSpan } from "shared/time";
 import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace } from "shared/utils";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorSwatch } from "src/core/components/Color";
-import { Markdown } from "src/core/components/markdown/RichTextEditor";
+import { Markdown } from "src/core/components/markdown/Markdown";
 import * as db3 from "../db3";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";

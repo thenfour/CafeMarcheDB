@@ -17,7 +17,7 @@ import { CMSelectNullBehavior } from "./CMSingleSelectDialog";
 import { CMTextInputBase } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
-import { Markdown } from "./markdown/RichTextEditor";
+import { Markdown } from "./markdown/Markdown";
 import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { AgeRelativeToNow } from "./RelativeTimeComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
@@ -73,12 +73,15 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
     const snackbar = useSnackbar();
 
     const handleSave = async () => {
+        console.log(`Saving wiki page ${props.wikiPageApi.wikiPath.canonicalWikiPath} with title ${title} and content ${content}`);
         const result = await props.wikiPageApi.saveProgress({
             revisionData: {
                 content,
                 name: title,
             }
         });
+        console.log(` => outcome ${result.outcome}`);
+        console.log(result);
         switch (result.outcome) {
             case UpdateWikiPageResultOutcome.success:
                 return true;

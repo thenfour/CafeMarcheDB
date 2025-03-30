@@ -20,7 +20,7 @@ import copyEventSegmentResponses from "../db3/mutations/copyEventSegmentResponse
 import { useConfirm } from "./ConfirmationDialog";
 import { useDashboardContext } from "./DashboardContext";
 import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
-import { Markdown } from "./markdown/RichTextEditor";
+import { Markdown } from "./markdown/Markdown";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
 

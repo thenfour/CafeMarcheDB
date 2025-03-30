@@ -48,7 +48,7 @@ import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
-import { Markdown } from './markdown/RichTextEditor';
+import { Markdown } from './markdown/Markdown';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {

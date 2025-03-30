@@ -17,7 +17,6 @@
 
 // image dimensions
 
-//import "@webscopeio/react-textarea-autocomplete/style.css";
 import React from "react";
 
 interface MarkdownReactPlugin {

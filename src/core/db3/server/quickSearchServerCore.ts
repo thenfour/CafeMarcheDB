@@ -275,11 +275,16 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
             { fieldName: "content", fieldType: "string", strengthMultiplier: 0.5 },
         ];
 
-        const wikiPages = await db.wikiPage.findMany({
+        const wikiArgs = {
             where: {
                 AND: [
-                    { namespace: { not: "EventDescription" } },
-                    GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
+                    {
+                        OR: [
+                            { namespace: { not: "EventDescription" } },
+                            { namespace: null },
+                        ]
+                    },
+                    //GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
                     {
                         OR: [
                             ...MakeWhereCondition(wikiPageFields, query).OR,
@@ -301,7 +306,11 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
                 },
             },
             take: kItemsPerType,
-        });
+        };
+
+        //debugger;
+
+        const wikiPages = await db.wikiPage.findMany(wikiArgs);
 
         const makeWikiPageInfo = (x: typeof wikiPages[0]): QuickSearchItemMatch => {
             const absoluteUri = process.env.CMDB_BASE_URL + `backstage/wiki/${x.slug}`; // 
@@ -317,6 +326,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
                 id: x.id,
                 absoluteUri,
                 name: x.currentRevision ? `${x.currentRevision.name} (${x.slug})` : x.slug,
+                canonicalWikiSlug: x.slug,
                 matchStrength: bestMatch.matchStrength,
                 matchingField: bestMatch.fieldName,
                 itemType: QuickSearchItemType.wikiPage,

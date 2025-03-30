@@ -130,7 +130,7 @@ import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
-import { Markdown } from "./markdown/RichTextEditor";
+import { Markdown } from "./markdown/Markdown";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
 
