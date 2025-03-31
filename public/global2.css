@@ -2469,8 +2469,8 @@ pre.serverStartInfo {
 }
 
 /* for dupe songs in the song list*/
-.songAutocompleteLI.faded {
-    color: #ccc;
+.faded {
+    opacity: 50%;
 }
 
 /* - custom css for db stuff --------------------------------- */

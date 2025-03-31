@@ -47,24 +47,30 @@ export const AssociationValueLink = (props: { value: QuickSearchItemMatch | null
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const AssociationValue = (props: { value: QuickSearchItemMatch | null, className?: string | undefined, selected?: boolean }) => {
+interface AssociationValueProps {
+    value: QuickSearchItemMatch | null;
+    className?: string | undefined;
+    selected?: boolean;
+    style?: React.CSSProperties | undefined;
+};
+export const AssociationValue = (props: AssociationValueProps) => {
 
     const className = `AssociationValue autoCompleteCMLinkItem ${props.className || ""} ${props.value?.itemType || "null"} ${props.selected ? "selected" : "notSelected"}`;
 
     if (!props.value) return <div className={className}>-</div>;
     switch (props.value?.itemType) {
         case "song":
-            return <div className={className}>{gIconMap.MusicNote()} {props.value?.name}</div>;
+            return <div className={className} style={props.style}>{gIconMap.MusicNote()} {props.value?.name}</div>;
         case "event":
-            return <div className={className}>{gIconMap.CalendarMonth()} {props.value?.name}</div>;
+            return <div className={className} style={props.style}>{gIconMap.CalendarMonth()} {props.value?.name}</div>;
         case "user":
-            return <div className={className}>{gIconMap.Person()} {props.value?.name}</div>;
+            return <div className={className} style={props.style}>{gIconMap.Person()} {props.value?.name}</div>;
         // case "instrument":
         //     return <div className={className}>{gIconMap.Trumpet()} {props.value?.name}</div>;
         case "wikiPage":
-            return <div className={className}>{gIconMap.EditNote()} {props.value?.name}</div>;
+            return <div className={className} style={props.style}>{gIconMap.EditNote()} {props.value?.name}</div>;
         default:
-            return <div className={className}>{props.value?.name}</div>;
+            return <div className={className} style={props.style}>{props.value?.name}</div>;
     }
 }
 
@@ -124,6 +130,10 @@ export const AssociationSelect = ({ allowNull = true, ...props }: AssociationSel
     />;
 };
 
+interface AssociationAutocompleteItemInfo {
+    style?: React.CSSProperties;
+    className?: string;
+};
 
 export interface AssociationAutocompleteProps {
     autofocus?: boolean;
@@ -155,9 +165,15 @@ export interface AssociationAutocompleteProps {
      * Allowed item types for the fetch operation.
      */
     allowedItemTypes: QuickSearchItemType[];
+
+    showSearchIcon?: boolean;
+    showClearIcon?: boolean;
+    placeholder?: string;
+
+    getItemInfo?: (item: QuickSearchItemMatch) => AssociationAutocompleteItemInfo;
 }
 
-export const AssociationAutocomplete = ({ autofocus = false, ...props }: AssociationAutocompleteProps) => {
+export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = true, showClearIcon = true, placeholder = "Search...", ...props }: AssociationAutocompleteProps) => {
     const isControlled = props.value !== undefined;
 
     // Internal, "uncontrolled" state
@@ -205,6 +221,7 @@ export const AssociationAutocomplete = ({ autofocus = false, ...props }: Associa
 
     return (
         <Autocomplete
+            className="AssociationAutocomplete"
             value={null}
             freeSolo
             // Tells Autocomplete how to track the current text for search
@@ -228,28 +245,30 @@ export const AssociationAutocomplete = ({ autofocus = false, ...props }: Associa
             }
             }
             // getOptionKey is not a standard Autocomplete prop. You can just set a key in renderOption.
-            renderOption={(liProps, option, { selected }) => (
-                <li {...liProps} key={`${option.itemType}_${option.id}`}>
+            renderOption={(liProps, option, { selected }) => {
+                const extraInfo: AssociationAutocompleteItemInfo = !props.getItemInfo ? {} : props.getItemInfo(option);
+                return <li {...liProps} key={`${option.itemType}_${option.id}`}>
                     <AssociationValue
                         value={option}
-                        className="autoCompleteCMLinkItem"
+                        className={`autoCompleteCMLinkItem ${extraInfo.className || ""}`}
+                        style={extraInfo.style}
                         selected={selected}
                     />
-                </li>
-            )}
+                </li>;
+            }}
             renderInput={(params) => (
                 <InputBase
                     ref={params.InputProps.ref}
-                    placeholder="Search..."
+                    placeholder={placeholder}
                     autoFocus={autofocus}
                     inputProps={{
                         ...params.inputProps,
                         onKeyDown: handleKeyDown,
                     }}
                     onChange={(e) => handleTextChange(e.target.value)}
-                    startAdornment={gIconMap.Search()}
+                    startAdornment={showSearchIcon ? gIconMap.Search() : undefined}
                     endAdornment={
-                        IsNullOrWhitespace(queryText) ? undefined : (
+                        (IsNullOrWhitespace(queryText) || !showClearIcon) ? undefined : (
                             <CMSmallButton onClick={() => handleTextChange("")}>
                                 {gIconMap.Close()}
                             </CMSmallButton>

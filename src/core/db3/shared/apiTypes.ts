@@ -484,7 +484,7 @@ export type GetFilteredSongsItemSongPayload = Prisma.SongGetPayload<{
 }>;
 
 export interface GetFilteredSongsRet {
-    matchingItems: GetFilteredSongsItemSongPayload[];
+    matchingItem: GetFilteredSongsItemSongPayload | null;
 };
 
 export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({

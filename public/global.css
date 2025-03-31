@@ -799,3 +799,18 @@ solution is to
   min-width: 100px;
   min-height: 40px;
 }
+
+.AssociationAutocomplete {
+  flex-grow: 1;
+  /* in setlist editor allow to take the size the parent gives it. */
+}
+
+.AssociationAutocomplete {
+  flex-grow: 1;
+  /* in setlist editor allow to take the size the parent gives it. */
+}
+
+.MuiInputBase-root {
+  width: 100%;
+  /* also required to push the clear button to the right */
+}
