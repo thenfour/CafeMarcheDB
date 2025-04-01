@@ -170,8 +170,6 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       setLockUid(newLockUid);
     }
 
-    console.log(`updating wiki page mutation ...`);
-
     const result = await updateWikiPageMutation({
       canonicalWikiPath: wikiPath.canonicalWikiPath,
       baseRevisionId: currentRevisionData.wikiPage?.currentRevision?.id ?? null,
@@ -179,8 +177,6 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       title: saveProgressArgs.revisionData.name,
       content: saveProgressArgs.revisionData.content,
     });
-
-    console.log(`... updateWikiPageMutation done`);
 
     switch (result.outcome) {
       case UpdateWikiPageResultOutcome.success:

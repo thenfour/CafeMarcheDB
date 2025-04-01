@@ -342,6 +342,9 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   /* max-width: var(--content-max-width);
   width: max-content; */
 
+  /* this allows children to position absolute to the content section (case in point: backstage index announcement markdown with floating header */
+  position: relative;
+
   /* the simplest way to deal with responsive layout is to just keep everything exactly the same width
   representing a comfortable mobile experience.*/
   width: var(--content-max-width);
@@ -758,6 +761,10 @@ span.songListVerified {
 
 .MuiDialog-container {
   height: 100%;
+}
+
+.MuiButtonBase-root:focus {
+  outline: 2px solid #000;
 }
 
 /* #409 on mobile, OK and Cancel buttons become very small; force them to a comfortable size,

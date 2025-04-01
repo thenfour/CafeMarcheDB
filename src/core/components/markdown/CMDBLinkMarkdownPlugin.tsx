@@ -37,6 +37,9 @@
 //     };
 // }
 
+export const MarkdownMentionRegex = /\[\[(event|song):(\d+)\|?(.*?)\]\]/g;
+export const MarkdownWikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
 export function CMDBLinkMarkdownPlugin(md) {
     // Save the current text renderer (which might be the default, or from another plugin)
     const originalTextRule = md.renderer.rules.text ||
@@ -49,7 +52,7 @@ export function CMDBLinkMarkdownPlugin(md) {
         let output = originalTextRule(tokens, idx, options, env, self);
 
         // 2) Then run the wiki link replacements on whatever text was returned
-        output = output.replace(/\[\[(event|song):(\d+)\|?(.*?)\]\]/g, (match, type, id, caption) => {
+        output = output.replace(MarkdownMentionRegex, (match, type, id, caption) => {
             if (type === 'event') {
                 caption = caption || `Event ${id}`;
                 return `<a href="/backstage/event/${id}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
@@ -60,7 +63,8 @@ export function CMDBLinkMarkdownPlugin(md) {
             return match;
         });
 
-        output = output.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, slug, caption) => {
+        //output = output.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, slug, caption) => {
+        output = output.replace(MarkdownWikiLinkRegex, (match, slug, caption) => {
             if (slug) {
                 caption = caption || slug;
                 return `<a href="/backstage/wiki/${slug}" class="wikiCMLink wikiWikiLink">${caption}</a>`;

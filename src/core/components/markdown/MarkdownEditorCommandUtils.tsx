@@ -1,7 +1,7 @@
-import { Menu, MenuItem, SvgIcon, Tooltip } from "@mui/material";
+import { Button, Menu, MenuItem, SvgIcon, Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
-import { MarkdownEditorCommandApi } from "./MarkdownEditorCommandBase";
+import { MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
 
 
 
@@ -184,7 +184,7 @@ export function parseMarkdownReference(text: string): ParsedMarkdownReference {
 
     // If matched, extract groups
     const slug = match[1]!.trim();
-    const caption = match[2] ? match[2].trim() : slug;
+    const caption = match[2] ? match[2].trim() : "";//slug;
 
     return {
         isReference: true,
@@ -193,3 +193,36 @@ export function parseMarkdownReference(text: string): ParsedMarkdownReference {
     };
 }
 
+
+export function GetMatchUnderSelection(text: string, selectionStart: number, selectionEnd: number, regexPattern: RegExp): undefined | MarkdownTokenContext {
+    // does the current selection land entirely within a mention (or exactly encapulates one?)
+    // to do this, use a regex to find all occurrences of mentions in the text, and check if the current selection is within one of them.
+    const matches = [...text.matchAll(regexPattern)];
+    if (matches.length === 0) {
+        //console.log(`not in a mention because none exist [${selectionStart},${selectionEnd}]`);
+        return undefined;
+    }
+    // now check if the current selection is within one of the matches
+    for (const match of matches) {
+        const matchStart = match.index!;
+        const matchEnd = matchStart + match[0]!.length;
+        if (selectionStart >= matchStart && selectionEnd <= matchEnd) {
+            //console.log(`in a mention [${selectionStart},${selectionEnd}] : ${text.slice(matchStart, matchEnd)}`);
+            return {
+                start: matchStart,
+                end: matchEnd,
+            };
+        }
+    }
+    //console.log(`not in any of the existing mentions [${selectionStart},${selectionEnd}]`);
+    return undefined;
+}
+
+// in the dialogs, enter key is not working properly so this wrapper hacks it up.
+export const MuiButtonWithEnterHandler = (props) => <Button {...props} onKeyDown={(e) => {
+    // but actually this doesn't work either; this soemitmes does a double-invoke.
+    // if (e.key === "Enter") {
+    //     e.stopPropagation();
+    //     props.onClick(e);
+    // }
+}} />;

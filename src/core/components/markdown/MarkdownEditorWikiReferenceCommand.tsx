@@ -5,11 +5,13 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationAutocomplete } from "../setlistPlan/ItemAssociation";
-import { MarkdownEditorCommand, MarkdownEditorCommandApi } from "./MarkdownEditorCommandBase";
-import { MarkdownEditorToolbarItem, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
+import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
+import { GetMatchUnderSelection, MarkdownEditorToolbarItem, MuiButtonWithEnterHandler, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
+import { MarkdownWikiLinkRegex } from "./CMDBLinkMarkdownPlugin";
 
+const kCommandId = "WikiReferenceCommand";
 
-const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props) => {
+const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationTrigger: number }> = (props) => {
     const [open, setOpen] = React.useState(false);
 
     const [wikiSlugQuery, setWikiSlugQuery] = React.useState<string>("");
@@ -37,6 +39,21 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props)
         }
     }
 
+    const invoke = async () => {
+        if (props.api.contextMap[kCommandId]) {
+            const context = props.api.contextMap[kCommandId]!;
+            await props.api.controlledTextArea.setSelectionRange(context.start, context.end);
+        }
+        setOpen(true);
+    };
+
+    const closeDialog = () => {
+        setOpen(false);
+        setTimeout(() => {
+            props.api.textArea.focus();
+        }, 0);
+    };
+
     const handleOK = async () => {
         if (!IsNullOrWhitespace(wikiSlugQuery)) {
             if (IsNullOrWhitespace(wikiTitle)) {
@@ -46,11 +63,16 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props)
                 await props.api.controlledTextArea.replaceSelectionWithText(`[[${wikiSlugQuery}|${wikiTitle}]]`, { select: "change" });
             }
         }
-        setOpen(false);
+        closeDialog();
     };
 
+    React.useEffect(() => {
+        if (!props.invocationTrigger) return; // avoid initial trigger
+        void invoke();
+    }, [props.invocationTrigger]);
+
     return <MarkdownEditorToolbarItem
-        tooltip="Wiki link (ctrl+W)"
+        tooltip="Wiki link (ctrl+J)"
         icon={
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M0 3.75A.75.75 0 0 1 .75 3h7.497c1.566 0 2.945.8 3.751 2.014A4.495 4.495 0 0 1 15.75 3h7.5a.75.75 0 0 1 .75.75v15.063a.752.752 0 0 1-.755.75l-7.682-.052a3 3 0 0 0-2.142.878l-.89.891a.75.75 0 0 1-1.061 0l-.902-.901a2.996 2.996 0 0 0-2.121-.879H.75a.75.75 0 0 1-.75-.75Zm12.75 15.232a4.503 4.503 0 0 1 2.823-.971l6.927.047V4.5h-6.75a3 3 0 0 0-3 3ZM11.247 7.497a3 3 0 0 0-3-2.997H1.5V18h6.947c1.018 0 2.006.346 2.803.98Z"></path></svg>
         }
@@ -58,7 +80,7 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props)
             setOpen(true);
         }}
     >
-        <ReactiveInputDialog open={open} onCancel={() => setOpen(false)}>
+        <ReactiveInputDialog open={open} onCancel={closeDialog}>
             <DialogTitle>
                 Insert reference to Wiki article
             </DialogTitle>
@@ -67,6 +89,7 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props)
                     name="Wiki link"
                     value={<>
                         <AssociationAutocomplete
+                            disableEscapeHandling={true}
                             allowedItemTypes={QuickSearchItemTypeSets.WikiPages}
                             value={wikiSlugQuery}
                             autofocus={true}
@@ -101,19 +124,23 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props)
                     }
                 />
                 <DialogActionsCM>
-                    <Button onClick={handleOK}>Ok</Button>
-                    <Button onClick={() => {
-                        setOpen(false);
-                    }}>Cancel</Button>
+                    <MuiButtonWithEnterHandler onClick={handleOK}>Ok</MuiButtonWithEnterHandler>
+                    <MuiButtonWithEnterHandler onClick={closeDialog}>Cancel</MuiButtonWithEnterHandler>
                 </DialogActionsCM>
             </DialogContent>
         </ReactiveInputDialog>
     </MarkdownEditorToolbarItem >;
 };
 
+function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
+    const ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, MarkdownWikiLinkRegex);
+    return ret;
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const WikiReferenceCommand: MarkdownEditorCommand = {
-    id: "WikiReferenceCommand",
+    id: kCommandId,
     toolbarItem: WikiReferenceDialog,
-    keyboardShortcutCondition: { ctrlKey: true, key: "w" },
+    keyboardShortcutCondition: { ctrlKey: true, key: "j" },
+    deduceContext,
 };

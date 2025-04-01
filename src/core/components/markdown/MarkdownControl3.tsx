@@ -6,13 +6,14 @@ import { gCharMap } from '../../db3/components/IconMap';
 import { CMDBUploadFile } from '../CMDBUploadFile';
 import { useSnackbar } from '../SnackbarContext';
 import { Markdown } from './Markdown';
-import { MarkdownEditorCommandApi } from './MarkdownEditorCommandBase';
+import { MarkdownCommandInvocationTriggerMap, MarkdownContextMap, MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from './MarkdownEditorCommandBase';
 import { gMarkdownEditorCommandGroups } from './MarkdownEditorCommands';
 import { MarkdownEditorFormattingTips } from './MarkdownEditorFormattingTips';
 import { MarkdownLockIndicator } from './MarkdownLockIndicator';
 import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
+import { useDashboardContext } from "../DashboardContext";
 
 const kMaxImageDimension = 750;
 
@@ -45,7 +46,11 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [showPreview, setShowPreview] = React.useState<boolean>(startWithPreviewOpen);
     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
+    const [contextMap, setContextMap] = React.useState<MarkdownContextMap>({});
+    const commandInvocationTriggerMap = React.useRef<MarkdownCommandInvocationTriggerMap>({});
+    const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
     const snackbar = useSnackbar();
+    const dashboardContext = useDashboardContext();
 
     const [textAreaRef, setTextAreaRef] = React.useState<HTMLTextAreaElement | null>(null);
     const controlledTextArea = useControlledTextArea(textAreaRef, props.value || "", props.onChange);
@@ -53,6 +58,9 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
 
     const makeApi = (): MarkdownEditorCommandApi => ({
         controlledTextArea,
+        contextMap,
+        invocationTriggerMap: commandInvocationTriggerMap.current,
+        dashboardContext: dashboardContext,
         textArea: textAreaRef!,
         nativeFileInputRef: nativeFileInputRef!,
         saveProgress: async () => {
@@ -65,6 +73,14 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const apiRef = React.useRef<MarkdownEditorCommandApi>(makeApi());
 
     apiRef.current = makeApi();
+
+    const triggerInvocationMap = (command: MarkdownEditorCommand) => {
+        if (commandInvocationTriggerMap.current[command.id] === undefined) {
+            commandInvocationTriggerMap.current[command.id] = 0;
+        }
+        setTotalInvocations((prev) => prev + 1); // force a re-render to continue the invocation.
+        commandInvocationTriggerMap.current[command.id]! += 1;
+    };
 
     // ok when you upload, the gallery item component is created.
     const handleFileSelect = (files: FileList) => {
@@ -109,9 +125,14 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     React.useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey) {
-                event.preventDefault();
                 const cta = apiRef.current.controlledTextArea;
                 const listInfo = cta.getListAtCaretInfo();
+                if (IsNullOrWhitespace(listInfo.itemText)) {
+                    // no list item, so just insert a new line.
+                    //cta.replaceSelectionWithText("\n", { select: "afterChange" });
+                    return;
+                }
+                event.preventDefault();
                 void cta.replaceSelectionWithText("\n" + listInfo.prefix);
                 return;
             }
@@ -129,6 +150,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
             if (command) {
                 event.preventDefault();
                 event.stopPropagation();
+                triggerInvocationMap(command);
                 if (command.invoke) {
                     void command.invoke({
                         triggeredBy: "keyboard",
@@ -146,6 +168,17 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         };
     }, [textAreaRef]);
 
+    React.useEffect(() => {
+        // find context under cursor / selection.
+        const newContextMap: MarkdownContextMap = {};
+        for (const command of gMarkdownEditorCommandGroups.flatMap(g => g)) {
+            if (!command.deduceContext) continue;
+            const context = command.deduceContext(apiRef.current);
+            newContextMap[command.id] = context;
+        };
+        setContextMap(newContextMap);
+    }, [textAreaRef, props.value, controlledTextArea.selectionStart, controlledTextArea.selectionEnd]);
+
     if (readonly) {
         return <pre>{props.value}</pre>
     }
@@ -156,23 +189,26 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                 <div className='toolItemGroupList'>
 
                     {gMarkdownEditorCommandGroups.map((group, index) => <div key={index} className='toolItemGroup'>
-                        {group.filter(item => item.toolbarItem || item.toolbarIcon).map((item, index) => {
-                            if (item.toolbarItem) {
-                                return <React.Fragment key={index}>{item.toolbarItem({ api: apiRef.current })}</React.Fragment>;
-                            }
+                        {group
+                            .filter(item => item.toolbarItem || item.toolbarIcon)
+                            .filter(item => !item.isEnabled || item.isEnabled(apiRef.current))
+                            .map((item, index) => {
+                                if (item.toolbarItem) {
+                                    return <React.Fragment key={index}>{item.toolbarItem({ api: apiRef.current, invocationTrigger: commandInvocationTriggerMap.current[item.id] || 0 })}</React.Fragment>;
+                                }
 
-                            return <Tooltip key={index} title={item.toolbarTooltip} disableInteractive>
-                                <div className={`toolItem`} onClick={item.invoke && (async () => {
-                                    await item.invoke!({
-                                        triggeredBy: "toolbar",
-                                        api: apiRef.current,
-                                    });
-                                    //
-                                })}>
-                                    {item.toolbarIcon}
-                                </div>
-                            </Tooltip>;
-                        })}
+                                return <Tooltip key={index} title={item.toolbarTooltip} disableInteractive>
+                                    <div className={`toolItem`} onClick={item.invoke && (async () => {
+                                        await item.invoke!({
+                                            triggeredBy: "toolbar",
+                                            api: apiRef.current,
+                                        });
+                                        //
+                                    })}>
+                                        {item.toolbarIcon}
+                                    </div>
+                                </Tooltip>;
+                            })}
                     </div>)}
 
                 </div>
@@ -212,7 +248,14 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                     <div className="flex-spacer" />
                     <MarkdownLockIndicator wikiApi={wikiPageApi} />
                     <div className={`freeButton cancelButton`} onClick={props.handleCancel}>{props.hasEdits ? "Cancel" : "Close"}</div>
-                    <div className={`freeButton saveButton saveProgressButton ${props.hasEdits ? "changed" : "unchanged disabled"}`} onClick={props.hasEdits ? async () => { await props.handleSave() } : undefined}>Save progress</div>
+                    <Tooltip title="Save progress (Ctrl+Enter)" disableInteractive>
+                        <div
+                            className={`freeButton saveButton saveProgressButton ${props.hasEdits ? "changed" : "unchanged disabled"}`}
+                            onClick={props.hasEdits ? async () => { await props.handleSave() } : undefined}
+                        >
+                            Save progress
+                        </div>
+                    </Tooltip>
                     <div className={`freeButton saveButton saveAndCloseButton ${props.hasEdits ? "changed" : "unchanged disabled"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>Save & close</div>
                 </div>
             }

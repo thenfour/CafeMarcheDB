@@ -363,7 +363,10 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                             }}
                         >
                             <div className="name">{dbPlan.name}</div>
-                            <Markdown markdown={dbPlan.description} />
+                            <Markdown
+                                markdown={dbPlan.description}
+                                compact
+                            />
                         </div>;
                     })}
                 </div>

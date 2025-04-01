@@ -156,11 +156,11 @@ export const RelevantEvents = () => {
     }
 
     return <div className="RelevantEvents">
-        <div className="RelevantEventsHeader">
+        {/* <div className="RelevantEventsHeader">
             <a href="/backstage/events" rel="noreferrer">
                 Current Events
             </a>
-        </div>
+        </div> */}
         {highlightedEvent && <div>
             <EventListItem
                 event={highlightedEvent.event}

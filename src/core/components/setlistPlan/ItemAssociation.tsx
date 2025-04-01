@@ -169,11 +169,12 @@ export interface AssociationAutocompleteProps {
     showSearchIcon?: boolean;
     showClearIcon?: boolean;
     placeholder?: string;
+    disableEscapeHandling?: boolean; // if true, pressing escape will not clear the input. this is useful for dialogs that use this component and want to close the dialog instead.
 
     getItemInfo?: (item: QuickSearchItemMatch) => AssociationAutocompleteItemInfo;
 }
 
-export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = true, showClearIcon = true, placeholder = "Search...", ...props }: AssociationAutocompleteProps) => {
+export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = true, showClearIcon = true, placeholder = "Search...", disableEscapeHandling = false, ...props }: AssociationAutocompleteProps) => {
     const isControlled = props.value !== undefined;
 
     // Internal, "uncontrolled" state
@@ -210,6 +211,7 @@ export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = tr
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (disableEscapeHandling) return; // don't handle escape if we are not supposed to
         if (e.key === "Escape" && !IsNullOrWhitespace(queryText)) { // don't handle if input empty, to allow dialogs to close
             // Clear out the text
             handleTextChange("");

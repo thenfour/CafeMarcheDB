@@ -24,9 +24,10 @@
 
 .SetlistPlannerDocumentOverviewGroupItemList {
     display: flex;
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
+    flex-direction: column;
     width: 900px;
-    gap: 7px;
+    /* gap: 7px; */
     padding: 10px;
 }
 
@@ -51,8 +52,8 @@
 
 .SetlistPlannerDocumentOverviewItem {
     border: 1px solid #ddd;
-    margin: 10px 0;
-    padding: 10px 20px;
+    /* margin: 10px 0; */
+    padding: 4px 10px;
     cursor: pointer;
 }
 

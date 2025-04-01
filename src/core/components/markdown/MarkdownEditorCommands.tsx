@@ -1,3 +1,4 @@
+import React from "react";
 import { EmojiSymbols, FormatIndentDecrease, FormatIndentIncrease, FormatQuote, FormatStrikethrough } from "@mui/icons-material";
 import { IsNullOrWhitespace } from "shared/utils";
 import { MarkdownEditorCommand } from "./MarkdownEditorCommandBase";
@@ -5,7 +6,7 @@ import { CMHighlightIcon, InsertSpecialCharacterToolItemWithDropdown, SurroundTe
 import { WikiReferenceCommand } from "./MarkdownEditorWikiReferenceCommand";
 import { MarkdownEditorMentionCommand } from "./MarkdownEditorMentionCommand";
 import { MarkdownHyperlinkCommand } from "./MarkdownEditorHyperlinkCommand";
-
+import { KeyValueTable } from "../CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const BoldCommand: MarkdownEditorCommand = {
@@ -15,7 +16,7 @@ const BoldCommand: MarkdownEditorCommand = {
         <path d="M4 2h4.5a3.501 3.501 0 0 1 2.852 5.53A3.499 3.499 0 0 1 9.5 14H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm1 7v3h4.5a1.5 1.5 0 0 0 0-3Zm3.5-2a1.5 1.5 0 0 0 0-3H5v3Z"></path>
     </svg>,
     invoke: async (args) => {
-        await args.api.controlledTextArea.surroundSelectionWithText("**", "**", "bold text");
+        await args.api.controlledTextArea.toggleSurroundingSelectionWithText("**", "**", "bold text");
     },
     keyboardShortcutCondition: { ctrlKey: true, key: "B" },
 };
@@ -31,7 +32,7 @@ const ItalicCommand: MarkdownEditorCommand = {
         </svg>
     ,
     invoke: async (args) => {
-        await args.api.controlledTextArea.surroundSelectionWithText("*", "*", "italic text");
+        await args.api.controlledTextArea.toggleSurroundingSelectionWithText("*", "*", "italic text");
     },
     keyboardShortcutCondition: { ctrlKey: true, key: "I" },
 };
@@ -43,7 +44,7 @@ const StrikethroughCommand: MarkdownEditorCommand = {
     toolbarIcon: <FormatStrikethrough />
     ,
     invoke: async (args) => {
-        await args.api.controlledTextArea.surroundSelectionWithText("~~", "~~", "strikethrough text");
+        await args.api.controlledTextArea.toggleSurroundingSelectionWithText("~~", "~~", "strikethrough text");
     },
     keyboardShortcutCondition: { ctrlKey: true, shiftKey: true, key: "S" },
 };
@@ -151,7 +152,6 @@ const UnorderedListCommand: MarkdownEditorCommand = {
     ,
     invoke: async (args) => {
         await args.api.controlledTextArea.transformSelectedLines((line, index) => {
-            //if (IsNullOrWhitespace(line)) return line;
             return `- ${line}`;
         });
     },
@@ -312,10 +312,53 @@ const CodeCommand: MarkdownEditorCommand = {
     },
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const MarkdownInspectCommand: MarkdownEditorCommand = {
+    id: "MarkdownInspectCommand",
+    isEnabled: (api) => {
+        return api.dashboardContext.isShowingAdminControls;
+    },
+    toolbarItem: (props) => {
+        const [_, setRefreshTrigger] = React.useState(0);
+        React.useEffect(() => {
+            const handleKeyDown = () => {
+                setTimeout(() => {
+                    setRefreshTrigger((prev) => prev + 1);
+                }, 0); // wait for the next event loop to get the latest selection
+            };
+            const textArea = props.api.textArea;
+            if (textArea) textArea.addEventListener("keydown", handleKeyDown);
+            return () => {
+                if (textArea) textArea.removeEventListener("keydown", handleKeyDown);
+            };
+        }, [props.api.textArea]);
+        // return <div style={{fontFamily:}}>pos: {props.api.controlledTextArea.selectionStart}</div>
+        return <KeyValueTable data={{
+            "sel": `${props.api.controlledTextArea.selectionStart}-${props.api.controlledTextArea.selectionEnd} (len: ${props.api.controlledTextArea.selectionEnd - props.api.controlledTextArea.selectionStart})`,
+            "selectedText: ": props.api.controlledTextArea.getText(),
+            "isLineBasedSelection": props.api.controlledTextArea.isLineBasedSelection(),
+            "List info at caret": `${props.api.controlledTextArea.getListAtCaretInfo().isListItem ? "IsList" : "NotList"} (prefix: ${props.api.controlledTextArea.getListAtCaretInfo().prefix})`,
+            // todo: 
+            // - parse wiki reference   [[abcd/xyzw]] [[abcd/xyzw|aoeu]]
+            // - parse mention          [[song:126|The Way We Were]] 
+            // - parse hyperlink        https://github.com/thenfour/CafeMarcheDB/issues/436
+            //                          [snthch](https://github.com/thenfour/CafeMarcheDB/issues/436)
+            // - parse file attachment  [AnnualReport2017.pdf](/api/files/download/HJtQXslPVK.pdf)
+            // - parse image            ![25_.jpg](/api/files/download/OB7Lzhk23h.jpg){{highlightgreen:highlighted text}}
+
+            // with the goal of:
+            // 1. detect & parse the contextual objects (there may be multiple, especially in the case of for example lists or tables, and we want to show the correct menus for each relevant object under the cursor)
+            // 2. allow tool commands to operate on more than just the selection, but specify the parsed info.
+            // probably for #2 we just start by setting the selection, then manipulating it. that avoids complexity of requiring changes across render boundaries / setTimeout stuff to set new selection etc..
+        }} />
+    },
+    keyboardShortcutCondition: { ctrlKey: true, key: "t" },
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const gMarkdownEditorCommandGroups: MarkdownEditorCommand[][] = [
+    // MarkdownInspectCommand
     [BoldCommand, ItalicCommand, StrikethroughCommand, EncloseCommand, HighlightCommand],
     [UnorderedListCommand, OrderedListCommand, DecreaseIndentCommand, IndentCommand],
     [Heading1Command, QuoteCommand, CodeCommand, CharacterSizeCommand],

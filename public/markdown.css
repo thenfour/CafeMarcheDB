@@ -413,6 +413,17 @@ test cases:
     display: flex;
 }
 
+.wikiPage.floatingHeader .header {
+    background-color: transparent;
+    float: right;
+}
+
+.announcementMarkdown.wikiPage {
+    background-color: transparent;
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
 
 .MarkdownLockIndicator,
 .MarkdownLockIndicator>* {

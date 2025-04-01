@@ -40,10 +40,11 @@ interface WikiStandaloneControlProps {
     onUpdated?: () => void;
     readonly?: boolean;
     className?: string | undefined;
+    floatingHeader?: boolean;
     renderCreateButton?: (onClick: () => void) => React.ReactNode;
 };
 
-const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
+const WikiStandaloneControlInner = ({ floatingHeader = false, ...props }: WikiStandaloneControlProps) => {
     const snackbar = useSnackbar();
     const [editing, setEditing] = React.useState<boolean>(false);
     const wikiPageApi = useWikiPageApi({
@@ -75,7 +76,7 @@ const WikiStandaloneControlInner = (props: WikiStandaloneControlProps) => {
         setEditing(false);
     };
 
-    return <div className={`wikiPage standaloneEditor ${props.className || ""}`}>
+    return <div className={`wikiPage standaloneEditor ${floatingHeader ? "floatingHeader" : ""} ${props.className || ""}`}>
         <AdminContainer>
             <WikiDebugIndicator wikiPageApi={wikiPageApi} />
         </AdminContainer>

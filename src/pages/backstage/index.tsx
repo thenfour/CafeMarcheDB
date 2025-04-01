@@ -46,7 +46,8 @@ const DynamicContent = () => {
 
     <WikiStandaloneControl
       canonicalWikiPath="special/announcements"
-      className="contentSection"
+      className="contentSection announcementMarkdown"
+      floatingHeader={true}
     />
 
     <PermissionBoundary permission={Permission.view_events_nonpublic}>

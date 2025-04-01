@@ -3,8 +3,9 @@ interface ReplaceSelectionWithTextOptions {
 }
 
 export interface ListAtCaretInfo {
-    isList: boolean; // true if the caret is inside a list item
+    isListItem: boolean; // true if the caret is inside a list item
     prefix: string; // the prefix of the list item (e.g. "- ", "1. ", "[ ] ")
+    itemText: string; // the text of the list item (e.g. "Item 1")
 }
 
 export interface ControlledTextAreaAPI {
@@ -12,10 +13,11 @@ export interface ControlledTextAreaAPI {
     selectionEnd: number;
     scrollTop: number; // scrollTop is the vertical scroll position of the textarea
 
+    getSelectedText: () => string;
     getText: () => string;
     getListAtCaretInfo: () => ListAtCaretInfo;
 
-    setSelectionRange: (start: number, end: number) => void;
+    setSelectionRange: (start: number, end: number) => Promise<void>;
 
     isLineBasedSelection: () => boolean;
 
@@ -23,6 +25,7 @@ export interface ControlledTextAreaAPI {
     replaceSelectionWithText: (replacement: string, options?: ReplaceSelectionWithTextOptions) => Promise<void>;
     surroundSelectionWithText: (prefix: string, suffix: string, textIfNoSelection: string) => Promise<void>;
     transformSelectedLines: (transform: (line: string, lineIndex: number, allSelectedLines: string[]) => string | undefined) => Promise<void>; // transforming a line to undefined removes it.
+    toggleSurroundingSelectionWithText: (prefix: string, suffix: string, textIfNoSelection: string) => Promise<void>;
 }
 
 function getLineCount(text: string): number {
@@ -70,10 +73,18 @@ export function useControlledTextArea(
     onTextChange: (val: string) => void
 ): ControlledTextAreaAPI {
 
-    const setSelectionRange = (start: number, end: number) => {
-        if (!textArea) return;
-        textArea.setSelectionRange(start, end);
-        textArea.focus();
+    const setSelectionRange = async (start: number, end: number) => {
+        return new Promise<void>((resolve) => {
+            if (!textArea) return resolve();
+            textArea.setSelectionRange(start, end);
+            textArea.focus();
+            setTimeout(() => {
+                resolve();
+            }, 0); // wait for the focus to be applied before resolving.
+        });
+        // if (!textArea) return;
+        // textArea.setSelectionRange(start, end);
+        // textArea.focus();
     };
     const setSelectionRangeAsync = (start: number, end: number): Promise<void> => {
         return new Promise((resolve) => {
@@ -82,6 +93,11 @@ export function useControlledTextArea(
                 resolve();
             }, 0);
         });
+    };
+
+    const getSelectedText = () => {
+        if (!textArea) return "";
+        return textValue.slice(textArea.selectionStart, textArea.selectionEnd);
     };
 
     const replaceRange = async (start: number, end: number, replacement: string) => {
@@ -150,26 +166,8 @@ export function useControlledTextArea(
     const isLineBasedSelection = () => {
         if (!textArea) return false;
         const selectedLineRange = getLineRangeForCharRange(textValue, textArea.selectionStart, textArea.selectionEnd);
-        console.log(`selectedLineRange.lineCount: ${selectedLineRange.lineCount}`);
         return selectedLineRange.lineCount > 1;
     };
-
-    // const getListAtCaretInfo = (): ListAtCaretInfo => {
-    //     if (!textArea) return { isList: false, prefix: "" };
-    //     const selectedLineRange = getLineRangeForCharRange(textValue, textArea.selectionStart, textArea.selectionEnd);
-    //     const selectedLines = textValue.split('\n').slice(selectedLineRange.startLineIndex, selectedLineRange.startLineIndex + selectedLineRange.lineCount);
-    //     const firstLine = selectedLines[0]!;
-    //     // get the prefix of the list. could be any amount of indentation,
-    //     // for ordered lists could be any number,
-    //     // and checkbox lists could be [ ] or [x] or [X].
-    //     const listPrefixRegex = /^( *)([\d]+\.|[-*]|[ ]?\[[ xX]?\] )/;
-    //     const match = firstLine.match(listPrefixRegex);
-    //     if (!match) return { isList: false, prefix: "" };
-    //     const prefix = match[2] || ""; // the prefix is the 2nd group.
-    //     const isList = match[0].length > 0; // if the prefix is empty, it's not a list.
-    //     console.log(`prefix: '${prefix}'`);
-    //     return { isList, prefix };
-    // };
 
     /**
      * Attempts to detect if the caret is on a line that is recognized
@@ -178,7 +176,7 @@ export function useControlledTextArea(
      */
     function getListAtCaretInfo(): ListAtCaretInfo {
         if (!textArea) {
-            return { isList: false, prefix: "" };
+            return { isListItem: false, prefix: "", itemText: "" };
         }
 
         // Get the relevant line(s) where the selection starts
@@ -197,75 +195,107 @@ export function useControlledTextArea(
         // We'll just inspect the first line for determining list prefix
         const firstLine = selectedLines[0] || "";
 
-        // A more robust pattern for Markdown list lines:
-        // 1) Optional indentation: ^(\s*)
-        // 2) Either (number + dot) or (bullet symbol)
-        // 3) Optional [x]/[ ] for tasks, with optional spaces before it
-        // 4) At least one space after
+        // we need to extract the prefix and the item text.
+        // The prefix is the part that matches the list item regex.
+        // The item text is the rest of the line after the prefix.
+
+        // // - Optional indentation: ^(\s*)
+        // // - Either (number + dot) or (bullet symbol)
+        // // - Optional [x]/[ ] for tasks, with optional spaces before it
+        // // - At least one space after
         const listPrefixRegex = /^(\s*(?:\d+\.|[+\-\*])(?:\s*\[[ xX]\])?\s+)/;
 
         // If it doesn't match, it's not recognized as a list
         const match = firstLine.match(listPrefixRegex);
         if (!match) {
-
-            return { isList: false, prefix: "" };
+            return { isListItem: false, prefix: "", itemText: "" };
         }
 
-        // Group 1 is the entire matched prefix
-        const prefix = match[1]!;
-        return { isList: true, prefix };
+        // Extract the prefix and item text
+        const prefix = match[1] || ""; // The prefix is the entire matched prefix
+        const itemText = firstLine.slice(prefix.length).trim(); // The rest of the line is the item text
+
+        return { isListItem: true, prefix, itemText };
+
+        // // Group 1 is the entire matched prefix
+        // const prefix = match[1]!;
+        // return { isListItem: true, prefix };
     }
+
+    const surroundSelectionWithText = async (prefix: string, suffix: string, textIfNoSelection: string) => {
+        const start = textArea?.selectionStart ?? 0;
+        const end = textArea?.selectionEnd ?? 0;
+        const selectedText = textValue.slice(start, end);
+
+        if (end - start > 0) {
+            // there's a selection; surround it.
+            await replaceRange(start, end, prefix + selectedText + suffix);
+            const existingTextStart = start + prefix.length;
+            const suffixStart = existingTextStart + selectedText.length;
+            await setSelectionRangeAsync(existingTextStart, suffixStart);
+        } else {
+            // No selection, insert the default text highlighted
+            await replaceRange(start, start, prefix + textIfNoSelection + suffix);
+            const existingTextStart = start + prefix.length;
+            const suffixStart = existingTextStart + textIfNoSelection.length;
+            await setSelectionRangeAsync(existingTextStart, suffixStart);
+        }
+    };
+
+    const replaceSelectionWithText = async (replacement: string, options = { select: "afterChange" }) => {
+        const start = textArea?.selectionStart ?? 0;
+        const end = textArea?.selectionEnd ?? 0;
+        await replaceRange(start, end, replacement);
+
+        // respect the select option
+        if (options.select === "change") {
+            await setSelectionRangeAsync(start, start + replacement.length);
+        }
+        else if (options.select === "afterChange") {
+            await setSelectionRangeAsync(start + replacement.length, start + replacement.length);
+        }
+    };
+
 
     return {
         selectionStart: textArea?.selectionStart ?? 0,
         selectionEnd: textArea?.selectionEnd ?? 0,
         setSelectionRange,
         getText: () => textValue,
+        getSelectedText,
         getListAtCaretInfo,
         scrollTop: textArea?.scrollTop ?? 0,
         transformSelectedLines,
         replaceRange,
         isLineBasedSelection,
-        replaceSelectionWithText: async (replacement: string, options = { select: "afterChange" }) => {
-            const start = textArea?.selectionStart ?? 0;
-            const end = textArea?.selectionEnd ?? 0;
-            await replaceRange(start, end, replacement);
-
-            // respect the select option
-            if (options.select === "change") {
-                await setSelectionRangeAsync(start, start + replacement.length);
+        surroundSelectionWithText,
+        replaceSelectionWithText,
+        // if the selection is surrounded by or includes the prefix and suffix, remove them
+        // if not, add them.
+        // if there's no selection, add the prefix and suffix around the textIfNoSelection.
+        toggleSurroundingSelectionWithText: async (prefix: string, suffix: string, textIfNoSelection: string) => {
+            const selectedText = getSelectedText();
+            // if the selection includes the surrounding ** (exactly 2 asterisks), remove them.
+            // this is the case when the selection INCLUDES the asterisks.
+            if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix)) {
+                const newText = selectedText.slice(prefix.length, -suffix.length);
+                await replaceSelectionWithText(newText, { select: "change" });
+                return;
             }
-            else if (options.select === "afterChange") {
-                await setSelectionRangeAsync(start + replacement.length, start + replacement.length);
+
+            const selectionStart = textArea?.selectionStart ?? 0;
+            const selectionEnd = textArea?.selectionEnd ?? 0;
+
+            // if the selection is not surrounded by **, but the text includes them, same thing.
+            const selectedTextWithSurrounding = textValue.slice(selectionStart - prefix.length, selectionEnd + suffix.length);
+            if (selectedTextWithSurrounding.startsWith(prefix) && selectedTextWithSurrounding.endsWith(suffix)) {
+                const newText = selectedTextWithSurrounding.slice(prefix.length, -suffix.length);
+                await setSelectionRange(selectionStart - prefix.length, selectionEnd + suffix.length);
+                await replaceSelectionWithText(newText, { select: "change" });
+                return;
             }
-        },
-        surroundSelectionWithText: async (prefix: string, suffix: string, textIfNoSelection: string) => {
-            const start = textArea?.selectionStart ?? 0;
-            const end = textArea?.selectionEnd ?? 0;
-            const selectedText = textValue.slice(start, end);
 
-            if (end - start > 0) {
-                // there's a selection; surround it.
-                await replaceRange(start, end, prefix + selectedText + suffix);
-
-                //const prefixStart = start;
-                const existingTextStart = start + prefix.length;
-                const suffixStart = existingTextStart + selectedText.length;
-                //const suffixEnd = suffixStart + suffix.length;
-
-                await setSelectionRangeAsync(existingTextStart, suffixStart);
-                //await setSelectionRangeAsync(suffixEnd, suffixEnd);
-            } else {
-                // No selection, insert the default text highlighted
-                await replaceRange(start, start, prefix + textIfNoSelection + suffix);
-
-                //const prefixStart = start;
-                const existingTextStart = start + prefix.length;
-                const suffixStart = existingTextStart + textIfNoSelection.length;
-                //const suffixEnd = suffixStart + suffix.length;
-
-                await setSelectionRangeAsync(existingTextStart, suffixStart);
-            }
-        },
+            return await surroundSelectionWithText(prefix, suffix, textIfNoSelection);
+        }
     };
 }

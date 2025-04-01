@@ -92,7 +92,7 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     };
 
     get isShowingAdminControls() {
-        return this.session?.showAdminControls && this.session.isSysAdmin;
+        return !!(this.session?.showAdminControls && this.session.isSysAdmin);
     }
 
     getPermissionsForRole(roleId) {

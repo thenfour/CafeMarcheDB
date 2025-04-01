@@ -5,8 +5,11 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationAutocomplete, AssociationValue } from "../setlistPlan/ItemAssociation";
-import { MarkdownEditorCommand, MarkdownEditorCommandApi } from "./MarkdownEditorCommandBase";
-import { MarkdownEditorToolbarItem, ParsedMarkdownReference, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
+import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
+import { GetMatchUnderSelection, MarkdownEditorToolbarItem, MuiButtonWithEnterHandler, ParsedMarkdownReference, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
+import { MarkdownMentionRegex } from "./CMDBLinkMarkdownPlugin";
+
+const kCommandId = "MarkdownEditorMentionCommand";
 
 interface ParsedMarkdownMention {
     isMention: boolean;
@@ -68,13 +71,28 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
     React.useEffect(() => {
         setCustomCaption(incomingParsedMention.parsedRef.caption);
     }, [incomingParsedMention.parsedRef.caption]);
+
     React.useEffect(() => {
         if (matchingItem) {
             setCustomCaption(matchingItem?.name);
         }
     }, [matchingItem]);
 
+    const invoke = async () => {
+        if (props.api.contextMap[kCommandId]) {
+            const context = props.api.contextMap[kCommandId]!;
+            await props.api.controlledTextArea.setSelectionRange(context.start, context.end);
+        }
+        setOpen(true);
+    };
+
+    React.useEffect(() => {
+        if (!props.api.invocationTriggerMap[kCommandId]) return; // avoid initial trigger
+        void invoke();
+    }, [props.api.invocationTriggerMap[kCommandId]]);
+
     const handleOK = async () => {
+        console.log(`handling OK mention.`);
         if (matchingItem) {
             const path = `${matchingItem.itemType}:${matchingItem.id}`;
             const itemCaption = IsNullOrWhitespace(customCaption) ? matchingItem.name : customCaption;
@@ -89,6 +107,13 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
         setOpen(false);
     };
 
+    const closeDialog = () => {
+        setOpen(false);
+        setTimeout(() => {
+            props.api.textArea.focus();
+        }, 0);
+    };
+
     return <MarkdownEditorToolbarItem
         tooltip="Link to song / event (ctrl+M)"
         icon={
@@ -96,11 +121,9 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
                 <path d="M4.75 2.37a6.501 6.501 0 0 0 6.5 11.26.75.75 0 0 1 .75 1.298A7.999 7.999 0 0 1 .989 4.148 8 8 0 0 1 16 7.75v1.5a2.75 2.75 0 0 1-5.072 1.475 3.999 3.999 0 0 1-6.65-4.19A4 4 0 0 1 12 8v1.25a1.25 1.25 0 0 0 2.5 0V7.867a6.5 6.5 0 0 0-9.75-5.496ZM10.5 8a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"></path>
             </svg>
         }
-        onClick={() => {
-            setOpen(true);
-        }}
+        onClick={invoke}
     >
-        <ReactiveInputDialog open={open} onCancel={() => setOpen(false)}>
+        <ReactiveInputDialog open={open} onCancel={closeDialog}>
             <DialogTitle>
                 Insert reference to songs, events, etc...
             </DialogTitle>
@@ -110,6 +133,7 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
                     value={<>
                         <AssociationAutocomplete
                             allowedItemTypes={QuickSearchItemTypeSets.ForMarkdownReference}
+                            disableEscapeHandling={true}
                             value={queryText}
                             autofocus={true}
                             onValueChange={(newQuery) => {
@@ -137,19 +161,23 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
                     }
                 />
                 <DialogActionsCM>
-                    <Button onClick={handleOK}>Ok</Button>
-                    <Button onClick={() => {
-                        setOpen(false);
-                    }}>Cancel</Button>
+                    <MuiButtonWithEnterHandler onClick={handleOK}>Ok</MuiButtonWithEnterHandler>
+                    <MuiButtonWithEnterHandler onClick={closeDialog}>Cancel</MuiButtonWithEnterHandler>
                 </DialogActionsCM>
             </DialogContent>
         </ReactiveInputDialog>
     </MarkdownEditorToolbarItem >;
 };
 
+function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
+    const ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, MarkdownMentionRegex);
+    return ret;
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const MarkdownEditorMentionCommand: MarkdownEditorCommand = {
-    id: "MarkdownEditorMentionCommand",
+    id: kCommandId,
     toolbarItem: MarkdownEditorMentionDialog,
     keyboardShortcutCondition: { ctrlKey: true, key: "m" },
+    deduceContext,
 };
