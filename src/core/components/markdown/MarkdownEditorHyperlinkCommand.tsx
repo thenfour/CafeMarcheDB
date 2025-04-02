@@ -7,43 +7,7 @@ import { MarkdownEditorCommand, MarkdownEditorCommandApi } from "./MarkdownEdito
 import { MarkdownEditorToolbarItem } from "./MarkdownEditorCommandUtils";
 
 
-interface RegionBounds {
-    refStart: number; // the index where [[ begins
-    refEnd: number;   // the index right after ]] ends
-}
-
-/**
- * Finds the reference (if any) that fully contains the given selection range.
- * Returns null if there's no reference containing the full selection.
- */
-export function findRegionBoundsForSelection(
-    text: string,
-    selectionStart: number,
-    selectionEnd: number
-): RegionBounds | null {
-    // This regex looks for [[...]] blocks, capturing everything from "[[" up to the matching "]]".
-    // It doesn't attempt to parse pipe chars, etc. — just identifies the bracketed segment.
-    // If you want the stricter pattern that excludes extra ']', you could do something like: /\[\[[^\]]*?\]\]/g
-    const pattern = /\[\[[^\]]*?\]\]/g;
-
-    let match: RegExpExecArray | null;
-
-    while ((match = pattern.exec(text)) !== null) {
-        // match.index is where "[[" starts
-        const refStart = match.index;
-        const refEnd = refStart + match[0].length; // index right after the entire "[[...]]"
-
-        // Check if the entire selection falls within this reference:
-        if (selectionStart >= refStart && selectionEnd <= refEnd) {
-            // Found a reference that fully contains the selection
-            return { refStart, refEnd };
-        }
-    }
-
-    // No match found that fully contains the selection
-    return null;
-}
-
+const kCommandId = "MarkdownHyperlinkCommand";
 
 
 interface ParsedMarkdownLink {
@@ -78,9 +42,9 @@ export function parseMarkdownLink(text: string): ParsedMarkdownLink {
 }
 
 
-/**
- * Toolbar item + dialog for inserting or editing a Markdown link: [caption](href).
- */
+// Toolbar item + dialog for inserting or editing a Markdown link: [caption](href).
+// todo: upon invoke, detect the link under the caret.
+// if so, adjust selection first to edit it.
 export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props) => {
     // Dialog state
     const [open, setOpen] = React.useState(false);
@@ -178,7 +142,7 @@ export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (pr
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const MarkdownHyperlinkCommand: MarkdownEditorCommand = {
-    id: "MarkdownHyperlinkCommand",
+    id: kCommandId,
     toolbarItem: InsertLinkDialog,
     keyboardShortcutCondition: { ctrlKey: true, key: "k" },
 };

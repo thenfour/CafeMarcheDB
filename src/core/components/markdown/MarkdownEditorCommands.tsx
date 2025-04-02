@@ -51,6 +51,7 @@ const StrikethroughCommand: MarkdownEditorCommand = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// todo: on invoke, detect the existing state, select the text, and pre-select the menu item
 const gHighlightCommands: SurroundTextCommandSpec[] = [
     {
         prefix: "{{highlight:",
@@ -90,6 +91,7 @@ const HighlightCommand: MarkdownEditorCommand = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// todo: on invoke, detect the existing state, select the text, and pre-select the menu item
 const gCharacterSizeCommands = [
     {
         prefix: "{{smaller:",
@@ -128,6 +130,8 @@ const CharacterSizeCommand: MarkdownEditorCommand = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// todo: on invoke, detect existing attachment.
+// if existing, select & show dialog. if not, show file picker dialog.
 const FileAttachCommand: MarkdownEditorCommand = {
     id: "fileAttach",
     toolbarTooltip: "File attach",
@@ -212,14 +216,13 @@ const DecreaseIndentCommand: MarkdownEditorCommand = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const SaveProgressCommand: MarkdownEditorCommand = {
     id: "SaveProgressCommand",
-    //toolbarTooltip: "Save (ctrl+enter)",
-    //toolbarIcon: <FormatIndentDecrease />    ,
     invoke: async (args) => {
         await args.api.saveProgress();
     },
     keyboardShortcutCondition: { ctrlKey: true, key: "enter" },
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const gSpecialCharacters = [
     { category: 'Musical Symbols', symbols: ['♪', '♫', '♩', '♬', '♭', '♮', '♯', '𝄞', '𝄢', '𝄡'] },
     { category: 'Arrows', symbols: ['→', '←', '↑', '↓', '↔', '↕', '⇒', '⇐', '⇑', '⇓', '⇔', '⇕'] },
@@ -238,6 +241,7 @@ const SpecialCharactersCommand: MarkdownEditorCommand = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// todo: detect the existing state, select the text, and pre-select the menu item
 const EncloseCommand: MarkdownEditorCommand = {
     id: "enclose",
     toolbarIcon: <span key={19} className='svg-like markdown-enclosed-icon'>A</span>,
@@ -249,6 +253,7 @@ const EncloseCommand: MarkdownEditorCommand = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// todo: make it like character size: detect the existing state, select the text, and pre-select the menu item
 const Heading1Command: MarkdownEditorCommand = {
     id: "Heading1Command",
     toolbarTooltip: "Heading 1 (ctrl+H)",
