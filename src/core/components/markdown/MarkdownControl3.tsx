@@ -4,16 +4,16 @@ import { Permission } from 'shared/permissions';
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
 import { CMDBUploadFile } from '../CMDBUploadFile';
+import { useDashboardContext } from "../DashboardContext";
 import { useSnackbar } from '../SnackbarContext';
 import { Markdown } from './Markdown';
-import { MarkdownCommandInvocationTriggerMap, MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from './MarkdownEditorCommandBase';
+import { MarkdownCommandInvocationTriggerMap, MarkdownEditorCommand, MarkdownEditorCommandApi } from './MarkdownEditorCommandBase';
 import { gMarkdownEditorCommandGroups } from './MarkdownEditorCommands';
 import { MarkdownEditorFormattingTips } from './MarkdownEditorFormattingTips';
 import { MarkdownLockIndicator } from './MarkdownLockIndicator';
 import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
-import { useDashboardContext } from "../DashboardContext";
 
 const kMaxImageDimension = 750;
 

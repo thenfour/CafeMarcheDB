@@ -65,9 +65,7 @@ model Permission {
 
   roles                              RolePermission[]
   visibilityForSongs                 Song[]
-  visibilityForSongComments          SongComment[]
   visibilityForEvents                Event[]
-  visibilityForEventComments         EventComment[]
   visibilityForFiles                 File[]
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
   visibilityForWikiPages             WikiPage[]
@@ -146,10 +144,7 @@ model User {
   uploadedFiles            File[]
   eventSegmentResponses    EventSegmentUserResponse[]
   eventResponses           EventUserResponse[]
-  activity                 Activity[]
   songCredits              SongCredit[]
-  eventComments            EventComment[]
-  songComments             SongComment[]
   instruments              UserInstrument[]
   createdCustomLinks       CustomLink[]
   createdMenuLinks         MenuLink[]
@@ -209,23 +204,6 @@ model Change {
   @@index([userId])
 }
 
-// activity & changes are different.
-// changes is really for minute database changes, for diagnostics / backup / emergency undo
-// activity is for analytics.
-model Activity {
-  id Int @id @default(autoincrement())
-
-  userId        Int?
-  sessionHandle String?
-
-  action String //
-  data   String? @db.MediumText // additional data for the action
-
-  happenedAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
-}
-
 model Session {
   id                 Int       @id @default(autoincrement())
   expiresAt          DateTime?
@@ -282,31 +260,12 @@ model Song {
 
   taggedFiles FileSongTag[]
   tags        SongTagAssociation[]
-  comments    SongComment[]
   credits     SongCredit[]
   songLists   EventSongListSong[]
 
   @@index([name])
   @@index([aliases])
   @@index([isDeleted])
-  @@index([visiblePermissionId])
-}
-
-model SongComment {
-  id     Int  @id @default(autoincrement())
-  songId Int
-  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade) // song deleted = comments too. songs are soft-delete.
-
-  userId    Int
-  createdAt DateTime
-  updatedAt DateTime
-  text      String   @db.MediumText
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) // users are soft delete; if an admin wants to force delete, then they can go through this.
-
-  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
-
-  @@index([songId])
   @@index([visiblePermissionId])
 }
 
@@ -549,7 +508,6 @@ model Event {
 
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
-  comments  EventComment[]
   segments  EventSegment[]
   songLists EventSongList[]
   responses EventUserResponse[]
@@ -697,23 +655,6 @@ model EventTagAssignment {
   eventTag   EventTag @relation(fields: [eventTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
 
   @@unique([eventId, eventTagId]) // 
-}
-
-model EventComment {
-  id        Int      @id @default(autoincrement())
-  eventId   Int
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade) // cascade delete association
-  userId    Int
-  createdAt DateTime
-  updatedAt DateTime
-  text      String   @db.MediumText
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
-
-  @@index([eventId])
-  @@index([visiblePermissionId])
 }
 
 model EventSongList {
@@ -1052,8 +993,9 @@ model WikiPageRevision {
   wikiPage      WikiPage  @relation(name: "AllRevisions", fields: [wikiPageId], references: [id], onDelete: Cascade)
   pageAsCurrent WikiPage? @relation(name: "CurrentRevision")
 
-  name    String @db.VarChar(768)
-  content String @db.MediumText
+  name             String  @db.VarChar(768)
+  content          String  @db.MediumText
+  consolidationKey String? // used to group revisions together
 
   createdByUserId Int?
   createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)

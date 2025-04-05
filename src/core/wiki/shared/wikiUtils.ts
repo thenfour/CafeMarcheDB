@@ -75,11 +75,18 @@ const ZWikiTitle = z.string().min(1);
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
-    baseRevisionId: z.number().nullable(),
-    lockId: z.string().nullable(), // you should always have a lock, but some weird cases like admin forcibly removing locks may cancel them.
+    baseRevisionId: z.number().nullable(), // used to return updateability status.
+    lockId: z.string().nullable(), // used to return updateability status
 });
 
 export type TGetWikiPageArgs = z.infer<typeof ZTGetWikiPageArgs>;
+
+////////////////////////////////////////////////////////////////
+export const ZTGetWikiPageRevisionsArgs = z.object({
+    canonicalWikiPath: ZWikiSlug,
+});
+
+export type TGetWikiPageRevisionsArgs = z.infer<typeof ZTGetWikiPageRevisionsArgs>;
 
 ////////////////////////////////////////////////////////////////
 export const ZTSetWikiPageVisibilityArgs = z.object({

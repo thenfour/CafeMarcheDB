@@ -1,13 +1,13 @@
-import { Button, DialogContent, DialogTitle, InputBase } from "@mui/material";
+import { DialogContent, DialogTitle, InputBase } from "@mui/material";
 import React from "react";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { IsNullOrWhitespace } from "shared/utils";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationAutocomplete } from "../setlistPlan/ItemAssociation";
+import { MarkdownWikiLinkRegexWithSurroundingWhitespace } from "./CMDBLinkMarkdownPlugin";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
 import { GetMatchUnderSelection, MarkdownEditorToolbarItem, MuiButtonWithEnterHandler, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
-import { MarkdownWikiLinkRegexWithSurroundingWhitespace } from "./CMDBLinkMarkdownPlugin";
 
 const kCommandId = "WikiReferenceCommand";
 

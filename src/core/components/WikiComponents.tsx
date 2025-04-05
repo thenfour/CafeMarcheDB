@@ -1,6 +1,6 @@
 
 import { useMutation } from "@blitzjs/rpc";
-import { LockOpen } from "@mui/icons-material";
+import { History, LockOpen } from "@mui/icons-material";
 import { Button, ListItemIcon, MenuItem } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
@@ -11,7 +11,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import wikiPageSetVisibility from "../wiki/mutations/wikiPageSetVisibility";
 import { UpdateWikiPageResultOutcome, WikiPath } from "../wiki/shared/wikiUtils";
 import { AdminContainer, AdminInspectObject, EventTextLink } from "./CMCoreComponents";
-import { DotMenu, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
+import { DotMenu, KeyValueTable, NameValuePair, simulateLinkClick } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { CMSelectNullBehavior } from "./CMSingleSelectDialog";
 import { CMTextInputBase } from "./CMTextField";
@@ -239,6 +239,16 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                     {gIconMap.Share()}
                 </ListItemIcon>
                 Copy link to wiki page
+            </MenuItem>
+
+            <MenuItem onClick={async () => {
+                simulateLinkClick(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
+                endMenuItemRef.current();
+            }}>
+                <ListItemIcon>
+                    <History />
+                </ListItemIcon>
+                View revision history
             </MenuItem>
 
             {props.wikiPageApi.lockStatus.isLockedInThisContext &&

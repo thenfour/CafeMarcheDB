@@ -88,8 +88,8 @@ export function useControlledTextArea(
     };
     const setSelectionRangeAsync = (start: number, end: number): Promise<void> => {
         return new Promise((resolve) => {
-            setTimeout(() => {
-                setSelectionRange(start, end);
+            setTimeout(async () => {
+                await setSelectionRange(start, end);
                 resolve();
             }, 0);
         });
