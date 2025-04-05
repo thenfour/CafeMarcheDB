@@ -16,6 +16,7 @@ export default resolver.pipe(
             currentUserId: ctx.session.userId,
             clientBaseRevisionId: args.baseRevisionId,
             clientLockId: args.lockId,
+            ctx: ctx,
             dbt: db
         });
         return ret;

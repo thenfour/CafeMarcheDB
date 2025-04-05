@@ -448,3 +448,19 @@ test cases:
 .MarkdownLockIndicator.lockedInThisContext {
     color: green;
 }
+
+/* -  --------------------------------- */
+.wikiRevisionHistoryPage tr.revisionItem {}
+
+.wikiRevisionHistoryPage .revisionItem.selected {
+    --selection-color: #ddd;
+    background-color: var(--selection-color);
+}
+
+.wikiRevisionHistoryPage .revisionItem.selectedB {
+    --selection-color: #dfd;
+}
+
+.wikiRevisionHistoryPage .revisionItem.selectedA {
+    --selection-color: #fdd;
+}

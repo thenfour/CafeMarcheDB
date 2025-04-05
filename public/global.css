@@ -19,6 +19,10 @@
   --ff-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Liberation Mono", Menlo, Monaco, Consolas, monospace;
 }
 
+pre {
+  font-family: var(--ff-mono);
+}
+
 body {
   line-height: unset;
   letter-spacing: unset;
@@ -348,6 +352,10 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   /* the simplest way to deal with responsive layout is to just keep everything exactly the same width
   representing a comfortable mobile experience.*/
   width: var(--content-max-width);
+}
+
+.contentSection.fullWidth {
+  width: 100%;
 }
 
 .contentSection>.header {

@@ -89,6 +89,13 @@ export const ZTGetWikiPageRevisionsArgs = z.object({
 export type TGetWikiPageRevisionsArgs = z.infer<typeof ZTGetWikiPageRevisionsArgs>;
 
 ////////////////////////////////////////////////////////////////
+export const ZTGetWikiPageRevisionArgs = z.object({
+    revisionId: z.number().nullable(), // if null, returns null.
+});
+
+export type TGetWikiPageRevisionArgs = z.infer<typeof ZTGetWikiPageRevisionArgs>;
+
+////////////////////////////////////////////////////////////////
 export const ZTSetWikiPageVisibilityArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
     visiblePermissionId: z.number().nullable(),

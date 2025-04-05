@@ -401,14 +401,6 @@ export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>(
         instruments: true,
         tags: true,
     }
-    // include: {
-    //     //instruments: UserInstrumentArgs,
-    //     instruments: {
-    //         include: {
-    //             instrument
-    //         }
-    //     }
-    // }
 });
 
 export type UserWithInstrumentsPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;

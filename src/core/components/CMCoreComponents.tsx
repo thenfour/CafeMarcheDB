@@ -188,29 +188,6 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 //export type EventDetailVerbosity = "compact" | "default" | "verbose";
 
 
-
-
-
-export interface UserChipProps {
-    value: db3.UserPayload_Name | null;
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    onClick?: () => void;
-    className?: string;
-};
-
-export const UserChip = (props: UserChipProps) => {
-    return <CMChip
-        variation={props.variation}
-        size={props.size}
-        onClick={props.onClick}
-        className={props.className}
-    >
-        {props.value?.name || "--"}
-    </CMChip>
-}
-
-
 export interface InstrumentChipProps {
     value: db3.InstrumentPayloadMinimum;
     variation?: ColorVariationSpec;

@@ -1,18 +1,32 @@
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { GetWikiPageUpdatability, WikiPageApiPayloadArgs, WikiPageData, wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { ProcessEventDescriptionForWikiPage } from "./wikiNamespaceEventDescription";
+import { AuthenticatedCtx } from "blitz";
+import { GetUserVisibilityWhereExpression } from "src/core/db3/shared/db3Helpers";
+import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 
 interface GetWikiPageCoreArgs {
     canonicalWikiSlug: string;
     currentUserId: number | null;
     clientBaseRevisionId: number | null;
     clientLockId: string | null;
+    ctx: AuthenticatedCtx;
     dbt: TransactionalPrismaClient;
 };
 
-export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ...args }: GetWikiPageCoreArgs): Promise<WikiPageData> {
+export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: GetWikiPageCoreArgs): Promise<WikiPageData> {
+
+    const currentUser = (await getCurrentUserCore(ctx))!;
+    const visibilityPermission = GetUserVisibilityWhereExpression({
+        id: currentUser.id,
+        roleId: currentUser.roleId,
+    });
+
     const page = await dbt.wikiPage.findUnique({
-        where: { slug: canonicalWikiSlug },
+        where: {
+            slug: canonicalWikiSlug,
+            ...visibilityPermission
+        },
         ...WikiPageApiPayloadArgs,
     });
 

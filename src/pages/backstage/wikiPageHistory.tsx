@@ -1,38 +1,155 @@
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
+import { Button, DialogContent, DialogTitle, Tooltip } from "@mui/material";
+import { Prisma } from "db";
+import React, { Suspense } from "react";
+import ReactDiffViewer from 'react-diff-viewer';
+import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
+import { CalcRelativeTiming, DateTimeRange } from "shared/time";
+import { CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
+import { Markdown } from "src/core/components/markdown/Markdown";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { UserChip } from "src/core/components/userChip";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision";
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
+import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
+
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
+
+interface WikiDiffViewerProps {
+    revisionIdLeft: number | null;
+    revisionIdRight: number;
+};
+
+const WikiDiffViewer = (props: WikiDiffViewerProps) => {
+    const [left, leftX] = useQuery(getWikiPageRevision, { revisionId: props.revisionIdLeft });
+    const [right, rightX] = useQuery(getWikiPageRevision, { revisionId: props.revisionIdRight });
+
+    return <ReactDiffViewer
+        oldValue={left?.content || ""}
+        newValue={right?.content || ""}
+        splitView={true}
+        leftTitle={`"${left?.name}" ${left?.createdAt.toLocaleString()}`}
+        rightTitle={`"${right?.name}" ${right?.createdAt.toLocaleString()}`}
+        hideLineNumbers={true}
+    />;
+};
+
+const WikiRevisionPreviewDialog = (props: { revisionId: number, onClose: () => void }) => {
+    const [revision, revisionX] = useQuery(getWikiPageRevision, { revisionId: props.revisionId });
+    return <ReactiveInputDialog onCancel={props.onClose} defaultAction={props.onClose}>
+        <DialogTitle>Previewing {revision?.name} @ {revision?.createdAt.toLocaleString()}</DialogTitle>
+        <DialogContent>
+            <Markdown markdown={revision?.content || ""} />
+            <DialogActionsCM>
+                <Button onClick={props.onClose} color="primary">
+                    Close
+                </Button>
+            </DialogActionsCM>
+        </DialogContent>
+    </ReactiveInputDialog>;
+};
+
+const WikiRevisionPreviewButton = (props: { revisionId: number }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    return <>
+        <CMSmallButton onClick={() => setIsOpen(!isOpen)}>
+            <span>{gIconMap.Visibility()}</span>
+        </CMSmallButton>
+        <Suspense>
+            {isOpen && <WikiRevisionPreviewDialog revisionId={props.revisionId} onClose={() => setIsOpen(false)} />}
+        </Suspense>
+    </>;
+};
 
 const WikiRevisionHistoryPageContent = () => {
     const canonicalWikiPath = (useRouterQuery()["path"] || "") as string;
+    const wikiPath = wikiParseCanonicalWikiPath(canonicalWikiPath);
     const [pageWithRevisions, qExtra] = useQuery(getWikiPageRevisions, { canonicalWikiPath });
-    return <div>
-        <h1>Wiki Page Revision History</h1>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", flexDirection: "row" }}>
-                <div style={{ flexGrow: 1 }}><strong>Page:</strong> {pageWithRevisions?.currentRevision?.name || pageWithRevisions?.slug}</div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "row" }}>
-                <div style={{ flexGrow: 1 }}>
-                    <strong>Updated by:</strong>
-                    {pageWithRevisions?.currentRevision?.createdByUserId}
-                    {pageWithRevisions?.revisions.map((rev) => {
-                        return <div key={rev.id} style={{ display: "flex", flexDirection: "row" }}>
-                            <div style={{ flexGrow: 1 }}>
-                                <strong>{rev.name}</strong> by {rev.createdByUserId} on {rev.createdAt.toString()}
-                            </div>
-                            <div style={{ flexGrow: 1 }}>
-                                <strong>Revision ID:</strong> {rev.id}
-                            </div>
-                        </div>;
-                    })}
-                </div>
+    if (!pageWithRevisions) {
+        return <div>Page not found</div>;
+    }
+
+    const currentRevision = pageWithRevisions.currentRevision!;
+    const revisions = toSorted(pageWithRevisions?.revisions || [], (a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const [selectedRevisionA, setSelectedRevisionA] = React.useState<Prisma.WikiPageRevisionGetPayload<{}> | null>(null);
+    const [selectedRevisionB, setSelectedRevisionB] = React.useState<Prisma.WikiPageRevisionGetPayload<{}>>(currentRevision);
+
+    return <div className="contentSection fullWidth wikiRevisionHistoryPage">
+        <h1>
+            <a href={wikiPath.uriRelativeToHost} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</a>
+        </h1>
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Compare</th>
+                    <th>User</th>
+                    <th>When</th>
+                </tr>
+            </thead>
+            <tbody>
+                {revisions.map((rev, index) => {
+                    // find the prev revision (the next in the array)
+                    const prevRev = revisions[index + 1] || null;
+                    const timing = CalcRelativeTiming(new Date(), new DateTimeRange({ startsAtDateTime: rev.createdAt, isAllDay: false, durationMillis: 0 }));
+                    const timeLabel = rev.createdAt.toLocaleString();
+                    return <tr
+                        key={rev.id}
+                        //onClick={() => handleClickRevision(rev)}
+                        className={`revisionItem ${rev.id === selectedRevisionA?.id ? "selected selectedA" : ""} ${rev.id === selectedRevisionB?.id ? "selected selectedB" : ""}`}
+                    >
+                        <td>
+                            <WikiRevisionPreviewButton revisionId={rev.id} />
+                        </td>
+                        <td>
+                            <CMSmallButton onClick={() => setSelectedRevisionA(rev)} >Left</CMSmallButton>
+                            <CMSmallButton onClick={() => setSelectedRevisionB(rev)} >Right</CMSmallButton>
+                            <CMSmallButton
+                                style={{ visibility: rev.id === currentRevision.id ? "hidden" : "visible" }}
+                                onClick={() => {
+                                    setSelectedRevisionA(rev);
+                                    setSelectedRevisionB(currentRevision);
+                                }}
+                            >
+                                Compare with current
+                            </CMSmallButton>
+                            <CMSmallButton onClick={() => {
+                                setSelectedRevisionA(prevRev);
+                                setSelectedRevisionB(rev);
+                            }}>
+                                Compare with prev
+                            </CMSmallButton>
+                        </td>
+                        <td>
+                            <UserChip userId={rev.createdByUserId} />
+                        </td>
+                        <td>
+                            <Tooltip title={timeLabel} disableInteractive><span>{timeLabel} {timing.label}</span></Tooltip>
+                            {rev.id === currentRevision.id ? <i>(Current version)</i> : ""}
+                        </td>
+                    </tr>;
+                })}
+            </tbody>
+        </table>
+        <div className="WikiRevisionDiffContainer">
+            <div className="header">Comparing 2 versions:</div>
+            <div className="diffContainer">
+                <Suspense>
+                    <WikiDiffViewer
+                        revisionIdLeft={selectedRevisionA?.id || null}
+                        revisionIdRight={selectedRevisionB.id}
+
+                    />
+                </Suspense>
             </div>
         </div>
-    </div>;
+    </div>
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
