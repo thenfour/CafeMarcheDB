@@ -1011,7 +1011,9 @@ model WikiPageRevision {
   sizeChars     Int?
   prevSizeChars Int?
 
+  @@unique([consolidationKey])
   @@index([name])
+  @@index([consolidationKey])
   @@index([wikiPageId])
 }
 

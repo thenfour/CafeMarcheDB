@@ -205,7 +205,7 @@ const WikiRevisionHistoryPageContent = () => {
                             <UserChip userId={rev.createdByUserId} />
                         </td>
                         <td>
-                            <Tooltip title={timeLabel} disableInteractive><span>{timeLabel} {timing.label}</span></Tooltip>
+                            <Tooltip title={<div>{timeLabel} -- {rev.consolidationKey}</div>} disableInteractive><span>{timeLabel} {timing.label}</span></Tooltip>
                             {rev.id === currentRevision.id ? <i>(Current version)</i> : ""}
                         </td>
                     </tr>;
