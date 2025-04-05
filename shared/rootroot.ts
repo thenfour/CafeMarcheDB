@@ -199,9 +199,11 @@ export function calculateMatchStrength(text: string, keyword: string): number {
         score += 2;
     }
 
-    // Bonus for additional occurrences (each extra occurrence adds 0.5).
+    // bonus for multiple occurrences
     const occurrences = lowerText.split(lowerKeyword).length - 1;
-    score += (occurrences - 1) * 0.5;
+    if (occurrences > 1) {
+        score += 0.5;
+    }
 
     // scale by keyword length. short keywords (1 & 2 chars) are less strong
     if (keyword.length < 3) {

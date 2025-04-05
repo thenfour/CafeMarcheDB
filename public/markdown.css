@@ -464,3 +464,19 @@ test cases:
 .wikiRevisionHistoryPage .revisionItem.selectedA {
     --selection-color: #fdd;
 }
+
+.wikiRevisionHistoryPage .changeStatsRow {
+    font-family: var(--ff-mono);
+}
+
+.wikiRevisionHistoryPage .changeStatsRow .added {
+    background-color: white;
+    padding: 4px;
+    color: #4c4;
+}
+
+.wikiRevisionHistoryPage .changeStatsRow .removed {
+    background-color: white;
+    padding: 4px;
+    color: #f99;
+}

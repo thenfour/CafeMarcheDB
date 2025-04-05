@@ -9,7 +9,7 @@ import { IsEntirelyIntegral } from "shared/utils";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
 import { getDefaultVisibilityPermission } from "src/core/db3/server/serverPermissionUtils";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
+import { calculateDiff, GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 
 const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<GetWikiPageUpdatabilityResult> => {
 
@@ -24,6 +24,8 @@ const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: Wi
         return updatability;
     }
 
+    const stats = calculateDiff(currentPage.currentRevision?.content || "", args.content);
+
     // Page exists, add new revision
     const newRevision = await dbt.wikiPageRevision.create({
         data: {
@@ -31,6 +33,18 @@ const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: Wi
             content: args.content,
             createdByUserId: currentUserId,
             wikiPageId: currentPage.id,
+
+            lineCount: stats.newLines,
+            prevLineCount: stats.oldLines,
+            linesAdded: stats.linesAdded,
+            linesRemoved: stats.linesRemoved,
+
+            prevSizeChars: stats.oldSize,
+            sizeChars: stats.newSize,
+
+            charsAdded: stats.charsAdded,
+            charsRemoved: stats.charsRemoved,
+
         },
         ...WikiPageApiRevisionPayloadArgs,
     });

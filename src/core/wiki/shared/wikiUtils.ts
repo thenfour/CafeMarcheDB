@@ -1,6 +1,7 @@
 import { Prisma } from "db";
 import { z } from "zod";
 import { slugify } from "../../../../shared/rootroot";
+import { diffChars, diffLines } from 'diff';
 
 export const enum SpecialWikiNamespace {
     EventDescription = "EventDescription",
@@ -322,4 +323,48 @@ export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClient
     };
 };
 
+export interface DiffStats {
+    oldSize: number;
+    newSize: number;
+    sizeDiff: number;
+    charsAdded: number;
+    charsRemoved: number;
 
+    oldLines: number;
+    newLines: number;
+    linesAdded: number;
+    linesRemoved: number;
+}
+
+export function calculateDiff(oldContent: string, newContent: string): DiffStats {
+    const ret = {
+        oldSize: oldContent.length,
+        newSize: newContent.length,
+        sizeDiff: newContent.length - oldContent.length,
+        oldLines: oldContent.split('\n').length,
+        newLines: newContent.split('\n').length,
+        linesAdded: 0,
+        linesRemoved: 0,
+        charsAdded: 0,
+        charsRemoved: 0,
+    };
+    const charDiff = diffChars(oldContent, newContent);
+    for (const part of charDiff) {
+        if (part.added) {
+            ret.charsAdded += part.count || 0;
+        }
+        if (part.removed) {
+            ret.charsRemoved += part.count || 0;
+        }
+    }
+    const lineDiff = diffLines(oldContent, newContent);
+    for (const part of lineDiff) {
+        if (part.added) {
+            ret.linesAdded += part.count || 0;
+        }
+        if (part.removed) {
+            ret.linesRemoved += part.count || 0;
+        }
+    }
+    return ret;
+}

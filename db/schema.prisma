@@ -1001,6 +1001,16 @@ model WikiPageRevision {
   createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
+  linesAdded    Int?
+  linesRemoved  Int?
+  prevLineCount Int?
+  lineCount     Int?
+
+  charsAdded    Int?
+  charsRemoved  Int?
+  sizeChars     Int?
+  prevSizeChars Int?
+
   @@index([name])
   @@index([wikiPageId])
 }

@@ -1,5 +1,5 @@
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
+import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Button, DialogContent, DialogTitle, Tooltip } from "@mui/material";
 import { Prisma } from "db";
 import React, { Suspense } from "react";
@@ -8,12 +8,17 @@ import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
+import { useMessageBox } from "src/core/components/context/MessageBoxContext";
+import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { useSnackbar } from "src/core/components/SnackbarContext";
 import { UserChip } from "src/core/components/userChip";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import deleteWikiRevision from "src/core/wiki/mutations/deleteWikiRevision";
+import rebuildWikiPageRevisionStats from "src/core/wiki/mutations/rebuildWikiPageRevisionStats";
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision";
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
 import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
@@ -66,9 +71,47 @@ const WikiRevisionPreviewButton = (props: { revisionId: number }) => {
     </>;
 };
 
+const WikiRevisionDeleteButton = (props: { revision: Prisma.WikiPageRevisionGetPayload<{}>, onChanged: () => void }) => {
+    const messageBox = useMessageBox();
+    const snackbar = useSnackbar();
+    const [deleteMutation] = useMutation(deleteWikiRevision);
+
+    const handleClickDelete = async () => {
+        if ("yes" === await messageBox.showMessage({
+            message: `Are you sure you want to delete the revision "${props.revision.name}" from ${props.revision.createdAt.toLocaleString()}?`,
+            buttons: ["yes", "cancel"]
+        })) {
+            snackbar.invokeAsync(async () => {
+                await deleteMutation({ revisionId: props.revision.id });
+            });
+        }
+    };
+    return <CMSmallButton onClick={handleClickDelete} >Delete this revision</CMSmallButton>
+};
+
+const RebuildStatsButton = (props: { onChanged: () => void }) => {
+    const snackbar = useSnackbar();
+    const messageBox = useMessageBox();
+    const [rebuildStats] = useMutation(rebuildWikiPageRevisionStats);
+    const handleClick = async () => {
+        if ("yes" !== await messageBox.showMessage({
+            message: "Are you sure you want to rebuild all wiki page stats?",
+            buttons: ["yes", "cancel"]
+        })) {
+            return;
+        }
+        await snackbar.invokeAsync(async () => {
+            await rebuildStats({});
+            props.onChanged();
+        });
+    };
+    return <Button onClick={handleClick}>Rebuild all stats</Button>;
+};
+
 const WikiRevisionHistoryPageContent = () => {
     const canonicalWikiPath = (useRouterQuery()["path"] || "") as string;
     const wikiPath = wikiParseCanonicalWikiPath(canonicalWikiPath);
+    const dashboardContext = useDashboardContext();
     const [pageWithRevisions, qExtra] = useQuery(getWikiPageRevisions, { canonicalWikiPath });
     if (!pageWithRevisions) {
         return <div>Page not found</div>;
@@ -81,6 +124,9 @@ const WikiRevisionHistoryPageContent = () => {
     const [selectedRevisionB, setSelectedRevisionB] = React.useState<Prisma.WikiPageRevisionGetPayload<{}>>(currentRevision);
 
     return <div className="contentSection fullWidth wikiRevisionHistoryPage">
+        {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <RebuildStatsButton onChanged={() => {
+            qExtra.refetch();
+        }} />}
         <h1>
             <a href={wikiPath.uriRelativeToHost} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</a>
         </h1>
@@ -89,6 +135,7 @@ const WikiRevisionHistoryPageContent = () => {
                 <tr>
                     <th></th>
                     <th>Compare</th>
+                    <th>Changed lines</th>
                     <th>User</th>
                     <th>When</th>
                 </tr>
@@ -101,11 +148,13 @@ const WikiRevisionHistoryPageContent = () => {
                     const timeLabel = rev.createdAt.toLocaleString();
                     return <tr
                         key={rev.id}
-                        //onClick={() => handleClickRevision(rev)}
                         className={`revisionItem ${rev.id === selectedRevisionA?.id ? "selected selectedA" : ""} ${rev.id === selectedRevisionB?.id ? "selected selectedB" : ""}`}
                     >
                         <td>
                             <WikiRevisionPreviewButton revisionId={rev.id} />
+                            {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <WikiRevisionDeleteButton revision={rev} onChanged={() => {
+                                qExtra.refetch();
+                            }} />}
                         </td>
                         <td>
                             <CMSmallButton onClick={() => setSelectedRevisionA(rev)} >Left</CMSmallButton>
@@ -127,6 +176,32 @@ const WikiRevisionHistoryPageContent = () => {
                             </CMSmallButton>
                         </td>
                         <td>
+                            <Tooltip title={
+                                <div>
+                                    {(rev.linesAdded || rev.linesRemoved) && <div className="changeStatsRow">
+                                        {rev.linesRemoved ? <span className="removed">-{rev.linesRemoved}</span> : ""}
+                                        {rev.linesAdded ? <span className="added">+{rev.linesAdded}</span> : ""}
+                                        lines
+                                    </div>}
+                                    {(rev.charsAdded || rev.charsRemoved) && <div className="changeStatsRow">
+                                        {rev.charsRemoved ? <span className="removed">-{rev.charsRemoved}</span> : ""}
+                                        {rev.charsAdded ? <span className="added">+{rev.charsAdded}</span> : ""}
+                                        chars
+                                    </div>}
+                                    <div className="changeStatsRow">
+                                        {rev.sizeChars ? <>{rev.sizeChars?.toLocaleString()} chars</> : ""}
+                                    </div>
+                                </div>
+                            } disableInteractive>
+                                <div>
+                                    {(rev.linesAdded || rev.linesRemoved) && <div className="changeStatsRow">
+                                        {rev.linesRemoved ? <span className="removed">-{rev.linesRemoved}</span> : ""}
+                                        {rev.linesAdded ? <span className="added">+{rev.linesAdded}</span> : ""}
+                                    </div>}
+                                </div>
+                            </Tooltip>
+                        </td>
+                        <td>
                             <UserChip userId={rev.createdByUserId} />
                         </td>
                         <td>
@@ -144,7 +219,6 @@ const WikiRevisionHistoryPageContent = () => {
                     <WikiDiffViewer
                         revisionIdLeft={selectedRevisionA?.id || null}
                         revisionIdRight={selectedRevisionB.id}
-
                     />
                 </Suspense>
             </div>
