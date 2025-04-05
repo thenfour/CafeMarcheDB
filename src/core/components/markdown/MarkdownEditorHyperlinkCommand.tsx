@@ -3,7 +3,7 @@ import React from "react";
 import { IsNullOrWhitespace, isValidURL } from "shared/utils";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
-import { MarkdownEditorCommand, MarkdownEditorCommandApi } from "./MarkdownEditorCommandBase";
+import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
 import { GetMatchUnderSelection, MarkdownEditorToolbarItem } from "./MarkdownEditorCommandUtils";
 
 
@@ -16,8 +16,18 @@ interface ParsedMarkdownLink {
     linkCaption: string;
 }
 
-const urlPattern = /^(https?:\/\/[^\s/$.?#].[^\s]*)$/i;
-const markdownHyperlinkPattern = /^\[([^\]]+)\]\(([^)]+)\)$/;
+const markdownHyperlinkPattern = /^\[([^\]]+)\]\(([^)]+)\)/;
+const markdownHyperlinkPatternWithSurroundingWhitespace = /\s*^\[([^\]]+)\]\(([^)]+)\)\s*/g;
+
+// regex pattern to match URLs (of any protocol - http, https, sftp, et al, and possibly relative URLs)
+// const urlPattern = /(?:[a-zA-Z][a-zA-Z0-9+\-.]*:\/\/\S+|\/\S+)/;
+// const urlPatternWithSurroundingWhitespace = /\s*(?:[a-zA-Z][a-zA-Z0-9+\-.]*:\/\/\S+|\/\S+)\s*/g;
+// while it's tempting to use regex for every supported url type, relative included, it can be too aggressive in matching.
+// for example [[special/announcements]] will match as a URL of "/announcements]]".
+// simplest to just support raw http/https URLs for context deduction.
+// https://stackoverflow.com/a/6927878/402169
+const urlPattern = /\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/gi;
+const urlPatternWithSurroundingWhitespace = /\s*\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))\s*/gi;
 
 /**
  * Checks if `text` is in the form [caption](url).
@@ -52,6 +62,25 @@ export function parseMarkdownLink(text: string): ParsedMarkdownLink {
     };
 }
 
+function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
+    let ret = GetMatchUnderSelection(
+        api.controlledTextArea.getText(),
+        api.controlledTextArea.selectionStart,
+        api.controlledTextArea.selectionEnd,
+        markdownHyperlinkPatternWithSurroundingWhitespace,
+        { trimSurroundingWhitespace: true }
+    );
+    if (ret) return ret;
+    ret = GetMatchUnderSelection(
+        api.controlledTextArea.getText(),
+        api.controlledTextArea.selectionStart,
+        api.controlledTextArea.selectionEnd,
+        urlPatternWithSurroundingWhitespace,
+        { trimSurroundingWhitespace: true }
+    );
+    return ret;
+}
+
 
 // Toolbar item + dialog for inserting or editing a Markdown link: [caption](href).
 // todo: upon invoke, detect the link under the caret.
@@ -80,6 +109,13 @@ export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (pr
         setLinkCaption(defaultCaption);
     }, [defaultCaption]);
 
+    const closeDialog = () => {
+        setOpen(false);
+        setTimeout(() => {
+            props.api.textArea.focus();
+        }, 0);
+    };
+
     const handleOK = async () => {
         // Example rules:
         // - If there's no href, do nothing or insert a placeholder
@@ -95,8 +131,21 @@ export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (pr
             }
         }
 
-        setOpen(false);
+        closeDialog();
     };
+
+    const invoke = async () => {
+        const context = deduceContext(props.api);
+        if (context) {
+            await props.api.controlledTextArea.setSelectionRange(context.start, context.end);
+        }
+        setOpen(true);
+    };
+
+    React.useEffect(() => {
+        if (!props.api.invocationTriggerMap[kCommandId]) return; // avoid initial trigger
+        void invoke();
+    }, [props.api.invocationTriggerMap[kCommandId]]);
 
     return (
         <MarkdownEditorToolbarItem
@@ -107,11 +156,9 @@ export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (pr
                 </svg>
 
             }
-            onClick={() => {
-                setOpen(true);
-            }}
+            onClick={invoke}
         >
-            <ReactiveInputDialog open={open} onCancel={() => setOpen(false)}>
+            <ReactiveInputDialog open={open} onCancel={closeDialog}>
                 <DialogTitle>Insert a hyperlink</DialogTitle>
                 <DialogContent>
                     <NameValuePair
@@ -139,7 +186,7 @@ export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (pr
                     />
                     <DialogActionsCM>
                         <Button onClick={handleOK}>Ok</Button>
-                        <Button onClick={() => setOpen(false)}>Cancel</Button>
+                        <Button onClick={closeDialog}>Cancel</Button>
                     </DialogActionsCM>
                 </DialogContent>
             </ReactiveInputDialog>
@@ -155,10 +202,5 @@ export const MarkdownHyperlinkCommand: MarkdownEditorCommand = {
     id: kCommandId,
     toolbarItem: InsertLinkDialog,
     keyboardShortcutCondition: { ctrlKey: true, key: "k" },
-    deduceContext: (api) => {
-        let ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, markdownHyperlinkPattern);
-        if (ret) return ret;
-        ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, urlPattern);
-        return ret;
-    }
+    deduceContext,
 };

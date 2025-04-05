@@ -102,6 +102,13 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
         void invoke();
     }, [props.api.invocationTriggerMap[kCommandId]]);
 
+    const closeDialog = () => {
+        setOpen(false);
+        setTimeout(() => {
+            props.api.textArea.focus();
+        }, 0);
+    };
+
     const handleOK = async () => {
         if (matchingItem) {
             const path = `${matchingItem.itemType}:${matchingItem.id}`;
@@ -114,14 +121,7 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
             }
 
         }
-        setOpen(false);
-    };
-
-    const closeDialog = () => {
-        setOpen(false);
-        setTimeout(() => {
-            props.api.textArea.focus();
-        }, 0);
+        closeDialog();
     };
 
     return <MarkdownEditorToolbarItem

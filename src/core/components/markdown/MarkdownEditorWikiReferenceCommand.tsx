@@ -50,19 +50,19 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationT
         }
     }
 
+    const closeDialog = () => {
+        setOpen(false);
+        setTimeout(() => {
+            props.api.textArea.focus();
+        }, 0);
+    };
+
     const invoke = async () => {
         const context = deduceContext(props.api);
         if (context) {
             await props.api.controlledTextArea.setSelectionRange(context.start, context.end);
         }
         setOpen(true);
-    };
-
-    const closeDialog = () => {
-        setOpen(false);
-        setTimeout(() => {
-            props.api.textArea.focus();
-        }, 0);
     };
 
     const handleOK = async () => {
