@@ -38,7 +38,10 @@
 // }
 
 export const MarkdownMentionRegex = /\[\[(event|song):(\d+)\|?(.*?)\]\]/g;
+export const MarkdownMentionRegexWithSurroundingWhitespace = /\s*\[\[(event|song):(\d+)\|?(.*?)\]\]\s*/g;
+
 export const MarkdownWikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+export const MarkdownWikiLinkRegexWithSurroundingWhitespace = /\s*\[\[([^\]|]+)(?:\|([^\]]+))?\]\]\s*/g;
 
 export function CMDBLinkMarkdownPlugin(md) {
     // Save the current text renderer (which might be the default, or from another plugin)

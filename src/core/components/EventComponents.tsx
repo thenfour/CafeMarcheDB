@@ -1016,7 +1016,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
 
     const segStats = GetSegmentResponseStats(shownSegments, dashboardContext);
 
-    return <div>
+    return <div style={{ overflowX: "auto" }}>
         {/* <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" /> */}
 
         {showCancelledSegmentsControls && <FormControlLabel

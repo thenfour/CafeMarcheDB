@@ -90,7 +90,7 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
 async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
     const now = new Date();
     const sevenDaysFromNow = new Date(now);
-    sevenDaysFromNow.setDate(now.getDate() + 6);
+    sevenDaysFromNow.setDate(now.getDate() + 7); // 7 days allows you to see next week's rehearsal just after the last one ends.
 
     const twentyFourHoursAgo = new Date(now);
     twentyFourHoursAgo.setDate(now.getDate() - 1);

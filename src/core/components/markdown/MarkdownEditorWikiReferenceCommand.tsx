@@ -7,9 +7,20 @@ import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationAutocomplete } from "../setlistPlan/ItemAssociation";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
 import { GetMatchUnderSelection, MarkdownEditorToolbarItem, MuiButtonWithEnterHandler, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
-import { MarkdownWikiLinkRegex } from "./CMDBLinkMarkdownPlugin";
+import { MarkdownWikiLinkRegexWithSurroundingWhitespace } from "./CMDBLinkMarkdownPlugin";
 
 const kCommandId = "WikiReferenceCommand";
+
+function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
+    const ret = GetMatchUnderSelection(
+        api.controlledTextArea.getText(),
+        api.controlledTextArea.selectionStart,
+        api.controlledTextArea.selectionEnd,
+        MarkdownWikiLinkRegexWithSurroundingWhitespace,
+        { trimSurroundingWhitespace: true }
+    );
+    return ret;
+};
 
 const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationTrigger: number }> = (props) => {
     const [open, setOpen] = React.useState(false);
@@ -40,8 +51,8 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationT
     }
 
     const invoke = async () => {
-        if (props.api.contextMap[kCommandId]) {
-            const context = props.api.contextMap[kCommandId]!;
+        const context = deduceContext(props.api);
+        if (context) {
             await props.api.controlledTextArea.setSelectionRange(context.start, context.end);
         }
         setOpen(true);
@@ -130,11 +141,6 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationT
             </DialogContent>
         </ReactiveInputDialog>
     </MarkdownEditorToolbarItem >;
-};
-
-function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
-    const ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, MarkdownWikiLinkRegex);
-    return ret;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

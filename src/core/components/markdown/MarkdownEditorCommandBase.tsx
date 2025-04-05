@@ -1,9 +1,9 @@
 import { DashboardContextData } from "../DashboardContext";
 import { ControlledTextAreaAPI } from "./useControlledTextArea";
 
-export type MarkdownContextMap = {
-    [commandId: string]: MarkdownTokenContext | undefined; // key = command id.
-};
+// export type MarkdownContextMap = {
+//     [commandId: string]: MarkdownTokenContext | undefined; // key = command id.
+// };
 
 // some comands can't really just use invoke() to do a command. like the "mentions",
 // which uses a dialog in its toolbar item. so the toolbar item needs to be able to detect
@@ -19,7 +19,7 @@ export interface MarkdownEditorCommandApi {
     controlledTextArea: ControlledTextAreaAPI;
     nativeFileInputRef: HTMLInputElement;
     saveProgress: () => Promise<void>;
-    contextMap: MarkdownContextMap;
+    //contextMap: MarkdownContextMap;
     invocationTriggerMap: MarkdownCommandInvocationTriggerMap;
 };
 

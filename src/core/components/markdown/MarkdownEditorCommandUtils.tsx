@@ -194,7 +194,8 @@ export function parseMarkdownReference(text: string): ParsedMarkdownReference {
 }
 
 
-export function GetMatchUnderSelection(text: string, selectionStart: number, selectionEnd: number, regexPattern: RegExp): undefined | MarkdownTokenContext {
+// if you want to trim surrounding whitespace, make sure your regex pattern has the \s* at the start and end of the regex. this is not done by default because it would be too slow for large text areas.
+export function GetMatchUnderSelection(text: string, selectionStart: number, selectionEnd: number, regexPattern: RegExp, options?: { trimSurroundingWhitespace?: boolean }): undefined | MarkdownTokenContext {
     // does the current selection land entirely within a mention (or exactly encapulates one?)
     // to do this, use a regex to find all occurrences of mentions in the text, and check if the current selection is within one of them.
     const matches = [...text.matchAll(regexPattern)];
@@ -204,17 +205,24 @@ export function GetMatchUnderSelection(text: string, selectionStart: number, sel
     }
     // now check if the current selection is within one of the matches
     for (const match of matches) {
-        const matchStart = match.index!;
-        const matchEnd = matchStart + match[0]!.length;
+        const matchText = match[0]!;
+        let matchStart = match.index!;
+        let matchEnd = matchStart + matchText.length;
         if (selectionStart >= matchStart && selectionEnd <= matchEnd) {
-            //console.log(`in a mention [${selectionStart},${selectionEnd}] : ${text.slice(matchStart, matchEnd)}`);
+            // if trimSurroundingWhitespace is true, trim the matchStart and matchEnd to the first non-whitespace character.
+            if (options?.trimSurroundingWhitespace) {
+                // trim matchStart.
+                const matchTextWithTrimmedStart = matchText.trimStart();
+                matchStart += matchText.length - matchTextWithTrimmedStart.length;
+                const matchTextWithTrimmedEnd = matchTextWithTrimmedStart.trimEnd();
+                matchEnd -= matchTextWithTrimmedStart.length - matchTextWithTrimmedEnd.length;
+            }
             return {
                 start: matchStart,
                 end: matchEnd,
             };
         }
     }
-    //console.log(`not in any of the existing mentions [${selectionStart},${selectionEnd}]`);
     return undefined;
 }
 

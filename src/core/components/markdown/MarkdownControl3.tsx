@@ -6,7 +6,7 @@ import { gCharMap } from '../../db3/components/IconMap';
 import { CMDBUploadFile } from '../CMDBUploadFile';
 import { useSnackbar } from '../SnackbarContext';
 import { Markdown } from './Markdown';
-import { MarkdownCommandInvocationTriggerMap, MarkdownContextMap, MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from './MarkdownEditorCommandBase';
+import { MarkdownCommandInvocationTriggerMap, MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from './MarkdownEditorCommandBase';
 import { gMarkdownEditorCommandGroups } from './MarkdownEditorCommands';
 import { MarkdownEditorFormattingTips } from './MarkdownEditorFormattingTips';
 import { MarkdownLockIndicator } from './MarkdownLockIndicator';
@@ -46,7 +46,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [showPreview, setShowPreview] = React.useState<boolean>(startWithPreviewOpen);
     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
-    const [contextMap, setContextMap] = React.useState<MarkdownContextMap>({});
+    //const [contextMap, setContextMap] = React.useState<MarkdownContextMap>({});
     const commandInvocationTriggerMap = React.useRef<MarkdownCommandInvocationTriggerMap>({});
     const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
     const snackbar = useSnackbar();
@@ -58,7 +58,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
 
     const makeApi = (): MarkdownEditorCommandApi => ({
         controlledTextArea,
-        contextMap,
+        //contextMap,
         invocationTriggerMap: commandInvocationTriggerMap.current,
         dashboardContext: dashboardContext,
         textArea: textAreaRef!,
@@ -168,16 +168,16 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         };
     }, [textAreaRef]);
 
-    React.useEffect(() => {
-        // find context under cursor / selection.
-        const newContextMap: MarkdownContextMap = {};
-        for (const command of gMarkdownEditorCommandGroups.flatMap(g => g)) {
-            if (!command.deduceContext) continue;
-            const context = command.deduceContext(apiRef.current);
-            newContextMap[command.id] = context;
-        };
-        setContextMap(newContextMap);
-    }, [textAreaRef, props.value, controlledTextArea.selectionStart, controlledTextArea.selectionEnd]);
+    // React.useEffect(() => {
+    //     // find context under cursor / selection.
+    //     const newContextMap: MarkdownContextMap = {};
+    //     for (const command of gMarkdownEditorCommandGroups.flatMap(g => g)) {
+    //         if (!command.deduceContext) continue;
+    //         const context = command.deduceContext(apiRef.current);
+    //         newContextMap[command.id] = context;
+    //     };
+    //     setContextMap(newContextMap);
+    // }, [textAreaRef, props.value, controlledTextArea.selectionStart, controlledTextArea.selectionEnd]);
 
     if (readonly) {
         return <pre>{props.value}</pre>

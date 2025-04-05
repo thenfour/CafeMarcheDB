@@ -7,7 +7,7 @@ import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationAutocomplete, AssociationValue } from "../setlistPlan/ItemAssociation";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
 import { GetMatchUnderSelection, MarkdownEditorToolbarItem, MuiButtonWithEnterHandler, ParsedMarkdownReference, parseMarkdownReference } from "./MarkdownEditorCommandUtils";
-import { MarkdownMentionRegex } from "./CMDBLinkMarkdownPlugin";
+import { MarkdownMentionRegex, MarkdownMentionRegexWithSurroundingWhitespace } from "./CMDBLinkMarkdownPlugin";
 
 const kCommandId = "MarkdownEditorMentionCommand";
 
@@ -49,6 +49,17 @@ const parseMarkdownMention = (text: string): ParsedMarkdownMention => {
     };
 };
 
+function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
+    const ret = GetMatchUnderSelection(
+        api.controlledTextArea.getText(),
+        api.controlledTextArea.selectionStart,
+        api.controlledTextArea.selectionEnd,
+        MarkdownMentionRegexWithSurroundingWhitespace,
+        { trimSurroundingWhitespace: true }
+    );
+    return ret;
+};
+
 const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (props) => {
     const [open, setOpen] = React.useState(false);
 
@@ -79,8 +90,8 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
     }, [matchingItem]);
 
     const invoke = async () => {
-        if (props.api.contextMap[kCommandId]) {
-            const context = props.api.contextMap[kCommandId]!;
+        const context = deduceContext(props.api);
+        if (context) {
             await props.api.controlledTextArea.setSelectionRange(context.start, context.end);
         }
         setOpen(true);
@@ -92,7 +103,6 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
     }, [props.api.invocationTriggerMap[kCommandId]]);
 
     const handleOK = async () => {
-        console.log(`handling OK mention.`);
         if (matchingItem) {
             const path = `${matchingItem.itemType}:${matchingItem.id}`;
             const itemCaption = IsNullOrWhitespace(customCaption) ? matchingItem.name : customCaption;
@@ -167,11 +177,6 @@ const MarkdownEditorMentionDialog: React.FC<{ api: MarkdownEditorCommandApi }> =
             </DialogContent>
         </ReactiveInputDialog>
     </MarkdownEditorToolbarItem >;
-};
-
-function deduceContext(api: MarkdownEditorCommandApi): undefined | MarkdownTokenContext {
-    const ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, MarkdownMentionRegex);
-    return ret;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

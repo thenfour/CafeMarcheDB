@@ -4,7 +4,7 @@ import { IsNullOrWhitespace, isValidURL } from "shared/utils";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi } from "./MarkdownEditorCommandBase";
-import { MarkdownEditorToolbarItem } from "./MarkdownEditorCommandUtils";
+import { GetMatchUnderSelection, MarkdownEditorToolbarItem } from "./MarkdownEditorCommandUtils";
 
 
 const kCommandId = "MarkdownHyperlinkCommand";
@@ -16,14 +16,25 @@ interface ParsedMarkdownLink {
     linkCaption: string;
 }
 
+const urlPattern = /^(https?:\/\/[^\s/$.?#].[^\s]*)$/i;
+const markdownHyperlinkPattern = /^\[([^\]]+)\]\(([^)]+)\)$/;
+
 /**
  * Checks if `text` is in the form [caption](url).
  * Returns { isLink: true, linkHref, linkCaption } if so,
  * or { isLink: false, ... } otherwise.
  */
 export function parseMarkdownLink(text: string): ParsedMarkdownLink {
+    if (isValidURL(text)) {
+        return {
+            isLink: true,
+            linkHref: text,
+            linkCaption: "",
+        };
+    }
+
     // Regex: ^ start, \[ capture text until ] \], \( capture url until ) \), $ end
-    const pattern = /^\[([^\]]*)\]\(([^)]*)\)$/;
+    const pattern = markdownHyperlinkPattern;
     const match = text.match(pattern);
 
     if (!match) {
@@ -57,10 +68,9 @@ export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (pr
     const text = props.api.controlledTextArea.getText();
     const { selectionStart, selectionEnd } = props.api.controlledTextArea;
     const selectedText = text.slice(selectionStart, selectionEnd);
-    const isURL = isValidURL(selectedText);
     const parsed = parseMarkdownLink(selectedText);
-    const defaultHref = parsed.isLink ? parsed.linkHref : (isURL ? selectedText : "");
-    const defaultCaption = parsed.isLink ? parsed.linkCaption : (isURL ? "" : selectedText);
+    const defaultHref = parsed.isLink ? parsed.linkHref : "";
+    const defaultCaption = parsed.isLink ? parsed.linkCaption : selectedText;
 
     React.useEffect(() => {
         setLinkHref(defaultHref);
@@ -145,4 +155,10 @@ export const MarkdownHyperlinkCommand: MarkdownEditorCommand = {
     id: kCommandId,
     toolbarItem: InsertLinkDialog,
     keyboardShortcutCondition: { ctrlKey: true, key: "k" },
+    deduceContext: (api) => {
+        let ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, markdownHyperlinkPattern);
+        if (ret) return ret;
+        ret = GetMatchUnderSelection(api.controlledTextArea.getText(), api.controlledTextArea.selectionStart, api.controlledTextArea.selectionEnd, urlPattern);
+        return ret;
+    }
 };
