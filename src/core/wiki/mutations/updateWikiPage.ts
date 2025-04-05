@@ -52,15 +52,15 @@ const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToC
 const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
     // check if we should consolidate the revision. don't create a new revision if
     // - the current revision was made with the same lock ID
-    // - the current revision was made by the same user within the last 5 minutes
     const revisionForConsolidation = await dbt.wikiPageRevision.findMany({
         where: {
             wikiPageId: currentPage.id,
             createdByUserId: currentUserId,
-            OR: [
-                { consolidationKey: args.lockId },
-                { createdAt: { gte: GetDateSecondsFromNow(-5 * 60) } }, // 5 minutes
-            ]
+            consolidationKey: args.lockId,
+            // tempting to do this but it's just kinda not useful and prevents you from ever making deliberate revisions.
+            // OR: [
+            //     { createdAt: { gte: GetDateSecondsFromNow(-5 * 60) } }, // 5 minutes
+            // ]
         },
         orderBy: { createdAt: "desc" },
         take: 1,
