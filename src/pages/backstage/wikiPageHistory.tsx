@@ -35,10 +35,19 @@ const WikiDiffViewer = (props: WikiDiffViewerProps) => {
     const [right, rightX] = useQuery(getWikiPageRevision, { revisionId: props.revisionIdRight });
 
     return <ReactDiffViewer
+        styles={{
+            wordDiff: {
+                padding: "0",
+            },
+            splitView: {
+                margin: "0",
+                fontSize: "13px",
+            }
+        }}
         oldValue={left?.content || ""}
         newValue={right?.content || ""}
         splitView={true}
-        leftTitle={`"${left?.name}" ${left?.createdAt.toLocaleString()}`}
+        leftTitle={left ? `"${left?.name}" ${left?.createdAt.toLocaleString()}` : ""}
         rightTitle={`"${right?.name}" ${right?.createdAt.toLocaleString()}`}
         hideLineNumbers={true}
     />;
