@@ -1132,6 +1132,22 @@ export type GetUserAttendanceRet = {
 
 
 
+export enum ReportAggregateBy {
+    hour = "hour",
+    day = "day",
+    week = "week",
+    month = "month",
+};
 
 
+export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDefaultArgs>()({
+    include: {
+        event: true,
+        user: true,
+        file: true,
+        song: true,
+        wikiPage: true,
+    }
+});
 
+export type GeneralActivityReportDetailPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;

@@ -76,6 +76,7 @@ export const AssociationValue = (props: AssociationValueProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface AssociationSelectProps {
+    title?: string;
     value: QuickSearchItemMatch | null;
     onChange: (newValue: QuickSearchItemMatch | null) => void;
     allowedItemTypes: QuickSearchItemType[]; // see QuickSearchItemTypeSets
@@ -98,7 +99,7 @@ export const AssociationSelect = ({ allowNull = true, ...props }: AssociationSel
     }, [query]);
 
     return <NameValuePair
-        name="Association"
+        name={props.title || "Association"}
         value={
             <div className="AssociationSelect">
                 <CMTextInputBase

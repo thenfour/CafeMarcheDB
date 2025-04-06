@@ -158,6 +158,25 @@ export const simulateLinkClick = (url: Url, as?: Url, options?: any) => {
     document.body.removeChild(link);
 };
 
+export const simulateLinkClickTargetBlank = (url: Url) => {
+    let href: string;
+
+    if (typeof url === 'string') {
+        href = url;
+    } else {
+        href = formatUrl(url);
+    }
+
+    const link = document.createElement('a');
+    link.href = href;
+    link.style.display = 'none';
+    link.rel = "noreferrer";
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const DebugCollapsibleText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {
     const [open, setOpen] = React.useState<boolean>(false);

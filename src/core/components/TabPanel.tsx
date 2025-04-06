@@ -33,13 +33,15 @@ const CMTabHeader = (props: CMTabProps & {
     </li>
 };
 
+type CMTabPanelChild = React.ReactElement<React.PropsWithChildren<CMTabProps>>;
+
 interface CMTabPanelProps {
     selectedTabId: TTabID;
     //defaultTabId?: TTabID;
     handleTabChange: (e: React.SyntheticEvent | undefined, newTabId: TTabID) => void;
     className?: string | undefined;
     style?: React.CSSProperties | undefined;
-    children: React.ReactElement<React.PropsWithChildren<CMTabProps>>[];
+    children: CMTabPanelChild | CMTabPanelChild[];
     //setNewDefault?: (tabId: TTabID) => void;
 };
 
@@ -48,9 +50,11 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
         props.handleTabChange(e, ch.props.thisTabId);
     };
 
+    const children = Array.isArray(props.children) ? props.children : [props.children];
+
     // if the selected tab is not available
 
-    const enabledChildren = props.children.filter(tab => CoalesceBool(tab.props.enabled, true));
+    const enabledChildren = children.filter(tab => CoalesceBool(tab.props.enabled, true));
     let selectedChild = enabledChildren.find(tab => tab.props.thisTabId === props.selectedTabId);
     if (!selectedChild) {
         //selectedChild = filteredChildren.find(tab => tab.props.thisTabId === props.defaultTabId);

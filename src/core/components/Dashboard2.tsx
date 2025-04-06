@@ -380,6 +380,7 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         name: "Admin Users",
         className: "admin users",
         items: [
+            { type: "link", path: "/backstage/featureReports", linkCaption: "Feature Usage", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/adminLogs", linkCaption: "Logs", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/calendarPreview", linkCaption: "iCal Preview", renderIcon: () => gIconMap.CalendarMonth(), permission: Permission.sysadmin },

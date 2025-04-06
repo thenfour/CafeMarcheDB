@@ -25,7 +25,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     //if (!idOrSlug) return <div>no event specified</div>;
     if (!eventId) throw new Error(`song not found`);
 
-    useRecordFeatureUse({ feature: ActivityFeature.song_view, eventId });
+    useRecordFeatureUse({ feature: ActivityFeature.event_view, eventId });
 
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = {

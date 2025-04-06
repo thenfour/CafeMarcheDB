@@ -4,22 +4,23 @@
 
 import { useSession } from "@blitzjs/auth";
 //import dynamic from 'next/dynamic';
+import { Prisma } from "db";
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
 import { Coalesce } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { Prisma } from "db";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
+import { Icon, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { Timing } from "shared/time";
+import { getURIForEvent, getURIForSong } from "../db3/clientAPILL";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
+import { simulateLinkClickTargetBlank } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
-import { Icon, Tooltip } from "@mui/material";
-import { getURIForEvent } from "../db3/clientAPILL";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -249,10 +250,14 @@ export interface EventChipProps {
 export const EventChip = (props: EventChipProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
+    const clickHandler = props.onClick || (() => {
+        simulateLinkClickTargetBlank(getURIForEvent(props.value));
+    });
+
     return <CMChip
         variation={props.variation}
         size={props.size}
-        onClick={props.onClick}
+        onClick={clickHandler}
         className={props.className}
         color={dashboardContext.eventType.getById(props.value.typeId)?.color}
     >
@@ -270,10 +275,14 @@ export interface SongChipProps {
 };
 
 export const SongChip = (props: SongChipProps) => {
+    const clickHandler = props.onClick || (() => {
+        simulateLinkClickTargetBlank(getURIForSong(props.value));
+    });
+
     return <CMChip
         variation={props.variation}
         size={props.size}
-        onClick={props.onClick}
+        onClick={clickHandler}
         className={props.className}
     //color={props.value.functionalGroup.color}
     >
