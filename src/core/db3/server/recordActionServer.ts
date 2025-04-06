@@ -1,12 +1,13 @@
 import { Ctx } from "blitz";
-import * as mutationCore from "../server/db3mutationCore";
 import db from "db";
-import { ActivityFeature } from "../shared/activityTracking";
 import { z } from "zod";
+import * as mutationCore from "../server/db3mutationCore";
+import { ActivityFeature } from "../shared/activityTracking";
 
 
 export const ZTRecordActionArgs = z.object({
     uri: z.string(),
+    userId: z.number().optional(), // optional for client-side actions
     feature: z.nativeEnum(ActivityFeature),
 
     eventId: z.number().optional(),
@@ -18,11 +19,15 @@ export const ZTRecordActionArgs = z.object({
 type RecordActionArgs = z.infer<typeof ZTRecordActionArgs>;
 
 export async function recordAction(args: RecordActionArgs, ctx: Ctx) {
-    const currentUser = await mutationCore.getCurrentUserCore(ctx);
+    let userId: number | undefined = args.userId;
+    if (!userId) {
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        userId = currentUser?.id;
+    }
 
     await db.action.create({
         data: {
-            userId: currentUser?.id,
+            userId,
             isClient: false,
             uri: args.uri,
             feature: args.feature,

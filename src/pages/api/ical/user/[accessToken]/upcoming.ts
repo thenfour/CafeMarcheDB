@@ -1,6 +1,7 @@
 // calendar of all upcoming events
 
 import { Ctx } from "@blitzjs/next";
+import db from "db";
 import { ICalCalendar } from "ical-generator";
 import { CoerceToString, concatenateUrlParts } from "shared/utils";
 import { api } from "src/blitz-server";
@@ -23,9 +24,16 @@ export default api(async (req, res, ctx: Ctx) => {
                 )
             });
 
+            const accessingUser = await db.user.findUnique({
+                where: {
+                    accessToken,
+                },
+            });
+
             await recordAction({
                 feature: ActivityFeature.global_ical_digest,
                 uri: req.url || "",
+                userId: accessingUser?.id,
             }, ctx);
 
             res.setHeader('Content-Type', 'text/calendar');
