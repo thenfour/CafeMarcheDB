@@ -72,7 +72,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
       SELECT
         DATE_FORMAT(\`createdAt\`, '${dateFormat}') AS bucket,
         COUNT(*) AS count
-      FROM \`action\`
+      FROM \`Action\`
       ${whereClause}
       GROUP BY bucket
       ORDER BY bucket ASC
