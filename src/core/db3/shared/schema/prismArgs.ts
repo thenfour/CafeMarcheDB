@@ -1438,6 +1438,7 @@ export abstract class DashboardContextDataBase {
     abstract sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[];
     abstract isAttendanceIdGoing(attendanceId: number | null): boolean;
     abstract getVisibilityPermissions(): Prisma.PermissionGetPayload<{}>[];
+    //abstract recordAction(args: { feature: ActivityFeature, properties?: any }): Promise<void>;
 }
 
 

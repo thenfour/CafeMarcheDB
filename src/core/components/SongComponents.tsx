@@ -539,6 +539,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                         taggedSongId: song.id,
                         fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
                     }}
+                    contextSongId={song.id}
                 />
             </CMTab>
             <CMTab
@@ -556,6 +557,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                         taggedSongId: song.id,
                         fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
                     }}
+                    contextSongId={song.id}
                 />
             </CMTab>
             <CMTab
@@ -565,9 +567,15 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={song.taggedFiles.length}
                 canBeDefault={!!song.taggedFiles.length}
             >
-                <FilesTabContent fileTags={fileInfo.enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
-                    taggedSongId: song.id,
-                }} />
+                <FilesTabContent
+                    fileTags={fileInfo.enrichedFiles}
+                    readonly={props.readonly}
+                    refetch={refetch}
+                    uploadTags={{
+                        taggedSongId: song.id,
+                    }}
+                    contextSongId={song.id}
+                />
             </CMTab>
             <CMTab
                 thisTabId={SongDetailTabSlug.history}

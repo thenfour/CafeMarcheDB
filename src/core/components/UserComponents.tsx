@@ -16,12 +16,13 @@ import getUserCredits from "../db3/queries/getUserCredits";
 import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
 import { CMChipContainer, CMStandardDBChip } from "./CMChip";
-import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, InstrumentChip, UserChip } from "./CMCoreComponents";
+import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, InstrumentChip } from "./CMCoreComponents";
 import { GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
 import { SongsProvider, useSongsContext } from "./SongsContext";
+import { UserChip } from "./userChip";
 
 
 

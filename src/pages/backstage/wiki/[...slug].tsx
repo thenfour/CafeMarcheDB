@@ -1,19 +1,24 @@
-import { SessionContext } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SettingKey } from "shared/settings";
 import { gSSP } from "src/blitz-server";
+import { useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
 import { getAuthenticatedCtx } from "src/core/db3/server/db3mutationCore";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
 import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
 
 
-const WikiPageComponent = ({ wikiPath }: { wikiPath: WikiPath }) => {
+const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiPageId: number }) => {
+    useRecordFeatureUse({
+        feature: ActivityFeature.wiki_page_view,
+        wikiPageId,
+    });
 
     return <>
         <SettingMarkdown setting="GlobalWikiPage_Markdown"></SettingMarkdown>
@@ -22,16 +27,17 @@ const WikiPageComponent = ({ wikiPath }: { wikiPath: WikiPath }) => {
     </>;
 };
 
-interface PageProps {
+type PageProps = {
     title: string;
     wikiPath: WikiPath;
+    wikiPageId: number | null;
 };
 
-type Props = {
-    publicData: SessionContext["$publicData"],
-}
+// type Props = {
+//     publicData: SessionContext["$publicData"],
+// }
 
-export const getServerSideProps = gSSP<Props>(async (args) => {
+export const getServerSideProps = gSSP<PageProps>(async (args) => {
     const wikiPath = wikiParsePathComponents((args.params?.slug || []) as string[]);
     const actx = getAuthenticatedCtx(args.ctx, Permission.view_wiki_pages);
     if (!actx) {
@@ -45,46 +51,41 @@ export const getServerSideProps = gSSP<Props>(async (args) => {
 
     const ret = await GetWikiPageCore({
         canonicalWikiSlug: wikiPath.canonicalWikiPath || "<never>",
-        dbt: db,
+        dbt: db as any,
         ctx: actx,
         clientBaseRevisionId: null,
         clientLockId: null,
         currentUserId: null,
     });
 
-    return {
-        props: {
-            title: ret.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
-            wikiPath,
-            slug: args.params?.slug as string[],
-            publicData: args.ctx.session.$publicData,
-        },
+    const retProps: PageProps = {
+        title: ret.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
+        wikiPath,
+        wikiPageId: ret.wikiPage?.id ?? null,
     };
+
+    return {
+        props: retProps,
+    };
+
+    // return {
+    //     props: {
+    //         title: ret.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
+    //         wikiPath,
+    //         //slug: args.params?.slug as string[],
+    //         //publicData: args.ctx.session.$publicData,
+    //     },
+    // };
 });
 
-// export const getServerSideProps = async (args) => {
-//     const wikiPath = wikiParsePathComponents(params.slug as string[]);
-//     const ret = await GetWikiPageCore({
-//         canonicalWikiSlug: wikiPath.canonicalWikiPath || "<never>",
-//         dbt: db,
-//         clientBaseRevisionId: null,
-//         clientLockId: null,
-//         currentUserId: null,
-//     });
-
-//     return {
-//         props: {
-//             title: ret.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
-//             wikiPath,
-//         }
-//     };
-// }
-
 const WikiPage: BlitzPage = (x: PageProps) => {
+    if (x.wikiPageId == null) {
+        return <div>Wiki page not found</div>;
+    }
     return (
         <DashboardLayout title={x.title}>
             <Suspense>
-                <WikiPageComponent wikiPath={x.wikiPath}></WikiPageComponent>
+                <WikiPageComponent wikiPath={x.wikiPath} wikiPageId={x.wikiPageId}></WikiPageComponent>
             </Suspense>
         </DashboardLayout>
     )

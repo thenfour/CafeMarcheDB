@@ -1,7 +1,7 @@
 // updateWikiPage
 import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import db, { Prisma, PrismaClient } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
@@ -49,10 +49,10 @@ const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToC
 };
 
 // internal; makes assumptions.
-const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
+const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPage: WikiPageApiPayload, currentUserId: number, dbt): Promise<WikiPageApiRevisionPayload> => {
     // check if we should consolidate the revision. don't create a new revision if
     // - the current revision was made with the same lock ID
-    const revisionForConsolidation = await dbt.wikiPageRevision.findMany({
+    const revisionForConsolidation = await (dbt as PrismaClient).wikiPageRevision.findMany({
         where: {
             wikiPageId: currentPage.id,
             createdByUserId: currentUserId,
@@ -66,36 +66,34 @@ const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPag
         take: 1,
     });
 
-    let newRevision: WikiPageApiRevisionPayload | undefined = undefined;
-
     if (revisionForConsolidation.length > 0) {
-        newRevision = await ConsolidatedUpdate(args, revisionForConsolidation[0]!, currentPage, currentUserId, dbt);
-    } else {
-        const stats = calculateDiff(currentPage.currentRevision?.content || "", args.content);
-
-        newRevision = await dbt.wikiPageRevision.create({
-            data: {
-                name: args.title,
-                content: args.content,
-                createdByUserId: currentUserId,
-                wikiPageId: currentPage.id,
-                consolidationKey: args.lockId,
-
-                lineCount: stats.newLines,
-                prevLineCount: stats.oldLines,
-                linesAdded: stats.linesAdded,
-                linesRemoved: stats.linesRemoved,
-
-                prevSizeChars: stats.oldSize,
-                sizeChars: stats.newSize,
-
-                charsAdded: stats.charsAdded,
-                charsRemoved: stats.charsRemoved,
-            },
-            ...WikiPageApiRevisionPayloadArgs,
-        });
+        const newRevision = await ConsolidatedUpdate(args, revisionForConsolidation[0]!, currentPage, currentUserId, dbt);
+        return newRevision;
     }
 
+    const stats = calculateDiff(currentPage.currentRevision?.content || "", args.content);
+
+    const newRevision = await dbt.wikiPageRevision.create({
+        data: {
+            name: args.title,
+            content: args.content,
+            createdByUserId: currentUserId,
+            wikiPageId: currentPage.id,
+            consolidationKey: args.lockId,
+
+            lineCount: stats.newLines,
+            prevLineCount: stats.oldLines,
+            linesAdded: stats.linesAdded,
+            linesRemoved: stats.linesRemoved,
+
+            prevSizeChars: stats.oldSize,
+            sizeChars: stats.newSize,
+
+            charsAdded: stats.charsAdded,
+            charsRemoved: stats.charsRemoved,
+        },
+        ...WikiPageApiRevisionPayloadArgs,
+    });
     return newRevision;
 };
 

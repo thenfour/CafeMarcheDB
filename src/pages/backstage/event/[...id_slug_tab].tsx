@@ -7,12 +7,13 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
-import { DashboardContext } from "src/core/components/DashboardContext";
+import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
 import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
@@ -23,6 +24,8 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     //if (!idOrSlug) return <div>no event specified</div>;
     if (!eventId) throw new Error(`song not found`);
+
+    useRecordFeatureUse({ feature: ActivityFeature.song_view, eventId });
 
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = {

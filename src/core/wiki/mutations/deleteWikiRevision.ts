@@ -15,7 +15,7 @@ export default resolver.pipe(
         await db.wikiPageRevision.delete({
             where: { id: args.revisionId }
         });
-        RegisterChange({
+        await RegisterChange({
             action: ChangeAction.delete,
             ctx,
             changeContext,

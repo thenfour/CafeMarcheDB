@@ -1,5 +1,5 @@
 
-import { Prisma, PrismaClient } from "db";
+import { Prisma } from "db";
 import { z } from "zod";
 
 import { SortDirection } from "shared/rootroot";
@@ -13,7 +13,10 @@ export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
 export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
 export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
 
-export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+// this really loves to break the typescript compiler... safest to just use "any"
+//export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+export type TransactionalPrismaClient = any;
+//export type TransactionalPrismaClient = PrismaClient;
 
 export interface CMDBTableFilterItem { // from MUI GridFilterItem
     id?: number | string;

@@ -24,7 +24,8 @@ export function useInterval(callback: () => void, intervalMilliseconds: number |
 
 // https://geekyants.com/blog/mastering-the-usethrottle-hook-in-react
 export function useThrottle(cb: () => void, limitIntervalMilliseconds: number) {
-    const lastRun = useRef(Date.now());
+    //const x = Date.now();
+    const lastRun = useRef<number>(0);
 
     return function () {
         if (Date.now() - lastRun.current >= limitIntervalMilliseconds) {

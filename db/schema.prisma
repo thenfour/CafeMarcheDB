@@ -88,6 +88,25 @@ model RolePermission {
   @@unique([roleId, permissionId]) // 
 }
 
+model Action {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+  uri       String? // if applicable
+  isClient  Boolean
+  feature   String // of enum ActivityFeature
+
+  fileId     Int?
+  file       File?     @relation(fields: [fileId], references: [id], onDelete: Cascade) // files are soft-delete; deleting a file will delete the action
+  eventId    Int?
+  event      Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete; deleting an event will delete the action
+  songId     Int?
+  song       Song?     @relation(fields: [songId], references: [id], onDelete: Cascade) // songs are soft-delete; deleting a song will delete the action
+  wikiPageId Int?
+  wikiPage   WikiPage? @relation(fields: [wikiPageId], references: [id], onDelete: Cascade) // wiki pages are soft-delete; deleting a wiki page will delete the action
+}
+
 // effectively this creates "groups" that you can belong to. or indeed just tags... makes sense anyway.
 // initial reason for this is attendance groups.
 // copied from FileTag
@@ -162,6 +181,8 @@ model User {
 
   setlistPlans    SetlistPlan[]
   lockedWikiPages WikiPage[]
+
+  actions Action[]
 
   @@unique([accessToken])
   @@unique([uid])
@@ -262,6 +283,7 @@ model Song {
   tags        SongTagAssociation[]
   credits     SongCredit[]
   songLists   EventSongListSong[]
+  actions     Action[]
 
   @@index([name])
   @@index([aliases])
@@ -511,6 +533,7 @@ model Event {
   segments  EventSegment[]
   songLists EventSongList[]
   responses EventUserResponse[]
+  actions   Action[]
 
   customFieldValues EventCustomFieldValue[]
 
@@ -841,8 +864,9 @@ model File {
   taggedInstruments     FileInstrumentTag[]
   frontpageGalleryItems FrontpageGalleryItem[]
 
-  previewForFile File[] @relation("previewFiles")
-  childFiles     File[] @relation("fileHierarchy")
+  previewForFile File[]   @relation("previewFiles")
+  childFiles     File[]   @relation("fileHierarchy")
+  actions        Action[]
 
   @@index([fileLeafName])
   @@index([storedLeafName])
@@ -976,7 +1000,8 @@ model WikiPage {
   lockId         String? // users can open a pagk more than once; this is associated to the specific rendering tree of this editing page.
   lastEditPingAt DateTime? // last time the page automatically sent an "I'm editing" ping. used to detect stale locks early.
 
-  events Event? @relation("eventDescriptionWikiPage")
+  events  Event?   @relation("eventDescriptionWikiPage")
+  actions Action[]
 
   @@unique([slug])
   @@unique([currentRevisionId])

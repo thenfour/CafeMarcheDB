@@ -5,11 +5,12 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
-import { DashboardContext } from "src/core/components/DashboardContext";
+import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {
@@ -17,13 +18,10 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     const [id__, slug, tab] = params.id_slug_tab as string[];
 
     const dashboardContext = React.useContext(DashboardContext);
-    //const id = CoerceToNumberOrNull(id__);
-    //if (!id) throw new Error(`no id`);
-
-    //console.log(params);
-    //const [_, tabIdOrSlug] = params.idOrSlug_tab as string[];
 
     if (!songId) throw new Error(`song not found`);
+
+    useRecordFeatureUse({ feature: ActivityFeature.song_view, songId });
 
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: currentUser, };

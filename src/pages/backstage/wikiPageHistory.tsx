@@ -90,7 +90,7 @@ const WikiRevisionDeleteButton = (props: { revision: Prisma.WikiPageRevisionGetP
             message: `Are you sure you want to delete the revision "${props.revision.name}" from ${props.revision.createdAt.toLocaleString()}?`,
             buttons: ["yes", "cancel"]
         })) {
-            snackbar.invokeAsync(async () => {
+            await snackbar.invokeAsync(async () => {
                 await deleteMutation({ revisionId: props.revision.id });
             });
         }
@@ -134,7 +134,7 @@ const WikiRevisionHistoryPageContent = () => {
 
     return <div className="contentSection fullWidth wikiRevisionHistoryPage">
         {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <RebuildStatsButton onChanged={() => {
-            qExtra.refetch();
+            void qExtra.refetch();
         }} />}
         <h1>
             <a href={wikiPath.uriRelativeToHost} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</a>
@@ -162,7 +162,7 @@ const WikiRevisionHistoryPageContent = () => {
                         <td>
                             <WikiRevisionPreviewButton revisionId={rev.id} />
                             {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && <WikiRevisionDeleteButton revision={rev} onChanged={() => {
-                                qExtra.refetch();
+                                void qExtra.refetch();
                             }} />}
                         </td>
                         <td>

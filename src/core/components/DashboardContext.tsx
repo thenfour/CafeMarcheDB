@@ -2,14 +2,17 @@ import { ClientSession, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import { Prisma } from "db";
 import React from 'react';
-import { Permission, gPublicPermissions } from 'shared/permissions';
+import { ColorVariationSpec, gAppColors } from "shared/color";
+import { gPublicPermissions, Permission } from 'shared/permissions';
 import { partition, TableAccessor } from 'shared/rootroot';
+import { useThrottle } from 'shared/useGeneral';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
+import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls';
 import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
-import { ColorVariationSpec, gAppColors } from "shared/color";
 import { GetStyleVariablesForColor } from "../components/Color";
-import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls';
+import recordActionMutation from '../db3/mutations/recordActionMutation';
+import { ActivityFeature, ClientActivityParams } from '../db3/shared/activityTracking';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -140,6 +143,10 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     getVisibilityPermissions(): Prisma.PermissionGetPayload<{}>[] {
         return this.permission.filter(p => p.isVisibility);
     }
+
+    recordAction(args: { feature: ActivityFeature, properties?: any }): Promise<void> {
+        return Promise.resolve();
+    }
 };
 
 
@@ -195,6 +202,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
 
+    // because of enrichment, this is at the end of the list.
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => db3.enrichInstrument(i, valueRef.current)));
 
     return <DashboardContext.Provider value={valueRef.current}>
@@ -202,3 +210,25 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     </DashboardContext.Provider>
 };
 
+export const useRecordFeatureUse = (args: ClientActivityParams) => {
+    const [recordActionProc] = useMutation(recordActionMutation);
+    // react likes to make redundant renders; throttle.
+    const throttledRecordAction = useThrottle(() => {
+        void recordActionProc({
+            uri: window.location.href,
+            ...args,
+        });
+    }, 250);
+
+    React.useEffect(throttledRecordAction, []);
+}
+
+export const useFeatureRecorder = () => {
+    const [recordActionProc] = useMutation(recordActionMutation);
+    return async (args: ClientActivityParams) => {
+        await recordActionProc({
+            uri: window.location.href,
+            ...args,
+        });
+    }
+}

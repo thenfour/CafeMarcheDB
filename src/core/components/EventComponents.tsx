@@ -1506,9 +1506,15 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="Files"
             summarySubtitle={<>({event.fileTags.length})</>}
         >
-            <FilesTabContent fileTags={enrichedFiles} uploadTags={{
-                taggedEventId: event.id,
-            }} refetch={refetch} readonly={props.readonly} />
+            <FilesTabContent
+                fileTags={enrichedFiles}
+                uploadTags={{
+                    taggedEventId: event.id,
+                }}
+                refetch={refetch}
+                readonly={props.readonly}
+                contextEventId={event.id}
+            />
         </CMTab>
     </CMTabPanel>
 };

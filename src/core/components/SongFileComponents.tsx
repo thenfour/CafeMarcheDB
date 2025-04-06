@@ -2,8 +2,10 @@
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Button, Tooltip } from "@mui/material";
 import React from "react";
+import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
+import { SplitQuickFilter } from 'shared/quickFilter';
 import { SortDirection, formatFileSize } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -13,18 +15,18 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
+import { ActivityFeature } from '../db3/shared/activityTracking';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AudioPreviewBehindButton } from './AudioPreview';
-import { EventChip, InstrumentChip, SongChip, UserChip } from "./CMCoreComponents";
+import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
+import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { CMDBUploadFile } from './CMDBUploadFile';
 import { SearchInput } from './CMTextField';
-import { DashboardContext } from './DashboardContext';
+import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
-import { Markdown } from "./markdown/Markdown";
 import { VisibilityValue } from './VisibilityControl';
-import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
-import { SplitQuickFilter } from 'shared/quickFilter';
-import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
+import { Markdown } from "./markdown/Markdown";
+import { UserChip } from './userChip';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
@@ -53,10 +55,13 @@ interface FileViewerProps {
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
     readonly: boolean;
     statHighlight: SortByKey;
+    contextEventId?: number;
+    contextSongId?: number;
 };
 
 export const FileValueViewer = (props: FileViewerProps) => {
     const dashboardContext = React.useContext(DashboardContext);
+    const downloadActivityRecorder = useFeatureRecorder();
     //const [currentUser] = useCurrentUser();
     const file = props.value;
     const visInfo = dashboardContext.getVisibilityInfo(file);
@@ -77,19 +82,28 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
     const variation = StandardVariationSpec.Weak;
 
+    const handleDownloadClick = (e: React.MouseEvent) => {
+        void downloadActivityRecorder({
+            feature: ActivityFeature.file_download,
+            fileId: file.id,
+            eventId: props.contextEventId,
+            songId: props.contextSongId,
+        });
+    };
+
     return <div className={classes.join(" ")}>
 
         <div className="header">
 
             {file.externalURI ? (
-                <a target="_empty" className="downloadLink" href={file.externalURI}>
+                <a target="_empty" className="downloadLink" href={file.externalURI} onClick={handleDownloadClick}>
                     {gIconMap.Link()}
                     <Tooltip title={file.fileLeafName}>
                         <div className="filename">{smartTruncate(file.fileLeafName)}</div>
                     </Tooltip>
                 </a>
             ) : (
-                <a target="_empty" className="downloadLink" href={API.files.getURIForFile(file)}>
+                <a target="_empty" className="downloadLink" href={API.files.getURIForFile(file)} onClick={handleDownloadClick}>
                     <FileDownloadIcon />
                     <Tooltip title={file.fileLeafName}>
                         <div className="filename">{smartTruncate(file.fileLeafName)}</div>
@@ -601,6 +615,8 @@ interface FileControlProps {
     readonly: boolean;
     refetch: () => void;
     statHighlight: SortByKey;
+    contextEventId?: number;
+    contextSongId?: number;
 };
 
 export const FileControl = (props: FileControlProps) => {
@@ -612,7 +628,14 @@ export const FileControl = (props: FileControlProps) => {
         {!props.readonly && editMode &&
             <FileEditor initialValue={props.value} onClose={() => { setEditMode(false); props.refetch() }} rowMode="update" />
         }
-        <FileValueViewer value={props.value} onEnterEditMode={() => setEditMode(true)} readonly={props.readonly} statHighlight={props.statHighlight} />
+        <FileValueViewer
+            value={props.value}
+            onEnterEditMode={() => setEditMode(true)}
+            readonly={props.readonly}
+            statHighlight={props.statHighlight}
+            contextEventId={props.contextEventId}
+            contextSongId={props.contextSongId}
+        />
     </>;
 };
 
@@ -622,6 +645,8 @@ export interface FilesTabContentProps {
     refetch: () => void;
     readonly: boolean;
     uploadTags: TClientFileUploadTags;
+    contextEventId?: number;
+    contextSongId?: number;
 };
 
 export const FilesTabContent = (props: FilesTabContentProps) => {
@@ -724,7 +749,15 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         /> */}
 
         <div className="EventFilesList">
-            {filteredItems.map((fileTag, index) => <FileControl key={fileTag.id} readonly={props.readonly} refetch={props.refetch} value={fileTag.file} statHighlight={filterSpec.sortBy} />)}
+            {filteredItems.map((fileTag, index) => <FileControl
+                key={fileTag.id}
+                readonly={props.readonly}
+                refetch={props.refetch}
+                value={fileTag.file}
+                statHighlight={filterSpec.sortBy}
+                contextEventId={props.contextEventId}
+                contextSongId={props.contextSongId}
+            />)}
         </div>
     </FileDropWrapper>;
 };

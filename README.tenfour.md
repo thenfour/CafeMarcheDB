@@ -291,3 +291,14 @@ The stack depth error can be worked around with `as any`.
 The `debug failure` is much more mysterious and i had to do a lot of narrowing down with `git stash` to even figure out what triggers it.
 It was triggered by making any queries to `db.event` from within wiki page fetching. No idea at all how that could cause an error, but again `as any` to bypass type checking resolved it.
 
+Some things to try:
+
+- change the type def of TransactionalPrismaClient to `any`
+
+# feature analytics
+
+* client:
+  * `useRecordFeatureUse` hook allows recording a feature view on component mount.
+  * `useFeatureRecorder()` allows recording upon explicit invocation
+* server:
+  * `recordAction`

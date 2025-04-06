@@ -1,16 +1,15 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db from "db";
+import db, { PrismaClient } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { calculateDiff } from "../shared/wikiUtils";
-import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 
-async function core(dbt: TransactionalPrismaClient) {
+async function core(dbt) {
 
-    const pages = await dbt.wikiPage.findMany({
+    const pages = await (dbt as PrismaClient).wikiPage.findMany({
         include: {
             revisions: true,
         }
@@ -49,10 +48,10 @@ export default resolver.pipe(
         const changeContext = CreateChangeContext("rebuildWikiPageRevisionStats");
 
         await db.$transaction(async (dbt) => {
-            await core(dbt);
+            await core(dbt as any);
         });
 
-        RegisterChange({
+        await RegisterChange({
             action: ChangeAction.delete,
             ctx,
             changeContext,

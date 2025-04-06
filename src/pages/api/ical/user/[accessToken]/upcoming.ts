@@ -5,6 +5,8 @@ import { ICalCalendar } from "ical-generator";
 import { CoerceToString, concatenateUrlParts } from "shared/utils";
 import { api } from "src/blitz-server";
 import { CalExportCore } from "src/core/db3/server/ical";
+import { recordAction } from "src/core/db3/server/recordActionServer";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { GetICalRelativeURIForUserUpcomingEvents } from "src/core/db3/shared/apiTypes";
 
 export default api(async (req, res, ctx: Ctx) => {
@@ -20,6 +22,11 @@ export default api(async (req, res, ctx: Ctx) => {
                     GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: accessToken || null })
                 )
             });
+
+            await recordAction({
+                feature: ActivityFeature.global_ical_digest,
+                uri: req.url || "",
+            }, ctx);
 
             res.setHeader('Content-Type', 'text/calendar');
             res.setHeader(`Content-Disposition`, `attachment; filename=CM_UpcomingAgenda_${accessToken}.ics`);
