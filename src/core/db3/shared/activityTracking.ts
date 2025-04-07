@@ -6,6 +6,7 @@ export enum ActivityFeature {
     song_view = "song_view",
     event_view = "event_view",
     file_download = "file_download",
+    // adding to this, consider seeding.
     //public_homepage_view = "public_homepage_view", <-- for this use something like ga
 
 };

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { gPermissionOrdered } from '../shared/permissions';
 import { SeedingState } from './seeding/base';
 import { SeedEvents_VeryRandom } from './seeding/events';
+import { SeedActivity } from './seeding/activitySeeding';
 
 const gState = new SeedingState();
 
@@ -1107,6 +1108,7 @@ const main = async () => {
 
   await SeedEvents_VeryRandom(gState);
 
+  await SeedActivity(gState);
 };
 
 main()
