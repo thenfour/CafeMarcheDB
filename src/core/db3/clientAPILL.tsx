@@ -1,7 +1,7 @@
 // stuff that clientAPI uses which doesn't require DB3ClientBasicFields to avoid a dependency cycle.
 
 import { Prisma } from "db";
-import { slugify } from "shared/rootroot";
+import { slugify, slugifyWithDots } from "shared/rootroot";
 
 import { IsNullOrWhitespace } from "shared/utils";
 
@@ -39,6 +39,17 @@ export const getURIForInstrument = (instrument: Prisma.InstrumentGetPayload<{ se
     parts.push(slugify(instrument.name));
     return getAbsoluteUrl(`/backstage/instrument/${parts.join("/")}`);
 };
+
+export const getURIForFile = (value: Prisma.FileGetPayload<{ select: { id: true, storedLeafName: true, fileLeafName: true, externalURI: true } }>) => {
+    if (value.externalURI) {
+        return value.externalURI;
+    }
+    if (!value.fileLeafName) {
+        return `/api/files/download/${value.storedLeafName}`;
+    }
+    return `/api/files/download/${value.storedLeafName}/${slugifyWithDots(value.fileLeafName)}`;
+};
+
 
 export function getURLClass(url: string, baseDomain: string = window.location.hostname): "internalPage" | "internalAPI" | "external" {
     try {

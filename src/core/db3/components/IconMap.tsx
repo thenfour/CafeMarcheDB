@@ -63,7 +63,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React from "react";
 import { TIconOptions } from "shared/utils";
-import { AccountTree, Alarm, Check, Equalizer, Notifications, Pause, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
+import { AccountTree, Alarm, Article, Check, Equalizer, Notifications, Pause, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
 import SvgIcon from '@mui/icons-material/Add';
 
 // interface IIconMap {
@@ -100,6 +100,7 @@ export const gIconMap /*: IIconMap*/ = {
     AccountTree: () => <AccountTree />,
     Add: () => <AddIcon />,
     Alarm: () => <Alarm />,
+    Article: () => <Article />,
     AttachFile: () => <AttachFileIcon />,
     AddCircleOutline: () => <AddCircleOutlineIcon />,
     AutoAwesome: () => <AutoAwesomeIcon />,

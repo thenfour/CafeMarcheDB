@@ -1,4 +1,5 @@
 import { crc32 } from "@foxglove/crc";
+import { Article } from "@mui/icons-material";
 import db from "db";
 import { Size } from "src/core/db3/shared/apiTypes";
 import z from "zod";
@@ -217,6 +218,7 @@ export const gIconOptions = {
     Add: "Add",
     AddCircleOutline: "AddCircleOutline",
     Alarm: "Alarm",
+    Article: "Article",
     AttachFile: "AttachFile",
     AutoAwesome: "AutoAwesome",
     Blank: "Blank",
@@ -495,6 +497,7 @@ export function isValidDate(date) {
 }
 
 
+// aka smart shorten
 export function smartTruncate(url: string, maxLength: number = 120) {
     if (url.length <= maxLength) return url;
 

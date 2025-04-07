@@ -1,18 +1,21 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Button } from "@mui/material";
 import * as React from 'react';
 import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
-import { roundToNearest15Minutes } from "shared/time";
-import { EventChip, SongChip } from "src/core/components/CMCoreComponents";
+import { CalcRelativeTiming, CalcRelativeTimingFromNow, roundToNearest15Minutes } from "shared/time";
+import { smartTruncate } from "shared/utils";
+import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { UserChip } from "src/core/components/userChip";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import * as DB3Client from "src/core/db3/DB3Client";
 import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
 import getGeneralFeatureReport from "src/core/db3/queries/getGeneralFeatureReport";
@@ -29,12 +32,13 @@ enum TabId {
 const GeneralFeatureReportDetailItem = ({ value }: { value: GeneralActivityReportDetailPayload }) => {
     return <tr>
         <td>{value.createdAt.toLocaleString()}</td>
-        <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{value.uri}</a>}</td>
-        <td>{value.user && <UserChip value={value.user} />}</td>
+        <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
+        <td>{value.user && <UserChip value={value.user} startAdornment={gIconMap.Person()} />}</td>
         <td>
-            {value.song && <SongChip value={value.song} />}
-            {value.event && <EventChip value={value.event} />}
-            {value.wikiPage && <div>Wiki page: {value.wikiPage.slug}</div>}
+            {value.song && <SongChip value={value.song} startAdornment={gIconMap.MusicNote()} />}
+            {value.event && <EventChip value={value.event} startAdornment={gIconMap.CalendarMonth()} />}
+            {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} />}
+            {value.wikiPage && <WikiPageChip slug={value.wikiPage.slug} startAdornment={gIconMap.Article()} />}
         </td>
     </tr>;
 };
@@ -92,7 +96,7 @@ const GeneralFeatureStatsReport = () => {
 
     const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
 
-    const [result] = useQuery(getGeneralFeatureReport, {
+    const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         feature,
         startDate: roundToNearest15Minutes(startDate),
         endDate: roundToNearest15Minutes(endDate),
@@ -108,6 +112,12 @@ const GeneralFeatureStatsReport = () => {
     };
 
     return <div>
+        <div style={{ display: "flex", alignItems: "center" }}>
+            <Button onClick={() => refetch()}>Refresh</Button>
+            <span className="smallText">
+                last updated: <AgeRelativeToNow value={new Date(dataUpdatedAt)} />
+            </span>
+        </div>
         <NameValuePair name="Feature" value={
             <CMSingleSelect
                 value={feature}

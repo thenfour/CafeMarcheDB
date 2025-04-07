@@ -14,13 +14,14 @@ import * as db3 from "src/core/db3/db3";
 import { Icon, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { Timing } from "shared/time";
-import { getURIForEvent, getURIForSong } from "../db3/clientAPILL";
+import { getURIForEvent, getURIForFile, getURIForSong } from "../db3/clientAPILL";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { simulateLinkClickTargetBlank } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -245,6 +246,8 @@ export interface EventChipProps {
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
+    startAdornment?: React.ReactNode;
+    endAdornment?: React.ReactNode;
 };
 
 export const EventChip = (props: EventChipProps) => {
@@ -261,7 +264,9 @@ export const EventChip = (props: EventChipProps) => {
         className={props.className}
         color={dashboardContext.eventType.getById(props.value.typeId)?.color}
     >
+        {props.startAdornment}
         {db3.EventAPI.getLabel(props.value)}
+        {props.endAdornment}
     </CMChip>
 }
 
@@ -272,6 +277,8 @@ export interface SongChipProps {
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
+    startAdornment?: React.ReactNode;
+    endAdornment?: React.ReactNode;
 };
 
 export const SongChip = (props: SongChipProps) => {
@@ -284,12 +291,71 @@ export const SongChip = (props: SongChipProps) => {
         size={props.size}
         onClick={clickHandler}
         className={props.className}
-    //color={props.value.functionalGroup.color}
     >
+        {props.startAdornment}
         {props.value.name}
+        {props.endAdornment}
     </CMChip>
 }
 
+
+
+export interface FileChipProps {
+    value: db3.FilePayloadMinimum;
+    variation?: ColorVariationSpec;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+    startAdornment?: React.ReactNode;
+    endAdornment?: React.ReactNode;
+};
+
+export const FileChip = (props: FileChipProps) => {
+    const clickHandler = props.onClick || (() => {
+        simulateLinkClickTargetBlank(getURIForFile(props.value));
+    });
+
+    return <CMChip
+        variation={props.variation}
+        size={props.size}
+        onClick={clickHandler}
+        className={props.className}
+    >
+        {props.startAdornment}
+        {props.value.fileLeafName}
+        {props.endAdornment}
+    </CMChip>
+}
+
+
+export interface WikiPageChipProps {
+    slug: string;
+    // todo: use actual wiki page name
+    variation?: ColorVariationSpec;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+    startAdornment?: React.ReactNode;
+    endAdornment?: React.ReactNode;
+};
+
+export const WikiPageChip = (props: WikiPageChipProps) => {
+    const wikiPath = wikiParseCanonicalWikiPath(props.slug);
+    const clickHandler = props.onClick || (() => {
+        simulateLinkClickTargetBlank(wikiPath.uriRelativeToHost);
+    });
+
+    return <CMChip
+        variation={props.variation}
+        size={props.size}
+        onClick={clickHandler}
+        className={props.className}
+    >
+        {props.startAdornment}
+        {props.slug}
+        {props.endAdornment}
+    </CMChip>
+}
 
 
 export interface AttendanceChipProps {

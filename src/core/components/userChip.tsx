@@ -11,6 +11,8 @@ export interface UserChipBaseProps {
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
+    startAdornment?: React.ReactNode;
+    endAdornment?: React.ReactNode;
 };
 
 // the user chip when you know the user info.
@@ -31,7 +33,9 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
         onClick={props.onClick}
         className={props.className}
     >
+        {props.startAdornment}
         {props.value?.name || "--"}
+        {props.endAdornment}
     </CMChip>
 }
 

@@ -716,9 +716,11 @@ table tfoot td {
 }
 
 
-/* compact markdown editor */
+/* compact markdown editor, other subtle text. */
 .helpText,
-.tinyCaption {
+.tinyCaption,
+.smalltext,
+.smallText {
   font-size: 13px;
   font-style: italic;
   color: #888;

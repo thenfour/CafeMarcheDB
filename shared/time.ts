@@ -37,7 +37,7 @@ export function formatMillisecondsToDHMS(milliseconds: number): string {
         return "--";
     }
 
-    const isNegative = milliseconds < 0;
+    //const isNegative = milliseconds < 0;
     milliseconds = Math.abs(milliseconds);
 
     const days = Math.floor(milliseconds / 86400000); // 86400000 milliseconds in a day
@@ -63,6 +63,10 @@ export function formatMillisecondsToDHMS(milliseconds: number): string {
     }
     if (seconds > 0) {
         parts.push(`${seconds}s`);
+    }
+
+    if (parts.length === 0) {
+        return "--";
     }
 
     return parts.join(' ');
@@ -943,3 +947,8 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): Relativ
     return { bucket: RelativeTimingBucket.InYears, label: `In ${diffYears} years` };
 }
 
+
+
+export function CalcRelativeTimingFromNow(date: Date): RelativeTimingInfo {
+    return CalcRelativeTiming(new Date(), new DateTimeRange({ startsAtDateTime: date, isAllDay: false, durationMillis: 0 }));
+}
