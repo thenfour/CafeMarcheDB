@@ -6,7 +6,7 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { CalcRelativeTiming, CalcRelativeTimingFromNow, roundToNearest15Minutes } from "shared/time";
-import { smartTruncate } from "shared/utils";
+import { getHashedColor, smartTruncate } from "shared/utils";
 import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMSingleSelect } from "src/core/components/CMSelect";
@@ -29,16 +29,21 @@ enum TabId {
     eventViews = "eventViews",
 };
 
-const GeneralFeatureReportDetailItem = ({ value }: { value: GeneralActivityReportDetailPayload }) => {
+const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivityReportDetailPayload, index: number }) => {
+
+    const featureColor = getHashedColor(value.feature);
+
     return <tr>
+        <td style={{ fontFamily: "var(--ff-mono)" }}>#{index}</td>
+        <td style={{ color: featureColor }}>{value.feature}</td>
         <td>{value.createdAt.toLocaleString()}</td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
-        <td>{value.user && <UserChip value={value.user} startAdornment={gIconMap.Person()} />}</td>
+        <td>{value.user && <UserChip value={value.user} startAdornment={gIconMap.Person()} useHashedColor={true} />}</td>
         <td>
-            {value.song && <SongChip value={value.song} startAdornment={gIconMap.MusicNote()} />}
-            {value.event && <EventChip value={value.event} startAdornment={gIconMap.CalendarMonth()} />}
-            {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} />}
-            {value.wikiPage && <WikiPageChip slug={value.wikiPage.slug} startAdornment={gIconMap.Article()} />}
+            {value.song && <SongChip value={value.song} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />}
+            {value.event && <EventChip value={value.event} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />}
+            {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />}
+            {value.wikiPage && <WikiPageChip slug={value.wikiPage.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />}
         </td>
     </tr>;
 };
@@ -68,6 +73,8 @@ const GeneralFeatureDetailArea = ({ feature, bucket, aggregateBy, filteredEventI
     return <table>
         <thead>
             <tr>
+                <th>#</th>
+                <th>Feature</th>
                 <th>When</th>
                 <th>URI</th>
                 <th>User</th>
@@ -76,7 +83,7 @@ const GeneralFeatureDetailArea = ({ feature, bucket, aggregateBy, filteredEventI
         </thead>
         <tbody>
             {detail && detail.data.map((item, index) => {
-                return <GeneralFeatureReportDetailItem key={index} value={item} />;
+                return <GeneralFeatureReportDetailItem key={index} value={item} index={detail.data.length - index} />;
             })}
         </tbody>
     </table>;
@@ -110,6 +117,12 @@ const GeneralFeatureStatsReport = () => {
     const handleBucketClick = (data: { bucket: string, count: number }, index: number, e) => {
         setSelectedBucket(data.bucket);
     };
+
+    const chartData = result.data.map((item) => ({
+        ...item,
+        //fill: selectedBucket === item.bucket ? "#c6c" : "#66c",
+        fill: selectedBucket === item.bucket ? "#cc8" : "#484",
+    }));
 
     return <div>
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -219,7 +232,8 @@ const GeneralFeatureStatsReport = () => {
         <ComposedChart
             width={600}
             height={600}
-            data={result.data}
+            //data={result.data}
+            data={chartData}
         >
             <CartesianGrid stroke="#f5f5f5" />
             <XAxis dataKey="bucket" />
@@ -227,7 +241,8 @@ const GeneralFeatureStatsReport = () => {
             <Tooltip />
             <Legend />
 
-            <Bar dataKey="count" barSize={30} fill="#44f" onClick={handleBucketClick} />
+            {/* <Bar dataKey="count" barSize={30} fill="#44f" onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} /> */}
+            <Bar dataKey="count" barSize={30} onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} />
 
         </ComposedChart>
 

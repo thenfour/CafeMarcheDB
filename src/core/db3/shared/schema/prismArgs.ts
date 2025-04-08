@@ -360,6 +360,7 @@ export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelat
 
 export type UserPayload_Name = Prisma.UserGetPayload<{
     select: {
+        id: true,
         name: true,
     }
 }>;

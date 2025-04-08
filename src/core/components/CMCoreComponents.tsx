@@ -8,7 +8,7 @@ import { Prisma } from "db";
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
-import { Coalesce } from "shared/utils";
+import { Coalesce, getHashedColor } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Icon, Tooltip } from "@mui/material";
@@ -248,6 +248,7 @@ export interface EventChipProps {
     className?: string;
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
+    useHashedColor?: boolean;
 };
 
 export const EventChip = (props: EventChipProps) => {
@@ -265,7 +266,9 @@ export const EventChip = (props: EventChipProps) => {
         color={dashboardContext.eventType.getById(props.value.typeId)?.color}
     >
         {props.startAdornment}
-        {db3.EventAPI.getLabel(props.value)}
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
+            {db3.EventAPI.getLabel(props.value)}
+        </span>
         {props.endAdornment}
     </CMChip>
 }
@@ -279,6 +282,7 @@ export interface SongChipProps {
     className?: string;
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
+    useHashedColor?: boolean;
 };
 
 export const SongChip = (props: SongChipProps) => {
@@ -293,7 +297,9 @@ export const SongChip = (props: SongChipProps) => {
         className={props.className}
     >
         {props.startAdornment}
-        {props.value.name}
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
+            {props.value.name}
+        </span>
         {props.endAdornment}
     </CMChip>
 }
@@ -308,6 +314,7 @@ export interface FileChipProps {
     className?: string;
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
+    useHashedColor?: boolean;
 };
 
 export const FileChip = (props: FileChipProps) => {
@@ -322,7 +329,9 @@ export const FileChip = (props: FileChipProps) => {
         className={props.className}
     >
         {props.startAdornment}
-        {props.value.fileLeafName}
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
+            {props.value.fileLeafName}
+        </span>
         {props.endAdornment}
     </CMChip>
 }
@@ -337,6 +346,7 @@ export interface WikiPageChipProps {
     className?: string;
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
+    useHashedColor?: boolean;
 };
 
 export const WikiPageChip = (props: WikiPageChipProps) => {
@@ -352,7 +362,9 @@ export const WikiPageChip = (props: WikiPageChipProps) => {
         className={props.className}
     >
         {props.startAdornment}
-        {props.slug}
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.slug) : undefined }}>
+            {props.slug}
+        </span>
         {props.endAdornment}
     </CMChip>
 }

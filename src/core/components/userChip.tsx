@@ -4,6 +4,7 @@ import { useQuery } from "@blitzjs/rpc";
 import getUser from "../db3/queries/getUser";
 import * as db3 from "src/core/db3/db3";
 import { ColorVariationSpec } from "shared/color";
+import { getHashedColor } from "shared/utils";
 
 
 export interface UserChipBaseProps {
@@ -13,6 +14,7 @@ export interface UserChipBaseProps {
     className?: string;
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
+    useHashedColor?: boolean;
 };
 
 // the user chip when you know the user info.
@@ -34,7 +36,9 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
         className={props.className}
     >
         {props.startAdornment}
-        {props.value?.name || "--"}
+        <span style={{ color: props.useHashedColor ? getHashedColor(props.value?.id.toString() || "") : undefined }}>
+            {props.value?.name || "--"}
+        </span>
         {props.endAdornment}
     </CMChip>
 }
@@ -48,18 +52,11 @@ const QueriedUserChip: React.FC<QueriedUserChipProps> = (props) => {
         size={props.size}
         onClick={props.onClick}
         className={props.className}
+        startAdornment={props.startAdornment}
+        endAdornment={props.endAdornment}
+        useHashedColor={props.useHashedColor}
     />;
 };
-
-// export interface UserChipProps {
-//     value?: db3.UserPayload_Name | null | undefined;
-//     userId?: number | null | undefined;
-
-//     variation?: ColorVariationSpec;
-//     size?: CMChipSizeOptions;
-//     onClick?: () => void;
-//     className?: string;
-// };
 
 export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
     return (props.userId !== undefined) ?
@@ -69,6 +66,9 @@ export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
             size={props.size}
             onClick={props.onClick}
             className={props.className}
+            startAdornment={props.startAdornment}
+            endAdornment={props.endAdornment}
+            useHashedColor={props.useHashedColor}
         />
         : <ValuedUserChip
             value={props.value}
@@ -76,6 +76,9 @@ export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
             size={props.size}
             onClick={props.onClick}
             className={props.className}
+            startAdornment={props.startAdornment}
+            endAdornment={props.endAdornment}
+            useHashedColor={props.useHashedColor}
         />
 }
 
