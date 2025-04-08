@@ -61,7 +61,7 @@ interface GeneralFeatureDetailAreaProps {
 
 const GeneralFeatureDetailArea = ({ features, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
 
-    console.log("generalFeatureDetailArea; bucket", bucket, "aggregateBy", aggregateBy, "filteredEventId", filteredEventId, "filteredSongId", filteredSongId, "filteredUserId", filteredUserId, "filteredWikiPageId", filteredWikiPageId);
+    //console.log("generalFeatureDetailArea; bucket", bucket, "aggregateBy", aggregateBy, "filteredEventId", filteredEventId, "filteredSongId", filteredSongId, "filteredUserId", filteredUserId, "filteredWikiPageId", filteredWikiPageId);
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
         features,
@@ -221,7 +221,10 @@ const GeneralFeatureStatsReport = () => {
 
                     <CMSingleSelect
                         value={aggregateBy}
-                        onChange={setAggregateBy}
+                        onChange={(option) => {
+                            setAggregateBy(option);
+                            setSelectedBucket(null); // buckets don't make sense anymore
+                        }}
                         getOptions={() => {
                             return Object.values(ReportAggregateBy);
                         }}
