@@ -22,6 +22,7 @@ import getGeneralFeatureReport from "src/core/db3/queries/getGeneralFeatureRepor
 import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { GeneralActivityReportDetailPayload, ReportAggregateBy } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { Tooltip as MuiTooltip } from "@mui/material";
 
 enum TabId {
     icalStats = "icalStats",
@@ -29,8 +30,8 @@ enum TabId {
     eventViews = "eventViews",
 };
 
-const AnonymizedUserChip = ({ value }: { value: string }) => {
-    return <Identicon string={value} size={25} />
+const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?: number }) => {
+    return <MuiTooltip title={value.substring(0, 6)} disableInteractive><span><Identicon string={value} size={size} /></span></MuiTooltip>;
 }
 
 const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivityReportDetailPayload, index: number }) => {
@@ -42,7 +43,6 @@ const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivi
         <td style={{ color: featureColor }}>{value.feature}</td>
         <td>{value.createdAt.toLocaleString()}</td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
-        {/* <td>{value.user && <UserChip value={value.user} startAdornment={gIconMap.Person()} useHashedColor={true} />}</td> */}
         <td>{value.userHash && <AnonymizedUserChip value={value.userHash} />}</td>
         <td>
             {value.song && <SongChip value={value.song} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />}
@@ -52,6 +52,29 @@ const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivi
         </td>
     </tr>;
 };
+
+
+
+const GeneralFeatureDetailTable = ({ data }: { data: GeneralActivityReportDetailPayload[] }) => {
+    return <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Feature</th>
+                <th>When</th>
+                <th>URI</th>
+                <th>User</th>
+                <th>...</th>
+            </tr>
+        </thead>
+        <tbody>
+            {data.map((item, index) => {
+                return <GeneralFeatureReportDetailItem key={index} value={item} index={data.length - index} />;
+            })}
+        </tbody>
+    </table>;
+}
+
 
 interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];
@@ -65,9 +88,13 @@ interface GeneralFeatureDetailAreaProps {
     refetchTrigger: number;
 };
 
+type DetailTabId = "general" | "users" | "songs" | "events" | "wikiPages" | "files";
+
 const GeneralFeatureDetailArea = ({ excludeYourself, features, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
 
     //console.log("generalFeatureDetailArea; bucket", bucket, "aggregateBy", aggregateBy, "filteredEventId", filteredEventId, "filteredSongId", filteredSongId, "filteredUserId", filteredUserId, "filteredWikiPageId", filteredWikiPageId);
+
+    const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
         features,
@@ -84,23 +111,111 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, bucket, aggregate
         refetchTrigger && refetch();
     }, [refetchTrigger]);
 
-    return <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Feature</th>
-                <th>When</th>
-                <th>URI</th>
-                <th>User</th>
-                <th>...</th>
-            </tr>
-        </thead>
-        <tbody>
-            {detail && detail.data.map((item, index) => {
-                return <GeneralFeatureReportDetailItem key={index} value={item} index={detail.data.length - index} />;
-            })}
-        </tbody>
-    </table>;
+    // get some distinct values...
+    const distinctSets: {
+        features: string[],
+        users: string[],
+        songIds: number[],
+        eventIds: number[],
+        wikiPageIds: number[],
+        fileIds: number[],
+    } = React.useMemo(() => {
+        if (!detail) {
+            return {
+                features: [],
+                users: [],
+                songIds: [],
+                eventIds: [],
+                wikiPageIds: [],
+                fileIds: [],
+            };
+        }
+
+        return {
+            features: [...new Set(detail.data.map((item) => item.feature))],
+            users: [...new Set(detail.data.filter(x => !!x.userHash).map((item) => item.userHash!))],
+            songIds: [...new Set(detail.data.filter(x => !!x.song).map((item) => item.song!.id))],
+            eventIds: [...new Set(detail.data.filter(x => !!x.event).map((item) => item.event!.id))],
+            wikiPageIds: [...new Set(detail.data.filter(x => !!x.wikiPage).map((item) => item.wikiPage!.id))],
+            fileIds: [...new Set(detail.data.filter(x => !!x.file).map((item) => item.file!.id))],
+        }
+    }, [detail]);
+
+    return <div>
+
+        <CMTabPanel handleTabChange={(e, newTabId: DetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
+            <CMTab thisTabId="general" summaryTitle={`General (${detail?.data.length})`} >
+                <GeneralFeatureDetailTable data={detail?.data || []} />
+            </CMTab>
+            <CMTab thisTabId="features" summaryTitle={`Features (${distinctSets.features.length})`} enabled={distinctSets.features.length > 1} >
+                {distinctSets.features.length > 1 && <div>
+                    {distinctSets.features.map((feature) => {
+                        return <div key={feature}>
+                            <strong>{feature}</strong>
+                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.feature === feature) || []} />
+                        </div>;
+                    })}
+                </div>}
+            </CMTab>
+            <CMTab thisTabId="users" summaryTitle={`Users (${distinctSets.users.length})`} enabled={distinctSets.users.length > 1} >
+                {distinctSets.users.length > 1 && <div>
+                    {distinctSets.users.map((user) => {
+                        return <div key={user}>
+                            <AnonymizedUserChip value={user} size={50} />
+                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.userHash === user) || []} />
+                        </div>;
+                    })}
+                </div>}
+            </CMTab>
+            <CMTab thisTabId="songs" summaryTitle={`Songs (${distinctSets.songIds.length})`} enabled={distinctSets.songIds.length > 1} >
+                {distinctSets.songIds.length > 1 && <div>
+                    {distinctSets.songIds.map((songId) => {
+                        const song = detail?.data.find((item) => item.song?.id === songId)?.song;
+                        return <div key={songId}>
+                            <SongChip value={song!} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />
+                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.song?.id === songId) || []} />
+                        </div>;
+                    })}
+                </div>}
+            </CMTab>
+            <CMTab thisTabId="events" summaryTitle={`Events (${distinctSets.eventIds.length})`} enabled={distinctSets.eventIds.length > 1} >
+                {distinctSets.eventIds.length > 1 && <div >
+                    {distinctSets.eventIds.map((eventId) => {
+                        const event = detail?.data.find((item) => item.event?.id === eventId)?.event;
+                        return <div key={eventId}>
+                            <EventChip value={event!} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />
+                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.event?.id === eventId) || []} />
+                        </div>;
+                    })}
+                </div>}
+            </CMTab>
+            <CMTab thisTabId="wikiPages" summaryTitle={`Wiki pages (${distinctSets.wikiPageIds.length})`} enabled={distinctSets.wikiPageIds.length > 1} >
+                {distinctSets.wikiPageIds.length > 1 && <div >
+                    {distinctSets.wikiPageIds.map((wikiPageId) => {
+                        const wikiPage = detail?.data.find((item) => item.wikiPage?.id === wikiPageId)?.wikiPage;
+                        return <div key={wikiPageId}>
+                            <WikiPageChip slug={wikiPage?.slug!} startAdornment={gIconMap.Article()} useHashedColor={true} />
+                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.wikiPage?.id === wikiPageId) || []} />
+                        </div>;
+                    })}
+                </div>}
+
+            </CMTab>
+            <CMTab thisTabId="files" summaryTitle={`Files (${distinctSets.fileIds.length})`} enabled={distinctSets.fileIds.length > 1} >
+                {distinctSets.fileIds.length > 1 && <div>
+                    {distinctSets.fileIds.map((fileId) => {
+                        const file = detail?.data.find((item) => item.file?.id === fileId)?.file;
+                        return <div key={fileId}>
+                            <FileChip value={file!} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />
+                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.file?.id === fileId) || []} />
+                        </div>;
+                    })}
+                </div>}
+            </CMTab>
+
+        </CMTabPanel>
+
+    </div>;
 };
 
 // to allow suspense to work right
@@ -256,7 +371,6 @@ const GeneralFeatureStatsReport = () => {
                             value={startDate}
                             onChange={(val) => {
                                 if (val) {
-                                    console.log("setStartDate", val);
                                     setStartDate(val);
                                 }
                             }}
@@ -266,7 +380,6 @@ const GeneralFeatureStatsReport = () => {
                             value={endDate}
                             onChange={(val) => {
                                 if (val) {
-                                    console.log("setEndDate", val);
                                     setEndDate(val);
                                 }
                             }}
