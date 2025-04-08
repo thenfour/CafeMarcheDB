@@ -6,6 +6,9 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { ActivityFeature } from "../shared/activityTracking";
 import { GeneralActivityReportDetailArgs, GeneralActivityReportDetailPayload, ReportAggregateBy } from "../shared/apiTypes";
+import { nanoid } from "nanoid";
+import { hashString } from "shared/utils";
+import { hash256 } from "@blitzjs/auth";
 
 const ZTGeneralFeatureDetailArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
@@ -57,8 +60,25 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
             createdAt: "desc",
         },
     });
+
+    // to anonymize users as much as possible, hash their userID with a deterministic salt
+    // which is a hash of query params.
+
+    const salt = hashString(
+        `${params.bucket}_${params.aggregateBy}_${params.excludeYourself}_5e0a4383307e4eb8322397d4bce4de0375e37c1a6c76bdb39abf5143e538b01b`
+    );
+
+    const anonymizedResults = results.map((result) => {
+        const anonymizedUserId = result.userId ? `${salt}${result.userId}` : null;
+        const { userId, user, ...rest } = result;
+        return {
+            ...rest,
+            userHash: anonymizedUserId ? hash256(anonymizedUserId) : null,
+        };
+    });
+
     return {
-        data: results
+        data: anonymizedResults,
     };
 }
 

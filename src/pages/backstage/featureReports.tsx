@@ -29,6 +29,12 @@ enum TabId {
     eventViews = "eventViews",
 };
 
+const AnonymizedUserChip = ({ value }: { value: string }) => {
+    const color = getHashedColor(value);
+    const backgroundColor = getHashedColor(value, { alpha: "0.2" });
+    return <span style={{ backgroundColor, color, fontFamily: "var(--ff-mono)" }}>{value.substring(0, 4)}</span>;
+}
+
 const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivityReportDetailPayload, index: number }) => {
 
     const featureColor = getHashedColor(value.feature);
@@ -38,7 +44,8 @@ const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivi
         <td style={{ color: featureColor }}>{value.feature}</td>
         <td>{value.createdAt.toLocaleString()}</td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
-        <td>{value.user && <UserChip value={value.user} startAdornment={gIconMap.Person()} useHashedColor={true} />}</td>
+        {/* <td>{value.user && <UserChip value={value.user} startAdornment={gIconMap.Person()} useHashedColor={true} />}</td> */}
+        <td>{value.userHash && <AnonymizedUserChip value={value.userHash} />}</td>
         <td>
             {value.song && <SongChip value={value.song} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />}
             {value.event && <EventChip value={value.event} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />}

@@ -1150,4 +1150,7 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
     }
 });
 
-export type GeneralActivityReportDetailPayload = Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>;
+// remove actual user & replace with anonymized hash
+export type GeneralActivityReportDetailPayload = Omit<Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>, "user" | "userId"> & {
+    userHash: string | null;
+};
