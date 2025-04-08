@@ -263,7 +263,7 @@ export const EventChip = (props: EventChipProps) => {
         size={props.size}
         onClick={clickHandler}
         className={props.className}
-        color={dashboardContext.eventType.getById(props.value.typeId)?.color}
+        color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
     >
         {props.startAdornment}
         <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
