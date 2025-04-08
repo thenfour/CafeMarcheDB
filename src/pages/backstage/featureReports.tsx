@@ -2,6 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel } from "@mui/material";
 import * as React from 'react';
+import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
@@ -14,7 +15,6 @@ import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
-import { UserChip } from "src/core/components/userChip";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as DB3Client from "src/core/db3/DB3Client";
 import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
@@ -30,9 +30,7 @@ enum TabId {
 };
 
 const AnonymizedUserChip = ({ value }: { value: string }) => {
-    const color = getHashedColor(value);
-    const backgroundColor = getHashedColor(value, { alpha: "0.2" });
-    return <span style={{ backgroundColor, color, fontFamily: "var(--ff-mono)" }}>{value.substring(0, 4)}</span>;
+    return <Identicon string={value} size={25} />
 }
 
 const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivityReportDetailPayload, index: number }) => {
