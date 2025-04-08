@@ -13,9 +13,9 @@ const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Da
     // get random ActivityFeature.
     const feature = faker.helpers.arrayElement([
         ActivityFeature.global_ical_digest,
-        //ActivityFeature.wiki_page_view,
+        ActivityFeature.wiki_page_view,
         ActivityFeature.song_view,
-        //ActivityFeature.event_view,
+        ActivityFeature.event_view,
         //ActivityFeature.file_download,
     ]);
 
@@ -42,17 +42,19 @@ const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Da
         //         }
         //     });
         //     return;
-        // case ActivityFeature.wiki_page_view:
-        // await gState.prisma.action.create({
-        //     data: {
-        //         feature,
-        //         isClient: false,
-        //         userId,
-        //         createdAt: date,
-        //         uri: 
-        //     }
-        // });
-        // return;
+        case ActivityFeature.wiki_page_view:
+            const wikiPage = faker.helpers.arrayElement(gState.gAllWikiPages);
+            await gState.prisma.action.create({
+                data: {
+                    feature,
+                    isClient: true,
+                    userId,
+                    createdAt: date,
+                    uri: `/backstage/wiki/${wikiPage.slug}`,
+                    wikiPageId: wikiPage.id,
+                }
+            });
+            return;
         case ActivityFeature.song_view:
             const song = faker.helpers.arrayElement(gState.gAllSongs);
             await gState.prisma.action.create({
@@ -68,18 +70,18 @@ const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Da
             return;
         default:
         case ActivityFeature.event_view:
-        // const event = faker.helpers.arrayElement(gState.gallev);
-        // await gState.prisma.action.create({
-        //     data: {
-        //         feature,
-        //         isClient: true,
-        //         userId,
-        //         createdAt: date,
-        //         uri: `/backstage/song/${song.id}/${slugify(song.name)}`,
-        //         songId: song.id,
-        //     }
-        // });
-        // return;
+            const event = faker.helpers.arrayElement(gState.gAllEvents);
+            await gState.prisma.action.create({
+                data: {
+                    feature,
+                    isClient: true,
+                    userId,
+                    createdAt: date,
+                    uri: `/backstage/event/${event.id}/${slugify(event.name)}`,
+                    eventId: event.id,
+                }
+            });
+            return;
         case ActivityFeature.file_download:
             return;
     };

@@ -4,6 +4,7 @@ import { gPermissionOrdered } from '../shared/permissions';
 import { SeedingState } from './seeding/base';
 import { SeedEvents_VeryRandom } from './seeding/events';
 import { SeedActivity } from './seeding/activitySeeding';
+import { SeedWikiPages } from './seeding/wikiPageSeeding';
 
 const gState = new SeedingState();
 
@@ -1107,6 +1108,8 @@ const main = async () => {
   gState.gAllAttendanceOptions = await gState.prisma.eventAttendance.findMany();
 
   await SeedEvents_VeryRandom(gState);
+
+  await SeedWikiPages(gState);
 
   await SeedActivity(gState);
 };

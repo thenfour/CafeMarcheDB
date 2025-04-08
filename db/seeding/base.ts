@@ -15,6 +15,8 @@ export class SeedingState {
     gAllEventTypes: Prisma.EventTypeGetPayload<{}>[] = [];
     gAllEventStatuses: Prisma.EventStatusGetPayload<{}>[] = [];
     gAllEventTags: Prisma.EventTagGetPayload<{}>[] = [];
+    gAllEvents: Prisma.EventGetPayload<{}>[] = [];
+    gAllWikiPages: Prisma.WikiPageGetPayload<{}>[] = [];
     gAllUsers: Prisma.UserGetPayload<{}>[] = [];
     gAllSongTags: Prisma.SongTagGetPayload<{}>[] = [];
     gAllSongCreditTypes: Prisma.SongCreditTypeGetPayload<{}>[] = [];

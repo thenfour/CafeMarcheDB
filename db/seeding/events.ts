@@ -430,6 +430,7 @@ export const SeedEvents_VeryRandom = async (gState: SeedingState) => {
         MakeEvent(gState, e.name, e.typeId, e.segments);
     });
 
+    gState.gAllEvents = await gState.prisma.event.findMany({});
 };
 
 
