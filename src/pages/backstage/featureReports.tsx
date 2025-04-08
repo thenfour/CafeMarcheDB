@@ -1,11 +1,11 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Accordion, AccordionDetails, AccordionSummary, Button } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel } from "@mui/material";
 import * as React from 'react';
 import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
-import { CalcRelativeTiming, CalcRelativeTimingFromNow, roundToNearest15Minutes } from "shared/time";
+import { roundToNearest15Minutes } from "shared/time";
 import { getHashedColor, smartTruncate } from "shared/utils";
 import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -52,6 +52,7 @@ interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];
     bucket: string | null;
     aggregateBy: ReportAggregateBy;
+    excludeYourself: boolean;
     filteredSongId: number | undefined;
     filteredEventId: number | undefined;
     filteredUserId: number | undefined;
@@ -59,7 +60,7 @@ interface GeneralFeatureDetailAreaProps {
     refetchTrigger: number;
 };
 
-const GeneralFeatureDetailArea = ({ features, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
+const GeneralFeatureDetailArea = ({ excludeYourself, features, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
 
     //console.log("generalFeatureDetailArea; bucket", bucket, "aggregateBy", aggregateBy, "filteredEventId", filteredEventId, "filteredSongId", filteredSongId, "filteredUserId", filteredUserId, "filteredWikiPageId", filteredWikiPageId);
 
@@ -68,6 +69,7 @@ const GeneralFeatureDetailArea = ({ features, bucket, aggregateBy, filteredEvent
         bucket,
         aggregateBy,
         filteredSongId,
+        excludeYourself,
         filteredEventId,
         filteredUserId,
         filteredWikiPageId,
@@ -100,6 +102,7 @@ const GeneralFeatureDetailArea = ({ features, bucket, aggregateBy, filteredEvent
 interface GeneralFeatureStatsReportInnerProps {
     features: ActivityFeature[],
     selectedBucket: string | null,
+    excludeYourself: boolean;
     aggregateBy: ReportAggregateBy,
     filteredSongId: number | undefined,
     filteredEventId: number | undefined,
@@ -111,12 +114,13 @@ interface GeneralFeatureStatsReportInnerProps {
     refetchTrigger: number,
     setDataUpdatedAt: (date: Date) => void,
 };
-const GeneralFeatureStatsReportInner = ({ setDataUpdatedAt, refetchTrigger, onClickBucket, features, selectedBucket, aggregateBy, filteredSongId,
+const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, refetchTrigger, onClickBucket, features, selectedBucket, aggregateBy, filteredSongId,
     filteredEventId,
     filteredUserId,
     filteredWikiPageId, startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         features,
+        excludeYourself,
         startDate,//: roundToNearest15Minutes(startDate),
         endDate,//: roundToNearest15Minutes(endDate),
         aggregateBy,
@@ -169,6 +173,7 @@ const GeneralFeatureStatsReport = () => {
     const now = React.useMemo(() => new Date(), []);
     const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
+    const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
@@ -264,6 +269,8 @@ const GeneralFeatureStatsReport = () => {
                     </>
                 } />
 
+                <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
+
                 <AssociationSelect
                     title="Filter by user"
                     allowedItemTypes={[QuickSearchItemType.user]}
@@ -302,6 +309,7 @@ const GeneralFeatureStatsReport = () => {
                 features={features}
                 selectedBucket={selectedBucket}
                 aggregateBy={aggregateBy}
+                excludeYourself={excludeYourself}
                 filteredSongId={filteredSong?.id}
                 filteredEventId={filteredEvent?.id}
                 filteredUserId={filteredUser?.id}
@@ -319,6 +327,7 @@ const GeneralFeatureStatsReport = () => {
                 features={features}
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
+                excludeYourself={excludeYourself}
                 filteredSongId={filteredSong?.id}
                 filteredEventId={filteredEvent?.id}
                 filteredUserId={filteredUser?.id}

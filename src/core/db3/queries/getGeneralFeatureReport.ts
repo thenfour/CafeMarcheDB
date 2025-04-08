@@ -12,6 +12,7 @@ const ZTGeneralFeatureReportArgs = z.object({
     startDate: z.date(),
     endDate: z.date(),
     aggregateBy: z.nativeEnum(ReportAggregateBy),
+    excludeYourself: z.boolean(),
 
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
@@ -28,7 +29,7 @@ interface GeneralFeatureReportResult {
     }[];
 };
 
-async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs): Promise<GeneralFeatureReportResult> {
+async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs, ctx: AuthenticatedCtx): Promise<GeneralFeatureReportResult> {
     const {
         features,
         startDate,
@@ -65,6 +66,12 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         conditions.push(`${MySqlSymbol("wikiPageId")} = ${filteredWikiPageId}`);
     }
 
+    // exclude the current user optionally
+    if (params.excludeYourself) {
+        const currentUserId = ctx.session.userId;
+        conditions.push(`${MySqlSymbol("userId")} != ${currentUserId}`);
+    }
+
     // Combine conditions in a single WHERE clause
     const whereClause = conditions.length
         ? "WHERE " + conditions.join(" AND ")
@@ -99,6 +106,6 @@ export default resolver.pipe(
     resolver.zod(ZTGeneralFeatureReportArgs),
     resolver.authorize(Permission.sysadmin),
     async (args, ctx: AuthenticatedCtx): Promise<GeneralFeatureReportResult> => {
-        return await getActionCountsByDateRangeMySQL(args);
+        return await getActionCountsByDateRangeMySQL(args, ctx);
     }
 );

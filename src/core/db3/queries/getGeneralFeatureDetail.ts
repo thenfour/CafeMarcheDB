@@ -11,6 +11,7 @@ const ZTGeneralFeatureDetailArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
     bucket: z.string().nullable(),
     aggregateBy: z.nativeEnum(ReportAggregateBy),
+    excludeYourself: z.boolean(),
 
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
@@ -24,7 +25,7 @@ interface GeneralFeatureDetailResult {
     data: GeneralActivityReportDetailPayload[];
 };
 
-async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs): Promise<GeneralFeatureDetailResult | null> {
+async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs, ctx: AuthenticatedCtx): Promise<GeneralFeatureDetailResult | null> {
     if (!params.bucket) {
         return null;
     }
@@ -45,6 +46,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
                 gte: dateRange.start,
                 lt: dateRange.end,
             },
+            ...(params.excludeYourself && { userId: { not: ctx.session.userId } }),
             ...(filteredSongId && { songId: filteredSongId }),
             ...(filteredEventId && { eventId: filteredEventId }),
             ...(filteredUserId && { userId: filteredUserId }),
@@ -64,6 +66,6 @@ export default resolver.pipe(
     resolver.zod(ZTGeneralFeatureDetailArgs),
     resolver.authorize(Permission.sysadmin),
     async (args, ctx: AuthenticatedCtx): Promise<GeneralFeatureDetailResult | null> => {
-        return await getActionCountsByDateRangeMySQL(args);
+        return await getActionCountsByDateRangeMySQL(args, ctx);
     }
 );
