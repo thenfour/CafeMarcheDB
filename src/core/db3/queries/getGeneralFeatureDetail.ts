@@ -8,7 +8,7 @@ import { ActivityFeature } from "../shared/activityTracking";
 import { GeneralActivityReportDetailArgs, GeneralActivityReportDetailPayload, ReportAggregateBy } from "../shared/apiTypes";
 
 const ZTGeneralFeatureDetailArgs = z.object({
-    feature: z.nativeEnum(ActivityFeature),
+    features: z.nativeEnum(ActivityFeature).array(),
     bucket: z.string().nullable(),
     aggregateBy: z.nativeEnum(ReportAggregateBy),
 
@@ -29,7 +29,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
         return null;
     }
     const {
-        feature,
+        features,
         filteredSongId,
         filteredEventId,
         filteredUserId,
@@ -40,7 +40,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
 
     const results = await db.action.findMany({
         where: {
-            feature: feature,
+            ...(features.length > 0 && { feature: { in: features } }),
             createdAt: {
                 gte: dateRange.start,
                 lt: dateRange.end,

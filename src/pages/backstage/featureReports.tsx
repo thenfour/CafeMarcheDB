@@ -9,7 +9,7 @@ import { CalcRelativeTiming, CalcRelativeTimingFromNow, roundToNearest15Minutes 
 import { getHashedColor, smartTruncate } from "shared/utils";
 import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { CMSingleSelect } from "src/core/components/CMSelect";
+import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
@@ -49,19 +49,22 @@ const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivi
 };
 
 interface GeneralFeatureDetailAreaProps {
-    feature: ActivityFeature;
+    features: ActivityFeature[];
     bucket: string | null;
     aggregateBy: ReportAggregateBy;
     filteredSongId: number | undefined;
     filteredEventId: number | undefined;
     filteredUserId: number | undefined;
     filteredWikiPageId: number | undefined;
+    refetchTrigger: number;
 };
 
-const GeneralFeatureDetailArea = ({ feature, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId }: GeneralFeatureDetailAreaProps) => {
+const GeneralFeatureDetailArea = ({ features, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
 
-    const [detail] = useQuery(getGeneralFeatureDetail, {
-        feature,
+    console.log("generalFeatureDetailArea; bucket", bucket, "aggregateBy", aggregateBy, "filteredEventId", filteredEventId, "filteredSongId", filteredSongId, "filteredUserId", filteredUserId, "filteredWikiPageId", filteredWikiPageId);
+
+    const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
+        features,
         bucket,
         aggregateBy,
         filteredSongId,
@@ -69,6 +72,10 @@ const GeneralFeatureDetailArea = ({ feature, bucket, aggregateBy, filteredEventI
         filteredUserId,
         filteredWikiPageId,
     });
+
+    React.useEffect(() => {
+        refetchTrigger && refetch();
+    }, [refetchTrigger]);
 
     return <table>
         <thead>
@@ -89,9 +96,78 @@ const GeneralFeatureDetailArea = ({ feature, bucket, aggregateBy, filteredEventI
     </table>;
 };
 
+// to allow suspense to work right
+interface GeneralFeatureStatsReportInnerProps {
+    features: ActivityFeature[],
+    selectedBucket: string | null,
+    aggregateBy: ReportAggregateBy,
+    filteredSongId: number | undefined,
+    filteredEventId: number | undefined,
+    filteredUserId: number | undefined,
+    filteredWikiPageId: number | undefined,
+    startDate: Date,
+    endDate: Date,
+    onClickBucket: (bucket: string) => void,
+    refetchTrigger: number,
+    setDataUpdatedAt: (date: Date) => void,
+};
+const GeneralFeatureStatsReportInner = ({ setDataUpdatedAt, refetchTrigger, onClickBucket, features, selectedBucket, aggregateBy, filteredSongId,
+    filteredEventId,
+    filteredUserId,
+    filteredWikiPageId, startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
+    const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
+        features,
+        startDate,//: roundToNearest15Minutes(startDate),
+        endDate,//: roundToNearest15Minutes(endDate),
+        aggregateBy,
+        filteredSongId,//: filteredSong?.id,
+        filteredEventId,//: filteredEvent?.id,
+        filteredUserId,//: filteredUser?.id,
+        filteredWikiPageId,//: filteredWikiPage?.id,
+    });
+
+    React.useEffect(() => {
+        refetchTrigger && refetch();
+    }, [refetchTrigger]);
+
+    React.useEffect(() => {
+        if (dataUpdatedAt) {
+            setDataUpdatedAt(new Date(dataUpdatedAt));
+        }
+    }, [dataUpdatedAt]);
+
+    const chartData = result.data.map((item) => ({
+        ...item,
+        //fill: selectedBucket === item.bucket ? "#c6c" : "#66c",
+        fill: selectedBucket === item.bucket ? "#cc8" : "#484",
+    }));
+
+    const handleBucketClick = (data: { bucket: string, count: number }, index: number, e) => {
+        onClickBucket(data.bucket);
+    };
+
+    return <ComposedChart
+        width={600}
+        height={600}
+        data={chartData}
+    >
+        <CartesianGrid stroke="#f5f5f5" />
+        <XAxis dataKey="bucket" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+
+        {/* <Bar dataKey="count" barSize={30} fill="#44f" onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} /> */}
+        <Bar dataKey="count" barSize={30} onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} />
+
+    </ComposedChart>
+
+
+};
+
 const GeneralFeatureStatsReport = () => {
     const now = React.useMemo(() => new Date(), []);
-    const [feature, setFeature] = React.useState<ActivityFeature>(ActivityFeature.event_view);
+    const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
@@ -102,52 +178,41 @@ const GeneralFeatureStatsReport = () => {
     const [filteredWikiPage, setFilteredWikiPage] = React.useState<QuickSearchItemMatch | undefined>(undefined);
 
     const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
+    const [refetchTrigger, setRefetchTrigger] = React.useState(0);
 
-    const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
-        feature,
-        startDate: roundToNearest15Minutes(startDate),
-        endDate: roundToNearest15Minutes(endDate),
-        aggregateBy,
-        filteredSongId: filteredSong?.id,
-        filteredEventId: filteredEvent?.id,
-        filteredUserId: filteredUser?.id,
-        filteredWikiPageId: filteredWikiPage?.id,
-    });
+    const [dataUpdatedAt, setDataUpdatedAt] = React.useState<Date>(now);
 
-    const handleBucketClick = (data: { bucket: string, count: number }, index: number, e) => {
-        setSelectedBucket(data.bucket);
-    };
+    const realStartDate = roundToNearest15Minutes(startDate);
+    const realEndDate = roundToNearest15Minutes(endDate);
 
-    const chartData = result.data.map((item) => ({
-        ...item,
-        //fill: selectedBucket === item.bucket ? "#c6c" : "#66c",
-        fill: selectedBucket === item.bucket ? "#cc8" : "#484",
-    }));
 
     return <div>
         <div style={{ display: "flex", alignItems: "center" }}>
-            <Button onClick={() => refetch()}>Refresh</Button>
+            <Button onClick={() => setRefetchTrigger(x => x + 1)}>Refresh</Button>
             <span className="smallText">
-                last updated: <AgeRelativeToNow value={new Date(dataUpdatedAt)} />
+                last updated: <AgeRelativeToNow value={dataUpdatedAt} />
             </span>
         </div>
+
         <NameValuePair name="Feature" value={
-            <CMSingleSelect
-                value={feature}
-                onChange={setFeature}
-                getOptions={() => {
-                    return Object.values(ActivityFeature);
-                }}
-                getOptionInfo={(item) => {
-                    return {
-                        id: item.toString(),
-                    };
-                }}
-                nullBehavior={CMSelectNullBehavior.NonNullable}
-                renderOption={(item) => {
-                    return item.toString();
-                }}
-            />
+            <>
+                <Button onClick={() => setFeatures([])} >Clear</Button>
+                <CMMultiSelect
+                    value={features}
+                    onChange={setFeatures}
+                    getOptions={() => {
+                        return Object.values(ActivityFeature);
+                    }}
+                    getOptionInfo={(item) => {
+                        return {
+                            id: item.toString(),
+                        };
+                    }}
+                    renderOption={(item) => {
+                        return item.toString();
+                    }}
+                />
+            </>
         } />
         <Accordion defaultExpanded={false}>
             <AccordionSummary>Filters</AccordionSummary>
@@ -229,32 +294,33 @@ const GeneralFeatureStatsReport = () => {
             </AccordionDetails>
         </Accordion>
 
-        <ComposedChart
-            width={600}
-            height={600}
-            //data={result.data}
-            data={chartData}
-        >
-            <CartesianGrid stroke="#f5f5f5" />
-            <XAxis dataKey="bucket" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-
-            {/* <Bar dataKey="count" barSize={30} fill="#44f" onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} /> */}
-            <Bar dataKey="count" barSize={30} onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} />
-
-        </ComposedChart>
+        <React.Suspense>
+            <GeneralFeatureStatsReportInner
+                features={features}
+                selectedBucket={selectedBucket}
+                aggregateBy={aggregateBy}
+                filteredSongId={filteredSong?.id}
+                filteredEventId={filteredEvent?.id}
+                filteredUserId={filteredUser?.id}
+                filteredWikiPageId={filteredWikiPage?.id}
+                startDate={realStartDate}
+                endDate={realEndDate}
+                onClickBucket={setSelectedBucket}
+                refetchTrigger={refetchTrigger}
+                setDataUpdatedAt={setDataUpdatedAt}
+            />
+        </React.Suspense>
 
         <React.Suspense>
             <GeneralFeatureDetailArea
-                feature={feature}
+                features={features}
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 filteredSongId={filteredSong?.id}
                 filteredEventId={filteredEvent?.id}
                 filteredUserId={filteredUser?.id}
                 filteredWikiPageId={filteredWikiPage?.id}
+                refetchTrigger={refetchTrigger}
             />
         </React.Suspense>
     </div>;
