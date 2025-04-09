@@ -1,6 +1,5 @@
 
 // no admin page:
-// - song comments
 // - song credits
 
 import { Prisma } from "db";
