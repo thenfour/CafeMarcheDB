@@ -10,8 +10,8 @@ import { SortDirection } from "shared/rootroot";
 import { IsNullOrWhitespace, arrayToTSV } from "shared/utils";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
-import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
+import { CMSmallButton, simulateLinkClick, useURLState } from "src/core/components/CMCoreComponents2";
+import { DashboardContext, useDashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -20,6 +20,7 @@ import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongOrderB
 import { useSongListData } from "src/core/components/SongSearch";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -40,11 +41,21 @@ const SongListItem = (props: SongListItemProps) => {
     const hasPartitions = fileInfo.partitions.length > 0;
     const hasRecordings = fileInfo.recordings.length > 0;
     const hasOtherFiles = fileInfo.otherFiles.length > 0;
+    const recordAction = useFeatureRecorder();
 
     return <div className={`songListItem`}>
         <div className="titleLine">
             <div className="topTitleLine">
-                <a className="nameLink" href={songData.songURI}>{props.song.name}</a>
+                <a className="nameLink" href={songData.songURI} onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await recordAction({
+                        feature: ActivityFeature.song_search_link_click,
+                        songId: props.song.id,
+                        queryText: props.filterSpec.quickFilter,
+                    });
+                    simulateLinkClick(songData.songURI);
+                }}>{props.song.name}</a>
                 {props.song.introducedYear && <span className="introducedYear">({props.song.introducedYear})</span>}
                 <div style={{ flexGrow: 1 }}></div>
                 <span className="resultIndex">#{props.index}</span>

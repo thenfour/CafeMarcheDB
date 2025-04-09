@@ -96,7 +96,8 @@ model Action {
   uri       String? // if applicable
   isClient  Boolean
   feature   String // of enum ActivityFeature
-  context   String? // free string trying to describe client context triggering the action
+  queryText String? // if applicable
+  context   String? // free string trying to describe client context triggering the action.
 
   fileId     Int?
   file       File?     @relation(fields: [fileId], references: [id], onDelete: Cascade) // files are soft-delete; deleting a file will delete the action

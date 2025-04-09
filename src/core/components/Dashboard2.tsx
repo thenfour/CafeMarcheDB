@@ -38,14 +38,15 @@ import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { AdminInspectObject } from "./CMCoreComponents";
-import { simulateLinkClick } from "./CMCoreComponents2";
+import { simulateLinkClick, simulateLinkClick2 } from "./CMCoreComponents2";
 import { ConfirmProvider } from "./ConfirmationDialog";
-import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
+import { DashboardContext, DashboardContextData, DashboardContextProvider, useFeatureRecorder } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
 import { MainSiteSearch } from "./MainSiteSearch";
 import { MessageBoxProvider } from "./context/MessageBoxContext";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 
 const drawerWidth = 260;
 
@@ -314,6 +315,7 @@ interface MenuItemComponentProps {
 
 const MenuItemComponent = (props: MenuItemComponentProps) => {
     const router = useRouter();
+    const recordFeature = useFeatureRecorder();
     if (props.item.item.type === "divider") {
         return <Divider className={`${props.item.group.className} divider`} />;
     }
@@ -330,6 +332,16 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
         return (<ListItemButton
             component={Link}
             href={props.item.item.path}
+            onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const menuLink = props.item.item as MenuItemLink;
+                await recordFeature({
+                    feature: ActivityFeature.dashboard_menu_link_click,
+                    context: `MenuItem/${menuLink.linkCaption}`,
+                });
+                simulateLinkClick2(menuLink.path, e);
+            }}
             selected={selected}
             className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}
             target={props.item.item.openInNewTab ? "_blank" : undefined}

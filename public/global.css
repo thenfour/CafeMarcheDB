@@ -831,3 +831,14 @@ solution is to
   width: 100%;
   /* also required to push the clear button to the right */
 }
+
+.GeneralFeatureReportDetailItemRow td .queryText {
+  font-family: var(--ff-mono);
+  padding: 2px 12px;
+  background-color: #ddd;
+  color: #999;
+}
+
+.GeneralFeatureReportDetailItemRow td .queryText .actualQueryText {
+  color: #11e;
+}

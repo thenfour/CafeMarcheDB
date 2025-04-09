@@ -37,7 +37,7 @@ const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivi
 
     const featureColor = getHashedColor(value.feature);
 
-    return <tr>
+    return <tr className="GeneralFeatureReportDetailItemRow">
         <td style={{ fontFamily: "var(--ff-mono)" }}>#{index}</td>
         <td style={{ color: featureColor }}>{value.feature}</td>
         <td>{value.createdAt.toLocaleString()}</td>
@@ -48,6 +48,10 @@ const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivi
             {value.event && <EventChip value={value.event} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />}
             {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />}
             {value.wikiPage && <WikiPageChip slug={value.wikiPage.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />}
+        </td>
+        <td>{value.context}</td>
+        <td style={{ whiteSpace: "nowrap" }}>
+            {value.queryText && <span className="queryText">"<span className="actualQueryText">{value.queryText}</span>"</span>}
         </td>
     </tr>;
 };
@@ -63,7 +67,9 @@ const GeneralFeatureDetailTable = ({ data }: { data: GeneralActivityReportDetail
                 <th>When</th>
                 <th>URI</th>
                 <th>User</th>
-                <th>...</th>
+                <th></th>
+                <th>Context</th>
+                <th>Query</th>
             </tr>
         </thead>
         <tbody>

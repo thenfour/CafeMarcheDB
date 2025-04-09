@@ -23,17 +23,18 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
-import { CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair, simulateLinkClick2 } from './CMCoreComponents2';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
-import { DashboardContext } from './DashboardContext';
+import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { Markdown } from "./markdown/Markdown";
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { useMessageBox } from './context/MessageBoxContext';
+import { ActivityFeature } from '../db3/shared/activityTracking';
 
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
@@ -245,6 +246,7 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
 };
 
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
+    const recordFeature = useFeatureRecorder();
     if (props.value.type === 'divider') {
         if (props.value.isSong) {
             return <EventSongListValueViewerDividerSongRow {...props} />;
@@ -263,7 +265,19 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
         </div>
         <div className="td songName">
-            {props.value.type === 'song' && <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)}>{props.value.song.name}</a>}
+            {props.value.type === 'song' && <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} onClick={async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (props.value.type === 'song') {
+                    await recordFeature({
+                        feature: ActivityFeature.setlist_song_link_click,
+                        songId: props.value.song.id,
+                        eventId: props.songList.eventId,
+                        context: `Setlist`,
+                    });
+                    simulateLinkClick2(API.songs.getURIForSong(props.value.song), e);
+                }
+            }}>{props.value.song.name}</a>}
         </div>
         <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
         <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>

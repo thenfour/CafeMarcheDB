@@ -21,6 +21,7 @@ import { SnackbarContext, SnackbarContextType } from "src/core/components/Snackb
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -146,6 +147,8 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
                     refetch={refetch}
                     results={results}
                     showTabs={false}
+                    feature={ActivityFeature.event_search_link_click}
+                    queryText={filterSpec.quickFilter}
                 />
             ))}
         </InfiniteScroll>

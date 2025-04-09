@@ -6,9 +6,15 @@ export enum ActivityFeature {
     song_view = "song_view",
     event_view = "event_view",
     file_download = "file_download",
-    // adding to this, consider seeding.
-    //public_homepage_view = "public_homepage_view", <-- for this use something like ga
-
+    // note that link clicks are not 100% reliable;
+    // for example right-clicking a link and opening in a new tab will not trigger this event.
+    main_search_link_click = "main_search_link_click",
+    song_search_link_click = "song_search_link_click",
+    event_search_link_click = "event_search_link_click",
+    relevant_event_link_click = "relevant_event_link_click",
+    big_calendar_event_link_click = "big_calendar_event_link_click",
+    setlist_song_link_click = "setlist_song_link_click",
+    dashboard_menu_link_click = "dashboard_menu_link_click",
 };
 
 // activity tracking for feature usage
@@ -19,5 +25,7 @@ export type ClientActivityParams = {
     fileId?: number;
     songId?: number;
     wikiPageId?: number;
+    context?: string;
+    queryText?: string;
 };
 

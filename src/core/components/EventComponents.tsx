@@ -27,11 +27,11 @@ import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEve
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair, simulateLinkClick, simulateLinkClick2 } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
-import { DashboardContext, DashboardContextData, useDashboardContext } from './DashboardContext';
+import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
@@ -49,6 +49,7 @@ import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { Markdown } from './markdown/Markdown';
+import { ActivityFeature } from '../db3/shared/activityTracking';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1566,11 +1567,14 @@ export interface EventSearchItemContainerProps {
     highlightStatusIds?: number[];
     highlightTypeIds?: number[];
     reducedInfo?: boolean; // show less info
+    feature: ActivityFeature;
+    queryText?: string;
 }
 
 export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = React.useContext(DashboardContext);
     const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusIds || [];
@@ -1649,13 +1653,25 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
         <div className='content'>
             {/* for search results it's really best if we allow the whole row to be clickable. */}
-            <Link href={eventURI} className="titleLink">
+            <a href={eventURI} className="titleLink" onClick={async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                await recordFeature({
+                    feature: props.feature,
+                    eventId: event.id,
+                    context: `EventSearchItemContainer`,
+                    queryText: props.queryText,
+                });
+
+                simulateLinkClick2(eventURI, e);
+            }
+            }>
                 <div className='titleLine'>
                     <div className="titleText">
                         {event.name}
                     </div>
                 </div>
-            </Link>
+            </a>
 
             <div className='titleLine'>
                 <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
@@ -1695,6 +1711,8 @@ export interface EventListItemProps {
     showTabs?: boolean;
     showAttendanceControl?: boolean;
     reducedInfo?: boolean; // show less info, like in the event list.
+    feature: ActivityFeature;
+    queryText?: string;
 };
 
 export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
@@ -1707,6 +1725,8 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         highlightStatusIds={props.filterSpec ? props.filterSpec.statusFilter.options as number[] : []}
         highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options as number[] : []}
         reducedInfo={reducedInfo}
+        feature={props.feature}
+        queryText={props.queryText}
     >
         {showAttendanceControl &&
             <EventAttendanceControl
@@ -1722,12 +1742,16 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
                     icon={<EditNote />}
                     title="View info"
                     uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                    eventId={event.id}
+                    feature={props.feature}
                 />
                 }
                 {event.songLists.length > 0 && <SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="View setlist"
                     uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                    eventId={event.id}
+                    feature={props.feature}
                 />
                 }
             </div>

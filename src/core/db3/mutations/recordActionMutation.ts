@@ -21,6 +21,8 @@ export default resolver.pipe(
                 fileId: args.fileId,
                 songId: args.songId,
                 wikiPageId: args.wikiPageId,
+                context: args.context,
+                queryText: args.queryText,
             },
         });
 

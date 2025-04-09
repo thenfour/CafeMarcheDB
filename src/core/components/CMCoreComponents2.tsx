@@ -177,6 +177,19 @@ export const simulateLinkClickTargetBlank = (url: Url) => {
     document.body.removeChild(link);
 };
 
+// reacts to ctrl key and prevents bubbling
+export const simulateLinkClick2 = (url: Url, e: React.MouseEvent) => {
+    if (IsNullOrWhitespace(url)) return;
+    e.stopPropagation();
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+        simulateLinkClickTargetBlank(url);
+    }
+    else {
+        simulateLinkClick(url);
+    }
+};
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const DebugCollapsibleText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {
     const [open, setOpen] = React.useState<boolean>(false);

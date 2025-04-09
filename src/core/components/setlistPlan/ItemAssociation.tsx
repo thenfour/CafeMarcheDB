@@ -160,7 +160,7 @@ export interface AssociationAutocompleteProps {
     /**
      * Called when the user selects a result from the Autocomplete list.
      */
-    onSelect: (newValue: QuickSearchItemMatch | null) => void;
+    onSelect: (newValue: QuickSearchItemMatch | null, queryText: string) => void;
 
     /**
      * Allowed item types for the fetch operation.
@@ -237,7 +237,8 @@ export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = tr
                     // but you might do something with that here if you want
                     return;
                 }
-                props.onSelect(newValue);
+
+                props.onSelect(newValue, queryText);
             }}
             options={results}
             getOptionLabel={(option) => {

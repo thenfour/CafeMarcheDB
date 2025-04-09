@@ -14,6 +14,9 @@ export const ZTRecordActionArgs = z.object({
     fileId: z.number().optional(),
     songId: z.number().optional(),
     wikiPageId: z.number().optional(),
+
+    context: z.string().optional(),
+    queryText: z.string().optional(),
 });
 
 type RecordActionArgs = z.infer<typeof ZTRecordActionArgs>;

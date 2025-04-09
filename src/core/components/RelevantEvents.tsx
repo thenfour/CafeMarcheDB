@@ -12,9 +12,10 @@ import getUserTagWithAssignments from "../db3/queries/getUserTagWithAssignments"
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../db3/shared/apiTypes";
 import { simulateLinkClick } from "./CMCoreComponents2";
 import { GetStyleVariablesForColor } from "./Color";
-import { useDashboardContext } from "./DashboardContext";
+import { useDashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 
 // events happening TODAY can be a search result card, maximum 1.
 // but all other events should be in a list of smaller cards.
@@ -36,6 +37,7 @@ function formatShortDate(date: Date, locale: string = navigator.language): strin
 
 export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {
     const dashboardContext = useDashboardContext();
+    const recordFeature = useFeatureRecorder();
     const visInfo = dashboardContext.getVisibilityInfo(event);
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Weak,
@@ -50,7 +52,14 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
         `status_${event.status?.significance}`,
     ];
 
-    return <div className={classes.join(" ")} style={typeStyle.style} onClick={() => simulateLinkClick(API.events.getURIForEvent(event))} >
+    return <div className={classes.join(" ")} style={typeStyle.style} onClick={async () => {
+        await recordFeature({
+            feature: ActivityFeature.relevant_event_link_click,
+            eventId: event.id,
+            context: `SubtleEventCard`,
+        });
+        simulateLinkClick(API.events.getURIForEvent(event));
+    }} >
         <div className="SubtleEventCardTitle">
             {/* {gIconMap.CalendarMonth()} */}
             <div>{event.name}</div>
@@ -66,12 +75,16 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
                 icon={<InfoOutlined />}
                 title="Info"
                 uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                eventId={event.id}
+                feature={ActivityFeature.relevant_event_link_click}
             />
             }
             {event.songLists.length > 0 && <SearchItemBigCardLink
                 icon={<LibraryMusic />}
                 title="Setlist"
                 uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                eventId={event.id}
+                feature={ActivityFeature.relevant_event_link_click}
             />
             }
         </div>
@@ -168,6 +181,7 @@ export const RelevantEvents = () => {
                 results={MakeMockSearchResultsRetFromEvents([highlightedEvent.event], userTagWithAssignments)}
                 showTabs={true}
                 reducedInfo={true}
+                feature={ActivityFeature.relevant_event_link_click}
             /></div>}
         {eventsWithTiming.length > 0 && <div>
             <div className="RelevantEventsList SubtleEventCardContainer">
