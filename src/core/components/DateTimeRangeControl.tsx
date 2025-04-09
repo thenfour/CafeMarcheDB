@@ -143,27 +143,27 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
 interface DayControlProps {
     value: Date | null;
     otherValue: Date | null;
-    coalescedFallbackValue: Date;
     onChange: (newValue: Date) => void;
-    readonly: boolean;
-    items: CalendarEventSpec[];
-    range: DateTimeRange;
-    showDuration: boolean;
+    coalescedFallbackValue?: Date;
+    readonly?: boolean;
+    items?: CalendarEventSpec[];
+    range?: DateTimeRange; // for formatting the calendar display
+    showDuration?: boolean;
     className?: string;
 };
 
-const DayControl = (props: DayControlProps) => {
+export const DayControl = ({ readonly = false, coalescedFallbackValue, ...props }: DayControlProps) => {
 
     const inputDate: Date | null = props.value;
     const isTBD = inputDate === null;
 
     // internal value that the user has selected, to be used when the externally-visible value goes NULL, we can still revert back to this.
-    const coalescedDay: Date = inputDate || props.coalescedFallbackValue;
+    const coalescedDay: Date = inputDate || coalescedFallbackValue || new Date();
 
     const [calendarAnchorEl, setCalendarAnchorEl] = React.useState<null | HTMLElement>(null);
 
     const handleFieldClick = (event: React.MouseEvent<HTMLElement>) => {
-        if (props.readonly) return;
+        if (readonly) return;
         setCalendarAnchorEl(event.currentTarget);
     };
 
@@ -176,15 +176,21 @@ const DayControl = (props: DayControlProps) => {
         setCalendarAnchorEl(null);
     };
 
+    const range = props.range || new DateTimeRange({
+        startsAtDateTime: coalescedDay,
+        durationMillis: gMillisecondsPerDay,
+        isAllDay: true,
+    });
+
     return <>
         {isTBD ? (
-            <div className={`${props.className} tbd  ${props.readonly ? "readonly" : "interactable editable"}`} onClick={handleFieldClick}>{gIconMap.CalendarMonth()}TBD</div>
+            <div className={`${props.className} tbd  ${readonly ? "readonly" : "interactable editable"}`} onClick={handleFieldClick}>{gIconMap.CalendarMonth()}TBD</div>
         ) : (
-            <div className={`${props.className} determined ${props.readonly ? "readonly" : "interactable editable"}`} onClick={handleFieldClick}>
+            <div className={`${props.className} determined ${readonly ? "readonly" : "interactable editable"}`} onClick={handleFieldClick} style={{ display: "flex", alignItems: "center" }}>
                 {gIconMap.CalendarMonth()}
-                {coalescedDay.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: "numeric" })}
+                <span>{coalescedDay.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: "numeric" })}</span>
                 {props.showDuration && <div className="duration">
-                    &nbsp;({formatMillisecondsToDHMS(props.range.getDurationMillis())})
+                    &nbsp;({formatMillisecondsToDHMS(range.getDurationMillis())})
                 </div>}
 
             </div>
@@ -204,8 +210,8 @@ const DayControl = (props: DayControlProps) => {
                     value={coalescedDay}
                     onChange={handleCalendarChangeDay}
                     otherDay={props.otherValue}
-                    items={props.items}
-                    range={props.range}
+                    items={props.items || []}
+                    range={range}
                 />
             </Popover >
         }
@@ -399,43 +405,10 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                 </>)}
 
             </div>
-            {/* 
-            {!value.isTBD() && (<>
-                <div className="row">
-                    <div className="allDayControl">
-                        <FormControlLabel
-                        className='CMFormControlLabel'
-                            control={<Switch checked={value.isAllDay()} onChange={handleAllDayChange} />}
-                            label="All-day"
-                        />
-                    </div>
-                </div>
-
-            </>)} */}
         </div>
     </NoSsr>;
 };
 
-
-
-// const DateViewer = (props: { caption: string, value: Date | null | undefined }) => {
-//     return <KeyValueTable
-//     data={{
-
-//     }}
-//     />
-//     return <NameValuePair
-//         name={props.caption}
-//         value={<div>
-//             <div>
-//                 {props.value?.toISOString() || "--"} &lt;-- ISO
-//             </div>
-//             {/* <div>
-//                 {props.value?.toString() || "--"} &lt;-- local (tz offset: {props.value?.getTimezoneOffset()})
-//             </div> */}
-//         </div>}
-//     />;
-// }
 
 const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
     const t = CalcRelativeTiming(new Date(), value);
@@ -454,20 +427,6 @@ const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
         }}
     />;
 
-    // return <div>
-    //     {/* <InspectObject src={value} /> */}
-    //     <DateViewer value={value.getStartDateTime()} caption='getStartDateTime'></DateViewer>
-    //     <DateViewer value={value.getLastDateTime()} caption='getLastDateTime'></DateViewer>
-    //     <DateViewer value={value.getEndDateTime()} caption='getEndDateTime'></DateViewer>
-    //     <div>duration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
-    //     <div><EventDateField dateRange={value} /></div>
-    //     <DateViewer value={value.getSpec().startsAtDateTime} caption='SPEC StartsAt'></DateViewer>
-    //     <div>spec duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
-
-    //     <span className="text">{t.label}</span>
-    //     <span className="text">{t.bucket}</span>
-
-    // </div>;
 }
 
 export const DateTimeRangeControlExample = () => {
@@ -612,3 +571,112 @@ export const DateTimeRangeControlExample = () => {
         </NoSsr>
     </LocalizationProvider>;
 }
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CMDatePickerProps {
+    value: Date;
+    onChange: (newValue: Date) => void;
+};
+
+export const CMDatePicker = ({ value, ...props }: CMDatePickerProps) => {
+
+    const handleStartDateChange = (newValue: Date) => {
+        props.onChange(newValue);
+    };
+
+    // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.
+    return <NoSsr>
+        <div className="DateTimeRangeControl">
+            <div className="row" style={{ display: "flex", alignItems: "center" }}>
+
+                <DayControl
+                    readonly={false}
+                    onChange={handleStartDateChange}
+                    value={value}
+                    coalescedFallbackValue={value}
+                    otherValue={null} // use LAST time so it doesn't spill into next day.
+                    items={[]}
+                    range={new DateTimeRange({
+                        durationMillis: 0,
+                        isAllDay: false,
+                        startsAtDateTime: value,
+                    })}
+                    showDuration={false}
+                    className="datePart field startDate"
+                />
+            </div>
+        </div>
+    </NoSsr>;
+};
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface DateRange {
+    start: Date;
+    end: Date;
+}
+
+export interface CMDateRangePickerProps {
+    value: DateRange;
+    onChange: (newValue: DateRange) => void;
+};
+
+export const CMDateRangePicker = ({ value, ...props }: CMDateRangePickerProps) => {
+
+    const handleStartDateChange = (newValue: Date) => {
+        props.onChange({ ...value, start: newValue });
+    };
+
+    const handleEndDateChange = (newValue: Date) => {
+        props.onChange({ ...value, end: newValue });
+    };
+
+    const range = new DateTimeRange({
+        startsAtDateTime: value.start,
+        durationMillis: value.end.valueOf() - value.start.valueOf(),
+        isAllDay: false,
+    });
+
+    // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.
+    return <NoSsr>
+        <div className="DateTimeRangeControl">
+            <div className="row" style={{ display: "flex", alignItems: "center" }}>
+
+                <DayControl
+                    readonly={false}
+                    onChange={handleStartDateChange}
+                    value={value.start}
+                    otherValue={null} // use LAST time so it doesn't spill into next day.
+                    items={[]}
+                    range={range}
+                    showDuration={false}
+                    className="datePart field startDate"
+                />
+            </div>
+        </div>
+        <div className="ndash field">&ndash;</div>
+
+        <div className="DateTimeRangeControl">
+            <div className="row" style={{ display: "flex", alignItems: "center" }}>
+
+                <DayControl
+                    readonly={false}
+                    onChange={handleEndDateChange}
+                    value={value.end}
+                    otherValue={null} // use LAST time so it doesn't spill into next day.
+                    range={range}
+                    showDuration={false}
+                    className="datePart field startDate"
+                />
+            </div>
+        </div>
+
+    </NoSsr>;
+};
+

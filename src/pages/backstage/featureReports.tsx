@@ -1,29 +1,28 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel, Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
+import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
-import { roundToNearest15Minutes } from "shared/time";
+import { DateAdd, roundToNearest15Minutes } from "shared/time";
 import { getHashedColor, smartTruncate } from "shared/utils";
 import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
-import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
 import { CMTab, CMTabPanel, CMTabPanelChild } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";
-import * as DB3Client from "src/core/db3/DB3Client";
 import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
 import getGeneralFeatureReport from "src/core/db3/queries/getGeneralFeatureReport";
 import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { GeneralActivityReportDetailPayload, ReportAggregateBy } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Tooltip as MuiTooltip } from "@mui/material";
-import { toSorted } from "shared/arrayUtils";
 
 enum TabId {
     general = "general",
@@ -393,54 +392,93 @@ const GeneralFeatureStatsReport = () => {
                 />
             </>
         } />
+
+        <NameValuePair name="Bucket size" value={
+            <CMSingleSelect
+                value={aggregateBy}
+                onChange={(option) => {
+                    setAggregateBy(option);
+                    setSelectedBucket(null); // buckets don't make sense anymore
+                }}
+                getOptions={() => {
+                    return Object.values(ReportAggregateBy);
+                }}
+                getOptionInfo={(item) => {
+                    return {
+                        id: item.toString(),
+                    };
+                }}
+                nullBehavior={CMSelectNullBehavior.NonNullable}
+                renderOption={(item) => {
+                    return item.toString();
+                }}
+            />
+        } />
+        <NameValuePair name="Date range" value={
+            <div style={{ display: "flex", alignItems: "center" }}>
+
+                <CMDateRangePicker
+                    value={{ start: startDate, end: endDate }}
+                    onChange={(val) => {
+                        if (val) {
+                            setStartDate(val.start);
+                            setEndDate(val.end);
+                        }
+                    }} />
+
+                <CMSmallButton
+                    onClick={() => {
+                        setStartDate(DateAdd(new Date(), { years: -1 }));
+                        setEndDate(DateAdd(new Date(), { days: 1 }));
+                    }}
+                >
+                    Past year
+                </CMSmallButton>
+
+                <CMSmallButton
+                    onClick={() => {
+                        setStartDate(DateAdd(new Date(), { months: -6 }));
+                        setEndDate(DateAdd(new Date(), { days: 1 }));
+                    }}
+                >
+                    Past 6 months
+                </CMSmallButton>
+
+
+                <CMSmallButton
+                    onClick={() => {
+                        setStartDate(DateAdd(new Date(), { months: -3 }));
+                        setEndDate(DateAdd(new Date(), { days: 1 }));
+                    }}
+                >
+                    Past 3 months
+                </CMSmallButton>
+
+
+                <CMSmallButton
+                    onClick={() => {
+                        setStartDate(DateAdd(new Date(), { months: -1 }));
+                        setEndDate(DateAdd(new Date(), { days: 1 }));
+                    }}
+                >
+                    Past month
+                </CMSmallButton>
+
+                <CMSmallButton
+                    onClick={() => {
+                        setStartDate(DateAdd(new Date(), { days: -14 }));
+                        setEndDate(DateAdd(new Date(), { days: 1 }));
+                    }}
+                >
+                    Past 2 weeks
+                </CMSmallButton>
+
+            </div>
+        } />
+
         <Accordion defaultExpanded={false}>
             <AccordionSummary>Filters</AccordionSummary>
             <AccordionDetails>
-                <NameValuePair name="Bucket size" value={
-
-                    <CMSingleSelect
-                        value={aggregateBy}
-                        onChange={(option) => {
-                            setAggregateBy(option);
-                            setSelectedBucket(null); // buckets don't make sense anymore
-                        }}
-                        getOptions={() => {
-                            return Object.values(ReportAggregateBy);
-                        }}
-                        getOptionInfo={(item) => {
-                            return {
-                                id: item.toString(),
-                            };
-                        }}
-                        nullBehavior={CMSelectNullBehavior.NonNullable}
-                        renderOption={(item) => {
-                            return item.toString();
-                        }}
-                    />
-                } />
-                <NameValuePair name="Date range" value={
-                    <>
-                        <DB3Client.CMDatePicker
-                            label="Start date"
-                            value={startDate}
-                            onChange={(val) => {
-                                if (val) {
-                                    setStartDate(val);
-                                }
-                            }}
-                        />
-                        <DB3Client.CMDatePicker
-                            label="End date"
-                            value={endDate}
-                            onChange={(val) => {
-                                if (val) {
-                                    setEndDate(val);
-                                }
-                            }}
-                        />
-                    </>
-                } />
-
                 <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
 
                 <AssociationSelect

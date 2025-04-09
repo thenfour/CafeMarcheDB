@@ -15,6 +15,28 @@ export function GetDateMinutesFromNow(minutes: number): Date {
     return new Date(Date.now() + minutes * gMillisecondsPerMinute);
 };
 
+export type DateInterval = {
+    years?: number | undefined;
+    months?: number | undefined;
+    days?: number | undefined;
+    hours?: number | undefined;
+    minutes?: number | undefined;
+    seconds?: number | undefined;
+    milliseconds?: number | undefined;
+}
+
+export function DateAdd(date: Date, interval: DateInterval): Date {
+    const newDate = new Date(date.getTime());
+    if (interval.years) newDate.setFullYear(newDate.getFullYear() + interval.years);
+    if (interval.months) newDate.setMonth(newDate.getMonth() + interval.months);
+    if (interval.days) newDate.setDate(newDate.getDate() + interval.days);
+    if (interval.hours) newDate.setHours(newDate.getHours() + interval.hours);
+    if (interval.minutes) newDate.setMinutes(newDate.getMinutes() + interval.minutes);
+    if (interval.seconds) newDate.setSeconds(newDate.getSeconds() + interval.seconds);
+    if (interval.milliseconds) newDate.setMilliseconds(newDate.getMilliseconds() + interval.milliseconds);
+    return newDate;
+}
+
 export function GetDateSecondsFromNow(seconds: number): Date {
     return new Date(Date.now() + seconds * 1000);
 };
