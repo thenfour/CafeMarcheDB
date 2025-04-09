@@ -842,3 +842,9 @@ solution is to
 .GeneralFeatureReportDetailItemRow td .queryText .actualQueryText {
   color: #11e;
 }
+
+.FeatureStatsReport .filterContainer {
+  padding: 8px;
+  background-color: #ddd;
+  max-width: 800px;
+}

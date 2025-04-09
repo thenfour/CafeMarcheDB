@@ -83,6 +83,7 @@ const GeneralFeatureDetailTable = ({ data }: { data: GeneralActivityReportDetail
 
 interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];
+    excludeFeatures: ActivityFeature[];
     bucket: string | null;
     aggregateBy: ReportAggregateBy;
     excludeYourself: boolean;
@@ -159,12 +160,13 @@ const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData 
     </div>;
 };
 
-const GeneralFeatureDetailArea = ({ excludeYourself, features, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
+const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
 
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
         features,
+        excludeFeatures,
         bucket,
         aggregateBy,
         filteredSongId,
@@ -280,6 +282,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, bucket, aggregate
 // to allow suspense to work right
 interface GeneralFeatureStatsReportInnerProps {
     features: ActivityFeature[],
+    excludeFeatures: ActivityFeature[],
     selectedBucket: string | null,
     excludeYourself: boolean;
     aggregateBy: ReportAggregateBy,
@@ -293,12 +296,13 @@ interface GeneralFeatureStatsReportInnerProps {
     refetchTrigger: number,
     setDataUpdatedAt: (date: Date) => void,
 };
-const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, refetchTrigger, onClickBucket, features, selectedBucket, aggregateBy, filteredSongId,
+const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy, filteredSongId,
     filteredEventId,
     filteredUserId,
     filteredWikiPageId, startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         features,
+        excludeFeatures,
         excludeYourself,
         startDate,//: roundToNearest15Minutes(startDate),
         endDate,//: roundToNearest15Minutes(endDate),
@@ -351,6 +355,7 @@ const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, ref
 const GeneralFeatureStatsReport = () => {
     const now = React.useMemo(() => new Date(), []);
     const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
+    const [excludeFeatures, setExcludeFeatures] = React.useState<ActivityFeature[]>([]);
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
     const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
@@ -370,159 +375,183 @@ const GeneralFeatureStatsReport = () => {
     const realEndDate = roundToNearest15Minutes(endDate);
 
 
-    return <div>
-        <div style={{ display: "flex", alignItems: "center" }}>
-            <Button onClick={() => setRefetchTrigger(x => x + 1)}>Refresh</Button>
-            <span className="smallText">
-                last updated: <AgeRelativeToNow value={dataUpdatedAt} />
-            </span>
-        </div>
+    return <div className="FeatureStatsReport">
+        <div className="filterContainer">
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <Button onClick={() => setRefetchTrigger(x => x + 1)}>Refresh</Button>
+                <span className="smallText">
+                    last updated: <AgeRelativeToNow value={dataUpdatedAt} />
+                </span>
+            </div>
 
-        <NameValuePair name="Feature" value={
-            <>
-                <Button onClick={() => setFeatures([])} >Clear</Button>
-                <CMMultiSelect
-                    value={features}
-                    onChange={setFeatures}
+            <NameValuePair name="Feature" value={
+                <>
+                    <Button onClick={() => setFeatures([])} >Clear</Button>
+                    <CMMultiSelect
+                        value={features}
+                        onChange={setFeatures}
+                        getOptions={() => {
+                            return Object.values(ActivityFeature);
+                        }}
+                        getOptionInfo={(item) => {
+                            return {
+                                id: item.toString(),
+                            };
+                        }}
+                        renderOption={(item) => {
+                            return item.toString();
+                        }}
+                    />
+                </>
+            } />
+
+            <NameValuePair name="Bucket size" value={
+                <CMSingleSelect
+                    value={aggregateBy}
+                    onChange={(option) => {
+                        setAggregateBy(option);
+                        setSelectedBucket(null); // buckets don't make sense anymore
+                    }}
                     getOptions={() => {
-                        return Object.values(ActivityFeature);
+                        return Object.values(ReportAggregateBy);
                     }}
                     getOptionInfo={(item) => {
                         return {
                             id: item.toString(),
                         };
                     }}
+                    nullBehavior={CMSelectNullBehavior.NonNullable}
                     renderOption={(item) => {
                         return item.toString();
                     }}
                 />
-            </>
-        } />
+            } />
+            <NameValuePair name="Date range" value={
+                <div style={{ display: "flex", alignItems: "center" }}>
 
-        <NameValuePair name="Bucket size" value={
-            <CMSingleSelect
-                value={aggregateBy}
-                onChange={(option) => {
-                    setAggregateBy(option);
-                    setSelectedBucket(null); // buckets don't make sense anymore
-                }}
-                getOptions={() => {
-                    return Object.values(ReportAggregateBy);
-                }}
-                getOptionInfo={(item) => {
-                    return {
-                        id: item.toString(),
-                    };
-                }}
-                nullBehavior={CMSelectNullBehavior.NonNullable}
-                renderOption={(item) => {
-                    return item.toString();
-                }}
-            />
-        } />
-        <NameValuePair name="Date range" value={
-            <div style={{ display: "flex", alignItems: "center" }}>
+                    <CMDateRangePicker
+                        value={{ start: startDate, end: endDate }}
+                        onChange={(val) => {
+                            if (val) {
+                                setStartDate(val.start);
+                                setEndDate(val.end);
+                            }
+                        }} />
 
-                <CMDateRangePicker
-                    value={{ start: startDate, end: endDate }}
-                    onChange={(val) => {
-                        if (val) {
-                            setStartDate(val.start);
-                            setEndDate(val.end);
-                        }
-                    }} />
+                    <CMSmallButton
+                        onClick={() => {
+                            setStartDate(DateAdd(new Date(), { years: -1 }));
+                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        }}
+                    >
+                        Past year
+                    </CMSmallButton>
 
-                <CMSmallButton
-                    onClick={() => {
-                        setStartDate(DateAdd(new Date(), { years: -1 }));
-                        setEndDate(DateAdd(new Date(), { days: 1 }));
-                    }}
-                >
-                    Past year
-                </CMSmallButton>
-
-                <CMSmallButton
-                    onClick={() => {
-                        setStartDate(DateAdd(new Date(), { months: -6 }));
-                        setEndDate(DateAdd(new Date(), { days: 1 }));
-                    }}
-                >
-                    Past 6 months
-                </CMSmallButton>
+                    <CMSmallButton
+                        onClick={() => {
+                            setStartDate(DateAdd(new Date(), { months: -6 }));
+                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        }}
+                    >
+                        Past 6 months
+                    </CMSmallButton>
 
 
-                <CMSmallButton
-                    onClick={() => {
-                        setStartDate(DateAdd(new Date(), { months: -3 }));
-                        setEndDate(DateAdd(new Date(), { days: 1 }));
-                    }}
-                >
-                    Past 3 months
-                </CMSmallButton>
+                    <CMSmallButton
+                        onClick={() => {
+                            setStartDate(DateAdd(new Date(), { months: -3 }));
+                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        }}
+                    >
+                        Past 3 months
+                    </CMSmallButton>
 
 
-                <CMSmallButton
-                    onClick={() => {
-                        setStartDate(DateAdd(new Date(), { months: -1 }));
-                        setEndDate(DateAdd(new Date(), { days: 1 }));
-                    }}
-                >
-                    Past month
-                </CMSmallButton>
+                    <CMSmallButton
+                        onClick={() => {
+                            setStartDate(DateAdd(new Date(), { months: -1 }));
+                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        }}
+                    >
+                        Past month
+                    </CMSmallButton>
 
-                <CMSmallButton
-                    onClick={() => {
-                        setStartDate(DateAdd(new Date(), { days: -14 }));
-                        setEndDate(DateAdd(new Date(), { days: 1 }));
-                    }}
-                >
-                    Past 2 weeks
-                </CMSmallButton>
+                    <CMSmallButton
+                        onClick={() => {
+                            setStartDate(DateAdd(new Date(), { days: -14 }));
+                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        }}
+                    >
+                        Past 2 weeks
+                    </CMSmallButton>
 
-            </div>
-        } />
+                </div>
+            } />
 
-        <Accordion defaultExpanded={false}>
-            <AccordionSummary>Filters</AccordionSummary>
-            <AccordionDetails>
-                <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
+            <Accordion defaultExpanded={false}>
+                <AccordionSummary>Filters</AccordionSummary>
+                <AccordionDetails>
+                    <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
 
-                <AssociationSelect
-                    title="Filter by user"
-                    allowedItemTypes={[QuickSearchItemType.user]}
-                    allowNull={true}
-                    value={filteredUser || null}
-                    onChange={(newValue) => setFilteredUser(newValue || undefined)}
-                />
-                <AssociationSelect
-                    title="Filter by song"
-                    allowedItemTypes={[QuickSearchItemType.song]}
-                    allowNull={true}
-                    value={filteredSong || null}
-                    onChange={(newValue) => setFilteredSong(newValue || undefined)}
-                />
-                <AssociationSelect
-                    title="Filter by event"
-                    allowedItemTypes={[QuickSearchItemType.event]}
-                    allowNull={true}
-                    value={filteredEvent || null}
-                    onChange={(newValue) => setFilteredEvent(newValue || undefined)}
-                />
-                <AssociationSelect
-                    title="Filter by wiki page"
-                    allowedItemTypes={[QuickSearchItemType.wikiPage]}
-                    allowNull={true}
-                    value={filteredEvent || null}
-                    onChange={(newValue) => setFilteredWikiPage(newValue || undefined)}
-                />
+                    <NameValuePair name="Exclude Feature" value={
+                        <>
+                            <Button onClick={() => setExcludeFeatures([])} >Clear</Button>
+                            <CMMultiSelect
+                                value={excludeFeatures}
+                                onChange={setExcludeFeatures}
+                                getOptions={() => {
+                                    return Object.values(ActivityFeature);
+                                }}
+                                getOptionInfo={(item) => {
+                                    return {
+                                        id: item.toString(),
+                                    };
+                                }}
+                                renderOption={(item) => {
+                                    return item.toString();
+                                }}
+                            />
+                        </>
+                    } />
+
+                    <AssociationSelect
+                        title="Filter by user"
+                        allowedItemTypes={[QuickSearchItemType.user]}
+                        allowNull={true}
+                        value={filteredUser || null}
+                        onChange={(newValue) => setFilteredUser(newValue || undefined)}
+                    />
+                    <AssociationSelect
+                        title="Filter by song"
+                        allowedItemTypes={[QuickSearchItemType.song]}
+                        allowNull={true}
+                        value={filteredSong || null}
+                        onChange={(newValue) => setFilteredSong(newValue || undefined)}
+                    />
+                    <AssociationSelect
+                        title="Filter by event"
+                        allowedItemTypes={[QuickSearchItemType.event]}
+                        allowNull={true}
+                        value={filteredEvent || null}
+                        onChange={(newValue) => setFilteredEvent(newValue || undefined)}
+                    />
+                    <AssociationSelect
+                        title="Filter by wiki page"
+                        allowedItemTypes={[QuickSearchItemType.wikiPage]}
+                        allowNull={true}
+                        value={filteredEvent || null}
+                        onChange={(newValue) => setFilteredWikiPage(newValue || undefined)}
+                    />
 
 
-            </AccordionDetails>
-        </Accordion>
+                </AccordionDetails>
+            </Accordion>
+        </div>
 
         <React.Suspense>
             <GeneralFeatureStatsReportInner
                 features={features}
+                excludeFeatures={excludeFeatures}
                 selectedBucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
@@ -541,6 +570,7 @@ const GeneralFeatureStatsReport = () => {
         <React.Suspense>
             <GeneralFeatureDetailArea
                 features={features}
+                excludeFeatures={excludeFeatures}
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
