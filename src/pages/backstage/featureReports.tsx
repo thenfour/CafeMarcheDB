@@ -3,7 +3,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
-import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { roundToNearest15Minutes } from "shared/time";
@@ -14,7 +14,7 @@ import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
-import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
+import { CMTab, CMTabPanel, CMTabPanelChild } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as DB3Client from "src/core/db3/DB3Client";
 import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
@@ -23,15 +23,15 @@ import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { GeneralActivityReportDetailPayload, ReportAggregateBy } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Tooltip as MuiTooltip } from "@mui/material";
+import { toSorted } from "shared/arrayUtils";
 
 enum TabId {
-    icalStats = "icalStats",
-    songViews = "songViews",
-    eventViews = "eventViews",
+    general = "general",
+    featureUsageByUser = "featureUsageByUser",
 };
 
 const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?: number }) => {
-    return <MuiTooltip title={value.substring(0, 6)} disableInteractive><span><Identicon string={value} size={size} /></span></MuiTooltip>;
+    return <MuiTooltip title={value.substring(0, 6)} disableInteractive><div><Identicon string={value} size={size} /></div></MuiTooltip>;
 }
 
 const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivityReportDetailPayload, index: number }) => {
@@ -88,11 +88,73 @@ interface GeneralFeatureDetailAreaProps {
     refetchTrigger: number;
 };
 
-type DetailTabId = "general" | "users" | "songs" | "events" | "wikiPages" | "files";
+type DetailTabId = "general" | "features" | "users" | "songs" | "events" | "wikiPages" | "files";
+
+type ContextObjectDistinctItem = {
+    key: string,
+    headingIndicator: React.ReactNode;
+    itemCount: number;
+    totalCount: number;
+    percentageOfTotal: string;
+    items: GeneralActivityReportDetailPayload[];
+};
+
+function getContextObjectTabData(
+    items: GeneralActivityReportDetailPayload[] | null | undefined,
+    getKey: (item: GeneralActivityReportDetailPayload) => string,
+    getHeadingIndicator: (item: GeneralActivityReportDetailPayload) => React.ReactNode,
+): ContextObjectDistinctItem[] {
+    if (!items) {
+        //console.log(`no items; short circuit`);
+        return [];
+    }
+    const distinctItems = [...new Set(items.map(getKey))];
+    const itemCount = items.length;
+    const contextObjects = distinctItems.map((distinctItem) => {
+        const filteredItems = items.filter((item) => getKey(item) === distinctItem);
+        return {
+            key: distinctItem,
+            headingIndicator: getHeadingIndicator(filteredItems[0]!),
+            itemCount: filteredItems.length,
+            totalCount: itemCount,
+            percentageOfTotal: `${(filteredItems.length * 100 / itemCount).toFixed()}%`,
+            items: filteredItems,
+        };
+    });
+    return toSorted(contextObjects, (a, b) => b.itemCount - a.itemCount);
+}
+
+type ContextObjectTabData = {
+    id: DetailTabId,
+    tabHeader: React.ReactNode,
+    items: ContextObjectDistinctItem[],
+};
+
+const DistinctContextObjectPieChart = ({ item }: { item: ContextObjectDistinctItem }) => {
+    const chartData = [
+        { fill: "#66f", value: item.itemCount },
+        { fill: "#f8f8f8", value: item.totalCount - item.itemCount },
+    ];
+    return <PieChart width={60} height={60} data={chartData}>
+        <Pie dataKey="value" data={chartData} cx="50%" cy="50%" innerRadius={7} outerRadius={25} isAnimationActive={false} />
+    </PieChart>;
+};
+
+const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData }) => {
+    return item.items.length > 1 && <div>
+        {item.items.map((contextObject) => {
+            return <div key={contextObject.key}>
+                <div style={{ display: "flex", fontWeight: "bold", alignItems: "center" }}>
+                    <DistinctContextObjectPieChart item={contextObject} />
+                    {contextObject.headingIndicator} ({contextObject.itemCount} items) ({contextObject.percentageOfTotal} of total)
+                </div>
+                <GeneralFeatureDetailTable data={contextObject.items} />
+            </div>;
+        })}
+    </div>;
+};
 
 const GeneralFeatureDetailArea = ({ excludeYourself, features, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
-
-    //console.log("generalFeatureDetailArea; bucket", bucket, "aggregateBy", aggregateBy, "filteredEventId", filteredEventId, "filteredSongId", filteredSongId, "filteredUserId", filteredUserId, "filteredWikiPageId", filteredWikiPageId);
 
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
@@ -111,110 +173,102 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, bucket, aggregate
         refetchTrigger && refetch();
     }, [refetchTrigger]);
 
-    // get some distinct values...
-    const distinctSets: {
-        features: string[],
-        users: string[],
-        songIds: number[],
-        eventIds: number[],
-        wikiPageIds: number[],
-        fileIds: number[],
-    } = React.useMemo(() => {
-        if (!detail) {
-            return {
-                features: [],
-                users: [],
-                songIds: [],
-                eventIds: [],
-                wikiPageIds: [],
-                fileIds: [],
-            };
+    const tabs: ContextObjectTabData[] = React.useMemo(() => {
+        const ret: ContextObjectTabData[] = [];
+
+        const byFeature = getContextObjectTabData(
+            detail?.data,
+            (item) => item.feature,
+            (item) => item.feature,
+        );
+        if (byFeature.length) {
+            ret.push({
+                id: "features",
+                tabHeader: `Features (${byFeature.length})`,
+                items: byFeature,
+            });
         }
 
-        return {
-            features: [...new Set(detail.data.map((item) => item.feature))],
-            users: [...new Set(detail.data.filter(x => !!x.userHash).map((item) => item.userHash!))],
-            songIds: [...new Set(detail.data.filter(x => !!x.song).map((item) => item.song!.id))],
-            eventIds: [...new Set(detail.data.filter(x => !!x.event).map((item) => item.event!.id))],
-            wikiPageIds: [...new Set(detail.data.filter(x => !!x.wikiPage).map((item) => item.wikiPage!.id))],
-            fileIds: [...new Set(detail.data.filter(x => !!x.file).map((item) => item.file!.id))],
+        const byUser = getContextObjectTabData(
+            detail?.data.filter(x => !!x.userHash),
+            (item) => item.userHash!,
+            (item) => <AnonymizedUserChip value={item.userHash!} size={50} />,
+        );
+        if (byUser.length) {
+            ret.push({
+                id: "users",
+                tabHeader: `Users (${byUser.length})`,
+                items: byUser,
+            });
         }
+        const bySong = getContextObjectTabData(
+            detail?.data.filter(x => !!x.song),
+            (item) => item.song!.id.toString(),
+            (item) => <SongChip value={item.song!} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />,
+        );
+        if (bySong.length) {
+            ret.push({
+                id: "songs",
+                tabHeader: `Songs (${bySong.length})`,
+                items: bySong,
+            });
+        }
+        const byEvent = getContextObjectTabData(
+            detail?.data.filter(x => !!x.event),
+            (item) => item.event!.id.toString(),
+            (item) => <EventChip value={item.event!} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />,
+        );
+        if (byEvent.length) {
+            ret.push({
+                id: "events",
+                tabHeader: `Events (${byEvent.length})`,
+                items: byEvent,
+            });
+        }
+        const byWikiPage = getContextObjectTabData(
+            detail?.data.filter(x => !!x.wikiPage),
+            (item) => item.wikiPage!.id.toString(),
+            (item) => <WikiPageChip slug={item.wikiPage!.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />,
+        );
+        if (byWikiPage.length) {
+            ret.push({
+                id: "wikiPages",
+                tabHeader: `Wiki pages (${byWikiPage.length})`,
+                items: byWikiPage,
+            });
+        }
+        const byFile = getContextObjectTabData(
+            detail?.data.filter(x => !!x.file),
+            (item) => item.file!.id.toString(),
+            (item) => <FileChip value={item.file!} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />,
+        );
+        if (byFile.length) {
+            ret.push({
+                id: "files",
+                tabHeader: `Files (${byFile.length})`,
+                items: byFile,
+            });
+        }
+
+        return ret;
+
     }, [detail]);
 
+    const renderedTabs: CMTabPanelChild[] = [
+        <CMTab key={9999} thisTabId="general" summaryTitle={`General (${detail?.data.length})`} >
+            <GeneralFeatureDetailTable data={detail?.data || []} />
+        </CMTab>,
+        ...tabs.map((tab) => <CMTab key={tab.id} thisTabId={tab.id} summaryTitle={tab.tabHeader} enabled={tab.items.length > 1} >
+            <DistinctContextObjectTabContent key={tab.id} item={tab} />
+        </CMTab>),
+    ];
+
+    console.log(`renderedTabs: `, renderedTabs);
+
     return <div>
-
         <CMTabPanel handleTabChange={(e, newTabId: DetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
-            <CMTab thisTabId="general" summaryTitle={`General (${detail?.data.length})`} >
-                <GeneralFeatureDetailTable data={detail?.data || []} />
-            </CMTab>
-            <CMTab thisTabId="features" summaryTitle={`Features (${distinctSets.features.length})`} enabled={distinctSets.features.length > 1} >
-                {distinctSets.features.length > 1 && <div>
-                    {distinctSets.features.map((feature) => {
-                        return <div key={feature}>
-                            <strong>{feature}</strong>
-                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.feature === feature) || []} />
-                        </div>;
-                    })}
-                </div>}
-            </CMTab>
-            <CMTab thisTabId="users" summaryTitle={`Users (${distinctSets.users.length})`} enabled={distinctSets.users.length > 1} >
-                {distinctSets.users.length > 1 && <div>
-                    {distinctSets.users.map((user) => {
-                        return <div key={user}>
-                            <AnonymizedUserChip value={user} size={50} />
-                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.userHash === user) || []} />
-                        </div>;
-                    })}
-                </div>}
-            </CMTab>
-            <CMTab thisTabId="songs" summaryTitle={`Songs (${distinctSets.songIds.length})`} enabled={distinctSets.songIds.length > 1} >
-                {distinctSets.songIds.length > 1 && <div>
-                    {distinctSets.songIds.map((songId) => {
-                        const song = detail?.data.find((item) => item.song?.id === songId)?.song;
-                        return <div key={songId}>
-                            <SongChip value={song!} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />
-                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.song?.id === songId) || []} />
-                        </div>;
-                    })}
-                </div>}
-            </CMTab>
-            <CMTab thisTabId="events" summaryTitle={`Events (${distinctSets.eventIds.length})`} enabled={distinctSets.eventIds.length > 1} >
-                {distinctSets.eventIds.length > 1 && <div >
-                    {distinctSets.eventIds.map((eventId) => {
-                        const event = detail?.data.find((item) => item.event?.id === eventId)?.event;
-                        return <div key={eventId}>
-                            <EventChip value={event!} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />
-                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.event?.id === eventId) || []} />
-                        </div>;
-                    })}
-                </div>}
-            </CMTab>
-            <CMTab thisTabId="wikiPages" summaryTitle={`Wiki pages (${distinctSets.wikiPageIds.length})`} enabled={distinctSets.wikiPageIds.length > 1} >
-                {distinctSets.wikiPageIds.length > 1 && <div >
-                    {distinctSets.wikiPageIds.map((wikiPageId) => {
-                        const wikiPage = detail?.data.find((item) => item.wikiPage?.id === wikiPageId)?.wikiPage;
-                        return <div key={wikiPageId}>
-                            <WikiPageChip slug={wikiPage?.slug!} startAdornment={gIconMap.Article()} useHashedColor={true} />
-                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.wikiPage?.id === wikiPageId) || []} />
-                        </div>;
-                    })}
-                </div>}
-
-            </CMTab>
-            <CMTab thisTabId="files" summaryTitle={`Files (${distinctSets.fileIds.length})`} enabled={distinctSets.fileIds.length > 1} >
-                {distinctSets.fileIds.length > 1 && <div>
-                    {distinctSets.fileIds.map((fileId) => {
-                        const file = detail?.data.find((item) => item.file?.id === fileId)?.file;
-                        return <div key={fileId}>
-                            <FileChip value={file!} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />
-                            <GeneralFeatureDetailTable data={detail?.data.filter((item) => item.file?.id === fileId) || []} />
-                        </div>;
-                    })}
-                </div>}
-            </CMTab>
-
+            {renderedTabs}
         </CMTabPanel>
-
     </div>;
 };
 
@@ -271,7 +325,7 @@ const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, ref
     };
 
     return <ComposedChart
-        width={600}
+        width={800}
         height={600}
         data={chartData}
     >
@@ -457,10 +511,15 @@ const GeneralFeatureStatsReport = () => {
 };
 
 const MainContent = () => {
-    const [tabId, setTabId] = React.useState<TabId>(TabId.icalStats);
+    const [tabId, setTabId] = React.useState<TabId>(TabId.general);
     return <CMTabPanel selectedTabId={tabId} handleTabChange={(e, newTabId: TabId) => setTabId(newTabId)} >
-        <CMTab thisTabId={TabId.icalStats} summaryTitle="Reports">
+        <CMTab key={TabId.general} thisTabId={TabId.general} summaryTitle="Reports">
             <GeneralFeatureStatsReport />
+        </CMTab>
+        <CMTab key={TabId.featureUsageByUser} thisTabId={TabId.featureUsageByUser} summaryTitle="Feature usage by user">
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <span className="smallText">Coming soon...</span>
+            </div>
         </CMTab>
     </CMTabPanel >;
 };

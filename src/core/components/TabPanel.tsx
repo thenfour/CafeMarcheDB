@@ -20,6 +20,7 @@ const CMTabHeader = (props: CMTabProps & {
     selected: boolean,
     onClick: (e: React.MouseEvent<HTMLLIElement>) => void
 }) => {
+    console.log(`thisTabId: ${props.thisTabId}, selected: ${props.selected}`);
     return <li
         key={props.thisTabId}
         onClick={props.onClick}
@@ -33,7 +34,7 @@ const CMTabHeader = (props: CMTabProps & {
     </li>
 };
 
-type CMTabPanelChild = React.ReactElement<React.PropsWithChildren<CMTabProps>>;
+export type CMTabPanelChild = React.ReactElement<React.PropsWithChildren<CMTabProps>>;
 
 interface CMTabPanelProps {
     selectedTabId: TTabID;
