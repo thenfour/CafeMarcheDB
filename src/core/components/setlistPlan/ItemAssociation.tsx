@@ -5,6 +5,8 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { CMSmallButton, NameValuePair } from "../CMCoreComponents2";
 import { CMTextInputBase } from "../CMTextField";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { useFeatureRecorder } from "../DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +139,7 @@ interface AssociationAutocompleteItemInfo {
 };
 
 export interface AssociationAutocompleteProps {
+    trackingFeature?: ActivityFeature;
     autofocus?: boolean;
     /**
      * The current query text value (controlled).
@@ -175,8 +178,16 @@ export interface AssociationAutocompleteProps {
     getItemInfo?: (item: QuickSearchItemMatch) => AssociationAutocompleteItemInfo;
 }
 
-export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = true, showClearIcon = true, placeholder = "Search...", disableEscapeHandling = false, ...props }: AssociationAutocompleteProps) => {
+export const AssociationAutocomplete = ({
+    autofocus = false,
+    showSearchIcon = true,
+    showClearIcon = true,
+    placeholder = "Search...",
+    disableEscapeHandling = false,
+    ...props
+}: AssociationAutocompleteProps) => {
     const isControlled = props.value !== undefined;
+    const recordFeature = useFeatureRecorder();
 
     // Internal, "uncontrolled" state
     const [internalValue, setInternalValue] = React.useState(
@@ -230,7 +241,7 @@ export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = tr
             // Tells Autocomplete how to track the current text for search
             inputValue={queryText}
             filterOptions={(x) => x}
-            onChange={(_event, newValue) => {
+            onChange={async (_event, newValue) => {
                 // newValue can be a string if freeSolo is true, or an object
                 if (typeof newValue === "string") {
                     // Typically we ignore string input since we are using freeSolo
@@ -238,6 +249,11 @@ export const AssociationAutocomplete = ({ autofocus = false, showSearchIcon = tr
                     return;
                 }
 
+                if (props.trackingFeature) {
+                    await recordFeature({
+                        feature: props.trackingFeature,
+                    });
+                }
                 props.onSelect(newValue, queryText);
             }}
             options={results}

@@ -1,6 +1,6 @@
 import { ActivityFeature } from "../db3/shared/activityTracking";
-import { simulateLinkClick } from "./CMCoreComponents2";
-import { useFeatureRecorder } from "./DashboardContext";
+import { simulateLinkClick2 } from "./CMCoreComponents2";
+import { CMDivLink } from "./CMLink";
 
 
 // for the "relevant event happening today" card on the dashboard, we show direct links to setlist and descriptions.
@@ -13,16 +13,8 @@ interface SearchItemBigCardLinkProps {
 };
 
 export const SearchItemBigCardLink = (props: SearchItemBigCardLinkProps) => {
-    const recordFeature = useFeatureRecorder();
-    return <div className='SearchItemBigCardLink interactable' onClick={async (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        await recordFeature({
-            feature: props.feature,
-            eventId: props.eventId,
-            //context: `SearchItemBigCardLink/${props.title}`,
-        });
-        simulateLinkClick(props.uri);
+    return <CMDivLink trackingFeature={props.feature} className='SearchItemBigCardLink interactable' onClick={async (e) => {
+        simulateLinkClick2(props.uri, e);
     }}>
         <div className='SearchItemBigCardLinkIcon'>
             {props.icon}
@@ -30,6 +22,6 @@ export const SearchItemBigCardLink = (props: SearchItemBigCardLinkProps) => {
         <div className='SearchItemBigCardLinkText'>
             {props.title}
         </div>
-    </div>;
+    </CMDivLink>;
 };
 

@@ -9,14 +9,15 @@ import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { useDb3Query } from "../db3/DB3Client";
 import getUserTagWithAssignments from "../db3/queries/getUserTagWithAssignments";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../db3/shared/apiTypes";
-import { simulateLinkClick } from "./CMCoreComponents2";
+import { AppContextMarker } from "./AppContext";
+import { simulateLinkClick2 } from "./CMCoreComponents2";
+import { CMDivLink } from "./CMLink";
 import { GetStyleVariablesForColor } from "./Color";
-import { useDashboardContext, useFeatureRecorder } from "./DashboardContext";
+import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
-import { ActivityFeature } from "../db3/shared/activityTracking";
-import { AppContextMarker } from "./AppContext";
 
 // events happening TODAY can be a search result card, maximum 1.
 // but all other events should be in a list of smaller cards.
@@ -38,7 +39,6 @@ function formatShortDate(date: Date, locale: string = navigator.language): strin
 
 export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {
     const dashboardContext = useDashboardContext();
-    const recordFeature = useFeatureRecorder();
     const visInfo = dashboardContext.getVisibilityInfo(event);
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Weak,
@@ -53,13 +53,8 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
         `status_${event.status?.significance}`,
     ];
 
-    return <div className={classes.join(" ")} style={typeStyle.style} onClick={async () => {
-        await recordFeature({
-            feature: ActivityFeature.relevant_event_link_click,
-            eventId: event.id,
-            //context: `SubtleEventCard`,
-        });
-        simulateLinkClick(API.events.getURIForEvent(event));
+    return <CMDivLink trackingFeature={ActivityFeature.relevant_event_link_click} className={classes.join(" ")} style={typeStyle.style} onClick={async (e) => {
+        simulateLinkClick2(API.events.getURIForEvent(event), e);
     }} >
         <div className="SubtleEventCardTitle">
             {/* {gIconMap.CalendarMonth()} */}
@@ -93,9 +88,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
             }
 
         </div>
-
-
-    </div>;
+    </CMDivLink>;
 };
 
 function MakeMockSearchResultsRetFromEvents(events: db3.EnrichedSearchEventPayload[], userTags: db3.UserTagWithAssignmentPayload[]): SearchResultsRet {

@@ -11,8 +11,9 @@ import { IsNullOrWhitespace, arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, simulateLinkClick, useURLState } from "src/core/components/CMCoreComponents2";
-import { DashboardContext, useDashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
+import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
+import { CMLink } from "src/core/components/CMLink";
+import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -42,62 +43,54 @@ const SongListItem = (props: SongListItemProps) => {
     const hasPartitions = fileInfo.partitions.length > 0;
     const hasRecordings = fileInfo.recordings.length > 0;
     const hasOtherFiles = fileInfo.otherFiles.length > 0;
-    const recordAction = useFeatureRecorder();
 
     return <div className={`songListItem`}>
-        <div className="titleLine">
-            <div className="topTitleLine">
-                <a className="nameLink" href={songData.songURI} onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    await recordAction({
-                        feature: ActivityFeature.song_search_link_click,
-                        songId: props.song.id,
-                        queryText: props.filterSpec.quickFilter,
-                    });
-                    simulateLinkClick(songData.songURI);
-                }}>{props.song.name}</a>
-                {props.song.introducedYear && <span className="introducedYear">({props.song.introducedYear})</span>}
-                <div style={{ flexGrow: 1 }}></div>
-                <span className="resultIndex">#{props.index}</span>
+        <AppContextMarker name="SongListItem" songId={props.song.id}>
+            <div className="titleLine">
+                <div className="topTitleLine">
+                    <CMLink className="nameLink" href={songData.songURI} trackingFeature={ActivityFeature.song_search_link_click}>{props.song.name}</CMLink>
+                    {props.song.introducedYear && <span className="introducedYear">({props.song.introducedYear})</span>}
+                    <div style={{ flexGrow: 1 }}></div>
+                    <span className="resultIndex">#{props.index}</span>
+                </div>
+                <div className="aliases">{props.song.aliases}</div>
             </div>
-            <div className="aliases">{props.song.aliases}</div>
-        </div>
-        <div className="searchBody">
-            <CMChipContainer className="songTags">
-                {props.song.tags.map(tag => <CMStandardDBChip
-                    key={tag.id}
-                    size='small'
-                    model={tag.tag}
-                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.tagId) }}
-                    getTooltip={(_) => tag.tag.description}
-                />)}
-            </CMChipContainer>
+            <div className="searchBody">
+                <CMChipContainer className="songTags">
+                    {props.song.tags.map(tag => <CMStandardDBChip
+                        key={tag.id}
+                        size='small'
+                        model={tag.tag}
+                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.tagId) }}
+                        getTooltip={(_) => tag.tag.description}
+                    />)}
+                </CMChipContainer>
 
-            {!!props.song.credits.length && (
-                <div className="credits">
-                    {props.song.credits.map(credit => {
-                        const creditType = dashboardContext.songCreditType.getById(credit.typeId);
-                        return <div className="credit row" key={credit.id}>
-                            {!!credit.user && <><div className="userName fieldItem">{credit.user?.name}</div></>}
-                            {!!creditType && <div className="creditType fieldItem">{creditType.text}</div>}
-                            {!IsNullOrWhitespace(credit.year) && <div className="year fieldItem">({credit.year})</div>}
-                            {!IsNullOrWhitespace(credit.comment) && <div className="creditComment fieldItem">{credit.comment}</div>}
-                        </div>;
-                    })}
-                </div>
-            )}
+                {!!props.song.credits.length && (
+                    <div className="credits">
+                        {props.song.credits.map(credit => {
+                            const creditType = dashboardContext.songCreditType.getById(credit.typeId);
+                            return <div className="credit row" key={credit.id}>
+                                {!!credit.user && <><div className="userName fieldItem">{credit.user?.name}</div></>}
+                                {!!creditType && <div className="creditType fieldItem">{creditType.text}</div>}
+                                {!IsNullOrWhitespace(credit.year) && <div className="year fieldItem">({credit.year})</div>}
+                                {!IsNullOrWhitespace(credit.comment) && <div className="creditComment fieldItem">{credit.comment}</div>}
+                            </div>;
+                        })}
+                    </div>
+                )}
 
-            {(hasBpm || hasLength) && (
-                <div className="lengthBpmLine row">
-                    {hasBpm && <div className="bpm fieldItem"><span className="label">BPM: </span><div className="value">{songData.formattedBPM}</div></div>}
-                    {hasLength && <div className="length  fieldItem"><span className="label">Length: </span><div className="value">{songData.formattedLength}</div></div>}
-                    {hasPartitions && <div className="partitionCount fieldItem">{gIconMap.LibraryMusic()} {fileInfo.partitions.length} {SelectEnglishNoun(fileInfo.partitions.length, "partition", "partitions")}</div>}
-                    {hasRecordings && <div className="recordingCount fieldItem">{gIconMap.PlayCircleOutline()} {fileInfo.recordings.length} {SelectEnglishNoun(fileInfo.recordings.length, "recording", "recordings")}</div>}
-                    {hasOtherFiles && <div className="otherFilesCount fieldItem">{gIconMap.AttachFile()} {fileInfo.otherFiles.length} {SelectEnglishNoun(fileInfo.otherFiles.length, "unsorted file", "unsorted files")}</div>}
-                </div>
-            )}
-        </div>
+                {(hasBpm || hasLength) && (
+                    <div className="lengthBpmLine row">
+                        {hasBpm && <div className="bpm fieldItem"><span className="label">BPM: </span><div className="value">{songData.formattedBPM}</div></div>}
+                        {hasLength && <div className="length  fieldItem"><span className="label">Length: </span><div className="value">{songData.formattedLength}</div></div>}
+                        {hasPartitions && <div className="partitionCount fieldItem">{gIconMap.LibraryMusic()} {fileInfo.partitions.length} {SelectEnglishNoun(fileInfo.partitions.length, "partition", "partitions")}</div>}
+                        {hasRecordings && <div className="recordingCount fieldItem">{gIconMap.PlayCircleOutline()} {fileInfo.recordings.length} {SelectEnglishNoun(fileInfo.recordings.length, "recording", "recordings")}</div>}
+                        {hasOtherFiles && <div className="otherFilesCount fieldItem">{gIconMap.AttachFile()} {fileInfo.otherFiles.length} {SelectEnglishNoun(fileInfo.otherFiles.length, "unsorted file", "unsorted files")}</div>}
+                    </div>
+                )}
+            </div>
+        </AppContextMarker>
     </div>;
 };
 
@@ -180,26 +173,26 @@ const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore 
     }, [songs]);
 
     return <div className="eventList searchResults">
-        <div className="searchRecordCount">
-            {results.rowCount === 0 ? "No items to show" : <>Displaying {songs.length} items of {results.rowCount} total</>}
-            <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
-            <Menu
-                id="menu-searchResults"
-                anchorEl={anchorEl}
-                keepMounted
-                open={Boolean(anchorEl)}
-                onClose={() => setAnchorEl(null)}
-            >
-                <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
-                    <ListItemIcon>
-                        {gIconMap.ContentCopy()}
-                    </ListItemIcon>
-                    Copy CSV
-                </MenuItem>
-            </Menu>
-        </div>
+        <AppContextMarker name="SongList" queryText={filterSpec.quickFilter}>
+            <div className="searchRecordCount">
+                {results.rowCount === 0 ? "No items to show" : <>Displaying {songs.length} items of {results.rowCount} total</>}
+                <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
+                <Menu
+                    id="menu-searchResults"
+                    anchorEl={anchorEl}
+                    keepMounted
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                >
+                    <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
+                        <ListItemIcon>
+                            {gIconMap.ContentCopy()}
+                        </ListItemIcon>
+                        Copy CSV
+                    </MenuItem>
+                </Menu>
+            </div>
 
-        <AppContextMarker name="SongList">
             <InfiniteScroll
                 dataLength={songs.length}
                 next={loadMoreData}
@@ -218,10 +211,10 @@ const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore 
                     />
                 ))}
             </InfiniteScroll>
-        </AppContextMarker>
-        {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
+            {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
 
-    </div>;
+        </AppContextMarker>
+    </div >;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

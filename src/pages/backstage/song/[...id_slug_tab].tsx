@@ -70,9 +70,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
         <NewSongButton />
         {song ? <>
             <SongBreadcrumbs song={song} />
-            <AppContextMarker name="song page">
-                <SongDetail readonly={false} song={song} tableClient={tableClient} initialTab={initialTab} />
-            </AppContextMarker>
+            <SongDetail readonly={false} song={song} tableClient={tableClient} initialTab={initialTab} />
         </> : <>
             no song was found. some possibilities:
             <ul>
@@ -128,9 +126,11 @@ export const getServerSideProps = async ({ params }) => {
 const SongDetailPage: BlitzPage = (x: PageProps) => {
     return (
         <DashboardLayout title={x.title} navRealm={NavRealm.songs} basePermission={Permission.view_songs}>
-            <Suspense>
-                <MyComponent songId={x.songId}></MyComponent>
-            </Suspense>
+            <AppContextMarker name="song page" songId={x.songId || undefined}>
+                <Suspense>
+                    <MyComponent songId={x.songId}></MyComponent>
+                </Suspense>
+            </AppContextMarker>
         </DashboardLayout>
     )
 }

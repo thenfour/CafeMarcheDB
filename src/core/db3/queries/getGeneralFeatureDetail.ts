@@ -18,7 +18,7 @@ const ZTGeneralFeatureDetailArgs = z.object({
 
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
-    filteredUserId: z.number().optional(),
+    //filteredUserId: z.number().optional(),
     filteredWikiPageId: z.number().optional(),
 });
 
@@ -37,7 +37,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
         excludeFeatures,
         filteredSongId,
         filteredEventId,
-        filteredUserId,
+        //filteredUserId,
         filteredWikiPageId,
     } = params;
 
@@ -54,7 +54,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
             ...(params.excludeYourself && { userId: { not: ctx.session.userId } }),
             ...(filteredSongId && { songId: filteredSongId }),
             ...(filteredEventId && { eventId: filteredEventId }),
-            ...(filteredUserId && { userId: filteredUserId }),
+            //...(filteredUserId && { userId: filteredUserId }),
             ...(filteredWikiPageId && { wikiPageId: filteredWikiPageId }),
         },
         ...GeneralActivityReportDetailArgs,

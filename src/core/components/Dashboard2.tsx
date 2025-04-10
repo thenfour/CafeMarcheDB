@@ -724,7 +724,7 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
-                    <AppContextMarker name="cmbs">
+                    <AppContextMarker name="bs">
                         <ConfirmProvider>
                             <MessageBoxProvider>
                                 <Dashboard3 navRealm={navRealm} basePermission={basePermission}>

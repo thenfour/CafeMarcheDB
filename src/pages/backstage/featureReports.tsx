@@ -50,6 +50,7 @@ const getColorForFeature = (feature: ActivityFeature): string | null => {
         [ActivityFeature.big_calendar_event_link_click]: gLightSwatchColors.light_green,
         [ActivityFeature.setlist_song_link_click]: gLightSwatchColors.light_green,
         [ActivityFeature.dashboard_menu_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.general_link_click]: gLightSwatchColors.light_green,
     };
 
     return featureColorMap[feature] || null;
@@ -115,7 +116,7 @@ interface GeneralFeatureDetailAreaProps {
     excludeYourself: boolean;
     filteredSongId: number | undefined;
     filteredEventId: number | undefined;
-    filteredUserId: number | undefined;
+    //filteredUserId: number | undefined;
     filteredWikiPageId: number | undefined;
     refetchTrigger: number;
 };
@@ -186,7 +187,7 @@ const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData 
     </div>;
 };
 
-const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, filteredEventId, filteredSongId, filteredUserId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
+const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, filteredEventId, filteredSongId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
 
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
@@ -198,7 +199,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
         filteredSongId,
         excludeYourself,
         filteredEventId,
-        filteredUserId,
+        //filteredUserId,
         filteredWikiPageId,
     });
 
@@ -314,7 +315,7 @@ interface GeneralFeatureStatsReportInnerProps {
     aggregateBy: ReportAggregateBy,
     filteredSongId: number | undefined,
     filteredEventId: number | undefined,
-    filteredUserId: number | undefined,
+    //filteredUserId: number | undefined,
     filteredWikiPageId: number | undefined,
     startDate: Date,
     endDate: Date,
@@ -324,7 +325,7 @@ interface GeneralFeatureStatsReportInnerProps {
 };
 const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy, filteredSongId,
     filteredEventId,
-    filteredUserId,
+    //filteredUserId,
     filteredWikiPageId, startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         features,
@@ -335,7 +336,7 @@ const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, ref
         aggregateBy,
         filteredSongId,//: filteredSong?.id,
         filteredEventId,//: filteredEvent?.id,
-        filteredUserId,//: filteredUser?.id,
+        //filteredUserId,//: filteredUser?.id,
         filteredWikiPageId,//: filteredWikiPage?.id,
     });
 
@@ -542,13 +543,13 @@ const GeneralFeatureStatsReport = () => {
                         </>
                     } /> */}
 
-                    <AssociationSelect
+                    {/* <AssociationSelect
                         title="Filter by user"
                         allowedItemTypes={[QuickSearchItemType.user]}
                         allowNull={true}
                         value={filteredUser || null}
                         onChange={(newValue) => setFilteredUser(newValue || undefined)}
-                    />
+                    /> */}
                     <AssociationSelect
                         title="Filter by song"
                         allowedItemTypes={[QuickSearchItemType.song]}
@@ -585,7 +586,7 @@ const GeneralFeatureStatsReport = () => {
                 excludeYourself={excludeYourself}
                 filteredSongId={filteredSong?.id}
                 filteredEventId={filteredEvent?.id}
-                filteredUserId={filteredUser?.id}
+                //filteredUserId={filteredUser?.id}
                 filteredWikiPageId={filteredWikiPage?.id}
                 startDate={realStartDate}
                 endDate={realEndDate}
@@ -604,7 +605,7 @@ const GeneralFeatureStatsReport = () => {
                 excludeYourself={excludeYourself}
                 filteredSongId={filteredSong?.id}
                 filteredEventId={filteredEvent?.id}
-                filteredUserId={filteredUser?.id}
+                //filteredUserId={filteredUser?.id}
                 filteredWikiPageId={filteredWikiPage?.id}
                 refetchTrigger={refetchTrigger}
             />

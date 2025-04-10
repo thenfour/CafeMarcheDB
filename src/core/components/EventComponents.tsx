@@ -26,13 +26,15 @@ import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
 import { ActivityFeature } from '../db3/shared/activityTracking';
 import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
+import { AppContextMarker } from './AppContext';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair, simulateLinkClick2 } from './CMCoreComponents2';
+import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMLink } from './CMLink';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
-import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from './DashboardContext';
+import { DashboardContext, DashboardContextData, useDashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
@@ -50,7 +52,6 @@ import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown } from './markdown/Markdown';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
-import { AppContextMarker } from './AppContext';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1555,22 +1556,24 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
     //const refetch = tableClient.refetch;
 
     return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true} refetch={props.refetch}>
-        <EventAttendanceControl
-            eventData={eventData}
-            onRefetch={tableClient.refetch}
-            userMap={userMap}
-            minimalWhenNotAlert={false} // show full always, allow users to respond always.
-        />
+        <AppContextMarker name="event detail full" eventId={event.id} >
+            <EventAttendanceControl
+                eventData={eventData}
+                onRefetch={tableClient.refetch}
+                userMap={userMap}
+                minimalWhenNotAlert={false} // show full always, allow users to respond always.
+            />
 
-        <SegmentList
-            event={event}
-            tableClient={tableClient}
-            readonly={props.readonly}
-        />
+            <SegmentList
+                event={event}
+                tableClient={tableClient}
+                readonly={props.readonly}
+            />
 
-        <Suspense>
-            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={props.refetch} eventData={eventData} userMap={userMap} />
-        </Suspense>
+            <Suspense>
+                <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={props.refetch} eventData={eventData} userMap={userMap} />
+            </Suspense>
+        </AppContextMarker>
     </EventDetailContainer>;
 };
 
@@ -1583,13 +1586,12 @@ export interface EventSearchItemContainerProps {
     highlightTypeIds?: number[];
     reducedInfo?: boolean; // show less info
     feature: ActivityFeature;
-    queryText?: string;
+    //queryText?: string;
 }
 
 export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = React.useContext(DashboardContext);
     const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
-    const recordFeature = useFeatureRecorder();
 
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusIds || [];
@@ -1617,104 +1619,93 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
     ];
 
     return <div style={typeStyle.style} className={classes.join(" ")}>
-        <div className='header applyColor'>
-            {!reducedInfo &&
-                <CMChipContainer>
-                    {event.status && <CMStandardDBChip
-                        variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(event.statusId!) }}
-                        border='border'
-                        shape="rectangle"
-                        model={event.status}
-                        //getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
-                        getTooltip={_ => event.status?.description || null}
-                    />}
-                </CMChipContainer>
-            }
-
-            <div className='flex-spacer'></div>
-
-            <CMChipContainer>
-                {event.type &&
-                    <CMStandardDBChip
-                        model={event.type}
-                        //getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                        getTooltip={_ => event.type?.description || ""}
-                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(event.typeId!) }}
-                        className='eventTypeChip'
-                    />
+        <AppContextMarker name="event search item" eventId={event.id} >
+            <div className='header applyColor'>
+                {!reducedInfo &&
+                    <CMChipContainer>
+                        {event.status && <CMStandardDBChip
+                            variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(event.statusId!) }}
+                            border='border'
+                            shape="rectangle"
+                            model={event.status}
+                            //getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
+                            getTooltip={_ => event.status?.description || null}
+                        />}
+                    </CMChipContainer>
                 }
 
-            </CMChipContainer>
+                <div className='flex-spacer'></div>
 
-            {
-                dashboardContext.isShowingAdminControls && <>
-                    <NameValuePair
-                        isReadOnly={true}
-                        name={"eventId"}
-                        value={event.id}
-                    />
-                    <NameValuePair
-                        isReadOnly={true}
-                        name={"revision"}
-                        value={event.revision}
-                    />
-                    <InspectObject src={event} />
-                </>
-            }
+                <CMChipContainer>
+                    {event.type &&
+                        <CMStandardDBChip
+                            model={event.type}
+                            //getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                            getTooltip={_ => event.type?.description || ""}
+                            variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(event.typeId!) }}
+                            className='eventTypeChip'
+                        />
+                    }
 
-            {!reducedInfo &&
-                <EventDotMenu event={event} showVisibility={false} />}
-        </div>
+                </CMChipContainer>
 
-        <div className='content'>
-            {/* for search results it's really best if we allow the whole row to be clickable. */}
-            <a href={eventURI} className="titleLink" onClick={async (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                await recordFeature({
-                    feature: props.feature,
-                    eventId: event.id,
-                    //context: `EventSearchItemContainer`,
-                    queryText: props.queryText,
-                });
+                {
+                    dashboardContext.isShowingAdminControls && <>
+                        <NameValuePair
+                            isReadOnly={true}
+                            name={"eventId"}
+                            value={event.id}
+                        />
+                        <NameValuePair
+                            isReadOnly={true}
+                            name={"revision"}
+                            value={event.revision}
+                        />
+                        <InspectObject src={event} />
+                    </>
+                }
 
-                simulateLinkClick2(eventURI, e);
-            }
-            }>
-                <div className='titleLine'>
-                    <div className="titleText">
-                        {event.name}
-                    </div>
-                </div>
-            </a>
-
-            <div className='titleLine'>
-                <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
+                {!reducedInfo &&
+                    <EventDotMenu event={event} showVisibility={false} />}
             </div>
 
-            {!IsNullOrWhitespace(event.locationDescription) &&
-                <div className='titleLine'>
-                    <div className="location smallInfoBox">
-                        {gIconMap.Place()}
-                        <span className="text">{event.locationDescription}</span>
+            <div className='content'>
+                {/* for search results it's really best if we allow the whole row to be clickable. */}
+                <CMLink href={eventURI} className="titleLink" trackingFeature={props.feature}>
+                    <div className='titleLine'>
+                        <div className="titleText">
+                            {event.name}
+                        </div>
                     </div>
-                </div>}
+                </CMLink>
 
-            {(event.status?.significance !== db3.EventStatusSignificance.Cancelled) &&
-                <CMChipContainer>
-                    {event.tags.map(tag => <CMStandardDBChip
-                        key={tag.id}
-                        model={tag.eventTag}
-                        size='small'
-                        variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
-                        getTooltip={(_) => tag.eventTag.description}
-                    />)}
-                </CMChipContainer>}
+                <div className='titleLine'>
+                    <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
+                </div>
 
-            {props.children}
+                {!IsNullOrWhitespace(event.locationDescription) &&
+                    <div className='titleLine'>
+                        <div className="location smallInfoBox">
+                            {gIconMap.Place()}
+                            <span className="text">{event.locationDescription}</span>
+                        </div>
+                    </div>}
 
-        </div>
+                {(event.status?.significance !== db3.EventStatusSignificance.Cancelled) &&
+                    <CMChipContainer>
+                        {event.tags.map(tag => <CMStandardDBChip
+                            key={tag.id}
+                            model={tag.eventTag}
+                            size='small'
+                            variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
+                            getTooltip={(_) => tag.eventTag.description}
+                        />)}
+                    </CMChipContainer>}
 
+                {props.children}
+
+            </div>
+        </AppContextMarker>
     </div>;
 };
 
@@ -1727,7 +1718,7 @@ export interface EventListItemProps {
     showAttendanceControl?: boolean;
     reducedInfo?: boolean; // show less info, like in the event list.
     feature: ActivityFeature;
-    queryText?: string;
+    //queryText?: string;
 };
 
 export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
@@ -1741,7 +1732,7 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options as number[] : []}
         reducedInfo={reducedInfo}
         feature={props.feature}
-        queryText={props.queryText}
+    //queryText={props.queryText}
     >
         {showAttendanceControl &&
             <EventAttendanceControl

@@ -7,6 +7,7 @@ import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { arrayToTSV } from "shared/utils";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
@@ -114,45 +115,47 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
     }, [events]);
 
     return <div className="eventList searchResults">
-        <div className="searchRecordCount">
-            {results.rowCount === 0 ? "No items to show" : <>Displaying {events.length} items of {results.rowCount} total</>}
-            <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
-            <Menu
-                id="menu-searchResults"
-                anchorEl={anchorEl}
-                keepMounted
-                open={Boolean(anchorEl)}
-                onClose={() => setAnchorEl(null)}
-            >
-                <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
-                    <ListItemIcon>
-                        {gIconMap.ContentCopy()}
-                    </ListItemIcon>
-                    Copy CSV
-                </MenuItem>
-            </Menu>
-        </div>
+        <AppContextMarker name="Events list" queryText={filterSpec.quickFilter}>
+            <div className="searchRecordCount">
+                {results.rowCount === 0 ? "No items to show" : <>Displaying {events.length} items of {results.rowCount} total</>}
+                <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
+                <Menu
+                    id="menu-searchResults"
+                    anchorEl={anchorEl}
+                    keepMounted
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                >
+                    <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
+                        <ListItemIcon>
+                            {gIconMap.ContentCopy()}
+                        </ListItemIcon>
+                        Copy CSV
+                    </MenuItem>
+                </Menu>
+            </div>
 
-        <InfiniteScroll
-            dataLength={events.length}
-            next={loadMoreData}
-            hasMore={hasMore}
-            loader={<h4>Loading...</h4>}
-        >
-            {events.map((event, i) => (
-                <EventListItem
-                    key={event.id}
-                    event={event}
-                    filterSpec={filterSpec}
-                    refetch={refetch}
-                    results={results}
-                    showTabs={false}
-                    feature={ActivityFeature.event_search_link_click}
-                    queryText={filterSpec.quickFilter}
-                />
-            ))}
-        </InfiniteScroll>
-        {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
+            <InfiniteScroll
+                dataLength={events.length}
+                next={loadMoreData}
+                hasMore={hasMore}
+                loader={<h4>Loading...</h4>}
+            >
+                {events.map((event, i) => (
+                    <EventListItem
+                        key={event.id}
+                        event={event}
+                        filterSpec={filterSpec}
+                        refetch={refetch}
+                        results={results}
+                        showTabs={false}
+                        feature={ActivityFeature.event_search_link_click}
+                    //queryText={filterSpec.quickFilter}
+                    />
+                ))}
+            </InfiniteScroll>
+            {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
+        </AppContextMarker>
     </div>;
 };
 

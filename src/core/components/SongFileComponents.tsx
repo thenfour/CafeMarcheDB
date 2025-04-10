@@ -17,12 +17,14 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { ActivityFeature } from '../db3/shared/activityTracking';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
+import { AppContextMarker } from './AppContext';
 import { AudioPreviewBehindButton } from './AudioPreview';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { CMDBUploadFile } from './CMDBUploadFile';
+import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
-import { DashboardContext, useFeatureRecorder } from './DashboardContext';
+import { DashboardContext } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown } from "./markdown/Markdown";
@@ -61,7 +63,6 @@ interface FileViewerProps {
 
 export const FileValueViewer = (props: FileViewerProps) => {
     const dashboardContext = React.useContext(DashboardContext);
-    const downloadActivityRecorder = useFeatureRecorder();
     //const [currentUser] = useCurrentUser();
     const file = props.value;
     const visInfo = dashboardContext.getVisibilityInfo(file);
@@ -82,90 +83,83 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
     const variation = StandardVariationSpec.Weak;
 
-    const handleDownloadClick = (e: React.MouseEvent) => {
-        void downloadActivityRecorder({
-            feature: ActivityFeature.file_download,
-            fileId: file.id,
-            eventId: props.contextEventId,
-            songId: props.contextSongId,
-        });
-    };
-
     return <div className={classes.join(" ")}>
+        <AppContextMarker fileId={props.value.id}>
 
-        <div className="header">
+            <div className="header">
 
-            {file.externalURI ? (
-                <a target="_empty" className="downloadLink" href={file.externalURI} onClick={handleDownloadClick}>
-                    {gIconMap.Link()}
-                    <Tooltip title={file.fileLeafName}>
-                        <div className="filename">{smartTruncate(file.fileLeafName)}</div>
-                    </Tooltip>
-                </a>
-            ) : (
-                <a target="_empty" className="downloadLink" href={API.files.getURIForFile(file)} onClick={handleDownloadClick}>
-                    <FileDownloadIcon />
-                    <Tooltip title={file.fileLeafName}>
-                        <div className="filename">{smartTruncate(file.fileLeafName)}</div>
-                    </Tooltip>
-                </a>)
-            }
+                {file.externalURI ? (
+                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={file.externalURI}>
+                        {gIconMap.Link()}
+                        <Tooltip title={file.fileLeafName}>
+                            <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+                        </Tooltip>
+                    </CMLink>
+                ) : (
+                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={API.files.getURIForFile(file)}>
+                        <FileDownloadIcon />
+                        <Tooltip title={file.fileLeafName}>
+                            <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+                        </Tooltip>
+                    </CMLink>)
+                }
 
-            <div className="flex-spacer"></div>
-            <VisibilityValue permissionId={file.visiblePermissionId} variant="minimal" />
-            {!props.readonly && <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>}
-        </div>
-        <div className="content">
-            <CMChipContainer>
-                {(file.tags.length > 0) && (
-                    file.tags.map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variation={variation} />)
-                )}
-
-                {(file.taggedEvents.length > 0) && (
-                    file.taggedEvents.map(a => <EventChip key={a.id} value={a.event} size="small" variation={variation} />)
-                )}
-
-                {(file.taggedUsers.length > 0) && (
-                    file.taggedUsers.map(a => <UserChip key={a.id} value={a.user} size="small" variation={variation} />)
-                )}
-
-                {(file.taggedSongs.length > 0) && (
-                    file.taggedSongs.map(a => <SongChip key={a.id} value={a.song} size="small" variation={variation} />)
-                )}
-
-                {(file.taggedInstruments.length > 0) && (
-                    file.taggedInstruments.map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
-                )}
-            </CMChipContainer>
-
-
-            <div className="descriptionContainer">
-                <Markdown markdown={file.description} />
+                <div className="flex-spacer"></div>
+                <VisibilityValue permissionId={file.visiblePermissionId} variant="minimal" />
+                {!props.readonly && <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>}
             </div>
-            <div className="preview">
-                {isAudio && <AudioPreviewBehindButton value={file} />}
-            </div>
+            <div className="content">
+                <CMChipContainer>
+                    {(file.tags.length > 0) && (
+                        file.tags.map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variation={variation} />)
+                    )}
 
-            <Tooltip title={<div>
-                <div>uploaded at {file.uploadedAt.toLocaleString()} by {file.uploadedByUser?.name}</div>
-                {file.externalURI && <div>{file.externalURI}</div>}
-            </div>}>
-                <div className="stats">
+                    {(file.taggedEvents.length > 0) && (
+                        file.taggedEvents.map(a => <EventChip key={a.id} value={a.event} size="small" variation={variation} />)
+                    )}
 
-                    {file.externalURI &&
-                        <div className="stat externalURI">
-                            {smartTruncate(file.externalURI)}
-                        </div>
-                    }
+                    {(file.taggedUsers.length > 0) && (
+                        file.taggedUsers.map(a => <UserChip key={a.id} value={a.user} size="small" variation={variation} />)
+                    )}
 
-                    {file.sizeBytes !== null && <div className={`stat ${props.statHighlight === 'sizeBytes' && "highlight"}`}>{formatFileSize(file.sizeBytes)}</div>}
-                    {file.mimeType && <div className={`stat ${props.statHighlight === 'mimeType' && "highlight"}`}>{file.mimeType}</div>}
-                    {file.fileCreatedAt && <div className={`stat ${props.statHighlight === 'fileCreatedAt' && "highlight"}`}>created at {file.fileCreatedAt.toLocaleString()}</div>}
-                    {props.statHighlight === 'uploadedByUserId' && <div className='stat highlight'>uploaded by {file.uploadedByUser?.name}</div>}
-                    {props.statHighlight === 'uploadedAt' && <div className='stat highlight'>uploaded at {file.uploadedAt.toLocaleString()}</div>}
+                    {(file.taggedSongs.length > 0) && (
+                        file.taggedSongs.map(a => <SongChip key={a.id} value={a.song} size="small" variation={variation} />)
+                    )}
+
+                    {(file.taggedInstruments.length > 0) && (
+                        file.taggedInstruments.map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
+                    )}
+                </CMChipContainer>
+
+
+                <div className="descriptionContainer">
+                    <Markdown markdown={file.description} />
                 </div>
-            </Tooltip>
-        </div>
+                <div className="preview">
+                    {isAudio && <AudioPreviewBehindButton value={file} />}
+                </div>
+
+                <Tooltip title={<div>
+                    <div>uploaded at {file.uploadedAt.toLocaleString()} by {file.uploadedByUser?.name}</div>
+                    {file.externalURI && <div>{file.externalURI}</div>}
+                </div>}>
+                    <div className="stats">
+
+                        {file.externalURI &&
+                            <div className="stat externalURI">
+                                {smartTruncate(file.externalURI)}
+                            </div>
+                        }
+
+                        {file.sizeBytes !== null && <div className={`stat ${props.statHighlight === 'sizeBytes' && "highlight"}`}>{formatFileSize(file.sizeBytes)}</div>}
+                        {file.mimeType && <div className={`stat ${props.statHighlight === 'mimeType' && "highlight"}`}>{file.mimeType}</div>}
+                        {file.fileCreatedAt && <div className={`stat ${props.statHighlight === 'fileCreatedAt' && "highlight"}`}>created at {file.fileCreatedAt.toLocaleString()}</div>}
+                        {props.statHighlight === 'uploadedByUserId' && <div className='stat highlight'>uploaded by {file.uploadedByUser?.name}</div>}
+                        {props.statHighlight === 'uploadedAt' && <div className='stat highlight'>uploaded at {file.uploadedAt.toLocaleString()}</div>}
+                    </div>
+                </Tooltip>
+            </div>
+        </AppContextMarker>
     </div>;
 };
 

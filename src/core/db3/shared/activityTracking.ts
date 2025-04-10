@@ -16,10 +16,33 @@ export enum ActivityFeature {
     big_calendar_event_link_click = "big_calendar_event_link_click",
     setlist_song_link_click = "setlist_song_link_click",
     dashboard_menu_link_click = "dashboard_menu_link_click",
+    general_link_click = "general_link_click",
 };
 
 // activity tracking for feature usage
 export type ClientActivityParams = {
+    feature: ActivityFeature;
+
+    // eventId?: number;
+    // fileId?: number;
+    // songId?: number;
+    // wikiPageId?: number;
+    // queryText?: string;
+
+    eventId?: never;
+    fileId?: never;
+    songId?: never;
+    wikiPageId?: never;
+    queryText?: never;
+
+
+    // context is derived from the current stack of AppContextMarkers.
+    context?: never;
+};
+
+
+// activity tracking for feature usage
+export type UseFeatureUseClientActivityParams = {
     feature: ActivityFeature;
 
     eventId?: number;

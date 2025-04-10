@@ -81,16 +81,14 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
         <NewEventButton />
         {event ? <>
             <EventBreadcrumbs event={event} />
-            <AppContextMarker name="event page">
-                <EventDetailFull
-                    readonly={false}
-                    event={event}
-                    tableClient={tableClient}
-                    initialTabIndex={initialTabIndex}
-                    workflowRefreshTrigger={workflowRefreshTrigger}
-                    refetch={refetch}
-                />
-            </AppContextMarker>
+            <EventDetailFull
+                readonly={false}
+                event={event}
+                tableClient={tableClient}
+                initialTabIndex={initialTabIndex}
+                workflowRefreshTrigger={workflowRefreshTrigger}
+                refetch={refetch}
+            />
         </> : <>
             no event was found. some possibilities:
             <ul>
@@ -173,11 +171,13 @@ export const getServerSideProps: GetServerSideProps = async ({ params, req }) =>
 const EventDetailPage: BlitzPage = (props: PageProps) => {
     return (
         <DashboardLayout title={props.title} navRealm={NavRealm.events} basePermission={Permission.view_events_nonpublic}>
-            <Suspense>
-                <MyComponent eventId={props.eventId}></MyComponent>
-            </Suspense>
-            {/* this helps prevent annoying scroll behavior when switching tabs */}
-            <div style={{ height: "65vh" }}></div>
+            <AppContextMarker name="event page" eventId={props.eventId || undefined}>
+                <Suspense>
+                    <MyComponent eventId={props.eventId}></MyComponent>
+                </Suspense>
+                {/* this helps prevent annoying scroll behavior when switching tabs */}
+                <div style={{ height: "65vh" }}></div>
+            </AppContextMarker>
         </DashboardLayout>
     )
 }

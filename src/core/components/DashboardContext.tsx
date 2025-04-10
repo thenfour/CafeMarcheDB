@@ -12,7 +12,7 @@ import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
 import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
-import { ActivityFeature, ClientActivityParams } from '../db3/shared/activityTracking';
+import { ActivityFeature, ClientActivityParams, UseFeatureUseClientActivityParams } from '../db3/shared/activityTracking';
 import { useAppContext } from './AppContext';
 
 interface ObjectWithVisiblePermission {
@@ -211,7 +211,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     </DashboardContext.Provider>
 };
 
-export const useRecordFeatureUse = (args: ClientActivityParams) => {
+export const useRecordFeatureUse = (args: UseFeatureUseClientActivityParams) => {
     const [recordActionProc] = useMutation(recordActionMutation);
     const appCtx = useAppContext();
     // react likes to make redundant renders; throttle.
@@ -219,6 +219,11 @@ export const useRecordFeatureUse = (args: ClientActivityParams) => {
         void recordActionProc({
             uri: window.location.href,
             context: appCtx.toString(),
+            eventId: appCtx.eventId,
+            songId: appCtx.songId,
+            wikiPageId: appCtx.wikiPageId,
+            fileId: appCtx.fileId,
+            queryText: appCtx.queryText,
             ...args,
         });
     }, 250);
@@ -233,6 +238,11 @@ export const useFeatureRecorder = () => {
         await recordActionProc({
             uri: window.location.href,
             context: appCtx.toString(),
+            eventId: appCtx.eventId,
+            songId: appCtx.songId,
+            wikiPageId: appCtx.wikiPageId,
+            fileId: appCtx.fileId,
+            queryText: appCtx.queryText,
             ...args,
         });
     }

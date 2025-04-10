@@ -22,6 +22,7 @@ import { simulateLinkClickTargetBlank } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
+import { CMLink } from "./CMLink";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -580,7 +581,7 @@ export const EventTextLink = (props: {
         width: "16px",
     };
 
-    return <a rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)}>
+    return <CMLink rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)}>
         <CMChip
             color={type?.color}
             size="small"
@@ -597,6 +598,6 @@ export const EventTextLink = (props: {
             <Tooltip title={label} disableInteractive><span>
                 {label}</span></Tooltip>
         </CMChip>
-    </a >;
+    </CMLink>;
 };
 

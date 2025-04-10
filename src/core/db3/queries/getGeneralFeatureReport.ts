@@ -17,7 +17,7 @@ const ZTGeneralFeatureReportArgs = z.object({
 
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
-    filteredUserId: z.number().optional(),
+    //filteredUserId: z.number().optional(),
     filteredWikiPageId: z.number().optional(),
 });
 
@@ -38,7 +38,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         aggregateBy,
         filteredSongId,
         filteredEventId,
-        filteredUserId,
+        //filteredUserId,
         filteredWikiPageId,
     } = params;
 
@@ -64,9 +64,9 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
     if (filteredEventId) {
         conditions.push(`${MySqlSymbol("eventId")} = ${filteredEventId}`);
     }
-    if (filteredUserId) {
-        conditions.push(`${MySqlSymbol("userId")} = ${filteredUserId}`);
-    }
+    // if (filteredUserId) {
+    //     conditions.push(`${MySqlSymbol("userId")} = ${filteredUserId}`);
+    // }
     if (filteredWikiPageId) {
         conditions.push(`${MySqlSymbol("wikiPageId")} = ${filteredWikiPageId}`);
     }

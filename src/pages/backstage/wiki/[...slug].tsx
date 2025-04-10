@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SettingKey } from "shared/settings";
 import { gSSP } from "src/blitz-server";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
@@ -84,9 +85,11 @@ const WikiPage: BlitzPage = (x: PageProps) => {
     }
     return (
         <DashboardLayout title={x.title}>
-            <Suspense>
-                <WikiPageComponent wikiPath={x.wikiPath} wikiPageId={x.wikiPageId}></WikiPageComponent>
-            </Suspense>
+            <AppContextMarker name="wiki page" wikiPageId={x.wikiPageId}>
+                <Suspense>
+                    <WikiPageComponent wikiPath={x.wikiPath} wikiPageId={x.wikiPageId}></WikiPageComponent>
+                </Suspense>
+            </AppContextMarker>
         </DashboardLayout>
     )
 }
