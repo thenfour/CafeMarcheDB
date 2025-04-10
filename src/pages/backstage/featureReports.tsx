@@ -5,6 +5,7 @@ import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { toSorted } from "shared/arrayUtils";
+import { gAppColors, gLightSwatchColors } from "shared/color";
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { DateAdd, roundToNearest15Minutes } from "shared/time";
@@ -28,6 +29,31 @@ enum TabId {
     general = "general",
     featureUsageByUser = "featureUsageByUser",
 };
+
+const getColorForFeature = (feature: ActivityFeature): string | null => {
+    const featureColorMap: Record<ActivityFeature, string> = {
+        [ActivityFeature.global_ical_digest]: gLightSwatchColors.light_blue,
+        [ActivityFeature.event_ical_digest]: gLightSwatchColors.light_blue,
+
+        [ActivityFeature.wiki_page_view]: gLightSwatchColors.light_pink,
+        [ActivityFeature.song_view]: gLightSwatchColors.light_pink,
+        [ActivityFeature.event_view]: gLightSwatchColors.light_pink,
+
+        [ActivityFeature.file_download]: gLightSwatchColors.light_purple,
+
+        [ActivityFeature.metronome_persistent]: gLightSwatchColors.light_gold,
+
+        [ActivityFeature.main_search_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.song_search_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.event_search_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.relevant_event_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.big_calendar_event_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.setlist_song_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.dashboard_menu_link_click]: gLightSwatchColors.light_green,
+    };
+
+    return featureColorMap[feature] || null;
+}
 
 const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?: number }) => {
     return <MuiTooltip title={value.substring(0, 6)} disableInteractive><div><Identicon string={value} size={size} /></div></MuiTooltip>;
@@ -396,6 +422,7 @@ const GeneralFeatureStatsReport = () => {
                         getOptionInfo={(item) => {
                             return {
                                 id: item.toString(),
+                                color: getColorForFeature(item),
                             };
                         }}
                         renderOption={(item) => {

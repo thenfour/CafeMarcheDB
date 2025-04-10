@@ -23,11 +23,12 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
+import { ActivityFeature } from '../db3/shared/activityTracking';
 import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair, simulateLinkClick, simulateLinkClick2 } from './CMCoreComponents2';
+import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair, simulateLinkClick2 } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -47,9 +48,8 @@ import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
-import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { Markdown } from './markdown/Markdown';
-import { ActivityFeature } from '../db3/shared/activityTracking';
+import { Markdown3Editor } from './markdown/MarkdownControl3';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {

@@ -20,6 +20,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
+import { ActivityFeature } from '../db3/shared/activityTracking';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
@@ -27,14 +28,13 @@ import { CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameVa
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
+import { useMessageBox } from './context/MessageBoxContext';
 import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { Markdown } from "./markdown/Markdown";
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
-import { useMessageBox } from './context/MessageBoxContext';
-import { ActivityFeature } from '../db3/shared/activityTracking';
 
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {

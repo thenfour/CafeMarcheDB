@@ -3,11 +3,12 @@ import { DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import { Clamp, CoerceToNumberOrNull } from "shared/utils";
 import { CMTextInputBase } from "./CMTextField";
-import { DashboardContext } from './DashboardContext';
+import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 //import { useURLState } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
 import { Knob } from "./Knob";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;
@@ -267,6 +268,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
 export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSyncClick, variant }: { bpm: number, mountPlaying?: boolean, tapTrigger: number, isTapping: boolean, onSyncClick: () => void, variant: "normal" | "tiny" }) => {
     const [playing, setPlaying] = React.useState<boolean>(mountPlaying || false);
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
     const [beatSyncTrigger, setBeatSyncTrigger] = React.useState<number>(0);
     const mySilencer = React.useRef<() => void>(() => setPlaying(false));
 
@@ -284,6 +286,20 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
         if (playing) {
             const withoutSelf = dashboardContext.metronomeSilencers.filter(s => s != mySilencer.current);
             withoutSelf.forEach(s => s());
+        }
+    }, [playing]);
+
+    // if you are playing the metronome for > 1 minute, record the activity.
+    React.useEffect(() => {
+        if (playing) {
+            const timer = window.setTimeout(() => {
+                recordFeature({
+                    feature: ActivityFeature.metronome_persistent,
+                });
+            }, 60 * 1000); // 1 minute
+            return () => {
+                clearTimeout(timer);
+            };
         }
     }, [playing]);
 

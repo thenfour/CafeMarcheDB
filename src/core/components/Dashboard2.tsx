@@ -36,17 +36,17 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { AdminInspectObject } from "./CMCoreComponents";
 import { simulateLinkClick, simulateLinkClick2 } from "./CMCoreComponents2";
 import { ConfirmProvider } from "./ConfirmationDialog";
 import { DashboardContext, DashboardContextData, DashboardContextProvider, useFeatureRecorder } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
+import { MainSiteSearch } from "./MainSiteSearch";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
-import { MainSiteSearch } from "./MainSiteSearch";
 import { MessageBoxProvider } from "./context/MessageBoxContext";
-import { ActivityFeature } from "../db3/shared/activityTracking";
 
 const drawerWidth = 260;
 
