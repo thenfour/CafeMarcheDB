@@ -42,7 +42,7 @@ const ToolItemWithDropdown = (props: React.PropsWithChildren<ToolItemWithDropdow
 
     return <>
         <Tooltip title={props.tooltip} disableInteractive>
-            <div className="toolItem" onClick={(e) => {
+            <div className="toolItem ToolItemWithDropdown interactable" onClick={(e) => {
                 props.setCloseMenuProc(closeMenu);
                 setAnchorEl(e.currentTarget);
             }}>
@@ -138,7 +138,7 @@ interface MarkdownEditorToolbarItemProps {
 
 export const MarkdownEditorToolbarItem = (props: React.PropsWithChildren<MarkdownEditorToolbarItemProps>) => {
     return <><Tooltip title={props.tooltip} disableInteractive>
-        <div className={`toolItem ${props.className ? " " + props.className : ""}`} onClick={props.onClick}>
+        <div className={`toolItem MarkdownEditorToolbarItem interactable ${props.className ? " " + props.className : ""}`} onClick={props.onClick}>
             {props.icon}
         </div>
     </Tooltip>

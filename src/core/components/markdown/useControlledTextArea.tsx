@@ -1,3 +1,5 @@
+import { UndoManagerApi, useUndoManager } from "./MarkdownUndoStack";
+
 interface ReplaceSelectionWithTextOptions {
     select: "change" | "afterChange",
 }
@@ -26,6 +28,8 @@ export interface ControlledTextAreaAPI {
     surroundSelectionWithText: (prefix: string, suffix: string, textIfNoSelection: string) => Promise<void>;
     transformSelectedLines: (transform: (line: string, lineIndex: number, allSelectedLines: string[]) => string | undefined) => Promise<void>; // transforming a line to undefined removes it.
     toggleSurroundingSelectionWithText: (prefix: string, suffix: string, textIfNoSelection: string) => Promise<void>;
+
+    undoManagerApi: UndoManagerApi,
 }
 
 function getLineCount(text: string): number {
@@ -68,10 +72,12 @@ function getLineRangeForCharRange(text: string, selectionStart: number, selectio
 
 
 export function useControlledTextArea(
-    textArea: HTMLTextAreaElement | undefined | null,
+    textAreaRef: React.RefObject<HTMLTextAreaElement> | null | undefined,
     textValue: string,
     onTextChange: (val: string) => void
 ): ControlledTextAreaAPI {
+
+    const textArea = textAreaRef?.current ?? null;
 
     const setSelectionRange = async (start: number, end: number) => {
         return new Promise<void>((resolve) => {
@@ -256,6 +262,19 @@ export function useControlledTextArea(
         }
     };
 
+    const undoManagerApi = useUndoManager({
+        textareaRef: textAreaRef,
+        getState: () => ({
+            text: textValue,
+            selectionStart: textArea?.selectionStart ?? 0,
+            selectionEnd: textArea?.selectionEnd ?? 0,
+            charCount: textValue.length,
+        }),
+        setState: async (state) => {
+            onTextChange(state.text);
+            await setSelectionRangeAsync(state.selectionStart, state.selectionEnd);
+        },
+    });
 
     return {
         selectionStart: textArea?.selectionStart ?? 0,
@@ -270,6 +289,7 @@ export function useControlledTextArea(
         isLineBasedSelection,
         surroundSelectionWithText,
         replaceSelectionWithText,
+        undoManagerApi,
         // if the selection is surrounded by or includes the prefix and suffix, remove them
         // if not, add them.
         // if there's no selection, add the prefix and suffix around the textIfNoSelection.

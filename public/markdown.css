@@ -159,6 +159,7 @@ test cases:
     display: flex;
     flex-direction: column;
     padding: 6px;
+    user-select: none;
 }
 
 .MD3Container.editor .tab {
@@ -198,7 +199,13 @@ test cases:
     border-radius: 4px;
     display: flex;
     align-items: center;
+    /* cursor: pointer; */
+    opacity: 20%;
+}
+
+.MD3Container.editor .toolbar .toolItem.interactable {
     cursor: pointer;
+    opacity: 100%;
 }
 
 .MD3Container.editor .toolbar .toolItem svg,
@@ -213,7 +220,7 @@ test cases:
     justify-content: center;
 }
 
-.MD3Container.editor .toolbar .toolItem:hover {
+.MD3Container.editor .toolbar .toolItem.interactable:hover {
     background-color: #ddd;
 }
 

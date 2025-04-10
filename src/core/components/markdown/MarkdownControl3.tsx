@@ -52,7 +52,8 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const snackbar = useSnackbar();
     const dashboardContext = useDashboardContext();
 
-    const [textAreaRef, setTextAreaRef] = React.useState<HTMLTextAreaElement | null>(null);
+    //const [textAreaRef, setTextAreaRef] = React.useState<HTMLTextAreaElement | null>(null);
+    const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const controlledTextArea = useControlledTextArea(textAreaRef, props.value || "", props.onChange);
     const [nativeFileInputRef, setNativeFileInputRef] = React.useState<HTMLInputElement | null>(null);
 
@@ -61,7 +62,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         //contextMap,
         invocationTriggerMap: commandInvocationTriggerMap.current,
         dashboardContext: dashboardContext,
-        textArea: textAreaRef!,
+        textArea: textAreaRef.current!,
         nativeFileInputRef: nativeFileInputRef!,
         saveProgress: async () => {
             if (props.handleSave) {
@@ -160,7 +161,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
             }
         };
 
-        const capturedTextArea = textAreaRef;
+        const capturedTextArea = textAreaRef.current;
         capturedTextArea && capturedTextArea.addEventListener('keydown', handleKeyDown);
 
         return () => {
@@ -198,7 +199,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                 }
 
                                 return <Tooltip key={index} title={item.toolbarTooltip} disableInteractive>
-                                    <div className={`toolItem`} onClick={item.invoke && (async () => {
+                                    <div className={`toolItem interactable`} onClick={item.invoke && (async () => {
                                         await item.invoke!({
                                             triggeredBy: "toolbar",
                                             api: apiRef.current,
@@ -235,7 +236,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                     autoFocus={autoFocus}
 
                     uploadProgress={uploadProgress}
-                    textAreaRef={setTextAreaRef}
+                    textAreaRef={(ref) => textAreaRef.current = ref}
                     nativeFileInputRef={setNativeFileInputRef}
                     onFileSelect={handleFileSelect}
                     onCustomPaste={(pastedHtml) => {
