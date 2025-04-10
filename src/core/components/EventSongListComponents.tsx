@@ -273,7 +273,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                         feature: ActivityFeature.setlist_song_link_click,
                         songId: props.value.song.id,
                         eventId: props.songList.eventId,
-                        context: `Setlist`,
+                        //context: `Setlist`,
                     });
                     simulateLinkClick2(API.songs.getURIForSong(props.value.song), e);
                 }

@@ -26,7 +26,9 @@ export type ClientActivityParams = {
     fileId?: number;
     songId?: number;
     wikiPageId?: number;
-    context?: string;
     queryText?: string;
+
+    // context is derived from the current stack of AppContextMarkers.
+    context?: never;
 };
 

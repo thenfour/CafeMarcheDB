@@ -16,6 +16,7 @@ import { useDashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
 import { ActivityFeature } from "../db3/shared/activityTracking";
+import { AppContextMarker } from "./AppContext";
 
 // events happening TODAY can be a search result card, maximum 1.
 // but all other events should be in a list of smaller cards.
@@ -56,7 +57,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
         await recordFeature({
             feature: ActivityFeature.relevant_event_link_click,
             eventId: event.id,
-            context: `SubtleEventCard`,
+            //context: `SubtleEventCard`,
         });
         simulateLinkClick(API.events.getURIForEvent(event));
     }} >
@@ -71,22 +72,26 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
             </div>
         }
         <div className='SearchItemBigCardLinkContainer'>
-            {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <SearchItemBigCardLink
+
+            {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
                 icon={<InfoOutlined />}
                 title="Info"
                 uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
                 eventId={event.id}
                 feature={ActivityFeature.relevant_event_link_click}
             />
+            </AppContextMarker>
             }
-            {event.songLists.length > 0 && <SearchItemBigCardLink
+            {event.songLists.length > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
                 icon={<LibraryMusic />}
                 title="Setlist"
                 uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
                 eventId={event.id}
                 feature={ActivityFeature.relevant_event_link_click}
             />
+            </AppContextMarker>
             }
+
         </div>
 
 
@@ -169,25 +174,30 @@ export const RelevantEvents = () => {
     }
 
     return <div className="RelevantEvents">
-        {/* <div className="RelevantEventsHeader">
+        <AppContextMarker name="relevant events">
+            {/* <div className="RelevantEventsHeader">
             <a href="/backstage/events" rel="noreferrer">
                 Current Events
             </a>
         </div> */}
-        {highlightedEvent && <div>
-            <EventListItem
-                event={highlightedEvent.event}
-                refetch={tableClient.refetch}
-                results={MakeMockSearchResultsRetFromEvents([highlightedEvent.event], userTagWithAssignments)}
-                showTabs={true}
-                reducedInfo={true}
-                feature={ActivityFeature.relevant_event_link_click}
-            /></div>}
-        {eventsWithTiming.length > 0 && <div>
-            <div className="RelevantEventsList SubtleEventCardContainer">
-                {eventsWithTiming.map((e, i) => <SubtleEventCard key={i} event={e.event} dateRange={e.dateRange} relativeTiming={e.relativeTiming} />)}
+            {highlightedEvent && <div>
+                <AppContextMarker name="highlighted">
+                    <EventListItem
+                        event={highlightedEvent.event}
+                        refetch={tableClient.refetch}
+                        results={MakeMockSearchResultsRetFromEvents([highlightedEvent.event], userTagWithAssignments)}
+                        showTabs={true}
+                        reducedInfo={true}
+                        feature={ActivityFeature.relevant_event_link_click}
+                    />
+                </AppContextMarker>
+            </div>}
+            {eventsWithTiming.length > 0 && <div>
+                <div className="RelevantEventsList SubtleEventCardContainer">
+                    {eventsWithTiming.map((e, i) => <SubtleEventCard key={i} event={e.event} dateRange={e.dateRange} relativeTiming={e.relativeTiming} />)}
+                </div>
             </div>
-        </div>
-        }
+            }
+        </AppContextMarker>
     </div>;
 };

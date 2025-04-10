@@ -47,6 +47,7 @@ import { MainSiteSearch } from "./MainSiteSearch";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
 import { MessageBoxProvider } from "./context/MessageBoxContext";
+import { AppContextMarker } from "./AppContext";
 
 const drawerWidth = 260;
 
@@ -338,7 +339,6 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
                 const menuLink = props.item.item as MenuItemLink;
                 await recordFeature({
                     feature: ActivityFeature.dashboard_menu_link_click,
-                    context: `MenuItem/${menuLink.linkCaption}`,
                 });
                 simulateLinkClick2(menuLink.path, e);
             }}
@@ -659,6 +659,16 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
         ...FlattenMenuGroups(dashboardContext, gMenuItemGroup2),
     ];
 
+    const getMenuItemName = (item: MenuItemSpec): string => {
+        if (item.type === "link") {
+            return item.linkCaption;
+        }
+        if (item.type === "sectionHeader") {
+            return item.sectionName;
+        }
+        return "??";
+    };
+
     return (<>
         <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
         <Drawer
@@ -672,12 +682,16 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
             onClose={toggleDrawer}
         >
             <Box sx={{ ...theme.mixins.toolbar }} />
-            <List component="nav" className="CMMenu">
-                {
-                    menuItems.map((item, index) => <MenuItemComponent key={index} item={item} realm={navRealm} />)
-                }
-                <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
-            </List>
+            <AppContextMarker name="dashboardMenu">
+                <List component="nav" className="CMMenu">
+                    {
+                        menuItems.map((item, index) => <AppContextMarker name={getMenuItemName(item.item)} key={index}>
+                            <MenuItemComponent key={index} item={item} realm={navRealm} />
+                        </AppContextMarker>)
+                    }
+                    <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
+                </List>
+            </AppContextMarker>
         </Drawer>
         <Box sx={{
             flexGrow: 1,
@@ -710,13 +724,15 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
-                    <ConfirmProvider>
-                        <MessageBoxProvider>
-                            <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
-                                {children}
-                            </Dashboard3>
-                        </MessageBoxProvider>
-                    </ConfirmProvider>
+                    <AppContextMarker name="cmbs">
+                        <ConfirmProvider>
+                            <MessageBoxProvider>
+                                <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
+                                    {children}
+                                </Dashboard3>
+                            </MessageBoxProvider>
+                        </ConfirmProvider>
+                    </AppContextMarker>
                 </DashboardContextProvider>
             </Box>
         </LocalizationProvider>

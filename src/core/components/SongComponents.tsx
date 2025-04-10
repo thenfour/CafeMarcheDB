@@ -29,6 +29,7 @@ import { FilesTabContent } from './SongFileComponents';
 import { SongHistory } from './SongHistory';
 import { VisibilityValue } from './VisibilityControl';
 import { CMTab, CMTabPanel } from './TabPanel';
+import { AppContextMarker } from './AppContext';
 
 
 export const SongClientColumns = {
@@ -332,13 +333,15 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 
     return <div>
         {rows.length > 0 &&
-            <table className='songMetadata'>
-                <tbody>
-                    {rows.map((kv, i) => <tr key={i} className={`${kv.rowClassName}`}>
-                        {kv.cells.map((cell, i) => cell)}
-                    </tr>)}
-                </tbody>
-            </table>
+            <AppContextMarker name="song metadata">
+                <table className='songMetadata'>
+                    <tbody>
+                        {rows.map((kv, i) => <tr key={i} className={`${kv.rowClassName}`}>
+                            {kv.cells.map((cell, i) => cell)}
+                        </tr>)}
+                    </tbody>
+                </table>
+            </AppContextMarker>
         }
 
         {insertAuthorized && !props.readonly && <DB3EditRowButton
@@ -522,7 +525,9 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryIcon={gIconMap.Info()}
                 canBeDefault={!IsNullOrWhitespace(song.description)}
             >
-                <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
+                <AppContextMarker name="info tab">
+                    <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
+                </AppContextMarker>
             </CMTab>
             <CMTab
                 thisTabId={SongDetailTabSlug.parts}
@@ -531,16 +536,18 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={fileInfo.partitions.length}
                 canBeDefault={!!fileInfo.partitions.length}
             >
-                <FilesTabContent
-                    fileTags={fileInfo.partitions}
-                    readonly={props.readonly}
-                    refetch={refetch}
-                    uploadTags={{
-                        taggedSongId: song.id,
-                        fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
-                    }}
-                    contextSongId={song.id}
-                />
+                <AppContextMarker name="partitions tab">
+                    <FilesTabContent
+                        fileTags={fileInfo.partitions}
+                        readonly={props.readonly}
+                        refetch={refetch}
+                        uploadTags={{
+                            taggedSongId: song.id,
+                            fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
+                        }}
+                        contextSongId={song.id}
+                    />
+                </AppContextMarker>
             </CMTab>
             <CMTab
                 thisTabId={SongDetailTabSlug.recordings}
@@ -549,16 +556,18 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={fileInfo.recordings.length}
                 canBeDefault={!!fileInfo.recordings.length}
             >
-                <FilesTabContent
-                    fileTags={fileInfo.recordings}
-                    readonly={props.readonly}
-                    refetch={refetch}
-                    uploadTags={{
-                        taggedSongId: song.id,
-                        fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
-                    }}
-                    contextSongId={song.id}
-                />
+                <AppContextMarker name="recordings tab">
+                    <FilesTabContent
+                        fileTags={fileInfo.recordings}
+                        readonly={props.readonly}
+                        refetch={refetch}
+                        uploadTags={{
+                            taggedSongId: song.id,
+                            fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
+                        }}
+                        contextSongId={song.id}
+                    />
+                </AppContextMarker>
             </CMTab>
             <CMTab
                 thisTabId={SongDetailTabSlug.files}
@@ -567,22 +576,26 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={song.taggedFiles.length}
                 canBeDefault={!!song.taggedFiles.length}
             >
-                <FilesTabContent
-                    fileTags={fileInfo.enrichedFiles}
-                    readonly={props.readonly}
-                    refetch={refetch}
-                    uploadTags={{
-                        taggedSongId: song.id,
-                    }}
-                    contextSongId={song.id}
-                />
+                <AppContextMarker name="all files tab">
+                    <FilesTabContent
+                        fileTags={fileInfo.enrichedFiles}
+                        readonly={props.readonly}
+                        refetch={refetch}
+                        uploadTags={{
+                            taggedSongId: song.id,
+                        }}
+                        contextSongId={song.id}
+                    />
+                </AppContextMarker>
             </CMTab>
             <CMTab
                 thisTabId={SongDetailTabSlug.history}
                 summaryTitle={"Stats"}
                 summaryIcon={gIconMap.Equalizer()}
             >
-                <SongHistory song={song} />
+                <AppContextMarker name="stats tab">
+                    <SongHistory song={song} />
+                </AppContextMarker>
             </CMTab>
         </CMTabPanel>
 

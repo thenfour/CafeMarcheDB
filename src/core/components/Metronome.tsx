@@ -293,7 +293,7 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
     React.useEffect(() => {
         if (playing) {
             const timer = window.setTimeout(() => {
-                recordFeature({
+                void recordFeature({
                     feature: ActivityFeature.metronome_persistent,
                 });
             }, 60 * 1000); // 1 minute

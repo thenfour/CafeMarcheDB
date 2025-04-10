@@ -6,6 +6,7 @@ import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
@@ -80,14 +81,16 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
         <NewEventButton />
         {event ? <>
             <EventBreadcrumbs event={event} />
-            <EventDetailFull
-                readonly={false}
-                event={event}
-                tableClient={tableClient}
-                initialTabIndex={initialTabIndex}
-                workflowRefreshTrigger={workflowRefreshTrigger}
-                refetch={refetch}
-            />
+            <AppContextMarker name="event page">
+                <EventDetailFull
+                    readonly={false}
+                    event={event}
+                    tableClient={tableClient}
+                    initialTabIndex={initialTabIndex}
+                    workflowRefreshTrigger={workflowRefreshTrigger}
+                    refetch={refetch}
+                />
+            </AppContextMarker>
         </> : <>
             no event was found. some possibilities:
             <ul>

@@ -50,6 +50,7 @@ import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown } from './markdown/Markdown';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
+import { AppContextMarker } from './AppContext';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1445,12 +1446,14 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             thisTabId={gEventDetailTabSlugIndices.info}
             canBeDefault={!IsNullOrWhitespace(eventData.event.descriptionWikiPage?.currentRevision?.content)}
         >
-            <div className='descriptionLine'>
-                <Suspense>
-                    <EventCustomFieldsControl event={event} readonly={props.readonly} refetch={refetch} />
-                </Suspense>
-                <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
-            </div>
+            <AppContextMarker name="info tab">
+                <div className='descriptionLine'>
+                    <Suspense>
+                        <EventCustomFieldsControl event={event} readonly={props.readonly} refetch={refetch} />
+                    </Suspense>
+                    <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
+                </div>
+            </AppContextMarker>
         </CMTab>
 
         <CMTab
@@ -1459,7 +1462,9 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="Checklist"
             thisTabId={gEventDetailTabSlugIndices.workflow}
         >
-            <EventWorkflowTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} refreshTrigger={props.workflowRefreshTrigger} />
+            <AppContextMarker name="workflow tab">
+                <EventWorkflowTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} refreshTrigger={props.workflowRefreshTrigger} />
+            </AppContextMarker>
         </CMTab>
 
         <CMTab
@@ -1469,7 +1474,9 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="Setlists"
             summarySubtitle={<>({event.songLists.length})</>}
         >
-            <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+            <AppContextMarker name="setlists tab">
+                <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+            </AppContextMarker>
         </CMTab>
 
         <CMTab
@@ -1477,8 +1484,10 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryIcon={gIconMap.Trumpet()}
             summaryTitle="by instrument"
         >
-            <SettingMarkdown setting='EventCompletenessTabMarkdown' />
-            <EventCompletenessTabContent eventData={eventData} userMap={userMap} readonly={props.readonly} refetch={refetch} />
+            <AppContextMarker name="by instrument tab">
+                <SettingMarkdown setting='EventCompletenessTabMarkdown' />
+                <EventCompletenessTabContent eventData={eventData} userMap={userMap} readonly={props.readonly} refetch={refetch} />
+            </AppContextMarker>
         </CMTab>
 
         <CMTab
@@ -1487,8 +1496,10 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="Responses"
             summarySubtitle={segmentResponseCountStr}
         >
-            <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
-            <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
+            <AppContextMarker name="attendance tab">
+                <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
+                <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
+            </AppContextMarker>
         </CMTab>
 
         <CMTab
@@ -1497,7 +1508,9 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="Frontpage"
             summarySubtitle={<>{eventData.event.frontpageVisible && gCharMap.Checkmark()}</>}
         >
-            <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
+            <AppContextMarker name="frontpage tab">
+                <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
+            </AppContextMarker>
         </CMTab>
 
         <CMTab
@@ -1507,15 +1520,17 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="Files"
             summarySubtitle={<>({event.fileTags.length})</>}
         >
-            <FilesTabContent
-                fileTags={enrichedFiles}
-                uploadTags={{
-                    taggedEventId: event.id,
-                }}
-                refetch={refetch}
-                readonly={props.readonly}
-                contextEventId={event.id}
-            />
+            <AppContextMarker name="files tab">
+                <FilesTabContent
+                    fileTags={enrichedFiles}
+                    uploadTags={{
+                        taggedEventId: event.id,
+                    }}
+                    refetch={refetch}
+                    readonly={props.readonly}
+                    contextEventId={event.id}
+                />
+            </AppContextMarker>
         </CMTab>
     </CMTabPanel>
 };
@@ -1659,7 +1674,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
                 await recordFeature({
                     feature: props.feature,
                     eventId: event.id,
-                    context: `EventSearchItemContainer`,
+                    //context: `EventSearchItemContainer`,
                     queryText: props.queryText,
                 });
 

@@ -5,7 +5,7 @@ import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { toSorted } from "shared/arrayUtils";
-import { gAppColors, gLightSwatchColors } from "shared/color";
+import { gLightSwatchColors } from "shared/color";
 import { Permission } from "shared/permissions";
 import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { DateAdd, roundToNearest15Minutes } from "shared/time";
@@ -381,7 +381,7 @@ const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, ref
 const GeneralFeatureStatsReport = () => {
     const now = React.useMemo(() => new Date(), []);
     const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
-    const [excludeFeatures, setExcludeFeatures] = React.useState<ActivityFeature[]>([]);
+    //const [excludeFeatures, setExcludeFeatures] = React.useState<ActivityFeature[]>([]);
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
     const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
@@ -412,7 +412,8 @@ const GeneralFeatureStatsReport = () => {
 
             <NameValuePair name="Feature" value={
                 <>
-                    <Button onClick={() => setFeatures([])} >Clear</Button>
+                    <Button onClick={() => setFeatures(Object.values(ActivityFeature))} >All</Button>
+                    <Button onClick={() => setFeatures([])} >None</Button>
                     <CMMultiSelect
                         value={features}
                         onChange={setFeatures}
@@ -429,6 +430,7 @@ const GeneralFeatureStatsReport = () => {
                             return item.toString();
                         }}
                     />
+                    <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
                 </>
             } />
 
@@ -518,8 +520,7 @@ const GeneralFeatureStatsReport = () => {
             <Accordion defaultExpanded={false}>
                 <AccordionSummary>Filters</AccordionSummary>
                 <AccordionDetails>
-                    <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
-
+                    {/* 
                     <NameValuePair name="Exclude Feature" value={
                         <>
                             <Button onClick={() => setExcludeFeatures([])} >Clear</Button>
@@ -539,7 +540,7 @@ const GeneralFeatureStatsReport = () => {
                                 }}
                             />
                         </>
-                    } />
+                    } /> */}
 
                     <AssociationSelect
                         title="Filter by user"
@@ -578,7 +579,7 @@ const GeneralFeatureStatsReport = () => {
         <React.Suspense>
             <GeneralFeatureStatsReportInner
                 features={features}
-                excludeFeatures={excludeFeatures}
+                excludeFeatures={[]}
                 selectedBucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
@@ -597,7 +598,7 @@ const GeneralFeatureStatsReport = () => {
         <React.Suspense>
             <GeneralFeatureDetailArea
                 features={features}
-                excludeFeatures={excludeFeatures}
+                excludeFeatures={[]}
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}

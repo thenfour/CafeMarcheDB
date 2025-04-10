@@ -16,6 +16,7 @@ import { EventListItem } from './EventComponents';
 import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
 import { useEventListData } from "./EventSearch";
 import { ActivityFeature } from "../db3/shared/activityTracking";
+import { AppContextMarker } from "./AppContext";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -330,33 +331,35 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
 
     // nossr to prevent using server's locale settings.
     return <>
-        <CMSinglePageSurfaceCard>
-            <div className="content">
-                <BigEventCalendarMonth
-                    selectedEvent={selectedEvent}
-                    setSelectedEvent={(e) => {
-                        if (e?.event.id === selectedEventId) { // deselect behavior
-                            setSelectedEventId(null);
-                            return;
-                        }
-                        setSelectedEventId(e?.event.id || null);
-                    }}
-                    date={date}
-                    enrichedEvents={eventsWithSearch}
-                    filterSpec={filterSpec}
-                    results={results}
-                    setMonthStr={setMonthStr}
-                />
-            </div>
-        </CMSinglePageSurfaceCard>
+        <AppContextMarker name="BigEventCalendar">
+            <CMSinglePageSurfaceCard>
+                <div className="content">
+                    <BigEventCalendarMonth
+                        selectedEvent={selectedEvent}
+                        setSelectedEvent={(e) => {
+                            if (e?.event.id === selectedEventId) { // deselect behavior
+                                setSelectedEventId(null);
+                                return;
+                            }
+                            setSelectedEventId(e?.event.id || null);
+                        }}
+                        date={date}
+                        enrichedEvents={eventsWithSearch}
+                        filterSpec={filterSpec}
+                        results={results}
+                        setMonthStr={setMonthStr}
+                    />
+                </div>
+            </CMSinglePageSurfaceCard>
 
-        {selectedEvent && <EventListItem
-            event={selectedEvent.event}
-            filterSpec={filterSpec}
-            refetch={() => setRefreshSerial(refreshSerial + 1)}
-            results={results}
-            feature={ActivityFeature.big_calendar_event_link_click}
-        />}
+            {selectedEvent && <EventListItem
+                event={selectedEvent.event}
+                filterSpec={filterSpec}
+                refetch={() => setRefreshSerial(refreshSerial + 1)}
+                results={results}
+                feature={ActivityFeature.big_calendar_event_link_click}
+            />}
+        </AppContextMarker>
     </>;
 
 };

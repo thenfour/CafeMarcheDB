@@ -2,6 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
@@ -25,38 +26,40 @@ const DynamicContent = () => {
   let limitedAccountWarning = !!(currentUser?.role?.isRoleForNewUsers);
 
   return (<Suspense>
+    <AppContextMarker name="backstage home">
 
-    {limitedAccountWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
-      <div>{gIconMap.ErrorOutline()}</div>
-      <div>Your account has limited access; please ask Carl to grant you access 😊.
+      {limitedAccountWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
+        <div>{gIconMap.ErrorOutline()}</div>
+        <div>Your account has limited access; please ask Carl to grant you access 😊.
+        </div>
+      </CMSinglePageSurfaceCard>}
+
+      {noInstrumentsWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
+        <div>{gIconMap.ErrorOutline()}</div>
+        <div>You have no instruments assigned; please go to
+          &nbsp;<a href="/backstage/profile">your profile</a>&nbsp;
+          and specify your instruments.
+        </div>
+      </CMSinglePageSurfaceCard>}
+
+      <div className="DashboardHeader">
+        <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
       </div>
-    </CMSinglePageSurfaceCard>}
 
-    {noInstrumentsWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
-      <div>{gIconMap.ErrorOutline()}</div>
-      <div>You have no instruments assigned; please go to
-        &nbsp;<a href="/backstage/profile">your profile</a>&nbsp;
-        and specify your instruments.
-      </div>
-    </CMSinglePageSurfaceCard>}
+      <WikiStandaloneControl
+        canonicalWikiPath="special/announcements"
+        className="contentSection announcementMarkdown"
+        floatingHeader={true}
+      />
 
-    <div className="DashboardHeader">
-      <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
-    </div>
+      <PermissionBoundary permission={Permission.view_events_nonpublic}>
+        <RelevantEvents />
+        <HomepageBigEventCalendar />
+      </PermissionBoundary>
 
-    <WikiStandaloneControl
-      canonicalWikiPath="special/announcements"
-      className="contentSection announcementMarkdown"
-      floatingHeader={true}
-    />
+      <SettingMarkdown setting="BackstageFrontpageMarkdown" />
 
-    <PermissionBoundary permission={Permission.view_events_nonpublic}>
-      <RelevantEvents />
-      <HomepageBigEventCalendar />
-    </PermissionBoundary>
-
-    <SettingMarkdown setting="BackstageFrontpageMarkdown" />
-
+    </AppContextMarker>
     {/* <DashboardInner /> */}
   </Suspense>
   )

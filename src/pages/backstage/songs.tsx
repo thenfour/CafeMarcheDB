@@ -8,6 +8,7 @@ import { SelectEnglishNoun } from "shared/lang";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { IsNullOrWhitespace, arrayToTSV } from "shared/utils";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, simulateLinkClick, useURLState } from "src/core/components/CMCoreComponents2";
@@ -198,24 +199,26 @@ const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore 
             </Menu>
         </div>
 
-        <InfiniteScroll
-            dataLength={songs.length}
-            next={loadMoreData}
-            hasMore={hasMore}
-            loader={<h4>Loading...</h4>}
-        //scrollableTarget="scrollableDiv"
-        >
-            {songs.map((song, i) => (
-                <SongListItem
-                    index={i + 1}
-                    key={song.id}
-                    song={song}
-                    filterSpec={filterSpec}
-                    refetch={refetch}
-                    results={results}
-                />
-            ))}
-        </InfiniteScroll>
+        <AppContextMarker name="SongList">
+            <InfiniteScroll
+                dataLength={songs.length}
+                next={loadMoreData}
+                hasMore={hasMore}
+                loader={<h4>Loading...</h4>}
+            //scrollableTarget="scrollableDiv"
+            >
+                {songs.map((song, i) => (
+                    <SongListItem
+                        index={i + 1}
+                        key={song.id}
+                        song={song}
+                        filterSpec={filterSpec}
+                        refetch={refetch}
+                        results={results}
+                    />
+                ))}
+            </InfiniteScroll>
+        </AppContextMarker>
         {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
 
     </div>;
@@ -435,12 +438,14 @@ const SearchSongsPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Songs" basePermission={Permission.view_songs}>
             <div className="eventsMainContent searchPage">
-                <Suspense>
-                    <SettingMarkdown setting="songs_markdown"></SettingMarkdown>
-                </Suspense>
-                <NewSongButton />
+                <AppContextMarker name="SearchSongsPage">
+                    <Suspense>
+                        <SettingMarkdown setting="songs_markdown"></SettingMarkdown>
+                    </Suspense>
+                    <NewSongButton />
 
-                <SongListOuter />
+                    <SongListOuter />
+                </AppContextMarker>
             </div>
         </DashboardLayout>
     )

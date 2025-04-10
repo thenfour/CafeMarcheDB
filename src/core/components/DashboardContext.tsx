@@ -13,6 +13,7 @@ import * as db3 from "src/core/db3/db3";
 import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
 import { ActivityFeature, ClientActivityParams } from '../db3/shared/activityTracking';
+import { useAppContext } from './AppContext';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -212,10 +213,12 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 
 export const useRecordFeatureUse = (args: ClientActivityParams) => {
     const [recordActionProc] = useMutation(recordActionMutation);
+    const appCtx = useAppContext();
     // react likes to make redundant renders; throttle.
     const throttledRecordAction = useThrottle(() => {
         void recordActionProc({
             uri: window.location.href,
+            context: appCtx.toString(),
             ...args,
         });
     }, 250);
@@ -225,9 +228,11 @@ export const useRecordFeatureUse = (args: ClientActivityParams) => {
 
 export const useFeatureRecorder = () => {
     const [recordActionProc] = useMutation(recordActionMutation);
+    const appCtx = useAppContext();
     return async (args: ClientActivityParams) => {
         await recordActionProc({
             uri: window.location.href,
+            context: appCtx.toString(),
             ...args,
         });
     }

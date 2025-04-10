@@ -4,6 +4,7 @@ import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/NewSongComponents";
@@ -69,7 +70,9 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
         <NewSongButton />
         {song ? <>
             <SongBreadcrumbs song={song} />
-            <SongDetail readonly={false} song={song} tableClient={tableClient} initialTab={initialTab} />
+            <AppContextMarker name="song page">
+                <SongDetail readonly={false} song={song} tableClient={tableClient} initialTab={initialTab} />
+            </AppContextMarker>
         </> : <>
             no song was found. some possibilities:
             <ul>

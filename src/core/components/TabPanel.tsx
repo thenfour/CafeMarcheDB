@@ -20,7 +20,6 @@ const CMTabHeader = (props: CMTabProps & {
     selected: boolean,
     onClick: (e: React.MouseEvent<HTMLLIElement>) => void
 }) => {
-    console.log(`thisTabId: ${props.thisTabId}, selected: ${props.selected}`);
     return <li
         key={props.thisTabId}
         onClick={props.onClick}

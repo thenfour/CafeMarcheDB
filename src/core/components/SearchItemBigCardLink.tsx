@@ -20,7 +20,7 @@ export const SearchItemBigCardLink = (props: SearchItemBigCardLinkProps) => {
         await recordFeature({
             feature: props.feature,
             eventId: props.eventId,
-            context: `SearchItemBigCardLink/${props.title}`,
+            //context: `SearchItemBigCardLink/${props.title}`,
         });
         simulateLinkClick(props.uri);
     }}>
