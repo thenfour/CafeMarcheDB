@@ -1,6 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel, Tooltip as MuiTooltip } from "@mui/material";
+import { B } from "@blitzjs/rpc/dist/index-670a0138";
+import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel, Tooltip as MuiTooltip, Popover } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
@@ -60,13 +61,50 @@ const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?: number
     return <MuiTooltip title={value.substring(0, 6)} disableInteractive><div><Identicon string={value} size={size} /></div></MuiTooltip>;
 }
 
-const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivityReportDetailPayload, index: number }) => {
+interface FeatureLabelProps {
+    feature: ActivityFeature;
+    onClickIsolate: () => void;
+    onClickExclude: () => void;
+}
 
-    const featureColor = getHashedColor(value.feature);
+const FeatureLabel = (props: FeatureLabelProps) => {
+    const featureColor = getHashedColor(props.feature);
+
+    return <>
+        <div
+            style={{ display: "flex", alignItems: "center" }}
+        >
+            <span style={{ color: featureColor }}>{props.feature}</span>
+            <span className="flex-spacer"></span>
+            <span>
+                <MuiTooltip title={`Isolate ${props.feature}`} disableInteractive>
+                    <span>
+                        <CMSmallButton onClick={props.onClickIsolate}>isol</CMSmallButton>
+                    </span>
+                </MuiTooltip>
+                <MuiTooltip title={`Hide / exclude ${props.feature}`} disableInteractive>
+                    <span>
+                        <CMSmallButton onClick={props.onClickExclude}>hide</CMSmallButton>
+                    </span>
+                </MuiTooltip>
+            </span>
+        </div>
+    </>;
+};
+
+interface GeneralFeatureReportDetailItemProps {
+    value: GeneralActivityReportDetailPayload;
+    index: number;
+    onIsolateFeature: (feature: ActivityFeature) => void;
+    onExcludeFeature: (feature: ActivityFeature) => void;
+};
+
+const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatureReportDetailItemProps) => {
+    const feature = value.feature as ActivityFeature;
 
     return <tr className="GeneralFeatureReportDetailItemRow">
         <td style={{ fontFamily: "var(--ff-mono)" }}>#{index}</td>
-        <td style={{ color: featureColor }}>{value.feature}</td>
+        <td><FeatureLabel feature={feature} onClickExclude={() => props.onExcludeFeature(feature)} onClickIsolate={() => props.onIsolateFeature(feature)} /></td>
         <td>{value.createdAt.toLocaleString()}</td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
         <td>{value.userHash && <AnonymizedUserChip value={value.userHash} />}</td>
@@ -83,9 +121,13 @@ const GeneralFeatureReportDetailItem = ({ value, index }: { value: GeneralActivi
     </tr>;
 };
 
+interface GeneralFeatureDetailTableProps {
+    data: GeneralActivityReportDetailPayload[];
+    onIsolateFeature: (feature: ActivityFeature) => void;
+    onExcludeFeature: (feature: ActivityFeature) => void;
+};
 
-
-const GeneralFeatureDetailTable = ({ data }: { data: GeneralActivityReportDetailPayload[] }) => {
+const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTableProps) => {
     return <table>
         <thead>
             <tr>
@@ -101,25 +143,12 @@ const GeneralFeatureDetailTable = ({ data }: { data: GeneralActivityReportDetail
         </thead>
         <tbody>
             {data.map((item, index) => {
-                return <GeneralFeatureReportDetailItem key={index} value={item} index={data.length - index} />;
+                return <GeneralFeatureReportDetailItem key={index} value={item} index={data.length - index} onExcludeFeature={props.onExcludeFeature} onIsolateFeature={props.onIsolateFeature} />;
             })}
         </tbody>
     </table>;
 }
 
-
-interface GeneralFeatureDetailAreaProps {
-    features: ActivityFeature[];
-    excludeFeatures: ActivityFeature[];
-    bucket: string | null;
-    aggregateBy: ReportAggregateBy;
-    excludeYourself: boolean;
-    filteredSongId: number | undefined;
-    filteredEventId: number | undefined;
-    //filteredUserId: number | undefined;
-    filteredWikiPageId: number | undefined;
-    refetchTrigger: number;
-};
 
 type DetailTabId = "general" | "features" | "users" | "songs" | "events" | "wikiPages" | "files";
 
@@ -157,12 +186,6 @@ function getContextObjectTabData(
     return toSorted(contextObjects, (a, b) => b.itemCount - a.itemCount);
 }
 
-type ContextObjectTabData = {
-    id: DetailTabId,
-    tabHeader: React.ReactNode,
-    items: ContextObjectDistinctItem[],
-};
-
 const DistinctContextObjectPieChart = ({ item }: { item: ContextObjectDistinctItem }) => {
     const chartData = [
         { fill: "#66f", value: item.itemCount },
@@ -173,6 +196,14 @@ const DistinctContextObjectPieChart = ({ item }: { item: ContextObjectDistinctIt
     </PieChart>;
 };
 
+type ContextObjectTabData = {
+    id: DetailTabId,
+    tabHeader: React.ReactNode,
+    items: ContextObjectDistinctItem[],
+    onIsolateFeature: (feature: ActivityFeature) => void;
+    onExcludeFeature: (feature: ActivityFeature) => void;
+};
+
 const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData }) => {
     return item.items.length > 1 && <div>
         {item.items.map((contextObject) => {
@@ -181,13 +212,29 @@ const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData 
                     <DistinctContextObjectPieChart item={contextObject} />
                     {contextObject.headingIndicator} ({contextObject.itemCount} items) ({contextObject.percentageOfTotal} of total)
                 </div>
-                <GeneralFeatureDetailTable data={contextObject.items} />
+                <GeneralFeatureDetailTable data={contextObject.items} onExcludeFeature={item.onExcludeFeature} onIsolateFeature={item.onIsolateFeature} />
             </div>;
         })}
     </div>;
 };
 
-const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, filteredEventId, filteredSongId, filteredWikiPageId, refetchTrigger }: GeneralFeatureDetailAreaProps) => {
+
+interface GeneralFeatureDetailAreaProps {
+    features: ActivityFeature[];
+    excludeFeatures: ActivityFeature[];
+    bucket: string | null;
+    aggregateBy: ReportAggregateBy;
+    excludeYourself: boolean;
+    filteredSongId: number | undefined;
+    filteredEventId: number | undefined;
+    //filteredUserId: number | undefined;
+    filteredWikiPageId: number | undefined;
+    refetchTrigger: number;
+    onIsolateFeature: (feature: ActivityFeature) => void;
+    onExcludeFeature: (feature: ActivityFeature) => void;
+};
+
+const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, filteredEventId, filteredSongId, filteredWikiPageId, refetchTrigger, onIsolateFeature, onExcludeFeature }: GeneralFeatureDetailAreaProps) => {
 
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
@@ -220,6 +267,8 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 id: "features",
                 tabHeader: `Features (${byFeature.length})`,
                 items: byFeature,
+                onIsolateFeature,
+                onExcludeFeature,
             });
         }
 
@@ -233,6 +282,8 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 id: "users",
                 tabHeader: `Users (${byUser.length})`,
                 items: byUser,
+                onIsolateFeature,
+                onExcludeFeature,
             });
         }
         const bySong = getContextObjectTabData(
@@ -245,6 +296,8 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 id: "songs",
                 tabHeader: `Songs (${bySong.length})`,
                 items: bySong,
+                onIsolateFeature,
+                onExcludeFeature,
             });
         }
         const byEvent = getContextObjectTabData(
@@ -257,6 +310,8 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 id: "events",
                 tabHeader: `Events (${byEvent.length})`,
                 items: byEvent,
+                onIsolateFeature,
+                onExcludeFeature,
             });
         }
         const byWikiPage = getContextObjectTabData(
@@ -269,6 +324,8 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 id: "wikiPages",
                 tabHeader: `Wiki pages (${byWikiPage.length})`,
                 items: byWikiPage,
+                onIsolateFeature,
+                onExcludeFeature,
             });
         }
         const byFile = getContextObjectTabData(
@@ -281,6 +338,8 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 id: "files",
                 tabHeader: `Files (${byFile.length})`,
                 items: byFile,
+                onIsolateFeature,
+                onExcludeFeature,
             });
         }
 
@@ -290,14 +349,12 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
 
     const renderedTabs: CMTabPanelChild[] = [
         <CMTab key={9999} thisTabId="general" summaryTitle={`General (${detail?.data.length})`} >
-            <GeneralFeatureDetailTable data={detail?.data || []} />
+            <GeneralFeatureDetailTable data={detail?.data || []} onExcludeFeature={onExcludeFeature} onIsolateFeature={onIsolateFeature} />
         </CMTab>,
         ...tabs.map((tab) => <CMTab key={tab.id} thisTabId={tab.id} summaryTitle={tab.tabHeader} enabled={tab.items.length > 1} >
             <DistinctContextObjectTabContent key={tab.id} item={tab} />
         </CMTab>),
     ];
-
-    console.log(`renderedTabs: `, renderedTabs);
 
     return <div>
         <CMTabPanel handleTabChange={(e, newTabId: DetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
@@ -382,7 +439,6 @@ const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, ref
 const GeneralFeatureStatsReport = () => {
     const now = React.useMemo(() => new Date(), []);
     const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
-    //const [excludeFeatures, setExcludeFeatures] = React.useState<ActivityFeature[]>([]);
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
     const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
@@ -390,7 +446,6 @@ const GeneralFeatureStatsReport = () => {
 
     const [filteredSong, setFilteredSong] = React.useState<QuickSearchItemMatch | undefined>(undefined);
     const [filteredEvent, setFilteredEvent] = React.useState<QuickSearchItemMatch | undefined>(undefined);
-    const [filteredUser, setFilteredUser] = React.useState<QuickSearchItemMatch | undefined>(undefined);
     const [filteredWikiPage, setFilteredWikiPage] = React.useState<QuickSearchItemMatch | undefined>(undefined);
 
     const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
@@ -401,6 +456,16 @@ const GeneralFeatureStatsReport = () => {
     const realStartDate = roundToNearest15Minutes(startDate);
     const realEndDate = roundToNearest15Minutes(endDate);
 
+    const onExcludeFeature = (feature: ActivityFeature) => {
+        // if you have nothing selected, it's the same as all selected. so handle that differently.
+        let newFeatures = features.length === 0 ? Object.values(ActivityFeature) : features;
+        newFeatures = newFeatures.filter(x => x !== feature);
+        setFeatures(newFeatures);
+    };
+
+    const onIsolateFeature = (feature: ActivityFeature) => {
+        setFeatures([feature]);
+    };
 
     return <div className="FeatureStatsReport">
         <div className="filterContainer">
@@ -521,35 +586,6 @@ const GeneralFeatureStatsReport = () => {
             <Accordion defaultExpanded={false}>
                 <AccordionSummary>Filters</AccordionSummary>
                 <AccordionDetails>
-                    {/* 
-                    <NameValuePair name="Exclude Feature" value={
-                        <>
-                            <Button onClick={() => setExcludeFeatures([])} >Clear</Button>
-                            <CMMultiSelect
-                                value={excludeFeatures}
-                                onChange={setExcludeFeatures}
-                                getOptions={() => {
-                                    return Object.values(ActivityFeature);
-                                }}
-                                getOptionInfo={(item) => {
-                                    return {
-                                        id: item.toString(),
-                                    };
-                                }}
-                                renderOption={(item) => {
-                                    return item.toString();
-                                }}
-                            />
-                        </>
-                    } /> */}
-
-                    {/* <AssociationSelect
-                        title="Filter by user"
-                        allowedItemTypes={[QuickSearchItemType.user]}
-                        allowNull={true}
-                        value={filteredUser || null}
-                        onChange={(newValue) => setFilteredUser(newValue || undefined)}
-                    /> */}
                     <AssociationSelect
                         title="Filter by song"
                         allowedItemTypes={[QuickSearchItemType.song]}
@@ -586,7 +622,6 @@ const GeneralFeatureStatsReport = () => {
                 excludeYourself={excludeYourself}
                 filteredSongId={filteredSong?.id}
                 filteredEventId={filteredEvent?.id}
-                //filteredUserId={filteredUser?.id}
                 filteredWikiPageId={filteredWikiPage?.id}
                 startDate={realStartDate}
                 endDate={realEndDate}
@@ -599,13 +634,14 @@ const GeneralFeatureStatsReport = () => {
         <React.Suspense>
             <GeneralFeatureDetailArea
                 features={features}
+                onExcludeFeature={onExcludeFeature}
+                onIsolateFeature={onIsolateFeature}
                 excludeFeatures={[]}
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
                 filteredSongId={filteredSong?.id}
                 filteredEventId={filteredEvent?.id}
-                //filteredUserId={filteredUser?.id}
                 filteredWikiPageId={filteredWikiPage?.id}
                 refetchTrigger={refetchTrigger}
             />
