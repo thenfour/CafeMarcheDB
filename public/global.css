@@ -848,3 +848,20 @@ solution is to
   background-color: #ddd;
   max-width: 950px;
 }
+
+.contextLabelContainer {
+  display: flex;
+  font-size: 13px;
+  font-family: var(--ff-mono);
+  gap: 1px;
+  letter-spacing: -.5px;
+}
+
+.contextLabelContainer .contextLabelPart {
+  border-radius: 4px;
+  padding: 2px 3px;
+}
+
+.contextLabelContainer .contextLabelSeparator {
+  color: #bbb;
+}

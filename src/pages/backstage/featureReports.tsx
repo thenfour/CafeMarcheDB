@@ -1,13 +1,12 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel, Tooltip as MuiTooltip } from "@mui/material";
+import { Button, FormControlLabel, Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { toSorted } from "shared/arrayUtils";
 import { gLightSwatchColors } from "shared/color";
 import { Permission } from "shared/permissions";
-import { QuickSearchItemMatch, QuickSearchItemType } from "shared/quickFilter";
 import { DateAdd, roundToNearest15Minutes } from "shared/time";
 import { getHashedColor, smartTruncate } from "shared/utils";
 import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
@@ -16,7 +15,6 @@ import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
-import { AssociationAutocomplete, AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
 import { CMTab, CMTabPanel, CMTabPanelChild } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
@@ -86,6 +84,25 @@ const FeatureLabel = (props: FeatureLabelProps) => {
     </>;
 };
 
+interface ContextLabelProps {
+    value: string;
+};
+
+const ContextLabel = (props: ContextLabelProps) => {
+    const parts = props.value.split("/").filter(x => x.length > 0);
+    return <span className="contextLabelContainer">{
+        parts.map((part, index) => {
+            const color = getHashedColor(part);
+            const bgcolor = getHashedColor(part, { alpha: "0.1" });
+            return <><span key={index} className="contextLabelPart" style={{ color, backgroundColor: bgcolor }}>
+                {part}
+            </span>
+                {index < parts.length - 1 && <span className="contextLabelSeparator">/</span>}
+            </>;
+        })
+    }</span>;
+};
+
 interface GeneralFeatureReportDetailItemProps {
     value: GeneralActivityReportDetailPayload;
     index: number;
@@ -108,7 +125,7 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
             {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />}
             {value.wikiPage && <WikiPageChip slug={value.wikiPage.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />}
         </td>
-        <td>{value.context}</td>
+        <td>{value.context && <ContextLabel value={value.context} />}</td>
         <td style={{ whiteSpace: "nowrap" }}>
             {value.queryText && <span className="queryText">"<span className="actualQueryText">{value.queryText}</span>"</span>}
         </td>

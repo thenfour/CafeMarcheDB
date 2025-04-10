@@ -12,13 +12,6 @@ export const MainSiteSearch = () => {
                 defaultValue=''
                 trackingFeature={ActivityFeature.main_search_link_click}
                 onSelect={async (newValue) => {
-                    // await recordFeature({
-                    //     feature: ActivityFeature.main_search_link_click,
-                    //     eventId: newValue?.itemType === QuickSearchItemType.event ? newValue.id : undefined,
-                    //     songId: newValue?.itemType === QuickSearchItemType.song ? newValue.id : undefined,
-                    //     wikiPageId: newValue?.itemType === QuickSearchItemType.wikiPage ? newValue.id : undefined,
-                    //     queryText,
-                    // });
                     if (newValue && newValue.absoluteUri) {
                         simulateLinkClick(newValue.absoluteUri);
                     }
