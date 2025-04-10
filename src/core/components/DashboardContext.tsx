@@ -218,12 +218,12 @@ export const useRecordFeatureUse = (args: UseFeatureUseClientActivityParams) => 
     const throttledRecordAction = useThrottle(() => {
         void recordActionProc({
             uri: window.location.href,
-            context: appCtx.toString(),
-            eventId: appCtx.eventId,
-            songId: appCtx.songId,
-            wikiPageId: appCtx.wikiPageId,
-            fileId: appCtx.fileId,
-            queryText: appCtx.queryText,
+            context: appCtx.stack,
+            eventId: args.eventId || appCtx.eventId,
+            songId: args.songId || appCtx.songId,
+            wikiPageId: args.wikiPageId || appCtx.wikiPageId,
+            fileId: args.fileId || appCtx.fileId,
+            queryText: args.queryText || appCtx.queryText,
             ...args,
         });
     }, 250);
@@ -237,12 +237,14 @@ export const useFeatureRecorder = () => {
     return async (args: ClientActivityParams) => {
         await recordActionProc({
             uri: window.location.href,
-            context: appCtx.toString(),
-            eventId: appCtx.eventId,
-            songId: appCtx.songId,
-            wikiPageId: appCtx.wikiPageId,
-            fileId: appCtx.fileId,
-            queryText: appCtx.queryText,
+            context: appCtx.stack,
+
+            eventId: args.eventId || appCtx.eventId,
+            songId: args.songId || appCtx.songId,
+            wikiPageId: args.wikiPageId || appCtx.wikiPageId,
+            fileId: args.fileId || appCtx.fileId,
+            queryText: args.queryText || appCtx.queryText,
+
             ...args,
         });
     }

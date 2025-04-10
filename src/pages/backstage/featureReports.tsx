@@ -1,7 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { B } from "@blitzjs/rpc/dist/index-670a0138";
-import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel, Tooltip as MuiTooltip, Popover } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Button, FormControlLabel, Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
@@ -17,7 +16,7 @@ import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
-import { AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
+import { AssociationAutocomplete, AssociationSelect } from "src/core/components/setlistPlan/ItemAssociation";
 import { CMTab, CMTabPanel, CMTabPanelChild } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
@@ -25,11 +24,6 @@ import getGeneralFeatureReport from "src/core/db3/queries/getGeneralFeatureRepor
 import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { GeneralActivityReportDetailPayload, ReportAggregateBy } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-
-enum TabId {
-    general = "general",
-    featureUsageByUser = "featureUsageByUser",
-};
 
 const getColorForFeature = (feature: ActivityFeature): string | null => {
     const featureColorMap: Record<ActivityFeature, string> = {
@@ -225,16 +219,16 @@ interface GeneralFeatureDetailAreaProps {
     bucket: string | null;
     aggregateBy: ReportAggregateBy;
     excludeYourself: boolean;
-    filteredSongId: number | undefined;
-    filteredEventId: number | undefined;
+    //filteredSongId: number | undefined;
+    //filteredEventId: number | undefined;
     //filteredUserId: number | undefined;
-    filteredWikiPageId: number | undefined;
+    //filteredWikiPageId: number | undefined;
     refetchTrigger: number;
     onIsolateFeature: (feature: ActivityFeature) => void;
     onExcludeFeature: (feature: ActivityFeature) => void;
 };
 
-const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, filteredEventId, filteredSongId, filteredWikiPageId, refetchTrigger, onIsolateFeature, onExcludeFeature }: GeneralFeatureDetailAreaProps) => {
+const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature }: GeneralFeatureDetailAreaProps) => {
 
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
@@ -243,11 +237,11 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
         excludeFeatures,
         bucket,
         aggregateBy,
-        filteredSongId,
+        //filteredSongId,
         excludeYourself,
-        filteredEventId,
+        //filteredEventId,
         //filteredUserId,
-        filteredWikiPageId,
+        //filteredWikiPageId,
     });
 
     React.useEffect(() => {
@@ -370,20 +364,14 @@ interface GeneralFeatureStatsReportInnerProps {
     selectedBucket: string | null,
     excludeYourself: boolean;
     aggregateBy: ReportAggregateBy,
-    filteredSongId: number | undefined,
-    filteredEventId: number | undefined,
-    //filteredUserId: number | undefined,
-    filteredWikiPageId: number | undefined,
     startDate: Date,
     endDate: Date,
     onClickBucket: (bucket: string) => void,
     refetchTrigger: number,
     setDataUpdatedAt: (date: Date) => void,
 };
-const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy, filteredSongId,
-    filteredEventId,
-    //filteredUserId,
-    filteredWikiPageId, startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
+const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy,
+    startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         features,
         excludeFeatures,
@@ -391,10 +379,6 @@ const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, ref
         startDate,//: roundToNearest15Minutes(startDate),
         endDate,//: roundToNearest15Minutes(endDate),
         aggregateBy,
-        filteredSongId,//: filteredSong?.id,
-        filteredEventId,//: filteredEvent?.id,
-        //filteredUserId,//: filteredUser?.id,
-        filteredWikiPageId,//: filteredWikiPage?.id,
     });
 
     React.useEffect(() => {
@@ -443,10 +427,6 @@ const GeneralFeatureStatsReport = () => {
     const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
-
-    const [filteredSong, setFilteredSong] = React.useState<QuickSearchItemMatch | undefined>(undefined);
-    const [filteredEvent, setFilteredEvent] = React.useState<QuickSearchItemMatch | undefined>(undefined);
-    const [filteredWikiPage, setFilteredWikiPage] = React.useState<QuickSearchItemMatch | undefined>(undefined);
 
     const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
@@ -500,117 +480,89 @@ const GeneralFeatureStatsReport = () => {
                 </>
             } />
 
-            <NameValuePair name="Bucket size" value={
-                <CMSingleSelect
-                    value={aggregateBy}
-                    onChange={(option) => {
-                        setAggregateBy(option);
-                        setSelectedBucket(null); // buckets don't make sense anymore
-                    }}
-                    getOptions={() => {
-                        return Object.values(ReportAggregateBy);
-                    }}
-                    getOptionInfo={(item) => {
-                        return {
-                            id: item.toString(),
-                        };
-                    }}
-                    nullBehavior={CMSelectNullBehavior.NonNullable}
-                    renderOption={(item) => {
-                        return item.toString();
-                    }}
-                />
-            } />
             <NameValuePair name="Date range" value={
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div>
+                    <div style={{ display: "flex", alignItems: "center" }}>
 
-                    <CMDateRangePicker
-                        value={{ start: startDate, end: endDate }}
-                        onChange={(val) => {
-                            if (val) {
-                                setStartDate(val.start);
-                                setEndDate(val.end);
-                            }
-                        }} />
+                        <CMDateRangePicker
+                            value={{ start: startDate, end: endDate }}
+                            onChange={(val) => {
+                                if (val) {
+                                    setStartDate(val.start);
+                                    setEndDate(val.end);
+                                }
+                            }} />
 
-                    <CMSmallButton
-                        onClick={() => {
-                            setStartDate(DateAdd(new Date(), { years: -1 }));
-                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        <CMSmallButton
+                            onClick={() => {
+                                setStartDate(DateAdd(new Date(), { years: -1 }));
+                                setEndDate(DateAdd(new Date(), { days: 1 }));
+                            }}
+                        >
+                            Past year
+                        </CMSmallButton>
+
+                        <CMSmallButton
+                            onClick={() => {
+                                setStartDate(DateAdd(new Date(), { months: -6 }));
+                                setEndDate(DateAdd(new Date(), { days: 1 }));
+                            }}
+                        >
+                            Past 6 months
+                        </CMSmallButton>
+
+
+                        <CMSmallButton
+                            onClick={() => {
+                                setStartDate(DateAdd(new Date(), { months: -3 }));
+                                setEndDate(DateAdd(new Date(), { days: 1 }));
+                            }}
+                        >
+                            Past 3 months
+                        </CMSmallButton>
+
+
+                        <CMSmallButton
+                            onClick={() => {
+                                setStartDate(DateAdd(new Date(), { months: -1 }));
+                                setEndDate(DateAdd(new Date(), { days: 1 }));
+                            }}
+                        >
+                            Past month
+                        </CMSmallButton>
+
+                        <CMSmallButton
+                            onClick={() => {
+                                setStartDate(DateAdd(new Date(), { days: -14 }));
+                                setEndDate(DateAdd(new Date(), { days: 1 }));
+                            }}
+                        >
+                            Past 2 weeks
+                        </CMSmallButton>
+
+                    </div>
+
+                    <CMSingleSelect
+                        value={aggregateBy}
+                        onChange={(option) => {
+                            setAggregateBy(option);
+                            setSelectedBucket(null); // buckets don't make sense anymore
                         }}
-                    >
-                        Past year
-                    </CMSmallButton>
-
-                    <CMSmallButton
-                        onClick={() => {
-                            setStartDate(DateAdd(new Date(), { months: -6 }));
-                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        getOptions={() => {
+                            return Object.values(ReportAggregateBy);
                         }}
-                    >
-                        Past 6 months
-                    </CMSmallButton>
-
-
-                    <CMSmallButton
-                        onClick={() => {
-                            setStartDate(DateAdd(new Date(), { months: -3 }));
-                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        getOptionInfo={(item) => {
+                            return {
+                                id: item.toString(),
+                            };
                         }}
-                    >
-                        Past 3 months
-                    </CMSmallButton>
-
-
-                    <CMSmallButton
-                        onClick={() => {
-                            setStartDate(DateAdd(new Date(), { months: -1 }));
-                            setEndDate(DateAdd(new Date(), { days: 1 }));
+                        nullBehavior={CMSelectNullBehavior.NonNullable}
+                        renderOption={(item) => {
+                            return item.toString();
                         }}
-                    >
-                        Past month
-                    </CMSmallButton>
-
-                    <CMSmallButton
-                        onClick={() => {
-                            setStartDate(DateAdd(new Date(), { days: -14 }));
-                            setEndDate(DateAdd(new Date(), { days: 1 }));
-                        }}
-                    >
-                        Past 2 weeks
-                    </CMSmallButton>
-
+                    />
                 </div>
             } />
-
-            <Accordion defaultExpanded={false}>
-                <AccordionSummary>Filters</AccordionSummary>
-                <AccordionDetails>
-                    <AssociationSelect
-                        title="Filter by song"
-                        allowedItemTypes={[QuickSearchItemType.song]}
-                        allowNull={true}
-                        value={filteredSong || null}
-                        onChange={(newValue) => setFilteredSong(newValue || undefined)}
-                    />
-                    <AssociationSelect
-                        title="Filter by event"
-                        allowedItemTypes={[QuickSearchItemType.event]}
-                        allowNull={true}
-                        value={filteredEvent || null}
-                        onChange={(newValue) => setFilteredEvent(newValue || undefined)}
-                    />
-                    <AssociationSelect
-                        title="Filter by wiki page"
-                        allowedItemTypes={[QuickSearchItemType.wikiPage]}
-                        allowNull={true}
-                        value={filteredEvent || null}
-                        onChange={(newValue) => setFilteredWikiPage(newValue || undefined)}
-                    />
-
-
-                </AccordionDetails>
-            </Accordion>
         </div>
 
         <React.Suspense>
@@ -620,9 +572,6 @@ const GeneralFeatureStatsReport = () => {
                 selectedBucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
-                filteredSongId={filteredSong?.id}
-                filteredEventId={filteredEvent?.id}
-                filteredWikiPageId={filteredWikiPage?.id}
                 startDate={realStartDate}
                 endDate={realEndDate}
                 onClickBucket={setSelectedBucket}
@@ -640,9 +589,6 @@ const GeneralFeatureStatsReport = () => {
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
-                filteredSongId={filteredSong?.id}
-                filteredEventId={filteredEvent?.id}
-                filteredWikiPageId={filteredWikiPage?.id}
                 refetchTrigger={refetchTrigger}
             />
         </React.Suspense>
@@ -650,17 +596,7 @@ const GeneralFeatureStatsReport = () => {
 };
 
 const MainContent = () => {
-    const [tabId, setTabId] = React.useState<TabId>(TabId.general);
-    return <CMTabPanel selectedTabId={tabId} handleTabChange={(e, newTabId: TabId) => setTabId(newTabId)} >
-        <CMTab key={TabId.general} thisTabId={TabId.general} summaryTitle="Reports">
-            <GeneralFeatureStatsReport />
-        </CMTab>
-        <CMTab key={TabId.featureUsageByUser} thisTabId={TabId.featureUsageByUser} summaryTitle="Feature usage by user">
-            <div style={{ display: "flex", alignItems: "center" }}>
-                <span className="smallText">Coming soon...</span>
-            </div>
-        </CMTab>
-    </CMTabPanel >;
+    return <GeneralFeatureStatsReport />
 };
 
 

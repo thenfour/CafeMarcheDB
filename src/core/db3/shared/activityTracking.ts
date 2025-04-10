@@ -23,17 +23,17 @@ export enum ActivityFeature {
 export type ClientActivityParams = {
     feature: ActivityFeature;
 
-    // eventId?: number;
-    // fileId?: number;
-    // songId?: number;
-    // wikiPageId?: number;
-    // queryText?: string;
+    eventId?: number;
+    fileId?: number;
+    songId?: number;
+    wikiPageId?: number;
+    queryText?: string;
 
-    eventId?: never;
-    fileId?: never;
-    songId?: never;
-    wikiPageId?: never;
-    queryText?: never;
+    // eventId?: never;
+    // fileId?: never;
+    // songId?: never;
+    // wikiPageId?: never;
+    //queryText?: never;
 
 
     // context is derived from the current stack of AppContextMarkers.
