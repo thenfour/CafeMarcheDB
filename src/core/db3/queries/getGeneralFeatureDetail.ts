@@ -17,6 +17,7 @@ const ZTGeneralFeatureDetailArgs = z.object({
     excludeYourself: z.boolean(),
     excludeSysadmins: z.boolean(),
 
+    contextBeginsWith: z.string().optional(),
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
     //filteredUserId: z.number().optional(),
@@ -40,6 +41,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
         filteredEventId,
         //filteredUserId,
         filteredWikiPageId,
+        contextBeginsWith,
     } = params;
 
     const dateRange = parseBucketToDateRange(params.bucket, params.aggregateBy);
@@ -61,6 +63,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
             ...(filteredSongId && { songId: filteredSongId }),
             ...(filteredEventId && { eventId: filteredEventId }),
             ...(filteredWikiPageId && { wikiPageId: filteredWikiPageId }),
+            ...(contextBeginsWith && { context: { startsWith: contextBeginsWith } }),
         },
         ...GeneralActivityReportDetailArgs,
         orderBy: {

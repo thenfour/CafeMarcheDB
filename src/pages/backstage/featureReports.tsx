@@ -1,5 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
+import { ArrowUpward, Clear } from "@mui/icons-material";
 import { Button, FormControlLabel, Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
@@ -9,11 +10,12 @@ import { gLightSwatchColors } from "shared/color";
 import { parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
-import { getHashedColor, smartTruncate } from "shared/utils";
+import { getHashedColor, IsNullOrWhitespace, smartTruncate } from "shared/utils";
 import { EventChip, FileChip, PermissionBoundary, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import { CMTextInputBase } from "src/core/components/CMTextField";
 import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { CMTab, CMTabPanel, CMTabPanelChild } from "src/core/components/TabPanel";
@@ -91,28 +93,53 @@ const FeatureLabel = (props: FeatureLabelProps) => {
 
 interface ContextLabelProps {
     value: string;
+    // if the user clicks on a path part, this will be called with rooted path part (e.g. "foo/bar")
+    onClickPart?: (rootedPart: string) => void;
 };
 
-const ContextLabel = (props: ContextLabelProps) => {
-    const parts = props.value.split("/").filter(x => x.length > 0);
-    return <span className="contextLabelContainer">{
-        parts.map((part, index) => {
-            const color = getHashedColor(part);
-            const bgcolor = getHashedColor(part, { alpha: "0.1" });
-            return <><span key={index} className="contextLabelPart" style={{ color, backgroundColor: bgcolor }}>
-                {part}
-            </span>
-                {index < parts.length - 1 && <span className="contextLabelSeparator">/</span>}
-            </>;
-        })
-    }</span>;
-};
+
+const ContextLabel = ({ value, onClickPart }: ContextLabelProps) => {
+    // Split on slash and filter out any empty segments
+    const parts = value.split("/").filter((x) => x.length > 0)
+
+    return (
+        <span className="contextLabelContainer">
+            {parts.map((part, index) => {
+                const color = getHashedColor(part)
+                const bgcolor = getHashedColor(part, { alpha: "0.1" })
+                const rooted = "/" + parts.slice(0, index + 1).join("/");
+
+                // construct the sub-path from the start up to this index
+                const handlePartClick = () => {
+                    if (!onClickPart) return
+                    onClickPart(rooted)
+                }
+
+                return (
+                    <React.Fragment key={index}>
+                        <MuiTooltip title={onClickPart ? `Show only ${rooted}` : `Context: ${rooted}`} disableInteractive>
+                            <span
+                                className={`contextLabelPart ${onClickPart && "interactable"}`}
+                                style={{ color, backgroundColor: bgcolor, cursor: onClickPart ? "pointer" : undefined }}
+                                onClick={onClickPart ? handlePartClick : undefined}
+                            >
+                                {part}
+                            </span>
+                        </MuiTooltip>
+                        {index < parts.length - 1 && <span className="contextLabelSeparator">/</span>}
+                    </React.Fragment>
+                )
+            })}
+        </span>
+    )
+}
 
 interface GeneralFeatureReportDetailItemProps {
     value: GeneralActivityReportDetailPayload;
     index: number;
     onIsolateFeature: (feature: ActivityFeature) => void;
     onExcludeFeature: (feature: ActivityFeature) => void;
+    onFilterContext: (context: string) => void;
 };
 
 const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatureReportDetailItemProps) => {
@@ -126,7 +153,9 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
             </MuiTooltip>
         </td>
         <td>{value.userHash && <AnonymizedUserChip value={value.userHash} />}</td>
-        <td>{value.context && <ContextLabel value={value.context} />}</td>
+        <td>{value.context && <ContextLabel value={value.context} onClickPart={(part) => {
+            props.onFilterContext(part);
+        }} />}</td>
         <td><FeatureLabel feature={feature} onClickExclude={() => props.onExcludeFeature(feature)} onClickIsolate={() => props.onIsolateFeature(feature)} /></td>
         <td style={{ whiteSpace: "nowrap" }}>
             {value.queryText && <span className="queryText">"<span className="actualQueryText">{value.queryText}</span>"</span>}
@@ -145,6 +174,7 @@ interface GeneralFeatureDetailTableProps {
     data: GeneralActivityReportDetailPayload[];
     onIsolateFeature: (feature: ActivityFeature) => void;
     onExcludeFeature: (feature: ActivityFeature) => void;
+    onFilterContext: (context: string) => void;
 };
 
 const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTableProps) => {
@@ -163,7 +193,7 @@ const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTable
         </thead>
         <tbody>
             {data.map((item, index) => {
-                return <GeneralFeatureReportDetailItem key={index} value={item} index={data.length - index} onExcludeFeature={props.onExcludeFeature} onIsolateFeature={props.onIsolateFeature} />;
+                return <GeneralFeatureReportDetailItem key={index} value={item} index={data.length - index} onExcludeFeature={props.onExcludeFeature} onIsolateFeature={props.onIsolateFeature} onFilterContext={props.onFilterContext} />;
             })}
         </tbody>
     </table>;
@@ -228,6 +258,7 @@ type ContextObjectTabData = {
     items: ContextObjectDistinctItem[],
     onIsolateFeature: (feature: ActivityFeature) => void;
     onExcludeFeature: (feature: ActivityFeature) => void;
+    onFilterContext: (context: string) => void;
 };
 
 const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData }) => {
@@ -248,7 +279,7 @@ const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData 
                     <DistinctContextObjectPieChart item={contextObject} items={item.items} />
                     {contextObject.headingIndicator} ({contextObject.itemCount} items) ({contextObject.percentageOfTotal} of total)
                 </div>
-                <GeneralFeatureDetailTable data={contextObject.items} onExcludeFeature={item.onExcludeFeature} onIsolateFeature={item.onIsolateFeature} />
+                <GeneralFeatureDetailTable data={contextObject.items} onExcludeFeature={item.onExcludeFeature} onIsolateFeature={item.onIsolateFeature} onFilterContext={item.onFilterContext} />
             </div>;
         })}
     </div>;
@@ -262,16 +293,14 @@ interface GeneralFeatureDetailAreaProps {
     aggregateBy: ReportAggregateBy;
     excludeYourself: boolean;
     excludeSysadmins: boolean;
-    //filteredSongId: number | undefined;
-    //filteredEventId: number | undefined;
-    //filteredUserId: number | undefined;
-    //filteredWikiPageId: number | undefined;
+    contextBeginsWith: string | undefined;
     refetchTrigger: number;
     onIsolateFeature: (feature: ActivityFeature) => void;
     onExcludeFeature: (feature: ActivityFeature) => void;
+    onFilterContext: (context: string) => void;
 };
 
-const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature }: GeneralFeatureDetailAreaProps) => {
+const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
 
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
@@ -280,12 +309,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
         excludeFeatures,
         bucket,
         aggregateBy,
-        //filteredSongId,
         excludeYourself,
         excludeSysadmins,
-        //filteredEventId,
-        //filteredUserId,
-        //filteredWikiPageId,
+        contextBeginsWith,
     });
 
     React.useEffect(() => {
@@ -307,6 +333,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 items: byFeature,
                 onIsolateFeature,
                 onExcludeFeature,
+                onFilterContext,
             });
         }
 
@@ -322,6 +349,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 items: byUser,
                 onIsolateFeature,
                 onExcludeFeature,
+                onFilterContext,
             });
         }
         const bySong = getContextObjectTabData(
@@ -336,6 +364,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 items: bySong,
                 onIsolateFeature,
                 onExcludeFeature,
+                onFilterContext,
             });
         }
         const byEvent = getContextObjectTabData(
@@ -350,6 +379,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 items: byEvent,
                 onIsolateFeature,
                 onExcludeFeature,
+                onFilterContext,
             });
         }
         const byWikiPage = getContextObjectTabData(
@@ -364,6 +394,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 items: byWikiPage,
                 onIsolateFeature,
                 onExcludeFeature,
+                onFilterContext,
             });
         }
         const byFile = getContextObjectTabData(
@@ -378,6 +409,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 items: byFile,
                 onIsolateFeature,
                 onExcludeFeature,
+                onFilterContext,
             });
         }
 
@@ -393,6 +425,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 items: byContext,
                 onIsolateFeature,
                 onExcludeFeature,
+                onFilterContext,
             });
         }
 
@@ -402,7 +435,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
 
     const renderedTabs: CMTabPanelChild[] = [
         <CMTab key={9999} thisTabId="general" summaryTitle={`General (${detail?.data.length})`} >
-            <GeneralFeatureDetailTable data={detail?.data || []} onExcludeFeature={onExcludeFeature} onIsolateFeature={onIsolateFeature} />
+            <GeneralFeatureDetailTable data={detail?.data || []} onExcludeFeature={onExcludeFeature} onIsolateFeature={onIsolateFeature} onFilterContext={onFilterContext} />
         </CMTab>,
         ...tabs.map((tab) => <CMTab key={tab.id} thisTabId={tab.id} summaryTitle={tab.tabHeader} enabled={tab.items.length > 1} >
             <DistinctContextObjectTabContent key={tab.id} item={tab} />
@@ -437,15 +470,17 @@ interface GeneralFeatureStatsReportInnerProps {
     endDate: Date,
     onClickBucket: (bucket: string) => void,
     refetchTrigger: number,
+    contextBeginsWith: string | undefined,
     setDataUpdatedAt: (date: Date) => void,
 };
-const GeneralFeatureStatsReportInner = ({ excludeYourself, excludeSysadmins, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy,
+const GeneralFeatureStatsReportInner = ({ excludeYourself, excludeSysadmins, contextBeginsWith, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy,
     startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         features,
         excludeFeatures,
         excludeYourself,
         excludeSysadmins,
+        contextBeginsWith,
         startDate,//: roundToNearest15Minutes(startDate),
         endDate,//: roundToNearest15Minutes(endDate),
         aggregateBy,
@@ -496,6 +531,7 @@ const GeneralFeatureStatsReport = () => {
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
     const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
     const [excludeSysadmins, setExcludeSysadmins] = React.useState<boolean>(true);
+    const [contextBeginsWith, setContextBeginsWith] = React.useState<string | undefined>();
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
@@ -526,7 +562,12 @@ const GeneralFeatureStatsReport = () => {
                     last updated: <AgeRelativeToNow value={dataUpdatedAt} />
                 </span>
             </div>
-
+            <div style={{ display: "flex", alignItems: "center", marginLeft: "6px" }}>
+                <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
+                <PermissionBoundary permission={Permission.sysadmin}>
+                    <FormControlLabel control={<input type="checkbox" checked={excludeSysadmins} onChange={(e) => setExcludeSysadmins(e.target.checked)} />} label="Exclude sysadmins" />
+                </PermissionBoundary>
+            </div>
             <NameValuePair name="Feature" value={
                 <>
                     <Button onClick={() => setFeatures(Object.values(ActivityFeature))} >All</Button>
@@ -547,10 +588,35 @@ const GeneralFeatureStatsReport = () => {
                             return item.toString();
                         }}
                     />
-                    <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
-                    <PermissionBoundary permission={Permission.sysadmin}>
-                        <FormControlLabel control={<input type="checkbox" checked={excludeSysadmins} onChange={(e) => setExcludeSysadmins(e.target.checked)} />} label="Exclude sysadmins" />
-                    </PermissionBoundary>
+
+                    <div style={{ display: "flex", alignItems: "center", marginRight: "25px" }}>
+                        <CMTextInputBase
+                            style={{ fontSize: "15px", margin: "7px", backgroundColor: "white", borderRadius: "4px", padding: "5px", fontFamily: "var(--ff-mono)" }}
+                            placeholder="filter context..."
+                            onChange={(e, val) => {
+                                setContextBeginsWith(IsNullOrWhitespace(val) ? undefined : val);
+                            }}
+                            value={contextBeginsWith}
+                        />
+                        <CMSmallButton onClick={() => {
+                            // remove last path part of contextBeginsWith
+                            if (contextBeginsWith) {
+                                const parts = contextBeginsWith.split("/");
+                                if (parts.length > 1) {
+                                    setContextBeginsWith(parts.slice(0, -1).join("/"));
+                                } else {
+                                    setContextBeginsWith(undefined);
+                                }
+                            }
+                        }}>
+                            <ArrowUpward />
+                        </CMSmallButton>
+                        <CMSmallButton onClick={() => {
+                            setContextBeginsWith(undefined);
+                        }}>
+                            <Clear />
+                        </CMSmallButton>
+                    </div>
                 </>
             } />
 
@@ -658,6 +724,7 @@ const GeneralFeatureStatsReport = () => {
                 endDate={realEndDate}
                 onClickBucket={setSelectedBucket}
                 refetchTrigger={refetchTrigger}
+                contextBeginsWith={contextBeginsWith}
                 setDataUpdatedAt={setDataUpdatedAt}
             />
         </React.Suspense>
@@ -667,15 +734,17 @@ const GeneralFeatureStatsReport = () => {
                 features={features}
                 onExcludeFeature={onExcludeFeature}
                 onIsolateFeature={onIsolateFeature}
+                onFilterContext={setContextBeginsWith}
                 excludeFeatures={[]}
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
                 excludeSysadmins={excludeSysadmins}
+                contextBeginsWith={contextBeginsWith}
                 refetchTrigger={refetchTrigger}
             />
         </React.Suspense>
-    </div>;
+    </div >;
 };
 
 const MainContent = () => {

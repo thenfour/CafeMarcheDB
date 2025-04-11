@@ -25,6 +25,7 @@ export interface CMTextInputBaseProps {
     type?: "password" | "text"; // "password" | "text" etc.
     ref?: React.Ref<HTMLInputElement>;
     style?: React.CSSProperties | undefined;
+    placeholder?: string;
 };
 
 // textfield for a string field on an object.
@@ -46,6 +47,7 @@ export function CMTextInputBase({ value, onChange, autoFocus, readOnly, ...props
 
     return <input
         ref={props.ref}
+        placeholder={props.placeholder}
         type={props.type || "text"}
         disabled={!!readOnly}
         autoFocus={!!autoFocus}

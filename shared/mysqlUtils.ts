@@ -41,6 +41,30 @@ export function MysqlEscape(str) {
     });
 }
 
+export function MysqlEscapeAllowingPercent(str) {
+    return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
+        switch (char) {
+            case "\0":
+                return "\\0";
+            case "\x08":
+                return "\\b";
+            case "\x09":
+                return "\\t";
+            case "\x1a":
+                return "\\z";
+            case "\n":
+                return "\\n";
+            case "\r":
+                return "\\r";
+            case "\"":
+            case "'":
+            case "\\":
+            default:
+                return char;
+        }
+    });
+}
+
 
 export function MySqlSymbol(symbol: string): string {
     return `\`${symbol}\``;
@@ -53,6 +77,10 @@ export function MySqlDateTimeLiteral(date: Date): string {
 
 export function MySqlStringLiteral(str: string): string {
     return `'${MysqlEscape(str)}'`;
+}
+
+export function MySqlStringLiteralAllowingPercent(str: string): string {
+    return `'${MysqlEscapeAllowingPercent(str)}'`;
 }
 
 // returns a MySql date format string which allows aggregation (truncating to the desired level)

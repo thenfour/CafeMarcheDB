@@ -1,7 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
-import { getMySqlAggregateDateFormat, MySqlDateTimeLiteral, MySqlStringLiteral, MySqlSymbol } from "shared/mysqlUtils";
+import { getMySqlAggregateDateFormat, MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { ActivityFeature } from "../shared/activityTracking";
@@ -21,6 +21,7 @@ const ZTGeneralFeatureReportArgs = z.object({
     filteredEventId: z.number().optional(),
     //filteredUserId: z.number().optional(),
     filteredWikiPageId: z.number().optional(),
+    contextBeginsWith: z.string().optional(),
 });
 
 type TGeneralFeatureReportArgs = z.infer<typeof ZTGeneralFeatureReportArgs>;
@@ -42,6 +43,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         filteredEventId,
         //filteredUserId,
         filteredWikiPageId,
+        contextBeginsWith,
     } = params;
 
     // Get the date format
@@ -71,6 +73,10 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
     // }
     if (filteredWikiPageId) {
         conditions.push(`${MySqlSymbol("wikiPageId")} = ${filteredWikiPageId}`);
+    }
+
+    if (contextBeginsWith) {
+        conditions.push(`${MySqlSymbol("context")} LIKE ${MySqlStringLiteralAllowingPercent(contextBeginsWith + "%")}`);
     }
 
     // exclude the current user optionally
