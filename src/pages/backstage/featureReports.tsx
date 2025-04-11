@@ -170,7 +170,7 @@ const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTable
 }
 
 
-type DetailTabId = "general" | "features" | "users" | "songs" | "events" | "wikiPages" | "files";
+type DetailTabId = "general" | "features" | "users" | "songs" | "events" | "wikiPages" | "files" | "contexts";
 
 type ContextObjectDistinctItem = {
     key: string,
@@ -376,6 +376,21 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
                 id: "files",
                 tabHeader: `Files (${byFile.length})`,
                 items: byFile,
+                onIsolateFeature,
+                onExcludeFeature,
+            });
+        }
+
+        const byContext = getContextObjectTabData(
+            detail?.data.filter(x => !!x.context),
+            (item) => item.context!,
+            (item) => <ContextLabel value={item.context!} />,
+        );
+        if (byContext.length) {
+            ret.push({
+                id: "contexts",
+                tabHeader: `Contexts (${byContext.length})`,
+                items: byContext,
                 onIsolateFeature,
                 onExcludeFeature,
             });
