@@ -60,13 +60,13 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
             }),
             ...(filteredSongId && { songId: filteredSongId }),
             ...(filteredEventId && { eventId: filteredEventId }),
-            //...(filteredUserId && { userId: filteredUserId }),
             ...(filteredWikiPageId && { wikiPageId: filteredWikiPageId }),
         },
         ...GeneralActivityReportDetailArgs,
         orderBy: {
             createdAt: "desc",
         },
+        take: 1000,
     });
 
     // to anonymize users as much as possible, hash their userID with a deterministic salt
