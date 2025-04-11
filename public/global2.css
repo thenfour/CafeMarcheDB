@@ -1690,6 +1690,7 @@ in particular the date range picker is wide.*/
     border-radius: 3px;
     border: 2px solid #ddd;
     border-left: 8px solid #ddd;
+    margin: 4px;
 }
 
 .eventAttendanceControl.alert {

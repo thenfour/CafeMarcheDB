@@ -115,20 +115,20 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
 
     return <tr className="GeneralFeatureReportDetailItemRow">
         <td style={{ fontFamily: "var(--ff-mono)" }}>#{index}</td>
-        <td><FeatureLabel feature={feature} onClickExclude={() => props.onExcludeFeature(feature)} onClickIsolate={() => props.onIsolateFeature(feature)} /></td>
         <td>{value.createdAt.toLocaleString()}</td>
-        <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
         <td>{value.userHash && <AnonymizedUserChip value={value.userHash} />}</td>
+        <td>{value.context && <ContextLabel value={value.context} />}</td>
+        <td><FeatureLabel feature={feature} onClickExclude={() => props.onExcludeFeature(feature)} onClickIsolate={() => props.onIsolateFeature(feature)} /></td>
+        <td style={{ whiteSpace: "nowrap" }}>
+            {value.queryText && <span className="queryText">"<span className="actualQueryText">{value.queryText}</span>"</span>}
+        </td>
         <td>
             {value.song && <SongChip value={value.song} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />}
             {value.event && <EventChip value={value.event} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />}
             {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />}
             {value.wikiPage && <WikiPageChip slug={value.wikiPage.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />}
         </td>
-        <td>{value.context && <ContextLabel value={value.context} />}</td>
-        <td style={{ whiteSpace: "nowrap" }}>
-            {value.queryText && <span className="queryText">"<span className="actualQueryText">{value.queryText}</span>"</span>}
-        </td>
+        <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
     </tr>;
 };
 
@@ -143,13 +143,13 @@ const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTable
         <thead>
             <tr>
                 <th>#</th>
-                <th>Feature</th>
                 <th>When</th>
-                <th>URI</th>
                 <th>User</th>
-                <th></th>
                 <th>Context</th>
+                <th>Feature</th>
                 <th>Query</th>
+                <th></th>
+                <th>URI</th>
             </tr>
         </thead>
         <tbody>

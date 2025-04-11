@@ -406,7 +406,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 /* this is a vertical column, allowing for a title + subtitle */
 .contentSection .titleText {
-  font-size: 38px;
+  font-size: 35px;
   font-weight: bold;
   color: var(--primary-color);
   text-transform: uppercase;
@@ -493,9 +493,15 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   font-weight: bold;
   white-space: nowrap;
   color: #888;
-  margin: 4px 0px 6px 6px;
+  margin-bottom: 5px;
   letter-spacing: -.7px;
   line-height: 25px;
+}
+
+.contentSection .smallInfoBox.location {
+  font-size: 15px;
+  font-weight: normal;
+  letter-spacing: normal;
 }
 
 .contentSection .smallInfoBox.date .text {
