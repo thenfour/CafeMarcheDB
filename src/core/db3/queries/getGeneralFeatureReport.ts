@@ -6,6 +6,7 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { ActivityFeature } from "../shared/activityTracking";
 import { ReportAggregateBy } from "../shared/apiTypes";
+import { simpleRolesIsAuthorized } from "@blitzjs/auth";
 
 const ZTGeneralFeatureReportArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
@@ -14,6 +15,7 @@ const ZTGeneralFeatureReportArgs = z.object({
     endDate: z.date(),
     aggregateBy: z.nativeEnum(ReportAggregateBy),
     excludeYourself: z.boolean(),
+    excludeSysadmins: z.boolean(),
 
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
@@ -75,6 +77,10 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
     if (params.excludeYourself) {
         const currentUserId = ctx.session.userId;
         conditions.push(`${MySqlSymbol("userId")} != ${currentUserId}`);
+    }
+
+    if (params.excludeSysadmins) {
+        conditions.push(`${MySqlSymbol("userId")} NOT IN (SELECT ${MySqlSymbol("id")} FROM \`User\` WHERE ${MySqlSymbol("isSysAdmin")} = 1)`);
     }
 
     // Combine conditions in a single WHERE clause

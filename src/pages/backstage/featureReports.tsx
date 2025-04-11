@@ -7,9 +7,9 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxi
 import { toSorted } from "shared/arrayUtils";
 import { gLightSwatchColors } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CalcRelativeTimingFromNow, DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
+import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
 import { getHashedColor, smartTruncate } from "shared/utils";
-import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
+import { EventChip, FileChip, PermissionBoundary, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
@@ -240,6 +240,7 @@ interface GeneralFeatureDetailAreaProps {
     bucket: string | null;
     aggregateBy: ReportAggregateBy;
     excludeYourself: boolean;
+    excludeSysadmins: boolean;
     //filteredSongId: number | undefined;
     //filteredEventId: number | undefined;
     //filteredUserId: number | undefined;
@@ -249,7 +250,7 @@ interface GeneralFeatureDetailAreaProps {
     onExcludeFeature: (feature: ActivityFeature) => void;
 };
 
-const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature }: GeneralFeatureDetailAreaProps) => {
+const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature }: GeneralFeatureDetailAreaProps) => {
 
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
@@ -260,6 +261,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
         aggregateBy,
         //filteredSongId,
         excludeYourself,
+        excludeSysadmins,
         //filteredEventId,
         //filteredUserId,
         //filteredWikiPageId,
@@ -384,6 +386,7 @@ interface GeneralFeatureStatsReportInnerProps {
     excludeFeatures: ActivityFeature[],
     selectedBucket: string | null,
     excludeYourself: boolean;
+    excludeSysadmins: boolean;
     aggregateBy: ReportAggregateBy,
     startDate: Date,
     endDate: Date,
@@ -391,12 +394,13 @@ interface GeneralFeatureStatsReportInnerProps {
     refetchTrigger: number,
     setDataUpdatedAt: (date: Date) => void,
 };
-const GeneralFeatureStatsReportInner = ({ excludeYourself, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy,
+const GeneralFeatureStatsReportInner = ({ excludeYourself, excludeSysadmins, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy,
     startDate, endDate }: GeneralFeatureStatsReportInnerProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         features,
         excludeFeatures,
         excludeYourself,
+        excludeSysadmins,
         startDate,//: roundToNearest15Minutes(startDate),
         endDate,//: roundToNearest15Minutes(endDate),
         aggregateBy,
@@ -446,6 +450,7 @@ const GeneralFeatureStatsReport = () => {
     const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
     const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
+    const [excludeSysadmins, setExcludeSysadmins] = React.useState<boolean>(true);
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
@@ -498,6 +503,9 @@ const GeneralFeatureStatsReport = () => {
                         }}
                     />
                     <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
+                    <PermissionBoundary permission={Permission.sysadmin}>
+                        <FormControlLabel control={<input type="checkbox" checked={excludeSysadmins} onChange={(e) => setExcludeSysadmins(e.target.checked)} />} label="Exclude sysadmins" />
+                    </PermissionBoundary>
                 </>
             } />
 
@@ -600,6 +608,7 @@ const GeneralFeatureStatsReport = () => {
                 selectedBucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
+                excludeSysadmins={excludeSysadmins}
                 startDate={realStartDate}
                 endDate={realEndDate}
                 onClickBucket={setSelectedBucket}
@@ -617,6 +626,7 @@ const GeneralFeatureStatsReport = () => {
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
+                excludeSysadmins={excludeSysadmins}
                 refetchTrigger={refetchTrigger}
             />
         </React.Suspense>

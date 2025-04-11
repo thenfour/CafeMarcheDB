@@ -15,6 +15,7 @@ const ZTGeneralFeatureDetailArgs = z.object({
     bucket: z.string().nullable(),
     aggregateBy: z.nativeEnum(ReportAggregateBy),
     excludeYourself: z.boolean(),
+    excludeSysadmins: z.boolean(),
 
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
@@ -52,6 +53,11 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
                 lt: dateRange.end,
             },
             ...(params.excludeYourself && { userId: { not: ctx.session.userId } }),
+            ...(params.excludeSysadmins && {
+                user: {
+                    isSysAdmin: false,
+                },
+            }),
             ...(filteredSongId && { songId: filteredSongId }),
             ...(filteredEventId && { eventId: filteredEventId }),
             //...(filteredUserId && { userId: filteredUserId }),
