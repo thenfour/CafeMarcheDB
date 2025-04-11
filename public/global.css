@@ -872,3 +872,12 @@ solution is to
 .contextLabelContainer .contextLabelSeparator {
   color: #bbb;
 }
+
+.FeatureStatsReport .bucketLabel {
+  font-size: 18px;
+  font-family: var(--ff-mono);
+  border-radius: 4px;
+  background-color: #ddd;
+  padding: 10px;
+  margin: 43px;
+}

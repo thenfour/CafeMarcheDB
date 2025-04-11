@@ -6,6 +6,7 @@ import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { toSorted } from "shared/arrayUtils";
 import { gLightSwatchColors } from "shared/color";
+import { parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
 import { getHashedColor, smartTruncate } from "shared/utils";
@@ -50,7 +51,11 @@ const getColorForFeature = (feature: ActivityFeature): string | null => {
 }
 
 const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?: number }) => {
-    return <MuiTooltip title={value.substring(0, 6)} disableInteractive><div><Identicon string={value} size={size} /></div></MuiTooltip>;
+    return <MuiTooltip title={value.substring(0, 6)} disableInteractive>
+        <div style={{ display: "flex", alignItems: "center", padding: "5px", margin: "2px", backgroundColor: "white", borderRadius: "4px" }}>
+            <Identicon string={value} size={size} />
+        </div>
+    </MuiTooltip>;
 }
 
 interface FeatureLabelProps {
@@ -201,13 +206,19 @@ function getContextObjectTabData(
     return toSorted(contextObjects, (a, b) => b.itemCount - a.itemCount);
 }
 
-const DistinctContextObjectPieChart = ({ item }: { item: ContextObjectDistinctItem }) => {
-    const chartData = [
-        { fill: "#66f", value: item.itemCount },
-        { fill: "#f8f8f8", value: item.totalCount - item.itemCount },
-    ];
+const DistinctContextObjectPieChart = ({ item, items }: { item: ContextObjectDistinctItem, items: ContextObjectDistinctItem[] }) => {
+    // const chartData = [
+    //     { fill: getHashedColor(item.key), value: item.itemCount },
+    //     { fill: "#f8f8f8", value: item.totalCount - item.itemCount },
+    // ];
+
+    const chartData = items.map((contextObject) => ({
+        ...contextObject,
+        fill: contextObject.key === item.key ? getHashedColor(contextObject.key) : "#f8f8f8",
+    }));
+
     return <PieChart width={60} height={60} data={chartData}>
-        <Pie dataKey="value" data={chartData} cx="50%" cy="50%" innerRadius={7} outerRadius={25} isAnimationActive={false} />
+        <Pie dataKey="itemCount" data={chartData} cx="50%" cy="50%" innerRadius={7} outerRadius={25} isAnimationActive={false} />
     </PieChart>;
 };
 
@@ -220,11 +231,21 @@ type ContextObjectTabData = {
 };
 
 const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData }) => {
+
+    const chartData = item.items.map((contextObject) => ({
+        ...contextObject,
+        fill: getHashedColor(contextObject.key),
+    }));
+
     return item.items.length > 1 && <div>
+        <PieChart width={210} height={210} data={chartData}>
+            <Pie dataKey="itemCount" nameKey={"key"} data={chartData} cx="50%" cy="50%" innerRadius={7} outerRadius={100} isAnimationActive={false} />
+            <Tooltip />
+        </PieChart>
         {item.items.map((contextObject) => {
             return <div key={contextObject.key}>
-                <div style={{ display: "flex", fontWeight: "bold", alignItems: "center" }}>
-                    <DistinctContextObjectPieChart item={contextObject} />
+                <div style={{ display: "flex", fontWeight: "bold", alignItems: "center", backgroundColor: getHashedColor(contextObject.key, { alpha: "0.2" }), borderTop: `3px solid ${getHashedColor(contextObject.key)}` }}>
+                    <DistinctContextObjectPieChart item={contextObject} items={item.items} />
                     {contextObject.headingIndicator} ({contextObject.itemCount} items) ({contextObject.percentageOfTotal} of total)
                 </div>
                 <GeneralFeatureDetailTable data={contextObject.items} onExcludeFeature={item.onExcludeFeature} onIsolateFeature={item.onIsolateFeature} />
@@ -373,7 +394,16 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, excludeFeatures, 
         </CMTab>),
     ];
 
+    const bucketDateRange = bucket ? parseBucketToDateRange(bucket, aggregateBy) : null;
+
     return <div>
+        <div className="bucketLabel">
+            {bucket && <>
+                {bucket} [{bucketDateRange?.start.toLocaleString()} - {bucketDateRange?.end.toLocaleString()}] (range: {formatMillisecondsToDHMS(bucketDateRange!.end.getTime() - bucketDateRange!.start.getTime())})
+            </>
+            }
+            {!bucket && <>No bucket selected</>}
+        </div>
         <CMTabPanel handleTabChange={(e, newTabId: DetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
             {renderedTabs}
         </CMTabPanel>
