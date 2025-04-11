@@ -52,6 +52,7 @@ import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown } from './markdown/Markdown';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
+import { slugify } from 'shared/rootroot';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1165,7 +1166,7 @@ const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimu
             <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
             Copy event link to clipboard
         </MenuItem>
-
+        {/* 
         <Divider />
 
         {uriForThisEvent &&
@@ -1184,9 +1185,16 @@ const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimu
                 <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
                 This event: iCal import
             </MenuItem>
-        }
+        } */}
 
         <Divider />
+
+        {uriForGlobalCalendar &&
+            <MenuItem component={Link} href={`/backstage/wiki/${slugify("calendar-sync-help")}`} target="_blank" rel="noreferrer" onClick={closeMenu}>
+                <ListItemIcon>{gIconMap.Help()}</ListItemIcon>
+                How to use calendar sync...
+            </MenuItem>
+        }
 
         {uriForGlobalCalendar &&
             <MenuItem onClick={async () => {
@@ -1195,13 +1203,13 @@ const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimu
                 snackbar.showSuccess("Link address copied");
             }}>
                 <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
-                Global event calendar: Copy Calendar link
+                Event calendar: Copy Calendar link
             </MenuItem>
         }
         {uriForGlobalCalendar &&
             <MenuItem component={Link} href={uriForGlobalCalendar} target='_blank' rel="noreferrer" onClick={closeMenu}>
                 <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
-                Global event calendar: iCal import
+                Event calendar: iCal import
             </MenuItem>
         }
     </DotMenu>;

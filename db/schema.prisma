@@ -107,6 +107,8 @@ model Action {
   song       Song?     @relation(fields: [songId], references: [id], onDelete: Cascade) // songs are soft-delete; deleting a song will delete the action
   wikiPageId Int?
   wikiPage   WikiPage? @relation(fields: [wikiPageId], references: [id], onDelete: Cascade) // wiki pages are soft-delete; deleting a wiki page will delete the action
+
+  @@index([createdAt, userId, context])
 }
 
 // effectively this creates "groups" that you can belong to. or indeed just tags... makes sense anyway.

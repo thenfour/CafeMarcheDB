@@ -860,6 +860,7 @@ solution is to
 .contextLabelContainer .contextLabelPart {
   border-radius: 4px;
   padding: 2px 3px;
+  white-space: nowrap;
 }
 
 .contextLabelContainer .contextLabelSeparator {

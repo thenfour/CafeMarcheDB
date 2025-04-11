@@ -3,7 +3,7 @@ import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
 import React from "react";
 import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
 import { StandardVariationSpec } from 'shared/color';
-import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, Timing } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
@@ -45,12 +45,15 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
         color: event.type?.color || null,
     });
 
+    const dateRange = API.events.getEventDateRange(event);
+    const eventTiming = dateRange.hitTestDateTime();
+
     const classes = [
-        //`contentSection`,
         "SubtleEventCard",
         event.type?.text,
         visInfo.className,
         `status_${event.status?.significance}`,
+        (eventTiming === Timing.Past) ? "past" : "notPast",
     ];
 
     return <CMDivLink trackingFeature={ActivityFeature.relevant_event_link_click} className={classes.join(" ")} style={typeStyle.style} onClick={async (e) => {

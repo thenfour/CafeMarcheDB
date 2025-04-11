@@ -2409,7 +2409,7 @@ pre.serverStartInfo {
 
 
 .EventDateField.container .RelativeIndicator {
-    --chip-color: #ddd;
+    --chip-color: #aaa;
     /* background-color: var(--chip-color); */
     /* color: #777; */
     color: var(--chip-color);

@@ -84,20 +84,30 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
                 <MenuItem onClick={async () => {
                     await onClickShowAdminControls(false);
                     closeMenu();
-                }}>Hide admin config {gIconMap.Settings()}</MenuItem>
+                }}
+                >
+                    <ListItemIcon>{gIconMap.Settings()}</ListItemIcon>
+                    Hide admin config
+                </MenuItem>
                 : <MenuItem onClick={async () => {
                     await onClickShowAdminControls(true);
                     closeMenu();
-                }}>Show admin config {gIconMap.Settings()}</MenuItem>
+                }}
+                >
+                    <ListItemIcon>{gIconMap.Settings()}</ListItemIcon>
+                    Show admin config
+                </MenuItem>
             }
 
-            <Divider /></>
+            <Divider />
+        </>
         }
 
         {currentUser &&
             <>
                 <MenuItem component={Link} href={`/backstage/wiki/${slugify("calendar-sync-help")}`} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                    {gIconMap.Help()} How to use calendar sync...
+                    <ListItemIcon>{gIconMap.Help()}</ListItemIcon>
+                    How to use calendar sync...
                 </MenuItem>
                 <MenuItem onClick={async () => {
                     const uri = getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
@@ -105,16 +115,19 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
                     closeMenu();
                     showSnackbar({ children: "Link address copied", severity: 'success' });
                 }}>
-                    {gIconMap.ContentCopy()} Copy Calendar Link Address
+                    <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
+                    Copy Calendar Link Address
                 </MenuItem>
                 <MenuItem component={Link} href={GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken })} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                    {gIconMap.CalendarMonth()} Calendar feed (iCal format)
+                    <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
+                    Calendar feed (iCal format)
                 </MenuItem>
                 <Divider />
             </>
         }
 
         <MenuItem component={Link} href='/backstage/profile' onClick={closeMenu}>Your profile</MenuItem>
+        <Divider />
 
         <MenuItem onClick={async () => {
             // just doing the mutation here will keep a bunch of app state; better to cleanly navigate to a simple logout page where we don't risk access exceptions.

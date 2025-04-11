@@ -64,6 +64,10 @@
     user-select: none;
 }
 
+.SubtleEventCard.past {
+    opacity: 50%;
+}
+
 .SubtleEventCard:hover {
     /* background-color: #eee; */
     border-color: blue;
