@@ -7,7 +7,7 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxi
 import { toSorted } from "shared/arrayUtils";
 import { gLightSwatchColors } from "shared/color";
 import { Permission } from "shared/permissions";
-import { DateAdd, roundToNearest15Minutes } from "shared/time";
+import { CalcRelativeTimingFromNow, DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
 import { getHashedColor, smartTruncate } from "shared/utils";
 import { EventChip, FileChip, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -115,7 +115,11 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
 
     return <tr className="GeneralFeatureReportDetailItemRow">
         <td style={{ fontFamily: "var(--ff-mono)" }}>#{index}</td>
-        <td>{value.createdAt.toLocaleString()}</td>
+        <td>
+            <MuiTooltip title={<AgeRelativeToNow value={value.createdAt} />} disableInteractive>
+                <span>{value.createdAt.toLocaleString()}</span>
+            </MuiTooltip>
+        </td>
         <td>{value.userHash && <AnonymizedUserChip value={value.userHash} />}</td>
         <td>{value.context && <ContextLabel value={value.context} />}</td>
         <td><FeatureLabel feature={feature} onClickExclude={() => props.onExcludeFeature(feature)} onClickIsolate={() => props.onIsolateFeature(feature)} /></td>
@@ -497,7 +501,7 @@ const GeneralFeatureStatsReport = () => {
                 </>
             } />
 
-            <NameValuePair name="Date range" value={
+            <NameValuePair name="Timing" value={
                 <div>
                     <div style={{ display: "flex", alignItems: "center" }}>
 
@@ -557,6 +561,13 @@ const GeneralFeatureStatsReport = () => {
                             Past 2 weeks
                         </CMSmallButton>
 
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", fontFamily: "var(--ff-mono)", opacity: 0.7, fontSize: "12px", padding: "5px", marginLeft: "10px" }}>
+                        [<AgeRelativeToNow value={startDate} />]
+                        <div className="ndash field">&ndash;</div>
+                        [<AgeRelativeToNow value={endDate} />]
+                        ({formatMillisecondsToDHMS(endDate.getTime() - startDate.getTime())})
                     </div>
 
                     <CMSingleSelect
