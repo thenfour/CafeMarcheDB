@@ -50,7 +50,22 @@ const getColorForFeature = (feature: ActivityFeature): string | null => {
         [ActivityFeature.dashboard_menu_link_click]: gLightSwatchColors.light_green,
         [ActivityFeature.general_link_click]: gLightSwatchColors.light_green,
 
-        [ActivityFeature.attendance_response]: gAppColors.null,
+        [ActivityFeature.event_change_custom_field]: gLightSwatchColors.light_orange,
+
+        [ActivityFeature.attendance_response]: gLightSwatchColors.light_brown,
+        [ActivityFeature.attendance_instrument]: gLightSwatchColors.light_brown,
+        [ActivityFeature.attendance_comment]: gLightSwatchColors.light_brown,
+        [ActivityFeature.attendance_explicit_invite]: gLightSwatchColors.light_brown,
+        [ActivityFeature.event_change_invite_tag]: gLightSwatchColors.light_brown,
+
+        [ActivityFeature.menu_link_update]: gLightSwatchColors.light_olive,
+        [ActivityFeature.menu_link_create]: gLightSwatchColors.light_olive,
+        [ActivityFeature.menu_link_reorder]: gLightSwatchColors.light_olive,
+        [ActivityFeature.menu_link_delete]: gLightSwatchColors.light_olive,
+
+        [ActivityFeature.custom_link_create]: gLightSwatchColors.light_citron,
+        [ActivityFeature.custom_link_update]: gLightSwatchColors.light_citron,
+        [ActivityFeature.custom_link_delete]: gLightSwatchColors.light_citron,
     };
 
     return featureColorMap[feature] || null;

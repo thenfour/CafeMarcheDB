@@ -579,6 +579,7 @@ const MainContent = () => {
     const items = client.items as db3.FrontpageGalleryItemPayload[];
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
+        if (args.addedIndex === args.removedIndex) return; // no change
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);

@@ -12,11 +12,13 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
+import { ActivityFeature } from "../db3/shared/activityTracking";
 import { TAnyModel } from "../db3/shared/apiTypes";
 import { KeyValueDisplay } from './CMCoreComponents2';
 import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
-import { DashboardContext } from "./DashboardContext";
+import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { VisibilityValue } from "./VisibilityControl";
+import { AppContextMarker } from "./AppContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,8 +31,14 @@ interface MenuLinkItemProps {
 
 export const MenuLinkItem = (props: MenuLinkItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const recordFeature = useFeatureRecorder();
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.menu_link_update,
+            menuLinkId: props.item.id,
+            context: "MenuLinkItem",
+        });
         props.client.doUpdateMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
             props.client.refetch();
@@ -42,6 +50,11 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
     };
 
     const handleDelete = (api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.menu_link_delete,
+            menuLinkId: props.item.id,
+            context: "MenuLinkItem",
+        });
         props.client.doDeleteMutation(props.item.id, 'softWhenPossible').then(() => {
             showSnackbar({ children: "delete successful", severity: 'success' });
             api.closeDialog();
@@ -198,6 +211,7 @@ export const MenuLinkList = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const [user] = useCurrentUser()!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
@@ -241,6 +255,10 @@ export const MenuLinkList = () => {
     newObj.visiblePermissionId = dashboardContext.getDefaultVisibilityPermission().id;
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.menu_link_create,
+            context: "MenuLinkList",
+        });
         client.doInsertMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
             client.refetch();
@@ -259,9 +277,16 @@ export const MenuLinkList = () => {
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+        if (args.addedIndex === args.removedIndex) return; // nothing to do
         const movingItem = items[args.removedIndex];
         const newPositionItem = items[args.addedIndex];
         assert(!!movingItem && !!newPositionItem, "moving item not found?");
+
+        void recordFeature({
+            feature: ActivityFeature.menu_link_reorder,
+            context: "MenuLinkList",
+            menuLinkId: movingItem.id,
+        });
 
         updateSortOrderMutation.invoke({
             tableID: db3.xMenuLink.tableID,
@@ -278,27 +303,29 @@ export const MenuLinkList = () => {
     };
 
     return <div>
-        {canEdit &&
-            <DB3EditRowButton
-                onSave={handleSaveNew}
-                row={newObj}
-                tableRenderClient={client}
-                label={<>{gIconMap.Add()} New menu item</>}
-            />}
+        <AppContextMarker name="MenuLinkList">
+            {canEdit &&
+                <DB3EditRowButton
+                    onSave={handleSaveNew}
+                    row={newObj}
+                    tableRenderClient={client}
+                    label={<>{gIconMap.Add()} New menu item</>}
+                />}
 
-        <div className='EventDashboard'>
-            <ReactSmoothDndContainer
-                dragHandleSelector=".dragHandle"
-                lockAxis="y"
-                onDrop={onDrop}
-            >
-                {items.map(i =>
-                    <ReactSmoothDndDraggable key={i.id}>
-                        <MenuLinkItem key={i.id} item={i} client={client} readonly={!canEdit} />
-                    </ReactSmoothDndDraggable>
-                )}
-            </ReactSmoothDndContainer>
-        </div>
+            <div className='EventDashboard'>
+                <ReactSmoothDndContainer
+                    dragHandleSelector=".dragHandle"
+                    lockAxis="y"
+                    onDrop={onDrop}
+                >
+                    {items.map(i =>
+                        <ReactSmoothDndDraggable key={i.id}>
+                            <MenuLinkItem key={i.id} item={i} client={client} readonly={!canEdit} />
+                        </ReactSmoothDndDraggable>
+                    )}
+                </ReactSmoothDndContainer>
+            </div>
+        </AppContextMarker>
     </div>;
 };
 

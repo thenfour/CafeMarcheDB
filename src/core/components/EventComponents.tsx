@@ -34,7 +34,7 @@ import { CMLink } from './CMLink';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
-import { DashboardContext, DashboardContextData, useDashboardContext } from './DashboardContext';
+import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
@@ -295,6 +295,7 @@ export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) =
     const [open, setOpen] = React.useState<boolean>(false);
     const dashboardContext = React.useContext(DashboardContext);
     const snackbar = useSnackbar();
+    const recordFeature = useFeatureRecorder();
 
     const authToEdit = dashboardContext.isAuthorized(Permission.manage_events);
     const readonly = !authToEdit || props.readonly;
@@ -333,6 +334,7 @@ export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) =
         }
         {open && !readonly && <EventCustomFieldEditDialog onClose={() => setOpen(false)} onOK={async (val) => {
             try {
+                void recordFeature({ feature: ActivityFeature.event_change_custom_field });
                 await updateMutation.invoke({
                     eventId: props.event.id,
                     values: val,
@@ -417,6 +419,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const mutationToken = API.events.updateUserEventAttendance.useToken();
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
 
     const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventVerbose_EventUserResponse | null>(() => {
@@ -473,6 +476,11 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     );
 
     const handleSaveClick = () => {
+        void recordFeature({
+            feature: ActivityFeature.attendance_response,
+            context: `EventAttendanceEditDialog`,
+            eventId: props.event.id,
+        });
         mutationToken.invoke({
             userId: props.user.id,
             eventId: props.event.id,
@@ -675,6 +683,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
     const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
     const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegment | null>(null);
+    const recordFeature = useFeatureRecorder();
 
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
 
@@ -690,6 +699,9 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
     const onAddUser = (u: db3.UserPayload | null) => {
         if (u == null) return;
+        void recordFeature({
+            feature: ActivityFeature.attendance_explicit_invite,
+        });
         token.invoke({
             eventId: event.id,
             userId: u.id,
@@ -851,27 +863,29 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
+//     const mutationToken = API.events.updateEventBasicFields.useToken();
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+//     const recordFeature = useFeatureRecorder();
 
-    const handleChange = (value: db3.PermissionPayload | null) => {
-        mutationToken.invoke({
-            eventId: event.id,
-            visiblePermissionId: !value ? null : value.id,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated event visibility" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event visibility" });
-        }).finally(() => {
-            refetch();
-        });
-    };
+//     const handleChange = (value: db3.PermissionPayload | null) => {
+//         void recordFeature({ feature: ActivityFeature.event_set_visibility });
+//         mutationToken.invoke({
+//             eventId: event.id,
+//             visiblePermissionId: !value ? null : value.id,
+//         }).then(() => {
+//             showSnackbar({ severity: "success", children: "Successfully updated event visibility" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: "error updating event visibility" });
+//         }).finally(() => {
+//             refetch();
+//         });
+//     };
 
-    return <VisibilityControl value={event.visiblePermission} onChange={handleChange} />;
-};
+//     return <VisibilityControl value={event.visiblePermission} onChange={handleChange} />;
+// };
 
 
 
@@ -893,6 +907,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
@@ -907,6 +922,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     });
 
     const handleChange = (value: db3.UserTagPayload | null) => {
+        void recordFeature({ feature: ActivityFeature.event_change_invite_tag });
         mutationToken.invoke({
             eventId: event.id,
             expectedAttendanceUserTagId: value?.id || null,

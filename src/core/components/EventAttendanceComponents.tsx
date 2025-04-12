@@ -134,6 +134,7 @@ import { Markdown } from "./markdown/Markdown";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { ActivityFeature } from "../db3/shared/activityTracking";
+import { AppContextMarker } from "./AppContext";
 
 
 const gCaptionMap = {};
@@ -207,11 +208,17 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
   const [inProgress, setInProgress] = React.useState<boolean>(false);
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
   const dashboardContext = React.useContext(DashboardContext);
+  const recordFeature = useFeatureRecorder();
 
   const selectedInstrument = dashboardContext.instrument.getById(props.eventUserResponse.response.instrumentId);
 
   const handleChange = async (value: null | db3.InstrumentPayloadMinimum) => {
     setInProgress(true);
+    void recordFeature({
+      feature: ActivityFeature.attendance_instrument,
+      eventId: props.eventUserResponse.event.id,
+      instrumentId: value?.id,
+    });
     token.invoke({
       userId: props.eventUserResponse.response.userId,
       eventId: props.eventId,
@@ -261,9 +268,15 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
   const [value, setValue] = React.useState<string>(props.initialValue);
   const token = API.events.updateUserEventAttendance.useToken();
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+  const recordFeature = useFeatureRecorder();
 
   const handleSave = async (): Promise<boolean> => {
     try {
+      void recordFeature({
+        feature: ActivityFeature.attendance_comment,
+        eventId: props.userResponse.event.id,
+        context: "EventAttendanceCommentEditorDialog",
+      });
       await token.invoke({
         userId: props.userResponse.user.id,
         eventId: props.userResponse.event.id,
@@ -287,31 +300,32 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
     return r;
   };
 
-  return <ReactiveInputDialog
-    onCancel={props.onClose}
-  >
+  return <AppContextMarker name="EventAttendanceCommentEditorDialog">
+    <ReactiveInputDialog
+      onCancel={props.onClose}
+    >
+      <DialogTitle>
+        <SettingMarkdown setting="EventAttendanceCommentDialog_TitleMarkdown" />
+      </DialogTitle>
+      <DialogContent dividers>
+        <SettingMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />
 
-    <DialogTitle>
-      <SettingMarkdown setting="EventAttendanceCommentDialog_TitleMarkdown" />
-    </DialogTitle>
-    <DialogContent dividers>
-      <SettingMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />
+        <Markdown3Editor
+          //autoFocus={true} // see #408
+          onChange={(v) => setValue(v)}
+          value={value}
+          handleSave={() => { void handleSave() }}
+          nominalHeight={200}
+        />
 
-      <Markdown3Editor
-        //autoFocus={true} // see #408
-        onChange={(v) => setValue(v)}
-        value={value}
-        handleSave={() => { void handleSave() }}
-        nominalHeight={200}
-      />
+        <DialogActionsCM>
+          <Button className={`freeButton cancelButton`} onClick={props.onClose}>Cancel</Button>
+          <Button className={`saveButton saveAndCloseButton freeButton changed`} onClick={handleSaveAndClose}>{gIconMap.CheckCircleOutline()}Save</Button>
+        </DialogActionsCM>
 
-      <DialogActionsCM>
-        <Button className={`freeButton cancelButton`} onClick={props.onClose}>Cancel</Button>
-        <Button className={`saveButton saveAndCloseButton freeButton changed`} onClick={handleSaveAndClose}>{gIconMap.CheckCircleOutline()}Save</Button>
-      </DialogActionsCM>
-
-    </DialogContent>
-  </ReactiveInputDialog>;
+      </DialogContent>
+    </ReactiveInputDialog>
+  </AppContextMarker>;
 };
 
 

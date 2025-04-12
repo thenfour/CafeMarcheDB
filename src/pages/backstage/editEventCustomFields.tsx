@@ -105,6 +105,7 @@ const CustomFieldEditor = () => {
                     dragHandleSelector=".dragHandle"
                     lockAxis="y"
                     onDrop={(args: ReactSmoothDnd.DropResult) => {
+                        if (args.addedIndex === args.removedIndex) return; // no change
                         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
                         //console.log(`moving ${args.removedIndex} / ${args.addedIndex}`);
                         const newval = moveItemInArray(value, args.removedIndex, args.addedIndex);

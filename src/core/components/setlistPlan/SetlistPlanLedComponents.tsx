@@ -215,6 +215,7 @@ export const SetlistPlannerLedDefArray = (props: SetlistPlannerLedDefArrayProps)
     const ledDefs = (props.collection === "row" ? props.doc.payload.rowLeds : props.doc.payload.columnLeds) || [];
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
+        if (args.addedIndex === args.removedIndex) return; // no change
         const proc = props.collection === "row" ? props.mutator.reorderRowLeds : props.mutator.reorderColumnLeds;
         proc(args);
     };

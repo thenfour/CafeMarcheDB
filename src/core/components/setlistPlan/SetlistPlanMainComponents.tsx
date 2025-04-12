@@ -319,6 +319,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     //const isTempDoc = !!props.tempDoc;
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
+        if (args.addedIndex === args.removedIndex) return; // no change
         props.mutator.reorderRows(args);
     };
 
@@ -789,6 +790,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
     }, [docOrTempDoc]);
 
     const onDropSegment = (args: ReactSmoothDnd.DropResult) => {
+        if (args.addedIndex === args.removedIndex) return; // no change
         props.mutator.reorderColumns(args);
     };
 

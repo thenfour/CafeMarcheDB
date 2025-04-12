@@ -993,6 +993,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+        if (args.addedIndex === args.removedIndex) return; // no change
         const newItems = moveItemInArray(rowItems, args.removedIndex, args.addedIndex).map((item, index) => ({ ...item, sortOrder: index }));
         handleRowsUpdated(newItems);
     };
@@ -1431,6 +1432,7 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
+        if (args.addedIndex === args.removedIndex) return; // no change
         setSaving(true);
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.

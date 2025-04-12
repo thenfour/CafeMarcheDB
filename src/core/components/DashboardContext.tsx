@@ -14,6 +14,7 @@ import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
 import { ActivityFeature, ClientActivityParams, UseFeatureUseClientActivityParams } from '../db3/shared/activityTracking';
 import { useAppContext } from './AppContext';
+import { IsNullOrWhitespace } from 'shared/utils';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -211,7 +212,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     </DashboardContext.Provider>
 };
 
-export const useRecordFeatureUse = ({ feature, ...associations }: UseFeatureUseClientActivityParams) => {
+export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFeatureUseClientActivityParams) => {
     const [recordActionProc] = useMutation(recordActionMutation);
     const appCtx = useAppContext();
     // react likes to make redundant renders; throttle.
@@ -220,7 +221,7 @@ export const useRecordFeatureUse = ({ feature, ...associations }: UseFeatureUseC
             ...appCtx,
             ...associations,
             uri: window.location.href,
-            context: appCtx.stack,
+            context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
             feature,
         });
     }, 250);
@@ -231,12 +232,12 @@ export const useRecordFeatureUse = ({ feature, ...associations }: UseFeatureUseC
 export const useFeatureRecorder = () => {
     const [recordActionProc] = useMutation(recordActionMutation);
     const appCtx = useAppContext();
-    return async ({ feature, ...associations }: ClientActivityParams) => {
+    return async ({ feature, context, ...associations }: ClientActivityParams) => {
         await recordActionProc({
             ...appCtx,
             ...associations,
             uri: window.location.href,
-            context: appCtx.stack,
+            context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
             feature,
         });
     }

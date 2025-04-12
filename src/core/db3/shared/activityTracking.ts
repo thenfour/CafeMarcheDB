@@ -19,8 +19,19 @@ export enum ActivityFeature {
     dashboard_menu_link_click = "dashboard_menu_link_click",
     general_link_click = "general_link_click",
     attendance_response = "attendance_response",
+    attendance_instrument = "attendance_instrument",
+    attendance_comment = "attendance_comment",
+    attendance_explicit_invite = "attendance_explicit_invite",
+    event_change_invite_tag = "event_change_invite_tag",
+    event_change_custom_field = "event_change_custom_field",
+    menu_link_update = "menu_link_update",
+    menu_link_create = "menu_link_create",
+    menu_link_reorder = "menu_link_reorder",
+    menu_link_delete = "menu_link_delete",
+    custom_link_create = "custom_link_create",
+    custom_link_update = "custom_link_update",
+    custom_link_delete = "custom_link_delete",
 
-    // * [ ] change customlink
     // * [ ] create / update event / segment
     // * [ ] create / update setlist
     // * [ ] login
@@ -79,50 +90,9 @@ export type ActivityFeatureAssociations = {
     instrumentId?: number;
 };
 
-// export function CoalesceActivityFeatureAssociations<T, U>(
-//     a: T,
-//     b: U,
-// ): T & U {
-//     return { ...a, ...b };
-// };
-
-// activity tracking for feature usage
 export type ClientActivityParams = ActivityFeatureAssociations & {
     feature: ActivityFeature;
+    context?: string | undefined | null; // sometimes you have a feature recording in a control that has an app context marker; that would miss the context; this allows callers to sorta fake it.
 };
-//     // eventId?: number;
-//     // fileId?: number;
-//     // songId?: number;
-//     // wikiPageId?: number;
-//     // queryText?: string;
-//     // attendanceId?: number;
-//     // eventSegmentId?: number;
 
-//     // customLinkId?: number;
-//     // eventSongListId?: number;
-//     // frontpageGalleryItemId?: number;
-//     // menuLinkId?: number;
-//     // setlistPlanId?: number;
-//     // songCreditTypeId?: number;
-//     // instrumentId?: number;
-
-//     // context is derived from the current stack of AppContextMarkers.
-//     context?: never;
-// };
-
-
-// activity tracking for feature usage
 export type UseFeatureUseClientActivityParams = ClientActivityParams;
-// {
-//     feature: ActivityFeature;
-
-//     eventId?: number;
-//     fileId?: number;
-//     songId?: number;
-//     wikiPageId?: number;
-//     queryText?: string;
-
-//     // context is derived from the current stack of AppContextMarkers.
-//     context?: never;
-// };
-

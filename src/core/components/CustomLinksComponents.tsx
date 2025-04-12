@@ -2,19 +2,20 @@ import { Tooltip } from "@mui/material";
 import React from "react";
 import { gLightSwatchColors, gSwatchColors } from "shared/color";
 import { Permission } from 'shared/permissions';
-import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { getAbsoluteUrl } from '../db3/clientAPILL';
+import { gIconMap } from "../db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
+import { ActivityFeature } from "../db3/shared/activityTracking";
 import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
+import { AppContextMarker } from "./AppContext";
+import { CMChip, CMChipContainer } from "./CMChip";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
-import { DashboardContext } from "./DashboardContext";
+import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { Markdown } from "./markdown/Markdown";
-import { gIconMap } from "../db3/components/IconMap";
-import { CMChip, CMChipContainer } from "./CMChip";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {
@@ -70,9 +71,14 @@ interface CustomLinkItemProps {
 
 export const CustomLinkItem = (props: CustomLinkItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
+    const recordFeature = useFeatureRecorder();
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.custom_link_update,
+            customLinkId: props.item.id,
+            context: `CustomLinkItem`,
+        });
         props.client.doUpdateMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
             props.client.refetch();
@@ -83,17 +89,12 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
         });
     };
 
-    // const handleDescriptionChange = async (value: string | null) => {
-    //     const obj: db3.CustomLinkPayload = { ...props.item, description: value || "" };
-    //     await props.client.doUpdateMutation(obj);
-    // };
-
-    // const handleIntermediateMessageChange = async (value: string | null) => {
-    //     const obj: db3.CustomLinkPayload = { ...props.item, intermediateMessage: value || "" };
-    //     await props.client.doUpdateMutation(obj);
-    // };
-
     const handleDelete = (api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.custom_link_delete,
+            customLinkId: props.item.id,
+            context: `CustomLinkItem`,
+        });
         props.client.doDeleteMutation(props.item.id, 'softWhenPossible').then(() => {
             showSnackbar({ children: "delete successful", severity: 'success' });
             api.closeDialog();
@@ -179,9 +180,8 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
 
 export const CustomLinkList = () => {
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const [user] = useCurrentUser()!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const getItemInfo = (option: { value: string, label: string }): DB3Client.ConstEnumStringFieldClientItemInfo => {
         if (option.value === gNullValue) return {};
@@ -193,7 +193,7 @@ export const CustomLinkList = () => {
 
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention,
+        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xCustomLink,
             columns: [
@@ -211,9 +211,13 @@ export const CustomLinkList = () => {
 
     const canEdit = dashboardContext.isAuthorized(Permission.manage_custom_links);
 
-    const newObj = db3.xCustomLink.createNew(clientIntention);
+    const newObj = db3.xCustomLink.createNew(dashboardContext.userClientIntention);
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.custom_link_create,
+            context: `CustomLinkList`,
+        });
         client.doInsertMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
             client.refetch();
@@ -228,17 +232,19 @@ export const CustomLinkList = () => {
     const items = client.items as db3.CustomLinkPayload[];
 
     return <div>
-        {canEdit &&
-            <DB3EditRowButton
-                onSave={handleSaveNew}
-                row={newObj}
-                tableRenderClient={client}
-                label={<>{gIconMap.Add()} New custom link</>}
-            />}
+        <AppContextMarker name="CustomLinkList">
+            {canEdit &&
+                <DB3EditRowButton
+                    onSave={handleSaveNew}
+                    row={newObj}
+                    tableRenderClient={client}
+                    label={<>{gIconMap.Add()} New custom link</>}
+                />}
 
-        <div className='EventDashboard'>
-            {items.map(i => <CustomLinkItem key={i.id} item={i} client={client} readonly={!canEdit} />)}
-        </div>
+            <div className='EventDashboard'>
+                {items.map(i => <CustomLinkItem key={i.id} item={i} client={client} readonly={!canEdit} />)}
+            </div>
+        </AppContextMarker>
     </div>;
 };
 

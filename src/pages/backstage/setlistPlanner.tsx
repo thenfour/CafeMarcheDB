@@ -842,6 +842,7 @@ const SetlistPlannerPageContent = () => {
                     // removedIndex is the previous index; the original item to be moved
                     // addedIndex is the new index where it should be moved to.
                     if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+                    if (args.addedIndex === args.removedIndex) return; // no change
                     const newSongs = moveItemInArray(doc.payload.rows, args.removedIndex, args.addedIndex);
                     setDocWrapper({
                         ...doc,
@@ -855,6 +856,7 @@ const SetlistPlannerPageContent = () => {
             reorderColumns: (args: ReactSmoothDnd.DropResult) => {
                 if (doc) {
                     if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+                    if (args.addedIndex === args.removedIndex) return; // no change
                     const newSegments = moveItemInArray(doc.payload.columns, args.removedIndex, args.addedIndex);
                     setDocWrapper({
                         ...doc,
@@ -868,6 +870,7 @@ const SetlistPlannerPageContent = () => {
             reorderColumnLeds: (args: ReactSmoothDnd.DropResult) => {
                 if (doc) {
                     if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+                    if (args.addedIndex === args.removedIndex) return; // no change
                     const newLeds = moveItemInArray(doc.payload.columnLeds || [], args.removedIndex, args.addedIndex);
                     setDocWrapper({
                         ...doc,
@@ -882,6 +885,7 @@ const SetlistPlannerPageContent = () => {
             reorderRowLeds: (args: ReactSmoothDnd.DropResult) => {
                 if (doc) {
                     if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+                    if (args.addedIndex === args.removedIndex) return; // no change
                     const newLeds = moveItemInArray(doc.payload.rowLeds || [], args.removedIndex, args.addedIndex);
                     setDocWrapper({
                         ...doc,
