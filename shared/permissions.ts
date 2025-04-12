@@ -88,7 +88,7 @@ export enum Permission {
     // ******************** menu customization
     customize_menu = "customize_menu",
 
-    // ******************** menu customization
+    // ********************
     setlist_planner_access = "setlist_planner_access",
 };
 

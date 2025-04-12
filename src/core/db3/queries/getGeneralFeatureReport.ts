@@ -6,7 +6,6 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { ActivityFeature } from "../shared/activityTracking";
 import { ReportAggregateBy } from "../shared/apiTypes";
-import { simpleRolesIsAuthorized } from "@blitzjs/auth";
 
 const ZTGeneralFeatureReportArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
@@ -19,7 +18,6 @@ const ZTGeneralFeatureReportArgs = z.object({
 
     filteredSongId: z.number().optional(),
     filteredEventId: z.number().optional(),
-    //filteredUserId: z.number().optional(),
     filteredWikiPageId: z.number().optional(),
     contextBeginsWith: z.string().optional(),
 });
@@ -41,7 +39,6 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         aggregateBy,
         filteredSongId,
         filteredEventId,
-        //filteredUserId,
         filteredWikiPageId,
         contextBeginsWith,
     } = params;

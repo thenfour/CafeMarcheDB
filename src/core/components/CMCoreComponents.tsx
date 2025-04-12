@@ -192,7 +192,7 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 
 
 export interface InstrumentChipProps {
-    value: db3.InstrumentPayloadMinimum;
+    value: number | db3.InstrumentPayloadMinimum;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -203,16 +203,20 @@ export interface InstrumentChipProps {
 
 export const InstrumentChip = (props: InstrumentChipProps) => {
     const dashboardContext = React.useContext(DashboardContext);
+
+    let instrument = typeof (props.value) === "number" ? dashboardContext.instrument.getById(props.value) : props.value;
+    const functionalGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument?.functionalGroupId || -1);
+
     return <CMChip
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
-        color={dashboardContext.instrumentFunctionalGroup.getById(props.value.functionalGroupId)?.color}
+        color={functionalGroup?.color}
         shape={props.shape}
         border={props.border}
     >
-        {props.value.name}
+        {instrument?.name || "<null>"}
     </CMChip>
 }
 

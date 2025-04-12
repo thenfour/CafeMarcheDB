@@ -70,6 +70,7 @@ model Permission {
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
   visibilityForWikiPages             WikiPage[]
   visibilityForMenuLinks             MenuLink[]
+  visibilityForSetlistPlans          SetlistPlan[]
 
   @@index([name])
   @@index([significance])
@@ -99,14 +100,33 @@ model Action {
   queryText String? // if applicable
   context   String? // free string trying to describe client context triggering the action.
 
-  fileId     Int?
-  file       File?     @relation(fields: [fileId], references: [id], onDelete: Cascade) // files are soft-delete; deleting a file will delete the action
-  eventId    Int?
-  event      Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete; deleting an event will delete the action
-  songId     Int?
-  song       Song?     @relation(fields: [songId], references: [id], onDelete: Cascade) // songs are soft-delete; deleting a song will delete the action
-  wikiPageId Int?
-  wikiPage   WikiPage? @relation(fields: [wikiPageId], references: [id], onDelete: Cascade) // wiki pages are soft-delete; deleting a wiki page will delete the action
+  fileId         Int?
+  file           File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  eventId        Int?
+  event          Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  songId         Int?
+  song           Song?            @relation(fields: [songId], references: [id], onDelete: SetNull)
+  wikiPageId     Int?
+  wikiPage       WikiPage?        @relation(fields: [wikiPageId], references: [id], onDelete: SetNull)
+  eventSegmentId Int?
+  eventSegment   EventSegment?    @relation(fields: [eventSegmentId], references: [id], onDelete: SetNull)
+  attendanceId   Int?
+  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
+
+  customLinkId           Int?
+  customLink             CustomLink?           @relation(fields: [customLinkId], references: [id], onDelete: SetNull)
+  eventSongListId        Int?
+  eventSongList          EventSongList?        @relation(fields: [eventSongListId], references: [id], onDelete: SetNull)
+  frontpageGalleryItemId Int?
+  frontpageGalleryItem   FrontpageGalleryItem? @relation(fields: [frontpageGalleryItemId], references: [id], onDelete: SetNull)
+  menuLinkId             Int?
+  menuLink               MenuLink?             @relation(fields: [menuLinkId], references: [id], onDelete: SetNull)
+  setlistPlanId          Int?
+  setlistPlan            SetlistPlan?          @relation(fields: [setlistPlanId], references: [id], onDelete: SetNull)
+  songCreditTypeId       Int?
+  songCreditType         SongCreditType?       @relation(fields: [songCreditTypeId], references: [id], onDelete: SetNull)
+  instrumentId           Int?
+  instrument             Instrument?           @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
 
   @@index([createdAt, userId, context])
 }
@@ -305,6 +325,7 @@ model SongCreditType {
   significance String? // SongCreditTypeSignificance
 
   songCredits SongCredit[]
+  actions     Action[]
 
   @@index([text])
   @@index([significance])
@@ -394,6 +415,8 @@ model Instrument {
   fileTags           FileInstrumentTag[]
   users              UserInstrument[]
   eventUserResponses EventUserResponse[]
+
+  actions Action[]
 
   @@index([name])
   @@index([sortOrder])
@@ -615,6 +638,7 @@ model EventSegment {
   isAllDay       Boolean   @default(true)
 
   responses EventSegmentUserResponse[]
+  actions   Action[]
 
   @@index([name])
   @@index([statusId])
@@ -703,6 +727,8 @@ model EventSongList {
   User   User? @relation(fields: [userId], references: [id])
   userId Int?
 
+  actions Action[]
+
   @@index([sortOrder])
   @@index([name])
   @@index([eventId])
@@ -761,6 +787,7 @@ model EventAttendance {
   isDeleted   Boolean @default(false)
 
   responses EventSegmentUserResponse[]
+  actions   Action[]
 
   @@index([sortOrder])
   @@index([strength])
@@ -788,12 +815,12 @@ model EventUserResponse {
 }
 
 model EventSegmentUserResponse {
-  id             Int @id @default(autoincrement())
-  userId         Int
-  eventSegmentId Int
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  eventSegment EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Cascade)
+  eventSegmentId Int
+  eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Cascade)
 
   attendanceId Int?
   attendance   EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
@@ -946,6 +973,8 @@ model FrontpageGalleryItem {
   visiblePermissionId Int?
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
+  actions Action[]
+
   @@index([isDeleted])
   @@index([sortOrder])
   @@index([fileId])
@@ -966,7 +995,8 @@ model CustomLink {
   createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
-  visits CustomLinkVisit[]
+  visits  CustomLinkVisit[]
+  actions Action[]
 
   @@unique([slug])
   @@index([name])
@@ -1074,6 +1104,8 @@ model MenuLink {
   createdByUserId Int?
   createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
+
+  actions Action[]
 
   @@index([caption])
   @@index([realm])
@@ -1285,6 +1317,12 @@ model SetlistPlan {
   createdAt       DateTime @default(now())
 
   payloadJson String @db.MediumText
+
+  isDeleted           Boolean     @default(false)
+  visiblePermissionId Int?
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+
+  actions Action[]
 
   @@index([name])
 }

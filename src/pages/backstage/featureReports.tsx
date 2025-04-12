@@ -6,16 +6,18 @@ import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { toSorted } from "shared/arrayUtils";
-import { gLightSwatchColors } from "shared/color";
+import { gAppColors, gLightSwatchColors } from "shared/color";
 import { parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
 import { getHashedColor, IsNullOrWhitespace, smartTruncate } from "shared/utils";
-import { EventChip, FileChip, PermissionBoundary, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
+import { CMChip } from "src/core/components/CMChip";
+import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, PermissionBoundary, SongChip, WikiPageChip } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { CMTextInputBase } from "src/core/components/CMTextField";
+import { useDashboardContext } from "src/core/components/DashboardContext";
 import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { CMTab, CMTabPanel, CMTabPanelChild } from "src/core/components/TabPanel";
@@ -47,6 +49,8 @@ const getColorForFeature = (feature: ActivityFeature): string | null => {
         [ActivityFeature.setlist_song_link_click]: gLightSwatchColors.light_green,
         [ActivityFeature.dashboard_menu_link_click]: gLightSwatchColors.light_green,
         [ActivityFeature.general_link_click]: gLightSwatchColors.light_green,
+
+        [ActivityFeature.attendance_response]: gAppColors.null,
     };
 
     return featureColorMap[feature] || null;
@@ -146,7 +150,10 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
     const feature = value.feature as ActivityFeature;
 
     return <tr className="GeneralFeatureReportDetailItemRow">
-        <td style={{ fontFamily: "var(--ff-mono)" }}>#{index}</td>
+        <td style={{ fontFamily: "var(--ff-mono)" }}>
+            <AdminInspectObject src={value} />
+            <span>#{index}</span>
+        </td>
         <td>
             <MuiTooltip title={<AgeRelativeToNow value={value.createdAt} />} disableInteractive>
                 <span>{value.createdAt.toLocaleString()}</span>
@@ -165,6 +172,18 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
             {value.event && <EventChip value={value.event} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />}
             {value.file && <FileChip value={value.file} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />}
             {value.wikiPage && <WikiPageChip slug={value.wikiPage.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />}
+
+            {/* todo: real chips */}
+            {value.eventSegmentId && <CMChip>Segment #{value.eventSegmentId}</CMChip>}
+            {value.customLinkId && <CMChip>Custom link #{value.customLinkId}</CMChip>}
+            {value.eventSongListId && <CMChip>Setlist #{value.eventSongListId}</CMChip>}
+            {value.frontpageGalleryItemId && <CMChip>Gallery item #{value.frontpageGalleryItemId}</CMChip>}
+            {value.menuLinkId && <CMChip>Menu link #{value.menuLinkId}</CMChip>}
+            {value.setlistPlanId && <CMChip>Setlist plan #{value.setlistPlanId}</CMChip>}
+            {value.songCreditTypeId && <CMChip>Song credit #{value.songCreditTypeId}</CMChip>}
+
+            {value.attendanceId && <AttendanceChip value={value.attendanceId} />}
+            {value.instrumentId && <InstrumentChip value={value.instrumentId} />}
         </td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
     </tr>;
@@ -199,8 +218,8 @@ const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTable
     </table>;
 }
 
-
-type DetailTabId = "general" | "features" | "users" | "songs" | "events" | "wikiPages" | "files" | "contexts";
+type DetailTabId = "general" | "features" | "users" | "songs" | "events" | "wikiPages" | "files" | "contexts" |
+    "attendance" | "customLink" | "eventSegment" | "setlist" | "frontpageGalleryItem" | "menuLink" | "setlistPlan" | "songCreditType" | "instrument";
 
 type ContextObjectDistinctItem = {
     key: string,
@@ -301,7 +320,7 @@ interface GeneralFeatureDetailAreaProps {
 };
 
 const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
-
+    const dashboardContext = useDashboardContext();
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
@@ -318,119 +337,179 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
         refetchTrigger && refetch();
     }, [refetchTrigger]);
 
+
     const tabs: ContextObjectTabData[] = React.useMemo(() => {
-        const ret: ContextObjectTabData[] = [];
+        interface TabConfig {
+            id: DetailTabId;
+            label: string;
+            // filters out the items you want to include in this tab
+            filterFn: (item: GeneralActivityReportDetailPayload) => boolean;
+            // returns the unique key or grouping ID for each item
+            keyFn: (item: GeneralActivityReportDetailPayload) => string;
+            // returns the rendered chip/component
+            renderFn: (item: GeneralActivityReportDetailPayload) => React.ReactNode;
+        }
 
-        const byFeature = getContextObjectTabData(
-            detail?.data,
-            (item) => item.feature,
-            (item) => item.feature,
-        );
-        if (byFeature.length) {
-            ret.push({
+        const tabConfigs: TabConfig[] = [
+            {
                 id: "features",
-                tabHeader: `Features (${byFeature.length})`,
-                items: byFeature,
-                onIsolateFeature,
-                onExcludeFeature,
-                onFilterContext,
-            });
-        }
-
-        const byUser = getContextObjectTabData(
-            detail?.data.filter(x => !!x.userHash),
-            (item) => item.userHash!,
-            (item) => <AnonymizedUserChip value={item.userHash!} size={50} />,
-        );
-        if (byUser.length) {
-            ret.push({
+                label: "Features",
+                filterFn: (item) => !!item.feature,
+                keyFn: (item) => item.feature,
+                renderFn: (item) => item.feature,
+            },
+            {
                 id: "users",
-                tabHeader: `Users (${byUser.length})`,
-                items: byUser,
-                onIsolateFeature,
-                onExcludeFeature,
-                onFilterContext,
-            });
-        }
-        const bySong = getContextObjectTabData(
-            detail?.data.filter(x => !!x.song),
-            (item) => item.song!.id.toString(),
-            (item) => <SongChip value={item.song!} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />,
-        );
-        if (bySong.length) {
-            ret.push({
+                label: "Users",
+                filterFn: (item) => !!item.userHash,
+                keyFn: (item) => item.userHash!,
+                renderFn: (item) => <AnonymizedUserChip value={item.userHash!} size={50} />,
+            },
+            {
                 id: "songs",
-                tabHeader: `Songs (${bySong.length})`,
-                items: bySong,
-                onIsolateFeature,
-                onExcludeFeature,
-                onFilterContext,
-            });
-        }
-        const byEvent = getContextObjectTabData(
-            detail?.data.filter(x => !!x.event),
-            (item) => item.event!.id.toString(),
-            (item) => <EventChip value={item.event!} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />,
-        );
-        if (byEvent.length) {
-            ret.push({
+                label: "Songs",
+                filterFn: (item) => !!item.song,
+                keyFn: (item) => item.song!.id.toString(),
+                renderFn: (item) => (
+                    <SongChip
+                        value={item.song!}
+                        startAdornment={gIconMap.MusicNote()}
+                        useHashedColor
+                    />
+                ),
+            },
+            {
                 id: "events",
-                tabHeader: `Events (${byEvent.length})`,
-                items: byEvent,
-                onIsolateFeature,
-                onExcludeFeature,
-                onFilterContext,
-            });
-        }
-        const byWikiPage = getContextObjectTabData(
-            detail?.data.filter(x => !!x.wikiPage),
-            (item) => item.wikiPage!.id.toString(),
-            (item) => <WikiPageChip slug={item.wikiPage!.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />,
-        );
-        if (byWikiPage.length) {
-            ret.push({
+                label: "Events",
+                filterFn: (item) => !!item.event,
+                keyFn: (item) => item.event!.id.toString(),
+                renderFn: (item) => (
+                    <EventChip
+                        value={item.event!}
+                        startAdornment={gIconMap.CalendarMonth()}
+                        useHashedColor
+                    />
+                ),
+            },
+            {
                 id: "wikiPages",
-                tabHeader: `Wiki pages (${byWikiPage.length})`,
-                items: byWikiPage,
-                onIsolateFeature,
-                onExcludeFeature,
-                onFilterContext,
-            });
-        }
-        const byFile = getContextObjectTabData(
-            detail?.data.filter(x => !!x.file),
-            (item) => item.file!.id.toString(),
-            (item) => <FileChip value={item.file!} startAdornment={gIconMap.AttachFile()} useHashedColor={true} />,
-        );
-        if (byFile.length) {
-            ret.push({
+                label: "Wiki pages",
+                filterFn: (item) => !!item.wikiPage,
+                keyFn: (item) => item.wikiPage!.id.toString(),
+                renderFn: (item) => (
+                    <WikiPageChip
+                        slug={item.wikiPage!.slug}
+                        startAdornment={gIconMap.Article()}
+                        useHashedColor
+                    />
+                ),
+            },
+            {
                 id: "files",
-                tabHeader: `Files (${byFile.length})`,
-                items: byFile,
-                onIsolateFeature,
-                onExcludeFeature,
-                onFilterContext,
-            });
-        }
-
-        const byContext = getContextObjectTabData(
-            detail?.data.filter(x => !!x.context),
-            (item) => item.context!,
-            (item) => <ContextLabel value={item.context!} />,
-        );
-        if (byContext.length) {
-            ret.push({
+                label: "Files",
+                filterFn: (item) => !!item.file,
+                keyFn: (item) => item.file!.id.toString(),
+                renderFn: (item) => (
+                    <FileChip
+                        value={item.file!}
+                        startAdornment={gIconMap.AttachFile()}
+                        useHashedColor
+                    />
+                ),
+            },
+            {
                 id: "contexts",
-                tabHeader: `Contexts (${byContext.length})`,
-                items: byContext,
-                onIsolateFeature,
-                onExcludeFeature,
-                onFilterContext,
-            });
-        }
+                label: "Contexts",
+                filterFn: (item) => !!item.context,
+                keyFn: (item) => item.context || "",
+                renderFn: (item) => <ContextLabel value={item.context!} />,
+            },
+            {
+                id: "attendance",
+                label: "Attendance",
+                filterFn: (item) => !!item.attendanceId,
+                keyFn: (item) => item.attendanceId!.toString(),
+                renderFn: (item) => <AttendanceChip value={item.attendanceId!} />,
+            },
+            {
+                id: "customLink",
+                label: "Custom Links",
+                filterFn: (item) => !!item.customLinkId,
+                keyFn: (item) => item.customLinkId!.toString(),
+                renderFn: (item) => <CMChip>Custom Link #{item.customLinkId}</CMChip>,
+            },
+            {
+                id: "eventSegment",
+                label: "Event Segments",
+                filterFn: (item) => !!item.eventSegmentId,
+                keyFn: (item) => item.eventSegmentId!.toString(),
+                renderFn: (item) => <CMChip>Segment #{item.eventSegmentId}</CMChip>,
+            },
+            {
+                id: "setlist",
+                label: "Setlists",
+                filterFn: (item) => !!item.eventSongListId,
+                keyFn: (item) => item.eventSongListId!.toString(),
+                renderFn: (item) => <CMChip>Setlist #{item.eventSongListId}</CMChip>,
+            },
+            {
+                id: "frontpageGalleryItem",
+                label: "Frontpage Gallery Items",
+                filterFn: (item) => !!item.frontpageGalleryItemId,
+                keyFn: (item) => item.frontpageGalleryItemId!.toString(),
+                renderFn: (item) => <CMChip>Gallery Item #{item.frontpageGalleryItemId}</CMChip>,
+            },
+            {
+                id: "menuLink",
+                label: "Menu Links",
+                filterFn: (item) => !!item.menuLinkId,
+                keyFn: (item) => item.menuLinkId!.toString(),
+                renderFn: (item) => <CMChip>Menu Link #{item.menuLinkId}</CMChip>,
+            },
+            {
+                id: "setlistPlan",
+                label: "Setlist Plans",
+                filterFn: (item) => !!item.setlistPlanId,
+                keyFn: (item) => item.setlistPlanId!.toString(),
+                renderFn: (item) => <CMChip>Setlist Plan #{item.setlistPlanId}</CMChip>,
+            },
+            {
+                id: "songCreditType",
+                label: "Song Credit Types",
+                filterFn: (item) => !!item.songCreditTypeId,
+                keyFn: (item) => item.songCreditTypeId!.toString(),
+                renderFn: (item) => <CMChip>Song Credit Type #{item.songCreditTypeId}</CMChip>,
+            },
+            {
+                id: "instrument",
+                label: "Instruments",
+                filterFn: (item) => !!item.instrumentId,
+                keyFn: (item) => item.instrumentId!.toString(),
+                renderFn: (item) => <InstrumentChip value={item.instrumentId!} />,
+            }
+        ];
 
-        return ret;
+        const data = detail?.data ?? [];
 
+        // 2) Iterate through each config to build the final tabs
+        return tabConfigs.reduce<ContextObjectTabData[]>((acc, cfg) => {
+            // Filter data for the current tab type
+            const filtered = data.filter(cfg.filterFn);
+            // Then gather context objects using your existing function
+            const items = getContextObjectTabData(filtered, cfg.keyFn, cfg.renderFn);
+
+            if (items.length > 0) {
+                acc.push({
+                    id: cfg.id,
+                    tabHeader: `${cfg.label} (${items.length})`,
+                    items,
+                    onIsolateFeature,
+                    onExcludeFeature,
+                    onFilterContext,
+                });
+            }
+            return acc;
+        }, []);
     }, [detail]);
 
     const renderedTabs: CMTabPanelChild[] = [
@@ -565,7 +644,13 @@ const GeneralFeatureStatsReport = () => {
             <div style={{ display: "flex", alignItems: "center", marginLeft: "6px" }}>
                 <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
                 <PermissionBoundary permission={Permission.sysadmin}>
-                    <FormControlLabel control={<input type="checkbox" checked={excludeSysadmins} onChange={(e) => setExcludeSysadmins(e.target.checked)} />} label="Exclude sysadmins" />
+                    <FormControlLabel control={<input type="checkbox" checked={excludeSysadmins} onChange={(e) => {
+                        setExcludeSysadmins(e.target.checked);
+                        if (!e.target.checked) {
+                            setExcludeYourself(false);
+                        }
+
+                    }} />} label="Exclude sysadmins" />
                 </PermissionBoundary>
             </div>
             <NameValuePair name="Feature" value={

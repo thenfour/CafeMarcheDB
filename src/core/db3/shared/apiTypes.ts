@@ -1147,6 +1147,15 @@ export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDef
         file: true,
         song: true,
         wikiPage: true,
+        //attendance: true,
+        customLink: true,
+        eventSegment: true,
+        eventSongList: true,
+        frontpageGalleryItem: true,
+        //instrument: true,
+        menuLink: true,
+        setlistPlan: true,
+        //songCreditType: true,
     }
 });
 

@@ -211,20 +211,17 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     </DashboardContext.Provider>
 };
 
-export const useRecordFeatureUse = (args: UseFeatureUseClientActivityParams) => {
+export const useRecordFeatureUse = ({ feature, ...associations }: UseFeatureUseClientActivityParams) => {
     const [recordActionProc] = useMutation(recordActionMutation);
     const appCtx = useAppContext();
     // react likes to make redundant renders; throttle.
     const throttledRecordAction = useThrottle(() => {
         void recordActionProc({
+            ...appCtx,
+            ...associations,
             uri: window.location.href,
             context: appCtx.stack,
-            eventId: args.eventId || appCtx.eventId,
-            songId: args.songId || appCtx.songId,
-            wikiPageId: args.wikiPageId || appCtx.wikiPageId,
-            fileId: args.fileId || appCtx.fileId,
-            queryText: args.queryText || appCtx.queryText,
-            ...args,
+            feature,
         });
     }, 250);
 
@@ -234,18 +231,13 @@ export const useRecordFeatureUse = (args: UseFeatureUseClientActivityParams) => 
 export const useFeatureRecorder = () => {
     const [recordActionProc] = useMutation(recordActionMutation);
     const appCtx = useAppContext();
-    return async (args: ClientActivityParams) => {
+    return async ({ feature, ...associations }: ClientActivityParams) => {
         await recordActionProc({
+            ...appCtx,
+            ...associations,
             uri: window.location.href,
             context: appCtx.stack,
-
-            eventId: args.eventId || appCtx.eventId,
-            songId: args.songId || appCtx.songId,
-            wikiPageId: args.wikiPageId || appCtx.wikiPageId,
-            fileId: args.fileId || appCtx.fileId,
-            queryText: args.queryText || appCtx.queryText,
-
-            ...args,
+            feature,
         });
     }
 }

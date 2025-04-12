@@ -128,11 +128,12 @@ import { Button, CircularProgress, DialogContent, DialogTitle } from "@mui/mater
 import { Prisma } from "db";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
-import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/Markdown";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 
 
 const gCaptionMap = {};
@@ -394,6 +395,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
   const [inProgress, setInProgress] = React.useState<boolean>(false);
 
   const token = API.events.updateUserEventAttendance.useToken();
+  const recordFeature = useFeatureRecorder();
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
   const selectedResponse = props.segmentUserResponse.response;
@@ -411,6 +413,12 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
       attendanceId: (value === null ? null : value.id),
     }
     setInProgress(true);
+    void recordFeature({
+      feature: ActivityFeature.attendance_response,
+      eventId: props.eventUserResponse.event.id,
+      attendanceId: value?.id,
+      eventSegmentId: props.segmentUserResponse.segment.id,
+    });
     token.invoke({
       userId: props.eventUserResponse.user.id,
       eventId: props.eventUserResponse.event.id,
