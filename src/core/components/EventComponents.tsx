@@ -14,6 +14,7 @@ import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
+import { slugify } from 'shared/rootroot';
 import { Timing } from 'shared/time';
 import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
@@ -47,12 +48,11 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { CMTab, CMTabPanel } from './TabPanel';
 import { AddUserButton } from './UserComponents';
-import { VisibilityControl, VisibilityValue } from './VisibilityControl';
+import { VisibilityValue } from './VisibilityControl';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Markdown } from './markdown/Markdown';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
-import { slugify } from 'shared/rootroot';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -859,34 +859,6 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
         renderCreateButton={(onClick) => <Button onClick={onClick} startIcon={gIconMap.Edit()}>Add information</Button>}
     />;
 };
-
-
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
-//     const mutationToken = API.events.updateEventBasicFields.useToken();
-//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-//     const recordFeature = useFeatureRecorder();
-
-//     const handleChange = (value: db3.PermissionPayload | null) => {
-//         void recordFeature({ feature: ActivityFeature.event_set_visibility });
-//         mutationToken.invoke({
-//             eventId: event.id,
-//             visiblePermissionId: !value ? null : value.id,
-//         }).then(() => {
-//             showSnackbar({ severity: "success", children: "Successfully updated event visibility" });
-//         }).catch(e => {
-//             console.log(e);
-//             showSnackbar({ severity: "error", children: "error updating event visibility" });
-//         }).finally(() => {
-//             refetch();
-//         });
-//     };
-
-//     return <VisibilityControl value={event.visiblePermission} onChange={handleChange} />;
-// };
-
 
 
 

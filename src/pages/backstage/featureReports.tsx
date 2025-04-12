@@ -6,7 +6,7 @@ import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { toSorted } from "shared/arrayUtils";
-import { gAppColors, gLightSwatchColors } from "shared/color";
+import { gLightSwatchColors } from "shared/color";
 import { parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
