@@ -1,4 +1,3 @@
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
 import { Typography } from "@mui/material";
 import React from "react";

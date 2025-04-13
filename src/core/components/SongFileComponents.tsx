@@ -24,7 +24,7 @@ import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { CMDBUploadFile } from './CMDBUploadFile';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
-import { DashboardContext, useFeatureRecorder, useRecordFeatureUse } from './DashboardContext';
+import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown } from "./markdown/Markdown";

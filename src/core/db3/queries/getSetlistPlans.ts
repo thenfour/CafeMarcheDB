@@ -3,9 +3,9 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
-import { DeserializeSetlistPlan } from "../shared/setlistPlanTypes";
-import { GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression, GetUserVisibilityWhereExpression2 } from "../shared/db3Helpers";
 import { getCurrentUserCore } from "../server/db3mutationCore";
+import { GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "../shared/db3Helpers";
+import { DeserializeSetlistPlan } from "../shared/setlistPlanTypes";
 
 const ZArgs = z.object({
     userId: z.number(),

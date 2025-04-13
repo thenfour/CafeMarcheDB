@@ -2,7 +2,6 @@
 //import { Form, FORM_ERROR } from "src/core/components/Form"
 import { useMutation } from "@blitzjs/rpc";
 import React from "react";
-import { sleep } from "shared/utils";
 import signup from "src/auth/mutations/signup";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { useFeatureRecorder } from "src/core/components/DashboardContext";
