@@ -78,6 +78,11 @@ export enum ActivityFeature {
     setlist_plan_create = "setlist_plan_create",
     setlist_plan_save = "setlist_plan_save",
     setlist_plan_delete = "setlist_plan_delete",
+
+    setlist_create = "setlist_create",
+    setlist_edit = "setlist_edit",
+    setlist_delete = "setlist_delete",
+    setlist_reorder = "setlist_reorder",
 };
 
 export const ZTRecordActionArgs = z.object({

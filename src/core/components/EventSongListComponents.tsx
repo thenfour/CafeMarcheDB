@@ -31,7 +31,7 @@ import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
 import { useMessageBox } from './context/MessageBoxContext';
-import { DashboardContext } from './DashboardContext';
+import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { Markdown } from "./markdown/Markdown";
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
@@ -1198,6 +1198,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
 
     const handleDeleteClick = async () => {
         if (!props.onDelete) return;
+
         const result = await messageBox.showMessage({
             title: "Delete setlist?",
             message: "Are you sure you want to delete this setlist?",
@@ -1289,10 +1290,15 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
         model: props.value,
     });
 
+    const recordFeature = useFeatureRecorder();
     const deleteMutation = API.events.deleteEventSongListx.useToken();
     const updateMutation = API.events.updateEventSongListx.useToken();
 
     const handleSave = (newValue: db3.EventSongListPayload) => {
+        void recordFeature({
+            feature: ActivityFeature.setlist_edit,
+            eventSongListId: newValue.id,
+        });
         updateMutation.invoke({
             id: newValue.id,
             //visiblePermissionId: newValue.visiblePermissionId,
@@ -1328,6 +1334,10 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     };
 
     const handleDelete = () => {
+        void recordFeature({
+            feature: ActivityFeature.setlist_delete,
+            eventSongListId: props.value.id,
+        });
         deleteMutation.invoke({
             id: props.value.id,
         }).then(() => {
@@ -1367,7 +1377,7 @@ interface EventSongListNewEditorProps {
 };
 
 export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
-
+    const recordFeature = useFeatureRecorder();
     const insertMutation = API.events.insertEventSongListx.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [currentUser] = useCurrentUser();
@@ -1384,6 +1394,10 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     }
 
     const handleSave = (value: db3.EventSongListPayload) => {
+        void recordFeature({
+            feature: ActivityFeature.setlist_create,
+            eventId: props.event.id,
+        });
         insertMutation.invoke({
             eventId: props.event.id,
             description: value.description,
@@ -1427,6 +1441,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventSongListList = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
     const [saving, setSaving] = React.useState<boolean>(false);
+    const recordFeature = useFeatureRecorder();
 
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -1440,6 +1455,11 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
         const movingItemId = event.songLists[args.removedIndex]!.id;
         const newPositionItemId = event.songLists[args.addedIndex]!.id;
         assert(!!movingItemId && !!newPositionItemId, "moving item not found?");
+
+        void recordFeature({
+            feature: ActivityFeature.setlist_reorder,
+            eventSongListId: movingItemId,
+        });
 
         updateSortOrderMutation.invoke({
             tableID: db3.xEventSongList.tableID,
@@ -1466,7 +1486,9 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
         >
             {event.songLists.map(c => (
                 <ReactSmoothDndDraggable key={c.id}>
-                    <EventSongListControl key={c.id} value={c} readonly={false} refetch={refetch} event={event} />
+                    <AppContextMarker name="EventSongListControl">
+                        <EventSongListControl key={c.id} value={c} readonly={false} refetch={refetch} event={event} />
+                    </AppContextMarker>
                 </ReactSmoothDndDraggable>
             ))}
         </ReactSmoothDndContainer>
@@ -1490,7 +1512,9 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
         <SettingMarkdown setting='EventSongListTabDescription' />
         {insertAuthorized && !readonly && <Button className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
         {newOpen && !readonly && insertAuthorized && (
-            <EventSongListNewEditor event={event} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
+            <AppContextMarker name="EventSongListNewEditor">
+                <EventSongListNewEditor event={event} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
+            </AppContextMarker>
         )}
         <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
     </div>;
