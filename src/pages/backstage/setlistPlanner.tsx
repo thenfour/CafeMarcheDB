@@ -6,23 +6,20 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Accordion, AccordionSummary, Backdrop, Button, ButtonGroup, FormControlLabel, Switch } from "@mui/material";
+import { Accordion, AccordionSummary, Backdrop, Button, FormControlLabel, Switch } from "@mui/material";
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { getUniqueNegativeID, groupBy, IsNullOrWhitespace } from "shared/utils";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { useDashboardContext } from "src/core/components/DashboardContext";
+import { useDashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/markdown/Markdown";
-import { AStarSearchConfig, SetlistPlanAutoFillAStar, SetlistPlanGetNeighborsForAStar } from "src/core/components/setlistPlan/SetlistPlanAutocompleteAStar";
-import { SetlistPlanAutoFillAStar2 } from "src/core/components/setlistPlan/SetlistPlanAutoFillAStar2";
-import { SetlistPlanAutoFillDAG } from "src/core/components/setlistPlan/SetlistPlanAutoFillDAG";
-import { SetlistPlanAutoFillSA, SimulatedAnnealingConfig } from "src/core/components/setlistPlan/SetlistPlanAutofillSA";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
-import { CalculateSetlistPlanCost, CalculateSetlistPlanStatsForCostCalc, GetSetlistPlanKey, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanSearchProgressState } from "src/core/components/setlistPlan/SetlistPlanUtilities";
+import { SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanSearchProgressState } from "src/core/components/setlistPlan/SetlistPlanUtilities";
 import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongsProvider, useSongsContext } from "src/core/components/SongsContext";
@@ -30,6 +27,7 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -134,115 +132,115 @@ const CostConfigEditor = (props: { value: SetlistPlanCostPenalties, onChange: (v
 };
 
 
-const SaConfigEditor = (props: { value: SimulatedAnnealingConfig, onChange: (value: SimulatedAnnealingConfig) => void }) => {
-    const snackbar = useSnackbar();
-    const { value, onChange } = props;
-    return <div className="CostConfigEditor">
-        <h2>Simulated Annealing Config</h2>
-        <table>
-            <tbody>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.initialTemp} onChange={(e, val) => onChange({ ...value, initialTemp: val || 0 })} /></td>
-                    <td>initial temp</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.coolingRate} onChange={(e, val) => onChange({ ...value, coolingRate: val || 0 })} /></td>
-                    <td>coolingRate</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.cellsToMutatePerIteration} onChange={(e, val) => onChange({ ...value, cellsToMutatePerIteration: val || 0 })} /></td>
-                    <td>cellsToMutatePerIteration</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.maxIterations} onChange={(e, val) => onChange({ ...value, maxIterations: val || 0 })} /></td>
-                    <td>maxIterations</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.favorLateIndicesAlpha} onChange={(e, val) => onChange({ ...value, favorLateIndicesAlpha: val || 0 })} /></td>
-                    <td>favorLateIndicesAlpha</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.probabilityOfEmpty01} onChange={(e, val) => onChange({ ...value, probabilityOfEmpty01: val || 0 })} /></td>
-                    <td>probabilityOfEmpty01</td>
-                </tr>
-            </tbody>
-        </table>
-        <Button onClick={() => onChange(gDefaultSaConfig)}>Reset to Default</Button>
-        <Button
-            onClick={() => {
-                void snackbar.invokeAsync(async () => {
-                    await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
-                }, "Copied to clipboard");
-            }}
-        >Copy to clipboard</Button>
-        <Button
-            onClick={() => {
-                void snackbar.invokeAsync(async () => {
-                    const text = await navigator.clipboard.readText();
-                    const parsed = JSON.parse(text);
-                    props.onChange(parsed);
-                }, "Pasted from clipboard");
-            }}
-        >
-            Paste from clipboard
-        </Button>
-    </div>;
-};
+// const SaConfigEditor = (props: { value: SimulatedAnnealingConfig, onChange: (value: SimulatedAnnealingConfig) => void }) => {
+//     const snackbar = useSnackbar();
+//     const { value, onChange } = props;
+//     return <div className="CostConfigEditor">
+//         <h2>Simulated Annealing Config</h2>
+//         <table>
+//             <tbody>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.initialTemp} onChange={(e, val) => onChange({ ...value, initialTemp: val || 0 })} /></td>
+//                     <td>initial temp</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.coolingRate} onChange={(e, val) => onChange({ ...value, coolingRate: val || 0 })} /></td>
+//                     <td>coolingRate</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.cellsToMutatePerIteration} onChange={(e, val) => onChange({ ...value, cellsToMutatePerIteration: val || 0 })} /></td>
+//                     <td>cellsToMutatePerIteration</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.maxIterations} onChange={(e, val) => onChange({ ...value, maxIterations: val || 0 })} /></td>
+//                     <td>maxIterations</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.favorLateIndicesAlpha} onChange={(e, val) => onChange({ ...value, favorLateIndicesAlpha: val || 0 })} /></td>
+//                     <td>favorLateIndicesAlpha</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.probabilityOfEmpty01} onChange={(e, val) => onChange({ ...value, probabilityOfEmpty01: val || 0 })} /></td>
+//                     <td>probabilityOfEmpty01</td>
+//                 </tr>
+//             </tbody>
+//         </table>
+//         <Button onClick={() => onChange(gDefaultSaConfig)}>Reset to Default</Button>
+//         <Button
+//             onClick={() => {
+//                 void snackbar.invokeAsync(async () => {
+//                     await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+//                 }, "Copied to clipboard");
+//             }}
+//         >Copy to clipboard</Button>
+//         <Button
+//             onClick={() => {
+//                 void snackbar.invokeAsync(async () => {
+//                     const text = await navigator.clipboard.readText();
+//                     const parsed = JSON.parse(text);
+//                     props.onChange(parsed);
+//                 }, "Pasted from clipboard");
+//             }}
+//         >
+//             Paste from clipboard
+//         </Button>
+//     </div>;
+// };
 
 
-const gDefaultAStarConfig: AStarSearchConfig = {
-    depthsWithoutCulling: 2,
-    cullPercent01: undefined,
-    cullClampMin: undefined,
-    cullClampMax: 1,
-};
+// const gDefaultAStarConfig: AStarSearchConfig = {
+//     depthsWithoutCulling: 2,
+//     cullPercent01: undefined,
+//     cullClampMin: undefined,
+//     cullClampMax: 1,
+// };
 
-const AStarConfigEditor = (props: { value: AStarSearchConfig, onChange: (value: AStarSearchConfig) => void }) => {
-    const snackbar = useSnackbar();
-    const { value, onChange } = props;
-    return <div className="CostConfigEditor">
-        <h2>A Star Config</h2>
-        <table>
-            <tbody>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.depthsWithoutCulling} onChange={(e, val) => onChange({ ...value, depthsWithoutCulling: val || 0 })} /></td>
-                    <td>depthsWithoutCulling</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.cullPercent01 || null} onChange={(e, val) => onChange({ ...value, cullPercent01: val || undefined })} /></td>
-                    <td>cullPercent01</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.cullClampMin || null} onChange={(e, val) => onChange({ ...value, cullClampMin: val || undefined })} /></td>
-                    <td>cullClampMin</td>
-                </tr>
-                <tr>
-                    <td><AutoSelectingNumberField value={value.cullClampMax || null} onChange={(e, val) => onChange({ ...value, cullClampMax: val || undefined })} /></td>
-                    <td>cullClampMax</td>
-                </tr>
-            </tbody>
-        </table>
-        <Button onClick={() => onChange(gDefaultAStarConfig)}>Reset to Default</Button>
-        <Button
-            onClick={() => {
-                void snackbar.invokeAsync(async () => {
-                    await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
-                }, "Copied to clipboard");
-            }}
-        >Copy to clipboard</Button>
-        <Button
-            onClick={() => {
-                void snackbar.invokeAsync(async () => {
-                    const text = await navigator.clipboard.readText();
-                    const parsed = JSON.parse(text);
-                    props.onChange(parsed);
-                }, "Pasted from clipboard");
-            }}
-        >
-            Paste from clipboard
-        </Button>
-    </div>;
-};
+// const AStarConfigEditor = (props: { value: AStarSearchConfig, onChange: (value: AStarSearchConfig) => void }) => {
+//     const snackbar = useSnackbar();
+//     const { value, onChange } = props;
+//     return <div className="CostConfigEditor">
+//         <h2>A Star Config</h2>
+//         <table>
+//             <tbody>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.depthsWithoutCulling} onChange={(e, val) => onChange({ ...value, depthsWithoutCulling: val || 0 })} /></td>
+//                     <td>depthsWithoutCulling</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.cullPercent01 || null} onChange={(e, val) => onChange({ ...value, cullPercent01: val || undefined })} /></td>
+//                     <td>cullPercent01</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.cullClampMin || null} onChange={(e, val) => onChange({ ...value, cullClampMin: val || undefined })} /></td>
+//                     <td>cullClampMin</td>
+//                 </tr>
+//                 <tr>
+//                     <td><AutoSelectingNumberField value={value.cullClampMax || null} onChange={(e, val) => onChange({ ...value, cullClampMax: val || undefined })} /></td>
+//                     <td>cullClampMax</td>
+//                 </tr>
+//             </tbody>
+//         </table>
+//         <Button onClick={() => onChange(gDefaultAStarConfig)}>Reset to Default</Button>
+//         <Button
+//             onClick={() => {
+//                 void snackbar.invokeAsync(async () => {
+//                     await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+//                 }, "Copied to clipboard");
+//             }}
+//         >Copy to clipboard</Button>
+//         <Button
+//             onClick={() => {
+//                 void snackbar.invokeAsync(async () => {
+//                     const text = await navigator.clipboard.readText();
+//                     const parsed = JSON.parse(text);
+//                     props.onChange(parsed);
+//                 }, "Pasted from clipboard");
+//             }}
+//         >
+//             Paste from clipboard
+//         </Button>
+//     </div>;
+// };
 
 
 
@@ -266,14 +264,14 @@ const gDefaultCostCalcConfig: SetlistPlanCostPenalties = {
     underAllocatedSegment: { mul: 0, add: 1 },
 };
 
-const gDefaultSaConfig: SimulatedAnnealingConfig = {
-    initialTemp: 9999,
-    coolingRate: 0.99,
-    maxIterations: 1000,
-    cellsToMutatePerIteration: 2,
-    favorLateIndicesAlpha: 1,
-    probabilityOfEmpty01: 0.5,
-};
+// const gDefaultSaConfig: SimulatedAnnealingConfig = {
+//     initialTemp: 9999,
+//     coolingRate: 0.99,
+//     maxIterations: 1000,
+//     cellsToMutatePerIteration: 2,
+//     favorLateIndicesAlpha: 1,
+//     probabilityOfEmpty01: 0.5,
+// };
 
 // const gDefaultRetainConfig: SetlistPlanRetentionConfig = {
 //     factor: 0.05,
@@ -390,14 +388,15 @@ const SetlistPlannerPageContent = () => {
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
     const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
     const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
-    const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
+    //const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
+    const recordFeature = useFeatureRecorder();
 
     const [autocompleteProgressState, setAutocompleteProgressState] = React.useState<SetlistPlanSearchProgressState>();
     const cancellationTrigger = React.useRef<boolean>(false);
 
     const [costCalcConfig, setCostCalcConfig] = React.useState<SetlistPlanCostPenalties>(gDefaultCostCalcConfig);
-    const [saConfig, setSaConfig] = React.useState<SimulatedAnnealingConfig>(gDefaultSaConfig);
-    const [aStarConfig, setAStarConfig] = React.useState<AStarSearchConfig>(gDefaultAStarConfig);
+    // const [saConfig, setSaConfig] = React.useState<SimulatedAnnealingConfig>(gDefaultSaConfig);
+    // const [aStarConfig, setAStarConfig] = React.useState<AStarSearchConfig>(gDefaultAStarConfig);
 
     const confirm = useConfirm();
     const allSongs = useSongsContext().songs;
@@ -507,30 +506,38 @@ const SetlistPlannerPageContent = () => {
                     }
                 }
             },
-            autoCompletePlanAStar: async () => {
-                if (!doc) return;
-                await doAutoFill(async (progressHandler) => {
-                    return await SetlistPlanAutoFillAStar(aStarConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
-                });
+            setVisiblePermissionId: (permissionId: number) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        visiblePermissionId: permissionId,
+                    });
+                }
             },
-            autoCompletePlanAStar2: async () => {
-                if (!doc) return;
-                await doAutoFill(async (progressHandler) => {
-                    return await SetlistPlanAutoFillAStar2(aStarConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
-                });
-            },
-            autoCompletePlanDag: async () => {
-                if (!doc) return;
-                await doAutoFill(async (progressHandler) => {
-                    return await SetlistPlanAutoFillDAG(doc, costCalcConfig, cancellationTrigger, progressHandler);
-                });
-            },
-            autoCompletePlanSA: async () => {
-                if (!doc) return;
-                await doAutoFill(async (progressHandler) => {
-                    return await SetlistPlanAutoFillSA(saConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
-                });
-            },
+            // autoCompletePlanAStar: async () => {
+            //     if (!doc) return;
+            //     await doAutoFill(async (progressHandler) => {
+            //         return await SetlistPlanAutoFillAStar(aStarConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
+            //     });
+            // },
+            // autoCompletePlanAStar2: async () => {
+            //     if (!doc) return;
+            //     await doAutoFill(async (progressHandler) => {
+            //         return await SetlistPlanAutoFillAStar2(aStarConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
+            //     });
+            // },
+            // autoCompletePlanDag: async () => {
+            //     if (!doc) return;
+            //     await doAutoFill(async (progressHandler) => {
+            //         return await SetlistPlanAutoFillDAG(doc, costCalcConfig, cancellationTrigger, progressHandler);
+            //     });
+            // },
+            // autoCompletePlanSA: async () => {
+            //     if (!doc) return;
+            //     await doAutoFill(async (progressHandler) => {
+            //         return await SetlistPlanAutoFillSA(saConfig, doc, costCalcConfig, cancellationTrigger, progressHandler);
+            //     });
+            // },
             setAutocompleteMaxPointsPerRehearsal: (maxPoints: number) => {
                 if (doc) {
                     setDocWrapper({
@@ -1097,6 +1104,10 @@ const SetlistPlannerPageContent = () => {
             colorScheme={colorScheme}
             isModified={modified}
             onSave={async (doc) => {
+                void recordFeature({
+                    feature: doc.id <= 0 ? ActivityFeature.setlist_plan_create : ActivityFeature.setlist_plan_save,
+                    setlistPlanId: doc.id <= 0 ? undefined : doc.id,
+                });
                 void snackbar.invokeAsync(async () => {
                     const newDoc = await upsertSetlistPlanToken(doc);
                     // because PKs change
@@ -1113,6 +1124,10 @@ const SetlistPlannerPageContent = () => {
             }}
             onDelete={async () => {
                 if (await confirm({ title: "Are you sure you want to delete this setlist plan?" })) {
+                    void recordFeature({
+                        feature: ActivityFeature.setlist_plan_delete,
+                        setlistPlanId: doc.id <= 0 ? undefined : doc.id,
+                    });
                     void snackbar.invokeAsync(async () => {
                         await deleteSetlistPlanToken({ id: doc.id });
                         setModified(false);
@@ -1143,53 +1158,6 @@ const SetlistPlannerPageContent = () => {
             }
 
             {isTempDoc && <h1>SHOWING TEMP VALUES</h1>}
-
-            {
-                doc && <FormControlLabel control={<Switch checked={showAutocompleteConfig} onChange={(e) => setShowAutocompleteConfig(e.target.checked)} />} label="Show autocomplete configs" />}
-
-            {showAutocompleteConfig && doc && <div>
-                <ButtonGroup>
-                    <Button onClick={() => {
-                        const stats = CalculateSetlistPlanStatsForCostCalc(doc);
-                        const cost = CalculateSetlistPlanCost({
-                            plan: doc,
-                            stats,
-                        }, costCalcConfig);
-                        const n = SetlistPlanGetNeighborsForAStar(aStarConfig, 0, {
-                            plan: doc,
-                            stats,
-                            cost,
-                            totalCost: cost.totalCost,
-                            stateId: GetSetlistPlanKey(doc),
-                        }, costCalcConfig);
-                        n.sort((a, b) => a.cost.totalCost - b.cost.totalCost);// {
-                        setNeighbors([doc, ...n.map(x => x.plan)]);
-                        console.log(n);
-                    }}>SetlistPlanGetNeighborsForAStar</Button>
-
-                    <Button onClick={() => setNeighbors([])}>clear neighbors</Button>
-                </ButtonGroup>
-                <ul>
-                    {neighbors.map((neighbor, index) => {
-                        const stats = CalculateSetlistPlanStatsForCostCalc(neighbor);
-                        const cost = CalculateSetlistPlanCost({
-                            plan: neighbor,
-                            stats,
-                        }, costCalcConfig);
-                        return <li className="interactable" key={neighbor.id} onClick={() => {
-                            setDoc(neighbor);
-                        }}>#{index}: {neighbor.name} cost:{cost.totalCost} key:{GetSetlistPlanKey(neighbor).substring(0, 100)}</li>;
-                    })}
-                </ul>
-            </div>
-            }
-
-            {showAutocompleteConfig && doc && <>
-                <CostConfigEditor value={costCalcConfig} onChange={setCostCalcConfig} />
-                <SaConfigEditor value={saConfig} onChange={setSaConfig} />
-                <AStarConfigEditor value={aStarConfig} onChange={setAStarConfig} />
-            </>}
-            {/* {showAutocompleteConfig && doc && <RetainConfigEditor value={retainConfig} onChange={setRetainConfig} />} */}
 
         </div>
 
@@ -1223,10 +1191,12 @@ const SetlistPlannerPageContent = () => {
 const SetlistPlannerPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Setlist Planner" basePermission={Permission.sysadmin}>
-            <SongsProvider>
-                {/* <NumberThingTester /> */}
-                <SetlistPlannerPageContent />
-            </SongsProvider>
+            <AppContextMarker name="Setlist plan page">
+                <SongsProvider>
+                    {/* <NumberThingTester /> */}
+                    <SetlistPlannerPageContent />
+                </SongsProvider>
+            </AppContextMarker>
         </DashboardLayout>
     )
 }

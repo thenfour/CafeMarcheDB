@@ -27,6 +27,7 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { VisibilityControl } from "../VisibilityControl";
 
 
 
@@ -515,44 +516,46 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         />
 
         <table style={{ fontFamily: "monospace" }} className="cost-table">
-            <tr>
-                <td className="interactable" onClick={() => {
-                    setShowCostBreakdown(!showCostBreakdown);
-                }}>Cost</td>
-                <td>{costResult.totalCost.toFixed(2)}</td>
-                <td></td>
-            </tr>
-            {showCostBreakdown && <>
+            <tbody>
                 <tr>
-                    <td>Iterations</td>
-                    <td>{docOrTempDoc.payload.autoCompleteIterations?.toLocaleString()}</td>
+                    <td className="interactable" onClick={() => {
+                        setShowCostBreakdown(!showCostBreakdown);
+                    }}>Cost</td>
+                    <td>{costResult.totalCost.toFixed(2)}</td>
                     <td></td>
                 </tr>
-                <tr>
-                    <td>Max depth</td>
-                    <td>{docOrTempDoc.payload.autoCompleteDepth?.toLocaleString()}</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Duration</td>
-                    <td>{docOrTempDoc.payload.autoCompleteDurationSeconds?.toFixed(3)} seconds</td>
-                    <td></td>
-                </tr>
-
-                {costResultBreakdown.map((x, index) => (
-                    <tr key={index}>
-                        <td>{x.explanation}</td>
-                        <td>{x.cost}</td>
-                        <td>
-                            <div>
-                                <span>{x.factor01.toFixed(2)}</span>
-                                {(x.beginRowIndex !== undefined) && <span> / {props.stats.songStats[x.beginRowIndex]?.song?.name}</span>}
-                                {(x.columnIndex !== undefined) && <span> / {props.stats.segmentStats[x.columnIndex]?.segment.name}</span>}
-                            </div>
-                        </td>
+                {showCostBreakdown && <>
+                    <tr>
+                        <td>Iterations</td>
+                        <td>{docOrTempDoc.payload.autoCompleteIterations?.toLocaleString()}</td>
+                        <td></td>
                     </tr>
-                ))}
-            </>}
+                    <tr>
+                        <td>Max depth</td>
+                        <td>{docOrTempDoc.payload.autoCompleteDepth?.toLocaleString()}</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Duration</td>
+                        <td>{docOrTempDoc.payload.autoCompleteDurationSeconds?.toFixed(3)} seconds</td>
+                        <td></td>
+                    </tr>
+
+                    {costResultBreakdown.map((x, index) => (
+                        <tr key={index}>
+                            <td>{x.explanation}</td>
+                            <td>{x.cost}</td>
+                            <td>
+                                <div>
+                                    <span>{x.factor01.toFixed(2)}</span>
+                                    {(x.beginRowIndex !== undefined) && <span> / {props.stats.songStats[x.beginRowIndex]?.song?.name}</span>}
+                                    {(x.columnIndex !== undefined) && <span> / {props.stats.segmentStats[x.columnIndex]?.segment.name}</span>}
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </>}
+            </tbody>
         </table>
 
         <KeyValueTable
@@ -719,19 +722,6 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
                 props.onDelete();
             }}>delete this plan</MenuItem>
             <Divider />
-            <MenuItem onClick={() => {
-                setAnchorEl(null);
-                props.mutator.autoCompletePlanSA();
-            }}>Auto-fill (Simulated annealing)</MenuItem>
-            <MenuItem onClick={() => {
-                setAnchorEl(null);
-                props.mutator.autoCompletePlanAStar();
-            }}>Auto-fill (A star)</MenuItem>
-            <MenuItem onClick={() => {
-                setAnchorEl(null);
-                props.mutator.autoCompletePlanDag();
-            }}>Auto-fill (DAG)</MenuItem>
-            <Divider />
             <MenuItem
                 onClick={handleCopyToClipboard}
             >
@@ -774,8 +764,8 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
     const [doc, setDoc] = React.useState<SetlistPlan>(props.initialValue);
     const [selectedTab, setSelectedTab] = React.useState<TTabId>("matrix");
     const allSongs = useSongsContext().songs;
-    const snackbar = useSnackbar();
-    const confirm = useConfirm();
+    //const snackbar = useSnackbar();
+    //const confirm = useConfirm();
 
     const docOrTempDoc = props.tempValue || doc;
     const isTempDoc = !!props.tempValue;
@@ -824,42 +814,23 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                         props.mutator.redo();
                     }}
                 >Redo</Button>
-            </ButtonGroup>
-            <MainDropdownMenu doc={doc} mutator={props.mutator} onDelete={props.onDelete} />
-            <ButtonGroup>
+                <Divider />
+                <MainDropdownMenu doc={doc} mutator={props.mutator} onDelete={props.onDelete} />
+                <Divider />
                 <Button
                     onClick={() => {
                         props.mutator.clearAllocation();
                     }}
                     disabled={isTempDoc}
                 >clear</Button>
-                <Divider />
-                <Button
-                    onClick={() => {
-                        props.mutator.autoCompletePlanSA();
+                <VisibilityControl
+                    value={docOrTempDoc.visiblePermissionId}
+                    onChange={(newValue) => {
+                        props.mutator.setVisiblePermissionId(newValue?.id || null);
                     }}
-                    disabled={isTempDoc}
-                >SA</Button>
-                <Button
-                    onClick={() => {
-                        props.mutator.autoCompletePlanAStar();
-                    }}
-                    disabled={isTempDoc}
-                >A*</Button>
-                <Button
-                    onClick={() => {
-                        props.mutator.autoCompletePlanAStar2();
-                    }}
-                    disabled={isTempDoc}
-                >A*2</Button>
-                <Button
-                    onClick={() => {
-                        props.mutator.autoCompletePlanDag();
-                    }}
-                    disabled={isTempDoc}
-                >DAG</Button>
+                />
             </ButtonGroup>
-            <InspectObject src={docOrTempDoc} label="doc" />
+            < InspectObject src={docOrTempDoc} label="doc" />
             <InspectObject src={stats} label="stats" />
             <div className="nameHeader">{docOrTempDoc.name}</div>
         </div>

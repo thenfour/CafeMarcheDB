@@ -19,9 +19,12 @@ export default resolver.pipe(
             return; // quiet success
         }
 
-        await db.setlistPlan.delete({
+        await db.setlistPlan.update({
             where: {
                 id: args.id,
+            },
+            data: {
+                isDeleted: true,
             },
         });
     }

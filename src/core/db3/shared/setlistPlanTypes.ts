@@ -98,6 +98,7 @@ export const ZSetlistPlan = z.object({
     description: z.string(),
     createdByUserId: z.number(),
     payload: ZSetlistPlanPayload,
+    visiblePermissionId: z.number().nullable(),
 });
 
 export type SetlistPlan = z.infer<typeof ZSetlistPlan>;
@@ -111,6 +112,7 @@ export const CreateNewSetlistPlan = (id: number, name: string, groupName: string
         name,
         groupName,
         description: "",
+        visiblePermissionId: null,
         payload: {
             version: 1,
             rows: [],
@@ -137,6 +139,7 @@ export const DeserializeSetlistPlan = (obj: Prisma.SetlistPlanGetPayload<{}>): S
         description: obj.description,
         id: obj.id,
         name: obj.name,
+        visiblePermissionId: obj.visiblePermissionId,
         groupName: obj.groupName || "",
         payload,
     };

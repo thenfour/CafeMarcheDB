@@ -71,14 +71,16 @@ export interface SetlistPlanSearchProgressState extends AStarSearchProgressState
 
 export interface SetlistPlanMutator {
     setDoc: (doc: SetlistPlan) => void;
-    autoCompletePlanSA: () => void;
-    autoCompletePlanAStar: () => void;
-    autoCompletePlanAStar2: () => void;
-    autoCompletePlanDag: () => void;
+    // autoCompletePlanSA: () => void;
+    // autoCompletePlanAStar: () => void;
+    // autoCompletePlanAStar2: () => void;
+    // autoCompletePlanDag: () => void;
     clearAllocation: () => void;
 
     undo: () => void;
     redo: () => void;
+
+    setVisiblePermissionId: (permissionId: number | null) => void;
 
     setName: (name: string) => void;
     setGroupName: (groupName: string) => void;

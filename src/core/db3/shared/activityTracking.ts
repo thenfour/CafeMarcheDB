@@ -3,7 +3,6 @@ import { z } from "zod";
 export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
     event_ical_digest = "event_ical_digest",
-    song_view = "song_view",
     event_view = "event_view",
     metronome_persistent = "metronome_persistent", // metronome playing longer than 1 minute
     // note that link clicks are not 100% reliable;
@@ -66,6 +65,19 @@ export enum ActivityFeature {
     file_upload_url = "file_upload_url",
     file_edit = "file_edit",
     file_delete = "file_delete",
+
+    song_view = "song_view",
+    song_edit = "song_edit",
+    song_edit_description = "song_edit_description",
+    song_delete = "song_delete",
+    song_create = "song_create",
+    song_credit_add = "song_credit_add",
+    song_credit_edit = "song_credit_edit",
+    song_credit_delete = "song_credit_delete",
+
+    setlist_plan_create = "setlist_plan_create",
+    setlist_plan_save = "setlist_plan_save",
+    setlist_plan_delete = "setlist_plan_delete",
 };
 
 export const ZTRecordActionArgs = z.object({

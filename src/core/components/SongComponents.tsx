@@ -17,7 +17,7 @@ import { TAnyModel } from '../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InspectObject } from './CMCoreComponents';
 import { NameValuePair } from './CMCoreComponents2';
-import { DashboardContext } from './DashboardContext';
+import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { MetronomeButton } from './Metronome';
@@ -30,6 +30,7 @@ import { SongHistory } from './SongHistory';
 import { VisibilityValue } from './VisibilityControl';
 import { CMTab, CMTabPanel } from './TabPanel';
 import { AppContextMarker } from './AppContext';
+import { ActivityFeature } from '../db3/shared/activityTracking';
 
 
 export const SongClientColumns = {
@@ -103,10 +104,14 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
     const [value, setValue] = React.useState<string>(props.song.description || "");
 
     const mutationToken = API.songs.updateSongBasicFields.useToken();
+    const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const handleSave = async (): Promise<boolean> => {
         try {
+            void recordFeature({
+                feature: ActivityFeature.song_edit_description,
+            });
             await mutationToken.invoke({
                 songId: props.song.id,
                 description: value,
@@ -193,9 +198,14 @@ export interface SongCreditEditButtonProps {
 // also checks authorization & readonly to hide this button
 export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCreditEditButtonProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const recordFeature = useFeatureRecorder();
     const publicData = useAuthenticatedSession();
 
     const handleConfirmedDelete = (api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.song_credit_delete,
+            songCreditTypeId: props.value.typeId,
+        });
         creditsTableClient.doDeleteMutation(props.value.id, 'softWhenPossible').then(e => {
             showSnackbar({ severity: "success", children: "deleted" });
             api.closeDialog();
@@ -208,6 +218,10 @@ export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCredi
     };
 
     const handleSaveEdits = (newRow: TAnyModel, api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.song_credit_edit,
+            songCreditTypeId: props.value.typeId,
+        });
         creditsTableClient.doUpdateMutation(newRow).then(e => {
             showSnackbar({ severity: "success", children: "updated" });
             api.closeDialog();
@@ -246,6 +260,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const publicData = useAuthenticatedSession();
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xSongCredit,
@@ -266,6 +281,9 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     });
 
     const handleSaveNew = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.song_credit_add,
+        });
         creditsTableClient.doInsertMutation(updateObj).then(e => {
             showSnackbar({ severity: "success", children: "updated" });
         }).catch(e => {
@@ -367,8 +385,9 @@ export interface SongDetailContainerProps {
 
 export const SongDetailContainer = ({ songData, tableClient, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
     const song = songData.song;
-    const router = useRouter();
+    //const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const recordFeature = useFeatureRecorder();
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
     const highlightedTagIds = props.highlightedTagIds || [];
     const dashboardContext = React.useContext(DashboardContext);
@@ -422,6 +441,10 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     tableSpec={tableClient.tableSpec}
                     onCancel={() => { }}
                     onOK={(obj: EnrichedVerboseSong, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                        void recordFeature({
+                            feature: ActivityFeature.song_edit,
+                            context: "song detail dialog",
+                        });
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
@@ -435,6 +458,10 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                         }).finally(refetch);
                     }}
                     onDelete={(api: EditFieldsDialogButtonApi) => {
+                        void recordFeature({
+                            feature: ActivityFeature.song_delete,
+                            context: "song detail dialog",
+                        });
                         tableClient.doDeleteMutation(song.id, 'softWhenPossible').then(() => {
                             showSnackbar({ children: "delete successful", severity: 'success' });
                             api.close();
@@ -525,7 +552,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryIcon={gIconMap.Info()}
                 canBeDefault={!IsNullOrWhitespace(song.description)}
             >
-                <AppContextMarker name="info tab">
+                <AppContextMarker name="info tab" songId={song.id}>
                     <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
                 </AppContextMarker>
             </CMTab>
@@ -536,7 +563,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={fileInfo.partitions.length}
                 canBeDefault={!!fileInfo.partitions.length}
             >
-                <AppContextMarker name="partitions tab">
+                <AppContextMarker name="partitions tab" songId={song.id}>
                     <FilesTabContent
                         fileTags={fileInfo.partitions}
                         readonly={props.readonly}
@@ -556,7 +583,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={fileInfo.recordings.length}
                 canBeDefault={!!fileInfo.recordings.length}
             >
-                <AppContextMarker name="recordings tab">
+                <AppContextMarker name="recordings tab" songId={song.id}>
                     <FilesTabContent
                         fileTags={fileInfo.recordings}
                         readonly={props.readonly}
@@ -576,7 +603,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={song.taggedFiles.length}
                 canBeDefault={!!song.taggedFiles.length}
             >
-                <AppContextMarker name="all files tab">
+                <AppContextMarker name="all files tab" songId={song.id}>
                     <FilesTabContent
                         fileTags={fileInfo.enrichedFiles}
                         readonly={props.readonly}
@@ -593,7 +620,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryTitle={"Stats"}
                 summaryIcon={gIconMap.Equalizer()}
             >
-                <AppContextMarker name="stats tab">
+                <AppContextMarker name="stats tab" songId={song.id}>
                     <SongHistory song={song} />
                 </AppContextMarker>
             </CMTab>

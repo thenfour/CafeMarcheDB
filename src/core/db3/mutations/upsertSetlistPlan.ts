@@ -33,6 +33,8 @@ export default resolver.pipe(
                     groupName: args.groupName || "",
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),
+                    isDeleted: false,
+                    visiblePermissionId: args.visiblePermissionId,
                 },
             });
         } else {
@@ -43,6 +45,8 @@ export default resolver.pipe(
                     createdByUserId: currentUser.id,
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),
+                    isDeleted: false,
+                    visiblePermissionId: args.visiblePermissionId,
                 },
             });
         }

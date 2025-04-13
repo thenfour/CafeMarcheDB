@@ -1,6 +1,6 @@
 
 import React from "react";
-import { generateFibonacci } from "shared/utils";
+import { CoalesceBool, generateFibonacci } from "shared/utils";
 
 const FIBONACCI_SEQUENCE = [0, ...generateFibonacci(100)];
 
@@ -30,8 +30,10 @@ type NumberFieldProps = {
     showPositiveSign?: boolean;
 };
 
-export const NumberField = (props: NumberFieldProps) => {
+export const NumberField = ({ inert, ...props }: NumberFieldProps) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
+
+    inert = CoalesceBool(inert, false);
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
         e.target.select();
@@ -79,10 +81,14 @@ export const NumberField = (props: NumberFieldProps) => {
             onChange={handleChange}
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
-            className={`NumberField ${props.readonly ? "readonly" : "editable"} ${props.inert ? "inert" : "notinert"} ${props.className}`}
-            inert={props.inert}
+            className={`NumberField ${props.readonly ? "readonly" : "editable"} ${inert ? "inert" : "notinert"} ${props.className}`}
+            //inert={(!!props.inert).toString() as any} // weird error about non-boolean attribute `inert`.
             readOnly={props.readonly}
-            disabled={props.inert}
+            disabled={inert}
+
+            // Warning: Received `true` for a non-boolean attribute `inert`.
+            // If you want to write it to the DOM, pass a string instead: inert="true" or inert={value.toString()}. Error Component Stack
+            inert={inert}
             style={props.style}
         />
     );
