@@ -5,8 +5,10 @@ import React from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -14,6 +16,7 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { TAnyModel } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -42,6 +45,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const updatePrimaryMutationToken = API.users.updateUserPrimaryInstrument.useToken();
     const [currentUser, { refetch }] = useCurrentUser();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const recordFeature = useFeatureRecorder();
 
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [oldValue, setOldValue] = React.useState<db3.UserInstrumentPayload[]>([]);
@@ -53,6 +57,9 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const primary: (db3.InstrumentPayload | null) = API.users.getPrimaryInstrument(props.row as db3.UserPayload);
 
     const handleClickMakePrimary = (instrumentId: number) => {
+        void recordFeature({
+            feature: ActivityFeature.profile_change_default_instrument,
+        });
         updatePrimaryMutationToken.invoke({ userId: currentUser!.id, instrumentId }).then(e => {
             showSnackbar({ severity: "success", children: "Primary instrument updated" });
         }).catch(e => {
@@ -113,6 +120,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
 const OwnInstrumentsControl = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [currentUser, { refetch }] = useCurrentUser();
+    const recordFeature = useFeatureRecorder();
     const tableClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xUser,
@@ -141,6 +149,9 @@ const OwnInstrumentsControl = () => {
         value={row.instruments}
         refetch={tableClient.refetch}
         onChange={(value: db3.UserInstrumentPayload[]) => {
+            void recordFeature({
+                feature: ActivityFeature.profile_change_instrument,
+            });
             const updateObj = {
                 id: currentUser!.id,
                 instruments: value,
@@ -165,7 +176,12 @@ const MainContent = () => {
     const [currentUser, { refetch }] = useCurrentUser();
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const publicData = useAuthenticatedSession();
+    //const publicData = useAuthenticatedSession();
+    const recordFeature = useFeatureRecorder();
+
+    useRecordFeatureUse({
+        feature: ActivityFeature.profile_view,
+    });
 
     const spec = new DB3Client.xTableClientSpec({
         table: db3.xUser,
@@ -189,8 +205,10 @@ const MainContent = () => {
 
     const value = client.items[0]! as db3.UserPayload;
 
-
     const handleSave = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        void recordFeature({
+            feature: ActivityFeature.profile_edit,
+        });
         client.doUpdateMutation(updateObj).then(e => {
             showSnackbar({ severity: "success", children: "updated" });
         }).catch(e => {
@@ -232,7 +250,9 @@ const MainContent = () => {
 const ProfilePage: BlitzPage = () => {
     return (
         <DashboardLayout title="Your profile" basePermission={Permission.basic_trust}>
-            <MainContent />
+            <AppContextMarker name="profile page">
+                <MainContent />
+            </AppContextMarker>
         </DashboardLayout>
     )
 }

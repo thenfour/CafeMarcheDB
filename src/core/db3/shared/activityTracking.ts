@@ -32,20 +32,10 @@ export enum ActivityFeature {
     custom_link_update = "custom_link_update",
     custom_link_delete = "custom_link_delete",
 
-    // * [ ] create / update event / segment
-    // * [ ] create / update setlist
-    // * [ ] login
-    // * [ ] create account
-    // * [ ] upload file
-    // * [ ] change file
-    // * [ ] frontpage gallery item
-    // * [ ] frontpage agenda
-    // * [ ] create / update menulink
-    // * [ ] create / update song
-    // * [ ] create / update song credit
-    // * [ ] change profile info
-    // * [ ] create / update wiki page
-    // * [ ] create / update setlistplan
+    profile_view = "profile_view",
+    profile_edit = "profile_edit",
+    profile_change_instrument = "profile_change_instrument",
+    profile_change_default_instrument = "profile_change_default_instrument",
 };
 
 export const ZTRecordActionArgs = z.object({
