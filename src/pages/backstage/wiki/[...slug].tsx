@@ -15,7 +15,7 @@ import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
 import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
 
 
-const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiPageId: number }) => {
+const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiPageId: number | undefined }) => {
     useRecordFeatureUse({
         feature: ActivityFeature.wiki_page_view,
         wikiPageId,
@@ -80,14 +80,14 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
 });
 
 const WikiPage: BlitzPage = (x: PageProps) => {
-    if (x.wikiPageId == null) {
-        return <div>Wiki page not found</div>;
-    }
+    // if (x.wikiPageId == null) {
+    //     return <div>Wiki page not found</div>;
+    // }
     return (
         <DashboardLayout title={x.title}>
-            <AppContextMarker name="wiki page" wikiPageId={x.wikiPageId}>
+            <AppContextMarker name="wiki page" wikiPageId={x.wikiPageId || undefined}>
                 <Suspense>
-                    <WikiPageComponent wikiPath={x.wikiPath} wikiPageId={x.wikiPageId}></WikiPageComponent>
+                    <WikiPageComponent wikiPath={x.wikiPath} wikiPageId={x.wikiPageId || undefined}></WikiPageComponent>
                 </Suspense>
             </AppContextMarker>
         </DashboardLayout>

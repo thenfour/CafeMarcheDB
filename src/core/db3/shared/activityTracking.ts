@@ -53,6 +53,8 @@ export enum ActivityFeature {
     event_segment_delete = "event_segment_delete",
     event_segment_reorder = "event_segment_reorder",
 
+    wiki_edit = "wiki_edit",
+    wiki_change_visibility = "wiki_change_visibility",
 };
 
 export const ZTRecordActionArgs = z.object({

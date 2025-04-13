@@ -15,13 +15,14 @@ import { DotMenu, KeyValueTable, NameValuePair, simulateLinkClick } from "./CMCo
 import { CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { CMSelectNullBehavior } from "./CMSingleSelectDialog";
 import { CMTextInputBase } from "./CMTextField";
-import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/Markdown";
 import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { AgeRelativeToNow } from "./RelativeTimeComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityValue } from "./VisibilityControl";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 
 
 //////////////////////////////////////////////////
@@ -73,15 +74,15 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
     const snackbar = useSnackbar();
 
     const handleSave = async () => {
-        console.log(`Saving wiki page ${props.wikiPageApi.wikiPath.canonicalWikiPath} with title ${title} and content ${content}`);
+        //console.log(`Saving wiki page ${props.wikiPageApi.wikiPath.canonicalWikiPath} with title ${title} and content ${content}`);
         const result = await props.wikiPageApi.saveProgress({
             revisionData: {
                 content,
                 name: title,
             }
         });
-        console.log(` => outcome ${result.outcome}`);
-        console.log(result);
+        //console.log(` => outcome ${result.outcome}`);
+        //console.log(result);
         switch (result.outcome) {
             case UpdateWikiPageResultOutcome.success:
                 return true;
@@ -161,6 +162,7 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const [wikiPageSetVisibilityMutation] = useMutation(wikiPageSetVisibility);
+    const recordFeature = useFeatureRecorder();
 
     return <CMSingleSelect<number | null>
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
@@ -171,6 +173,10 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
         value={props.wikiPageApi.coalescedCurrentPageData.visiblePermissionId}
         nullBehavior={CMSelectNullBehavior.AllowNull}
         onChange={async (v) => {
+            void recordFeature({
+                feature: ActivityFeature.wiki_change_visibility,
+                wikiPageId: props.wikiPageApi.currentPageData?.wikiPage?.id,
+            });
             await snackbar.invokeAsync(async () => {
                 await wikiPageSetVisibilityMutation({
                     canonicalWikiPath: props.wikiPageApi.wikiPath.canonicalWikiPath,

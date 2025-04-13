@@ -12,8 +12,9 @@ import wikiRenewYourLock from "src/core/wiki/mutations/wikiRenewYourLock";
 import getWikiPage from "src/core/wiki/queries/getWikiPage";
 import { GetWikiPageUpdatabilityResult, gWikiEditPingIntervalMilliseconds, gWikiLockAutoRenewThrottleInterval, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiUpdatePayload, WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { v4 as uuidv4 } from "uuid";
-import { useDashboardContext } from "../DashboardContext";
+import { useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { useMessageBox } from "../context/MessageBoxContext";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 
 // upon begin edit:
 //     - try to acquire lock (with your client-generated uid)
@@ -91,6 +92,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   const dashboardContext = useDashboardContext();
   const messageBox = useMessageBox();
   const [wikiPath, setWikiPath] = React.useState<WikiPath>(() => wikiParseCanonicalWikiPath(args.canonicalWikiPath));
+  const recordFeature = useFeatureRecorder();
 
   const [lockUid, setLockUid] = React.useState<string | null>(null);
   const [basePage, setBasePage] = React.useState<WikiPageApiPayload | null>(null);
@@ -155,6 +157,10 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   }
 
   async function saveProgress(saveProgressArgs: WikiApiUpdateArgs): Promise<GetWikiPageUpdatabilityResult> {
+    void recordFeature({
+      feature: ActivityFeature.wiki_edit,
+      wikiPageId: currentRevisionData.wikiPage?.id,
+    });
     let lockIdToUse = lockUid;
     if (!lockUid) {
       // if you don't have a lock (did you manually release it?), acquire it new.
