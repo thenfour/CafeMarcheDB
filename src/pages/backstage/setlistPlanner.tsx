@@ -16,6 +16,7 @@ import { getUniqueNegativeID, groupBy, IsNullOrWhitespace } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
+import { PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { gSetlistPlannerDefaultColorScheme, SetlistPlannerColorScheme, SetlistPlannerColorSchemeEditor } from "src/core/components/setlistPlan/SetlistPlanColorComponents";
 import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/SetlistPlanMainComponents";
@@ -633,6 +634,35 @@ const SetlistPlannerPageContent = () => {
                                 rowId: getId("row"),
                                 type: "divider",
                             }],
+                        },
+                    });
+                }
+            },
+            addPortableSongList: (songList: PortableSongList) => {
+                if (doc) {
+
+                    const newRows: SetlistPlanRow[] = songList.map(item => {
+                        if (item.type === "song") {
+                            return {
+                                rowId: getId("row"),
+                                songId: item.song.id,
+                                commentMarkdown: "",
+                                type: "song",
+                                pointsRequired: 0,
+                            };
+                        } else {
+                            return {
+                                rowId: getId("row"),
+                                type: "divider",
+                            };
+                        }
+                    });
+
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rows: [...doc.payload.rows, ...newRows],
                         },
                     });
                 }

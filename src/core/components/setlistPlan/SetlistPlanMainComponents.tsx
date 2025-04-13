@@ -29,7 +29,49 @@ import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
 import { VisibilityControl } from "../VisibilityControl";
 
+interface AddSongComponentProps {
+    mutator: SetlistPlanMutator;
+}
 
+const AddSongComponent = (props: AddSongComponentProps) => {
+    const snackbar = useSnackbar();
+    return <div className="SetlistPlannerDocumentEditorAddSong">
+        Add song...
+        <SongAutocomplete
+            value={null}
+            onChange={(newSong) => {
+                if (newSong) {
+                    props.mutator.addSong(newSong.id);
+                }
+            }}
+        />
+
+        <ButtonGroup>
+            <Button
+                startIcon={gIconMap.Add()}
+                onClick={() => {
+                    props.mutator.addDivider();
+                }}
+            >
+                Add Divider
+            </Button>
+            <Button
+                startIcon={gIconMap.ContentPaste()}
+                onClick={async () => {
+                    const songList = await getClipboardSongList();
+                    console.log(songList);
+                    if (!songList) {
+                        snackbar.showError("Not a valid setlist in the clipboard");
+                        return;
+                    }
+                    props.mutator.addPortableSongList(songList);
+                }}
+            >
+                Paste json setlist
+            </Button>
+        </ButtonGroup>
+    </div>;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -571,22 +613,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 "songs per rehearsal": props.stats.songsPerSegment.toFixed(2),
             }} />
 
-        <div className="SetlistPlannerDocumentEditorAddSong">
-            Add song...
-            <SongAutocomplete
-                value={null}
-                onChange={(newSong) => {
-                    if (newSong) {
-                        props.mutator.addSong(newSong.id);
-                    }
-                }}
-            />
-
-            <Button startIcon={gIconMap.Add()} onClick={() => {
-                props.mutator.addDivider();
-            }}>Add Divider</Button>
-        </div>
-
+        <AddSongComponent mutator={props.mutator} />
     </div >;
 }
 
@@ -941,16 +968,15 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     {docOrTempDoc.payload.rows.map((song) => {
                         return <div key={song.rowId} className="SetlistPlannerDocumentEditorSong">
                             <div>
-
                                 {song.type === "song" && <div>
-                                    <h2 className="name">{allSongs.find((x) => x.id === song.songId)?.name}</h2>
-                                    <NumberField
+                                    <h3 className="name">{allSongs.find((x) => x.id === song.songId)?.name}</h3>
+                                    {/* <NumberField
                                         value={song.pointsRequired || null}
                                         onChange={(e, newMeasure) => {
                                             props.mutator.setRowPointsRequired(song.rowId, newMeasure || undefined);
                                         }}
                                     />
-                                    <span>rehearsal points required</span>
+                                    <span>rehearsal points required</span> */}
                                 </div>}
 
                                 <div style={{ display: "flex", alignItems: "center" }}>
@@ -968,7 +994,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                 </div>
                             </div>
                             <Markdown3Editor
-                                nominalHeight={75}
+                                nominalHeight={50}
                                 onChange={(newMarkdown) => {
                                     props.mutator.setRowComment(song.rowId, newMarkdown);
                                 }}
@@ -979,21 +1005,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     })}
                 </div>
 
-                <div className="SetlistPlannerDocumentEditorAddSong">
-                    Add a song...
-                    <SongAutocomplete
-                        value={null}
-                        onChange={(newSong) => {
-                            if (newSong) {
-                                props.mutator.addSong(newSong.id);
-                            }
-                        }}
-                    />
-
-                    <Button startIcon={gIconMap.Add()} onClick={() => {
-                        props.mutator.addDivider();
-                    }}>Add Divider</Button>
-                </div>
+                <AddSongComponent mutator={props.mutator} />
 
             </CMTab>
 
