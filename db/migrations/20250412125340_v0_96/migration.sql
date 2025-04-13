@@ -1,17 +1,17 @@
 -- DropForeignKey
-ALTER TABLE `action` DROP FOREIGN KEY `Action_eventId_fkey`;
+ALTER TABLE `Action` DROP FOREIGN KEY `Action_eventId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `action` DROP FOREIGN KEY `Action_fileId_fkey`;
+ALTER TABLE `Action` DROP FOREIGN KEY `Action_fileId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `action` DROP FOREIGN KEY `Action_songId_fkey`;
+ALTER TABLE `Action` DROP FOREIGN KEY `Action_songId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `action` DROP FOREIGN KEY `Action_wikiPageId_fkey`;
+ALTER TABLE `Action` DROP FOREIGN KEY `Action_wikiPageId_fkey`;
 
 -- AlterTable
-ALTER TABLE `action` ADD COLUMN `attendanceId` INTEGER NULL,
+ALTER TABLE `Action` ADD COLUMN `attendanceId` INTEGER NULL,
     ADD COLUMN `customLinkId` INTEGER NULL,
     ADD COLUMN `eventSegmentId` INTEGER NULL,
     ADD COLUMN `eventSongListId` INTEGER NULL,
@@ -22,7 +22,7 @@ ALTER TABLE `action` ADD COLUMN `attendanceId` INTEGER NULL,
     ADD COLUMN `songCreditTypeId` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `setlistplan` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false,
+ALTER TABLE `SetlistPlan` ADD COLUMN `isDeleted` BOOLEAN NOT NULL DEFAULT false,
     ADD COLUMN `visiblePermissionId` INTEGER NULL;
 
 -- CreateIndex
