@@ -6,7 +6,7 @@ import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Bar, CartesianGrid, ComposedChart, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import { toSorted } from "shared/arrayUtils";
-import { gLightSwatchColors } from "shared/color";
+import { gLightSwatchColors, gSwatchColors } from "shared/color";
 import { parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
@@ -32,12 +32,6 @@ const getColorForFeature = (feature: ActivityFeature): string | null => {
     const featureColorMap: Record<ActivityFeature, string> = {
         [ActivityFeature.global_ical_digest]: gLightSwatchColors.light_blue,
         [ActivityFeature.event_ical_digest]: gLightSwatchColors.light_blue,
-
-        [ActivityFeature.wiki_page_view]: gLightSwatchColors.light_pink,
-        [ActivityFeature.song_view]: gLightSwatchColors.light_pink,
-        [ActivityFeature.event_view]: gLightSwatchColors.light_pink,
-
-        [ActivityFeature.file_download]: gLightSwatchColors.light_purple,
 
         [ActivityFeature.metronome_persistent]: gLightSwatchColors.light_gold,
 
@@ -66,6 +60,63 @@ const getColorForFeature = (feature: ActivityFeature): string | null => {
         [ActivityFeature.custom_link_create]: gLightSwatchColors.light_citron,
         [ActivityFeature.custom_link_update]: gLightSwatchColors.light_citron,
         [ActivityFeature.custom_link_delete]: gLightSwatchColors.light_citron,
+
+        [ActivityFeature.event_segment_create]: gSwatchColors.blue,
+        [ActivityFeature.event_segment_edit]: gSwatchColors.blue,
+        [ActivityFeature.event_segment_delete]: gSwatchColors.blue,
+        [ActivityFeature.event_segment_reorder]: gSwatchColors.blue,
+
+        [ActivityFeature.event_view]: gLightSwatchColors.light_pink,
+        [ActivityFeature.event_create]: gSwatchColors.teal,
+        [ActivityFeature.event_edit]: gSwatchColors.teal,
+        [ActivityFeature.event_frontpage_edit]: gSwatchColors.teal,
+        [ActivityFeature.event_delete]: gSwatchColors.teal,
+
+        [ActivityFeature.profile_view]: gSwatchColors.dark_gray,
+        [ActivityFeature.profile_edit]: gSwatchColors.dark_gray,
+        [ActivityFeature.profile_change_instrument]: gSwatchColors.dark_gray,
+        [ActivityFeature.profile_change_default_instrument]: gSwatchColors.dark_gray,
+
+        [ActivityFeature.login_email]: gSwatchColors.pink,
+        [ActivityFeature.login_google]: gSwatchColors.pink,
+        [ActivityFeature.logout]: gSwatchColors.pink,
+        [ActivityFeature.signup_email]: gSwatchColors.red,
+        [ActivityFeature.signup_google]: gSwatchColors.red,
+        [ActivityFeature.forgot_password]: gSwatchColors.red,
+
+        [ActivityFeature.wiki_page_view]: gSwatchColors.light_gray,
+        [ActivityFeature.wiki_edit]: gSwatchColors.light_gray,
+        [ActivityFeature.wiki_change_visibility]: gSwatchColors.light_gray,
+
+        [ActivityFeature.frontpagegallery_reorder]: gSwatchColors.citron,
+        [ActivityFeature.frontpagegallery_item_create]: gSwatchColors.citron,
+        [ActivityFeature.frontpagegallery_item_edit]: gSwatchColors.citron,
+        [ActivityFeature.frontpagegallery_item_delete]: gSwatchColors.citron,
+        [ActivityFeature.frontpagegallery_item_change_visibility]: gSwatchColors.citron,
+
+        [ActivityFeature.file_download]: gSwatchColors.maroon,
+        [ActivityFeature.file_upload]: gSwatchColors.maroon,
+        [ActivityFeature.file_upload_url]: gSwatchColors.maroon,
+        [ActivityFeature.file_edit]: gSwatchColors.maroon,
+        [ActivityFeature.file_delete]: gSwatchColors.maroon,
+
+        [ActivityFeature.song_view]: gSwatchColors.purple,
+        [ActivityFeature.song_edit]: gSwatchColors.purple,
+        [ActivityFeature.song_edit_description]: gSwatchColors.purple,
+        [ActivityFeature.song_delete]: gSwatchColors.purple,
+        [ActivityFeature.song_create]: gSwatchColors.purple,
+        [ActivityFeature.song_credit_add]: gSwatchColors.purple,
+        [ActivityFeature.song_credit_edit]: gSwatchColors.purple,
+        [ActivityFeature.song_credit_delete]: gSwatchColors.purple,
+
+        [ActivityFeature.setlist_plan_create]: gSwatchColors.black,
+        [ActivityFeature.setlist_plan_save]: gSwatchColors.black,
+        [ActivityFeature.setlist_plan_delete]: gSwatchColors.black,
+
+        [ActivityFeature.setlist_create]: gSwatchColors.green,
+        [ActivityFeature.setlist_edit]: gSwatchColors.green,
+        [ActivityFeature.setlist_delete]: gSwatchColors.green,
+        [ActivityFeature.setlist_reorder]: gSwatchColors.green,
     };
 
     return featureColorMap[feature] || null;
@@ -86,20 +137,28 @@ interface FeatureLabelProps {
 }
 
 const FeatureLabel = (props: FeatureLabelProps) => {
-    const featureColor = getHashedColor(props.feature);
+    //const featureColor = getHashedColor(props.feature);
+    const color = getColorForFeature(props.feature);
 
     return <>
         <div
             style={{ display: "flex", alignItems: "center" }}
         >
-            <span style={{ color: featureColor }}>{props.feature}</span>
+            {/* <span>{props.feature}</span> */}
+            <CMChip
+                color={color}
+                size="small"
+                shape="rectangle"
+                onClick={() => props.onClickIsolate()}
+                tooltip={`Isolate ${props.feature}`}
+            >{props.feature}</CMChip>
             <span className="flex-spacer"></span>
             <span>
-                <MuiTooltip title={`Isolate ${props.feature}`} disableInteractive>
+                {/* <MuiTooltip title={`Isolate ${props.feature}`} disableInteractive>
                     <span>
                         <CMSmallButton onClick={props.onClickIsolate}>isol</CMSmallButton>
                     </span>
-                </MuiTooltip>
+                </MuiTooltip> */}
                 <MuiTooltip title={`Hide / exclude ${props.feature}`} disableInteractive>
                     <span>
                         <CMSmallButton onClick={props.onClickExclude}>hide</CMSmallButton>

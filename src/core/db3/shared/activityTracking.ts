@@ -3,7 +3,7 @@ import { z } from "zod";
 export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
     event_ical_digest = "event_ical_digest",
-    event_view = "event_view",
+
     metronome_persistent = "metronome_persistent", // metronome playing longer than 1 minute
     // note that link clicks are not 100% reliable;
     // for example right-clicking a link and opening in a new tab will not trigger this event.
@@ -40,6 +40,7 @@ export enum ActivityFeature {
     signup_google = "signup_google",
     forgot_password = "forgot_password",
 
+    event_view = "event_view",
     event_edit = "event_edit",
     event_frontpage_edit = "event_frontpage_edit",
     event_create = "event_create",
