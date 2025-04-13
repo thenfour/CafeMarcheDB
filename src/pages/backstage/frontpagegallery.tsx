@@ -16,7 +16,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
-import { DashboardContext } from "src/core/components/DashboardContext";
+import { DashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/FileDrop";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { Markdown } from "src/core/components/markdown/Markdown";
@@ -31,6 +31,8 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { AppContextMarker } from "src/core/components/AppContext";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 
 
 
@@ -47,6 +49,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     //const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const permissionId = dashboardContext.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
     const currentUser = useCurrentUser()[0]!;
@@ -67,6 +70,9 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
                 },
             }).then((resp) => {
                 setProgress(null);
+                void recordFeature({
+                    feature: ActivityFeature.frontpagegallery_item_create,
+                });
                 const promises = resp.files.map(file => {
                     const newGalleryItem = props.client.tableSpec.args.table.createNew(clientIntention) as db3.FrontpageGalleryItemPayloadForUpload;
                     newGalleryItem.fileId = file.id;
@@ -133,12 +139,16 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
     const [valueEn, setValueEn] = React.useState<string>(props.galleryItem.caption);
     const [valueFr, setValueFr] = React.useState<string>(props.galleryItem.caption_fr || "");
     const [valueNl, setValueNl] = React.useState<string>(props.galleryItem.caption_nl || "");
+    const recordFeature = useFeatureRecorder();
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const handleSave = async (): Promise<boolean> => {
         try {
-            console.log(`yo ?`);
+            void recordFeature({
+                feature: ActivityFeature.frontpagegallery_item_edit,
+                frontpageGalleryItemId: props.galleryItem.id,
+            });
             const newrow: db3.FrontpageGalleryItemPayload = {
                 ...props.galleryItem,
                 caption: valueEn || "",
@@ -237,6 +247,7 @@ export interface GalleryItemImageEditControlProps {
 };
 export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const recordFeature = useFeatureRecorder();
     const updateImageMutation = API.files.updateGalleryItemImageMutation.useToken();
     const [editingValue, setEditingValue] = React.useState<db3.FrontpageGalleryItemPayloadWithAncestorFile>(() => {
         const ev: db3.FrontpageGalleryItemPayloadWithAncestorFile = { ...props.value }; // create our own copy of the item, for live editing
@@ -288,6 +299,11 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     };
 
     const handleSaveClick = () => {
+        void recordFeature({
+            feature: ActivityFeature.frontpagegallery_item_edit,
+            frontpageGalleryItemId: editingValue.id,
+            context: `ImageEditorBake`,
+        });
         const args: UpdateGalleryItemImageParams = {
             galleryItemId: editingValue.id,
             imageParams: {
@@ -311,6 +327,11 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     };
 
     const handleSaveRotationClick = () => {
+        void recordFeature({
+            feature: ActivityFeature.frontpagegallery_item_edit,
+            frontpageGalleryItemId: editingValue.id,
+            context: `ImageEditorSave`,
+        });
         props.client.doUpdateMutation(editingValue).then((r) => {
             showSnackbar({ severity: "success", children: `params updated.` });
         }).catch((e) => {
@@ -488,9 +509,14 @@ interface GalleryItemProps {
 const GalleryItem = (props: GalleryItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
+    const recordFeature = useFeatureRecorder();
 
     const handleSoftDeleteClick = () => {
         const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, isDeleted: true };
+        void recordFeature({
+            feature: ActivityFeature.frontpagegallery_item_delete,
+            frontpageGalleryItemId: newrow.id,
+        });
         props.client.doUpdateMutation(newrow).then(() => {
             showSnackbar({ severity: "success", children: `item soft-deleted.` });
         }).catch(e => {
@@ -503,6 +529,10 @@ const GalleryItem = (props: GalleryItemProps) => {
 
     const handleVisibilityChange = (visiblePermission: VisibilityControlValue) => {
         const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, visiblePermission, visiblePermissionId: visiblePermission?.id || null };
+        void recordFeature({
+            feature: ActivityFeature.frontpagegallery_item_change_visibility,
+            frontpageGalleryItemId: newrow.id,
+        });
         props.client.doUpdateMutation(newrow).then(() => {
             // the referenced file should also assume the visibility, however that's not necessary. when viewing a file via gallery item, the file is automatically shown if the gallery item is.
             showSnackbar({ severity: "success", children: `Visibility updated.` });
@@ -548,9 +578,9 @@ const GalleryItem = (props: GalleryItemProps) => {
 
 ////////////////////////////////////////////////////////////////
 const MainContent = () => {
-
     const [showImages, setShowImages] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const recordFeature = useFeatureRecorder();
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
@@ -586,6 +616,11 @@ const MainContent = () => {
         const movingItem = items[args.removedIndex];
         const newPositionItem = items[args.addedIndex];
         assert(!!movingItem && !!newPositionItem, "moving item not found?");
+
+        void recordFeature({
+            feature: ActivityFeature.frontpagegallery_reorder,
+            frontpageGalleryItemId: movingItem.id,
+        });
 
         // be optimistic while we're refetching. if we were keeping our own state then we could, but we're displaying sort order directly from teh database so can't.
         //const newOrder = moveItemInArray(items, args.removedIndex, args.addedIndex).map((item, index) => ({ ...item, sortOrder: index }));
@@ -626,7 +661,9 @@ const MainContent = () => {
 const EditFrontpageGalleryPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Frontpage gallery" basePermission={Permission.edit_public_homepage}>
-            <MainContent />
+            <AppContextMarker name="FrontpageGalleryPage">
+                <MainContent />
+            </AppContextMarker>
         </DashboardLayout>
     )
 }

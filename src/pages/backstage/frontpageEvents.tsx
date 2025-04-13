@@ -3,6 +3,7 @@ import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventDetailContainer } from "src/core/components/EventComponents";
 import { CalculateEventMetadata_Verbose } from "src/core/components/EventComponentsBase";
@@ -78,7 +79,9 @@ const MainContent = () => {
 const FrontpageAgendaPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Homepage Agenda" basePermission={Permission.edit_public_homepage}>
-            <MainContent />
+            <AppContextMarker name="FrontpageAgendaPage">
+                <MainContent />
+            </AppContextMarker>
         </DashboardLayout>
     )
 }

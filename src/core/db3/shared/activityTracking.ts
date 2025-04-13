@@ -3,7 +3,6 @@ import { z } from "zod";
 export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
     event_ical_digest = "event_ical_digest",
-    wiki_page_view = "wiki_page_view",
     song_view = "song_view",
     event_view = "event_view",
     file_download = "file_download",
@@ -53,8 +52,15 @@ export enum ActivityFeature {
     event_segment_delete = "event_segment_delete",
     event_segment_reorder = "event_segment_reorder",
 
+    wiki_page_view = "wiki_page_view",
     wiki_edit = "wiki_edit",
     wiki_change_visibility = "wiki_change_visibility",
+
+    frontpagegallery_reorder = "frontpagegallery_reorder",
+    frontpagegallery_item_create = "frontpagegallery_item_create",
+    frontpagegallery_item_edit = "frontpagegallery_item_edit",
+    frontpagegallery_item_delete = "frontpagegallery_item_delete",
+    frontpagegallery_item_change_visibility = "frontpagegallery_item_change_visibility",
 };
 
 export const ZTRecordActionArgs = z.object({
