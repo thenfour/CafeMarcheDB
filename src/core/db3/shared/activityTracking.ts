@@ -36,10 +36,16 @@ export enum ActivityFeature {
     profile_edit = "profile_edit",
     profile_change_instrument = "profile_change_instrument",
     profile_change_default_instrument = "profile_change_default_instrument",
+    login_email = "login_email",
+    login_google = "login_google",
+    logout = "logout",
+    signup_email = "signup_email",
+    signup_google = "signup_google",
+    forgot_password = "forgot_password",
 };
 
 export const ZTRecordActionArgs = z.object({
-    uri: z.string(),
+    uri: z.string().optional(), // for server side this may not be available.
     userId: z.number().optional(), // optional for client-side actions
     feature: z.nativeEnum(ActivityFeature),
     context: z.string().optional(),

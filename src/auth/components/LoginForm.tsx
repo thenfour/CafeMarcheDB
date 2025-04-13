@@ -8,7 +8,9 @@ import { useMutation } from "@blitzjs/rpc"
 //import { Routes } from "@blitzjs/next"
 import React from "react"
 import { NameValuePair } from "src/core/components/CMCoreComponents2"
+import { useFeatureRecorder } from "src/core/components/DashboardContext"
 import { SnackbarContext } from "src/core/components/SnackbarContext"
+import { ActivityFeature } from "src/core/db3/shared/activityTracking"
 
 type LoginFormProps = {
   onSuccess?: (user: PromiseReturnType<typeof login>) => void
@@ -19,10 +21,16 @@ export const LoginForm = (props: LoginFormProps) => {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+  const recordFeature = useFeatureRecorder();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+
     e.preventDefault();
     try {
+      void recordFeature({
+        feature: ActivityFeature.login_email,
+        context: "LoginForm",
+      });
       const user = await loginMutation({
         email,
         password,

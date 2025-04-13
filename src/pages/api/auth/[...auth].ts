@@ -5,6 +5,8 @@ import { nanoid } from 'nanoid';
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import signupMutation from "src/auth/mutations/signup";
 import { api } from "src/blitz-server";
+import { recordAction } from "src/core/db3/server/recordActionServer";
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 import { CreatePublicData } from "types";
 
 export default api(
@@ -57,6 +59,11 @@ export default api(
                 if (user) {
                   // user already has correct email, but not the google id. might as well update it. i guess strictly it's not necessary,
                   // as long as we don't allow users to update email addresses.
+                  await recordAction({
+                    feature: ActivityFeature.login_google,
+                    userId: user.id,
+                    uri: undefined,
+                  }, ctx);
                   user = await db.user.update({
                     where: { id: user.id },
                     data: { googleId },
@@ -66,6 +73,11 @@ export default api(
                   // i should just create separate schema validation/mutation for when a user uses a password vs. external auth.
                   // but whatever; simpler to just supply a password that will never be used.
                   user = await signupMutation({ email, googleId, password: "1234567890!@#$%^&aoeuAOEU" + nanoid(), name: displayName }, ctx);
+                  await recordAction({
+                    feature: ActivityFeature.signup_google,
+                    userId: user.id,
+                    uri: undefined,
+                  }, ctx);
                 }
               }
 

@@ -60,6 +60,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
     const isShowingAdminControls = !!sess.showAdminControls;
     const [currentUser] = useCurrentUser();
+    const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
@@ -131,6 +132,10 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
 
         <MenuItem onClick={async () => {
             // just doing the mutation here will keep a bunch of app state; better to cleanly navigate to a simple logout page where we don't risk access exceptions.
+            void recordFeature({
+                feature: ActivityFeature.logout,
+                context: "AppBarAvatarMenu",
+            });
             closeMenu();
             simulateLinkClick(Routes.LogoutPage());
         }}>
