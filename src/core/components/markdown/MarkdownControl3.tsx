@@ -4,7 +4,7 @@ import { Permission } from 'shared/permissions';
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
 import { CMDBUploadFile } from '../CMDBUploadFile';
-import { useDashboardContext } from "../DashboardContext";
+import { useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { useSnackbar } from '../SnackbarContext';
 import { Markdown } from './Markdown';
 import { MarkdownCommandInvocationTriggerMap, MarkdownEditorCommand, MarkdownEditorCommandApi } from './MarkdownEditorCommandBase';
@@ -14,6 +14,7 @@ import { MarkdownLockIndicator } from './MarkdownLockIndicator';
 import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
+import { ActivityFeature } from "src/core/db3/shared/activityTracking";
 
 const kMaxImageDimension = 750;
 
@@ -51,6 +52,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
     const snackbar = useSnackbar();
     const dashboardContext = useDashboardContext();
+    const recordFeature = useFeatureRecorder();
 
     //const [textAreaRef, setTextAreaRef] = React.useState<HTMLTextAreaElement | null>(null);
     const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -89,6 +91,10 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         setUploadProgress(0);
 
         void snackbar.invokeAsync(async () => {
+            void recordFeature({
+                feature: ActivityFeature.file_upload,
+                context: "Markdown3Editor",
+            });
             const resp = await CMDBUploadFile({
                 fields: {
                     visiblePermission: Permission.visibility_public,

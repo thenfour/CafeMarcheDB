@@ -5,6 +5,7 @@ import React from "react";
 
 import { CoerceToBoolean, isValidURL } from "shared/utils";
 import { CircularProgressWithLabel } from "./CMCoreComponents2";
+import { AppContextMarker } from "./AppContext";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileDropWrapperProps {
@@ -208,7 +209,9 @@ export const CollapsableUploadFileComponent = (props: UploadFileComponentProps) 
     const [showUpload, setShowUpload] = React.useState<boolean>(false);
 
     return (showUpload ? <div className="uploadControlContainer">
-        <UploadFileComponent {...props} />
+        <AppContextMarker name="CollapsableUploadFileComponent">
+            <UploadFileComponent {...props} />
+        </AppContextMarker>
         <Button onClick={() => setShowUpload(false)}>Cancel</Button>
     </div> :
         <Button onClick={() => setShowUpload(true)}>Upload</Button>)

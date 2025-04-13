@@ -24,7 +24,7 @@ import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { CMDBUploadFile } from './CMDBUploadFile';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
-import { DashboardContext } from './DashboardContext';
+import { DashboardContext, useFeatureRecorder, useRecordFeatureUse } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown } from "./markdown/Markdown";
@@ -174,6 +174,7 @@ export const FileEditor = (props: FileEditorProps) => {
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
@@ -222,6 +223,10 @@ export const FileEditor = (props: FileEditorProps) => {
         initialValue={props.initialValue}
         onCancel={() => props.onClose()}
         onDelete={(tableClient) => {
+            void recordFeature({
+                feature: ActivityFeature.file_delete,
+                fileId: props.initialValue.id,
+            });
             tableClient.doDeleteMutation(props.initialValue.id, "softWhenPossible").then(() => {
                 showSnackbar({ severity: "success", children: "file delete successful" });
             }).catch((e) => {
@@ -232,6 +237,10 @@ export const FileEditor = (props: FileEditorProps) => {
             });
         }}
         onOK={(value, tableClient) => {
+            void recordFeature({
+                feature: ActivityFeature.file_edit,
+                fileId: props.initialValue.id,
+            });
             tableClient.doUpdateMutation(value).then(() => {
                 showSnackbar({ severity: "success", children: "file edit successful" });
             }).catch((e) => {
@@ -614,7 +623,7 @@ interface FileControlProps {
 };
 
 export const FileControl = (props: FileControlProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    //const dashboardContext = React.useContext(DashboardContext);
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
 
@@ -648,10 +657,11 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const permissionId = dashboardContext.getDefaultVisibilityPermission().id;
 
-    const user = useCurrentUser()[0]!;
+    //const user = useCurrentUser()[0]!;
 
     const [filterSpec, setFilterSpec] = React.useState<FileFilterAndSortSpec>({
         quickFilter: "",
@@ -670,6 +680,11 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
             setProgress(0);
+
+            void recordFeature({
+                feature: ActivityFeature.file_upload,
+            });
+
             CMDBUploadFile({
                 fields: {
                     ...props.uploadTags,
@@ -695,6 +710,11 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
     const handleURLSelect = (uri: string) => {
         setProgress(0);
+
+        void recordFeature({
+            feature: ActivityFeature.file_upload_url,
+        });
+
         CMDBUploadFile({
             fields: {
                 ...props.uploadTags,

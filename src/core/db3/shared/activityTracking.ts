@@ -5,7 +5,6 @@ export enum ActivityFeature {
     event_ical_digest = "event_ical_digest",
     song_view = "song_view",
     event_view = "event_view",
-    file_download = "file_download",
     metronome_persistent = "metronome_persistent", // metronome playing longer than 1 minute
     // note that link clicks are not 100% reliable;
     // for example right-clicking a link and opening in a new tab will not trigger this event.
@@ -61,6 +60,12 @@ export enum ActivityFeature {
     frontpagegallery_item_edit = "frontpagegallery_item_edit",
     frontpagegallery_item_delete = "frontpagegallery_item_delete",
     frontpagegallery_item_change_visibility = "frontpagegallery_item_change_visibility",
+
+    file_download = "file_download",
+    file_upload = "file_upload",
+    file_upload_url = "file_upload_url",
+    file_edit = "file_edit",
+    file_delete = "file_delete",
 };
 
 export const ZTRecordActionArgs = z.object({

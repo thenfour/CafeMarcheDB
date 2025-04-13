@@ -59,6 +59,12 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
             setProgress(0);
+
+            void recordFeature({
+                feature: ActivityFeature.file_upload,
+                context: "NewGalleryItemComponent",
+            });
+
             CMDBUploadFile({
                 fields: {
                     visiblePermissionId: permissionId,
