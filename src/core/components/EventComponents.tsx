@@ -1236,6 +1236,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusId || [];
     const highlightTypeIds = props.highlightTypeId || [];
+    const recordFeature = useFeatureRecorder();
 
     const visInfo = dashboardContext.getVisibilityInfo(eventData.event);
 
@@ -1318,6 +1319,10 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                     dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
                     onCancel={() => { }}
                     onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                        void recordFeature({
+                            feature: ActivityFeature.event_edit,
+                            context: "EditFieldsDialogButton",
+                        });
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
@@ -1331,6 +1336,9 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                         }).finally(refetch);
                     }}
                     onDelete={(api: EditFieldsDialogButtonApi) => {
+                        void recordFeature({
+                            feature: ActivityFeature.event_delete,
+                        });
                         tableClient.doDeleteMutation(eventData.event.id, 'softWhenPossible').then(() => {
                             showSnackbar({ children: "delete successful", severity: 'success' });
                             api.close();

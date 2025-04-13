@@ -42,6 +42,17 @@ export enum ActivityFeature {
     signup_email = "signup_email",
     signup_google = "signup_google",
     forgot_password = "forgot_password",
+
+    event_edit = "event_edit",
+    event_frontpage_edit = "event_frontpage_edit",
+    event_create = "event_create",
+    event_delete = "event_delete",
+
+    event_segment_create = "event_segment_create",
+    event_segment_edit = "event_segment_edit",
+    event_segment_delete = "event_segment_delete",
+    event_segment_reorder = "event_segment_reorder",
+
 };
 
 export const ZTRecordActionArgs = z.object({

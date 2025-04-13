@@ -12,9 +12,11 @@ import * as db3 from "src/core/db3/db3";
 import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../db3/components/IconMap";
 import { DialogActionsCM, simulateLinkClick } from "./CMCoreComponents2";
-import { DashboardContext } from "./DashboardContext";
+import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
+import { ActivityFeature } from "../db3/shared/activityTracking";
+import { AppContextMarker } from "./AppContext";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -28,6 +30,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const workflowQuery = DB3Client.useDb3Query(db3.xWorkflowDef_Search);
     const workflows = workflowQuery.items as db3.WorkflowDef_SearchPayload[];
@@ -109,6 +112,9 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new", clientIntention);
 
     const handleSaveClick = async () => {
+        void recordFeature({
+            feature: ActivityFeature.event_create,
+        });
         const payload: TinsertEventArgs = {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),
@@ -177,14 +183,16 @@ export const NewEventButton = (props: {}) => {
     return <>
         <Button onClick={() => setOpen(true)}>{gIconMap.Add()} Create a new event</Button>
         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-            <NewEventDialogWrapper
-                onCancel={
-                    () => {
+            <AppContextMarker name="new event dialog">
+                <NewEventDialogWrapper
+                    onCancel={
+                        () => {
+                            setOpen(false);
+                        }}
+                    onOK={() => {
                         setOpen(false);
-                    }}
-                onOK={() => {
-                    setOpen(false);
-                }} />
+                    }} />
+            </AppContextMarker>
         </ReactiveInputDialog>}
     </>;
 };

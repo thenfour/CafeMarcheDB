@@ -16,6 +16,7 @@ import * as db3 from "../db3";
 import { TAnyModel } from "../shared/apiTypes";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
+import { AppContextMarker } from "src/core/components/AppContext";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -273,15 +274,17 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
         clientIntention,
     });
 
-    return <DB3EditObject2Dialog
-        initialValue={initialValue}
-        onCancel={onCancel}
-        onOK={onOK}
-        onDelete={onDelete}
-        tableRenderClient={tableClient}
-        title={props.title}
-        description={props.description}
-    />
+    return <AppContextMarker name="DB3EditObjectDialog">
+        <DB3EditObject2Dialog
+            initialValue={initialValue}
+            onCancel={onCancel}
+            onOK={onOK}
+            onDelete={onDelete}
+            tableRenderClient={tableClient}
+            title={props.title}
+            description={props.description}
+        />
+    </AppContextMarker>;
 };
 
 

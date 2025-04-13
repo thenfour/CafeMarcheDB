@@ -431,7 +431,7 @@ const SearchSongsPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Songs" basePermission={Permission.view_songs}>
             <div className="eventsMainContent searchPage">
-                <AppContextMarker name="SearchSongsPage">
+                <AppContextMarker name="song search page">
                     <Suspense>
                         <SettingMarkdown setting="songs_markdown"></SettingMarkdown>
                     </Suspense>

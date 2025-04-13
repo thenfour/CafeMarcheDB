@@ -14,11 +14,13 @@ import { CMChip, CMChipContainer } from "./CMChip";
 import { EditTextField } from "./CMCoreComponents";
 import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
 import { useConfirm } from "./ConfirmationDialog";
-import { DashboardContext } from "./DashboardContext";
+import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 import { AgendaItem } from './homepageComponents';
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
+import { AppContextMarker } from "./AppContext";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 
 
 
@@ -45,7 +47,7 @@ export interface EditTextDialogProps {
     valueFr: string;
     columnSpecFr: db3.FieldBase<string>;
 };
-export const EditTextDialog = (props: EditTextDialogProps) => {
+const EditTextDialog = (props: EditTextDialogProps) => {
     const [valueEn, setValueEn] = React.useState<string>(props.valueEn);
     const [valueNl, setValueNl] = React.useState<string>(props.valueNl);
     const [valueFr, setValueFr] = React.useState<string>(props.valueFr);
@@ -93,7 +95,7 @@ export const EditTextDialog = (props: EditTextDialogProps) => {
 ////////////////////////////////////////////////////////////////
 // this control is a button which pops up a dialog.
 // by default JUST displays the button (not the text)
-export interface EditTextDialogButtonProps {
+interface EditTextDialogButtonProps {
     valueEn: string;
     columnSpecEn: db3.FieldBase<string>;
     valueNl: string;
@@ -108,7 +110,7 @@ export interface EditTextDialogButtonProps {
     dialogDescription: React.ReactNode;
     clientIntention: db3.xTableClientUsageContext
 };
-export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
+const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
     return <>
@@ -211,15 +213,19 @@ const EventFrontpageValuesTable = ({ valueEn, valueNl, valueFr }: { valueEn: str
 
 
 ////////////////////////////////////////////////////////////////
-export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
+const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const user = useCurrentUser()[0]!;
+    const recordFeature = useFeatureRecorder();
     const confirm = useConfirm();
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const handleChange = (valueEn: string | null, valueNl: string | null, valueFr: string | null) => {
+        void recordFeature({
+            feature: ActivityFeature.event_frontpage_edit,
+        });
         mutationToken.invoke({
             eventId: props.event.id,
             [props.fieldSpec.fieldNameEn]: valueEn,
@@ -321,8 +327,12 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const dashboardContext = React.useContext(DashboardContext);
+    const recordFeature = useFeatureRecorder();
 
     const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        void recordFeature({
+            feature: ActivityFeature.event_frontpage_edit,
+        });
         mutationToken.invoke({
             eventId: props.event.id,
             frontpageVisible: e.target.checked,
@@ -394,6 +404,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         });
         if (y) {
             try {
+                void recordFeature({
+                    feature: ActivityFeature.event_frontpage_edit,
+                });
                 await mutationToken.invoke({
                     eventId: props.event.id,
 
@@ -429,6 +442,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     };
 
     return <div className='EventFrontpageTabContent'>
+        {/* <AppContextMarker name="EventFrontpageTab"> */}
         <div className={`fieldContainer frontpageVisible`}>
             <div className='label'>
             </div>
@@ -548,6 +562,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             </div>
 
         }
+        {/* </AppContextMarker> */}
     </div>;
 };
 

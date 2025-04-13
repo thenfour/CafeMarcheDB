@@ -613,14 +613,16 @@ const EventListOuter = () => {
 const SearchEventsPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Events" basePermission={Permission.view_events_nonpublic}>
-            <div className="eventsMainContent searchPage">
-                <Suspense>
-                    <SettingMarkdown setting="events_markdown"></SettingMarkdown>
-                </Suspense>
-                <NewEventButton />
+            <AppContextMarker name="Event search page">
+                <div className="eventsMainContent searchPage">
+                    <Suspense>
+                        <SettingMarkdown setting="events_markdown"></SettingMarkdown>
+                    </Suspense>
+                    <NewEventButton />
 
-                <EventListOuter />
-            </div>
+                    <EventListOuter />
+                </div>
+            </AppContextMarker>
         </DashboardLayout>
     )
 }
