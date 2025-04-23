@@ -348,7 +348,7 @@ function getContextObjectTabData(
     return toSorted(contextObjects, (a, b) => b.itemCount - a.itemCount);
 }
 
-const DistinctContextObjectPieChart = ({ item, items }: { item: ContextObjectDistinctItem, items: ContextObjectDistinctItem[] }) => {
+const DistinctContextObjectPieChart = ({ item, items, innerRadius = 7, outerRadius = 25 }: { item: ContextObjectDistinctItem, items: ContextObjectDistinctItem[], innerRadius?: number, outerRadius?: number }) => {
     const chartData = items.map((contextObject) => ({
         ...contextObject,
         fill: contextObject.key === item.key ? getHashedColor(contextObject.key) : "#f8f8f8",
@@ -360,8 +360,8 @@ const DistinctContextObjectPieChart = ({ item, items }: { item: ContextObjectDis
             data={chartData}
             cx="50%"
             cy="50%"
-            innerRadius={7}
-            outerRadius={25}
+            innerRadius={innerRadius}
+            outerRadius={outerRadius}
             isAnimationActive={false}
         />
     </PieChart>;
@@ -414,6 +414,12 @@ const renderCustomTooltip = ({ active, label, payload, ...e }: any, item: Contex
     return null;
 };
 
+const CMBar = ({ value01, color }: { value01: number, color?: string }) => {
+    return <div style={{ width: "150px", height: "13px", backgroundColor: "#eee", borderRadius: "2px", overflow: "hidden" }}>
+        <div style={{ width: `${value01 * 100}%`, height: "100%", backgroundColor: color }}></div>
+    </div>;
+};
+
 type ContextObjectTabData = {
     id: DetailTabId,
     tabHeader: React.ReactNode,
@@ -430,24 +436,60 @@ const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData 
         fill: getHashedColor(contextObject.key),
     }));
 
-    return item.items.length > 1 && <div>
-        <PieChart width={210} height={210} data={chartData}>
-            <Pie
-                dataKey="itemCount"
-                nameKey={"label"}
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={7}
-                outerRadius={100}
-                isAnimationActive={false}
-                label={(e) => {
-                    return renderCustomizedLabel(e, chartData);
-                }}
-                labelLine={false}
-            />
-            <Tooltip content={e => renderCustomTooltip(e, item)} />
-        </PieChart>
+    const TopCount = 5;
+
+    const sortedItems = item.items.sort((a, b) => b.itemCount - a.itemCount);
+    const topNItems = sortedItems.slice(0, TopCount);
+
+    return item.items.length > 1 && <div className="DistinctContextObjectTabContent">
+        <div className="header">
+            <PieChart width={210} height={210} data={chartData}>
+                <Pie
+                    dataKey="itemCount"
+                    nameKey={"label"}
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={7}
+                    outerRadius={100}
+                    isAnimationActive={false}
+                    label={(e) => {
+                        return renderCustomizedLabel(e, chartData);
+                    }}
+                    labelLine={false}
+                />
+                <Tooltip content={e => renderCustomTooltip(e, item)} />
+            </PieChart>
+            <div>
+                top {TopCount} {item.tabHeader}:
+                <table>
+                    <tbody>
+                        {topNItems.map((contextObject) => {
+                            return <tr key={contextObject.key}>
+                                <td>
+                                    <CMBar value01={contextObject.itemCount / contextObject.totalCount} color={getHashedColor(contextObject.key)} />
+                                </td>
+                                <td>
+                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", color: getHashedColor(contextObject.key) }}>
+                                        {contextObject.percentageOfTotal}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", color: getHashedColor(contextObject.key) }}>
+                                        ({contextObject.itemCount} of {contextObject.totalCount})
+                                    </span>
+                                </td>
+                                <td>
+                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", color: getHashedColor(contextObject.key) }}>
+                                        {contextObject.headingIndicator}
+                                    </span>
+                                </td>
+                            </tr>;
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
         {item.items.map((contextObject) => {
             return <div key={contextObject.key}>
                 <div style={{ display: "flex", fontWeight: "bold", alignItems: "center", backgroundColor: getHashedColor(contextObject.key, { alpha: "0.2" }), borderTop: `3px solid ${getHashedColor(contextObject.key)}` }}>

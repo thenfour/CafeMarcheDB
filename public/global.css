@@ -889,3 +889,8 @@ solution is to
 .recharts-sector:hover {
   opacity: 100%;
 }
+
+.DistinctContextObjectTabContent .header {
+  display: flex;
+  align-items: center;
+}
