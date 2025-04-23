@@ -1,79 +1,179 @@
 import { faker } from '@faker-js/faker';
-import { slugify } from '../../shared/rootroot';
-import { ActivityFeature } from '../../src/core/db3/shared/activityTracking';
-import { SeedingState } from './base';
 import { GetDateMinutesFromNow } from '../../shared/time';
+import { ActivityFeature, DeviceInfo } from '../../src/core/db3/shared/activityTracking';
+import { SeedingState } from './base';
 
 const kActivityIntervalMinimumMinutes = 1;
 const kActivityIntervalMaximumMinutes = 180;
 const kActivityLayerUserCounts = [2, 4, 100];
 
+
+
+/* -------------------------------------------------------------------------- */
+/* Fixed value pools                                                          */
+const pointerOptions = ["touch", "cursor"] as const;
+
+const resolutionOptions = [
+    { width: 2280, height: 1080 }, // desktop FHD
+    { width: 1920, height: 1080 }, // desktop FHD
+    { width: 1366, height: 768 },  // common laptop
+    { width: 1280, height: 720 },  // small notebook / landscape tablet
+    { width: 1024, height: 768 },  // small notebook / landscape tablet
+    { width: 390, height: 844 },  // iPhone 15 Pro portrait
+] as const;
+
+const deviceClassOptions = ["desktop", "tablet", "phone"] as const;
+
+const browserOptions = ["chrome", "safari", "firefox", "edge"] as const;
+
+const osOptions = ["windows", "macos", "linux", "android"] as const;
+
+const languageOptions = ["en", "nl", "fr", "de"] as const;
+
+const localeOptions = ["en-us", "en-au", "fr-be", "nl-be", "de-ca"] as const;
+
+const timezoneOptions = [
+    "america/new_york",
+    "europe/berlin",
+    "asia/tokyo",
+    "australia/sydney",
+] as const;
+
+/* -------------------------------------------------------------------------- */
+/* Helper to optionally include a value                                       */
+const maybe = <T>(value: T, includeAll: boolean): T | undefined =>
+    includeAll || Math.random() < 0.5 ? value : undefined;
+
+/* -------------------------------------------------------------------------- */
+/* Main factory                                                               */
+export const getRandomClientData = (): DeviceInfo => {
+    const roll = Math.random();
+
+    // 1) 33 % chance: no data at all
+    if (roll < 0.33) return {};
+
+    // 2) 33 % chance: "some" data
+    const includeAll = roll > 0.66;
+
+    const info: DeviceInfo = {
+        pointer: maybe(faker.helpers.arrayElement(pointerOptions), includeAll),
+        screenInfo: maybe(
+            faker.helpers.arrayElement(resolutionOptions),
+            includeAll,
+        ),
+        deviceClass: maybe(
+            faker.helpers.arrayElement(deviceClassOptions),
+            includeAll,
+        ),
+        browser: maybe(faker.helpers.arrayElement(browserOptions), includeAll),
+        operatingSystem: maybe(faker.helpers.arrayElement(osOptions), includeAll),
+        language: maybe(faker.helpers.arrayElement(languageOptions), includeAll),
+        locale: maybe(faker.helpers.arrayElement(localeOptions), includeAll),
+        timezone: maybe(faker.helpers.arrayElement(timezoneOptions), includeAll),
+    };
+
+    /* Strip undefined keys so the object satisfies the Zod schema cleanly */
+    return Object.fromEntries(
+        Object.entries(info).filter(([, v]) => v !== undefined),
+    ) as DeviceInfo;
+};
+
+
 const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Date) => {
 
     // get random ActivityFeature.
-    const feature = faker.helpers.arrayElement([
-        ActivityFeature.global_ical_digest,
-        ActivityFeature.wiki_page_view,
-        ActivityFeature.song_view,
-        ActivityFeature.event_view,
-        //ActivityFeature.file_download,
-    ]);
+    // const feature = faker.helpers.arrayElement([
+    //     ActivityFeature.global_ical_digest,
+    //     ActivityFeature.wiki_page_view,
+    //     ActivityFeature.song_view,
+    //     ActivityFeature.event_view,
+    //     //ActivityFeature.file_download,
+    // ]);
 
-    switch (feature) {
-        case ActivityFeature.global_ical_digest:
-            await gState.prisma.action.create({
-                data: {
-                    feature,
-                    isClient: false,
-                    userId,
-                    createdAt: date,
-                    uri: faker.internet.url(),
-                }
-            });
-            return;
-        case ActivityFeature.wiki_page_view:
-            const wikiPage = faker.helpers.arrayElement(gState.gAllWikiPages);
-            await gState.prisma.action.create({
-                data: {
-                    feature,
-                    isClient: true,
-                    userId,
-                    createdAt: date,
-                    uri: `/backstage/wiki/${wikiPage.slug}`,
-                    wikiPageId: wikiPage.id,
-                }
-            });
-            return;
-        case ActivityFeature.song_view:
-            const song = faker.helpers.arrayElement(gState.gAllSongs);
-            await gState.prisma.action.create({
-                data: {
-                    feature,
-                    isClient: true,
-                    userId,
-                    createdAt: date,
-                    uri: `/backstage/song/${song.id}/${slugify(song.name)}`,
-                    songId: song.id,
-                }
-            });
-            return;
-        default:
-        case ActivityFeature.event_view:
-            const event = faker.helpers.arrayElement(gState.gAllEvents);
-            await gState.prisma.action.create({
-                data: {
-                    feature,
-                    isClient: true,
-                    userId,
-                    createdAt: date,
-                    uri: `/backstage/event/${event.id}/${slugify(event.name)}`,
-                    eventId: event.id,
-                }
-            });
-            return;
-        case ActivityFeature.file_download:
-            return;
-    };
+    const clientData = getRandomClientData();
+
+    await gState.prisma.action.create({
+        data: {
+            feature: faker.helpers.arrayElement(Object.values(ActivityFeature)),
+            isClient: faker.datatype.boolean(),
+            userId,
+            createdAt: date,
+            uri: faker.internet.url(),
+            wikiPageId: maybe(faker.helpers.arrayElement(gState.gAllWikiPages).id, false),
+            songId: maybe(faker.helpers.arrayElement(gState.gAllSongs).id, false),
+            eventId: maybe(faker.helpers.arrayElement(gState.gAllEvents).id, false),
+
+            queryText: maybe(faker.lorem.sentence({ min: 0, max: 2 }), false),
+
+            context: faker.lorem.words({ min: 1, max: 6 }).replaceAll(" ", "/"),
+            browserName: clientData.browser,
+            deviceClass: clientData.deviceClass,
+            pointerType: clientData.pointer,
+            screenHeight: clientData.screenInfo?.height,
+            screenWidth: clientData.screenInfo?.width,
+            operatingSystem: clientData.operatingSystem,
+            language: clientData.language,
+            locale: clientData.locale,
+            timezone: clientData.timezone,
+        }
+    });
+
+
+    // switch (feature) {
+    //     case ActivityFeature.global_ical_digest:
+    //         await gState.prisma.action.create({
+    //             data: {
+    //                 feature,
+    //                 isClient: false,
+    //                 userId,
+    //                 createdAt: date,
+    //                 uri: faker.internet.url(),
+    //             }
+    //         });
+    //         return;
+    //     case ActivityFeature.wiki_page_view:
+    //         const wikiPage = faker.helpers.arrayElement(gState.gAllWikiPages);
+    //         await gState.prisma.action.create({
+    //             data: {
+    //                 feature,
+    //                 isClient: true,
+    //                 userId,
+    //                 createdAt: date,
+    //                 uri: `/backstage/wiki/${wikiPage.slug}`,
+    //                 wikiPageId: wikiPage.id,
+    //             }
+    //         });
+    //         return;
+    //     case ActivityFeature.song_view:
+    //         const song = faker.helpers.arrayElement(gState.gAllSongs);
+    //         await gState.prisma.action.create({
+    //             data: {
+    //                 feature,
+    //                 isClient: true,
+    //                 userId,
+    //                 createdAt: date,
+    //                 uri: `/backstage/song/${song.id}/${slugify(song.name)}`,
+    //                 songId: song.id,
+    //             }
+    //         });
+    //         return;
+    //     default:
+    //     case ActivityFeature.event_view:
+    //         const event = faker.helpers.arrayElement(gState.gAllEvents);
+    //         await gState.prisma.action.create({
+    //             data: {
+    //                 feature,
+    //                 isClient: true,
+    //                 userId,
+    //                 createdAt: date,
+    //                 uri: `/backstage/event/${event.id}/${slugify(event.name)}`,
+    //                 eventId: event.id,
+    //             }
+    //         });
+    //         return;
+    //     case ActivityFeature.file_download:
+    //         return;
+    // };
 
 };
 

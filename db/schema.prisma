@@ -100,11 +100,16 @@ model Action {
   queryText String? // if applicable
   context   String? // free string trying to describe client context triggering the action.
 
-  pointerType  String?
+  pointerType  String? // lowercase.
   screenWidth  Int?
   screenHeight Int?
-  deviceClass  String?
-  browserName  String?
+  deviceClass  String? // lowercase.
+  browserName  String? // lowercase.
+
+  operatingSystem String? // lowercase.
+  language        String? // lowercase. "en"
+  locale          String? // lowercase. "en-us"
+  timezone        String? // lowercase. e.g. "europe/brussels"
 
   fileId         Int?
   file           File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)

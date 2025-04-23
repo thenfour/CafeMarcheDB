@@ -285,8 +285,31 @@ const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTable
     </table>;
 }
 
-type DetailTabId = "general" | "features" | "users" | "songs" | "events" | "wikiPages" | "files" | "contexts" |
-    "attendance" | "customLink" | "eventSegment" | "setlist" | "frontpageGalleryItem" | "menuLink" | "setlistPlan" | "songCreditType" | "instrument";
+type DetailTabId = "general" |
+    "features" |
+    "users" |
+    "songs" |
+    "events" |
+    "wikiPages" |
+    "files" |
+    "contexts" |
+    "attendance" |
+    "customLink" |
+    "eventSegment" |
+    "setlist" |
+    "frontpageGalleryItem" |
+    "menuLink" |
+    "setlistPlan" |
+    "songCreditType" |
+    "instrument" |
+    "screenSize" |
+    "operatingSystem" |
+    "pointerType" |
+    "browser" |
+    "deviceClass" |
+    "language" |
+    "locale" |
+    "timezone";
 
 type ContextObjectDistinctItem = {
     key: string,
@@ -387,7 +410,7 @@ interface GeneralFeatureDetailAreaProps {
 };
 
 const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
-    const dashboardContext = useDashboardContext();
+    //const dashboardContext = useDashboardContext();
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
@@ -553,7 +576,83 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.instrumentId,
                 keyFn: (item) => item.instrumentId!.toString(),
                 renderFn: (item) => <InstrumentChip value={item.instrumentId!} />,
-            }
+            },
+            {
+                id: "screenSize",
+                label: "Screen Size",
+                filterFn: (item) => !!item.screenWidth && !!item.screenHeight,
+                keyFn: (item) => {
+                    return `${item.screenWidth}x${item.screenHeight}`;
+                },
+                renderFn: (item) => <CMChip>{item.screenWidth}x{item.screenHeight}</CMChip>,
+            },
+            {
+                id: "operatingSystem",
+                label: "Operating System",
+                filterFn: (item) => !!item.operatingSystem,
+                keyFn: (item) => {
+                    return item.operatingSystem!;
+                },
+                renderFn: (item) => <CMChip>{item.operatingSystem}</CMChip>,
+            },
+            {
+                id: "pointerType",
+                label: "Pointer type",
+                filterFn: (item) => !!item.pointerType,
+                keyFn: (item) => {
+                    return item.pointerType!;
+                },
+                renderFn: (item) => <CMChip>{item.pointerType}</CMChip>,
+            },
+            {
+                id: "browser",
+                label: "Browser",
+                filterFn: (item) => !!item.browserName,
+                keyFn: (item) => {
+                    return item.browserName!;
+                },
+                renderFn: (item) => <CMChip>{item.browserName}</CMChip>,
+            },
+            {
+                id: "deviceClass",
+                label: "Device type",
+                filterFn: (item) => !!item.deviceClass,
+                keyFn: (item) => {
+                    return item.deviceClass!;
+                },
+                renderFn: (item) => <CMChip>{item.deviceClass}</CMChip>,
+            },
+
+            {
+                id: "language",
+                label: "Language",
+                filterFn: (item) => !!item.language,
+                keyFn: (item) => {
+                    return item.language!;
+                },
+                renderFn: (item) => <CMChip>{item.language}</CMChip>,
+            },
+
+            {
+                id: "locale",
+                label: "Locale",
+                filterFn: (item) => !!item.locale,
+                keyFn: (item) => {
+                    return item.locale!;
+                },
+                renderFn: (item) => <CMChip>{item.locale}</CMChip>,
+            },
+
+            {
+                id: "timezone",
+                label: "Timezone",
+                filterFn: (item) => !!item.timezone,
+                keyFn: (item) => {
+                    return item.timezone!;
+                },
+                renderFn: (item) => <CMChip>{item.timezone}</CMChip>,
+            },
+
         ];
 
         const data = detail?.data ?? [];

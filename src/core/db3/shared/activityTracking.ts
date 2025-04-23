@@ -89,6 +89,11 @@ export const ZDeviceInfo = z.object({
     }).optional(),
     deviceClass: z.enum(['phone', 'tablet', 'desktop']).optional(),
     browser: z.enum(['safari', 'firefox', 'chrome', 'edge', 'opera']).optional(),
+
+    operatingSystem: z.string().optional(), // e.g. "windows", "macos", "linux", "android", "ios"
+    language: z.string().optional(), // the 2-letter language code, e.g. 'en', 'de', 'fr', etc.
+    locale: z.string().optional(), // lowercase, e.g. "en-us", "de-de", etc.
+    timezone: z.string().optional(), // lowercase; e.g. "europe/berlin", "america/new_york", etc.
 });
 
 export type DeviceInfo = z.infer<typeof ZDeviceInfo>;
