@@ -31,7 +31,6 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 const getColorForFeature = (feature: ActivityFeature): string | null => {
     const featureColorMap: Record<ActivityFeature, string> = {
         [ActivityFeature.global_ical_digest]: gLightSwatchColors.light_blue,
-        [ActivityFeature.event_ical_digest]: gLightSwatchColors.light_blue,
 
         [ActivityFeature.metronome_persistent]: gLightSwatchColors.light_gold,
 
