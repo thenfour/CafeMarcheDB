@@ -7,10 +7,10 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import { slugify, unslugify } from "shared/rootroot";
 import { Timing } from "shared/time";
-import { IsNullOrWhitespace, getEnumValues, parseMimeType } from "shared/utils";
+import { IsNullOrWhitespace, getEnumValues, isInternalUrl, parseMimeType } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMSinglePageSurfaceCard, InspectObject } from "src/core/components/CMCoreComponents";
 import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -30,6 +30,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
+import { collectDeviceInfo } from "@/src/core/db3/shared/activityTracking";
 
 interface FilterSpec {
     qfText: string;
@@ -157,11 +158,6 @@ const AutoAssignInstrumentTester = () => {
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.SlugColumnClient({
-                columnName: "slug", cellWidth: 120, previewSlug: (obj) => {
-                    return null;
-                }
-            }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
             new DB3Client.GenericStringColumnClient({ columnName: "autoAssignFileLeafRegex", cellWidth: 200, fieldCaption: "Regex" }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
@@ -289,49 +285,37 @@ const ActivityLogValueViewerTester = () => {
 };
 
 
-// const AutoCompleteSongEventTester = () => {
-//     const [query, setQuery] = React.useState<string>("");
-//     const [results, setResults] = React.useState<MatchingSlugItem[]>([]);
-//     const [loading, setLoading] = React.useState<boolean>(false);
-
-//     const fetchResults = async (query: string) => {
-//         setLoading(true);
-//         const results = await fetchObjectQuery(query);
-//         console.log(`Results for query: ${query}`);
-//         console.log(results);
-//         setResults(results);
-//         setLoading(false);
-//     };
-
-//     React.useEffect(() => {
-//         fetchResults(query);
-//     }, [query]);
-
-//     return <div>
-//         <NameValuePair
-//             name="Keyword search"
-//             value={
-//                 <div>
-//                     <CMTextInputBase
-//                         value={query}
-//                         onChange={(e, v) => setQuery(v)}
-//                     />
-//                     <div>
-//                         {loading ? "Loading..." : (<div>
-//                             {results.map((r, i) => (
-//                                 <AssociationValue key={i} value={r} />
-//                             ))}
-//                         </div>)}
-//                     </div>
-//                 </div>}
-//         />
-//     </div>;
-// };
-
-
 const AutoCompleteSongEventTester = () => {
     const [result, setResult] = React.useState<QuickSearchItemMatch | null>(null);
     return <AssociationSelect value={result} onChange={(v) => setResult(v)} allowedItemTypes={QuickSearchItemTypeSets.Everything!} />;
+};
+
+
+const InternalUriTester = () => {
+    const [uri, setUri] = React.useState<string>("");
+    return <NameValuePair name="Internal URI" value={
+        <div>
+            <CMTextField value={uri} onChange={(e, v) => setUri(v)} autoFocus={false} label="URI" />
+            <pre>{isInternalUrl(uri) ? "Internal" : "External"}</pre>
+        </div>
+    } />
+};
+
+
+const ClientInfoTester = () => {
+
+    const [info, setInfo] = React.useState<any>(null);
+
+    React.useEffect(() => {
+        collectDeviceInfo().then((info) => {
+            setInfo(info);
+        });
+    }, [])
+
+    return <NameValuePair name="Client info" value={
+        <InspectObject src={info} />
+
+    } />
 };
 
 
@@ -352,6 +336,10 @@ const MainContent = () => {
         <div>
             <a href="test/quickSearchTest">quickSearchTest.tsx</a>
         </div>
+
+        <ClientInfoTester />
+
+        <InternalUriTester />
 
         <AutoCompleteSongEventTester />
 

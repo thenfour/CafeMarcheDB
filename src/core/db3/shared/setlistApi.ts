@@ -47,13 +47,13 @@ export type EventSongListSongItemWithSong = Prisma.EventSongListSongGetPayload<{
                 lengthSeconds: true,
                 startBPM: true,
                 endBPM: true,
+                tags: true,
             },
         }
     }
 }>;
 
 export type EventSongListSongItem = EventSongListSongItemWithSong & {
-    //song: LocalSongPayload;
     type: "song";
     index: number;
     runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
@@ -105,6 +105,7 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
                         lengthSeconds: true,
                         startBPM: true,
                         endBPM: true,
+                        tags: true,
                     }
                 }
             }

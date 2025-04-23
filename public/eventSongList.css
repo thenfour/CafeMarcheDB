@@ -168,12 +168,51 @@
 .songListSongTable .td.songName,
 .songListSongTable .th.songName {
     width: 340px;
+    position: relative;
     display: flex;
     justify-content: flex-start;
     font-weight: bold;
     color: var(--song-hash-color);
     padding: 2px 0;
 }
+
+.songListSongTable .td.songName .songTagIndicatorContainer {
+    position: absolute;
+    right: 0;
+    /* top: 0;  <-- dont set to center vertically*/
+    display: flex;
+    gap: 4px;
+}
+
+.songListSongTable .td.songName .songTagIndicator {
+    padding: 1px 3px;
+    background-color: #ddd;
+    border-radius: 4px;
+    user-select: none;
+    opacity: 50%;
+    display: flex;
+    align-items: center;
+
+    font-family: var(--ff-mono);
+    color: #666;
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.songListSongTable .td.songName .songTagIndicator:hover {
+    opacity: 100%;
+}
+
+
+.songListSongTable .td.songName .songTagIndicator.bare {
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+    opacity: 100%;
+    user-select: none;
+    font-size: 16px;
+}
+
 
 .songListSongTable .td.songName {
     font-size: 20px;

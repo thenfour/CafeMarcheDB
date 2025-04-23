@@ -6,15 +6,15 @@ import { ColorVariationSpec, gAppColors } from "shared/color";
 import { gPublicPermissions, Permission } from 'shared/permissions';
 import { partition, TableAccessor } from 'shared/rootroot';
 import { useThrottle } from 'shared/useGeneral';
+import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls';
 import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
 import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
-import { ActivityFeature, ClientActivityParams, UseFeatureUseClientActivityParams } from '../db3/shared/activityTracking';
+import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from '../db3/shared/activityTracking';
 import { useAppContext } from './AppContext';
-import { IsNullOrWhitespace } from 'shared/utils';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -217,14 +217,18 @@ export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFe
     const appCtx = useAppContext();
     // react likes to make redundant renders; throttle.
     const throttledRecordAction = useThrottle(() => {
-        void recordActionProc({
-            ...appCtx,
-            ...associations,
-            uri: window.location.href,
-            context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
-            feature,
+        collectDeviceInfo().then(deviceInfo => {
+            void recordActionProc({
+                ...appCtx,
+                ...associations,
+                uri: window.location.href,
+                context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
+                feature,
+                deviceInfo,
+            });
         });
     }, 250);
+
 
     React.useEffect(throttledRecordAction, []);
 }
@@ -233,12 +237,14 @@ export const useFeatureRecorder = () => {
     const [recordActionProc] = useMutation(recordActionMutation);
     const appCtx = useAppContext();
     return async ({ feature, context, ...associations }: ClientActivityParams) => {
+        const deviceInfo = await collectDeviceInfo();
         await recordActionProc({
             ...appCtx,
             ...associations,
             uri: window.location.href,
             context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
             feature,
+            deviceInfo,
         });
     }
 }

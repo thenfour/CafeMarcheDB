@@ -8,6 +8,11 @@
       "esnext.array"
     ],
     "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,

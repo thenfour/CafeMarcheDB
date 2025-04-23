@@ -477,22 +477,6 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         name: null,
         className: "admin events",
         items: [
-            { type: "link", path: "/backstage/editEventSongLists", linkCaption: "Event Song Lists", renderIcon: () => <FormatListNumberedIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editEventSongListSongs", linkCaption: "Event Song List Songs", renderIcon: () => <FormatListNumberedIcon />, permission: Permission.sysadmin },
-        ],
-    },
-    {
-        name: null,
-        className: "admin events",
-        items: [
-            { type: "link", path: "/backstage/editEventUserResponses", linkCaption: "Event User Responses", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editEventSegmentUserResponses", linkCaption: "Segment User Responses", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
-        ],
-    },
-    {
-        name: null,
-        className: "admin events",
-        items: [
             { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },

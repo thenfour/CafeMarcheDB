@@ -1,4 +1,4 @@
-// insertOrUpdateWorkflowDefMutation
+// recordActionMutation
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
@@ -7,7 +7,7 @@ import { ZTRecordActionArgs } from "../shared/activityTracking";
 
 export default resolver.pipe(
     resolver.zod(ZTRecordActionArgs),
-    async ({ uri, feature, context, ...associations }, ctx: AuthenticatedCtx) => {
+    async ({ uri, feature, context, deviceInfo, ...associations }, ctx: AuthenticatedCtx) => {
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
 
         await db.action.create({
@@ -17,14 +17,15 @@ export default resolver.pipe(
                 uri,
                 feature,
                 context,
-                //queryText: args.queryText,
+
+                // device info...
+                screenHeight: deviceInfo?.screenInfo?.height,
+                screenWidth: deviceInfo?.screenInfo?.width,
+                deviceClass: deviceInfo?.deviceClass,
+                pointerType: deviceInfo?.pointer,
+                browserName: deviceInfo?.browser,
 
                 ...associations,
-
-                // eventId: args.eventId,
-                // fileId: args.fileId,
-                // songId: args.songId,
-                // wikiPageId: args.wikiPageId,
             },
         });
 

@@ -70,6 +70,8 @@ export const xSongTag = new db3.xTable({
             sortOrder: 0,
             color: null,
             significance: null,
+            indicator: null,
+            indicatorCssClass: null,
         };
     },
     getRowInfo: (row: SongTagPayload) => ({
@@ -93,6 +95,18 @@ export const xSongTag = new db3.xTable({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+        }),
+        new GenericStringField({
+            columnName: "indicator",
+            allowNull: true,
+            format: "plain",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+        }),
+        new GenericStringField({
+            columnName: "indicatorCssClass",
+            allowNull: true,
+            format: "plain",
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({

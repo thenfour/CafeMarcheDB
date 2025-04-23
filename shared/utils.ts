@@ -1,5 +1,4 @@
 import { crc32 } from "@foxglove/crc";
-import { Article } from "@mui/icons-material";
 import db from "db";
 import { Size } from "src/core/db3/shared/apiTypes";
 import z from "zod";
@@ -720,3 +719,4 @@ export function isInternalUrl(href: string): boolean {
         return true;
     }
 }
+

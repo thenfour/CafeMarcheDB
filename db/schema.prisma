@@ -100,6 +100,12 @@ model Action {
   queryText String? // if applicable
   context   String? // free string trying to describe client context triggering the action.
 
+  pointerType  String?
+  screenWidth  Int?
+  screenHeight Int?
+  deviceClass  String?
+  browserName  String?
+
   fileId         Int?
   file           File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)
   eventId        Int?
@@ -353,14 +359,16 @@ model SongCredit {
 }
 
 model SongTag {
-  id              Int                  @id @default(autoincrement())
-  text            String               @db.VarChar(768)
-  description     String               @db.MediumText
-  color           String?
-  significance    String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  showOnSongLists Boolean              @default(false)
-  sortOrder       Int                  @default(0)
-  songs           SongTagAssociation[]
+  id                Int                  @id @default(autoincrement())
+  text              String               @db.VarChar(768)
+  description       String               @db.MediumText
+  color             String?
+  significance      String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  showOnSongLists   Boolean              @default(false)
+  sortOrder         Int                  @default(0)
+  indicator         String? // a little overlay char or so, batons/pompoms...
+  indicatorCssClass String?
+  songs             SongTagAssociation[]
 
   @@index([text])
   @@index([significance])

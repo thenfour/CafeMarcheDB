@@ -10,10 +10,10 @@ import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBas
 import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { moveItemInArray } from 'shared/arrayUtils';
+import { moveItemInArray, sortBy, toSorted } from 'shared/arrayUtils';
 import { gSwatchColors } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
+import { CoalesceBool, getHashedColor, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
@@ -38,6 +38,20 @@ import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 
+const SongTagIndicatorContainer = ({ value }: { value: SetlistAPI.EventSongListSongItem }) => {
+    const dashboardContext = React.useContext(DashboardContext);
+    const allSongTags = value.song.tags.map(t => dashboardContext.songTag.getById(t.tagId)).filter(t => !!t);
+    const tagsWithIndicators = allSongTags.filter(t => !IsNullOrWhitespace(t.indicator));
+    if (!tagsWithIndicators.length) return null;
+    const sortedTags = sortBy(tagsWithIndicators, t => t.sortOrder);
+    return <div className='songTagIndicatorContainer'>
+        {sortedTags.map((tag, i) => {
+            return <Tooltip title={tag.text} key={i} disableInteractive>
+                <div key={i} className={`songTagIndicator ${tag.indicatorCssClass}`}>{tag.indicator}</div>
+            </Tooltip>;
+        })}
+    </div>;
+};
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
     sortOrder: number,
@@ -266,7 +280,10 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
             </div>
             <div className="td songName">
-                {props.value.type === 'song' && <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>}
+                {props.value.type === 'song' && <>
+                    <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
+                    <SongTagIndicatorContainer value={props.value} />
+                </>}
             </div>
             <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
             <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
@@ -369,8 +386,6 @@ async function CopySongListMarkdown(snackbarContext: SnackbarContextType, setlis
 interface EventSongListDotMenuProps {
     readonly: boolean;
     multipleLists: boolean;
-    //showTags: boolean;
-    //setShowTags: (v: boolean) => void;
     handleCopySongNames: () => Promise<void>;
     handleCopyIndexSongNames: () => Promise<void>;
     handleCopyMarkdown: () => Promise<void>;
@@ -618,10 +633,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
 
 
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
-    //const [currentUser] = useCurrentUser();
-    //const [showTags, setShowTags] = React.useState<boolean>(false);
     const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
-    //const visInfo = API.users.getVisibilityInfo(props.value);
     const snackbarContext = React.useContext(SnackbarContext);
 
     const user = useCurrentUser()[0]!;
@@ -634,7 +646,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         model: props.value,
     });
 
-    const rowItems = SetlistAPI.GetRowItems(props.value);
+    //const rowItems = SetlistAPI.GetRowItems(props.value);
 
     const stats = API.events.getSongListStats(props.value);
 
@@ -861,7 +873,11 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad. 
                 ${props.value.type === 'song' && "dragHandle draggable"}*/}
                     <div className={`td songName `}>
-                        {props.value.type === 'song' && <div>{props.value.song.name}</div>}
+                        {props.value.type === 'song' && <>
+                            <div>{props.value.song.name}</div>
+                            <SongTagIndicatorContainer value={props.value} />
+                        </>}
+
                         {/* value used to be props.value.song || null */}
                         {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
                     </div>
@@ -1129,8 +1145,6 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         <EventSongListDotMenu
                             readonly={false}
                             multipleLists={false} // don't bother with this from the editor
-                            // showTags={showTags}
-                            // setShowTags={setShowTags}
                             handleCopySongNames={async () => await CopySongListNames(value, snackbarContext)}
                             handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
                             handleCopyCSV={async () => await CopySongListCSV(snackbarContext, value)}
@@ -1143,8 +1157,6 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                             handlePasteAppend={handlePasteAppend}
                             handlePasteReplace={handlePasteReplace}
                         />
-                        {/* <FormControlLabel className='CMFormControlLabel'
-                                        control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" /> */}
                     </div>
                 </div>
             </div>

@@ -104,7 +104,8 @@ const main = async () => {
       "sortOrder": 0,
       "color": null,
       "significance": "Improvisation",
-      "showOnSongLists": true
+      "showOnSongLists": true,
+      indicator: "impro",
     },
     {
       "text": "Majoretteketet",
@@ -112,7 +113,8 @@ const main = async () => {
       "sortOrder": 0,
       "color": null,
       "significance": "Majoretteketet",
-      "showOnSongLists": true
+      "showOnSongLists": true,
+      indicator: "M",
     },
     {
       "text": "Singer",
@@ -129,7 +131,27 @@ const main = async () => {
       "color": null,
       "significance": "Street",
       "showOnSongLists": true
-    }
+    },
+    {
+      "text": "Pompoms",
+      "description": "",
+      "sortOrder": 0,
+      "color": null,
+      "significance": "Street",
+      "showOnSongLists": true,
+      indicator: "🔴",
+      indicatorCssClass: "bare",
+    },
+    {
+      "text": "Batons",
+      "description": "",
+      "sortOrder": 0,
+      "color": null,
+      "significance": "Street",
+      "showOnSongLists": true,
+      indicator: "🔵",
+      indicatorCssClass: "bare",
+    },
   ];
 
   await SeedTable("songTag", gState.prisma.songTag, songTagSeed);

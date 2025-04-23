@@ -80,11 +80,100 @@ export enum ActivityFeature {
     setlist_reorder = "setlist_reorder",
 };
 
+
+export const ZDeviceInfo = z.object({
+    pointer: z.enum(['touch', 'cursor']).optional(),
+    screenInfo: z.object({
+        width: z.number(),
+        height: z.number(),
+    }).optional(),
+    deviceClass: z.enum(['phone', 'tablet', 'desktop']).optional(),
+    browser: z.enum(['safari', 'firefox', 'chrome', 'edge', 'opera']).optional(),
+});
+
+export type DeviceInfo = z.infer<typeof ZDeviceInfo>;
+
+// export type DeviceInfo = {
+//     pointer?: 'touch' | 'cursor';
+//     screenInfo?: { width: number; height: number };
+//     deviceClass?: 'phone' | 'tablet' | 'desktop';
+//     browser?: 'safari' | 'firefox' | 'chrome' | 'edge' | 'opera';
+// };
+
+/**
+ * Collect the device information client-side.
+ * Call inside useEffect(() => { … }, []) so it never runs on the server.
+ */
+export async function collectDeviceInfo(): Promise<DeviceInfo> {
+    const info: DeviceInfo = {};
+
+    /* -------- pointer -------------------------------------------------------- */
+    // Media-queries describe input **capabilities** very reliably.
+    if (matchMedia('(pointer: coarse)').matches) {
+        info.pointer = 'touch';
+    } else if (matchMedia('(pointer: fine)').matches) {
+        info.pointer = 'cursor';
+    }
+    /* pointer/any-pointer are specced keywords: coarse = touch, fine = mouse :contentReference[oaicite:0]{index=0} */
+
+    /* -------- screen resolution --------------------------------------------- */
+    info.screenInfo = {
+        width: window.screen.width,
+        height: window.screen.height,
+    };
+
+    /* -------- device class --------------------------------------------------- */
+    const uaData = (navigator as any).userAgentData as /*NavigatorUAData*/ any | undefined;
+    if (uaData?.mobile) {
+        // Use viewport size to split phone ↔ tablet
+        const maxDim = Math.max(info.screenInfo.width, info.screenInfo.height);
+        info.deviceClass = maxDim >= 768 ? 'tablet' : 'phone';
+    } else {
+        info.deviceClass = 'desktop';
+    }
+
+    /* -------- browser -------------------------------------------------------- */
+    info.browser = detectBrowser(uaData);
+
+    return info;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Helper: normalise UA-CH / UA-string into your union type                   */
+function detectBrowser(uaData?: /*NavigatorUAData*/ any): DeviceInfo['browser'] {
+    /** Brand token → canonical name map (order matters) */
+    const map: Record<string, DeviceInfo['browser']> = {
+        'Microsoft Edge': 'edge',
+        'Opera': 'opera',
+        'Firefox': 'firefox',
+        'Safari': 'safari',
+        'Chromium': 'chrome',
+        'Google Chrome': 'chrome',
+    };
+
+    // 1) Modern way: User-Agent Client Hints
+    if (uaData?.brands?.length) {
+        for (const { brand } of uaData.brands) {
+            const canonical = map[brand];
+            if (canonical) return canonical;
+        }
+    }
+
+    // 2) Fallback: legacy userAgent parsing
+    const ua = navigator.userAgent;
+    if (/Edg/i.test(ua)) return 'edge';
+    if (/OPR|Opera/i.test(ua)) return 'opera';
+    if (/Firefox/i.test(ua)) return 'firefox';
+    if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) return 'safari';
+    return 'chrome';
+}
+
 export const ZTRecordActionArgs = z.object({
     uri: z.string().optional(), // for server side this may not be available.
     userId: z.number().optional(), // optional for client-side actions
     feature: z.nativeEnum(ActivityFeature),
     context: z.string().optional(),
+    deviceInfo: ZDeviceInfo.optional(),
 
     queryText: z.string().optional(),
 
