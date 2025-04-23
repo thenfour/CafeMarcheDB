@@ -1,3 +1,4 @@
+import { useDashboardContext } from "@/src/core/components/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { ArrowUpward, Clear } from "@mui/icons-material";
@@ -17,7 +18,6 @@ import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponen
 import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 import { CMTab, CMTabPanel, CMTabPanelChild } from "src/core/components/TabPanel";
@@ -314,6 +314,7 @@ type DetailTabId = "general" |
 type ContextObjectDistinctItem = {
     key: string,
     headingIndicator: React.ReactNode;
+    label: string;
     itemCount: number;
     totalCount: number;
     percentageOfTotal: string;
@@ -323,6 +324,7 @@ type ContextObjectDistinctItem = {
 function getContextObjectTabData(
     items: GeneralActivityReportDetailPayload[] | null | undefined,
     getKey: (item: GeneralActivityReportDetailPayload) => string,
+    getLabel: (item: GeneralActivityReportDetailPayload) => string,
     getHeadingIndicator: (item: GeneralActivityReportDetailPayload) => React.ReactNode,
 ): ContextObjectDistinctItem[] {
     if (!items) {
@@ -336,6 +338,7 @@ function getContextObjectTabData(
         return {
             key: distinctItem,
             headingIndicator: getHeadingIndicator(filteredItems[0]!),
+            label: getLabel(filteredItems[0]!),
             itemCount: filteredItems.length,
             totalCount: itemCount,
             percentageOfTotal: `${(filteredItems.length * 100 / itemCount).toFixed()}%`,
@@ -346,19 +349,69 @@ function getContextObjectTabData(
 }
 
 const DistinctContextObjectPieChart = ({ item, items }: { item: ContextObjectDistinctItem, items: ContextObjectDistinctItem[] }) => {
-    // const chartData = [
-    //     { fill: getHashedColor(item.key), value: item.itemCount },
-    //     { fill: "#f8f8f8", value: item.totalCount - item.itemCount },
-    // ];
-
     const chartData = items.map((contextObject) => ({
         ...contextObject,
         fill: contextObject.key === item.key ? getHashedColor(contextObject.key) : "#f8f8f8",
     }));
 
     return <PieChart width={60} height={60} data={chartData}>
-        <Pie dataKey="itemCount" data={chartData} cx="50%" cy="50%" innerRadius={7} outerRadius={25} isAnimationActive={false} />
+        <Pie
+            dataKey="itemCount"
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={7}
+            outerRadius={25}
+            isAnimationActive={false}
+        />
     </PieChart>;
+};
+
+const RADIAN = Math.PI / 180;
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }, items: ContextObjectDistinctItem[]) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+        percent < 0.1 ? <></> :
+            <g style={{ pointerEvents: "none" }}>
+                <text
+                    x={x}
+                    y={y}
+                    fill="#666"
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={14}
+                >
+                    {/* {`${(percent * 100).toFixed(0)}%`} */}
+                    {items[index]!.label}
+                </text>
+                <text
+                    x={x + 1}
+                    y={y + 1}
+                    fill="#eee"
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={14}
+                >
+                    {/* {`${(percent * 100).toFixed(0)}%`} */}
+                    {items[index]!.label}
+                </text>
+            </g>
+    );
+};
+
+const renderCustomTooltip = ({ active, label, payload, ...e }: any, item: ContextObjectTabData) => {
+    if (active && payload[0]) {
+        const item = payload[0]!;
+        return (
+            <div className="custom-tooltip" style={{ backgroundColor: '#ffff', padding: '5px', border: '1px solid #cccc' }}>
+                {item.name} ({item.payload.itemCount} of {item.payload.totalCount}, {item.payload.percentageOfTotal} of total)
+            </div>
+        );
+    }
+    return null;
 };
 
 type ContextObjectTabData = {
@@ -379,8 +432,21 @@ const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectTabData 
 
     return item.items.length > 1 && <div>
         <PieChart width={210} height={210} data={chartData}>
-            <Pie dataKey="itemCount" nameKey={"key"} data={chartData} cx="50%" cy="50%" innerRadius={7} outerRadius={100} isAnimationActive={false} />
-            <Tooltip />
+            <Pie
+                dataKey="itemCount"
+                nameKey={"label"}
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={7}
+                outerRadius={100}
+                isAnimationActive={false}
+                label={(e) => {
+                    return renderCustomizedLabel(e, chartData);
+                }}
+                labelLine={false}
+            />
+            <Tooltip content={e => renderCustomTooltip(e, item)} />
         </PieChart>
         {item.items.map((contextObject) => {
             return <div key={contextObject.key}>
@@ -410,7 +476,7 @@ interface GeneralFeatureDetailAreaProps {
 };
 
 const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
-    //const dashboardContext = useDashboardContext();
+    const dashboardContext = useDashboardContext();
     const [tabId, setTabId] = React.useState<DetailTabId>("general");
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
@@ -432,12 +498,10 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
         interface TabConfig {
             id: DetailTabId;
             label: string;
-            // filters out the items you want to include in this tab
             filterFn: (item: GeneralActivityReportDetailPayload) => boolean;
-            // returns the unique key or grouping ID for each item
             keyFn: (item: GeneralActivityReportDetailPayload) => string;
-            // returns the rendered chip/component
             renderFn: (item: GeneralActivityReportDetailPayload) => React.ReactNode;
+            getlabel: (item: GeneralActivityReportDetailPayload) => string;
         }
 
         const tabConfigs: TabConfig[] = [
@@ -447,6 +511,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.feature,
                 keyFn: (item) => item.feature,
                 renderFn: (item) => item.feature,
+                getlabel: (item) => item.feature,
             },
             {
                 id: "users",
@@ -454,6 +519,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.userHash,
                 keyFn: (item) => item.userHash!,
                 renderFn: (item) => <AnonymizedUserChip value={item.userHash!} size={50} />,
+                getlabel: (item) => item.userHash!.substring(0, 6),
             },
             {
                 id: "songs",
@@ -467,6 +533,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                         useHashedColor
                     />
                 ),
+                getlabel: (item) => item.song!.name,
             },
             {
                 id: "events",
@@ -480,6 +547,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                         useHashedColor
                     />
                 ),
+                getlabel: (item) => item.event!.name,
             },
             {
                 id: "wikiPages",
@@ -493,6 +561,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                         useHashedColor
                     />
                 ),
+                getlabel: (item) => item.wikiPage!.slug,
             },
             {
                 id: "files",
@@ -506,6 +575,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                         useHashedColor
                     />
                 ),
+                getlabel: (item) => item.file!.fileLeafName,
             },
             {
                 id: "contexts",
@@ -513,6 +583,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.context,
                 keyFn: (item) => item.context || "",
                 renderFn: (item) => <ContextLabel value={item.context!} />,
+                getlabel: (item) => item.context!,
             },
             {
                 id: "attendance",
@@ -520,6 +591,10 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.attendanceId,
                 keyFn: (item) => item.attendanceId!.toString(),
                 renderFn: (item) => <AttendanceChip value={item.attendanceId!} />,
+                getlabel: (item) => {
+                    const att = dashboardContext.eventAttendance.getById(item.attendanceId!);
+                    return att?.text!;
+                },
             },
             {
                 id: "customLink",
@@ -527,6 +602,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.customLinkId,
                 keyFn: (item) => item.customLinkId!.toString(),
                 renderFn: (item) => <CMChip>Custom Link #{item.customLinkId}</CMChip>,
+                getlabel: (item) => item.customLink?.name!,
             },
             {
                 id: "eventSegment",
@@ -534,6 +610,8 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.eventSegmentId,
                 keyFn: (item) => item.eventSegmentId!.toString(),
                 renderFn: (item) => <CMChip>Segment #{item.eventSegmentId}</CMChip>,
+                getlabel: (item) => item.eventSegmentId!.toString(),
+
             },
             {
                 id: "setlist",
@@ -541,6 +619,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.eventSongListId,
                 keyFn: (item) => item.eventSongListId!.toString(),
                 renderFn: (item) => <CMChip>Setlist #{item.eventSongListId}</CMChip>,
+                getlabel: (item) => item.eventSongListId!.toString(),
             },
             {
                 id: "frontpageGalleryItem",
@@ -548,6 +627,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.frontpageGalleryItemId,
                 keyFn: (item) => item.frontpageGalleryItemId!.toString(),
                 renderFn: (item) => <CMChip>Gallery Item #{item.frontpageGalleryItemId}</CMChip>,
+                getlabel: (item) => item.frontpageGalleryItemId!.toString(),
             },
             {
                 id: "menuLink",
@@ -555,6 +635,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.menuLinkId,
                 keyFn: (item) => item.menuLinkId!.toString(),
                 renderFn: (item) => <CMChip>Menu Link #{item.menuLinkId}</CMChip>,
+                getlabel: (item) => item.menuLink?.caption!,
             },
             {
                 id: "setlistPlan",
@@ -562,6 +643,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.setlistPlanId,
                 keyFn: (item) => item.setlistPlanId!.toString(),
                 renderFn: (item) => <CMChip>Setlist Plan #{item.setlistPlanId}</CMChip>,
+                getlabel: (item) => item.setlistPlan?.name!,
             },
             {
                 id: "songCreditType",
@@ -569,6 +651,10 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.songCreditTypeId,
                 keyFn: (item) => item.songCreditTypeId!.toString(),
                 renderFn: (item) => <CMChip>Song Credit Type #{item.songCreditTypeId}</CMChip>,
+                getlabel: (item) => {
+                    const creditType = dashboardContext.songCreditType.getById(item.songCreditTypeId!);
+                    return creditType?.text!;
+                },
             },
             {
                 id: "instrument",
@@ -576,6 +662,10 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 filterFn: (item) => !!item.instrumentId,
                 keyFn: (item) => item.instrumentId!.toString(),
                 renderFn: (item) => <InstrumentChip value={item.instrumentId!} />,
+                getlabel: (item) => {
+                    const instrument = dashboardContext.instrument.getById(item.instrumentId!);
+                    return instrument?.name!;
+                },
             },
             {
                 id: "screenSize",
@@ -585,6 +675,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return `${item.screenWidth}x${item.screenHeight}`;
                 },
                 renderFn: (item) => <CMChip>{item.screenWidth}x{item.screenHeight}</CMChip>,
+                getlabel: (item) => {
+                    return `${item.screenWidth}x${item.screenHeight}`;
+                }
             },
             {
                 id: "operatingSystem",
@@ -594,6 +687,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return item.operatingSystem!;
                 },
                 renderFn: (item) => <CMChip>{item.operatingSystem}</CMChip>,
+                getlabel: (item) => {
+                    return item.operatingSystem!;
+                }
             },
             {
                 id: "pointerType",
@@ -603,6 +699,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return item.pointerType!;
                 },
                 renderFn: (item) => <CMChip>{item.pointerType}</CMChip>,
+                getlabel: (item) => {
+                    return item.pointerType!;
+                }
             },
             {
                 id: "browser",
@@ -612,6 +711,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return item.browserName!;
                 },
                 renderFn: (item) => <CMChip>{item.browserName}</CMChip>,
+                getlabel: (item) => {
+                    return item.browserName!;
+                }
             },
             {
                 id: "deviceClass",
@@ -621,6 +723,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return item.deviceClass!;
                 },
                 renderFn: (item) => <CMChip>{item.deviceClass}</CMChip>,
+                getlabel: (item) => {
+                    return item.deviceClass!;
+                }
             },
 
             {
@@ -631,6 +736,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return item.language!;
                 },
                 renderFn: (item) => <CMChip>{item.language}</CMChip>,
+                getlabel: (item) => {
+                    return item.language!;
+                }
             },
 
             {
@@ -641,6 +749,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return item.locale!;
                 },
                 renderFn: (item) => <CMChip>{item.locale}</CMChip>,
+                getlabel: (item) => {
+                    return item.locale!;
+                }
             },
 
             {
@@ -651,6 +762,9 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                     return item.timezone!;
                 },
                 renderFn: (item) => <CMChip>{item.timezone}</CMChip>,
+                getlabel: (item) => {
+                    return item.timezone!;
+                }
             },
 
         ];
@@ -662,7 +776,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
             // Filter data for the current tab type
             const filtered = data.filter(cfg.filterFn);
             // Then gather context objects using your existing function
-            const items = getContextObjectTabData(filtered, cfg.keyFn, cfg.renderFn);
+            const items = getContextObjectTabData(filtered, cfg.keyFn, cfg.getlabel, cfg.renderFn);
 
             if (items.length > 0) {
                 acc.push({

@@ -79,16 +79,37 @@ export const getRandomClientData = (): DeviceInfo => {
 };
 
 
-const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Date) => {
+const CONTEXT_PATHS = [
+    // marketing
+    "marketing",
+    "marketing/campaigns",
+    "marketing/campaigns/spring-sale",
+    "marketing/campaigns/black-friday",
+    "marketing/audiences/enterprise",
+    "marketing/audiences/consumer",
 
-    // get random ActivityFeature.
-    // const feature = faker.helpers.arrayElement([
-    //     ActivityFeature.global_ical_digest,
-    //     ActivityFeature.wiki_page_view,
-    //     ActivityFeature.song_view,
-    //     ActivityFeature.event_view,
-    //     //ActivityFeature.file_download,
-    // ]);
+    // sales
+    "sales/leads/import",
+    "sales/leads/scoring",
+    "sales/deals/pipeline",
+    "sales/deals/won",
+    "sales/deals/lost",
+
+    // analytics
+    "analytics/dashboards/traffic",
+    "analytics/dashboards/conversion",
+    "analytics/reports/daily",
+    "analytics/reports/monthly",
+
+    // admin
+    "admin/users/create",
+    "admin/users/roles",
+    "admin/settings/billing",
+    "admin/settings/integrations",
+] as const;
+
+
+const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Date) => {
 
     const clientData = getRandomClientData();
 
@@ -103,9 +124,9 @@ const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Da
             songId: maybe(faker.helpers.arrayElement(gState.gAllSongs).id, false),
             eventId: maybe(faker.helpers.arrayElement(gState.gAllEvents).id, false),
 
-            queryText: maybe(faker.lorem.sentence({ min: 0, max: 2 }), false),
+            queryText: maybe(faker.lorem.words({ min: 0, max: 2 }), false),
 
-            context: faker.lorem.words({ min: 1, max: 6 }).replaceAll(" ", "/"),
+            context: faker.helpers.arrayElement(CONTEXT_PATHS),
             browserName: clientData.browser,
             deviceClass: clientData.deviceClass,
             pointerType: clientData.pointer,
@@ -117,64 +138,6 @@ const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Da
             timezone: clientData.timezone,
         }
     });
-
-
-    // switch (feature) {
-    //     case ActivityFeature.global_ical_digest:
-    //         await gState.prisma.action.create({
-    //             data: {
-    //                 feature,
-    //                 isClient: false,
-    //                 userId,
-    //                 createdAt: date,
-    //                 uri: faker.internet.url(),
-    //             }
-    //         });
-    //         return;
-    //     case ActivityFeature.wiki_page_view:
-    //         const wikiPage = faker.helpers.arrayElement(gState.gAllWikiPages);
-    //         await gState.prisma.action.create({
-    //             data: {
-    //                 feature,
-    //                 isClient: true,
-    //                 userId,
-    //                 createdAt: date,
-    //                 uri: `/backstage/wiki/${wikiPage.slug}`,
-    //                 wikiPageId: wikiPage.id,
-    //             }
-    //         });
-    //         return;
-    //     case ActivityFeature.song_view:
-    //         const song = faker.helpers.arrayElement(gState.gAllSongs);
-    //         await gState.prisma.action.create({
-    //             data: {
-    //                 feature,
-    //                 isClient: true,
-    //                 userId,
-    //                 createdAt: date,
-    //                 uri: `/backstage/song/${song.id}/${slugify(song.name)}`,
-    //                 songId: song.id,
-    //             }
-    //         });
-    //         return;
-    //     default:
-    //     case ActivityFeature.event_view:
-    //         const event = faker.helpers.arrayElement(gState.gAllEvents);
-    //         await gState.prisma.action.create({
-    //             data: {
-    //                 feature,
-    //                 isClient: true,
-    //                 userId,
-    //                 createdAt: date,
-    //                 uri: `/backstage/event/${event.id}/${slugify(event.name)}`,
-    //                 eventId: event.id,
-    //             }
-    //         });
-    //         return;
-    //     case ActivityFeature.file_download:
-    //         return;
-    // };
-
 };
 
 export const SeedActivityLayer = async (gState: SeedingState, userPool: (SeedingState["gAllUsers"][0])[]) => {

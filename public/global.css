@@ -881,3 +881,11 @@ solution is to
   padding: 10px;
   margin: 43px;
 }
+
+.recharts-sector {
+  opacity: 70%;
+}
+
+.recharts-sector:hover {
+  opacity: 100%;
+}

@@ -27,10 +27,10 @@ export class SeedingState {
 
     config = {
         userCount: 100,
-        songCount: 150,
+        songCount: 100,
 
         events: {
-            minDate: monthsFromNow(-120),
+            minDate: monthsFromNow(-60),
             maxDate: monthsFromNow(9),
         }
 
