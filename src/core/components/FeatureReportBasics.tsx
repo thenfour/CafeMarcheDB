@@ -1,18 +1,18 @@
+import { toSorted } from "@/shared/arrayUtils";
+import { gLightSwatchColors, gSwatchColors } from "@/shared/color";
+import { getHashedColor, smartTruncate } from "@/shared/utils";
+import { Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
-import { Button, FormControlLabel, Tooltip as MuiTooltip } from "@mui/material";
+import Identicon from 'react-identicons';
+import { Pie, PieChart, Tooltip } from 'recharts';
+import { gIconMap } from "../db3/components/IconMap";
 import { ActivityDetailTabId } from "../db3/shared/activityTabs";
 import { ActivityFeature } from "../db3/shared/activityTracking";
 import { GeneralActivityReportDetailPayload } from "../db3/shared/apiTypes";
-import { toSorted } from "@/shared/arrayUtils";
-import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
-import { AgeRelativeToNow } from "./RelativeTimeComponents";
-import { gIconMap } from "../db3/components/IconMap";
 import { CMChip } from "./CMChip";
-import { getHashedColor, smartTruncate } from "@/shared/utils";
-import { gLightSwatchColors, gSwatchColors } from "@/shared/color";
-import Identicon from 'react-identicons';
+import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
 import { CMSmallButton } from "./CMCoreComponents2";
-import { Pie, PieChart, Tooltip } from 'recharts';
+import { AgeRelativeToNow } from "./RelativeTimeComponents";
 
 
 export type ContextObjectDistinctItem = {

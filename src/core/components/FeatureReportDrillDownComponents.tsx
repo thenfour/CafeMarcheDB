@@ -1,17 +1,17 @@
+import { parseBucketToDateRange } from '@/shared/mysqlUtils';
+import { formatMillisecondsToDHMS } from '@/shared/time';
+import { useQuery } from '@blitzjs/rpc';
 import * as React from 'react';
+import { gIconMap } from '../db3/components/IconMap';
+import getGeneralFeatureDetail from '../db3/queries/getGeneralFeatureDetail';
 import { ActivityDetailTabId } from "../db3/shared/activityTabs";
 import { ActivityFeature } from "../db3/shared/activityTracking";
 import { GeneralActivityReportDetailPayload, ReportAggregateBy } from "../db3/shared/apiTypes";
-import { useDashboardContext } from "./DashboardContext";
-import { useQuery } from '@blitzjs/rpc';
-import getGeneralFeatureDetail from '../db3/queries/getGeneralFeatureDetail';
-import { AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from './CMCoreComponents';
-import { gIconMap } from '../db3/components/IconMap';
 import { CMChip } from './CMChip';
-import { CMTab, CMTabPanel, CMTabPanelChild } from './TabPanel';
-import { parseBucketToDateRange } from '@/shared/mysqlUtils';
-import { formatMillisecondsToDHMS } from '@/shared/time';
+import { AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from './CMCoreComponents';
+import { useDashboardContext } from "./DashboardContext";
 import { AnonymizedUserChip, ContextLabel, ContextObjectTabData, DistinctContextObjectTabContent, FeatureLabel, GeneralFeatureDetailTable, getContextObjectTabData } from './FeatureReportBasics';
+import { CMTab, CMTabPanel, CMTabPanelChild } from './TabPanel';
 
 interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];
