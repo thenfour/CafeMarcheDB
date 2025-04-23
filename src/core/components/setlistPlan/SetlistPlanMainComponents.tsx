@@ -11,8 +11,8 @@ import { CMSmallButton, KeyValueTable, NameValuePair } from "src/core/components
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
-import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { Markdown } from "src/core/components/markdown/Markdown";
+import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { useSongsContext } from "src/core/components/SongsContext";
@@ -21,13 +21,13 @@ import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
 import { ColorPick } from "../ColorPick";
+import { VisibilityControl } from "../VisibilityControl";
 import { AssociationSelect, AssociationValueLink } from "./ItemAssociation";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
 import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlanLedComponents";
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
-import { VisibilityControl } from "../VisibilityControl";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;
@@ -261,16 +261,6 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
     const allSongs = useSongsContext().songs;
     const snackbar = useSnackbar();
 
-    const handleCopySongNames = async () => {
-        await snackbar.invokeAsync(async () => {
-            const songNames = props.doc.payload.rows
-                .filter((x) => x.type === "song" && props.doc.payload.cells.some((c) => c.rowId === x.rowId && c.columnId === column.columnId && (c.pointsAllocated !== undefined)))
-                .map((x) => allSongs.find((s) => s.id === x.songId)!.name);
-            await navigator.clipboard.writeText(songNames.join("\n"));
-            setAnchorEl(null);
-        }, "Copied song names to clipboard");
-    };
-
     const handleClearAllocation = async () => {
         await snackbar.invokeAsync(async () => {
             props.mutator.clearColumnAllocation(column.columnId);
@@ -287,8 +277,10 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
 
     const columnToSetlist = (column: SetlistPlanColumn): PortableSongList => {
         // ignores dividers, and picks only songs for which cells have allocated points.
-        const cells = props.doc.payload.cells.filter((x) => x.columnId === column.columnId && (x.pointsAllocated !== undefined)).map((x) => x.rowId);
-        const songIds = props.doc.payload.rows.filter((x) => x.type === "song" && cells.includes(x.rowId)).map(row => row.songId);
+        const cellsThisColumn = props.doc.payload.cells.filter((x) => x.columnId === column.columnId);
+        const filteredCells = cellsThisColumn.filter((x) => !!x.pointsAllocated);
+        const cellRowIds = filteredCells.map((x) => x.rowId);
+        const songIds = props.doc.payload.rows.filter((x) => x.type === "song" && cellRowIds.includes(x.rowId)).map(row => row.songId);
         const songs = allSongs.filter((x) => songIds.includes(x.id));
         return songs.map((s, index) => ({
             sortOrder: index,
@@ -298,9 +290,43 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
         }));
     };
 
+    const allSongsToSetlist = (): PortableSongList => {
+        const songs = props.doc.payload.rows.filter((x) => x.type === "song").map(row => allSongs.find(s => s.id === row.songId)).filter(x => !!x) as any;
+        return songs.map((s, index) => ({
+            sortOrder: index,
+            comment: "",
+            song: s,
+            type: 'song',
+        }));
+    };
+
+    const handleCopySongNames = async () => {
+        const setlist = columnToSetlist(column);
+        await snackbar.invokeAsync(async () => {
+            await navigator.clipboard.writeText(setlist.filter(x => x.type === "song").map(x => x.song.name).join("\n"));
+            setAnchorEl(null);
+        }, "Copied song names to clipboard");
+    };
+
     const handleCopyAsSetlist = async () => {
         await snackbar.invokeAsync(async () => {
             const setlist = columnToSetlist(column);
+            await navigator.clipboard.writeText(JSON.stringify(setlist, null, 2));
+            setAnchorEl(null);
+        }, `Copied ${column.name} as setlist`);
+    };
+
+    const handleCopyAllSongNames = async () => {
+        const setlist = allSongsToSetlist();
+        await snackbar.invokeAsync(async () => {
+            await navigator.clipboard.writeText(setlist.filter(x => x.type === "song").map(x => x.song.name).join("\n"));
+            setAnchorEl(null);
+        }, "Copied song names to clipboard");
+    };
+
+    const handleCopyAllAsSetlist = async () => {
+        await snackbar.invokeAsync(async () => {
+            const setlist = allSongsToSetlist();
             await navigator.clipboard.writeText(JSON.stringify(setlist, null, 2));
             setAnchorEl(null);
         }, `Copied ${column.name} as setlist`);
@@ -318,26 +344,42 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
             {column.associatedItem && <MenuItem>
                 <AssociationValueLink value={{ ...column.associatedItem, matchingField: undefined, matchStrength: 0 }} />
             </MenuItem>}
+
             <MenuItem onClick={handleCopySongNames}>
-                Copy song names
+                Copy allocated song names
             </MenuItem>
 
             <MenuItem onClick={handleCopyAsSetlist}>
-                Copy as setlist
+                Copy allocated songs as setlist
             </MenuItem>
 
             <Divider />
+
+            <MenuItem onClick={handleCopyAllSongNames}>
+                Copy all song names
+            </MenuItem>
+
+            <MenuItem onClick={handleCopyAllAsSetlist}>
+                Copy all songs as setlist
+            </MenuItem>
+
+            <Divider />
+
             <MenuItem onClick={handleClearAllocation}>
                 Clear allocation for {column.name}
             </MenuItem>
-            <Divider />
+
             {
-                props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c, index) => (
-                    <MenuItem key={index} onClick={() => handleSwapAllocationWith(c.columnId)}>
-                        Swap allocation with {c.name}
-                    </MenuItem>
-                ))
-            }
+                props.doc.payload.columns.length > 1 && <>
+                    <Divider />
+                    {
+                        props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c, index) => (
+                            <MenuItem key={index} onClick={() => handleSwapAllocationWith(c.columnId)}>
+                                Swap allocation with {c.name}
+                            </MenuItem>
+                        ))
+                    }
+                </>}
         </Menu >
     </>;
 };
