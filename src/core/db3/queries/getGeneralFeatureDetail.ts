@@ -39,7 +39,6 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
         excludeFeatures,
         filteredSongId,
         filteredEventId,
-        //filteredUserId,
         filteredWikiPageId,
         contextBeginsWith,
     } = params;

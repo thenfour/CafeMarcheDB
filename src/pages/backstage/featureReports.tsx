@@ -1,4 +1,5 @@
 import { useDashboardContext } from "@/src/core/components/DashboardContext";
+import { ActivityDetailTabId } from "@/src/core/db3/shared/activityTabs";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { ArrowUpward, Clear } from "@mui/icons-material";
@@ -285,32 +286,6 @@ const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDetailTable
     </table>;
 }
 
-type DetailTabId = "general" |
-    "features" |
-    "users" |
-    "songs" |
-    "events" |
-    "wikiPages" |
-    "files" |
-    "contexts" |
-    "attendance" |
-    "customLink" |
-    "eventSegment" |
-    "setlist" |
-    "frontpageGalleryItem" |
-    "menuLink" |
-    "setlistPlan" |
-    "songCreditType" |
-    "instrument" |
-    "screenSize" |
-    "operatingSystem" |
-    "pointerType" |
-    "browser" |
-    "deviceClass" |
-    "language" |
-    "locale" |
-    "timezone";
-
 type ContextObjectDistinctItem = {
     key: string,
     headingIndicator: React.ReactNode;
@@ -421,7 +396,7 @@ const CMBar = ({ value01, color }: { value01: number, color?: string }) => {
 };
 
 type ContextObjectTabData = {
-    id: DetailTabId,
+    id: ActivityDetailTabId,
     tabHeader: React.ReactNode,
     items: ContextObjectDistinctItem[],
     onIsolateFeature: (feature: ActivityFeature) => void;
@@ -519,7 +494,7 @@ interface GeneralFeatureDetailAreaProps {
 
 const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
     const dashboardContext = useDashboardContext();
-    const [tabId, setTabId] = React.useState<DetailTabId>("general");
+    const [tabId, setTabId] = React.useState<ActivityDetailTabId>(ActivityDetailTabId.general);
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
         features,
@@ -538,7 +513,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
 
     const tabs: ContextObjectTabData[] = React.useMemo(() => {
         interface TabConfig {
-            id: DetailTabId;
+            id: ActivityDetailTabId;
             label: string;
             filterFn: (item: GeneralActivityReportDetailPayload) => boolean;
             keyFn: (item: GeneralActivityReportDetailPayload) => string;
@@ -548,15 +523,15 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
 
         const tabConfigs: TabConfig[] = [
             {
-                id: "features",
+                id: ActivityDetailTabId.feature,
                 label: "Features",
                 filterFn: (item) => !!item.feature,
                 keyFn: (item) => item.feature,
-                renderFn: (item) => item.feature,
+                renderFn: (item) => <FeatureLabel feature={item.feature as ActivityFeature} onClickExclude={() => { }} onClickIsolate={() => { }} />,
                 getlabel: (item) => item.feature,
             },
             {
-                id: "users",
+                id: ActivityDetailTabId.user,
                 label: "Users",
                 filterFn: (item) => !!item.userHash,
                 keyFn: (item) => item.userHash!,
@@ -564,7 +539,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.userHash!.substring(0, 6),
             },
             {
-                id: "songs",
+                id: ActivityDetailTabId.song,
                 label: "Songs",
                 filterFn: (item) => !!item.song,
                 keyFn: (item) => item.song!.id.toString(),
@@ -578,7 +553,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.song!.name,
             },
             {
-                id: "events",
+                id: ActivityDetailTabId.event,
                 label: "Events",
                 filterFn: (item) => !!item.event,
                 keyFn: (item) => item.event!.id.toString(),
@@ -592,7 +567,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.event!.name,
             },
             {
-                id: "wikiPages",
+                id: ActivityDetailTabId.wikiPage,
                 label: "Wiki pages",
                 filterFn: (item) => !!item.wikiPage,
                 keyFn: (item) => item.wikiPage!.id.toString(),
@@ -606,7 +581,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.wikiPage!.slug,
             },
             {
-                id: "files",
+                id: ActivityDetailTabId.file,
                 label: "Files",
                 filterFn: (item) => !!item.file,
                 keyFn: (item) => item.file!.id.toString(),
@@ -620,7 +595,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.file!.fileLeafName,
             },
             {
-                id: "contexts",
+                id: ActivityDetailTabId.context,
                 label: "Contexts",
                 filterFn: (item) => !!item.context,
                 keyFn: (item) => item.context || "",
@@ -628,7 +603,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.context!,
             },
             {
-                id: "attendance",
+                id: ActivityDetailTabId.attendance,
                 label: "Attendance",
                 filterFn: (item) => !!item.attendanceId,
                 keyFn: (item) => item.attendanceId!.toString(),
@@ -639,7 +614,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 },
             },
             {
-                id: "customLink",
+                id: ActivityDetailTabId.customLink,
                 label: "Custom Links",
                 filterFn: (item) => !!item.customLinkId,
                 keyFn: (item) => item.customLinkId!.toString(),
@@ -647,16 +622,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.customLink?.name!,
             },
             {
-                id: "eventSegment",
-                label: "Event Segments",
-                filterFn: (item) => !!item.eventSegmentId,
-                keyFn: (item) => item.eventSegmentId!.toString(),
-                renderFn: (item) => <CMChip>Segment #{item.eventSegmentId}</CMChip>,
-                getlabel: (item) => item.eventSegmentId!.toString(),
-
-            },
-            {
-                id: "setlist",
+                id: ActivityDetailTabId.setlist,
                 label: "Setlists",
                 filterFn: (item) => !!item.eventSongListId,
                 keyFn: (item) => item.eventSongListId!.toString(),
@@ -664,7 +630,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.eventSongListId!.toString(),
             },
             {
-                id: "frontpageGalleryItem",
+                id: ActivityDetailTabId.frontpageGalleryItem,
                 label: "Frontpage Gallery Items",
                 filterFn: (item) => !!item.frontpageGalleryItemId,
                 keyFn: (item) => item.frontpageGalleryItemId!.toString(),
@@ -672,7 +638,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.frontpageGalleryItemId!.toString(),
             },
             {
-                id: "menuLink",
+                id: ActivityDetailTabId.menuLink,
                 label: "Menu Links",
                 filterFn: (item) => !!item.menuLinkId,
                 keyFn: (item) => item.menuLinkId!.toString(),
@@ -680,7 +646,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.menuLink?.caption!,
             },
             {
-                id: "setlistPlan",
+                id: ActivityDetailTabId.setlistPlan,
                 label: "Setlist Plans",
                 filterFn: (item) => !!item.setlistPlanId,
                 keyFn: (item) => item.setlistPlanId!.toString(),
@@ -688,7 +654,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 getlabel: (item) => item.setlistPlan?.name!,
             },
             {
-                id: "songCreditType",
+                id: ActivityDetailTabId.songCreditType,
                 label: "Song Credit Types",
                 filterFn: (item) => !!item.songCreditTypeId,
                 keyFn: (item) => item.songCreditTypeId!.toString(),
@@ -699,7 +665,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 },
             },
             {
-                id: "instrument",
+                id: ActivityDetailTabId.instrument,
                 label: "Instruments",
                 filterFn: (item) => !!item.instrumentId,
                 keyFn: (item) => item.instrumentId!.toString(),
@@ -710,7 +676,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 },
             },
             {
-                id: "screenSize",
+                id: ActivityDetailTabId.screenSize,
                 label: "Screen Size",
                 filterFn: (item) => !!item.screenWidth && !!item.screenHeight,
                 keyFn: (item) => {
@@ -722,7 +688,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 }
             },
             {
-                id: "operatingSystem",
+                id: ActivityDetailTabId.operatingSystem,
                 label: "Operating System",
                 filterFn: (item) => !!item.operatingSystem,
                 keyFn: (item) => {
@@ -734,7 +700,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 }
             },
             {
-                id: "pointerType",
+                id: ActivityDetailTabId.pointerType,
                 label: "Pointer type",
                 filterFn: (item) => !!item.pointerType,
                 keyFn: (item) => {
@@ -746,7 +712,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 }
             },
             {
-                id: "browser",
+                id: ActivityDetailTabId.browser,
                 label: "Browser",
                 filterFn: (item) => !!item.browserName,
                 keyFn: (item) => {
@@ -758,7 +724,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
                 }
             },
             {
-                id: "deviceClass",
+                id: ActivityDetailTabId.deviceClass,
                 label: "Device type",
                 filterFn: (item) => !!item.deviceClass,
                 keyFn: (item) => {
@@ -771,7 +737,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
             },
 
             {
-                id: "language",
+                id: ActivityDetailTabId.language,
                 label: "Language",
                 filterFn: (item) => !!item.language,
                 keyFn: (item) => {
@@ -784,7 +750,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
             },
 
             {
-                id: "locale",
+                id: ActivityDetailTabId.locale,
                 label: "Locale",
                 filterFn: (item) => !!item.locale,
                 keyFn: (item) => {
@@ -797,7 +763,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
             },
 
             {
-                id: "timezone",
+                id: ActivityDetailTabId.timezone,
                 label: "Timezone",
                 filterFn: (item) => !!item.timezone,
                 keyFn: (item) => {
@@ -853,7 +819,7 @@ const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith
             }
             {!bucket && <>No bucket selected</>}
         </div>
-        <CMTabPanel handleTabChange={(e, newTabId: DetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
+        <CMTabPanel handleTabChange={(e, newTabId: ActivityDetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
             {renderedTabs}
         </CMTabPanel>
     </div>;
