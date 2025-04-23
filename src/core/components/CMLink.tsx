@@ -2,7 +2,7 @@ import { ActivityFeature } from "../db3/shared/activityTracking";
 import { useFeatureRecorder } from "./DashboardContext";
 
 type CMLinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-    trackingFeature?: ActivityFeature;
+    trackingFeature: ActivityFeature;
 }
 
 // use this for tracking purposes
@@ -11,7 +11,7 @@ export function CMLink({ trackingFeature, onClick, ...rest }: CMLinkProps) {
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         void recordFeature({
-            feature: trackingFeature || ActivityFeature.general_link_click,
+            feature: trackingFeature,
         });
         if (onClick) {
             onClick(e)
@@ -22,7 +22,7 @@ export function CMLink({ trackingFeature, onClick, ...rest }: CMLinkProps) {
 
 
 type CMDivLinkProps = React.HTMLAttributes<HTMLDivElement> & {
-    trackingFeature?: ActivityFeature;
+    trackingFeature: ActivityFeature;
 }
 
 // use this for tracking purposes
@@ -31,7 +31,7 @@ export function CMDivLink({ trackingFeature, onClick, ...rest }: CMDivLinkProps)
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         void recordFeature({
-            feature: trackingFeature || ActivityFeature.general_link_click,
+            feature: trackingFeature,
         });
         if (onClick) {
             onClick(e)
@@ -42,7 +42,7 @@ export function CMDivLink({ trackingFeature, onClick, ...rest }: CMDivLinkProps)
 
 
 type CMSpanLinkProps = React.HTMLAttributes<HTMLSpanElement> & {
-    trackingFeature?: ActivityFeature;
+    trackingFeature: ActivityFeature;
 }
 
 // use this for tracking purposes
@@ -51,7 +51,7 @@ export function CMSpanLink({ trackingFeature, onClick, ...rest }: CMSpanLinkProp
 
     const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
         void recordFeature({
-            feature: trackingFeature || ActivityFeature.general_link_click,
+            feature: trackingFeature,
         });
         if (onClick) {
             onClick(e)

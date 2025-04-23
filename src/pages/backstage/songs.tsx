@@ -48,7 +48,7 @@ const SongListItem = (props: SongListItemProps) => {
         <AppContextMarker name="SongListItem" songId={props.song.id}>
             <div className="titleLine">
                 <div className="topTitleLine">
-                    <CMLink className="nameLink" href={songData.songURI} trackingFeature={ActivityFeature.song_search_link_click}>{props.song.name}</CMLink>
+                    <CMLink className="nameLink" href={songData.songURI} trackingFeature={ActivityFeature.link_follow_internal}>{props.song.name}</CMLink>
                     {props.song.introducedYear && <span className="introducedYear">({props.song.introducedYear})</span>}
                     <div style={{ flexGrow: 1 }}></div>
                     <span className="resultIndex">#{props.index}</span>

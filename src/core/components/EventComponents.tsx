@@ -1589,8 +1589,6 @@ export interface EventSearchItemContainerProps {
     highlightStatusIds?: number[];
     highlightTypeIds?: number[];
     reducedInfo?: boolean; // show less info
-    feature: ActivityFeature;
-    //queryText?: string;
 }
 
 export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
@@ -1675,7 +1673,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
             <div className='content'>
                 {/* for search results it's really best if we allow the whole row to be clickable. */}
-                <CMLink href={eventURI} className="titleLink" trackingFeature={props.feature}>
+                <CMLink href={eventURI} className="titleLink" trackingFeature={ActivityFeature.link_follow_internal}>
                     <div className='titleLine'>
                         <div className="titleText">
                             {event.name}
@@ -1721,8 +1719,6 @@ export interface EventListItemProps {
     showTabs?: boolean;
     showAttendanceControl?: boolean;
     reducedInfo?: boolean; // show less info, like in the event list.
-    feature: ActivityFeature;
-    //queryText?: string;
 };
 
 export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
@@ -1735,7 +1731,6 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         highlightStatusIds={props.filterSpec ? props.filterSpec.statusFilter.options as number[] : []}
         highlightTypeIds={props.filterSpec ? props.filterSpec.typeFilter.options as number[] : []}
         reducedInfo={reducedInfo}
-        feature={props.feature}
     //queryText={props.queryText}
     >
         {showAttendanceControl &&
@@ -1753,7 +1748,6 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
                     title="View info"
                     uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
                     eventId={event.id}
-                    feature={props.feature}
                 />
                 }
                 {event.songLists.length > 0 && <SearchItemBigCardLink
@@ -1761,7 +1755,6 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
                     title="View setlist"
                     uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
                     eventId={event.id}
-                    feature={props.feature}
                 />
                 }
             </div>

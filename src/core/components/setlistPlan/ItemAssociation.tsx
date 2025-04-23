@@ -139,7 +139,6 @@ interface AssociationAutocompleteItemInfo {
 };
 
 export interface AssociationAutocompleteProps {
-    trackingFeature?: ActivityFeature;
     autofocus?: boolean;
     /**
      * The current query text value (controlled).
@@ -249,15 +248,13 @@ export const AssociationAutocomplete = ({
                     return;
                 }
 
-                if (props.trackingFeature) {
-                    await recordFeature({
-                        feature: props.trackingFeature,
-                        queryText: queryText,
-                        eventId: newValue?.itemType === QuickSearchItemType.event ? newValue.id : undefined,
-                        songId: newValue?.itemType === QuickSearchItemType.song ? newValue.id : undefined,
-                        wikiPageId: newValue?.itemType === QuickSearchItemType.wikiPage ? newValue.id : undefined,
-                    });
-                }
+                await recordFeature({
+                    feature: ActivityFeature.link_follow_internal,
+                    queryText: queryText,
+                    eventId: newValue?.itemType === QuickSearchItemType.event ? newValue.id : undefined,
+                    songId: newValue?.itemType === QuickSearchItemType.song ? newValue.id : undefined,
+                    wikiPageId: newValue?.itemType === QuickSearchItemType.wikiPage ? newValue.id : undefined,
+                });
                 props.onSelect(newValue, queryText);
             }}
             options={results}

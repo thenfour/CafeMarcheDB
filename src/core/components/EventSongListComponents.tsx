@@ -266,7 +266,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
             </div>
             <div className="td songName">
-                {props.value.type === 'song' && <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.setlist_song_link_click} >{props.value.song.name}</CMLink>}
+                {props.value.type === 'song' && <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>}
             </div>
             <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
             <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>

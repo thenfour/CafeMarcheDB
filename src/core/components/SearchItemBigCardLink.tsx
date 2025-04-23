@@ -9,11 +9,10 @@ interface SearchItemBigCardLinkProps {
     title: string;
     uri: string;
     eventId: number;
-    feature: ActivityFeature;
 };
 
 export const SearchItemBigCardLink = (props: SearchItemBigCardLinkProps) => {
-    return <CMDivLink trackingFeature={props.feature} className='SearchItemBigCardLink interactable' onClick={async (e) => {
+    return <CMDivLink trackingFeature={ActivityFeature.link_follow_internal} className='SearchItemBigCardLink interactable' onClick={async (e) => {
         simulateLinkClick2(props.uri, e);
     }}>
         <div className='SearchItemBigCardLinkIcon'>

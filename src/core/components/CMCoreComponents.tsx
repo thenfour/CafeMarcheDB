@@ -23,6 +23,7 @@ import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
 import { CMLink } from "./CMLink";
+import { ActivityFeature } from "../db3/shared/activityTracking";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -585,7 +586,7 @@ export const EventTextLink = (props: {
         width: "16px",
     };
 
-    return <CMLink rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)}>
+    return <CMLink rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)} trackingFeature={ActivityFeature.link_follow_internal}>
         <CMChip
             color={type?.color}
             size="small"

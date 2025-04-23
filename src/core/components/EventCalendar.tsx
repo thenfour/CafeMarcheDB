@@ -8,6 +8,7 @@ import { StandardVariationSpec } from 'shared/color';
 import * as db3 from "src/core/db3/db3";
 import { RenderMuiIcon, gCharMap } from "../db3/components/IconMap";
 import { DiscreteCriterionFilterType, SearchResultsRet } from '../db3/shared/apiTypes';
+import { AppContextMarker } from "./AppContext";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { useURLState } from './CMCoreComponents2';
 import { GetStyleVariablesForColor } from './Color';
@@ -15,8 +16,6 @@ import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { EventListItem } from './EventComponents';
 import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
 import { useEventListData } from "./EventSearch";
-import { ActivityFeature } from "../db3/shared/activityTracking";
-import { AppContextMarker } from "./AppContext";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -357,7 +356,7 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
                 filterSpec={filterSpec}
                 refetch={() => setRefreshSerial(refreshSerial + 1)}
                 results={results}
-                feature={ActivityFeature.big_calendar_event_link_click}
+            //feature={ActivityFeature.big_calendar_event_link_click}
             />}
         </AppContextMarker>
     </>;

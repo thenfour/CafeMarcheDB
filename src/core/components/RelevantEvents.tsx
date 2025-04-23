@@ -56,42 +56,42 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
         (eventTiming === Timing.Past) ? "past" : "notPast",
     ];
 
-    return <CMDivLink trackingFeature={ActivityFeature.relevant_event_link_click} className={classes.join(" ")} style={typeStyle.style} onClick={async (e) => {
-        simulateLinkClick2(API.events.getURIForEvent(event), e);
-    }} >
-        <div className="SubtleEventCardTitle">
-            {/* {gIconMap.CalendarMonth()} */}
-            <div>{event.name}</div>
-        </div>
-        {event.startsAt &&
-            <div className="SubtleEventCardDate">
-                {formatShortDate(event.startsAt)}
-                <span className={`EventDateField container ${props.relativeTiming.bucket}`}><span className="RelativeIndicator">{props.relativeTiming.label}</span></span>
+    return <AppContextMarker eventId={event.id}>
+        <CMDivLink trackingFeature={ActivityFeature.link_follow_internal} className={classes.join(" ")} style={typeStyle.style} onClick={async (e) => {
+            simulateLinkClick2(API.events.getURIForEvent(event), e);
+        }} >
+            <div className="SubtleEventCardTitle">
+                {/* {gIconMap.CalendarMonth()} */}
+                <div>{event.name}</div>
             </div>
-        }
-        <div className='SearchItemBigCardLinkContainer'>
-
-            {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
-                icon={<InfoOutlined />}
-                title="Info"
-                uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
-                eventId={event.id}
-                feature={ActivityFeature.relevant_event_link_click}
-            />
-            </AppContextMarker>
+            {event.startsAt &&
+                <div className="SubtleEventCardDate">
+                    {formatShortDate(event.startsAt)}
+                    <span className={`EventDateField container ${props.relativeTiming.bucket}`}><span className="RelativeIndicator">{props.relativeTiming.label}</span></span>
+                </div>
             }
-            {event.songLists.length > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
-                icon={<LibraryMusic />}
-                title="Setlist"
-                uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
-                eventId={event.id}
-                feature={ActivityFeature.relevant_event_link_click}
-            />
-            </AppContextMarker>
-            }
+            <div className='SearchItemBigCardLinkContainer'>
 
-        </div>
-    </CMDivLink>;
+                {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
+                    icon={<InfoOutlined />}
+                    title="Info"
+                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                    eventId={event.id}
+                />
+                </AppContextMarker>
+                }
+                {event.songLists.length > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
+                    icon={<LibraryMusic />}
+                    title="Setlist"
+                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                    eventId={event.id}
+                />
+                </AppContextMarker>
+                }
+
+            </div>
+        </CMDivLink>
+    </AppContextMarker>;
 };
 
 function MakeMockSearchResultsRetFromEvents(events: db3.EnrichedSearchEventPayload[], userTags: db3.UserTagWithAssignmentPayload[]): SearchResultsRet {
@@ -184,7 +184,7 @@ export const RelevantEvents = () => {
                         results={MakeMockSearchResultsRetFromEvents([highlightedEvent.event], userTagWithAssignments)}
                         showTabs={true}
                         reducedInfo={true}
-                        feature={ActivityFeature.relevant_event_link_click}
+                    //feature={ActivityFeature.relevant_event_link_click}
                     />
                 </AppContextMarker>
             </div>}

@@ -31,17 +31,6 @@ const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Da
                 }
             });
             return;
-        // case ActivityFeature.event_ical_digest:
-        //     await gState.prisma.action.create({
-        //         data: {
-        //             feature,
-        //             isClient: false,
-        //             userId,
-        //             createdAt: date,
-        //             uri: faker.internet.url(),
-        //         }
-        //     });
-        //     return;
         case ActivityFeature.wiki_page_view:
             const wikiPage = faker.helpers.arrayElement(gState.gAllWikiPages);
             await gState.prisma.action.create({

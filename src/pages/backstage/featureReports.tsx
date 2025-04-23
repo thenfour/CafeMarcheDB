@@ -34,14 +34,8 @@ const getColorForFeature = (feature: ActivityFeature): string | null => {
 
         [ActivityFeature.metronome_persistent]: gLightSwatchColors.light_gold,
 
-        [ActivityFeature.main_search_link_click]: gLightSwatchColors.light_green,
-        [ActivityFeature.song_search_link_click]: gLightSwatchColors.light_green,
-        [ActivityFeature.event_search_link_click]: gLightSwatchColors.light_green,
-        [ActivityFeature.relevant_event_link_click]: gLightSwatchColors.light_green,
-        [ActivityFeature.big_calendar_event_link_click]: gLightSwatchColors.light_green,
-        [ActivityFeature.setlist_song_link_click]: gLightSwatchColors.light_green,
-        [ActivityFeature.dashboard_menu_link_click]: gLightSwatchColors.light_green,
-        [ActivityFeature.general_link_click]: gLightSwatchColors.light_green,
+        [ActivityFeature.link_follow_external]: gLightSwatchColors.light_green,
+        [ActivityFeature.link_follow_internal]: gLightSwatchColors.light_green,
 
         [ActivityFeature.event_change_custom_field]: gLightSwatchColors.light_orange,
 
@@ -678,7 +672,8 @@ const GeneralFeatureStatsReportInner = ({ excludeYourself, excludeSysadmins, con
 };
 
 const GeneralFeatureStatsReport = () => {
-    const now = React.useMemo(() => new Date(), []);
+    const [refetchTrigger, setRefetchTrigger] = React.useState(0);
+    const now = React.useMemo(() => new Date(), [refetchTrigger]);
     const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
     const [aggregateBy, setAggregateBy] = React.useState<ReportAggregateBy>(ReportAggregateBy.day);
     const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
@@ -688,7 +683,6 @@ const GeneralFeatureStatsReport = () => {
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
     const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
-    const [refetchTrigger, setRefetchTrigger] = React.useState(0);
 
     const [dataUpdatedAt, setDataUpdatedAt] = React.useState<Date>(now);
 

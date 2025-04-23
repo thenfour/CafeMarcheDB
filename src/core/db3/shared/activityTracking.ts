@@ -2,19 +2,13 @@ import { z } from "zod";
 
 export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
-    event_ical_digest = "event_ical_digest",
 
     metronome_persistent = "metronome_persistent", // metronome playing longer than 1 minute
     // note that link clicks are not 100% reliable;
     // for example right-clicking a link and opening in a new tab will not trigger this event.
-    main_search_link_click = "main_search_link_click",
-    song_search_link_click = "song_search_link_click",
-    event_search_link_click = "event_search_link_click",
-    relevant_event_link_click = "relevant_event_link_click",
-    big_calendar_event_link_click = "big_calendar_event_link_click",
-    setlist_song_link_click = "setlist_song_link_click",
-    dashboard_menu_link_click = "dashboard_menu_link_click",
-    general_link_click = "general_link_click",
+    link_follow_internal = "link_follow_internal",
+    link_follow_external = "link_follow_external",
+
     attendance_response = "attendance_response",
     attendance_instrument = "attendance_instrument",
     attendance_comment = "attendance_comment",

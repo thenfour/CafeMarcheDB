@@ -690,3 +690,33 @@ export function groupBy<T, K extends string | number>(
     }, {} as Record<K, T[]>);
 }
 
+
+/**
+ * isInternalUrl
+ * -------------
+ * Returns true when `href` resolves to the same origin as the current page,
+ * or when it is a purely relative/anchor/mail link that should be handled
+ * inside the app.  Otherwise it is considered external.
+ */
+export function isInternalUrl(href: string): boolean {
+    // “mailto:”, “tel:”, “javascript:”, etc. are always external to routing
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href) && !href.startsWith('http')) {
+        return false;
+    }
+
+    try {
+        // The WHATWG URL constructor resolves relative URLs when given a base.
+        // We use window.location.origin so query/fragment-only links work.
+        const resolved = new URL(href, window.location.origin);
+
+        // Same-origin ⇒ internal.
+        if (resolved.origin === window.location.origin) return true;
+
+        // Different origin ⇒ external.
+        return false;
+    } catch {
+        // “href” was something like “/path” or “#hash” (invalid in URL ctor)
+        // — treat that as an internal route.
+        return true;
+    }
+}

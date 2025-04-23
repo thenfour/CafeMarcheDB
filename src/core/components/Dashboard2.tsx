@@ -356,7 +356,8 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
                 e.stopPropagation();
                 const menuLink = props.item.item as MenuItemLink;
                 await recordFeature({
-                    feature: ActivityFeature.dashboard_menu_link_click,
+                    feature: ActivityFeature.link_follow_internal,
+                    //context: menuLink.linkCaption,
                 });
                 simulateLinkClick2(menuLink.path, e);
             }}
