@@ -1,18 +1,18 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
-import { getMySqlAggregateDateFormat, MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol } from "shared/mysqlUtils";
+import { getMySqlTimeBucketSelectExpression, MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
-import { ActivityFeature } from "../shared/activityTracking";
-import { ReportAggregateBy } from "../shared/apiTypes";
+import { ActivityReportTimeBucketSize } from "../activityReportTypes";
+import { ActivityFeature } from "../activityTracking";
 
 const ZTGeneralFeatureReportArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
     excludeFeatures: z.nativeEnum(ActivityFeature).array(),
     startDate: z.date(),
     endDate: z.date(),
-    aggregateBy: z.nativeEnum(ReportAggregateBy),
+    aggregateBy: z.nativeEnum(ActivityReportTimeBucketSize),
     excludeYourself: z.boolean(),
     excludeSysadmins: z.boolean(),
 
@@ -42,9 +42,6 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         filteredWikiPageId,
         contextBeginsWith,
     } = params;
-
-    // Get the date format
-    const dateFormat = getMySqlAggregateDateFormat(aggregateBy);
 
     const conditions: string[] = [];
 
@@ -91,9 +88,11 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         ? "WHERE " + conditions.join(" AND ")
         : "";
 
+    //const dateFormat = getMySqlAggregateDateFormat(aggregateBy);
+
     const sqlQuery = `
       SELECT
-        DATE_FORMAT(\`createdAt\`, '${dateFormat}') AS bucket,
+        ${getMySqlTimeBucketSelectExpression(`createdAt`, aggregateBy)} AS bucket,
         COUNT(*) AS count
       FROM \`Action\`
       ${whereClause}

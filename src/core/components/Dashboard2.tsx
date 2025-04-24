@@ -36,7 +36,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { AdminInspectObject } from "./CMCoreComponents";
 import { simulateLinkClick, simulateLinkClick2 } from "./CMCoreComponents2";

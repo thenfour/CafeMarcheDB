@@ -20,7 +20,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
-import { ActivityFeature } from '../db3/shared/activityTracking';
+import { ActivityFeature } from './featureReports/activityTracking';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';

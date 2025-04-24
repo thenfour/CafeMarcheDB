@@ -13,7 +13,7 @@ import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
 import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
-import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from '../db3/shared/activityTracking';
+import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from './featureReports/activityTracking';
 import { useAppContext } from './AppContext';
 
 interface ObjectWithVisiblePermission {

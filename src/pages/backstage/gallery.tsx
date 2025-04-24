@@ -11,7 +11,7 @@ import { IsNullOrWhitespace, getEnumValues, isInternalUrl, parseMimeType } from 
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard, InspectObject } from "src/core/components/CMCoreComponents";
-import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { KeyValueDisplay, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
@@ -30,7 +30,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
-import { collectDeviceInfo } from "@/src/core/db3/shared/activityTracking";
+import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
 
 interface FilterSpec {
     qfText: string;
@@ -313,8 +313,10 @@ const ClientInfoTester = () => {
     }, [])
 
     return <NameValuePair name="Client info" value={
-        <InspectObject src={info} />
-
+        <>
+            <InspectObject src={info} />
+            <KeyValueTable data={info || {}} />
+        </>
     } />
 };
 

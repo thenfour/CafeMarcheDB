@@ -7,7 +7,7 @@ import { CoerceToString, concatenateUrlParts } from "shared/utils";
 import { api } from "src/blitz-server";
 import { CalExportCore } from "src/core/db3/server/ical";
 import { recordAction } from "src/core/db3/server/recordActionServer";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { GetICalRelativeURIForUserUpcomingEvents } from "src/core/db3/shared/apiTypes";
 
 export default api(async (req, res, ctx: Ctx) => {

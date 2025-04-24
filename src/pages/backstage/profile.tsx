@@ -15,7 +15,7 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { TAnyModel } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 

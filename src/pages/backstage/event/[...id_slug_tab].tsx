@@ -14,7 +14,7 @@ import { EventTableClientColumns } from "src/core/components/EventComponentsBase
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {

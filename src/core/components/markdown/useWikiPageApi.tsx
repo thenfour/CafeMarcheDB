@@ -14,7 +14,7 @@ import { GetWikiPageUpdatabilityResult, gWikiEditPingIntervalMilliseconds, gWiki
 import { v4 as uuidv4 } from "uuid";
 import { useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { useMessageBox } from "../context/MessageBoxContext";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 
 // upon begin edit:
 //     - try to acquire lock (with your client-generated uid)

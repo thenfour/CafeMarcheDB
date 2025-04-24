@@ -4,7 +4,7 @@ import { LoginForm } from "src/auth/components/LoginForm";
 import { simulateLinkClick } from "./CMCoreComponents2";
 import { AppContextMarker } from "./AppContext";
 import { CMLink } from "./CMLink";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 
 export const LoginSignup = () => {
     const router = useRouter();

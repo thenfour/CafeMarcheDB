@@ -1130,36 +1130,3 @@ export type GetUserAttendanceRet = {
 
 };
 
-
-
-export enum ReportAggregateBy {
-    hour = "hour",
-    day = "day",
-    week = "week",
-    month = "month",
-};
-
-
-export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDefaultArgs>()({
-    include: {
-        event: true,
-        user: true,
-        file: true,
-        song: true,
-        wikiPage: true,
-        //attendance: true,
-        customLink: true,
-        eventSegment: true,
-        eventSongList: true,
-        frontpageGalleryItem: true,
-        //instrument: true,
-        menuLink: true,
-        setlistPlan: true,
-        //songCreditType: true,
-    }
-});
-
-// remove actual user & replace with anonymized hash
-export type GeneralActivityReportDetailPayload = Omit<Prisma.ActionGetPayload<typeof GeneralActivityReportDetailArgs>, "user" | "userId"> & {
-    userHash: string | null;
-};

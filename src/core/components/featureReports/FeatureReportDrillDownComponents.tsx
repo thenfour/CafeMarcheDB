@@ -2,22 +2,21 @@ import { parseBucketToDateRange } from '@/shared/mysqlUtils';
 import { formatMillisecondsToDHMS } from '@/shared/time';
 import { useQuery } from '@blitzjs/rpc';
 import * as React from 'react';
-import { gIconMap } from '../db3/components/IconMap';
-import getGeneralFeatureDetail from '../db3/queries/getGeneralFeatureDetail';
-import { ActivityDetailTabId } from "../db3/shared/activityTabs";
-import { ActivityFeature } from "../db3/shared/activityTracking";
-import { GeneralActivityReportDetailPayload, ReportAggregateBy } from "../db3/shared/apiTypes";
-import { CMChip } from './CMChip';
-import { AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from './CMCoreComponents';
-import { useDashboardContext } from "./DashboardContext";
+import { gIconMap } from '../../db3/components/IconMap';
+import getGeneralFeatureDetail from './queries/getGeneralFeatureDetail';
+import { ActivityDetailTabId, ActivityReportTimeBucketSize, GeneralActivityReportDetailPayload } from "./activityReportTypes";
+import { ActivityFeature } from "./activityTracking";
+import { CMChip } from '../CMChip';
+import { AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from '../CMCoreComponents';
+import { useDashboardContext } from "../DashboardContext";
 import { AnonymizedUserChip, ContextLabel, ContextObjectTabData, DistinctContextObjectTabContent, FeatureLabel, GeneralFeatureDetailTable, getContextObjectTabData } from './FeatureReportBasics';
-import { CMTab, CMTabPanel, CMTabPanelChild } from './TabPanel';
+import { CMTab, CMTabPanel, CMTabPanelChild } from '../TabPanel';
 
 interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];
     excludeFeatures: ActivityFeature[];
     bucket: string | null;
-    aggregateBy: ReportAggregateBy;
+    aggregateBy: ActivityReportTimeBucketSize;
     excludeYourself: boolean;
     excludeSysadmins: boolean;
     contextBeginsWith: string | undefined;
@@ -29,7 +28,7 @@ interface GeneralFeatureDetailAreaProps {
 
 export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
     const dashboardContext = useDashboardContext();
-    const [tabId, setTabId] = React.useState<ActivityDetailTabId>(ActivityDetailTabId.general);
+    const [tabId, setTabId] = React.useState<ActivityDetailTabId | "general">("general");
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
         features,
@@ -56,8 +55,8 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
             getlabel: (item: GeneralActivityReportDetailPayload) => string;
         }
 
-        const tabConfigs: TabConfig[] = [
-            {
+        const tabConfigs: Record<ActivityDetailTabId, TabConfig> = {
+            [ActivityDetailTabId.feature]: {
                 id: ActivityDetailTabId.feature,
                 label: "Features",
                 filterFn: (item) => !!item.feature,
@@ -65,6 +64,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 renderFn: (item) => <FeatureLabel feature={item.feature as ActivityFeature} onClickExclude={() => { }} onClickIsolate={() => { }} />,
                 getlabel: (item) => item.feature,
             },
+            [ActivityDetailTabId.user]:
             {
                 id: ActivityDetailTabId.user,
                 label: "Users",
@@ -73,6 +73,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 renderFn: (item) => <AnonymizedUserChip value={item.userHash!} size={50} />,
                 getlabel: (item) => item.userHash!.substring(0, 6),
             },
+            [ActivityDetailTabId.song]:
             {
                 id: ActivityDetailTabId.song,
                 label: "Songs",
@@ -87,6 +88,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 ),
                 getlabel: (item) => item.song!.name,
             },
+            [ActivityDetailTabId.event]:
             {
                 id: ActivityDetailTabId.event,
                 label: "Events",
@@ -101,6 +103,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 ),
                 getlabel: (item) => item.event!.name,
             },
+            [ActivityDetailTabId.wikiPage]:
             {
                 id: ActivityDetailTabId.wikiPage,
                 label: "Wiki pages",
@@ -115,20 +118,22 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 ),
                 getlabel: (item) => item.wikiPage!.slug,
             },
-            {
-                id: ActivityDetailTabId.file,
-                label: "Files",
-                filterFn: (item) => !!item.file,
-                keyFn: (item) => item.file!.id.toString(),
-                renderFn: (item) => (
-                    <FileChip
-                        value={item.file!}
-                        startAdornment={gIconMap.AttachFile()}
-                        useHashedColor
-                    />
-                ),
-                getlabel: (item) => item.file!.fileLeafName,
-            },
+            // [ActivityDetailTabId.file]:
+            // {
+            //     id: ActivityDetailTabId.file,
+            //     label: "Files",
+            //     filterFn: (item) => !!item.file,
+            //     keyFn: (item) => item.file!.id.toString(),
+            //     renderFn: (item) => (
+            //         <FileChip
+            //             value={item.file!}
+            //             startAdornment={gIconMap.AttachFile()}
+            //             useHashedColor
+            //         />
+            //     ),
+            //     getlabel: (item) => item.file!.fileLeafName,
+            // },
+            [ActivityDetailTabId.context]:
             {
                 id: ActivityDetailTabId.context,
                 label: "Contexts",
@@ -137,17 +142,19 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 renderFn: (item) => <ContextLabel value={item.context!} />,
                 getlabel: (item) => item.context!,
             },
-            {
-                id: ActivityDetailTabId.attendance,
-                label: "Attendance",
-                filterFn: (item) => !!item.attendanceId,
-                keyFn: (item) => item.attendanceId!.toString(),
-                renderFn: (item) => <AttendanceChip value={item.attendanceId!} />,
-                getlabel: (item) => {
-                    const att = dashboardContext.eventAttendance.getById(item.attendanceId!);
-                    return att?.text!;
-                },
-            },
+            // [ActivityDetailTabId.attendance]:
+            // {
+            //     id: ActivityDetailTabId.attendance,
+            //     label: "Attendance",
+            //     filterFn: (item) => !!item.attendanceId,
+            //     keyFn: (item) => item.attendanceId!.toString(),
+            //     renderFn: (item) => <AttendanceChip value={item.attendanceId!} />,
+            //     getlabel: (item) => {
+            //         const att = dashboardContext.eventAttendance.getById(item.attendanceId!);
+            //         return att?.text!;
+            //     },
+            // },
+            [ActivityDetailTabId.customLink]:
             {
                 id: ActivityDetailTabId.customLink,
                 label: "Custom Links",
@@ -156,22 +163,25 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 renderFn: (item) => <CMChip>Custom Link #{item.customLinkId}</CMChip>,
                 getlabel: (item) => item.customLink?.name!,
             },
-            {
-                id: ActivityDetailTabId.setlist,
-                label: "Setlists",
-                filterFn: (item) => !!item.eventSongListId,
-                keyFn: (item) => item.eventSongListId!.toString(),
-                renderFn: (item) => <CMChip>Setlist #{item.eventSongListId}</CMChip>,
-                getlabel: (item) => item.eventSongListId!.toString(),
-            },
-            {
-                id: ActivityDetailTabId.frontpageGalleryItem,
-                label: "Frontpage Gallery Items",
-                filterFn: (item) => !!item.frontpageGalleryItemId,
-                keyFn: (item) => item.frontpageGalleryItemId!.toString(),
-                renderFn: (item) => <CMChip>Gallery Item #{item.frontpageGalleryItemId}</CMChip>,
-                getlabel: (item) => item.frontpageGalleryItemId!.toString(),
-            },
+            // [ActivityDetailTabId.setlist]:
+            // {
+            //     id: ActivityDetailTabId.setlist,
+            //     label: "Setlists",
+            //     filterFn: (item) => !!item.eventSongListId,
+            //     keyFn: (item) => item.eventSongListId!.toString(),
+            //     renderFn: (item) => <CMChip>Setlist #{item.eventSongListId}</CMChip>,
+            //     getlabel: (item) => item.eventSongListId!.toString(),
+            // },
+            // [ActivityDetailTabId.frontpageGalleryItem]:
+            // {
+            //     id: ActivityDetailTabId.frontpageGalleryItem,
+            //     label: "Frontpage Gallery Items",
+            //     filterFn: (item) => !!item.frontpageGalleryItemId,
+            //     keyFn: (item) => item.frontpageGalleryItemId!.toString(),
+            //     renderFn: (item) => <CMChip>Gallery Item #{item.frontpageGalleryItemId}</CMChip>,
+            //     getlabel: (item) => item.frontpageGalleryItemId!.toString(),
+            // },
+            [ActivityDetailTabId.menuLink]:
             {
                 id: ActivityDetailTabId.menuLink,
                 label: "Menu Links",
@@ -180,36 +190,40 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 renderFn: (item) => <CMChip>Menu Link #{item.menuLinkId}</CMChip>,
                 getlabel: (item) => item.menuLink?.caption!,
             },
-            {
-                id: ActivityDetailTabId.setlistPlan,
-                label: "Setlist Plans",
-                filterFn: (item) => !!item.setlistPlanId,
-                keyFn: (item) => item.setlistPlanId!.toString(),
-                renderFn: (item) => <CMChip>Setlist Plan #{item.setlistPlanId}</CMChip>,
-                getlabel: (item) => item.setlistPlan?.name!,
-            },
-            {
-                id: ActivityDetailTabId.songCreditType,
-                label: "Song Credit Types",
-                filterFn: (item) => !!item.songCreditTypeId,
-                keyFn: (item) => item.songCreditTypeId!.toString(),
-                renderFn: (item) => <CMChip>Song Credit Type #{item.songCreditTypeId}</CMChip>,
-                getlabel: (item) => {
-                    const creditType = dashboardContext.songCreditType.getById(item.songCreditTypeId!);
-                    return creditType?.text!;
-                },
-            },
-            {
-                id: ActivityDetailTabId.instrument,
-                label: "Instruments",
-                filterFn: (item) => !!item.instrumentId,
-                keyFn: (item) => item.instrumentId!.toString(),
-                renderFn: (item) => <InstrumentChip value={item.instrumentId!} />,
-                getlabel: (item) => {
-                    const instrument = dashboardContext.instrument.getById(item.instrumentId!);
-                    return instrument?.name!;
-                },
-            },
+            // [ActivityDetailTabId.setlistPlan]:
+            // {
+            //     id: ActivityDetailTabId.setlistPlan,
+            //     label: "Setlist Plans",
+            //     filterFn: (item) => !!item.setlistPlanId,
+            //     keyFn: (item) => item.setlistPlanId!.toString(),
+            //     renderFn: (item) => <CMChip>Setlist Plan #{item.setlistPlanId}</CMChip>,
+            //     getlabel: (item) => item.setlistPlan?.name!,
+            // },
+            // [ActivityDetailTabId.songCreditType]:
+            // {
+            //     id: ActivityDetailTabId.songCreditType,
+            //     label: "Song Credit Types",
+            //     filterFn: (item) => !!item.songCreditTypeId,
+            //     keyFn: (item) => item.songCreditTypeId!.toString(),
+            //     renderFn: (item) => <CMChip>Song Credit Type #{item.songCreditTypeId}</CMChip>,
+            //     getlabel: (item) => {
+            //         const creditType = dashboardContext.songCreditType.getById(item.songCreditTypeId!);
+            //         return creditType?.text!;
+            //     },
+            // },
+            // [ActivityDetailTabId.instrument]:
+            // {
+            //     id: ActivityDetailTabId.instrument,
+            //     label: "Instruments",
+            //     filterFn: (item) => !!item.instrumentId,
+            //     keyFn: (item) => item.instrumentId!.toString(),
+            //     renderFn: (item) => <InstrumentChip value={item.instrumentId!} />,
+            //     getlabel: (item) => {
+            //         const instrument = dashboardContext.instrument.getById(item.instrumentId!);
+            //         return instrument?.name!;
+            //     },
+            // },
+            [ActivityDetailTabId.screenSize]:
             {
                 id: ActivityDetailTabId.screenSize,
                 label: "Screen Size",
@@ -222,6 +236,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return `${item.screenWidth}x${item.screenHeight}`;
                 }
             },
+            [ActivityDetailTabId.operatingSystem]:
             {
                 id: ActivityDetailTabId.operatingSystem,
                 label: "Operating System",
@@ -234,6 +249,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return item.operatingSystem!;
                 }
             },
+            [ActivityDetailTabId.pointerType]:
             {
                 id: ActivityDetailTabId.pointerType,
                 label: "Pointer type",
@@ -246,6 +262,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return item.pointerType!;
                 }
             },
+            [ActivityDetailTabId.browser]:
             {
                 id: ActivityDetailTabId.browser,
                 label: "Browser",
@@ -258,6 +275,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return item.browserName!;
                 }
             },
+            [ActivityDetailTabId.deviceClass]:
             {
                 id: ActivityDetailTabId.deviceClass,
                 label: "Device type",
@@ -270,7 +288,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return item.deviceClass!;
                 }
             },
-
+            [ActivityDetailTabId.language]:
             {
                 id: ActivityDetailTabId.language,
                 label: "Language",
@@ -283,7 +301,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return item.language!;
                 }
             },
-
+            [ActivityDetailTabId.locale]:
             {
                 id: ActivityDetailTabId.locale,
                 label: "Locale",
@@ -296,7 +314,7 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return item.locale!;
                 }
             },
-
+            [ActivityDetailTabId.timezone]:
             {
                 id: ActivityDetailTabId.timezone,
                 label: "Timezone",
@@ -309,13 +327,12 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                     return item.timezone!;
                 }
             },
-
-        ];
+        };
 
         const data = detail?.data ?? [];
 
         // 2) Iterate through each config to build the final tabs
-        return tabConfigs.reduce<ContextObjectTabData[]>((acc, cfg) => {
+        return Object.values(tabConfigs).reduce<ContextObjectTabData[]>((acc, cfg) => {
             // Filter data for the current tab type
             const filtered = data.filter(cfg.filterFn);
             // Then gather context objects using your existing function

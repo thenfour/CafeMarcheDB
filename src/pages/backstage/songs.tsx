@@ -22,7 +22,7 @@ import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongOrderB
 import { useSongListData } from "src/core/components/SongSearch";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 

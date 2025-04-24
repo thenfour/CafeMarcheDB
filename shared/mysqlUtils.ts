@@ -1,4 +1,4 @@
-import { ReportAggregateBy } from "src/core/db3/shared/apiTypes";
+import { ActivityReportTimeBucketSize } from "@/src/core/components/featureReports/activityReportTypes";
 
 export function SqlCombineAndExpression(expressions: string[]): string {
     if (expressions.length === 0) return "(true)";
@@ -83,112 +83,75 @@ export function MySqlStringLiteralAllowingPercent(str: string): string {
     return `'${MysqlEscapeAllowingPercent(str)}'`;
 }
 
-// returns a MySql date format string which allows aggregation (truncating to the desired level)
-export function getMySqlAggregateDateFormat(aggregateBy: ReportAggregateBy) {
+// // returns a MySql date format string which allows aggregation (truncating to the desired level)
+// export function getMySqlAggregateDateFormat(aggregateBy: ActivityReportTimeBucketSize) {
+//     switch (aggregateBy) {
+//         case ActivityReportTimeBucketSize.hour:
+//             // E.g. 2025-03-15 13:00:00
+//             return "%Y-%m-%d %H:00:00";
+//         case ActivityReportTimeBucketSize.day:
+//             // E.g. 2025-03-15
+//             return "%Y-%m-%d";
+//         case ActivityReportTimeBucketSize.week:
+//             // E.g. "2025-11" for the 11th week of 2025. Another approach: YEARWEEK(createdAt, 1)
+//             // If you prefer a date, you might do something like:
+//             // DATE_FORMAT(createdAt, '%x-%v-1')
+//             // But usually year-week is enough
+//             return "%x-%v";
+//         case ActivityReportTimeBucketSize.month:
+//             // E.g. "2025-03" or if you want a date: "2025-03-01"
+//             return "%Y-%m";
+//         case ActivityReportTimeBucketSize.year: return "%Y";           // 2025, 2026, …
+//         case ActivityReportTimeBucketSize.all: return "'all'";        // literal const string
+//         default:
+//             throw new Error(`Unsupported aggregateBy: ${aggregateBy}`);
+//     }
+// }
+
+
+// return a SQL select expression which returns the distinct bucket grouping.
+export function getMySqlTimeBucketSelectExpression(dateColumnName: string, aggregateBy: ActivityReportTimeBucketSize) {
     switch (aggregateBy) {
-        case ReportAggregateBy.hour:
+        case ActivityReportTimeBucketSize.hour:
             // E.g. 2025-03-15 13:00:00
-            return "%Y-%m-%d %H:00:00";
-        case ReportAggregateBy.day:
+            // DATE_FORMAT(\`createdAt\`, '${dateFormat}') AS bucket,
+            return `DATE_FORMAT(${MySqlSymbol(dateColumnName)}, '%Y-%m-%d %H:00:00')`;
+        //return "%Y-%m-%d %H:00:00";
+        case ActivityReportTimeBucketSize.day:
             // E.g. 2025-03-15
-            return "%Y-%m-%d";
-        case ReportAggregateBy.week:
+            return `DATE_FORMAT(${MySqlSymbol(dateColumnName)}, '%Y-%m-%d')`;
+        //return "%Y-%m-%d";
+        case ActivityReportTimeBucketSize.week:
             // E.g. "2025-11" for the 11th week of 2025. Another approach: YEARWEEK(createdAt, 1)
             // If you prefer a date, you might do something like:
             // DATE_FORMAT(createdAt, '%x-%v-1')
             // But usually year-week is enough
-            return "%x-%v";
-        case ReportAggregateBy.month:
+            return `DATE_FORMAT(${MySqlSymbol(dateColumnName)}, '%x-%v')`;
+        //return "%x-%v";
+        case ActivityReportTimeBucketSize.month:
             // E.g. "2025-03" or if you want a date: "2025-03-01"
-            return "%Y-%m";
+            return `DATE_FORMAT(${MySqlSymbol(dateColumnName)}, '%Y-%m')`;
+        //return "%Y-%m";
+        case ActivityReportTimeBucketSize.year:
+            return `DATE_FORMAT(${MySqlSymbol(dateColumnName)}, '%Y')`;
+        //return "%Y";           // 2025, 2026, …
+
+        case ActivityReportTimeBucketSize.all:
+            return "'all'";        // literal const string
         default:
             throw new Error(`Unsupported aggregateBy: ${aggregateBy}`);
     }
 }
 
 
+
+
+
+
 interface MySqlDateRange {
     start: Date;
     end: Date;
 }
-
-// /**
-//  * Given a "bucket" string from MySQL DATE_FORMAT + the aggregateBy,
-//  * returns the [start, end] Date range for that "bucket."
-//  */
-// export function parseBucketToDateRange(
-//     bucket: string,
-//     aggregateBy: ReportAggregateBy
-// ): MySqlDateRange {
-//     switch (aggregateBy) {
-//         case ReportAggregateBy.hour:
-//             return parseHourBucket(bucket);
-//         case ReportAggregateBy.day:
-//             return parseDayBucket(bucket);
-//         case ReportAggregateBy.week:
-//             return parseWeekBucket(bucket);
-//         case ReportAggregateBy.month:
-//             return parseMonthBucket(bucket);
-//         default:
-//             throw new Error(`Unsupported aggregateBy: ${aggregateBy}`);
-//     }
-// }
-
-// function parseHourBucket(bucket: string): MySqlDateRange {
-//     // "2025-03-15 13:00:00" -> hour start + hour end
-//     const normalized = bucket.replace(" ", "T");
-//     const start = new Date(normalized);
-//     const end = new Date(start.getTime() + 60 * 60 * 1000 - 1);
-//     return { start, end };
-// }
-
-// function parseDayBucket(bucket: string): MySqlDateRange {
-//     // "2025-03-15"
-//     const [y, m, d] = bucket.split("-");
-//     const year = parseInt(y!, 10);
-//     const month = parseInt(m!, 10) - 1;
-//     const day = parseInt(d!, 10);
-//     const start = new Date(year, month, day, 0, 0, 0, 0);
-//     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
-//     return { start, end };
-// }
-
-// function parseWeekBucket(bucket: string): MySqlDateRange {
-//     // "2025-11"
-//     const [yearStr, weekStr] = bucket.split("-");
-//     const isoYear = parseInt(yearStr!, 10);
-//     const isoWeek = parseInt(weekStr!, 10);
-//     return getIsoWeekRange(isoYear, isoWeek);
-// }
-
-// function getIsoWeekRange(year: number, week: number): MySqlDateRange {
-//     // see explanation above
-//     const jan4 = new Date(year, 0, 4);
-//     const jan4Day = jan4.getDay() || 7;
-//     const mondayWeek1 = new Date(jan4);
-//     mondayWeek1.setDate(jan4.getDate() + (1 - jan4Day));
-
-//     const start = new Date(mondayWeek1);
-//     start.setDate(mondayWeek1.getDate() + (week - 1) * 7);
-
-//     const end = new Date(start);
-//     end.setDate(start.getDate() + 6);
-//     end.setHours(23, 59, 59, 999);
-
-//     return { start, end };
-// }
-
-// function parseMonthBucket(bucket: string): MySqlDateRange {
-//     // "2025-03"
-//     const [y, m] = bucket.split("-");
-//     const year = parseInt(y!, 10);
-//     const month = parseInt(m!, 10) - 1;
-//     const start = new Date(year, month, 1, 0, 0, 0, 0);
-//     const nextMonth = new Date(year, month + 1, 1, 0, 0, 0, 0);
-//     const end = new Date(nextMonth.getTime() - 1);
-//     return { start, end };
-// }
-
 
 
 /**
@@ -197,20 +160,45 @@ interface MySqlDateRange {
  */
 export function parseBucketToDateRange(
     bucket: string,
-    aggregateBy: ReportAggregateBy
+    aggregateBy: ActivityReportTimeBucketSize
 ): MySqlDateRange {
     switch (aggregateBy) {
-        case ReportAggregateBy.hour:
+        case ActivityReportTimeBucketSize.hour:
             return parseHourBucketUTC(bucket);
-        case ReportAggregateBy.day:
+        case ActivityReportTimeBucketSize.day:
             return parseDayBucketUTC(bucket);
-        case ReportAggregateBy.week:
+        case ActivityReportTimeBucketSize.week:
             return parseWeekBucketUTC(bucket);
-        case ReportAggregateBy.month:
+        case ActivityReportTimeBucketSize.month:
             return parseMonthBucketUTC(bucket);
+        case ActivityReportTimeBucketSize.year: return parseYearBucketUTC(bucket);
+        case ActivityReportTimeBucketSize.all: return parseAllTimeBucketUTC();
         default:
             throw new Error(`Unsupported aggregateBy: ${aggregateBy}`);
     }
+}
+
+
+// 3a) YEAR  ─ e.g. bucket = "2025"
+function parseYearBucketUTC(bucket: string): MySqlDateRange {
+    const year = parseInt(bucket, 10);
+
+    const startMillis = Date.UTC(year, 0, 1, 0, 0, 0, 0);                // 1 Jan 00:00
+    const endMillis = Date.UTC(year + 1, 0, 1, 0, 0, 0, 0) - 1;         // 31 Dec 23:59:59.999
+
+    return {
+        start: new Date(startMillis),
+        end: new Date(endMillis),
+    };
+}
+
+// 3b) ALL TIME  ─ single bucket that spans “forever”.
+// You may want to replace these sentinel dates with your real data limits.
+function parseAllTimeBucketUTC(): MySqlDateRange {
+    return {
+        start: new Date(0),                        // 1970-01-01T00:00:00Z
+        end: new Date(8640000000000000 - 1),     // Max safe JS date ≈ +275 000 yrs
+    };
 }
 
 // --------------------

@@ -14,7 +14,7 @@ import { MarkdownLockIndicator } from './MarkdownLockIndicator';
 import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 
 const kMaxImageDimension = 750;
 

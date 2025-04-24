@@ -133,7 +133,7 @@ import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/Markdown";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { AppContextMarker } from "./AppContext";
 
 

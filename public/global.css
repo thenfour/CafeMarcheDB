@@ -840,7 +840,7 @@ solution is to
 
 .GeneralFeatureReportDetailItemRow td .queryText {
   font-family: var(--ff-mono);
-  padding: 2px 12px;
+  padding: 2px 6px;
   background-color: #ddd;
   color: #999;
 }
@@ -893,4 +893,23 @@ solution is to
 .DistinctContextObjectTabContent .header {
   display: flex;
   align-items: center;
+}
+
+
+
+
+
+.adHocChipContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.adHocChip {
+  background-color: #ccc;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: var(--ff-mono);
+  letter-spacing: -0.3px;
 }

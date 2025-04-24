@@ -9,7 +9,7 @@ import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { useDb3Query } from "../db3/DB3Client";
 import getUserTagWithAssignments from "../db3/queries/getUserTagWithAssignments";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
 import { simulateLinkClick2 } from "./CMCoreComponents2";

@@ -15,7 +15,7 @@ import { DialogActionsCM, simulateLinkClick } from "./CMCoreComponents2";
 import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { AppContextMarker } from "./AppContext";
 
 interface NewEventDialogProps {

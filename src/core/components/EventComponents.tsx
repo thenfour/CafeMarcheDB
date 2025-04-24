@@ -24,7 +24,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
-import { ActivityFeature } from '../db3/shared/activityTracking';
+import { ActivityFeature } from './featureReports/activityTracking';
 import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { AppContextMarker } from './AppContext';

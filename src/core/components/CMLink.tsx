@@ -1,4 +1,4 @@
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { useFeatureRecorder } from "./DashboardContext";
 
 type CMLinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & {

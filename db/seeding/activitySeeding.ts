@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { GetDateMinutesFromNow } from '../../shared/time';
-import { ActivityFeature, DeviceInfo } from '../../src/core/db3/shared/activityTracking';
+import { ActivityFeature, DeviceInfo } from '../../src/core/components/featureReports/activityTracking';
 import { SeedingState } from './base';
 
 const kActivityIntervalMinimumMinutes = 1;
@@ -55,12 +55,15 @@ export const getRandomClientData = (): DeviceInfo => {
     // 2) 33 % chance: "some" data
     const includeAll = roll > 0.66;
 
+    const screenInfo = maybe(
+        faker.helpers.arrayElement(resolutionOptions),
+        includeAll,
+    );
+
     const info: DeviceInfo = {
         pointer: maybe(faker.helpers.arrayElement(pointerOptions), includeAll),
-        screenInfo: maybe(
-            faker.helpers.arrayElement(resolutionOptions),
-            includeAll,
-        ),
+        screenHeight: screenInfo?.height,
+        screenWidth: screenInfo?.width,
         deviceClass: maybe(
             faker.helpers.arrayElement(deviceClassOptions),
             includeAll,
@@ -130,8 +133,8 @@ const SeedSingleActivity = async (gState: SeedingState, userId: number, date: Da
             browserName: clientData.browser,
             deviceClass: clientData.deviceClass,
             pointerType: clientData.pointer,
-            screenHeight: clientData.screenInfo?.height,
-            screenWidth: clientData.screenInfo?.width,
+            screenHeight: clientData.screenHeight,
+            screenWidth: clientData.screenWidth,
             operatingSystem: clientData.operatingSystem,
             language: clientData.language,
             locale: clientData.locale,

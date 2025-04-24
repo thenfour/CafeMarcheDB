@@ -2,7 +2,7 @@ import { Ctx } from "blitz";
 import db from "db";
 import { z } from "zod";
 import * as mutationCore from "../server/db3mutationCore";
-import { ZTRecordActionArgs } from "../shared/activityTracking";
+import { ZTRecordActionArgs } from "../../components/featureReports/activityTracking";
 
 
 type RecordActionArgs = z.infer<typeof ZTRecordActionArgs>;

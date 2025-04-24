@@ -1,4 +1,4 @@
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { simulateLinkClick2 } from "./CMCoreComponents2";
 import { CMDivLink } from "./CMLink";
 

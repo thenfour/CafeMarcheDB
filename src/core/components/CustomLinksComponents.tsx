@@ -8,7 +8,7 @@ import * as db3 from "src/core/db3/db3";
 import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gIconMap } from "../db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
 import { CMChip, CMChipContainer } from "./CMChip";

@@ -80,15 +80,93 @@ export enum ActivityFeature {
     setlist_reorder = "setlist_reorder",
 };
 
+export enum DeviceClasses {
+    phone = "phone",
+    tablet = "tablet",
+    desktop = "desktop",
+}
+
+export const DeviceClassIconMap: Record<DeviceClasses, string> = {
+    [DeviceClasses.phone]: "/images/icons/mobile.svg",
+    [DeviceClasses.tablet]: "/images/icons/tablet.svg",
+    [DeviceClasses.desktop]: "/images/icons/desktop.svg",
+};
+
+export enum PointerTypes {
+    touch = "touch",
+    cursor = "cursor",
+}
+
+export const PointerTypeIconMap: Record<PointerTypes, string> = {
+    [PointerTypes.touch]: "/images/icons/touch.svg",
+    [PointerTypes.cursor]: "/images/icons/mouse.svg",
+};
+
+export enum Browsers {
+    safari = "safari",
+    firefox = "firefox",
+    chrome = "chrome",
+    edge = "edge",
+    opera = "opera",
+    brave = "brave",
+    ie = "ie",
+}
+
+export const BrowserIconMap: Record<Browsers, string> = {
+    // from https://iconduck.com
+    [Browsers.safari]: "/images/icons/safari-ios.svg",
+    [Browsers.firefox]: "/images/icons/firefox.svg",
+    [Browsers.chrome]: "/images/icons/chrome.svg",
+    [Browsers.edge]: "/images/icons/edge.svg",
+    [Browsers.opera]: "/images/icons/opera.svg",
+    [Browsers.brave]: "/images/icons/brave.svg",
+    [Browsers.ie]: "/images/icons/internet-explorer-9.svg",
+}
+
+export type OperatingSystem =
+    | 'windows'
+    | 'macos'
+    | 'linux'
+    | 'android'
+    | 'ios'
+    | 'chromeos'
+    ;
+
+export const OSIconMap: Record<OperatingSystem, string> = {
+    windows: "/images/icons/windows-legacy.svg",
+    macos: "/images/icons/macos.svg",
+    chromeos: "/images/icons/chrome.svg",
+    ios: "/images/icons/ios.svg",
+    linux: "/images/icons/linux.svg",
+    android: "/images/icons/android.svg",
+};
+
+export function detectOS(): OperatingSystem | undefined {
+    const uaData = (navigator as any).userAgentData;
+    const platform = uaData?.platform || navigator.platform || navigator.userAgent;
+
+    if (/Win/i.test(platform)) return 'windows';
+    if (/Mac/i.test(platform) && !/iPhone|iPad|iPod/i.test(platform)) return 'macos';
+    if (/Linux/i.test(platform)) return 'linux';
+    if (/Android/i.test(platform)) return 'android';
+    if (/CrOS/i.test(platform)) return 'chromeos';
+    if (/iPhone|iPad|iPod/i.test(platform)) return 'ios';
+
+    return undefined;
+}
+
 
 export const ZDeviceInfo = z.object({
-    pointer: z.enum(['touch', 'cursor']).optional(),
-    screenInfo: z.object({
-        width: z.number(),
-        height: z.number(),
-    }).optional(),
-    deviceClass: z.enum(['phone', 'tablet', 'desktop']).optional(),
-    browser: z.enum(['safari', 'firefox', 'chrome', 'edge', 'opera']).optional(),
+    //pointer: z.enum(['touch', 'cursor']).optional(),
+    pointer: z.nativeEnum(PointerTypes).optional(), // touch or cursor
+    screenWidth: z.number().optional(),
+    screenHeight: z.number().optional(),
+
+    //deviceClass: z.enum(['phone', 'tablet', 'desktop']).optional(),
+    deviceClass: z.nativeEnum(DeviceClasses).optional(), // phone, tablet, or desktop
+
+    //browser: z.enum(['safari', 'firefox', 'chrome', 'edge', 'opera', 'brave', 'ie']).optional(),
+    browser: z.nativeEnum(Browsers).optional(), // safari, firefox, chrome, edge, opera, brave, ie
 
     operatingSystem: z.string().optional(), // e.g. "windows", "macos", "linux", "android", "ios"
     language: z.string().optional(), // the 2-letter language code, e.g. 'en', 'de', 'fr', etc.
@@ -97,13 +175,6 @@ export const ZDeviceInfo = z.object({
 });
 
 export type DeviceInfo = z.infer<typeof ZDeviceInfo>;
-
-// export type DeviceInfo = {
-//     pointer?: 'touch' | 'cursor';
-//     screenInfo?: { width: number; height: number };
-//     deviceClass?: 'phone' | 'tablet' | 'desktop';
-//     browser?: 'safari' | 'firefox' | 'chrome' | 'edge' | 'opera';
-// };
 
 /**
  * Collect the device information client-side.
@@ -115,62 +186,97 @@ export async function collectDeviceInfo(): Promise<DeviceInfo> {
     /* -------- pointer -------------------------------------------------------- */
     // Media-queries describe input **capabilities** very reliably.
     if (matchMedia('(pointer: coarse)').matches) {
-        info.pointer = 'touch';
+        info.pointer = PointerTypes.touch;
     } else if (matchMedia('(pointer: fine)').matches) {
-        info.pointer = 'cursor';
+        info.pointer = PointerTypes.cursor;
     }
     /* pointer/any-pointer are specced keywords: coarse = touch, fine = mouse :contentReference[oaicite:0]{index=0} */
 
-    /* -------- screen resolution --------------------------------------------- */
-    info.screenInfo = {
-        width: window.screen.width,
-        height: window.screen.height,
-    };
+    info.screenHeight = window.screen.height;
+    info.screenWidth = window.screen.width;
 
     /* -------- device class --------------------------------------------------- */
     const uaData = (navigator as any).userAgentData as /*NavigatorUAData*/ any | undefined;
     if (uaData?.mobile) {
         // Use viewport size to split phone ↔ tablet
-        const maxDim = Math.max(info.screenInfo.width, info.screenInfo.height);
-        info.deviceClass = maxDim >= 768 ? 'tablet' : 'phone';
+        const maxDim = Math.max(window.screen.width, window.screen.height);
+        info.deviceClass = maxDim >= 768 ? DeviceClasses.tablet : DeviceClasses.phone;
     } else {
-        info.deviceClass = 'desktop';
+        info.deviceClass = DeviceClasses.desktop;
     }
 
-    /* -------- browser -------------------------------------------------------- */
     info.browser = detectBrowser(uaData);
+    info.operatingSystem = detectOS();
+    // info.operatingSystem = uaData?.platform || navigator.platform || undefined;
+    // if (info.operatingSystem) {
+    //     info.operatingSystem = info.operatingSystem.toLowerCase();
+    // }
+
+    info.language = navigator.language.split("-")[0] || undefined;
+    if (info.language) {
+        info.language = info.language.toLowerCase();
+    }
+
+    info.locale = navigator.language || undefined;
+    if (info.locale) {
+        info.locale = info.locale.toLowerCase();
+    }
+
+    info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+    if (info.timezone) {
+        info.timezone = info.timezone.toLowerCase();
+    }
 
     return info;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Helper: normalise UA-CH / UA-string into your union type                   */
-function detectBrowser(uaData?: /*NavigatorUAData*/ any): DeviceInfo['browser'] {
-    /** Brand token → canonical name map (order matters) */
-    const map: Record<string, DeviceInfo['browser']> = {
-        'Microsoft Edge': 'edge',
-        'Opera': 'opera',
-        'Firefox': 'firefox',
-        'Safari': 'safari',
-        'Chromium': 'chrome',
-        'Google Chrome': 'chrome',
+/* 2) normalise UA-CH / UA-string into that type                                 */
+function detectBrowser(uaData?: /* NavigatorUAData */ any): DeviceInfo['browser'] {
+    /* ---- A. UA-CH branch ---------------------------------------------------- */
+    /*  (Brave & Edge really do expose their own brand token in modern Chromium) */
+    /*      see table lines 11-13 here …                                        */
+    /*      Brave“Brave”;v=”124″, “Chromium”;v=”124″✅                          */
+    /*      Edge “Microsoft Edge”;v=”124″, “Chromium”;v=”124″✅                 */
+    /*      Opera“Opera”…                                                      */
+    const brandMap: Record<string, DeviceInfo['browser']> = {
+        'Microsoft Edge': Browsers.edge,
+        'Opera': Browsers.opera,
+        'Brave': Browsers.brave,
+        'Firefox': Browsers.firefox,
+        'Safari': Browsers.safari,
+        'Chromium': Browsers.chrome,
+        'Google Chrome': Browsers.chrome,
     };
 
-    // 1) Modern way: User-Agent Client Hints
     if (uaData?.brands?.length) {
         for (const { brand } of uaData.brands) {
-            const canonical = map[brand];
+            const canonical = brandMap[brand];
             if (canonical) return canonical;
         }
     }
 
-    // 2) Fallback: legacy userAgent parsing
+    /* ---- B. Fallback: sniff the legacy user-agent string -------------------- */
     const ua = navigator.userAgent;
-    if (/Edg/i.test(ua)) return 'edge';
-    if (/OPR|Opera/i.test(ua)) return 'opera';
-    if (/Firefox/i.test(ua)) return 'firefox';
-    if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) return 'safari';
-    return 'chrome';
+
+    /*  order matters – match the most specific first */
+    if (/Edg/i.test(ua)) return Browsers.edge;
+    if (/OPR|Opera/i.test(ua)) return Browsers.opera;
+
+    /* Brave: two signals – “Brave” in UA (desktop) or the `navigator.brave` hook */
+    if (/Brave/i.test(ua) ||
+        (typeof navigator === 'object' && (navigator as any).brave)) return Browsers.brave;
+
+    if (/Firefox/i.test(ua)) return Browsers.firefox;
+
+    /* IE 6-10 → “MSIE”, IE11 → “Trident/… rv:11.0”  */  // Example UA strings: turn2search0
+    if (/MSIE |Trident\//i.test(ua)) return Browsers.ie;
+
+    /* Safari must come *after* the Chromium-based checks                       */
+    if (/Safari/i.test(ua) &&
+        !/Chrome|Chromium|Brave|Edg|OPR/i.test(ua)) return Browsers.safari;
+
+    return Browsers.chrome;  // default
 }
 
 export const ZTRecordActionArgs = z.object({

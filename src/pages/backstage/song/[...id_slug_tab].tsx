@@ -11,7 +11,7 @@ import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {

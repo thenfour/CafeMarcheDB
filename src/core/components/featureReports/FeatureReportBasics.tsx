@@ -1,18 +1,17 @@
 import { toSorted } from "@/shared/arrayUtils";
 import { gLightSwatchColors, gSwatchColors } from "@/shared/color";
-import { getHashedColor, smartTruncate } from "@/shared/utils";
+import { getHashedColor, IsNullOrWhitespace, smartTruncate } from "@/shared/utils";
 import { Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Pie, PieChart, Tooltip } from 'recharts';
-import { gIconMap } from "../db3/components/IconMap";
-import { ActivityDetailTabId } from "../db3/shared/activityTabs";
-import { ActivityFeature } from "../db3/shared/activityTracking";
-import { GeneralActivityReportDetailPayload } from "../db3/shared/apiTypes";
-import { CMChip } from "./CMChip";
-import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
-import { CMSmallButton } from "./CMCoreComponents2";
-import { AgeRelativeToNow } from "./RelativeTimeComponents";
+import { gIconMap } from "../../db3/components/IconMap";
+import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
+import { ActivityFeature, BrowserIconMap, Browsers, DeviceClasses, DeviceClassIconMap, OperatingSystem, OSIconMap, PointerTypeIconMap, PointerTypes } from "./activityTracking";
+import { CMChip } from "../CMChip";
+import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
+import { CMSmallButton } from "../CMCoreComponents2";
+import { AgeRelativeToNow } from "../RelativeTimeComponents";
 
 
 export type ContextObjectDistinctItem = {
@@ -247,6 +246,41 @@ export function getContextObjectTabData(
     return toSorted(contextObjects, (a, b) => b.itemCount - a.itemCount);
 }
 
+const BrowserChip = ({ value }: { value: string | null | undefined }) => {
+    if (IsNullOrWhitespace(value)) return null;
+    const relUri = BrowserIconMap[value as Browsers];
+    if (!relUri) return <div className="adHocChip">{value}</div>;
+    return <MuiTooltip title={value}>
+        <img src={relUri} width={24} height={24} />
+    </MuiTooltip>;
+}
+
+const OperatingSystemChip = ({ value }: { value: string | null | undefined }) => {
+    if (IsNullOrWhitespace(value)) return null;
+    const relUri = OSIconMap[value as OperatingSystem];
+    if (!relUri) return <div className="adHocChip">{value}</div>;
+    return <MuiTooltip title={value}>
+        <img src={relUri} width={24} height={24} />
+    </MuiTooltip>;
+}
+
+const PointerTypeChip = ({ value }: { value: string | null | undefined }) => {
+    if (IsNullOrWhitespace(value)) return null;
+    const relUri = PointerTypeIconMap[value as PointerTypes];
+    if (!relUri) return <div className="adHocChip">{value}</div>;
+    return <MuiTooltip title={value}>
+        <img src={relUri} width={24} height={24} />
+    </MuiTooltip>;
+}
+
+const DeviceClassChip = ({ value }: { value: string | null | undefined }) => {
+    if (IsNullOrWhitespace(value)) return null;
+    const relUri = DeviceClassIconMap[value as DeviceClasses];
+    if (!relUri) return <div className="adHocChip">{value}</div>;
+    return <MuiTooltip title={value}>
+        <img src={relUri} width={24} height={24} />
+    </MuiTooltip>;
+}
 
 interface GeneralFeatureReportDetailItemProps {
     value: GeneralActivityReportDetailPayload;
@@ -296,7 +330,33 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
             {value.instrumentId && <InstrumentChip value={value.instrumentId} />}
         </td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
-    </tr>;
+        {/* <td>
+            {value.language &&
+                <div className="adHocChipContainer">
+                    <div className="adHocChip">{value.language}</div>
+                </div>
+            }
+        </td > */}
+        <td>
+            {value.locale && <div className="adHocChipContainer">
+                <div className="adHocChip">{value.locale}</div>
+            </div>}
+        </td >
+        {/* <td>
+            {value.timezone && <div className="adHocChipContainer">
+                <div className="adHocChip">{value.timezone}</div></div>}
+        </td > */}
+        <td>
+            <div className="adHocChipContainer">
+                <PointerTypeChip value={value.pointerType} />
+                <DeviceClassChip value={value.deviceClass} />
+                <OperatingSystemChip value={value.operatingSystem} />
+            </div>
+        </td>
+        <td>
+            <BrowserChip value={value.browserName} />
+        </td>
+    </tr >;
 };
 
 
@@ -320,6 +380,12 @@ export const GeneralFeatureDetailTable = ({ data, ...props }: GeneralFeatureDeta
                 <th>Query</th>
                 <th></th>
                 <th>URI</th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
             </tr>
         </thead>
         <tbody>

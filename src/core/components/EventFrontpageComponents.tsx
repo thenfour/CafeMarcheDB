@@ -10,7 +10,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconMap";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { EditTextField } from "./CMCoreComponents";
 import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";

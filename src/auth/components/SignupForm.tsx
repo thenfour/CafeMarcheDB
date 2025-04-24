@@ -6,7 +6,7 @@ import signup from "src/auth/mutations/signup";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { useFeatureRecorder } from "src/core/components/DashboardContext";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 
 type SignupFormProps = {
   onSuccess?: () => void

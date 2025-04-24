@@ -23,7 +23,7 @@ import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
 import { CMLink } from "./CMLink";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 

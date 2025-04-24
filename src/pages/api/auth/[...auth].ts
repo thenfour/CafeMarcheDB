@@ -6,7 +6,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import signupMutation from "src/auth/mutations/signup";
 import { api } from "src/blitz-server";
 import { recordAction } from "src/core/db3/server/recordActionServer";
-import { ActivityFeature } from "src/core/db3/shared/activityTracking";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { CreatePublicData } from "types";
 
 export default api(

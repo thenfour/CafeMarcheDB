@@ -15,7 +15,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
-import { ActivityFeature } from '../db3/shared/activityTracking';
+import { ActivityFeature } from './featureReports/activityTracking';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
 import { AudioPreviewBehindButton } from './AudioPreview';

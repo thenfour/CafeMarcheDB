@@ -8,7 +8,7 @@ import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { gIconMap } from "../db3/components/IconMap";
 import { Knob } from "./Knob";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;

@@ -22,7 +22,7 @@ import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { AgeRelativeToNow } from "./RelativeTimeComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityValue } from "./VisibilityControl";
-import { ActivityFeature } from "../db3/shared/activityTracking";
+import { ActivityFeature } from "./featureReports/activityTracking";
 
 
 //////////////////////////////////////////////////

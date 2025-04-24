@@ -100,16 +100,16 @@ model Action {
   queryText String? // if applicable
   context   String? // free string trying to describe client context triggering the action.
 
-  pointerType  String? // lowercase.
+  pointerType  String? @db.VarChar(30) // lowercase.
   screenWidth  Int?
   screenHeight Int?
-  deviceClass  String? // lowercase.
-  browserName  String? // lowercase.
+  deviceClass  String? @db.VarChar(30) // lowercase.
+  browserName  String? @db.VarChar(30) // lowercase.
 
-  operatingSystem String? // lowercase.
-  language        String? // lowercase. "en"
-  locale          String? // lowercase. "en-us"
-  timezone        String? // lowercase. e.g. "europe/brussels"
+  operatingSystem String? @db.VarChar(30) // lowercase.
+  language        String? @db.VarChar(30)// lowercase. "en"
+  locale          String? @db.VarChar(30)// lowercase. "en-us"
+  timezone        String? @db.VarChar(90)// lowercase. e.g. "europe/brussels"
 
   fileId         Int?
   file           File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)
@@ -139,7 +139,7 @@ model Action {
   instrumentId           Int?
   instrument             Instrument?           @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
 
-  @@index([createdAt, userId, context])
+  @@index([feature, createdAt, userId, context, pointerType, deviceClass, browserName, operatingSystem, language, locale, timezone])
 }
 
 // effectively this creates "groups" that you can belong to. or indeed just tags... makes sense anyway.

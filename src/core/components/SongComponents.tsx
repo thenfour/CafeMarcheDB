@@ -30,7 +30,7 @@ import { SongHistory } from './SongHistory';
 import { VisibilityValue } from './VisibilityControl';
 import { CMTab, CMTabPanel } from './TabPanel';
 import { AppContextMarker } from './AppContext';
-import { ActivityFeature } from '../db3/shared/activityTracking';
+import { ActivityFeature } from './featureReports/activityTracking';
 
 
 export const SongClientColumns = {

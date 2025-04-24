@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useMemo } from "react";
 import { slugifyWithDots } from "shared/rootroot";
-import { ActivityFeatureAssociations } from "../db3/shared/activityTracking";
+import { ActivityFeatureAssociations } from "./featureReports/activityTracking";
 
 // Our context will hold an array of strings that represent the "stack."
 type AppContextDataBase = ActivityFeatureAssociations & {

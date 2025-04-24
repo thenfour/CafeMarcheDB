@@ -6,14 +6,14 @@ import { parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { hashString } from "shared/utils";
 import { z } from "zod";
-import { ActivityFeature } from "../shared/activityTracking";
-import { GeneralActivityReportDetailArgs, GeneralActivityReportDetailPayload, ReportAggregateBy } from "../shared/apiTypes";
+import { ActivityReportTimeBucketSize, GeneralActivityReportDetailArgs, GeneralActivityReportDetailPayload } from "../activityReportTypes";
+import { ActivityFeature } from "../activityTracking";
 
 const ZTGeneralFeatureDetailArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
     excludeFeatures: z.nativeEnum(ActivityFeature).array(),
     bucket: z.string().nullable(),
-    aggregateBy: z.nativeEnum(ReportAggregateBy),
+    aggregateBy: z.nativeEnum(ActivityReportTimeBucketSize),
     excludeYourself: z.boolean(),
     excludeSysadmins: z.boolean(),
 

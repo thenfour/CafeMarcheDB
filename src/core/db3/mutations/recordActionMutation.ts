@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import * as mutationCore from "../server/db3mutationCore";
-import { ZTRecordActionArgs } from "../shared/activityTracking";
+import { ZTRecordActionArgs } from "../../components/featureReports/activityTracking";
 
 export default resolver.pipe(
     resolver.zod(ZTRecordActionArgs),
