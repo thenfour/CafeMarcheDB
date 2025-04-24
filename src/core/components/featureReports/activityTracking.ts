@@ -123,14 +123,14 @@ export const BrowserIconMap: Record<Browsers, string> = {
     [Browsers.ie]: "/images/icons/internet-explorer-9.svg",
 }
 
-export type OperatingSystem =
-    | 'windows'
-    | 'macos'
-    | 'linux'
-    | 'android'
-    | 'ios'
-    | 'chromeos'
-    ;
+export enum OperatingSystem {
+    windows = "windows",
+    macos = "macos",
+    linux = "linux",
+    android = "android",
+    ios = "ios",
+    chromeos = "chromeos",
+};
 
 export const OSIconMap: Record<OperatingSystem, string> = {
     windows: "/images/icons/windows-legacy.svg",
@@ -145,12 +145,12 @@ export function detectOS(): OperatingSystem | undefined {
     const uaData = (navigator as any).userAgentData;
     const platform = uaData?.platform || navigator.platform || navigator.userAgent;
 
-    if (/Win/i.test(platform)) return 'windows';
-    if (/Mac/i.test(platform) && !/iPhone|iPad|iPod/i.test(platform)) return 'macos';
-    if (/Linux/i.test(platform)) return 'linux';
-    if (/Android/i.test(platform)) return 'android';
-    if (/CrOS/i.test(platform)) return 'chromeos';
-    if (/iPhone|iPad|iPod/i.test(platform)) return 'ios';
+    if (/Win/i.test(platform)) return OperatingSystem.windows;
+    if (/Mac/i.test(platform) && !/iPhone|iPad|iPod/i.test(platform)) return OperatingSystem.macos;
+    if (/Linux/i.test(platform)) return OperatingSystem.linux;
+    if (/Android/i.test(platform)) return OperatingSystem.android;
+    if (/CrOS/i.test(platform)) return OperatingSystem.chromeos;
+    if (/iPhone|iPad|iPod/i.test(platform)) return OperatingSystem.ios;
 
     return undefined;
 }

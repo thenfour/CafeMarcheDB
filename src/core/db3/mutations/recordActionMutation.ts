@@ -19,8 +19,8 @@ export default resolver.pipe(
                 context,
 
                 // device info...
-                screenHeight: deviceInfo?.screenInfo?.height,
-                screenWidth: deviceInfo?.screenInfo?.width,
+                screenHeight: deviceInfo?.screenHeight,
+                screenWidth: deviceInfo?.screenWidth,
                 deviceClass: deviceInfo?.deviceClass,
                 pointerType: deviceInfo?.pointer,
                 browserName: deviceInfo?.browser,

@@ -13,8 +13,8 @@ import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
 import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
-import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from './featureReports/activityTracking';
 import { useAppContext } from './AppContext';
+import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from './featureReports/activityTracking';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -217,7 +217,7 @@ export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFe
     const appCtx = useAppContext();
     // react likes to make redundant renders; throttle.
     const throttledRecordAction = useThrottle(() => {
-        collectDeviceInfo().then(deviceInfo => {
+        void collectDeviceInfo().then(deviceInfo => {
             void recordActionProc({
                 ...appCtx,
                 ...associations,

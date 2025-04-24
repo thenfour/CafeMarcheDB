@@ -3,14 +3,14 @@ import { formatMillisecondsToDHMS } from '@/shared/time';
 import { useQuery } from '@blitzjs/rpc';
 import * as React from 'react';
 import { gIconMap } from '../../db3/components/IconMap';
-import getGeneralFeatureDetail from './queries/getGeneralFeatureDetail';
+import { CMChip } from '../CMChip';
+import { EventChip, SongChip, WikiPageChip } from '../CMCoreComponents';
+import { useDashboardContext } from "../DashboardContext";
+import { CMTab, CMTabPanel, CMTabPanelChild } from '../TabPanel';
 import { ActivityDetailTabId, ActivityReportTimeBucketSize, GeneralActivityReportDetailPayload } from "./activityReportTypes";
 import { ActivityFeature } from "./activityTracking";
-import { CMChip } from '../CMChip';
-import { AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from '../CMCoreComponents';
-import { useDashboardContext } from "../DashboardContext";
 import { AnonymizedUserChip, ContextLabel, ContextObjectTabData, DistinctContextObjectTabContent, FeatureLabel, GeneralFeatureDetailTable, getContextObjectTabData } from './FeatureReportBasics';
-import { CMTab, CMTabPanel, CMTabPanelChild } from '../TabPanel';
+import getGeneralFeatureDetail from './queries/getGeneralFeatureDetail';
 
 interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];

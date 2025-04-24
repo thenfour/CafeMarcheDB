@@ -307,7 +307,7 @@ const ClientInfoTester = () => {
     const [info, setInfo] = React.useState<any>(null);
 
     React.useEffect(() => {
-        collectDeviceInfo().then((info) => {
+        void collectDeviceInfo().then((info) => {
             setInfo(info);
         });
     }, [])

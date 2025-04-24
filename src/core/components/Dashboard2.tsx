@@ -11,8 +11,6 @@ import {
     Settings as SettingsIcon
 } from '@mui/icons-material';
 import CollectionsIcon from '@mui/icons-material/Collections';
-import CommentIcon from '@mui/icons-material/Comment';
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
@@ -36,8 +34,8 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
-import { ActivityFeature } from "./featureReports/activityTracking";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
+import { AppContextMarker } from "./AppContext";
 import { AdminInspectObject } from "./CMCoreComponents";
 import { simulateLinkClick, simulateLinkClick2 } from "./CMCoreComponents2";
 import { ConfirmProvider } from "./ConfirmationDialog";
@@ -47,7 +45,7 @@ import { MainSiteSearch } from "./MainSiteSearch";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
 import { MessageBoxProvider } from "./context/MessageBoxContext";
-import { AppContextMarker } from "./AppContext";
+import { ActivityFeature } from "./featureReports/activityTracking";
 
 const drawerWidth = 260;
 

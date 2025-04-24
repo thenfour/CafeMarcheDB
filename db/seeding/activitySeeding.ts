@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { GetDateMinutesFromNow } from '../../shared/time';
-import { ActivityFeature, DeviceInfo } from '../../src/core/components/featureReports/activityTracking';
+import { ActivityFeature, Browsers, DeviceClasses, DeviceInfo, OperatingSystem, PointerTypes } from '../../src/core/components/featureReports/activityTracking';
 import { SeedingState } from './base';
 
 const kActivityIntervalMinimumMinutes = 1;
@@ -11,7 +11,7 @@ const kActivityLayerUserCounts = [2, 4, 100];
 
 /* -------------------------------------------------------------------------- */
 /* Fixed value pools                                                          */
-const pointerOptions = ["touch", "cursor"] as const;
+//const pointerOptions = ["touch", "cursor"] as const;
 
 const resolutionOptions = [
     { width: 2280, height: 1080 }, // desktop FHD
@@ -22,11 +22,11 @@ const resolutionOptions = [
     { width: 390, height: 844 },  // iPhone 15 Pro portrait
 ] as const;
 
-const deviceClassOptions = ["desktop", "tablet", "phone"] as const;
+//const deviceClassOptions = ["desktop", "tablet", "phone"] as const;
 
-const browserOptions = ["chrome", "safari", "firefox", "edge"] as const;
+//const browserOptions = ["chrome", "safari", "firefox", "edge"] as const;
 
-const osOptions = ["windows", "macos", "linux", "android"] as const;
+//const osOptions = ["windows", "macos", "linux", "android"] as const;
 
 const languageOptions = ["en", "nl", "fr", "de"] as const;
 
@@ -61,15 +61,15 @@ export const getRandomClientData = (): DeviceInfo => {
     );
 
     const info: DeviceInfo = {
-        pointer: maybe(faker.helpers.arrayElement(pointerOptions), includeAll),
+        pointer: maybe(faker.helpers.arrayElement(Object.values(PointerTypes)), includeAll),
         screenHeight: screenInfo?.height,
         screenWidth: screenInfo?.width,
         deviceClass: maybe(
-            faker.helpers.arrayElement(deviceClassOptions),
+            faker.helpers.arrayElement(Object.values(DeviceClasses)),
             includeAll,
         ),
-        browser: maybe(faker.helpers.arrayElement(browserOptions), includeAll),
-        operatingSystem: maybe(faker.helpers.arrayElement(osOptions), includeAll),
+        browser: maybe(faker.helpers.arrayElement(Object.values(Browsers)), includeAll),
+        operatingSystem: maybe(faker.helpers.arrayElement(Object.values(OperatingSystem)), includeAll),
         language: maybe(faker.helpers.arrayElement(languageOptions), includeAll),
         locale: maybe(faker.helpers.arrayElement(localeOptions), includeAll),
         timezone: maybe(faker.helpers.arrayElement(timezoneOptions), includeAll),

@@ -1,26 +1,10 @@
-import { getColorForFeature } from "@/src/core/components/featureReports/FeatureReportBasics";
-import { GeneralFeatureDetailArea } from "@/src/core/components/featureReports/FeatureReportDrillDownComponents";
 import { ActivityReportTimeBucketSize } from "@/src/core/components/featureReports/activityReportTypes";
-import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { ArrowUpward, Clear } from "@mui/icons-material";
-import { Button, FormControlLabel } from "@mui/material";
 import * as React from 'react';
 import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
-import { Permission } from "shared/permissions";
-import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
-import { IsNullOrWhitespace } from "shared/utils";
-import { PermissionBoundary } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
-import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
-import { CMTextInputBase } from "src/core/components/CMTextField";
-import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
-import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
 //import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
-import getGeneralFeatureReport from "@/src/core/components/featureReports/queries/getGeneralFeatureReport";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import getGeneralFeatureReport from "@/src/core/components/featureReports/queries/getGeneralFeatureReport";
 
 // date selection, bucket size
 // and other filters
