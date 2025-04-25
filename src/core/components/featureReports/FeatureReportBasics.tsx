@@ -170,22 +170,17 @@ export const FeatureLabel = (props: FeatureLabelProps) => {
                 color={color}
                 size="small"
                 shape="rectangle"
-                onClick={props.onClickIsolate ? (() => props.onClickIsolate!()) : undefined}
-                tooltip={`Isolate ${props.feature}`}
+            //onClick={props.onClickIsolate ? (() => props.onClickIsolate!()) : undefined}
+            //tooltip={`Isolate ${props.feature}`}
             >{props.feature}</CMChip>
-            <span className="flex-spacer"></span>
-            <span>
-                {/* <MuiTooltip title={`Isolate ${props.feature}`} disableInteractive>
-                    <span>
-                        <CMSmallButton onClick={props.onClickIsolate}>isol</CMSmallButton>
-                    </span>
-                </MuiTooltip> */}
+            {/* <span className="flex-spacer"></span> */}
+            {/* <span>
                 <MuiTooltip title={`Hide / exclude ${props.feature}`} disableInteractive>
                     <span>
                         <CMSmallButton onClick={props.onClickExclude}>hide</CMSmallButton>
                     </span>
                 </MuiTooltip>
-            </span>
+            </span> */}
         </div>
     </>;
 };

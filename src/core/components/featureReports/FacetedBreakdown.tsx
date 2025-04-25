@@ -1,18 +1,15 @@
-import { gGeneralPaletteList } from '@/shared/color';
 import { parseBucketToDateRange } from '@/shared/mysqlUtils';
 import { formatMillisecondsToDHMS } from '@/shared/time';
-import { getHashedColor } from '@/shared/utils';
 import { useQuery } from "@blitzjs/rpc";
+import { Collapse } from '@mui/material';
 import * as React from 'react';
 import { Pie, PieChart, Tooltip } from 'recharts';
-import { useDashboardContext } from "../DashboardContext";
 import { CMTab, CMTabPanel, CMTabPanelChild } from "../TabPanel";
-import { ActivityDetailTabId, ActivityReportTimeBucketSize, FacetedBreakdownResult, FacetResultBase } from "./activityReportTypes";
-import { ActivityFeature } from "./activityTracking";
-import { AnonymizedUserChip, BrowserChip, CMAdhocChip, CMAdhocChipContainer, CMBar, ContextLabel, DeviceClassChip, FeatureLabel, getColorForFeature, OperatingSystemChip, PointerTypeChip } from './FeatureReportBasics';
+import { ActivityDetailTabId, FacetResultBase, FeatureReportFilterSpec } from "./activityReportTypes";
+import { FacetHandler, gClientFacetHandlers } from './ClientFacetHandlers';
+import { FacetItemDetailTable } from './FacetItemDetailTable';
+import { CMBar } from './FeatureReportBasics';
 import getFacetedBreakdown from "./queries/getFacetedBreakdown";
-import { EventChip, SongChip, WikiPageChip } from '../CMCoreComponents';
-import { gIconMap } from '../../db3/components/IconMap';
 
 interface ScreenSizeIndicatorProps {
     screenWidth: number;
@@ -119,200 +116,6 @@ const renderCustomTooltip = ({ active, label, payload, ...e }: any) => {
     }
     return null;
 };
-interface FacetHandler<Tpayload extends FacetResultBase> {
-    getItemKey: (item: Tpayload) => string;
-    getFacetName: () => string;
-    renderItem: (item: Tpayload) => React.ReactNode;
-    getItemLabel: (item: Tpayload) => string;
-    getItemColor: (item: Tpayload, alpha?: string) => string;
-}
-
-const MakeHandler = <Tpayload extends FacetResultBase,>(val: FacetHandler<Tpayload>) => val;
-
-const gHandlers = {
-    features: MakeHandler<FacetedBreakdownResult['facets']['features'][0]>({
-        getItemKey: (item) => item.feature,
-        getFacetName: () => "Feature",
-        getItemLabel: (item) => item.feature,
-        renderItem: (item) => {
-            return <FeatureLabel feature={item.feature} />;
-        },
-        getItemColor: (item, alpha) => {
-            const colorName = getColorForFeature(item.feature);
-            const entry = gGeneralPaletteList.findEntry(colorName)!;
-            if (alpha) return entry.strong.backgroundColor;
-            return entry.strong.foregroundColor;
-        }
-    }),
-    contexts: MakeHandler<FacetedBreakdownResult['facets']['contexts'][0]>({
-        getItemKey: (item) => item.context,
-        getFacetName: () => "Context",
-        getItemLabel: (item) => item.context,
-        renderItem: (item) => {
-            return <ContextLabel value={item.context} />;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.context, { alpha }),
-    }),
-    operatingSystems: MakeHandler<FacetedBreakdownResult['facets']['operatingSystems'][0]>({
-        getItemKey: (item) => item.operatingSystem,
-        getFacetName: () => "Operating System",
-        getItemLabel: (item) => item.operatingSystem,
-        renderItem: (item) => {
-            return <CMAdhocChipContainer>
-                <CMAdhocChip startIcon={<OperatingSystemChip value={item.operatingSystem} />}>
-                    {item.operatingSystem}
-                </CMAdhocChip>
-            </CMAdhocChipContainer>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.operatingSystem, { alpha }),
-    }),
-    pointerTypes: MakeHandler<FacetedBreakdownResult['facets']['pointerTypes'][0]>({
-        getItemKey: (item) => item.pointerType,
-        getFacetName: () => "Pointer Type",
-        getItemLabel: (item) => item.pointerType,
-        renderItem: (item) => {
-            return <CMAdhocChipContainer>
-
-                <CMAdhocChip startIcon={<PointerTypeChip value={item.pointerType} />}>{item.pointerType}</CMAdhocChip>
-            </CMAdhocChipContainer>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.pointerType, { alpha }),
-    }),
-    browsers: MakeHandler<FacetedBreakdownResult['facets']['browsers'][0]>({
-        getItemKey: (item) => item.browserName,
-        getFacetName: () => "Browser",
-        getItemLabel: (item) => item.browserName,
-        renderItem: (item) => {
-            return <CMAdhocChipContainer>
-
-                <CMAdhocChip startIcon={<BrowserChip value={item.browserName} />}>{item.browserName}</CMAdhocChip>
-            </CMAdhocChipContainer>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.browserName, { alpha }),
-    }),
-    deviceClasses: MakeHandler<FacetedBreakdownResult['facets']['deviceClasses'][0]>({
-        getItemKey: (item) => item.deviceClass,
-        getFacetName: () => "Device Class",
-        getItemLabel: (item) => item.deviceClass,
-        renderItem: (item) => {
-            return <CMAdhocChipContainer>
-                <CMAdhocChip startIcon={<DeviceClassChip value={item.deviceClass} />}>{item.deviceClass}</CMAdhocChip>
-            </CMAdhocChipContainer>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.deviceClass, { alpha }),
-    }),
-    customLinks: MakeHandler<FacetedBreakdownResult['facets']['customLinks'][0]>({
-        getItemKey: (item) => item.customLinkId.toString(),
-        getFacetName: () => "Custom Link",
-        getItemLabel: (item) => item.customLinkId.toString(),
-        renderItem: (item) => {
-            return <span style={{ fontFamily: "var(--ff-mono)" }}>{item.customLinkId}</span>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.customLinkId.toString(), { alpha }),
-    }),
-    menuLinks: MakeHandler<FacetedBreakdownResult['facets']['menuLinks'][0]>({
-        getItemKey: (item) => item.menuLinkId.toString(),
-        getItemLabel: (item) => item.menuLinkId.toString(),
-        getFacetName: () => "Menu Link",
-        renderItem: (item) => {
-            return <span style={{ fontFamily: "var(--ff-mono)" }}>{item.menuLinkId}</span>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.menuLinkId.toString(), { alpha }),
-    }),
-    songs: MakeHandler<FacetedBreakdownResult['facets']['songs'][0]>({
-        getItemKey: (item) => item.songId.toString(),
-        getFacetName: () => "Song",
-        getItemLabel: (item) => item.name,
-        renderItem: (item) => {
-            //return <span style={{ fontFamily: "var(--ff-mono)" }}>{item.songId}</span>;
-            return <SongChip value={{ ...item, id: item.songId }} startAdornment={gIconMap.MusicNote()} useHashedColor={true} />;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.songId.toString(), { alpha }),
-    }),
-    events: MakeHandler<FacetedBreakdownResult['facets']['events'][0]>({
-        getItemKey: (item) => item.eventId.toString(),
-        getFacetName: () => "Event",
-        getItemLabel: (item) => item.name,
-        renderItem: (item) => {
-            //return <span style={{ fontFamily: "var(--ff-mono)" }}>{item.eventId}</span>;
-            return <EventChip value={{ ...item, id: item.eventId }} startAdornment={gIconMap.CalendarMonth()} useHashedColor={true} />
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.eventId.toString(), { alpha }),
-    }),
-    wikiPages: MakeHandler<FacetedBreakdownResult['facets']['wikiPages'][0]>({
-        getItemKey: (item) => item.wikiPageId.toString(),
-        getFacetName: () => "Wiki Page",
-        getItemLabel: (item) => item.slug,
-        renderItem: (item) => {
-            //return <span style={{ fontFamily: "var(--ff-mono)" }}>{item.wikiPageId}</span>;
-            return <WikiPageChip slug={item.slug} startAdornment={gIconMap.Article()} useHashedColor={true} />;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.slug, { alpha }),
-    }),
-    users: MakeHandler<FacetedBreakdownResult['facets']['users'][0]>({
-        getItemKey: (item) => item.userHash,
-        getFacetName: () => "User",
-        getItemLabel: (item) => item.userHash.substring(0, 8),
-        renderItem: (item) => {
-            return <AnonymizedUserChip value={item.userHash} />;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.userHash, { alpha }),
-    }),
-    timezones: MakeHandler<FacetedBreakdownResult['facets']['timezones'][0]>({
-        getItemKey: (item) => item.timezone,
-        getFacetName: () => "Timezone",
-        getItemLabel: (item) => item.timezone,
-        renderItem: (item) => {
-            return <span style={{ fontFamily: "var(--ff-mono)" }}>{item.timezone}</span>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.timezone, { alpha }),
-    }),
-    languages: MakeHandler<FacetedBreakdownResult['facets']['languages'][0]>({
-        getItemKey: (item) => item.language,
-        getFacetName: () => "Language",
-        getItemLabel: (item) => item.language,
-        renderItem: (item) => {
-            return <CMAdhocChipContainer>
-                <CMAdhocChip style={{ color: getHashedColor(item.language) }} ><span style={{ fontSize: "22px", fontWeight: "bold" }}>{item.language.toUpperCase()}</span></CMAdhocChip>
-            </CMAdhocChipContainer>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.language, { alpha }),
-    }),
-    locales: MakeHandler<FacetedBreakdownResult['facets']['locales'][0]>({
-        getItemKey: (item) => item.locale,
-        getFacetName: () => "Locale",
-        getItemLabel: (item) => item.locale,
-        renderItem: (item) => {
-            return <CMAdhocChipContainer>
-                <CMAdhocChip style={{ color: getHashedColor(item.locale) }} ><span style={{ fontSize: "22px", fontWeight: "bold" }}>{item.locale.toUpperCase()}</span></CMAdhocChip>
-            </CMAdhocChipContainer>;
-        },
-        getItemColor: (item, alpha) => getHashedColor(item.locale, { alpha }),
-    }),
-    screenSizes: MakeHandler<FacetedBreakdownResult['facets']['screenSizes'][0]>({
-        getItemKey: (item) => `${item.width}x${item.height}`,
-        getFacetName: () => "Screen Size",
-        getItemLabel: (item) => `${item.width}x${item.height}`,
-        renderItem: (item) => {
-
-            return <CMAdhocChipContainer>
-                <CMAdhocChip startIcon={<ScreenSizeIndicator
-                    screenHeight={item.height}
-                    screenWidth={item.width}
-                    maxScreenWidth={1920}
-                    maxScreenHeight={1080}
-                    renderWidth={40}
-                    renderHeight={30}
-                />}>
-                    <span style={{ fontSize: "22px", fontWeight: "bold" }}>{item.width}x{item.height}</span></CMAdhocChip>
-            </CMAdhocChipContainer>;
-
-
-        },
-        getItemColor: (item, alpha) => getHashedColor(`${item.width}x${item.height}`, { alpha }),
-    }),
-} as const;
-
 
 const DistinctContextObjectPieChart = <Tpayload extends FacetResultBase,>({ item, items, innerRadius = 7, outerRadius = 25, handler }: { item: Tpayload, items: Tpayload[], innerRadius?: number, outerRadius?: number, handler: FacetHandler<Tpayload> }) => {
     const itemKey = handler.getItemKey(item);
@@ -382,14 +185,48 @@ const DistinctContextObjectPieChart = <Tpayload extends FacetResultBase,>({ item
 };
 
 
+
+
+interface CollapsibleFacetItemDetailProps<Tpayload extends FacetResultBase> {
+    handler: FacetHandler<Tpayload>;
+    items: Tpayload[];
+    contextObject: Tpayload;
+    baseFilterSpec: FeatureReportFilterSpec;
+    totalCount: number;
+    refreshTrigger: number;
+};
+
+const CollapsibleFacetItemDetail = <Tpayload extends FacetResultBase,>({ handler, contextObject, items, totalCount, baseFilterSpec, refreshTrigger }: CollapsibleFacetItemDetailProps<Tpayload>) => {
+    const [expanded, setExpanded] = React.useState(false);
+    const supportsDrilldown = handler.supportsDrilldown;
+
+    const key = handler.getItemKey(contextObject);
+    const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
+    return <div key={key}>
+        <div
+            className={`${supportsDrilldown ? "interactable" : ""}`}
+            style={{ display: "flex", fontWeight: "bold", alignItems: "center", backgroundColor: handler.getItemColor(contextObject, "0.2"), borderTop: `3px solid ${handler.getItemColor(contextObject)}` }}
+            onClick={() => setExpanded(!expanded)}
+        >
+            <DistinctContextObjectPieChart item={contextObject} items={items} handler={handler} />
+            {handler.renderItem(contextObject)} ({contextObject.count} items) ({percentageOfTotal} of total)
+        </div>
+        {supportsDrilldown && <Collapse in={expanded}>
+            <React.Suspense>
+                <FacetItemDetailTable filterSpec={handler.addFilter(baseFilterSpec, contextObject)} refreshTrigger={refreshTrigger} />
+            </React.Suspense>
+        </Collapse>}
+    </div>;
+};
+
 interface FacetedTabContentProps<Tpayload extends FacetResultBase> {
     handler: FacetHandler<Tpayload>;
     items: Tpayload[];
+    filterSpec: FeatureReportFilterSpec;
+    refreshTrigger: number;
 };
 
-const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items }: FacetedTabContentProps<Tpayload>) => {
-
-    //const [selectedItem, setSelectedItem] = React.useState<Tpayload | null>(null);
+const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items, ...props }: FacetedTabContentProps<Tpayload>) => {
 
     const totalCount = items.reduce((acc, item) => acc + item.count, 0);
 
@@ -466,44 +303,32 @@ const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items }
             </div>
         </div>
 
-        {items.map((contextObject) => {
-            const key = handler.getItemKey(contextObject);
-            const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
-            return <div key={key}>
-                <div style={{ display: "flex", fontWeight: "bold", alignItems: "center", backgroundColor: handler.getItemColor(contextObject, "0.2"), borderTop: `3px solid ${handler.getItemColor(contextObject)}` }}>
-                    <DistinctContextObjectPieChart item={contextObject} items={items} handler={handler} />
-                    {handler.renderItem(contextObject)} ({contextObject.count} items) ({percentageOfTotal} of total)
-                </div>
-                {/* <GeneralFeatureDetailTable data={contextObject.items} onExcludeFeature={item.onExcludeFeature} onIsolateFeature={item.onIsolateFeature} onFilterContext={item.onFilterContext} /> */}
-            </div>;
-        })}
+        {items.map((contextObject) => <CollapsibleFacetItemDetail
+            key={handler.getItemKey(contextObject)}
+            contextObject={contextObject}
+            handler={handler}
+            items={items}
+            totalCount={totalCount}
+            baseFilterSpec={props.filterSpec}
+            refreshTrigger={props.refreshTrigger}
+        />)}
 
     </div>;
 };
 
 
 interface FeatureReportTopLevelDateSelectorProps {
-    features: ActivityFeature[];
-    bucket: string | null;
-    bucketSize: ActivityReportTimeBucketSize;
-    excludeYourself: boolean;
-    excludeSysadmins: boolean;
-    contextBeginsWith: string | undefined;
     refetchTrigger: number;
+    filterSpec: FeatureReportFilterSpec;
 };
 
 export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) => {
-    const dashboardContext = useDashboardContext();
+    //const dashboardContext = useDashboardContext();
     const [tabId, setTabId] = React.useState<ActivityDetailTabId | "total">("total");
 
     const [result, { refetch }] = useQuery(getFacetedBreakdown, {
-        features: props.features,
-        excludeYourself: props.excludeYourself,
-        excludeSysadmins: props.excludeSysadmins,
-        contextBeginsWith: props.contextBeginsWith,
-        bucket: props.bucket,
-        aggregateBy: props.bucketSize,
         refreshTrigger: props.refetchTrigger,
+        filterSpec: props.filterSpec,
     });
     if (!result) return null;
 
@@ -511,7 +336,7 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
         <CMTab key={9999} thisTabId="total" summaryTitle={`Total (${result.total.count})`} >
         </CMTab>,
         ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
-            const handler = gHandlers[facetKey];
+            const handler = gClientFacetHandlers[facetKey];
             if (!handler) {
                 console.error(`No handler for facet ${facetKey}`);
             }
@@ -519,20 +344,22 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
                 <FacetedTabContent
                     handler={handler}
                     items={facetInfo as any}
+                    filterSpec={props.filterSpec}
+                    refreshTrigger={props.refetchTrigger}
                 />
             </CMTab>;
         }),
     ];
 
-    const bucketDateRange = props.bucket ? parseBucketToDateRange(props.bucket, props.bucketSize) : null;
+    const bucketDateRange = props.filterSpec.selectedBucket ? parseBucketToDateRange(props.filterSpec.selectedBucket, props.filterSpec.bucketSize) : null;
 
     return <div>
         <div className="bucketLabel">
-            {props.bucket && <>
-                {props.bucket} [{bucketDateRange?.start.toLocaleString()} - {bucketDateRange?.end.toLocaleString()}] (range: {formatMillisecondsToDHMS(bucketDateRange!.end.getTime() - bucketDateRange!.start.getTime())})
+            {props.filterSpec.selectedBucket && <>
+                {props.filterSpec.selectedBucket} [{bucketDateRange?.start.toLocaleString()} - {bucketDateRange?.end.toLocaleString()}] (range: {formatMillisecondsToDHMS(bucketDateRange!.end.getTime() - bucketDateRange!.start.getTime())})
             </>
             }
-            {!props.bucket && <>No bucket selected</>}
+            {!props.filterSpec.selectedBucket && <>No bucket selected</>}
         </div>
         <CMTabPanel handleTabChange={(e, newTabId: ActivityDetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
             {renderedTabs}

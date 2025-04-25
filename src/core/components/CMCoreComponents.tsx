@@ -321,7 +321,7 @@ export const SongChip = (props: SongChipProps) => {
 
 
 export interface FileChipProps {
-    value: db3.FilePayloadMinimum;
+    value: Prisma.FileGetPayload<{ select: { id: true, storedLeafName: true, fileLeafName: true, externalURI: true } }> | db3.FilePayloadMinimum;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;

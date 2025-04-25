@@ -4,21 +4,22 @@ import db, { Prisma } from "db";
 import { getMySqlTimeBucketSelectExpression, MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
-import { ActivityReportTimeBucketSize } from "../activityReportTypes";
+import { ActivityReportTimeBucketSize, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { ActivityFeature } from "../activityTracking";
 
 const ZTGeneralFeatureReportArgs = z.object({
-    features: z.nativeEnum(ActivityFeature).array(),
+    //features: z.nativeEnum(ActivityFeature).array(),
     startDate: z.date(),
     endDate: z.date(),
-    aggregateBy: z.nativeEnum(ActivityReportTimeBucketSize),
-    excludeYourself: z.boolean(),
-    excludeSysadmins: z.boolean(),
+    filterSpec: ZFeatureReportFilterSpec,
+    //aggregateBy: z.nativeEnum(ActivityReportTimeBucketSize),
+    //excludeYourself: z.boolean(),
+    //excludeSysadmins: z.boolean(),
 
-    filteredSongId: z.number().optional(),
-    filteredEventId: z.number().optional(),
-    filteredWikiPageId: z.number().optional(),
-    contextBeginsWith: z.string().optional(),
+    // filteredSongId: z.number().optional(),
+    // filteredEventId: z.number().optional(),
+    // filteredWikiPageId: z.number().optional(),
+    // contextBeginsWith: z.string().optional(),
 });
 
 type TGeneralFeatureReportArgs = z.infer<typeof ZTGeneralFeatureReportArgs>;
@@ -32,20 +33,20 @@ interface GeneralFeatureReportResult {
 
 async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs, ctx: AuthenticatedCtx): Promise<GeneralFeatureReportResult> {
     const {
-        features,
+        filterSpec,
         startDate,
         endDate,
-        aggregateBy,
-        filteredSongId,
-        filteredEventId,
-        filteredWikiPageId,
-        contextBeginsWith,
+        // aggregateBy,
+        // filteredSongId,
+        // filteredEventId,
+        // filteredWikiPageId,
+        // contextBeginsWith,
     } = params;
 
     const conditions: string[] = [];
 
-    if (features.length > 0) {
-        conditions.push(`${MySqlSymbol("feature")} IN (${features.map((feature) => MySqlStringLiteral(feature)).join(", ")})`);
+    if (filterSpec.includeFeatures.length > 0) {
+        conditions.push(`${MySqlSymbol("feature")} IN (${filterSpec.includeFeatures.map((feature) => MySqlStringLiteral(feature)).join(", ")})`);
     }
 
     // if (params.excludeFeatures.length > 0) {
@@ -55,30 +56,30 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
     conditions.push(`${MySqlSymbol("createdAt")} >= ${MySqlDateTimeLiteral(startDate)}`);
     conditions.push(`${MySqlSymbol("createdAt")} <= ${MySqlDateTimeLiteral(endDate)}`);
 
-    if (filteredSongId) {
-        conditions.push(`${MySqlSymbol("songId")} = ${filteredSongId}`);
-    }
-    if (filteredEventId) {
-        conditions.push(`${MySqlSymbol("eventId")} = ${filteredEventId}`);
-    }
+    // if (filteredSongId) {
+    //     conditions.push(`${MySqlSymbol("songId")} = ${filteredSongId}`);
+    // }
+    // if (filteredEventId) {
+    //     conditions.push(`${MySqlSymbol("eventId")} = ${filteredEventId}`);
+    // }
     // if (filteredUserId) {
     //     conditions.push(`${MySqlSymbol("userId")} = ${filteredUserId}`);
     // }
-    if (filteredWikiPageId) {
-        conditions.push(`${MySqlSymbol("wikiPageId")} = ${filteredWikiPageId}`);
-    }
+    // if (filteredWikiPageId) {
+    //     conditions.push(`${MySqlSymbol("wikiPageId")} = ${filteredWikiPageId}`);
+    // }
 
-    if (contextBeginsWith) {
-        conditions.push(`${MySqlSymbol("context")} LIKE ${MySqlStringLiteralAllowingPercent(contextBeginsWith + "%")}`);
+    if (filterSpec.contextBeginsWith) {
+        conditions.push(`${MySqlSymbol("context")} LIKE ${MySqlStringLiteralAllowingPercent(filterSpec.contextBeginsWith + "%")}`);
     }
 
     // exclude the current user optionally
-    if (params.excludeYourself) {
+    if (filterSpec.excludeYourself) {
         const currentUserId = ctx.session.userId;
         conditions.push(`${MySqlSymbol("userId")} != ${currentUserId}`);
     }
 
-    if (params.excludeSysadmins) {
+    if (filterSpec.excludeSysadmins) {
         conditions.push(`${MySqlSymbol("userId")} NOT IN (SELECT ${MySqlSymbol("id")} FROM \`User\` WHERE ${MySqlSymbol("isSysAdmin")} = 1)`);
     }
 
@@ -91,7 +92,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
 
     const sqlQuery = `
       SELECT
-        ${getMySqlTimeBucketSelectExpression(`createdAt`, aggregateBy)} AS bucket,
+        ${getMySqlTimeBucketSelectExpression(`createdAt`, filterSpec.bucketSize)} AS bucket,
         COUNT(*) AS count
       FROM \`Action\`
       ${whereClause}

@@ -1,5 +1,5 @@
 import { getColorForFeature } from "@/src/core/components/featureReports/FeatureReportBasics";
-import { ActivityReportTimeBucketSize } from "@/src/core/components/featureReports/activityReportTypes";
+import { ActivityReportTimeBucketSize, FeatureReportFilterSpec } from "@/src/core/components/featureReports/activityReportTypes";
 import { BlitzPage } from "@blitzjs/next";
 import { ArrowUpward, Clear } from "@mui/icons-material";
 import { Button, FormControlLabel } from "@mui/material";
@@ -22,31 +22,39 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 const GeneralFeatureStatsReport = () => {
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
     const now = React.useMemo(() => new Date(), [refetchTrigger]);
-    const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
-    const [aggregateBy, setAggregateBy] = React.useState<ActivityReportTimeBucketSize>(ActivityReportTimeBucketSize.day);
-    const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
-    const [excludeSysadmins, setExcludeSysadmins] = React.useState<boolean>(true);
-    const [contextBeginsWith, setContextBeginsWith] = React.useState<string | undefined>();
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
-    const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
+    // const [aggregateBy, setAggregateBy] = React.useState<ActivityReportTimeBucketSize>(ActivityReportTimeBucketSize.day);
+    // const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
+    // const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
+    // const [excludeSysadmins, setExcludeSysadmins] = React.useState<boolean>(true);
+    // const [contextBeginsWith, setContextBeginsWith] = React.useState<string | undefined>();
+    // const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
+    const [filterSpec, setFilterSpec] = React.useState<FeatureReportFilterSpec>({
+        selectedBucket: null,
+        bucketSize: ActivityReportTimeBucketSize.day,
+        excludeYourself: true,
+        excludeSysadmins: true,
+        contextBeginsWith: undefined,
+        includeFeatures: [],
+    });
 
     const [dataUpdatedAt, setDataUpdatedAt] = React.useState<Date>(now);
 
     const realStartDate = roundToNearest15Minutes(startDate);
     const realEndDate = roundToNearest15Minutes(endDate);
 
-    const onExcludeFeature = (feature: ActivityFeature) => {
-        // if you have nothing selected, it's the same as all selected. so handle that differently.
-        let newFeatures = features.length === 0 ? Object.values(ActivityFeature) : features;
-        newFeatures = newFeatures.filter(x => x !== feature);
-        setFeatures(newFeatures);
-    };
+    // const onExcludeFeature = (feature: ActivityFeature) => {
+    //     // if you have nothing selected, it's the same as all selected. so handle that differently.
+    //     let newFeatures = features.length === 0 ? Object.values(ActivityFeature) : features;
+    //     newFeatures = newFeatures.filter(x => x !== feature);
+    //     setFeatures(newFeatures);
+    // };
 
-    const onIsolateFeature = (feature: ActivityFeature) => {
-        setFeatures([feature]);
-    };
+    // const onIsolateFeature = (feature: ActivityFeature) => {
+    //     setFeatures([feature]);
+    // };
 
     return <div className="FeatureStatsReport">
         <div className="filterContainer">
@@ -57,24 +65,45 @@ const GeneralFeatureStatsReport = () => {
                 </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", marginLeft: "6px" }}>
-                <FormControlLabel control={<input type="checkbox" checked={excludeYourself} onChange={(e) => setExcludeYourself(e.target.checked)} />} label="Exclude yourself" />
+                <FormControlLabel
+                    control={
+                        <input
+                            type="checkbox"
+                            checked={filterSpec.excludeYourself}
+                            onChange={(e) => {
+                                if (e.target.checked) {
+                                    setFilterSpec((x) => ({ ...x, excludeYourself: true }));
+                                }
+                                else {
+                                    setFilterSpec((x) => ({ ...x, excludeYourself: false, excludeSysadmins: false }));
+                                }
+                            }}
+                        />}
+                    label="Exclude yourself"
+                />
                 <PermissionBoundary permission={Permission.sysadmin}>
-                    <FormControlLabel control={<input type="checkbox" checked={excludeSysadmins} onChange={(e) => {
-                        setExcludeSysadmins(e.target.checked);
-                        if (!e.target.checked) {
-                            setExcludeYourself(false);
+                    <FormControlLabel control={<input type="checkbox" checked={filterSpec.excludeSysadmins} onChange={(e) => {
+                        if (e.target.checked) {
+                            setFilterSpec((x) => ({ ...x, excludeSysadmins: true }));
                         }
-
+                        else {
+                            setFilterSpec((x) => ({ ...x, excludeSysadmins: false, excludeYourself: false }));
+                        }
                     }} />} label="Exclude sysadmins" />
                 </PermissionBoundary>
             </div>
             <NameValuePair name="Feature" value={
                 <>
-                    <Button onClick={() => setFeatures(Object.values(ActivityFeature))} >All</Button>
-                    <Button onClick={() => setFeatures([])} >None</Button>
+                    <Button onClick={() => {
+                        //setFeatures(Object.values(ActivityFeature))
+                        setFilterSpec((x) => ({ ...x, includeFeatures: Object.values(ActivityFeature) }));
+                    }} >All</Button>
+                    <Button onClick={() => setFilterSpec((x) => ({ ...x, includeFeatures: [] }))} >None</Button>
                     <CMMultiSelect
-                        value={features}
-                        onChange={setFeatures}
+                        value={filterSpec.includeFeatures}
+                        onChange={(checkedItems) => {
+                            setFilterSpec((x) => ({ ...x, includeFeatures: checkedItems as ActivityFeature[] }));
+                        }}
                         getOptions={() => {
                             return Object.values(ActivityFeature);
                         }}
@@ -94,25 +123,39 @@ const GeneralFeatureStatsReport = () => {
                             style={{ fontSize: "15px", margin: "7px", backgroundColor: "white", borderRadius: "4px", padding: "5px", fontFamily: "var(--ff-mono)" }}
                             placeholder="filter context..."
                             onChange={(e, val) => {
-                                setContextBeginsWith(IsNullOrWhitespace(val) ? undefined : val);
+                                //setContextBeginsWith(IsNullOrWhitespace(val) ? undefined : val);
+                                if (IsNullOrWhitespace(val)) {
+                                    setFilterSpec((x) => ({ ...x, contextBeginsWith: undefined }));
+                                } else {
+                                    setFilterSpec((x) => ({ ...x, contextBeginsWith: val }));
+                                }
                             }}
-                            value={contextBeginsWith}
+                            value={filterSpec.contextBeginsWith || ""}
                         />
                         <CMSmallButton onClick={() => {
                             // remove last path part of contextBeginsWith
-                            if (contextBeginsWith) {
-                                const parts = contextBeginsWith.split("/");
+                            // if (contextBeginsWith) {
+                            //     const parts = contextBeginsWith.split("/");
+                            //     if (parts.length > 1) {
+                            //         setContextBeginsWith(parts.slice(0, -1).join("/"));
+                            //     } else {
+                            //         setContextBeginsWith(undefined);
+                            //     }
+                            // }
+                            if (filterSpec.contextBeginsWith) {
+                                const parts = filterSpec.contextBeginsWith.split("/");
                                 if (parts.length > 1) {
-                                    setContextBeginsWith(parts.slice(0, -1).join("/"));
+                                    setFilterSpec((x) => ({ ...x, contextBeginsWith: parts.slice(0, -1).join("/") }));
                                 } else {
-                                    setContextBeginsWith(undefined);
+                                    setFilterSpec((x) => ({ ...x, contextBeginsWith: undefined }));
                                 }
                             }
                         }}>
                             <ArrowUpward />
                         </CMSmallButton>
                         <CMSmallButton onClick={() => {
-                            setContextBeginsWith(undefined);
+                            //setContextBeginsWith(undefined);
+                            setFilterSpec((x) => ({ ...x, contextBeginsWith: undefined }));
                         }}>
                             <Clear />
                         </CMSmallButton>
@@ -190,10 +233,11 @@ const GeneralFeatureStatsReport = () => {
                     </div>
 
                     <CMSingleSelect
-                        value={aggregateBy}
+                        value={filterSpec.bucketSize}
                         onChange={(option) => {
-                            setAggregateBy(option);
-                            setSelectedBucket(null); // buckets don't make sense anymore
+                            //setAggregateBy(option);
+                            //setSelectedBucket(null); // buckets don't make sense anymore
+                            setFilterSpec((x) => ({ ...x, bucketSize: option, selectedBucket: null }));
                         }}
                         getOptions={() => {
                             return Object.values(ActivityReportTimeBucketSize);
@@ -214,16 +258,19 @@ const GeneralFeatureStatsReport = () => {
 
         <React.Suspense>
             <FeatureReportTopLevelDateSelector
-                features={features}
-                selectedBucket={selectedBucket}
-                aggregateBy={aggregateBy}
-                excludeYourself={excludeYourself}
-                excludeSysadmins={excludeSysadmins}
+                //features={features}
+                //selectedBucket={selectedBucket}
+                //aggregateBy={aggregateBy}
+                // excludeYourself={excludeYourself}
+                // excludeSysadmins={excludeSysadmins}
+                filterSpec={filterSpec}
                 startDate={realStartDate}
                 endDate={realEndDate}
-                onClickBucket={setSelectedBucket}
+                onClickBucket={(bucket) => {
+                    setFilterSpec((x) => ({ ...x, selectedBucket: bucket }));
+                }}
                 refetchTrigger={refetchTrigger}
-                contextBeginsWith={contextBeginsWith}
+                //contextBeginsWith={contextBeginsWith}
                 setDataUpdatedAt={setDataUpdatedAt}
             />
         </React.Suspense>
@@ -231,12 +278,13 @@ const GeneralFeatureStatsReport = () => {
 
         <React.Suspense>
             <FacetedBreakdown
-                features={features}
-                bucket={selectedBucket}
-                bucketSize={aggregateBy}
-                excludeYourself={excludeYourself}
-                excludeSysadmins={excludeSysadmins}
-                contextBeginsWith={contextBeginsWith}
+                filterSpec={filterSpec}
+                // features={features}
+                // bucket={selectedBucket}
+                // bucketSize={aggregateBy}
+                // excludeYourself={excludeYourself}
+                // excludeSysadmins={excludeSysadmins}
+                // contextBeginsWith={contextBeginsWith}
                 refetchTrigger={refetchTrigger}
             />
         </React.Suspense>

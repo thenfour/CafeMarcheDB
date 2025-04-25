@@ -1,4 +1,4 @@
-import { ActivityReportTimeBucketSize } from "@/src/core/components/featureReports/activityReportTypes";
+import { ActivityReportTimeBucketSize, FeatureReportFilterSpec } from "@/src/core/components/featureReports/activityReportTypes";
 import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
 import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
@@ -9,32 +9,27 @@ import getGeneralFeatureReport from "@/src/core/components/featureReports/querie
 // date selection, bucket size
 // and other filters
 
-
 // to allow suspense to work right
 interface FeatureReportTopLevelDateSelectorProps {
-    features: ActivityFeature[],
-    selectedBucket: string | null,
-    excludeYourself: boolean;
-    excludeSysadmins: boolean;
-    aggregateBy: ActivityReportTimeBucketSize,
+    filterSpec: FeatureReportFilterSpec;
+    //features: ActivityFeature[],
+    //selectedBucket: string | null,
+    //excludeYourself: boolean;
+    //excludeSysadmins: boolean;
+    //aggregateBy: ActivityReportTimeBucketSize,
     startDate: Date,
     endDate: Date,
     onClickBucket: (bucket: string) => void,
     refetchTrigger: number,
-    contextBeginsWith: string | undefined,
+    //contextBeginsWith: string | undefined,
     setDataUpdatedAt: (date: Date) => void,
 };
 
-export const FeatureReportTopLevelDateSelector = ({ excludeYourself, excludeSysadmins, contextBeginsWith, setDataUpdatedAt, refetchTrigger, onClickBucket, features, selectedBucket, aggregateBy,
-    startDate, endDate }: FeatureReportTopLevelDateSelectorProps) => {
+export const FeatureReportTopLevelDateSelector = ({ filterSpec, setDataUpdatedAt, refetchTrigger, onClickBucket, startDate, endDate }: FeatureReportTopLevelDateSelectorProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
-        features,
-        excludeYourself,
-        excludeSysadmins,
-        contextBeginsWith,
+        filterSpec,
         startDate,//: roundToNearest15Minutes(startDate),
         endDate,//: roundToNearest15Minutes(endDate),
-        aggregateBy,
     });
 
     React.useEffect(() => {
@@ -50,7 +45,7 @@ export const FeatureReportTopLevelDateSelector = ({ excludeYourself, excludeSysa
     const chartData = result.data.map((item) => ({
         ...item,
         //fill: selectedBucket === item.bucket ? "#c6c" : "#66c",
-        fill: selectedBucket === item.bucket ? "#cc8" : "#484",
+        fill: filterSpec.selectedBucket === item.bucket ? "#cc8" : "#484",
     }));
 
     const handleBucketClick = (data: { bucket: string, count: number }, index: number, e) => {
