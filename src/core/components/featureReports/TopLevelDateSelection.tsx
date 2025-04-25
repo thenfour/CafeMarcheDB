@@ -13,7 +13,6 @@ import getGeneralFeatureReport from "@/src/core/components/featureReports/querie
 // to allow suspense to work right
 interface FeatureReportTopLevelDateSelectorProps {
     features: ActivityFeature[],
-    excludeFeatures: ActivityFeature[],
     selectedBucket: string | null,
     excludeYourself: boolean;
     excludeSysadmins: boolean;
@@ -26,11 +25,10 @@ interface FeatureReportTopLevelDateSelectorProps {
     setDataUpdatedAt: (date: Date) => void,
 };
 
-export const FeatureReportTopLevelDateSelector = ({ excludeYourself, excludeSysadmins, contextBeginsWith, setDataUpdatedAt, refetchTrigger, onClickBucket, features, excludeFeatures, selectedBucket, aggregateBy,
+export const FeatureReportTopLevelDateSelector = ({ excludeYourself, excludeSysadmins, contextBeginsWith, setDataUpdatedAt, refetchTrigger, onClickBucket, features, selectedBucket, aggregateBy,
     startDate, endDate }: FeatureReportTopLevelDateSelectorProps) => {
     const [result, { refetch, dataUpdatedAt }] = useQuery(getGeneralFeatureReport, {
         features,
-        excludeFeatures,
         excludeYourself,
         excludeSysadmins,
         contextBeginsWith,

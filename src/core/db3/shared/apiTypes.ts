@@ -530,10 +530,10 @@ export function ParseICalEventUid(uid: string): { eventUid: string; userUid: str
     };
 }
 
-export function GetICalRelativeURIForUserAndEvent(args: { userAccessToken: string | null, eventUid: string | null, userUid: string | null }) {
-    if (!args.eventUid) throw new Error("invalid event for ical");
-    return `/api/ical/user/${args.userAccessToken || "public"}/event/${MakeICalEventUid(args.eventUid, args.userUid)}`;
-}
+// export function GetICalRelativeURIForUserAndEvent(args: { userAccessToken: string | null, eventUid: string | null, userUid: string | null }) {
+//     if (!args.eventUid) throw new Error("invalid event for ical");
+//     return `/api/ical/user/${args.userAccessToken || "public"}/event/${MakeICalEventUid(args.eventUid, args.userUid)}`;
+// }
 
 export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken: string | null }) {
     return `/api/ical/user/${args.userAccessToken || "public"}/upcoming`;

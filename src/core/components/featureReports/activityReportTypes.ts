@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
 
 
 export enum ActivityReportTimeBucketSize {
@@ -95,23 +96,113 @@ export enum ActivityDetailTabId {
     language = "language",
     locale = "locale",
     timezone = "timezone",
+    screenSize = "screenSize",
 
     // number id
     user = "user",
     song = "song",
     event = "event",
+    wikiPage = "wikiPage",
+    menuLink = "menuLink",
+    customLink = "customLink",
+
     //attendance = "attendance",
     //setlist = "setlist",
-
     //instrument = "instrument",
-    wikiPage = "wikiPage",
     //frontpageGalleryItem = "frontpageGalleryItem",
-    menuLink = "menuLink",
     // setlistPlan = "setlistPlan",
     // songCreditType = "songCreditType",
     // file = "file",
-    customLink = "customLink",
-
-    // compound id
-    screenSize = "screenSize",
 };
+
+export type FacetResultBase = { count: number };
+
+export interface FacetedBreakdownResult {
+    total: {
+        count: number;
+    },
+    metrics: {
+        queryTimeMs: number;
+    },
+    facets: {
+        features: {
+            feature: ActivityFeature;
+            count: number;
+        }[],
+        contexts: {
+            context: string;
+            count: number;
+        }[],
+
+        operatingSystems: {
+            operatingSystem: OperatingSystem;
+            count: number;
+        }[],
+        pointerTypes: {
+            pointerType: PointerTypes;
+            count: number;
+        }[],
+        browsers: {
+            browserName: Browsers;
+            count: number;
+        }[],
+        deviceClasses: {
+            deviceClass: DeviceClasses;
+            count: number;
+        }[],
+        languages: {
+            language: string;
+            count: number;
+        }[],
+        locales: {
+            locale: string;
+            count: number;
+        }[],
+        timezones: {
+            timezone: string;
+            count: number;
+        }[],
+        screenSizes: {
+            width: number;
+            height: number;
+            count: number;
+        }[],
+
+        users: {
+            userHash: string;
+            count: number;
+        }[],
+        songs: {
+            songId: number;
+            name: string;
+            count: number;
+        }[],
+        events: {
+            eventId: number;
+            // other fields?
+            //id: true,
+            name: string,
+            startsAt: Date | null,
+            statusId: number | null,
+            typeId: number | null,
+            count: number;
+        }[],
+        wikiPages: {
+            wikiPageId: number;
+            slug: string;
+            count: number;
+        }[],
+        menuLinks: {
+            menuLinkId: number;
+            name: string;
+            count: number;
+        }[],
+        customLinks: {
+            customLinkId: number;
+            name: string;
+            count: number;
+        }[],
+    }
+}
+
+

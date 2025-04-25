@@ -72,7 +72,8 @@ export function MySqlSymbol(symbol: string): string {
 
 // returns a string that can be used as a MySql date literal
 export function MySqlDateTimeLiteral(date: Date): string {
-    return `DATE('${date.toISOString()}')`; // will return UTC string like '2025-04-06T11:47:55.077Z'
+    return `('${date.toISOString()}')`; // will return UTC string like '2025-04-06T11:47:55.077Z'
+    //return `DATE('${date.toISOString()}')`; // will return UTC string like '2025-04-06T11:47:55.077Z'
 }
 
 export function MySqlStringLiteral(str: string): string {
@@ -197,7 +198,7 @@ function parseYearBucketUTC(bucket: string): MySqlDateRange {
 function parseAllTimeBucketUTC(): MySqlDateRange {
     return {
         start: new Date(0),                        // 1970-01-01T00:00:00Z
-        end: new Date(8640000000000000 - 1),     // Max safe JS date ≈ +275 000 yrs
+        end: new Date(`2999-01-01`),     // Max safe JS date ≈ +275 000 yrs
     };
 }
 

@@ -23,7 +23,7 @@ import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase
 import { Markdown } from "./markdown/Markdown";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
-
+import { Prisma } from "db";
 
 
 
@@ -96,7 +96,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
 
 ////////////////////////////////////////////////////////////////
 interface NewEventSegmentButtonProps {
-    event: db3.EventPayloadMinimum;
+    event: Prisma.EventGetPayload<{}>;
     initialName: string;
     refetch: () => void;
 };

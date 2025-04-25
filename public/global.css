@@ -892,10 +892,9 @@ solution is to
 
 .DistinctContextObjectTabContent .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  padding: 10px;
 }
-
-
 
 
 
@@ -906,9 +905,18 @@ solution is to
 }
 
 .adHocChip {
-  background-color: #ccc;
+  display: flex;
+  align-items: center;
+  background-color: white;
   padding: 2px 6px;
   border-radius: 3px;
+}
+
+.adHocChip>.adHocChipStartIcon {
+  margin-right: 6px;
+}
+
+.adHocChip>.adHocChipContent {
   font-size: 13px;
   font-family: var(--ff-mono);
   letter-spacing: -0.3px;

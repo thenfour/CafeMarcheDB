@@ -11,7 +11,6 @@ import { ActivityFeature } from "../activityTracking";
 
 const ZTGeneralFeatureDetailArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
-    excludeFeatures: z.nativeEnum(ActivityFeature).array(),
     bucket: z.string().nullable(),
     aggregateBy: z.nativeEnum(ActivityReportTimeBucketSize),
     excludeYourself: z.boolean(),
@@ -36,7 +35,6 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
     }
     const {
         features,
-        excludeFeatures,
         filteredSongId,
         filteredEventId,
         filteredWikiPageId,
@@ -48,7 +46,6 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureDetailArgs
     const results = await db.action.findMany({
         where: {
             ...(features.length > 0 && { feature: { in: features } }),
-            ...(excludeFeatures.length > 0 && { feature: { notIn: excludeFeatures } }),
             createdAt: {
                 gte: dateRange.start,
                 lt: dateRange.end,

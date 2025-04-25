@@ -247,7 +247,15 @@ export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupCh
 
 
 export interface EventChipProps {
-    value: db3.EventPayloadMinimum;
+    value: Prisma.EventGetPayload<{
+        select: {
+            id: true,
+            name: true,
+            startsAt: true,
+            statusId: true,
+            typeId: true
+        }
+    }>;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;

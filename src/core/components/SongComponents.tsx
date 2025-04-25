@@ -10,6 +10,7 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { Prisma } from "db";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
@@ -92,10 +93,18 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
         ;
 };
 
+type SongWithDescription = Prisma.SongGetPayload<{
+    select: {
+        id: true,
+        name: true,
+        description: true,
+        createdByUserId: true,
+    }
+}>;
 
 ////////////////////////////////////////////////////////////////
 interface SongDescriptionEditorProps {
-    song: db3.SongPayloadMinimum;
+    song: SongWithDescription;
     refetch: () => void;
     onClose: () => void;
 };
@@ -149,7 +158,7 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
     </>;
 };
 
-export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.SongPayloadMinimum, refetch: () => void, readonly: boolean }) => {
+export const SongDescriptionControl = ({ song, refetch, readonly }: { song: SongWithDescription, refetch: () => void, readonly: boolean }) => {
     const [editing, setEditing] = React.useState<boolean>(false);
 
     const user = useCurrentUser()[0]!;

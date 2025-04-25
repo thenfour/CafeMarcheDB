@@ -451,7 +451,12 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
 });
 
 export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
-export type SongPayloadMinimum = Prisma.SongGetPayload<{}>;
+export type SongPayloadMinimum = Prisma.SongGetPayload<{
+    select: {
+        id: true,
+        name: true,
+    }
+}>;
 
 
 
@@ -702,8 +707,20 @@ export const EventCustomFieldValueNaturalOrderBy: Prisma.EventCustomFieldValueOr
 
 
 
-////////////////////////////////////////////////////////////////
-export type EventPayloadMinimum = Prisma.EventGetPayload<{}>;
+// ////////////////////////////////////////////////////////////////
+// export type EventPayloadMinimum = Prisma.EventGetPayload<{
+//     select: {
+//         id: true,
+//         name: true,
+
+//         startsAt: true,
+//         durationMillis: true,
+//         isAllDay: true,
+
+//         typeId: true,
+//         statusId: true,
+//     }
+// }>;
 export type EventPayloadWithVisiblePermission = Prisma.EventGetPayload<{
     include: {
         visiblePermission: {

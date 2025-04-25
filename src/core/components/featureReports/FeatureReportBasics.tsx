@@ -13,6 +13,27 @@ import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip
 import { CMSmallButton } from "../CMCoreComponents2";
 import { AgeRelativeToNow } from "../RelativeTimeComponents";
 
+export const CMAdhocChipContainer = ({ children }: { children: React.ReactNode }) => {
+    return <div className="adHocChipContainer">
+        {children}
+    </div>;
+}
+
+export interface CMAdhocChipProps {
+    children: React.ReactNode;
+    startIcon?: React.ReactNode;
+    style?: React.CSSProperties;
+    className?: string;
+    onClick?: () => void;
+};
+
+export const CMAdhocChip = (props: CMAdhocChipProps) => {
+    return <div className={`adHocChip ${props.className}`} onClick={props.onClick} style={props.style}>
+        {props.startIcon && <div className="adHocChipStartIcon">{props.startIcon}</div>}
+        <div className="adHocChipContent">{props.children}</div>
+    </div>;
+};
+
 
 export type ContextObjectDistinctItem = {
     key: string,
@@ -124,7 +145,7 @@ export const getColorForFeature = (feature: ActivityFeature): string | null => {
 
 export const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?: number }) => {
     return <MuiTooltip title={value.substring(0, 6)} disableInteractive>
-        <div style={{ display: "flex", alignItems: "center", padding: "5px", margin: "2px", backgroundColor: "white", borderRadius: "4px" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "0px", margin: "2px", backgroundColor: "white", borderRadius: "4px" }}>
             <Identicon string={value} size={size} />
         </div>
     </MuiTooltip>;
@@ -132,8 +153,8 @@ export const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?:
 
 interface FeatureLabelProps {
     feature: ActivityFeature;
-    onClickIsolate: () => void;
-    onClickExclude: () => void;
+    onClickIsolate?: () => void;
+    onClickExclude?: () => void;
 }
 
 export const FeatureLabel = (props: FeatureLabelProps) => {
@@ -149,7 +170,7 @@ export const FeatureLabel = (props: FeatureLabelProps) => {
                 color={color}
                 size="small"
                 shape="rectangle"
-                onClick={() => props.onClickIsolate()}
+                onClick={props.onClickIsolate ? (() => props.onClickIsolate!()) : undefined}
                 tooltip={`Isolate ${props.feature}`}
             >{props.feature}</CMChip>
             <span className="flex-spacer"></span>
@@ -246,7 +267,7 @@ export function getContextObjectTabData(
     return toSorted(contextObjects, (a, b) => b.itemCount - a.itemCount);
 }
 
-const BrowserChip = ({ value }: { value: string | null | undefined }) => {
+export const BrowserChip = ({ value }: { value: string | null | undefined }) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = BrowserIconMap[value as Browsers];
     if (!relUri) return <div className="adHocChip">{value}</div>;
@@ -255,7 +276,7 @@ const BrowserChip = ({ value }: { value: string | null | undefined }) => {
     </MuiTooltip>;
 }
 
-const OperatingSystemChip = ({ value }: { value: string | null | undefined }) => {
+export const OperatingSystemChip = ({ value }: { value: string | null | undefined }) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = OSIconMap[value as OperatingSystem];
     if (!relUri) return <div className="adHocChip">{value}</div>;
@@ -264,7 +285,7 @@ const OperatingSystemChip = ({ value }: { value: string | null | undefined }) =>
     </MuiTooltip>;
 }
 
-const PointerTypeChip = ({ value }: { value: string | null | undefined }) => {
+export const PointerTypeChip = ({ value }: { value: string | null | undefined }) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = PointerTypeIconMap[value as PointerTypes];
     if (!relUri) return <div className="adHocChip">{value}</div>;
@@ -273,7 +294,7 @@ const PointerTypeChip = ({ value }: { value: string | null | undefined }) => {
     </MuiTooltip>;
 }
 
-const DeviceClassChip = ({ value }: { value: string | null | undefined }) => {
+export const DeviceClassChip = ({ value }: { value: string | null | undefined }) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = DeviceClassIconMap[value as DeviceClasses];
     if (!relUri) return <div className="adHocChip">{value}</div>;
@@ -330,22 +351,11 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
             {value.instrumentId && <InstrumentChip value={value.instrumentId} />}
         </td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>
-        {/* <td>
-            {value.language &&
-                <div className="adHocChipContainer">
-                    <div className="adHocChip">{value.language}</div>
-                </div>
-            }
-        </td > */}
         <td>
             {value.locale && <div className="adHocChipContainer">
                 <div className="adHocChip">{value.locale}</div>
             </div>}
         </td >
-        {/* <td>
-            {value.timezone && <div className="adHocChipContainer">
-                <div className="adHocChip">{value.timezone}</div></div>}
-        </td > */}
         <td>
             <div className="adHocChipContainer">
                 <PointerTypeChip value={value.pointerType} />
@@ -505,17 +515,17 @@ export const DistinctContextObjectTabContent = ({ item }: { item: ContextObjectT
                                     <CMBar value01={contextObject.itemCount / contextObject.totalCount} color={getHashedColor(contextObject.key)} />
                                 </td>
                                 <td>
-                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", color: getHashedColor(contextObject.key) }}>
+                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /*color: getHashedColor(contextObject.key)*/ }}>
                                         {contextObject.percentageOfTotal}
                                     </span>
                                 </td>
                                 <td>
-                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", color: getHashedColor(contextObject.key) }}>
+                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /* color: getHashedColor(contextObject.key)*/ }}>
                                         ({contextObject.itemCount} of {contextObject.totalCount})
                                     </span>
                                 </td>
                                 <td>
-                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", color: getHashedColor(contextObject.key) }}>
+                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /* color: getHashedColor(contextObject.key)*/ }}>
                                         {contextObject.headingIndicator}
                                     </span>
                                 </td>

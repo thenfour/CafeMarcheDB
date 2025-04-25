@@ -14,11 +14,10 @@ import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
-//import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
+import { FacetedBreakdown } from "@/src/core/components/featureReports/FacetedBreakdown";
 import { FeatureReportTopLevelDateSelector } from "@/src/core/components/featureReports/TopLevelDateSelection";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { GeneralFeatureDetailArea } from "@/src/core/components/featureReports/FeatureReportDrillDownComponents";
 
 const GeneralFeatureStatsReport = () => {
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
@@ -216,7 +215,6 @@ const GeneralFeatureStatsReport = () => {
         <React.Suspense>
             <FeatureReportTopLevelDateSelector
                 features={features}
-                excludeFeatures={[]}
                 selectedBucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
@@ -230,13 +228,25 @@ const GeneralFeatureStatsReport = () => {
             />
         </React.Suspense>
 
+
+        <React.Suspense>
+            <FacetedBreakdown
+                features={features}
+                bucket={selectedBucket}
+                bucketSize={aggregateBy}
+                excludeYourself={excludeYourself}
+                excludeSysadmins={excludeSysadmins}
+                contextBeginsWith={contextBeginsWith}
+                refetchTrigger={refetchTrigger}
+            />
+        </React.Suspense>
+        {/* 
         <React.Suspense>
             <GeneralFeatureDetailArea
                 features={features}
                 onExcludeFeature={onExcludeFeature}
                 onIsolateFeature={onIsolateFeature}
                 onFilterContext={setContextBeginsWith}
-                excludeFeatures={[]}
                 bucket={selectedBucket}
                 aggregateBy={aggregateBy}
                 excludeYourself={excludeYourself}
@@ -244,7 +254,7 @@ const GeneralFeatureStatsReport = () => {
                 contextBeginsWith={contextBeginsWith}
                 refetchTrigger={refetchTrigger}
             />
-        </React.Suspense>
+        </React.Suspense> */}
     </div >;
 };
 

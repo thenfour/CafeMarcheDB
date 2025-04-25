@@ -9,7 +9,6 @@ import { ActivityFeature } from "../activityTracking";
 
 const ZTGeneralFeatureReportArgs = z.object({
     features: z.nativeEnum(ActivityFeature).array(),
-    excludeFeatures: z.nativeEnum(ActivityFeature).array(),
     startDate: z.date(),
     endDate: z.date(),
     aggregateBy: z.nativeEnum(ActivityReportTimeBucketSize),
@@ -49,9 +48,9 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         conditions.push(`${MySqlSymbol("feature")} IN (${features.map((feature) => MySqlStringLiteral(feature)).join(", ")})`);
     }
 
-    if (params.excludeFeatures.length > 0) {
-        conditions.push(`${MySqlSymbol("feature")} NOT IN (${params.excludeFeatures.map((feature) => MySqlStringLiteral(feature)).join(", ")})`);
-    }
+    // if (params.excludeFeatures.length > 0) {
+    //     conditions.push(`${MySqlSymbol("feature")} NOT IN (${params.excludeFeatures.map((feature) => MySqlStringLiteral(feature)).join(", ")})`);
+    // }
 
     conditions.push(`${MySqlSymbol("createdAt")} >= ${MySqlDateTimeLiteral(startDate)}`);
     conditions.push(`${MySqlSymbol("createdAt")} <= ${MySqlDateTimeLiteral(endDate)}`);

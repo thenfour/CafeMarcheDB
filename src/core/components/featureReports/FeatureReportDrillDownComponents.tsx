@@ -14,7 +14,6 @@ import getGeneralFeatureDetail from './queries/getGeneralFeatureDetail';
 
 interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];
-    excludeFeatures: ActivityFeature[];
     bucket: string | null;
     aggregateBy: ActivityReportTimeBucketSize;
     excludeYourself: boolean;
@@ -26,13 +25,12 @@ interface GeneralFeatureDetailAreaProps {
     onFilterContext: (context: string) => void;
 };
 
-export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeFeatures, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
+export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeginsWith, excludeSysadmins, bucket, aggregateBy, refetchTrigger, onIsolateFeature, onExcludeFeature, onFilterContext }: GeneralFeatureDetailAreaProps) => {
     const dashboardContext = useDashboardContext();
     const [tabId, setTabId] = React.useState<ActivityDetailTabId | "general">("general");
 
     const [detail, { refetch }] = useQuery(getGeneralFeatureDetail, {
         features,
-        excludeFeatures,
         bucket,
         aggregateBy,
         excludeYourself,

@@ -24,8 +24,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
-import { ActivityFeature } from './featureReports/activityTracking';
-import { GetICalRelativeURIForUserAndEvent, GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
+import { GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { AppContextMarker } from './AppContext';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
@@ -51,6 +50,7 @@ import { AddUserButton } from './UserComponents';
 import { VisibilityValue } from './VisibilityControl';
 import { WikiStandaloneControl } from './WikiStandaloneComponents';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
+import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from './markdown/Markdown';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
 
@@ -850,7 +850,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
 
 
-export const EventDescriptionControl = ({ event, refetch, readonly }: { event: db3.EventPayloadMinimum, refetch: () => void, readonly: boolean }) => {
+export const EventDescriptionControl = ({ event, refetch, readonly }: { event: Prisma.EventGetPayload<{ select: { name: true, id: true } }>, refetch: () => void, readonly: boolean }) => {
     const wikiPath = wikiMakeWikiPathFromEventDescription(event);
     return <WikiStandaloneControl
         canonicalWikiPath={wikiPath.canonicalWikiPath}
@@ -1117,16 +1117,16 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
     </div>;
 };
 
-const EventDotMenu = ({ event, showVisibility }: { event: db3.EventPayloadMinimum, showVisibility: boolean }) => {
+const EventDotMenu = ({ event, showVisibility }: { event: Prisma.EventGetPayload<{ select: { visiblePermissionId: true, id: true, name: true } }>, showVisibility: boolean }) => {
     const endMenuItemRef = React.useRef<() => void>(() => { });
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
 
-    const uriForThisEvent = dashboardContext.currentUser && GetICalRelativeURIForUserAndEvent({
-        userAccessToken: dashboardContext.currentUser?.accessToken || null,
-        eventUid: event.uid,
-        userUid: dashboardContext.currentUser.uid,
-    });
+    // const uriForThisEvent = dashboardContext.currentUser && GetICalRelativeURIForUserAndEvent({
+    //     userAccessToken: dashboardContext.currentUser?.accessToken || null,
+    //     eventUid: event.uid,
+    //     userUid: dashboardContext.currentUser.uid,
+    // });
     const uriForGlobalCalendar = dashboardContext.currentUser && getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: dashboardContext.currentUser!.accessToken }));
 
     const closeMenu = () => {
