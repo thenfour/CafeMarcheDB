@@ -478,7 +478,7 @@ interface CMTableColumnSpec<T extends Object> {
     memberName?: keyof T;
     allowSort?: boolean;
     header?: React.ReactNode;
-    render?: (args: { row: T, slot: CMTableSlot, defaultRenderer: (val: any) => React.ReactNode }) => React.ReactNode;
+    render?: (args: { row: T, slot: CMTableSlot, defaultRenderer: (val: any) => React.ReactNode, rowIndex: number, columnIndex: number }) => React.ReactNode;
     getRowStyle?: (args: { row: T }) => React.CSSProperties | undefined;
 }
 
@@ -511,6 +511,7 @@ interface CMTableRowProps<T extends Object> {
     slot: CMTableSlot;
     style?: React.CSSProperties | undefined;
     columns: CMTableColumnSpec<T>[];
+    index?: number;
 }
 
 const CMTableRow = <T extends Object,>({ row, slot, columns, ...props }: CMTableRowProps<T>) => {
@@ -518,7 +519,7 @@ const CMTableRow = <T extends Object,>({ row, slot, columns, ...props }: CMTable
         <tr style={props.style}>
             {columns.map((column, idx) => {
                 const content = column.render
-                    ? column.render({ row, slot, defaultRenderer: CMTableValueDefaultRenderer })
+                    ? column.render({ row, slot, defaultRenderer: CMTableValueDefaultRenderer, rowIndex: props.index || 0, columnIndex: idx })
                     : (column.memberName ? CMTableValueDefaultRenderer(row[column.memberName]) : "");
 
                 const style = column.getRowStyle ? column.getRowStyle({ row }) : undefined;
@@ -583,7 +584,7 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
             <tbody>
                 {sortedRows.map((row, idx) => {
                     const style = props.getRowStyle ? props.getRowStyle({ row }) : undefined;
-                    return <CMTableRow<T> slot={CMTableSlot.Body} key={idx} row={row} columns={columns} style={style} />;
+                    return <CMTableRow<T> slot={CMTableSlot.Body} key={idx} row={row} columns={columns} style={style} index={idx} />;
                 })}
             </tbody>
             {props.footerRow &&

@@ -16,8 +16,8 @@ import getUserCredits from "../db3/queries/getUserCredits";
 import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
 import { CMChipContainer, CMStandardDBChip } from "./CMChip";
-import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, InstrumentChip } from "./CMCoreComponents";
-import { GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
+import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, InstrumentChip, SongChip } from "./CMCoreComponents";
+import { CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
@@ -231,27 +231,72 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const allSongs = useSongsContext().songs;
     const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id });
 
-    return <div>
-        <table className="songCreditTable">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Song</th>
-                    <th>Credit</th>
-                </tr>
-            </thead>
-            <tbody>
-                {qr.songCredits.map((sc, index) => {
-                    const song = allSongs.find(s => s.id === sc.songId)!;
-                    return <tr key={sc.id}>
-                        <td>{index + 1}</td>
-                        <td><a href={getURIForSong(song || { id: sc.songId, name: `#${sc.songId}` })} target="_blank" rel="noreferrer">{song?.name || sc.songId}</a></td>
-                        <td>{dashboardContext.songCreditType.getById(sc.typeId)?.text}</td>
-                    </tr>
-                })}
-            </tbody>
-        </table>
-    </div>;
+    // return <div>
+    //     <table className="songCreditTable">
+    //         <thead>
+    //             <tr>
+    //                 <th>#</th>
+    //                 <th>Song</th>
+    //                 <th>Song year</th>
+    //                 <th>Credit</th>
+    //                 <th>Year</th>
+    //                 <th>Comment</th>
+    //             </tr>
+    //         </thead>
+    //         <tbody>
+    //             {qr.songCredits.map((sc, index) => {
+    //                 const song = allSongs.find(s => s.id === sc.songId)!;
+    //                 return <tr key={sc.id}>
+    //                     <td>{index + 1}</td>
+    //                     <td><a href={getURIForSong(song || { id: sc.songId, name: `#${sc.songId}` })} target="_blank" rel="noreferrer">{song?.name || sc.songId}</a></td>
+    //                     <td>{song.introducedYear}</td>
+    //                     <td>{dashboardContext.songCreditType.getById(sc.typeId)?.text}</td>
+    //                     <td>{sc.year}</td>
+    //                     <td>{sc.comment}</td>
+    //                 </tr>
+    //             })}
+    //         </tbody>
+    //     </table>
+    // </div>;
+
+    return <CMTable
+        rows={qr.songCredits}
+        columns={[
+            {
+                header: "#",
+                render: (row) => {
+                    return <span>{row.rowIndex + 1}</span>;
+                },
+            },
+            {
+                header: "Song",
+                render: (row) => {
+                    return <SongChip value={allSongs.find(s => s.id === row.row.songId) || { id: row.row.songId, name: `#${row.row.songId}` }} />;
+                },
+            },
+            {
+                header: "Song year",
+                render: (row) => {
+                    const song = allSongs.find(s => s.id === row.row.songId)!;
+                    return <span>{song?.introducedYear}</span>;
+                },
+            },
+            {
+                header: "Credit type",
+                memberName: "typeId",
+                render: (row) => {
+                    return <span>{dashboardContext.songCreditType.getById(row.row.typeId)?.text}</span>;
+                },
+            },
+            {
+                header: "Credit year",
+                memberName: "year",
+            },
+            {
+                memberName: "comment",
+            }
+        ]}
+    />;
 };
 
 

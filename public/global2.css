@@ -1467,7 +1467,7 @@ in particular the date range picker is wide.*/
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
-    cursor: pointer;
+    /* cursor: pointer; */
     overflow: hidden;
     white-space: nowrap;
     /* this just feels more comfortable*/
