@@ -902,6 +902,7 @@ solution is to
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
+  align-items: center;
 }
 
 .adHocChip {

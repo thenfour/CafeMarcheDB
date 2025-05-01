@@ -5,16 +5,19 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
 import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
 import { AgeRelativeToNow } from "../RelativeTimeComponents";
-import { Prisma } from "db";
-import { FeatureReportFilterSpec, GetFeatureReportDetailResultArgs, TGetFeatureReportDetailResult } from "./activityReportTypes";
+import { FeatureReportFilterSpec, TGetFeatureReportDetailResult } from "./activityReportTypes";
 import { ActivityFeature } from "./activityTracking";
-import getDetail from "./queries/getDetail";
+import { gClientFacetHandlers } from "./ClientFacetHandlers";
 import { AnonymizedUserChip, BrowserChip, ContextLabel, DeviceClassChip, FeatureLabel, OperatingSystemChip, PointerTypeChip } from "./FeatureReportBasics";
+import getDetail from "./queries/getDetail";
+import { CMSmallButton } from "../CMCoreComponents2";
 
 
 interface FacetItemDetailTableRowProps {
-    value: Prisma.ActionGetPayload<typeof GetFeatureReportDetailResultArgs>;// TGetFeatureReportDetailResult['rows'][0];
+    value: TGetFeatureReportDetailResult['rows'][0];
     index: number;
+    filterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (spec: FeatureReportFilterSpec) => void;
 };
 
 const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDetailTableRowProps) => {
@@ -32,7 +35,10 @@ const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDetailTabl
         </td>
         <td>{value.userHash && <AnonymizedUserChip value={value.userHash} />}</td>
         <td>{value.context && <ContextLabel value={value.context} onClickPart={(part) => {
-            props.onFilterContext(part);
+            props.setFilterSpec(gClientFacetHandlers.contexts.addFilter(props.filterSpec, {
+                count: 0,
+                context: part,
+            }));
         }} />}</td>
         <td><FeatureLabel feature={feature} /></td>
         <td style={{ whiteSpace: "nowrap" }}>
@@ -74,15 +80,10 @@ const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDetailTabl
     </tr >;
 };
 
-
-
 interface FacetItemDetailTableProps {
     filterSpec: FeatureReportFilterSpec;
     refreshTrigger: number;
-    // data: GeneralActivityReportDetailPayload[];
-    // onIsolateFeature: (feature: ActivityFeature) => void;
-    // onExcludeFeature: (feature: ActivityFeature) => void;
-    // onFilterContext: (context: string) => void;
+    setFilterSpec: (spec: FeatureReportFilterSpec) => void;
 };
 
 export const FacetItemDetailTable = ({ filterSpec, refreshTrigger, ...props }: FacetItemDetailTableProps) => {
@@ -96,7 +97,7 @@ export const FacetItemDetailTable = ({ filterSpec, refreshTrigger, ...props }: F
         return <div>Loading...</div>;
     }
 
-    return <table>
+    return <><table>
         <thead>
             <tr>
                 <th>#</th>
@@ -117,9 +118,11 @@ export const FacetItemDetailTable = ({ filterSpec, refreshTrigger, ...props }: F
         </thead>
         <tbody>
             {items.rows.map((item, index) => {
-                // return <div>item....</div>;
-                return <FacetItemDetailTableRow key={index} value={item} index={items.rows.length - index} />;
+                //return <div>item....</div>;
+                return <FacetItemDetailTableRow key={index} value={item} index={items.rows.length - index} filterSpec={filterSpec} setFilterSpec={props.setFilterSpec} />;
             })}
         </tbody>
-    </table>;
+    </table>
+        <CMSmallButton>{items.metrics.queryTimeMs} ms</CMSmallButton>
+    </>;
 }

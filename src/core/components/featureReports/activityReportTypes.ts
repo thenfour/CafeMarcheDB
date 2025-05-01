@@ -3,6 +3,7 @@ import { UserWithRolesPayload } from "@/types";
 import { Prisma } from "db";
 import { z } from "zod";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
+import { gFeatureReportFacetProcessors } from "./server/facetProcessor";
 
 
 export enum ActivityReportTimeBucketSize {
@@ -35,58 +36,6 @@ export type GeneralActivityReportDetailPayload = Omit<Prisma.ActionGetPayload<ty
     userHash: string | null;
 };
 
-
-// // @@index([feature, createdAt, userId, context, pointerType, deviceClass, browserName, operatingSystem, language, locale, timezone])
-
-
-// export enum ActivityReportFacet {
-//     // string id
-//     feature = "feature",
-//     context = "context",
-//     user = "user",
-
-//     pointerType = "pointerType",
-//     deviceClass = "deviceClass",
-//     browser = "browser",
-//     operatingSystem = "operatingSystem",
-//     language = "language",
-//     locale = "locale",
-//     timezone = "timezone",
-// }
-
-// export const ZTActivityReportArgs = z.object({
-
-//     // created at
-//     bucket: z.string(),
-//     aggregateBy: z.nativeEnum(ActivityReportTimeBucketSize),
-
-//     includeFeatures: z.nativeEnum(ActivityFeature).array(),
-
-//     excludeYourself: z.boolean(),
-//     excludeSysadmins: z.boolean(),
-//     userId: z.number().optional(),
-
-//     contextBeginsWith: z.string().optional(),
-
-//     pointerType: z.string().optional(),
-//     deviceClass: z.string().optional(),
-//     browserName: z.string().optional(),
-//     operatingSystem: z.string().optional(),
-//     language: z.string().optional(),
-//     locale: z.string().optional(),
-//     timezone: z.string().optional(),
-
-//     // filteredSongId: z.number().optional(),
-//     // filteredEventId: z.number().optional(),
-//     // filteredWikiPageId: z.number().optional(),
-// });
-
-// // type TFeatureAggregateReportArgs = z.infer<typeof ZTFeatureAggregateReportArgs>;
-
-// // interface TFeatureAggregateReportResult {
-
-// // };
-
 export enum ActivityDetailTabId {
     // string id
     feature = "feature",
@@ -108,14 +57,6 @@ export enum ActivityDetailTabId {
     wikiPage = "wikiPage",
     menuLink = "menuLink",
     customLink = "customLink",
-
-    //attendance = "attendance",
-    //setlist = "setlist",
-    //instrument = "instrument",
-    //frontpageGalleryItem = "frontpageGalleryItem",
-    // setlistPlan = "setlistPlan",
-    // songCreditType = "songCreditType",
-    // file = "file",
 };
 
 export type FacetResultBase = { count: number };
@@ -214,24 +155,37 @@ export const ZFeatureReportFilterSpec = z.object({
     excludeYourself: z.boolean(),
     excludeSysadmins: z.boolean(),
     contextBeginsWith: z.string().optional(),
+
     includeFeatures: z.nativeEnum(ActivityFeature).array(),
+    includeOperatingSystems: z.nativeEnum(OperatingSystem).array(),
+    includePointerTypes: z.nativeEnum(PointerTypes).array(),
+    includeBrowserNames: z.nativeEnum(Browsers).array(),
+    includeDeviceClasses: z.nativeEnum(DeviceClasses).array(),
+    includeTimezones: z.string().array(),
+    includeLanguages: z.string().array(),
+    includeLocales: z.string().array(),
+    includeCustomLinkIds: z.number().array(),
+    includeEventIds: z.number().array(),
+    includeMenuLinkIds: z.number().array(),
+    includeSongIds: z.number().array(),
+    includeWikiPageIds: z.number().array(),
 
-    operatingSystem: z.nativeEnum(OperatingSystem).optional(),
-    pointerType: z.nativeEnum(PointerTypes).optional(),
-    browserName: z.nativeEnum(Browsers).optional(),
-    deviceClass: z.nativeEnum(DeviceClasses).optional(),
+    excludeFeatures: z.nativeEnum(ActivityFeature).array(),
+    excludeOperatingSystems: z.nativeEnum(OperatingSystem).array(),
+    excludePointerTypes: z.nativeEnum(PointerTypes).array(),
+    excludeBrowserNames: z.nativeEnum(Browsers).array(),
+    excludeDeviceClasses: z.nativeEnum(DeviceClasses).array(),
+    excludeTimezones: z.string().array(),
+    excludeLanguages: z.string().array(),
+    excludeLocales: z.string().array(),
+    excludeCustomLinkIds: z.number().array(),
+    excludeEventIds: z.number().array(),
+    excludeMenuLinkIds: z.number().array(),
+    excludeSongIds: z.number().array(),
+    excludeWikiPageIds: z.number().array(),
 
-    timezone: z.string().optional(),
-    language: z.string().optional(),
-    locale: z.string().optional(),
-    screenWidth: z.number().optional(),
-    screenHeight: z.number().optional(),
-
-    customLinkId: z.number().optional(),
-    eventId: z.number().optional(),
-    menuLinkId: z.number().optional(),
-    songId: z.number().optional(),
-    wikiPageId: z.number().optional(),
+    // screenWidths: z.number().optional(),
+    // screenHeights: z.number().optional(),
 });
 
 export type FeatureReportFilterSpec = z.infer<typeof ZFeatureReportFilterSpec>;
@@ -247,13 +201,6 @@ export function buildFeatureReportFiltersSQL(filterSpec: FeatureReportFilterSpec
     conditions.push(`${MySqlSymbol("createdAt")} >= ${MySqlDateTimeLiteral(dateRange.start)}`);
     conditions.push(`${MySqlSymbol("createdAt")} <= ${MySqlDateTimeLiteral(dateRange.end)}`);
 
-    // TODO: add other filters here
-    if (filterSpec.includeFeatures.length > 0) {
-        conditions.push(`${MySqlSymbol("feature")} IN (${filterSpec.includeFeatures.map((f) => MySqlStringLiteral(f)).join(",")})`);
-    }
-    if (filterSpec.contextBeginsWith) {
-        conditions.push(`${MySqlSymbol("context")} LIKE ${MySqlStringLiteralAllowingPercent(filterSpec.contextBeginsWith + "%")}`);
-    }
     if (filterSpec.excludeYourself) {
         conditions.push(`${MySqlSymbol("userId")} != ${currentUser.id}`);
     }
@@ -262,60 +209,8 @@ export function buildFeatureReportFiltersSQL(filterSpec: FeatureReportFilterSpec
         conditions.push(`${MySqlSymbol("userId")} NOT IN (SELECT ${MySqlSymbol("id")} FROM \`User\` WHERE ${MySqlSymbol("isSysAdmin")} = 1)`);
     }
 
-    if (filterSpec.operatingSystem) {
-        conditions.push(`${MySqlSymbol("operatingSystem")} = ${MySqlStringLiteral(filterSpec.operatingSystem)}`);
-    }
-
-    if (filterSpec.pointerType) {
-        conditions.push(`${MySqlSymbol("pointerType")} = ${MySqlStringLiteral(filterSpec.pointerType)}`);
-    }
-
-    if (filterSpec.browserName) {
-        conditions.push(`${MySqlSymbol("browserName")} = ${MySqlStringLiteral(filterSpec.browserName)}`);
-    }
-
-    if (filterSpec.deviceClass) {
-        conditions.push(`${MySqlSymbol("deviceClass")} = ${MySqlStringLiteral(filterSpec.deviceClass)}`);
-    }
-
-    if (filterSpec.timezone) {
-        conditions.push(`${MySqlSymbol("timezone")} = ${MySqlStringLiteral(filterSpec.timezone)}`);
-    }
-
-    if (filterSpec.language) {
-        conditions.push(`${MySqlSymbol("language")} = ${MySqlStringLiteral(filterSpec.language)}`);
-    }
-
-    if (filterSpec.locale) {
-        conditions.push(`${MySqlSymbol("locale")} = ${MySqlStringLiteral(filterSpec.locale)}`);
-    }
-
-    if (filterSpec.screenWidth) {
-        conditions.push(`${MySqlSymbol("screenWidth")} = ${filterSpec.screenWidth}`);
-    }
-
-    if (filterSpec.screenHeight) {
-        conditions.push(`${MySqlSymbol("screenHeight")} = ${filterSpec.screenHeight}`);
-    }
-
-    if (filterSpec.customLinkId) {
-        conditions.push(`${MySqlSymbol("customLinkId")} = ${filterSpec.customLinkId}`);
-    }
-
-    if (filterSpec.eventId) {
-        conditions.push(`${MySqlSymbol("eventId")} = ${filterSpec.eventId}`);
-    }
-
-    if (filterSpec.menuLinkId) {
-        conditions.push(`${MySqlSymbol("menuLinkId")} = ${filterSpec.menuLinkId}`);
-    }
-
-    if (filterSpec.songId) {
-        conditions.push(`${MySqlSymbol("songId")} = ${filterSpec.songId}`);
-    }
-
-    if (filterSpec.wikiPageId) {
-        conditions.push(`${MySqlSymbol("wikiPageId")} = ${filterSpec.wikiPageId}`);
+    for (const [key, processor] of Object.entries(gFeatureReportFacetProcessors)) {
+        processor.getFilterSqlConditions(filterSpec, conditions);
     }
 
     return conditions.join(" AND ");

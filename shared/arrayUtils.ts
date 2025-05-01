@@ -20,7 +20,35 @@ export function toSorted<T>(array: T[], compareFn?: (a: T, b: T) => number): T[]
     return array.slice().sort(compareFn);
 }
 
+// export function isOneOf<T>(value: T, ...values: T[]): boolean {
+//     return values.includes(value);
+// }
 
+/**
+ * `values` can only contain members of the union type of `value`.
+ * The return type is a type-predicate, so it also narrows `value`
+ * when the result is `true`.
+ */
+export function isOneOf<
+    T,                       // inferred solely from the first argument
+    V extends readonly T[]   // every element of `values` must be a `T`
+>(
+    value: T,
+    ...values: V
+): value is V[number] {
+    // runtime implementation is trivial
+    return (values as readonly unknown[]).includes(value as unknown);
+}
+
+
+
+// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+export function clearArray(array) {
+    while (array.length > 0) {
+        array.pop();
+    }
+    return array;
+}
 
 export function arraysContainSameValues<T>(arr1: T[], arr2: T[]): boolean {
     if (arr1.length !== arr2.length) {

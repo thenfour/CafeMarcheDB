@@ -6,6 +6,7 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { ActivityReportTimeBucketSize, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { ActivityFeature } from "../activityTracking";
+import { Stopwatch } from "@/shared/rootroot";
 
 const ZTGeneralFeatureReportArgs = z.object({
     //features: z.nativeEnum(ActivityFeature).array(),
@@ -29,9 +30,13 @@ interface GeneralFeatureReportResult {
         bucket: string;
         count: number;
     }[];
+    metrics: {
+        queryTimeMs: number;
+    };
 };
 
 async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs, ctx: AuthenticatedCtx): Promise<GeneralFeatureReportResult> {
+    const sw = new Stopwatch();
     const {
         filterSpec,
         startDate,
@@ -107,7 +112,10 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
         data: results.map((row) => ({
             bucket: row.bucket,    // or parse as Date if you prefer
             count: Number(row.count),
-        }))
+        })),
+        metrics: {
+            queryTimeMs: sw.ElapsedMillis,
+        },
     };
 }
 

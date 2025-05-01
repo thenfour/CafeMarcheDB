@@ -8,8 +8,9 @@ import { CMTab, CMTabPanel, CMTabPanelChild } from "../TabPanel";
 import { ActivityDetailTabId, FacetResultBase, FeatureReportFilterSpec } from "./activityReportTypes";
 import { FacetHandler, gClientFacetHandlers } from './ClientFacetHandlers';
 import { FacetItemDetailTable } from './FacetItemDetailTable';
-import { CMBar } from './FeatureReportBasics';
+import { CMAdhocChipContainer, CMBar } from './FeatureReportBasics';
 import getFacetedBreakdown from "./queries/getFacetedBreakdown";
+import { CMSmallButton } from '../CMCoreComponents2';
 
 interface ScreenSizeIndicatorProps {
     screenWidth: number;
@@ -117,15 +118,8 @@ const renderCustomTooltip = ({ active, label, payload, ...e }: any) => {
     return null;
 };
 
-const DistinctContextObjectPieChart = <Tpayload extends FacetResultBase,>({ item, items, innerRadius = 7, outerRadius = 25, handler }: { item: Tpayload, items: Tpayload[], innerRadius?: number, outerRadius?: number, handler: FacetHandler<Tpayload> }) => {
+const DistinctContextObjectPieChart = <Tpayload extends FacetResultBase, TKey>({ item, items, innerRadius = 7, outerRadius = 25, handler }: { item: Tpayload, items: Tpayload[], innerRadius?: number, outerRadius?: number, handler: FacetHandler<Tpayload, TKey> }) => {
     const itemKey = handler.getItemKey(item);
-
-    // const chartData = items.map((contextObject) => ({
-    //     ...contextObject,
-    //     fill: handler.getItemKey(contextObject) === itemKey ? handler.getItemColor(contextObject) : "#fff",
-    //     //fill: handler.getItemColor(contextObject),
-    //     //border: "0",
-    // }));
 
     const chartData: any[] = [];
 
@@ -187,46 +181,48 @@ const DistinctContextObjectPieChart = <Tpayload extends FacetResultBase,>({ item
 
 
 
-interface CollapsibleFacetItemDetailProps<Tpayload extends FacetResultBase> {
-    handler: FacetHandler<Tpayload>;
+interface CollapsibleFacetItemDetailProps<Tpayload extends FacetResultBase, TKey> {
+    handler: FacetHandler<Tpayload, TKey>;
     items: Tpayload[];
     contextObject: Tpayload;
     baseFilterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (spec: FeatureReportFilterSpec) => void;
     totalCount: number;
     refreshTrigger: number;
 };
 
-const CollapsibleFacetItemDetail = <Tpayload extends FacetResultBase,>({ handler, contextObject, items, totalCount, baseFilterSpec, refreshTrigger }: CollapsibleFacetItemDetailProps<Tpayload>) => {
+const CollapsibleFacetItemDetail = <Tpayload extends FacetResultBase, TKey>({ handler, contextObject, items, totalCount, baseFilterSpec, refreshTrigger, ...props }: CollapsibleFacetItemDetailProps<Tpayload, TKey>) => {
     const [expanded, setExpanded] = React.useState(false);
     const supportsDrilldown = handler.supportsDrilldown;
 
     const key = handler.getItemKey(contextObject);
     const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
-    return <div key={key}>
+    return <div key={key as React.Key}>
         <div
             className={`${supportsDrilldown ? "interactable" : ""}`}
             style={{ display: "flex", fontWeight: "bold", alignItems: "center", backgroundColor: handler.getItemColor(contextObject, "0.2"), borderTop: `3px solid ${handler.getItemColor(contextObject)}` }}
             onClick={() => setExpanded(!expanded)}
         >
             <DistinctContextObjectPieChart item={contextObject} items={items} handler={handler} />
-            {handler.renderItem(contextObject)} ({contextObject.count} items) ({percentageOfTotal} of total)
+            {handler.renderItem({ item: contextObject, filterSpec: baseFilterSpec, setFilterSpec: props.setFilterSpec, handler, reason: "facetItemDetailHeader" })} ({contextObject.count} items) ({percentageOfTotal} of total)
         </div>
-        {supportsDrilldown && <Collapse in={expanded}>
+        {supportsDrilldown && expanded && <Collapse in={expanded}>
             <React.Suspense>
-                <FacetItemDetailTable filterSpec={handler.addFilter(baseFilterSpec, contextObject)} refreshTrigger={refreshTrigger} />
+                <FacetItemDetailTable filterSpec={handler.addFilter(baseFilterSpec, contextObject)} refreshTrigger={refreshTrigger} setFilterSpec={props.setFilterSpec} />
             </React.Suspense>
         </Collapse>}
     </div>;
 };
 
-interface FacetedTabContentProps<Tpayload extends FacetResultBase> {
-    handler: FacetHandler<Tpayload>;
+interface FacetedTabContentProps<Tpayload extends FacetResultBase, TKey> {
+    handler: FacetHandler<Tpayload, TKey>;
     items: Tpayload[];
     filterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (spec: FeatureReportFilterSpec) => void;
     refreshTrigger: number;
 };
 
-const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items, ...props }: FacetedTabContentProps<Tpayload>) => {
+const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, items, ...props }: FacetedTabContentProps<Tpayload, TKey>) => {
 
     const totalCount = items.reduce((acc, item) => acc + item.count, 0);
 
@@ -251,7 +247,7 @@ const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items, 
     const kPieSize = 240;
     const kInnerRadius = 30;
 
-    return items.length > 1 && <div className="DistinctContextObjectTabContent">
+    return <div className="DistinctContextObjectTabContent">
         <div className="header">
             <PieChart width={kPieSize} height={kPieSize} data={chartData}>
                 <Pie
@@ -277,7 +273,7 @@ const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items, 
                             const key = handler.getItemKey(contextObject);
                             const color = handler.getItemColor(contextObject);
                             const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
-                            return <tr key={key}>
+                            return <tr key={key as React.Key}>
                                 <td>
                                     <CMBar value01={contextObject.count / totalCount} color={color} />
                                 </td>
@@ -292,9 +288,10 @@ const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items, 
                                     </span>
                                 </td>
                                 <td>
-                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /*color*/ }}>
-                                        {handler.renderItem(contextObject)}
-                                    </span>
+                                    {/* <CMAdhocChipContainer> */}
+                                    {handler.renderItem({ item: contextObject, filterSpec: props.filterSpec, setFilterSpec: props.setFilterSpec, handler, reason: "facetItemSummaryHeader" })}
+                                    {/* </CMAdhocChipContainer> */}
+
                                 </td>
                             </tr>;
                         })}
@@ -304,10 +301,11 @@ const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items, 
         </div>
 
         {items.map((contextObject) => <CollapsibleFacetItemDetail
-            key={handler.getItemKey(contextObject)}
+            key={handler.getItemKey(contextObject) as React.Key}
             contextObject={contextObject}
             handler={handler}
             items={items}
+            setFilterSpec={props.setFilterSpec}
             totalCount={totalCount}
             baseFilterSpec={props.filterSpec}
             refreshTrigger={props.refreshTrigger}
@@ -320,6 +318,7 @@ const FacetedTabContent = <Tpayload extends FacetResultBase,>({ handler, items, 
 interface FeatureReportTopLevelDateSelectorProps {
     refetchTrigger: number;
     filterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (spec: FeatureReportFilterSpec) => void;
 };
 
 export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) => {
@@ -340,9 +339,10 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
             if (!handler) {
                 console.error(`No handler for facet ${facetKey}`);
             }
-            return <CMTab key={facetKey} thisTabId={facetKey} summaryTitle={`${facetKey} (${facetInfo.length})`} enabled={facetInfo.length > 1} >
+            return <CMTab key={facetKey} thisTabId={facetKey} summaryTitle={`${facetKey} (${facetInfo.length})`} enabled={facetInfo.length > 0} >
                 <FacetedTabContent
                     handler={handler}
+                    setFilterSpec={props.setFilterSpec}
                     items={facetInfo as any}
                     filterSpec={props.filterSpec}
                     refreshTrigger={props.refetchTrigger}
@@ -354,6 +354,7 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
     const bucketDateRange = props.filterSpec.selectedBucket ? parseBucketToDateRange(props.filterSpec.selectedBucket, props.filterSpec.bucketSize) : null;
 
     return <div>
+        <CMSmallButton>{result.metrics.queryTimeMs}ms</CMSmallButton>
         <div className="bucketLabel">
             {props.filterSpec.selectedBucket && <>
                 {props.filterSpec.selectedBucket} [{bucketDateRange?.start.toLocaleString()} - {bucketDateRange?.end.toLocaleString()}] (range: {formatMillisecondsToDHMS(bucketDateRange!.end.getTime() - bucketDateRange!.start.getTime())})

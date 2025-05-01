@@ -84,31 +84,31 @@ export const getRandomClientData = (): DeviceInfo => {
 
 const CONTEXT_PATHS = [
     // marketing
-    "marketing",
-    "marketing/campaigns",
-    "marketing/campaigns/spring-sale",
-    "marketing/campaigns/black-friday",
-    "marketing/audiences/enterprise",
-    "marketing/audiences/consumer",
+    "/marketing",
+    "/marketing/campaigns",
+    "/marketing/campaigns/spring-sale",
+    "/marketing/campaigns/black-friday",
+    "/marketing/audiences/enterprise",
+    "/marketing/audiences/consumer",
 
-    // sales
-    "sales/leads/import",
-    "sales/leads/scoring",
-    "sales/deals/pipeline",
-    "sales/deals/won",
-    "sales/deals/lost",
+    /// sales
+    "/sales/leads/import",
+    "/sales/leads/scoring",
+    "/sales/deals/pipeline",
+    "/sales/deals/won",
+    "/sales/deals/lost",
 
-    // analytics
-    "analytics/dashboards/traffic",
-    "analytics/dashboards/conversion",
-    "analytics/reports/daily",
-    "analytics/reports/monthly",
+    /// analytics
+    "/analytics/dashboards/traffic",
+    "/analytics/dashboards/conversion",
+    "/analytics/reports/daily",
+    "/analytics/reports/monthly",
 
-    // admin
-    "admin/users/create",
-    "admin/users/roles",
-    "admin/settings/billing",
-    "admin/settings/integrations",
+    /// admin
+    "/admin/users/create",
+    "/admin/users/roles",
+    "/admin/settings/billing",
+    "/admin/settings/integrations",
 ] as const;
 
 

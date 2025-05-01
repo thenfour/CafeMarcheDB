@@ -1,12 +1,14 @@
 import { hash256 } from "@blitzjs/auth";
-import { FacetedBreakdownResult } from "../activityReportTypes";
+import { FacetedBreakdownResult, FeatureReportFilterSpec } from "../activityReportTypes";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "../activityTracking";
 import { xCustomLink, xEvent, xMenuLink, xSong, xWikiPage } from "@/src/core/db3/db3";
 import { UserWithRolesPayload } from "@/types";
+import { MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol } from "@/shared/mysqlUtils";
 
 export interface FacetProcessor<T> {
     getGroupedQuery: (filterSql: string, currentUser: UserWithRolesPayload) => string;
     postProcessRow: (row: unknown, filterSql: string, currentUser: UserWithRolesPayload) => T | null; // if null, excluded.
+    getFilterSqlConditions: (filterSpec: FeatureReportFilterSpec, conditions: string[]) => void;
 }
 
 const NullFacetProcessor: FacetProcessor<null> = {
@@ -14,6 +16,9 @@ const NullFacetProcessor: FacetProcessor<null> = {
         return `select 1`;
     },
     postProcessRow: (row: any) => null,
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        // no-op
+    },
 };
 
 export const TotalFacetProcessor: FacetProcessor<FacetedBreakdownResult['total']> = {
@@ -28,6 +33,9 @@ export const TotalFacetProcessor: FacetProcessor<FacetedBreakdownResult['total']
     postProcessRow: (row: { count: bigint }) => ({
         count: Number(row.count),
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        // no-op
+    },
 };
 
 const featuresFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['features'][0]> = {
@@ -47,6 +55,14 @@ const featuresFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['f
         feature: row.feature as ActivityFeature,
         count: Number(row.count),
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeFeatures.length > 0) {
+            conditions.push(`${MySqlSymbol("feature")} IN (${filterSpec.includeFeatures.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludeFeatures.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("feature")} IN (${filterSpec.excludeFeatures.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+    },
 };
 
 const contextsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['contexts'][0]> = {
@@ -66,6 +82,11 @@ const contextsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['c
         context: row.context,
         count: Number(row.count),
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.contextBeginsWith) {
+            conditions.push(`${MySqlSymbol("context")} LIKE ${MySqlStringLiteralAllowingPercent(filterSpec.contextBeginsWith + "%")}`);
+        }
+    },
 };
 
 const browsersFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['browsers'][0]> = {
@@ -86,8 +107,15 @@ const browsersFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['b
             browserName: row.browserName as Browsers,
             count: Number(row.count),
         });
-    }
-    ,
+    },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeBrowserNames.length > 0) {
+            conditions.push(`${MySqlSymbol("browserName")} IN (${filterSpec.includeBrowserNames.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludeBrowserNames.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("browserName")} IN (${filterSpec.excludeBrowserNames.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+    },
 };
 
 const operatingSystemsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['operatingSystems'][0]> = {
@@ -108,6 +136,14 @@ const operatingSystemsFacetProcessor: FacetProcessor<FacetedBreakdownResult['fac
             operatingSystem: row.operatingSystem as OperatingSystem,
             count: Number(row.count),
         });
+    },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeOperatingSystems.length > 0) {
+            conditions.push(`${MySqlSymbol("operatingSystem")} IN (${filterSpec.includeOperatingSystems.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludeOperatingSystems.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("operatingSystem")} IN (${filterSpec.excludeOperatingSystems.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
     },
 };
 
@@ -130,6 +166,14 @@ const pointerTypesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets'
             count: Number(row.count),
         });
     },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includePointerTypes.length > 0) {
+            conditions.push(`${MySqlSymbol("pointerType")} IN (${filterSpec.includePointerTypes.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludePointerTypes.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("pointerType")} IN (${filterSpec.excludePointerTypes.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+    },
 };
 
 const deviceClassesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['deviceClasses'][0]> = {
@@ -150,6 +194,14 @@ const deviceClassesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets
             deviceClass: row.deviceClass as DeviceClasses,
             count: Number(row.count),
         });
+    },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeDeviceClasses.length > 0) {
+            conditions.push(`${MySqlSymbol("deviceClass")} IN (${filterSpec.includeDeviceClasses.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludeDeviceClasses.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("deviceClass")} IN (${filterSpec.excludeDeviceClasses.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
     },
 };
 
@@ -172,6 +224,14 @@ const languagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
             count: Number(row.count),
         });
     },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeLanguages.length > 0) {
+            conditions.push(`${MySqlSymbol("language")} IN (${filterSpec.includeLanguages.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludeLanguages.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("language")} IN (${filterSpec.excludeLanguages.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+    },
 };
 
 const localesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['locales'][0]> = {
@@ -193,6 +253,14 @@ const localesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['lo
             count: Number(row.count),
         });
     },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeLocales.length > 0) {
+            conditions.push(`${MySqlSymbol("locale")} IN (${filterSpec.includeLocales.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludeLocales.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("locale")} IN (${filterSpec.excludeLocales.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+    },
 };
 
 const timezonesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['timezones'][0]> = {
@@ -213,6 +281,14 @@ const timezonesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
             timezone: row.timezone,
             count: Number(row.count),
         });
+    },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeTimezones.length > 0) {
+            conditions.push(`${MySqlSymbol("timezone")} IN (${filterSpec.includeTimezones.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
+        if (filterSpec.excludeTimezones.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("timezone")} IN (${filterSpec.excludeTimezones.map((f) => MySqlStringLiteral(f)).join(",")})`);
+        }
     },
 };
 
@@ -236,6 +312,9 @@ const screenSizesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']
             width: row.screenWidth,
             count: Number(row.count),
         });
+    },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        // no-op; we don't filter by screen size yet.
     },
 };
 
@@ -268,6 +347,9 @@ const anonymizedUsersFacetProcessor: FacetProcessor<FacetedBreakdownResult['face
             count: Number(row.count),
         });
     },
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        // no-op; we don't filter by user yet.
+    },
 };
 
 const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['songs'][0]> = {
@@ -295,6 +377,14 @@ const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['song
         name: row.name,
         count: Number(row.count),
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeSongIds.length > 0) {
+            conditions.push(`${MySqlSymbol("songId")} IN (${filterSpec.includeSongIds.map((f) => (f.toString())).join(",")})`);
+        }
+        if (filterSpec.excludeSongIds.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("songId")} IN (${filterSpec.excludeSongIds.map((f) => MySqlStringLiteral(f.toString())).join(",")})`);
+        }
+    },
 };
 
 const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['events'][0]> = {
@@ -324,9 +414,15 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
         startsAt: row.startsAt,
         statusId: row.statusId,
         typeId: row.typeId,
-
-
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeEventIds.length > 0) {
+            conditions.push(`${MySqlSymbol("eventId")} IN (${filterSpec.includeEventIds.map((f) => f.toString()).join(",")})`);
+        }
+        if (filterSpec.excludeEventIds.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("eventId")} IN (${filterSpec.excludeEventIds.map((f) => f.toString()).join(",")})`);
+        }
+    },
 };
 
 const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['wikiPages'][0]> = {
@@ -354,6 +450,14 @@ const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
         slug: row.slug,
         count: Number(row.count),
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeWikiPageIds.length > 0) {
+            conditions.push(`${MySqlSymbol("wikiPageId")} IN (${filterSpec.includeWikiPageIds.map((f) => f.toString()).join(",")})`);
+        }
+        if (filterSpec.excludeWikiPageIds.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("wikiPageId")} IN (${filterSpec.excludeWikiPageIds.map((f) => f.toString()).join(",")})`);
+        }
+    },
 };
 
 const menuLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['menuLinks'][0]> = {
@@ -381,6 +485,14 @@ const menuLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['
         name: row.caption,
         count: Number(row.count),
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeMenuLinkIds.length > 0) {
+            conditions.push(`${MySqlSymbol("menuLinkId")} IN (${filterSpec.includeMenuLinkIds.map((f) => f.toString()).join(",")})`);
+        }
+        if (filterSpec.excludeMenuLinkIds.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("menuLinkId")} IN (${filterSpec.excludeMenuLinkIds.map((f) => f.toString()).join(",")})`);
+        }
+    },
 };
 
 const customLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['customLinks'][0]> = {
@@ -408,6 +520,14 @@ const customLinksFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']
         name: row.name,
         count: Number(row.count),
     }),
+    getFilterSqlConditions: (filterSpec, conditions) => {
+        if (filterSpec.includeCustomLinkIds.length > 0) {
+            conditions.push(`${MySqlSymbol("customLinkId")} IN (${filterSpec.includeCustomLinkIds.map((f) => f.toString()).join(",")})`);
+        }
+        if (filterSpec.excludeCustomLinkIds.length > 0) {
+            conditions.push(`NOT ${MySqlSymbol("customLinkId")} IN (${filterSpec.excludeCustomLinkIds.map((f) => f.toString()).join(",")})`);
+        }
+    },
 };
 
 

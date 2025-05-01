@@ -215,7 +215,7 @@ export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: strin
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSmallButtonProps {
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
-    variant?: "framed" | "default";
+    variant?: "framed" | "default" | "technical";
     className?: string;
     style?: React.CSSProperties;
 };

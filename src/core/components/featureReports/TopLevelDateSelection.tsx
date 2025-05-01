@@ -5,6 +5,7 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from
 //import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import getGeneralFeatureReport from "@/src/core/components/featureReports/queries/getGeneralFeatureReport";
+import { CMSmallButton } from "../CMCoreComponents2";
 
 // date selection, bucket size
 // and other filters
@@ -52,21 +53,23 @@ export const FeatureReportTopLevelDateSelector = ({ filterSpec, setDataUpdatedAt
         onClickBucket(data.bucket);
     };
 
-    return <ComposedChart
-        width={800}
-        height={600}
-        data={chartData}
-    >
-        <CartesianGrid stroke="#f5f5f5" />
-        <XAxis dataKey="bucket" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
+    return <div>
+        <CMSmallButton>{result.metrics.queryTimeMs} ms</CMSmallButton>
+        <ComposedChart
+            width={800}
+            height={600}
+            data={chartData}
+        >
+            <CartesianGrid stroke="#f5f5f5" />
+            <XAxis dataKey="bucket" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
 
-        {/* <Bar dataKey="count" barSize={30} fill="#44f" onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} /> */}
-        <Bar dataKey="count" barSize={30} onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} />
+            {/* <Bar dataKey="count" barSize={30} fill="#44f" onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} /> */}
+            <Bar dataKey="count" barSize={30} onClick={handleBucketClick} isAnimationActive={true} animationDuration={40} />
 
-    </ComposedChart>
-
+        </ComposedChart>
+    </div>
 
 };

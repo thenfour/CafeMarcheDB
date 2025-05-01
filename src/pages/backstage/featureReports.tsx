@@ -7,7 +7,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
-import { PermissionBoundary } from "src/core/components/CMCoreComponents";
+import { AdminInspectObject, PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
@@ -18,6 +18,7 @@ import { FacetedBreakdown } from "@/src/core/components/featureReports/FacetedBr
 import { FeatureReportTopLevelDateSelector } from "@/src/core/components/featureReports/TopLevelDateSelection";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { gClientFacetHandlers } from "@/src/core/components/featureReports/ClientFacetHandlers";
 
 const GeneralFeatureStatsReport = () => {
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
@@ -25,12 +26,6 @@ const GeneralFeatureStatsReport = () => {
     const [startDate, setStartDate] = React.useState<Date>(new Date(now.getTime() - 3 * 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = React.useState<Date>(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
-    // const [aggregateBy, setAggregateBy] = React.useState<ActivityReportTimeBucketSize>(ActivityReportTimeBucketSize.day);
-    // const [features, setFeatures] = React.useState<ActivityFeature[]>([]);
-    // const [excludeYourself, setExcludeYourself] = React.useState<boolean>(true);
-    // const [excludeSysadmins, setExcludeSysadmins] = React.useState<boolean>(true);
-    // const [contextBeginsWith, setContextBeginsWith] = React.useState<string | undefined>();
-    // const [selectedBucket, setSelectedBucket] = React.useState<string | null>(null);
     const [filterSpec, setFilterSpec] = React.useState<FeatureReportFilterSpec>({
         selectedBucket: null,
         bucketSize: ActivityReportTimeBucketSize.day,
@@ -38,6 +33,31 @@ const GeneralFeatureStatsReport = () => {
         excludeSysadmins: true,
         contextBeginsWith: undefined,
         includeFeatures: [],
+        excludeFeatures: [],
+        includeOperatingSystems: [],
+        includePointerTypes: [],
+        includeBrowserNames: [],
+        includeDeviceClasses: [],
+        includeTimezones: [],
+        includeLanguages: [],
+        includeLocales: [],
+        includeCustomLinkIds: [],
+        includeEventIds: [],
+        includeMenuLinkIds: [],
+        includeSongIds: [],
+        includeWikiPageIds: [],
+        excludeOperatingSystems: [],
+        excludePointerTypes: [],
+        excludeBrowserNames: [],
+        excludeDeviceClasses: [],
+        excludeTimezones: [],
+        excludeLanguages: [],
+        excludeLocales: [],
+        excludeCustomLinkIds: [],
+        excludeEventIds: [],
+        excludeMenuLinkIds: [],
+        excludeSongIds: [],
+        excludeWikiPageIds: [],
     });
 
     const [dataUpdatedAt, setDataUpdatedAt] = React.useState<Date>(now);
@@ -45,16 +65,11 @@ const GeneralFeatureStatsReport = () => {
     const realStartDate = roundToNearest15Minutes(startDate);
     const realEndDate = roundToNearest15Minutes(endDate);
 
-    // const onExcludeFeature = (feature: ActivityFeature) => {
-    //     // if you have nothing selected, it's the same as all selected. so handle that differently.
-    //     let newFeatures = features.length === 0 ? Object.values(ActivityFeature) : features;
-    //     newFeatures = newFeatures.filter(x => x !== feature);
-    //     setFeatures(newFeatures);
-    // };
-
-    // const onIsolateFeature = (feature: ActivityFeature) => {
-    //     setFeatures([feature]);
-    // };
+    const additionalFilters = Object.entries(gClientFacetHandlers).map(([key, handler]) => {
+        const x = handler.renderFilter({ filterSpec, setFilterSpec, handler: handler as any });
+        if (!x) return null;
+        return <React.Fragment key={key}>{x}</React.Fragment>;
+    }).filter(x => x !== null);
 
     return <div className="FeatureStatsReport">
         <div className="filterContainer">
@@ -254,15 +269,19 @@ const GeneralFeatureStatsReport = () => {
                     />
                 </div>
             } />
+
+            <AdminInspectObject src={additionalFilters} label="additionalFilters" />
+
+            {additionalFilters.length > 0 && <NameValuePair name="Additional filters"
+                value={
+                    <div>{additionalFilters}
+                    </div>
+                } />
+            }
         </div>
 
         <React.Suspense>
             <FeatureReportTopLevelDateSelector
-                //features={features}
-                //selectedBucket={selectedBucket}
-                //aggregateBy={aggregateBy}
-                // excludeYourself={excludeYourself}
-                // excludeSysadmins={excludeSysadmins}
                 filterSpec={filterSpec}
                 startDate={realStartDate}
                 endDate={realEndDate}
@@ -270,7 +289,6 @@ const GeneralFeatureStatsReport = () => {
                     setFilterSpec((x) => ({ ...x, selectedBucket: bucket }));
                 }}
                 refetchTrigger={refetchTrigger}
-                //contextBeginsWith={contextBeginsWith}
                 setDataUpdatedAt={setDataUpdatedAt}
             />
         </React.Suspense>
@@ -279,30 +297,10 @@ const GeneralFeatureStatsReport = () => {
         <React.Suspense>
             <FacetedBreakdown
                 filterSpec={filterSpec}
-                // features={features}
-                // bucket={selectedBucket}
-                // bucketSize={aggregateBy}
-                // excludeYourself={excludeYourself}
-                // excludeSysadmins={excludeSysadmins}
-                // contextBeginsWith={contextBeginsWith}
+                setFilterSpec={setFilterSpec}
                 refetchTrigger={refetchTrigger}
             />
         </React.Suspense>
-        {/* 
-        <React.Suspense>
-            <GeneralFeatureDetailArea
-                features={features}
-                onExcludeFeature={onExcludeFeature}
-                onIsolateFeature={onIsolateFeature}
-                onFilterContext={setContextBeginsWith}
-                bucket={selectedBucket}
-                aggregateBy={aggregateBy}
-                excludeYourself={excludeYourself}
-                excludeSysadmins={excludeSysadmins}
-                contextBeginsWith={contextBeginsWith}
-                refetchTrigger={refetchTrigger}
-            />
-        </React.Suspense> */}
     </div >;
 };
 

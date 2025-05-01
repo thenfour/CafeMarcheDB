@@ -28,7 +28,7 @@ export interface CMAdhocChipProps {
 };
 
 export const CMAdhocChip = (props: CMAdhocChipProps) => {
-    return <div className={`adHocChip ${props.className}`} onClick={props.onClick} style={props.style}>
+    return <div className={`adHocChip ${props.className} ${props.onClick && 'interactable'}`} onClick={props.onClick} style={props.style}>
         {props.startIcon && <div className="adHocChipStartIcon">{props.startIcon}</div>}
         <div className="adHocChipContent">{props.children}</div>
     </div>;
@@ -267,7 +267,9 @@ export const BrowserChip = ({ value }: { value: string | null | undefined }) => 
     const relUri = BrowserIconMap[value as Browsers];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <img src={relUri} width={24} height={24} />
+        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+            {value}
+        </CMAdhocChip>
     </MuiTooltip>;
 }
 
@@ -276,7 +278,9 @@ export const OperatingSystemChip = ({ value }: { value: string | null | undefine
     const relUri = OSIconMap[value as OperatingSystem];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <img src={relUri} width={24} height={24} />
+        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+            {value}
+        </CMAdhocChip>
     </MuiTooltip>;
 }
 
@@ -285,7 +289,9 @@ export const PointerTypeChip = ({ value }: { value: string | null | undefined })
     const relUri = PointerTypeIconMap[value as PointerTypes];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <img src={relUri} width={24} height={24} />
+        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+            {value}
+        </CMAdhocChip>
     </MuiTooltip>;
 }
 
@@ -294,7 +300,9 @@ export const DeviceClassChip = ({ value }: { value: string | null | undefined })
     const relUri = DeviceClassIconMap[value as DeviceClasses];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <img src={relUri} width={24} height={24} />
+        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+            {value}
+        </CMAdhocChip>
     </MuiTooltip>;
 }
 
