@@ -1,4 +1,10 @@
+import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
+import { gClientFacetHandlers } from "@/src/core/components/featureReports/ClientFacetHandlers";
+import { FacetedBreakdown } from "@/src/core/components/featureReports/FacetedBreakdown";
 import { getColorForFeature } from "@/src/core/components/featureReports/FeatureReportBasics";
+import { FeatureReportTopLevelDateSelector } from "@/src/core/components/featureReports/TopLevelDateSelection";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { FeatureReportFilterSpec } from "@/src/core/components/featureReports/server/facetProcessor";
 import { BlitzPage } from "@blitzjs/next";
 import { ArrowUpward, Clear } from "@mui/icons-material";
 import { Button, FormControlLabel } from "@mui/material";
@@ -13,14 +19,7 @@ import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
 import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
-import { FacetedBreakdown } from "@/src/core/components/featureReports/FacetedBreakdown";
-import { FeatureReportTopLevelDateSelector } from "@/src/core/components/featureReports/TopLevelDateSelection";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { gClientFacetHandlers } from "@/src/core/components/featureReports/ClientFacetHandlers";
-import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
-import { FeatureReportFilterSpec } from "@/src/core/components/featureReports/server/facetProcessor";
-import { gGeneralPaletteList } from "@/shared/color";
 
 const GeneralFeatureStatsReport = () => {
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
