@@ -1,5 +1,5 @@
 -- DropIndex
-DROP INDEX `Action_createdAt_userId_context_idx` ON `action`;
+DROP INDEX `Action_createdAt_userId_context_idx` ON `Action`;
 
 -- AlterTable
 ALTER TABLE `Action` ADD COLUMN `browserName` VARCHAR(30) NULL,
