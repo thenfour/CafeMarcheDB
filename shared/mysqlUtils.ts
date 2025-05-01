@@ -1,4 +1,15 @@
-import { ActivityReportTimeBucketSize } from "@/src/core/components/featureReports/activityReportTypes";
+// import { ActivityReportTimeBucketSize } from "@/src/core/components/featureReports/activityReportTypes";
+
+
+export enum ActivityReportTimeBucketSize {
+    hour = "hour",
+    day = "day",
+    week = "week",
+    month = "month",
+    year = "year",
+    all = "all",
+};
+
 
 export function SqlCombineAndExpression(expressions: string[]): string {
     if (expressions.length === 0) return "(true)";

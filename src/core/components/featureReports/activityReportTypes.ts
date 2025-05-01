@@ -1,19 +1,8 @@
-import { MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol, parseBucketToDateRange } from "@/shared/mysqlUtils";
-import { UserWithRolesPayload } from "@/types";
+import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
 import { Prisma } from "db";
 import { z } from "zod";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
-import { gFeatureReportFacetProcessors } from "./server/facetProcessor";
-
-
-export enum ActivityReportTimeBucketSize {
-    hour = "hour",
-    day = "day",
-    week = "week",
-    month = "month",
-    year = "year",
-    all = "all",
-};
+//import { gFeatureReportFacetProcessors } from "./server/facetProcessor";
 
 export const GeneralActivityReportDetailArgs = Prisma.validator<Prisma.ActionDefaultArgs>()({
     include: {
@@ -187,34 +176,6 @@ export const ZFeatureReportFilterSpec = z.object({
     // screenWidths: z.number().optional(),
     // screenHeights: z.number().optional(),
 });
-
-export type FeatureReportFilterSpec = z.infer<typeof ZFeatureReportFilterSpec>;
-
-export function buildFeatureReportFiltersSQL(filterSpec: FeatureReportFilterSpec, currentUser: UserWithRolesPayload): string {
-    if (!filterSpec.selectedBucket) {
-        throw new Error("No bucket selected");
-    }
-
-    const dateRange = parseBucketToDateRange(filterSpec.selectedBucket, filterSpec.bucketSize);
-    const conditions: string[] = [];
-
-    conditions.push(`${MySqlSymbol("createdAt")} >= ${MySqlDateTimeLiteral(dateRange.start)}`);
-    conditions.push(`${MySqlSymbol("createdAt")} <= ${MySqlDateTimeLiteral(dateRange.end)}`);
-
-    if (filterSpec.excludeYourself) {
-        conditions.push(`${MySqlSymbol("userId")} != ${currentUser.id}`);
-    }
-    if (filterSpec.excludeSysadmins) {
-        // conditions.push(`(userId NOT IN (SELECT id FROM User WHERE isSysAdmin = 1))`);
-        conditions.push(`${MySqlSymbol("userId")} NOT IN (SELECT ${MySqlSymbol("id")} FROM \`User\` WHERE ${MySqlSymbol("isSysAdmin")} = 1)`);
-    }
-
-    for (const [key, processor] of Object.entries(gFeatureReportFacetProcessors)) {
-        processor.getFilterSqlConditions(filterSpec, conditions);
-    }
-
-    return conditions.join(" AND ");
-}
 
 
 

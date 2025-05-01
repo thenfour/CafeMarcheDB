@@ -1,9 +1,40 @@
-import { hash256 } from "@blitzjs/auth";
-import { FacetedBreakdownResult, FeatureReportFilterSpec } from "../activityReportTypes";
-import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "../activityTracking";
+import { z } from "zod";
+import { MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol, parseBucketToDateRange } from "@/shared/mysqlUtils";
 import { xCustomLink, xEvent, xMenuLink, xSong, xWikiPage } from "@/src/core/db3/db3";
 import { UserWithRolesPayload } from "@/types";
-import { MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol } from "@/shared/mysqlUtils";
+import { hash256 } from "@blitzjs/auth";
+import { FacetedBreakdownResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
+import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "../activityTracking";
+
+
+export type FeatureReportFilterSpec = z.infer<typeof ZFeatureReportFilterSpec>;
+
+export function buildFeatureReportFiltersSQL(filterSpec: FeatureReportFilterSpec, currentUser: UserWithRolesPayload): string {
+    if (!filterSpec.selectedBucket) {
+        throw new Error("No bucket selected");
+    }
+
+    const dateRange = parseBucketToDateRange(filterSpec.selectedBucket, filterSpec.bucketSize);
+    const conditions: string[] = [];
+
+    conditions.push(`${MySqlSymbol("createdAt")} >= ${MySqlDateTimeLiteral(dateRange.start)}`);
+    conditions.push(`${MySqlSymbol("createdAt")} <= ${MySqlDateTimeLiteral(dateRange.end)}`);
+
+    if (filterSpec.excludeYourself) {
+        conditions.push(`${MySqlSymbol("userId")} != ${currentUser.id}`);
+    }
+    if (filterSpec.excludeSysadmins) {
+        // conditions.push(`(userId NOT IN (SELECT id FROM User WHERE isSysAdmin = 1))`);
+        conditions.push(`${MySqlSymbol("userId")} NOT IN (SELECT ${MySqlSymbol("id")} FROM \`User\` WHERE ${MySqlSymbol("isSysAdmin")} = 1)`);
+    }
+
+    for (const [key, processor] of Object.entries(gFeatureReportFacetProcessors)) {
+        processor.getFilterSqlConditions(filterSpec, conditions);
+    }
+
+    return conditions.join(" AND ");
+}
+
 
 export interface FacetProcessor<T> {
     getGroupedQuery: (filterSql: string, currentUser: UserWithRolesPayload) => string;

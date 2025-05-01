@@ -10,7 +10,7 @@ import { getHashedColor, IsNullOrWhitespace, StringToEnumValue } from "shared/ut
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { getURIForSong, getURIForUser } from "../db3/clientAPILL";
+import { getURIForUser } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import getUserCredits from "../db3/queries/getUserCredits";
 import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
@@ -20,8 +20,8 @@ import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, Instr
 import { CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
-import { CMTab, CMTabPanel } from "./TabPanel";
 import { SongsProvider, useSongsContext } from "./SongsContext";
+import { CMTab, CMTabPanel } from "./TabPanel";
 import { UserChip } from "./userChip";
 
 

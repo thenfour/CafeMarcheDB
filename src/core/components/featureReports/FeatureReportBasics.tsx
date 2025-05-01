@@ -6,12 +6,12 @@ import * as React from 'react';
 import Identicon from 'react-identicons';
 import { Pie, PieChart, Tooltip } from 'recharts';
 import { gIconMap } from "../../db3/components/IconMap";
-import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
-import { ActivityFeature, BrowserIconMap, Browsers, DeviceClasses, DeviceClassIconMap, OperatingSystem, OSIconMap, PointerTypeIconMap, PointerTypes } from "./activityTracking";
 import { CMChip } from "../CMChip";
 import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
-import { CMSmallButton } from "../CMCoreComponents2";
 import { AgeRelativeToNow } from "../RelativeTimeComponents";
+//
+import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
+import { ActivityFeature, BrowserIconMap, Browsers, DeviceClasses, DeviceClassIconMap, OperatingSystem, OSIconMap, PointerTypeIconMap, PointerTypes } from "./activityTracking";
 
 export const CMAdhocChipContainer = ({ children }: { children: React.ReactNode }) => {
     return <div className="adHocChipContainer">

@@ -1,13 +1,74 @@
-import { gGeneralPaletteList } from "@/shared/color";
-import { FacetedBreakdownResult, FacetResultBase, FeatureReportFilterSpec } from "./activityReportTypes";
-import { AnonymizedUserChip, BrowserChip, CMAdhocChip, CMAdhocChipContainer, ContextLabel, DeviceClassChip, FeatureLabel, getColorForFeature, OperatingSystemChip, PointerTypeChip } from "./FeatureReportBasics";
-import { getHashedColor } from "@/shared/utils";
-import { EventChip, SongChip, WikiPageChip } from "../CMCoreComponents";
-import { gIconMap } from "../../db3/components/IconMap";
-import ScreenSizeIndicator from "./FacetedBreakdown";
-import { CMSmallButton } from "../CMCoreComponents2";
 import { clearArray, isOneOf } from "@/shared/arrayUtils";
+import { gGeneralPaletteList } from "@/shared/color";
+import { getHashedColor } from "@/shared/utils";
+import { gIconMap } from "../../db3/components/IconMap";
+import { EventChip, SongChip, WikiPageChip } from "../CMCoreComponents";
+import { CMSmallButton } from "../CMCoreComponents2";
+//
+import { FacetedBreakdownResult, FacetResultBase } from "./activityReportTypes";
 import { ActivityFeature, OperatingSystem } from "./activityTracking";
+import { AnonymizedUserChip, BrowserChip, CMAdhocChip, CMAdhocChipContainer, ContextLabel, DeviceClassChip, FeatureLabel, getColorForFeature, OperatingSystemChip, PointerTypeChip } from "./FeatureReportBasics";
+import { FeatureReportFilterSpec } from "./server/facetProcessor";
+
+
+interface ScreenSizeIndicatorProps {
+    screenWidth: number;
+    screenHeight: number;
+    maxScreenWidth: number;
+    maxScreenHeight: number;
+    renderWidth: number;
+    renderHeight: number;
+}
+
+/**
+ * Renders a simple visual representation of a screen size as a box,
+ * scaled to fit inside the given render dimensions.
+ */
+export default function ScreenSizeIndicator({
+    screenWidth,
+    screenHeight,
+    maxScreenWidth,
+    maxScreenHeight,
+    renderWidth,
+    renderHeight,
+}: ScreenSizeIndicatorProps) {
+    // Normalize screen dimensions to max bounds
+    //const widthRatio = screenWidth / maxScreenWidth;
+    //const heightRatio = screenHeight / maxScreenHeight;
+
+    // Determine final rendered size, keeping aspect ratio correct
+    const scaleFactor = Math.min(renderWidth / maxScreenWidth, renderHeight / maxScreenHeight);
+    const displayWidth = screenWidth * scaleFactor;
+    const displayHeight = screenHeight * scaleFactor;
+
+    return (
+        <div
+            className="relative flex items-center justify-center"
+            style={{
+                width: renderWidth,
+                height: renderHeight,
+                backgroundColor: "#f3f4f6", // Tailwind gray-100
+                border: "1px solid #d1d5db", // Tailwind gray-300
+                borderRadius: 4,
+                overflow: "hidden",
+            }}
+        >
+            <div
+                style={{
+                    width: displayWidth,
+                    height: displayHeight,
+                    backgroundColor: "#3b82f6", // Tailwind blue-500
+                    border: "2px solid #2563eb", // Tailwind blue-600
+                    borderRadius: 2,
+                }}
+                title={`${screenWidth} × ${screenHeight}`}
+            />
+        </div>
+    );
+}
+
+
+
 
 export interface FacetHandlerRenderItemProps<Tpayload extends FacetResultBase, TKey> {
     item: Tpayload;

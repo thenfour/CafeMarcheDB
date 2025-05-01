@@ -2,11 +2,11 @@ import { hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
-import { parseBucketToDateRange } from "shared/mysqlUtils";
+import { ActivityReportTimeBucketSize, parseBucketToDateRange } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { hashString } from "shared/utils";
 import { z } from "zod";
-import { ActivityReportTimeBucketSize, GeneralActivityReportDetailArgs, GeneralActivityReportDetailPayload } from "../activityReportTypes";
+import { GeneralActivityReportDetailArgs, GeneralActivityReportDetailPayload } from "../activityReportTypes";
 import { ActivityFeature } from "../activityTracking";
 
 const ZTGeneralFeatureDetailArgs = z.object({

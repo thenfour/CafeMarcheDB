@@ -1,11 +1,10 @@
-import { ActivityReportTimeBucketSize, FeatureReportFilterSpec } from "@/src/core/components/featureReports/activityReportTypes";
 import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
 import { Bar, CartesianGrid, ComposedChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
 //import getGeneralFeatureDetail from "src/core/db3/queries/getGeneralFeatureDetail";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import getGeneralFeatureReport from "@/src/core/components/featureReports/queries/getGeneralFeatureReport";
 import { CMSmallButton } from "../CMCoreComponents2";
+import { FeatureReportFilterSpec } from "./server/facetProcessor";
 
 // date selection, bucket size
 // and other filters

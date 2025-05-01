@@ -1,4 +1,4 @@
-import { parseBucketToDateRange } from '@/shared/mysqlUtils';
+import { ActivityReportTimeBucketSize, parseBucketToDateRange } from '@/shared/mysqlUtils';
 import { formatMillisecondsToDHMS } from '@/shared/time';
 import { useQuery } from '@blitzjs/rpc';
 import * as React from 'react';
@@ -7,7 +7,7 @@ import { CMChip } from '../CMChip';
 import { EventChip, SongChip, WikiPageChip } from '../CMCoreComponents';
 import { useDashboardContext } from "../DashboardContext";
 import { CMTab, CMTabPanel, CMTabPanelChild } from '../TabPanel';
-import { ActivityDetailTabId, ActivityReportTimeBucketSize, GeneralActivityReportDetailPayload } from "./activityReportTypes";
+import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
 import { ActivityFeature } from "./activityTracking";
 import { AnonymizedUserChip, ContextLabel, ContextObjectTabData, DistinctContextObjectTabContent, FeatureLabel, GeneralFeatureDetailTable, getContextObjectTabData } from './FeatureReportBasics';
 import getGeneralFeatureDetail from './queries/getGeneralFeatureDetail';

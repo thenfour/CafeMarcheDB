@@ -4,13 +4,15 @@ import { Tooltip as MuiTooltip } from "@mui/material";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
 import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
+import { CMSmallButton } from "../CMCoreComponents2";
 import { AgeRelativeToNow } from "../RelativeTimeComponents";
-import { FeatureReportFilterSpec, TGetFeatureReportDetailResult } from "./activityReportTypes";
+//
+import { TGetFeatureReportDetailResult } from "./activityReportTypes";
 import { ActivityFeature } from "./activityTracking";
 import { gClientFacetHandlers } from "./ClientFacetHandlers";
 import { AnonymizedUserChip, BrowserChip, ContextLabel, DeviceClassChip, FeatureLabel, OperatingSystemChip, PointerTypeChip } from "./FeatureReportBasics";
 import getDetail from "./queries/getDetail";
-import { CMSmallButton } from "../CMCoreComponents2";
+import { FeatureReportFilterSpec } from "./server/facetProcessor";
 
 
 interface FacetItemDetailTableRowProps {

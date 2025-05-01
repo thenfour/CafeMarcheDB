@@ -1,5 +1,4 @@
 import { getColorForFeature } from "@/src/core/components/featureReports/FeatureReportBasics";
-import { ActivityReportTimeBucketSize, FeatureReportFilterSpec } from "@/src/core/components/featureReports/activityReportTypes";
 import { BlitzPage } from "@blitzjs/next";
 import { ArrowUpward, Clear } from "@mui/icons-material";
 import { Button, FormControlLabel } from "@mui/material";
@@ -19,6 +18,8 @@ import { FeatureReportTopLevelDateSelector } from "@/src/core/components/feature
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { gClientFacetHandlers } from "@/src/core/components/featureReports/ClientFacetHandlers";
+import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
+import { FeatureReportFilterSpec } from "@/src/core/components/featureReports/server/facetProcessor";
 
 const GeneralFeatureStatsReport = () => {
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
