@@ -45,6 +45,18 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
 
 
 const QueriedUserChip: React.FC<QueriedUserChipProps> = (props) => {
+    if (props.userId === null) {
+        return <ValuedUserChip
+            value={null}
+            variation={props.variation}
+            size={props.size}
+            onClick={props.onClick}
+            className={props.className}
+            startAdornment={props.startAdornment}
+            endAdornment={props.endAdornment}
+            useHashedColor={props.useHashedColor}
+        />;
+    }
     const [user, userX] = useQuery(getUser, { userId: props.userId });
     return <ValuedUserChip
         value={user}
