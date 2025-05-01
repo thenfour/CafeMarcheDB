@@ -1,5 +1,5 @@
 import { toSorted } from "@/shared/arrayUtils";
-import { gLightSwatchColors, gSwatchColors } from "@/shared/color";
+import { ColorPaletteEntry, gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "@/shared/color";
 import { getHashedColor, IsNullOrWhitespace, smartTruncate } from "@/shared/utils";
 import { Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
@@ -56,7 +56,7 @@ export type ContextObjectTabData = {
 };
 
 
-export const getColorForFeature = (feature: ActivityFeature): string | null => {
+export const getColorForFeature = (feature: ActivityFeature): ColorPaletteEntry => {
     const featureColorMap: Record<ActivityFeature, string> = {
         [ActivityFeature.global_ical_digest]: gLightSwatchColors.light_blue,
 
@@ -140,7 +140,8 @@ export const getColorForFeature = (feature: ActivityFeature): string | null => {
         [ActivityFeature.setlist_reorder]: gSwatchColors.green,
     };
 
-    return featureColorMap[feature] || null;
+    //return featureColorMap[feature] || gGeneralPaletteList.defaultEntry.strong.foregroundColor;
+    return gGeneralPaletteList.findEntry(featureColorMap[feature]) || gGeneralPaletteList.defaultEntry;
 }
 
 export const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?: number }) => {
