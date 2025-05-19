@@ -61,6 +61,7 @@ export const GetSongFileInfo = (song: EnrichedVerboseSong, dashboardContext: Das
 export enum SongOrderByColumnOptions {
     id = "id",
     name = "name",
+    startBPM = "startBPM",
 };
 
 export type SongOrderByColumnOption = keyof typeof SongOrderByColumnOptions;

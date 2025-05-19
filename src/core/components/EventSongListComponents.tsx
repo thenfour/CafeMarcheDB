@@ -510,7 +510,7 @@ interface EventSongListValueViewerProps {
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
 };
 
-type SongListSortSpec = "sortOrderAsc" | "sortOrderDesc" | "nameAsc" | "nameDesc";
+type SongListSortSpec = "sortOrderAsc" | "sortOrderDesc" | "nameAsc" | "nameDesc" | "bpmAsc" | "bpmDesc";
 
 export const EventSongListValueViewerTable = ({ showHeader = true, disableInteraction = false, ...props }: EventSongListValueViewerProps & { showHeader?: boolean | undefined, disableInteraction?: boolean | undefined }) => {
     const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
@@ -548,6 +548,14 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         }
     };
 
+    const handleClickBpmTH = () => {
+        if (sortSpec === 'bpmAsc') {
+            setSortSpec('bpmDesc');
+        } else {
+            setSortSpec('bpmAsc');
+        }
+    };
+
     // create a id -> index map.
     // the list is already sorted by sortorder
     const indexMap = new Map<number, number>();
@@ -562,6 +570,18 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                 return a.song.name < b.song.name ? -1 : 1;
             case 'nameDesc':
                 return a.song.name > b.song.name ? -1 : 1;
+            case 'bpmAsc': {
+                const aBpm = a.song.startBPM || 0;
+                const bBpm = b.song.startBPM || 0;
+                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
+                return aBpm - bBpm;
+            }
+            case 'bpmDesc': {
+                const aBpm = a.song.startBPM || 0;
+                const bBpm = b.song.startBPM || 0;
+                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
+                return bBpm - aBpm;
+            }
             default:
             case 'sortOrderAsc':
                 return a.sortOrder < b.sortOrder ? -1 : 1;
@@ -596,7 +616,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                 <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
                 <div className="th length">Len</div>
                 <div className="th runningLength">∑T</div>
-                <div className="th tempo">Bpm</div>
+                <div className="th tempo interactable" onClick={handleClickBpmTH}>Bpm {sortSpec === 'bpmAsc' && gCharMap.DownArrow()} {sortSpec === 'bpmDesc' && gCharMap.UpArrow()}</div>
                 <div className="th comment">
                     Comment
                     {props.event &&
@@ -668,6 +688,14 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         }
     };
 
+    const handleClickBpmTH = () => {
+        if (sortSpec === 'bpmAsc') {
+            setSortSpec('bpmDesc');
+        } else {
+            setSortSpec('bpmAsc');
+        }
+    };
+
     // create a id -> index map.
     // the list is already sorted by sortorder
     const indexMap = new Map<number, number>();
@@ -682,6 +710,18 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                 return a.song.name < b.song.name ? -1 : 1;
             case 'nameDesc':
                 return a.song.name > b.song.name ? -1 : 1;
+            case 'bpmAsc': {
+                const aBpm = a.song.startBPM || 0;
+                const bBpm = b.song.startBPM || 0;
+                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
+                return aBpm - bBpm;
+            }
+            case 'bpmDesc': {
+                const aBpm = a.song.startBPM || 0;
+                const bBpm = b.song.startBPM || 0;
+                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
+                return bBpm - aBpm;
+            }
             default:
             case 'sortOrderAsc':
                 return a.sortOrder < b.sortOrder ? -1 : 1;

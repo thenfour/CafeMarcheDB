@@ -23,6 +23,7 @@ import { useDashboardContext } from "./DashboardContext";
 import { SongsProvider, useSongsContext } from "./SongsContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
 import { UserChip } from "./userChip";
+import { Markdown } from "./markdown/Markdown";
 
 
 
@@ -231,34 +232,6 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const allSongs = useSongsContext().songs;
     const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id });
 
-    // return <div>
-    //     <table className="songCreditTable">
-    //         <thead>
-    //             <tr>
-    //                 <th>#</th>
-    //                 <th>Song</th>
-    //                 <th>Song year</th>
-    //                 <th>Credit</th>
-    //                 <th>Year</th>
-    //                 <th>Comment</th>
-    //             </tr>
-    //         </thead>
-    //         <tbody>
-    //             {qr.songCredits.map((sc, index) => {
-    //                 const song = allSongs.find(s => s.id === sc.songId)!;
-    //                 return <tr key={sc.id}>
-    //                     <td>{index + 1}</td>
-    //                     <td><a href={getURIForSong(song || { id: sc.songId, name: `#${sc.songId}` })} target="_blank" rel="noreferrer">{song?.name || sc.songId}</a></td>
-    //                     <td>{song.introducedYear}</td>
-    //                     <td>{dashboardContext.songCreditType.getById(sc.typeId)?.text}</td>
-    //                     <td>{sc.year}</td>
-    //                     <td>{sc.comment}</td>
-    //                 </tr>
-    //             })}
-    //         </tbody>
-    //     </table>
-    // </div>;
-
     return <CMTable
         rows={qr.songCredits}
         columns={[
@@ -294,6 +267,9 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
             },
             {
                 memberName: "comment",
+                render: (row) => {
+                    return <Markdown markdown={row.row.comment} />;
+                }
             }
         ]}
     />;
