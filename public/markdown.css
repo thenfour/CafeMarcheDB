@@ -331,26 +331,85 @@ test cases:
     font-size: 30px;
 }
 
+.markdown {
+    --hl-yellow: #fdee54;
+    /* fluorescent yellow  */
+    --hl-lime: #c4ff5a;
+    /* electric lime      */
+    --hl-orange: #ffd875;
+    /* neon orange        */
+    --hl-pink: #ff7efc;
+    /* hot pink / magenta */
+    --hl-blue: #88b7ff;
+    /* sky-blue           */
+    --hl-purple: #d6a9ff;
+    /* light lavender     */
+    --hl-teal: #6ff7e8;
+    /* mint aqua          */
+    --hl-coral: #ffb6a3;
+    /* soft coral         */
+}
+
 .markdown .markdown-class-highlight {
-    background-color: #fe0a;
+    background-color: var(--hl-yellow);
     padding: 3px 5px;
+    border-radius: 3px;
 }
 
 .markdown .markdown-class-highlightred {
-    background-color: #f008;
-    padding: 3px 5px;
+    background-color: var(--hl-pink);
 }
 
 
 .markdown .markdown-class-highlightgreen {
-    background-color: #0f0a;
-    padding: 3px 5px;
+    background-color: var(--hl-lime);
 }
 
 
 .markdown .markdown-class-highlightblue {
-    background-color: #00f6;
-    padding: 3px 5px;
+    background-color: var(--hl-blue);
+}
+
+.markdown .markdown-class-highlightpurple {
+    background-color: var(--hl-purple);
+}
+
+.markdown .markdown-class-highlightorange {
+    background-color: var(--hl-orange);
+}
+
+.markdown .markdown-class-highlightteal {
+    background-color: var(--hl-teal);
+}
+
+.markdown .markdown-class-highlightcoral {
+    background-color: var(--hl-coral);
+}
+
+.markdown .markdown-class-hashhighlight {
+    /* --dynamic-highlight: #fdee54; */
+    /* background: var(--dynamic-highlight, repeating-linear-gradient(45deg, #ccc 0 6px, #eee 6px 12px)); */
+    /* background: linear-gradient(90deg, red, orange, yellow, lime, cyan, blue, violet); */
+
+
+    /* size of each coloured band */
+    --band: 16px;
+
+    background:
+        repeating-linear-gradient(45deg,
+            var(--hl-yellow) 0 calc(var(--band) * 1),
+            var(--hl-lime) calc(var(--band) * 1) calc(var(--band) * 2),
+            var(--hl-orange) calc(var(--band) * 2) calc(var(--band) * 3),
+            var(--hl-pink) calc(var(--band) * 3) calc(var(--band) * 4),
+            var(--hl-blue) calc(var(--band) * 4) calc(var(--band) * 5),
+            var(--hl-purple) calc(var(--band) * 5) calc(var(--band) * 6),
+            var(--hl-teal) calc(var(--band) * 6) calc(var(--band) * 7),
+            var(--hl-coral) calc(var(--band) * 7) calc(var(--band) * 8));
+
+    /* optional: gentle slide to suggest “dynamic” */
+    /* background-size: calc(var(--band) * 5) calc(var(--band) * 5);
+    animation: stripes-move 4s linear infinite; */
+
 }
 
 .markdown h1,

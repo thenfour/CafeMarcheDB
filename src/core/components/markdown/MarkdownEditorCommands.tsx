@@ -64,19 +64,51 @@ const gHighlightCommands: SurroundTextCommandSpec[] = [
         prefix: "{{highlightred:",
         suffix: "}}",
         textIfNoSelection: "highlighted text",
-        menuItemLabel: <span className='markdown-class-highlightred'>Highlight red</span>,
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightred'>Highlight red</span>,
     },
     {
         prefix: "{{highlightgreen:",
         suffix: "}}",
         textIfNoSelection: "highlighted text",
-        menuItemLabel: <span className='markdown-class-highlightgreen'>Highlight green</span>,
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightgreen'>Highlight green</span>,
     },
     {
         prefix: "{{highlightblue:",
         suffix: "}}",
         textIfNoSelection: "highlighted text",
-        menuItemLabel: <span className='markdown-class-highlightblue'>Highlight blue</span>,
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightblue'>Highlight blue</span>,
+    },
+    {
+        prefix: "{{highlightorange:",
+        suffix: "}}",
+        textIfNoSelection: "highlighted text",
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightorange'>Highlight orange</span>,
+    },
+    {
+        prefix: "{{highlightpurple:",
+        suffix: "}}",
+        textIfNoSelection: "highlighted text",
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightpurple'>Highlight purple</span>,
+    },
+    {
+        prefix: "{{highlightteal:",
+        suffix: "}}",
+        textIfNoSelection: "highlighted text",
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightteal'>Highlight teal</span>,
+    },
+    {
+        prefix: "{{highlightcoral:",
+        suffix: "}}",
+        textIfNoSelection: "highlighted text",
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightcoral'>Highlight coral</span>,
+    },
+    {
+        prefix: "{{hashhighlight:",
+        suffix: "}}",
+        textIfNoSelection: "highlighted text",
+        menuItemLabel: <>
+            <span className='markdown-class-highlight markdown-class-hashhighlight'>Highlight color depends on context</span>
+        </>,
     },
 ];
 
@@ -89,6 +121,30 @@ const HighlightCommand: MarkdownEditorCommand = {
         tooltip="Highlight"
     />,
 };
+
+
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// // todo: on invoke, detect the existing state, select the text, and pre-select the menu item
+// const gHashHighlightCommands: SurroundTextCommandSpec[] = [
+//     {
+//         prefix: "{{hashhighlight:",
+//         suffix: "}}",
+//         textIfNoSelection: "hash-highlighted text",
+//         menuItemLabel: <span className='markdown-class-hashhighlight'>Hash highlight</span>,
+//     },
+// ];
+
+// const HashHighlightCommand: MarkdownEditorCommand = {
+//     id: "hashhighlight",
+//     toolbarItem: (props) => <SurroundTextToolItemWithDropdown
+//         {...props}
+//         commands={gHashHighlightCommands}
+//         icon={<span className='svg-like markdown-class-hashhighlight'>#</span>}
+//         tooltip="Hash highlight"
+//     />, 
+// };
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
