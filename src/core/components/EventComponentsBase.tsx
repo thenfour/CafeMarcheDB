@@ -3,7 +3,7 @@ import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from 'react';
 import { SortDirection } from 'shared/rootroot';
-import { DateTimeRange, Timing } from 'shared/time';
+import { CalcRelativeTimingFromNow, DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
 import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
 import * as db3 from "src/core/db3/db3";
@@ -16,6 +16,37 @@ import { CMStatusIndicator } from './CMCoreComponents';
 import { CMStandardDBChip } from './CMChip';
 import { StandardVariationSpec } from '@/shared/color';
 
+function formatShortDate(date: Date, locale: string = navigator.language): string {
+    const formatter = new Intl.DateTimeFormat(locale, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        // We deliberately omit the year option.
+    });
+    // Use formatToParts to filter out punctuation
+    const parts = formatter.formatToParts(date);
+    return parts
+        .filter(part => part.type !== "literal")
+        .map(part => part.value)
+        .join(" ");
+}
+
+export interface EventShortDateProps {
+    event: Prisma.EventGetPayload<{
+        select: {
+            startsAt: true;
+        }
+    }>;
+};
+
+export const EventShortDate = ({ event }: EventShortDateProps) => {
+    if (!event.startsAt) return null;
+    const relativeTiming = CalcRelativeTimingFromNow(event.startsAt);
+    return <>
+        {formatShortDate(event.startsAt)}
+        <span className={`EventDateField container ${relativeTiming.bucket}`}><span className="RelativeIndicator">{relativeTiming.label}</span></span>
+    </>
+};
 
 export interface EventStatusChipProps {
     statusId: number | null | undefined;

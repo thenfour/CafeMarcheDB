@@ -18,25 +18,8 @@ import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
-import { EventStatusChip } from "./EventComponentsBase";
+import { EventShortDate, EventStatusChip } from "./EventComponentsBase";
 
-// events happening TODAY can be a search result card, maximum 1.
-// but all other events should be in a list of smaller cards.
-
-function formatShortDate(date: Date, locale: string = navigator.language): string {
-    const formatter = new Intl.DateTimeFormat(locale, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        // We deliberately omit the year option.
-    });
-    // Use formatToParts to filter out punctuation
-    const parts = formatter.formatToParts(date);
-    return parts
-        .filter(part => part.type !== "literal")
-        .map(part => part.value)
-        .join(" ");
-}
 
 export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {
     const dashboardContext = useDashboardContext();
@@ -66,11 +49,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
             </div>
             <div className="SubtleEventCardDate">
                 <EventStatusChip statusId={event.statusId} displayStyle="iconOnly" size="small" />
-                {event.startsAt && <>
-                    {formatShortDate(event.startsAt)}
-                    <span className={`EventDateField container ${props.relativeTiming.bucket}`}><span className="RelativeIndicator">{props.relativeTiming.label}</span></span>
-                </>
-                }
+                <EventShortDate event={event} />
             </div>
             <div className='SearchItemBigCardLinkContainer'>
 
