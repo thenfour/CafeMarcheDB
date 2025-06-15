@@ -316,6 +316,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
     />
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        // TODO: Pass uploadFileContext based on table type (e.g., song, event, etc.)
         return this.defaultRenderer({
             isReadOnly: false,
             validationResult: params.validationResult,
@@ -326,6 +327,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
                 onChange={async (val) => {
                     params.api.setFieldValues({ [this.columnName]: val });
                 }}
+                // uploadFileContext={...} // See TODO above
             />
         });
     }

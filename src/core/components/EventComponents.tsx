@@ -142,11 +142,16 @@ const EventCustomFieldValueValueView_RichText = (props: EventCustomFieldValueCon
 }
 
 const EventCustomFieldValueValueEdit_RichText = (props: EventCustomFieldValueControlPropsWithDeserializedValue<string | null>) => {
-    return <div><Markdown3Editor
-        value={props.deserializedValue || ""}
-        onChange={(v) => props.onChange(v)}
-        nominalHeight={250}
-    /></div>
+    return <div>
+        <Markdown3Editor
+            value={props.deserializedValue || ""}
+            onChange={(v) => props.onChange(v)}
+            nominalHeight={250}
+            uploadFileContext={{
+                taggedEventId: props.value.eventId,
+            }}
+        />
+    </div>
 }
 
 const EventCustomFieldValueValueView_SimpleText = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<string | null>) => {

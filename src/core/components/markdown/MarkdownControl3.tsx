@@ -27,6 +27,18 @@ interface Markdown3EditorPropsBase {
     onChange: (v: string) => void;
     wikiPageApi?: WikiPageApi | null;
     startWithPreviewOpen?: boolean;
+    /**
+     * Optional file upload context for tagging uploaded files (e.g. song, event, instrument, user, fileTagId, etc)
+     */
+    uploadFileContext?: {
+        taggedSongId?: number;
+        taggedEventId?: number;
+        taggedInstrumentId?: number;
+        taggedUserId?: number;
+        fileTagId?: number;
+        visiblePermissionId?: number;
+        visiblePermission?: string;
+    };
 };
 
 //////////////////////////////////////////////////
@@ -97,7 +109,8 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
             });
             const resp = await CMDBUploadFile({
                 fields: {
-                    visiblePermission: Permission.visibility_public,
+                    ...props.uploadFileContext,
+                    visiblePermission: props.uploadFileContext?.visiblePermission ?? Permission.visibility_public,
                 },
                 files,
                 onProgress: (prog01, uploaded, total) => {

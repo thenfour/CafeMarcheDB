@@ -316,6 +316,7 @@ const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) 
           value={value}
           handleSave={() => { void handleSave() }}
           nominalHeight={200}
+          uploadFileContext={{ taggedEventId: props.userResponse.event.id }}
         />
 
         <DialogActionsCM>

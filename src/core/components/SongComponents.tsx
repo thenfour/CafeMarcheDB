@@ -153,8 +153,8 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
             handleCancel={props.onClose}
             showActionButtons={true}
             hasEdits={hasEdits}
+            uploadFileContext={{ taggedSongId: props.song.id }}
         />
-
     </>;
 };
 
