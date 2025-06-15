@@ -480,6 +480,11 @@ interface CMTableColumnSpec<T extends Object> {
     header?: React.ReactNode;
     render?: (args: { row: T, slot: CMTableSlot, defaultRenderer: (val: any) => React.ReactNode, rowIndex: number, columnIndex: number }) => React.ReactNode;
     getRowStyle?: (args: { row: T }) => React.CSSProperties | undefined;
+    /**
+     * Optional custom comparison function for this column. Receives (a, b, direction).
+     * Should return -1, 0, or 1 as in Array.sort.
+     */
+    compareFn?: (a: T, b: T, direction: 'asc' | 'desc') => number;
 }
 
 interface CMTableProps<T extends Object> {
@@ -536,7 +541,10 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
 
     const sortedRows = React.useMemo(() => {
         if (!sortColumn) return rows;
-
+        const colSpec = columns.find(c => c.memberName === sortColumn);
+        if (colSpec && colSpec.compareFn) {
+            return [...rows].sort((a, b) => colSpec.compareFn!(a, b, sortDirection));
+        }
         return [...rows].sort((a, b) => {
             const aValue = a[sortColumn];
             const bValue = b[sortColumn];
@@ -549,7 +557,7 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
             if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [rows, sortColumn, sortDirection]);
+    }, [rows, sortColumn, sortDirection, columns]);
 
     const handleHeaderClick = (column: CMTableColumnSpec<T>) => {
         if (!CoalesceBool(column.allowSort, true)) return;

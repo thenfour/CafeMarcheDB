@@ -185,90 +185,80 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
     return <div className="UserAttendanceTabContent">
         <AdminInspectObject src={qr} label="results" />
 
-        <CMTable rows={sortedQrWithIndex} columns={[
-            {
-                allowSort: true,
-                memberName: "index",
-                render: (row) => {
-                    return <span className="pre">#{row.row.index}</span>;
+        <CMTable
+            className="userAttendanceTable"
+            getRowStyle={(row) => {
+                const year = row.row.startsAt ? new Date(row.row.startsAt).getFullYear() : 0;
+                const month = row.row.startsAt ? new Date(row.row.startsAt).getMonth() : 0;
+                const yearColorA = getHashedColor(`${year}`, { alpha: "5%" });
+                const yearColorB = getHashedColor(`${year}`, { alpha: "15%" });
+                return {
+                    backgroundColor: month % 2 === 0 ? yearColorA : yearColorB,
                 }
-            },
-            {
-                allowSort: false,
-                header: "Event",
-                render: (row) => <EventTextLink event={row.row} />,
-            },
-            {
-                allowSort: true,
-                memberName: "startsAt",
-                header: "Date",
-                render: (row) => {
-                    return <EventShortDate event={row.row} />;// <span>todo</span>;
-                }
-            },
-            {
-                allowSort: true,
-                memberName: "instrumentId",
-                header: "Instrument",
-                render: (row) => {
-                    const inst = dashboardContext.instrument.getById(row.row.instrumentId);
-                    return inst ? <InstrumentChip value={inst} /> : <span>--</span>;
-                }
-            },
-            {
-                allowSort: false,
-                header: "Response(s)",
-                render: (row) => {
-                    const segs = API.events.sortEvents(row.row.segments);
-                    return <CMChipContainer>
-                        {segs.map(seg => {
-                            const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
-                            return <AttendanceChip key={seg.id} size={"small"} fadeNoResponse={true} showLabel={false} value={att} tooltipOverride={db3.EventAPI.getLabel(seg)} />
-                        })}
-                    </CMChipContainer>;
-                }
-            },
-            {
-                allowSort: true,
-                memberName: "userComment",
-                header: "Comments",
-                render: (row) => <Markdown markdown={row.row.userComment || ""} />,
-            }
-        ]} />
+            }}
+            rows={sortedQrWithIndex} columns={[
+                {
+                    allowSort: true,
+                    memberName: "index",
+                    render: (row) => {
+                        return <span className="pre">#{row.row.index}</span>;
+                    }
+                },
+                {
+                    allowSort: false,
+                    header: "Event",
+                    render: (row) => <EventTextLink event={row.row} />,
+                    compareFn: (a, b) => {
+                        const aName = a.name || "";
+                        const bName = b.name || "";
+                        return aName.localeCompare(bName);
+                    },
+                },
+                {
+                    allowSort: true,
+                    memberName: "startsAt",
+                    header: "Date",
+                    render: (row) => {
+                        return <EventShortDate event={row.row} />;
+                    }
+                },
+                {
+                    allowSort: true,
+                    memberName: "instrumentId",
+                    header: "Instrument",
+                    render: (row) => {
+                        const inst = dashboardContext.instrument.getById(row.row.instrumentId);
+                        return inst ? <InstrumentChip value={inst} /> : <span>--</span>;
+                    },
+                    compareFn: (a, b) => {
+                        const aInst = dashboardContext.instrument.getById(a.instrumentId);
+                        const bInst = dashboardContext.instrument.getById(b.instrumentId);
+                        const aName = aInst ? aInst.name : "";
+                        const bName = bInst ? bInst.name : "";
+                        return aName.localeCompare(bName);
+                    }
 
-        {/* <table className="userAttendanceTable">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Event</th>
-                    <th>Date</th>
-                    <th>Instrument</th>
-                    <th>Response(s)</th>
-                    <th>Comments</th>
-                </tr>
-            </thead>
-            <tbody>
-                {sortedQrWithIndex.map((event, index) => {
-                    const inst = dashboardContext.instrument.getById(event.instrumentId);
-                    const sortedSegs = API.events.sortEvents(event.segments);
-                    const year = event.startsAt ? new Date(event.startsAt).getFullYear() : 0;
-                    const month = event.startsAt ? new Date(event.startsAt).getMonth() : 0;
-                    const yearColorA = getHashedColor(`${year}`, { alpha: "5%" });
-                    const yearColorB = getHashedColor(`${year}`, { alpha: "15%" });
-                    return <tr key={event.id} style={{ backgroundColor: month % 2 === 0 ? yearColorA : yearColorB }}>
-                        <td>#{event.index}</td>
-                        <td style={{ overflow: "hidden" }}><EventTextLink event={event} /></td>
-                        <td>{inst && <InstrumentChip value={inst} />}</td>
-                        <td><CMChipContainer>
-                            {sortedSegs.map(seg => {
+                },
+                {
+                    allowSort: false,
+                    header: "Response(s)",
+                    render: (row) => {
+                        const segs = API.events.sortEvents(row.row.segments);
+                        return <CMChipContainer>
+                            {segs.map(seg => {
                                 const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
                                 return <AttendanceChip key={seg.id} size={"small"} fadeNoResponse={true} showLabel={false} value={att} tooltipOverride={db3.EventAPI.getLabel(seg)} />
-                            })}</CMChipContainer></td>
-                        <td>{event.userComment}</td>
-                    </tr>;
-                })}
-            </tbody>
-        </table> */}
+                            })}
+                        </CMChipContainer>;
+                    }
+                },
+                {
+                    allowSort: true,
+                    memberName: "userComment",
+                    header: "Comments",
+                    render: (row) => <Markdown markdown={row.row.userComment || ""} />,
+                }
+            ]} />
 
         {agg.totalSegmentCount > 0 &&
             <KeyValueTable data={{
