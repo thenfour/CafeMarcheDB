@@ -17,11 +17,17 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
                 // Hash the text and map to a color using getHashedColor
                 const text = propsString;
                 const color = getHashedColor(text, { saturation: "90%", luminosity: "80%", alpha: "100%" });
-                const style = `background-color: ${color};`;
-                return `<span class="markdown-class-hashhighlight" style="${style}">${text}</span>`;
+                const style = `background: ${color};`;
+                return `<span class="markdown-class-highlight markdown-class-hashhighlight" style="${style}">${text}</span>`;
+            }
+            if (componentName.startsWith("highlight")) {
+                // For highlight components, we can use a specific class
+                const span = document.createElement('span');
+                span.className = `markdown-class-highlight markdown-class-${componentName}`;
+                span.innerText = propsString;
+                return span.outerHTML;
             }
             const span = document.createElement('span');
-
             span.className = `markdown-class-${componentName}`;
             span.innerText = propsString;
             return span.outerHTML;

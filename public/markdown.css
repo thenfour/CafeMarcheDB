@@ -341,7 +341,8 @@ test cases:
     /* electric lime      */
     --hl-orange: #ffd875;
     /* neon orange        */
-    --hl-pink: #ff7efc;
+    --hl-red: #ff8080;
+    --hl-pink: #ff96fd;
     /* hot pink / magenta */
     --hl-blue: #88b7ff;
     /* sky-blue           */
@@ -360,9 +361,12 @@ test cases:
 }
 
 .markdown .markdown-class-highlightred {
-    background-color: var(--hl-pink);
+    background-color: var(--hl-red);
 }
 
+.markdown .markdown-class-highlightpink {
+    background-color: var(--hl-pink);
+}
 
 .markdown .markdown-class-highlightgreen {
     background-color: var(--hl-lime);
@@ -383,10 +387,6 @@ test cases:
 
 .markdown .markdown-class-highlightteal {
     background-color: var(--hl-teal);
-}
-
-.markdown .markdown-class-highlightcoral {
-    background-color: var(--hl-coral);
 }
 
 .markdown .markdown-class-hashhighlight {

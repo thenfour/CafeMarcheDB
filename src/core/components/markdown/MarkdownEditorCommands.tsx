@@ -97,10 +97,10 @@ const gHighlightCommands: SurroundTextCommandSpec[] = [
         menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightteal'>Highlight teal</span>,
     },
     {
-        prefix: "{{highlightcoral:",
+        prefix: "{{highlightpink:",
         suffix: "}}",
         textIfNoSelection: "highlighted text",
-        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightcoral'>Highlight coral</span>,
+        menuItemLabel: <span className='markdown-class-highlight markdown-class-highlightpink'>Highlight pink</span>,
     },
     {
         prefix: "{{hashhighlight:",
