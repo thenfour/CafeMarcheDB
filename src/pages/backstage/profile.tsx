@@ -228,6 +228,8 @@ const MainContent = () => {
                     {gIconMap.Person()} Your profile
                 </Typography>
 
+                <SettingMarkdown setting="profile_description_markdown" />
+
                 <NameValuePair isReadOnly={false} name="Your instruments" value={<OwnInstrumentsControl />} />
 
                 {client.items.length === 1 && (

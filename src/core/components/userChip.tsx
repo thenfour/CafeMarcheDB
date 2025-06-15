@@ -5,6 +5,8 @@ import getUser from "../db3/queries/getUser";
 import * as db3 from "src/core/db3/db3";
 import { ColorVariationSpec } from "shared/color";
 import { getHashedColor } from "shared/utils";
+import { simulateLinkClickTargetBlank } from "./CMCoreComponents2";
+import { getURIForUser } from "../db3/clientAPILL";
 
 
 export interface UserChipBaseProps {
@@ -71,12 +73,19 @@ const QueriedUserChip: React.FC<QueriedUserChipProps> = (props) => {
 };
 
 export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
+
+    const clickHandler = props.onClick || (() => {
+        if (!!props.userId) {
+            simulateLinkClickTargetBlank(getURIForUser({ id: props.userId }));
+        }
+    });
+
     return (props.userId !== undefined) ?
         <QueriedUserChip
             userId={props.userId}
             variation={props.variation}
             size={props.size}
-            onClick={props.onClick}
+            onClick={clickHandler}
             className={props.className}
             startAdornment={props.startAdornment}
             endAdornment={props.endAdornment}
@@ -86,7 +95,7 @@ export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
             value={props.value}
             variation={props.variation}
             size={props.size}
-            onClick={props.onClick}
+            onClick={clickHandler}
             className={props.className}
             startAdornment={props.startAdornment}
             endAdornment={props.endAdornment}

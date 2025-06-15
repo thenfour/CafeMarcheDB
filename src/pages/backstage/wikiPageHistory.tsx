@@ -122,7 +122,7 @@ const WikiRevisionHistoryPageContent = () => {
     const wikiPath = wikiParseCanonicalWikiPath(canonicalWikiPath);
     const dashboardContext = useDashboardContext();
     const [pageWithRevisions, qExtra] = useQuery(getWikiPageRevisions, { canonicalWikiPath });
-    if (!pageWithRevisions) {
+    if (!pageWithRevisions || !pageWithRevisions.currentRevision) {
         return <div>Page not found</div>;
     }
 

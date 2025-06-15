@@ -215,10 +215,63 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
 
     const pageData = props.wikiPageApi.currentPageData;
 
-    const showEditButton = authorizedForEdit && pageData?.isExisting;
-    const showCreateButton = authorizedForEdit && !(pageData?.isExisting);
+    const pageExists = !!(pageData?.isExisting && pageData.wikiPage?.currentRevision);
+    const showEditButton = authorizedForEdit && pageExists;
+    const showCreateButton = authorizedForEdit && !pageExists;
 
     const renderCreateButton = props.renderCreateButton || ((onClick) => <Button onClick={onClick}>{gIconMap.AutoAwesome()} Create this page</Button>);
+
+    const menuItems = [
+        showVisiblePermission &&
+        <MenuItem key={"vis"}>
+            <WikiPageVisibilityControl readonly={props.readonly} wikiPageApi={props.wikiPageApi} onUpdateComplete={() => {
+                props.wikiPageApi.refetch();
+                endMenuItemRef.current();
+            }} />
+        </MenuItem>,
+        pageExists &&
+        <MenuItem key={"copylink"} onClick={async () => {
+            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPageApi.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
+            endMenuItemRef.current();
+        }}>
+            <ListItemIcon>
+                {gIconMap.Share()}
+            </ListItemIcon>
+            Copy link to wiki page
+        </MenuItem>,
+        pageExists &&
+        <MenuItem key={"viewhistory"} onClick={async () => {
+            simulateLinkClick(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
+            endMenuItemRef.current();
+        }}>
+            <ListItemIcon>
+                <History />
+            </ListItemIcon>
+            View revision history
+        </MenuItem>,
+        props.wikiPageApi.lockStatus.isLockedInThisContext &&
+        <MenuItem key={"releaselock"} onClick={async () => {
+            await snackbar.invokeAsync(async () => props.wikiPageApi.releaseYourLock(), "Lock cleared");
+            endMenuItemRef.current();
+        }}>
+            <ListItemIcon>
+                {<LockOpen />}
+            </ListItemIcon>
+            Clear your lock
+        </MenuItem>
+        ,
+        dashboardContext.isAuthorized(Permission.admin_wiki_pages) && props.wikiPageApi.lockStatus.isLocked &&
+        <MenuItem key={"releaselockadmin"} onClick={async () => {
+            await snackbar.invokeAsync(async () => props.wikiPageApi.adminClearLock(), "Lock cleared");
+            endMenuItemRef.current();
+        }}>
+            <ListItemIcon>
+                {<LockOpen />}
+            </ListItemIcon>
+            Clear Lock (admin)
+        </MenuItem>
+
+    ];
 
     return <div className="header">
         {showNamespace && !IsNullOrWhitespace(props.wikiPageApi.wikiPath.namespace) &&
@@ -237,60 +290,11 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
             <VisibilityValue permissionId={pageData?.wikiPage?.visiblePermissionId} variant="minimal" />
         }
 
-        <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
-            {showVisiblePermission &&
-                <MenuItem>
-                    <WikiPageVisibilityControl readonly={props.readonly} wikiPageApi={props.wikiPageApi} onUpdateComplete={() => {
-                        props.wikiPageApi.refetch();
-                        endMenuItemRef.current();
-                    }} />
-                </MenuItem>
-            }
-
-            <MenuItem onClick={async () => {
-                await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPageApi.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
-                endMenuItemRef.current();
-            }}>
-                <ListItemIcon>
-                    {gIconMap.Share()}
-                </ListItemIcon>
-                Copy link to wiki page
-            </MenuItem>
-
-            <MenuItem onClick={async () => {
-                simulateLinkClick(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
-                endMenuItemRef.current();
-            }}>
-                <ListItemIcon>
-                    <History />
-                </ListItemIcon>
-                View revision history
-            </MenuItem>
-
-            {props.wikiPageApi.lockStatus.isLockedInThisContext &&
-                <MenuItem onClick={async () => {
-                    await snackbar.invokeAsync(async () => props.wikiPageApi.releaseYourLock(), "Lock cleared");
-                    endMenuItemRef.current();
-                }}>
-                    <ListItemIcon>
-                        {<LockOpen />}
-                    </ListItemIcon>
-                    Clear your lock
-                </MenuItem>
-            }
-
-            {dashboardContext.isAuthorized(Permission.admin_wiki_pages) && props.wikiPageApi.lockStatus.isLocked &&
-                <MenuItem onClick={async () => {
-                    await snackbar.invokeAsync(async () => props.wikiPageApi.adminClearLock(), "Lock cleared");
-                    endMenuItemRef.current();
-                }}>
-                    <ListItemIcon>
-                        {<LockOpen />}
-                    </ListItemIcon>
-                    Clear Lock (admin)
-                </MenuItem>
-            }
-        </DotMenu>
+        {menuItems.some(m => !!m) &&
+            <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
+                {menuItems}
+            </DotMenu>
+        }
     </div>
 };
 
