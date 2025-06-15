@@ -37,7 +37,7 @@ import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
+import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventStatusChip, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -1272,14 +1272,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
     return <div style={typeStyle.style} className={classes.join(" ")}>
         <div className='header  applyColor'>
             <CMChipContainer>
-                {eventData.event.status && <CMStandardDBChip
-                    variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(eventData.event.statusId!) }}
-                    border='border'
-                    shape="rectangle"
-                    model={eventData.event.status}
-                    getTooltip={_ => eventData.event.status?.description || null}
-                />}
-
+                <EventStatusChip statusId={eventData.event.statusId} highlightStatusIds={highlightStatusIds} />
             </CMChipContainer>
 
             <div className='flex-spacer'></div>

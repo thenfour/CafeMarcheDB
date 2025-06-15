@@ -88,6 +88,11 @@
     color: var(--color-foreground);
 }
 
+.SubtleEventCardDate {
+    display: flex;
+    align-items: center;
+}
+
 /* ------------------------------- */
 .RelevantEventsHeader {
     font-size: 19px;

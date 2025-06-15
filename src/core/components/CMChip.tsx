@@ -119,11 +119,13 @@ export interface CMStandardDBChipProps<T> {
     border?: CMChipBorderOption;
     onClick?: () => void;
     className?: string;
+    iconOnly?: boolean; // if true, only the icon will be rendered, no text
 };
 
 export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
     const dbText = props.model?.label || props.model?.text || props.model?.name || null;
     const tooltip: string | null | undefined = props.getTooltip ? props.getTooltip(props.model, dbText) : (props.model?.description);
+    const text = props.getText ? props.getText(props.model, dbText) : dbText || "--";
     return <CMChip
         color={props.model?.color}
         variation={props.variation}
@@ -134,7 +136,7 @@ export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStan
         shape={props.shape}
         border={props.border}
     >
-        {RenderMuiIcon(props.model?.iconName)}{props.getText ? props.getText(props.model, dbText) : dbText || "--"}
+        {RenderMuiIcon(props.model?.iconName)}{props.iconOnly ? null : <span className="text">{text}</span>}
     </CMChip>;
 };
 

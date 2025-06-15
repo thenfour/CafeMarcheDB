@@ -18,6 +18,7 @@ import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
+import { EventStatusChip } from "./EventComponentsBase";
 
 // events happening TODAY can be a search result card, maximum 1.
 // but all other events should be in a list of smaller cards.
@@ -61,15 +62,16 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
             simulateLinkClick2(API.events.getURIForEvent(event), e);
         }} >
             <div className="SubtleEventCardTitle">
-                {/* {gIconMap.CalendarMonth()} */}
                 <div>{event.name}</div>
             </div>
-            {event.startsAt &&
-                <div className="SubtleEventCardDate">
+            <div className="SubtleEventCardDate">
+                <EventStatusChip statusId={event.statusId} displayStyle="iconOnly" size="small" />
+                {event.startsAt && <>
                     {formatShortDate(event.startsAt)}
                     <span className={`EventDateField container ${props.relativeTiming.bucket}`}><span className="RelativeIndicator">{props.relativeTiming.label}</span></span>
-                </div>
-            }
+                </>
+                }
+            </div>
             <div className='SearchItemBigCardLinkContainer'>
 
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink

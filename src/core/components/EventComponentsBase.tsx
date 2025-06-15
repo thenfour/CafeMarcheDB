@@ -13,6 +13,33 @@ import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../db
 import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
 import { DashboardContextData } from './DashboardContext';
 import { CMStatusIndicator } from './CMCoreComponents';
+import { CMStandardDBChip } from './CMChip';
+import { StandardVariationSpec } from '@/shared/color';
+
+
+export interface EventStatusChipProps {
+    statusId: number | null | undefined;
+    highlightStatusIds?: number[];
+    displayStyle?: "default" | "iconOnly";
+    size?: "small" | "big";
+};
+
+
+export const EventStatusChip = ({ statusId, highlightStatusIds = [], displayStyle = "default", size }: EventStatusChipProps) => {
+    const dashboardContext = useDashboardContext();
+    const status = dashboardContext.eventStatus.getById(statusId);
+    if (!status) return null;
+    return <CMStandardDBChip
+        variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(statusId || -1) }}
+        border='border'
+        shape="rectangle"
+        model={status}
+        getTooltip={_ => status?.description || null}
+        iconOnly={displayStyle === "iconOnly"}
+        size={size}
+    />
+
+};
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {
