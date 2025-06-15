@@ -852,7 +852,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             eventSongListId: props.value.eventSongListId,
             id: getUniqueNegativeID(),
             textStyle: db3.EventSongListDividerTextStyle.Default,
-            isInterruption: true,
+            isInterruption: false,
             runningTimeSeconds: null,
             songsWithUnknownLength: 0,
             index: -1,
