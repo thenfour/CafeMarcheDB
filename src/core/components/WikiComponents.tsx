@@ -218,7 +218,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
     const showEditButton = authorizedForEdit && pageData?.isExisting;
     const showCreateButton = authorizedForEdit && !(pageData?.isExisting);
 
-    const renderCreateButton = props.renderCreateButton || ((onClick) => <Button onClick={onClick}>{gIconMap.AutoAwesome()} Create</Button>);
+    const renderCreateButton = props.renderCreateButton || ((onClick) => <Button onClick={onClick}>{gIconMap.AutoAwesome()} Create this page</Button>);
 
     return <div className="header">
         {showNamespace && !IsNullOrWhitespace(props.wikiPageApi.wikiPath.namespace) &&
@@ -227,8 +227,16 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
             </div>
         }
         {showCreateButton && renderCreateButton(() => props.onEnterEditMode())}
-        <div className="flex-spacer"></div>
+
+        <div className="flex-spacer">&nbsp;</div>
+
         {showEditButton && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</Button>}
+
+        {/* only show if the page is created, because otherwise the permission id is always null and this value is meaningless. */}
+        {!showCreateButton && showVisiblePermission &&
+            <VisibilityValue permissionId={pageData?.wikiPage?.visiblePermissionId} variant="minimal" />
+        }
+
         <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
             {showVisiblePermission &&
                 <MenuItem>
@@ -238,6 +246,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                     }} />
                 </MenuItem>
             }
+
             <MenuItem onClick={async () => {
                 await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPageApi.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
                 endMenuItemRef.current();
