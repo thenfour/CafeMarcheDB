@@ -475,7 +475,7 @@ export enum CMTableSlot {
     Footer,
 }
 interface CMTableColumnSpec<T extends Object> {
-    memberName?: keyof T;
+    memberName?: keyof T; // for now, this is required in order to sort, because our "current sort column" depends on it.
     allowSort?: boolean;
     header?: React.ReactNode;
     render?: (args: { row: T, slot: CMTableSlot, defaultRenderer: (val: any) => React.ReactNode, rowIndex: number, columnIndex: number }) => React.ReactNode;

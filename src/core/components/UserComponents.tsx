@@ -281,23 +281,36 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const allSongs = useSongsContext().songs;
     const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id });
 
+    const songCreditsWithAddl = qr.songCredits.map((credit, index) => ({
+        ...credit,
+        rowIndex: index,
+        songYear: allSongs.find(s => s.id === credit.songId)?.introducedYear,
+        songName: allSongs.find(s => s.id === credit.songId)?.name || `#${credit.songId}`,
+    }));
+
     return <CMTable
-        rows={qr.songCredits}
+        rows={songCreditsWithAddl}
         columns={[
             {
                 header: "#",
+                allowSort: false,
+                memberName: "rowIndex",
                 render: (row) => {
-                    return <span>{row.rowIndex + 1}</span>;
+                    return <span className="pre">#{row.rowIndex + 1}</span>;
                 },
             },
             {
                 header: "Song",
+                memberName: "songName",
+                allowSort: true,
                 render: (row) => {
                     return <SongChip value={allSongs.find(s => s.id === row.row.songId) || { id: row.row.songId, name: `#${row.row.songId}` }} />;
                 },
             },
             {
                 header: "Song year",
+                allowSort: true,
+                memberName: "songYear",
                 render: (row) => {
                     const song = allSongs.find(s => s.id === row.row.songId)!;
                     return <span>{song?.introducedYear}</span>;

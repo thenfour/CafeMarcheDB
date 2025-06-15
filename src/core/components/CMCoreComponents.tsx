@@ -594,22 +594,28 @@ export const EventTextLink = (props: {
         width: "16px",
     };
 
+    const isCancelled = status?.significance === db3.EventStatusSignificance.Cancelled;
+
     return <CMLink rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)} trackingFeature={ActivityFeature.link_follow_internal}>
         <CMChip
             color={type?.color}
             size="small"
+            className={`${isCancelled ? "strikethrough" : ""}`}
         >
             <CMChip
                 color={status?.color}
                 tooltip={status?.label || ""}
-                className="attendanceResponseColorBarSegment"
+                className={`attendanceResponseColorBarSegment`}
                 style={style}
                 shape="rectangle"
             >
                 {firstLetter(status?.label)}
             </CMChip>
-            <Tooltip title={label} disableInteractive><span>
-                {label}</span></Tooltip>
+            <Tooltip title={label} disableInteractive>
+                <span>
+                    {label}
+                </span>
+            </Tooltip>
         </CMChip>
     </CMLink>;
 };
