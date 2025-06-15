@@ -218,14 +218,18 @@ export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFe
     // react likes to make redundant renders; throttle.
     const throttledRecordAction = useThrottle(() => {
         void collectDeviceInfo().then(deviceInfo => {
-            void recordActionProc({
-                ...appCtx,
-                ...associations,
-                uri: window.location.href,
-                context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
-                feature,
-                deviceInfo,
-            });
+            try {
+                void recordActionProc({
+                    ...appCtx,
+                    ...associations,
+                    uri: window.location.href,
+                    context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
+                    feature,
+                    deviceInfo,
+                });
+            } catch (e) {
+                console.error("Error recording feature use", e);
+            }
         });
     }, 250);
 
@@ -238,13 +242,17 @@ export const useFeatureRecorder = () => {
     const appCtx = useAppContext();
     return async ({ feature, context, ...associations }: ClientActivityParams) => {
         const deviceInfo = await collectDeviceInfo();
-        await recordActionProc({
-            ...appCtx,
-            ...associations,
-            uri: window.location.href,
-            context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
-            feature,
-            deviceInfo,
-        });
+        try {
+            await recordActionProc({
+                ...appCtx,
+                ...associations,
+                uri: window.location.href,
+                context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
+                feature,
+                deviceInfo,
+            });
+        } catch (e) {
+            console.error("Error recording feature use", e);
+        }
     }
 }
