@@ -168,9 +168,12 @@ interface FacetedTabContentProps<Tpayload extends FacetResultBase, TKey> {
 
 const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, items, ...props }: FacetedTabContentProps<Tpayload, TKey>) => {
 
-    const totalCount = items.reduce((acc, item) => acc + item.count, 0);
+    // Sort items by count descending for consistent pie chart and table order
+    const sortedItems = [...items].sort((a, b) => b.count - a.count);
 
-    const chartData = items.map((item) => {
+    const totalCount = sortedItems.reduce((acc, item) => acc + item.count, 0);
+
+    const chartData = sortedItems.map((item) => {
         if (!item || !handler.getItemKey(item)) {
             console.log(item);
             console.error(`No fill for item ${item}`);
@@ -187,7 +190,6 @@ const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, it
         });
     });
 
-    const sortedItems = items.sort((a, b) => b.count - a.count);
     const kPieSize = 240;
     const kInnerRadius = 30;
 
