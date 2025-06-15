@@ -356,8 +356,9 @@ test cases:
 
 .markdown .markdown-class-highlight {
     background-color: var(--hl-yellow);
-    padding: 3px 5px;
+    padding: 2px 8px;
     border-radius: 3px;
+    clip-path: polygon(2% 0, 100% 0, 98% 100%, 0% 100%);
 }
 
 .markdown .markdown-class-highlightred {
