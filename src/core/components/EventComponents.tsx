@@ -12,7 +12,7 @@ import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
-import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { ColorVariationSpec, gAppColors, gLightSwatchColors, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { slugify } from 'shared/rootroot';
 import { Timing } from 'shared/time';
@@ -53,6 +53,7 @@ import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from './markdown/Markdown';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
+import { UserChip } from './userChip';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -615,6 +616,11 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
     const currentUser = useCurrentUser()[0]!;
     const dashboardContext = React.useContext(DashboardContext);
 
+    const realUser: { color: string | null } & typeof user = {
+        ...user,
+        color: null,
+    };
+
     const eventResponse = responseInfo.getEventResponseForUser(user, dashboardContext, userMap);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const attendanceVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "filled", variation: 'strong' };
@@ -635,12 +641,18 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
         ...user.tags.map(ta => `userTagCssClass_${dashboardContext.userTag.getById(ta.userTagId)?.cssClass}`),
     ];
 
+    if (isYou) {
+        realUser.name += " (you)";
+        realUser.color = gLightSwatchColors.light_blue;
+    }
+
     return <tr>
         <td>
-            <div className={classes.join(" ")}>
-                <div className={`name`}>{user.name}</div>
-                {isYou && <div className='you'>(you)</div>}
-            </div>
+            {/* <div className={classes.join(" ")}> */}
+            {/* <div className={`name`}>{user.name}</div> */}
+            <UserChip className={classes.join(" ")} value={realUser} size='small' color={realUser.color} />
+            {/* {isYou && <div className='you'>(you)</div>} */}
+            {/* </div> */}
         </td>
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
         {shownSegments.map((segment, iseg) => {

@@ -24,8 +24,7 @@ import { SongsProvider, useSongsContext } from "./SongsContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
 import { UserChip } from "./userChip";
 import { Markdown } from "./markdown/Markdown";
-
-
+import { Permission } from "@/shared/permissions";
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -332,58 +331,63 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
             </div>{/* title line */}
 
-            <CMChipContainer>
-                {user.tags.map(tag => <CMStandardDBChip
-                    key={tag.id}
-                    size='small'
-                    model={tag.userTag}
-                    variation={StandardVariationSpec.Weak}
-                    getTooltip={(_) => tag.userTag.description}
-                />)}
-            </CMChipContainer>
+            {dashboardContext.isAuthorized(Permission.search_users) &&
+                <CMChipContainer>
+                    {user.tags.map(tag => <CMStandardDBChip
+                        key={tag.id}
+                        size='small'
+                        model={tag.userTag}
+                        variation={StandardVariationSpec.Weak}
+                        getTooltip={(_) => tag.userTag.description}
+                    />)}
+                </CMChipContainer>
+            }
+            {dashboardContext.isAuthorized(Permission.search_users) &&
+                <CMChipContainer>
+                    {user.instruments.map(tag => <CMStandardDBChip
+                        key={tag.id}
+                        size='small'
+                        model={{ ...tag.instrument, color: tag.instrument.functionalGroup.color }}
+                        variation={StandardVariationSpec.Weak}
+                        getTooltip={(_) => tag.instrument.description}
+                    />)}
+                </CMChipContainer>
+            }
+            {dashboardContext.isAuthorized(Permission.manage_users) &&
+                <KeyValueTable data={{
+                    phone: user.phone,
+                    email: user.email,
+                    identity: user.googleId ? <GoogleIconSmall /> : "Password"
+                }} />
+            }
 
-            <CMChipContainer>
-                {user.instruments.map(tag => <CMStandardDBChip
-                    key={tag.id}
-                    size='small'
-                    model={{ ...tag.instrument, color: tag.instrument.functionalGroup.color }}
-                    variation={StandardVariationSpec.Weak}
-                    getTooltip={(_) => tag.instrument.description}
-                />)}
-            </CMChipContainer>
-
-            <KeyValueTable data={{
-                phone: user.phone,
-                email: user.email,
-                identity: user.googleId ? <GoogleIconSmall /> : "Password"
-            }} />
-
-            <CMTabPanel
-                selectedTabId={selectedTab}
-                handleTabChange={(e, newId) => handleTabChange(newId as string)}
-            >
-                <CMTab
-                    thisTabId={UserDetailTabSlug.attendance}
-                    summaryTitle={"Attendance"}
-                    summaryIcon={gIconMap.Check()}
+            {dashboardContext.isAuthorized(Permission.sysadmin) &&
+                <CMTabPanel
+                    selectedTabId={selectedTab}
+                    handleTabChange={(e, newId) => handleTabChange(newId as string)}
                 >
-                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                        <UserAttendanceTabContent user={user} />
-                    </Suspense>
-                </CMTab>
-                <CMTab
-                    thisTabId={UserDetailTabSlug.credits}
-                    summaryTitle={"Credits"}
-                    summaryIcon={gIconMap.Comment()}
-                >
-                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                        <SongsProvider>
-                            <UserCreditsTabContent user={user} />
-                        </SongsProvider>
-                    </Suspense>
-                </CMTab>
-            </CMTabPanel>
-
+                    <CMTab
+                        thisTabId={UserDetailTabSlug.attendance}
+                        summaryTitle={"Attendance"}
+                        summaryIcon={gIconMap.Check()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <UserAttendanceTabContent user={user} />
+                        </Suspense>
+                    </CMTab>
+                    <CMTab
+                        thisTabId={UserDetailTabSlug.credits}
+                        summaryTitle={"Credits"}
+                        summaryIcon={gIconMap.Comment()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <SongsProvider>
+                                <UserCreditsTabContent user={user} />
+                            </SongsProvider>
+                        </Suspense>
+                    </CMTab>
+                </CMTabPanel>
+            }
         </div>
     </div>;
 };

@@ -1553,19 +1553,21 @@ in particular the date range picker is wide.*/
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    padding-left: 8px;
+    /* padding-left: 8px; */
 }
 
 .attendanceDetailTable .nameCellContainer>* {
     margin-right: 6px;
 }
 
-.attendanceDetailTable .nameCellContainer.you {
+/* 
+.attendanceDetailTable .nameCellContainer.you,
+.attendanceDetailTable .CMChip.nameCellContainer.you {
     color: #00f;
     padding-right: 10px;
     font-weight: bold;
     background-color: #00f1;
-}
+} */
 
 .attendanceDetailTable .nameCellContainer>.editButton {
     color: #888;

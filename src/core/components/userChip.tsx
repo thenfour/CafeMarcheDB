@@ -23,19 +23,30 @@ export interface UserChipBaseProps {
 type ValuedUserChipProps = UserChipBaseProps & {
     value: db3.UserPayload_Name | null;
     userId?: never;
+    color?: string | null;
 };
 
 // the user chip when you know the user ID, and need to query for the info.
 type QueriedUserChipProps = UserChipBaseProps & {
     userId: number | null;
+    color?: string | null;
 };
 
 const ValuedUserChip = (props: ValuedUserChipProps) => {
+
+    const userId = props.value?.id || null;
+    const ownClickHandler = userId ? () => {
+        simulateLinkClickTargetBlank(getURIForUser({ id: userId }));
+    } : undefined;
+
+    const clickHandler = props.onClick || ownClickHandler;
+
     return <CMChip
         variation={props.variation}
         size={props.size}
-        onClick={props.onClick}
+        onClick={clickHandler}
         className={props.className}
+        color={props.color}
     >
         {props.startAdornment}
         <span style={{ color: props.useHashedColor ? getHashedColor(props.value?.id.toString() || "") : undefined }}>
@@ -74,32 +85,28 @@ const QueriedUserChip: React.FC<QueriedUserChipProps> = (props) => {
 
 export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
 
-    const clickHandler = props.onClick || (() => {
-        if (!!props.userId) {
-            simulateLinkClickTargetBlank(getURIForUser({ id: props.userId }));
-        }
-    });
-
     return (props.userId !== undefined) ?
         <QueriedUserChip
             userId={props.userId}
             variation={props.variation}
             size={props.size}
-            onClick={clickHandler}
+            onClick={props.onClick}
             className={props.className}
             startAdornment={props.startAdornment}
             endAdornment={props.endAdornment}
             useHashedColor={props.useHashedColor}
+            color={props.color}
         />
         : <ValuedUserChip
             value={props.value}
             variation={props.variation}
             size={props.size}
-            onClick={clickHandler}
+            onClick={props.onClick}
             className={props.className}
             startAdornment={props.startAdornment}
             endAdornment={props.endAdornment}
             useHashedColor={props.useHashedColor}
+            color={props.color}
         />
 }
 
