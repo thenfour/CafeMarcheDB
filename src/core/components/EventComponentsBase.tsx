@@ -17,11 +17,13 @@ import { CMStandardDBChip } from './CMChip';
 import { StandardVariationSpec } from '@/shared/color';
 
 function formatShortDate(date: Date, locale: string = navigator.language): string {
+    const now = new Date();
+    const showYear = date.getFullYear() !== now.getFullYear();
     const formatter = new Intl.DateTimeFormat(locale, {
         weekday: "long",
         month: "long",
         day: "numeric",
-        // We deliberately omit the year option.
+        ...(showYear ? { year: "numeric" } : {})
     });
     // Use formatToParts to filter out punctuation
     const parts = formatter.formatToParts(date);
