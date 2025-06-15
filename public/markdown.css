@@ -24,6 +24,9 @@ test cases:
     color: var(--primary-color);
 }
 
+.markdown img {
+    max-width: calc(var(--content-max-width) - 40px);
+}
 
 .wikiPage .wikiPageSpecialNamespaceSubtitle {
     font-size: 16px;
