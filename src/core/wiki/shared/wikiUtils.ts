@@ -1,3 +1,16 @@
+// Returns file tag context for uploads based on wiki namespace/slug
+export function getFileTagsForNamespace(wikiPath: WikiPath): {
+    taggedEventId?: number;
+    // Add more tags as needed for other namespaces
+} | undefined {
+    if (wikiPath.namespace === SpecialWikiNamespace.EventDescription) {
+        const eventId = Number(wikiPath.slugWithoutNamespace);
+        if (!isNaN(eventId)) {
+            return { taggedEventId: eventId };
+        }
+    }
+    return undefined;
+}
 import { Prisma } from "db";
 import { z } from "zod";
 import { slugify } from "../../../../shared/rootroot";

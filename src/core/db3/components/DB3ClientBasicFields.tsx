@@ -327,7 +327,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
                 onChange={async (val) => {
                     params.api.setFieldValues({ [this.columnName]: val });
                 }}
-                // uploadFileContext={...} // See TODO above
+            // uploadFileContext={...} // See TODO above
             />
         });
     }
