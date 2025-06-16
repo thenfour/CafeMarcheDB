@@ -15,6 +15,7 @@ import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
 import { useAppContext } from './AppContext';
 import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from './featureReports/activityTracking';
+import { MediaPlayerProvider } from './mediaPlayer/MediaPlayerContext';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -207,9 +208,13 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     // because of enrichment, this is at the end of the list.
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => db3.enrichInstrument(i, valueRef.current)));
 
-    return <DashboardContext.Provider value={valueRef.current}>
-        {children}
-    </DashboardContext.Provider>
+    return (
+        <DashboardContext.Provider value={valueRef.current}>
+            <MediaPlayerProvider>
+                {children}
+            </MediaPlayerProvider>
+        </DashboardContext.Provider>
+    );
 };
 
 export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFeatureUseClientActivityParams) => {
@@ -232,7 +237,6 @@ export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFe
             }
         });
     }, 250);
-
 
     React.useEffect(throttledRecordAction, []);
 }

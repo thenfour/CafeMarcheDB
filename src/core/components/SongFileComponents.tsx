@@ -18,7 +18,8 @@ import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
-import { AudioPreviewBehindButton } from './AudioPreview';
+//import { AudioPreviewBehindButton } from './AudioPreview';
+import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { CMDBUploadFile } from './CMDBUploadFile';
@@ -135,9 +136,15 @@ export const FileValueViewer = (props: FileViewerProps) => {
                 <div className="descriptionContainer">
                     <Markdown markdown={file.description} />
                 </div>
-                <div className="preview">
+
+                {/* <div className="preview">
                     {isAudio && <AudioPreviewBehindButton value={file} />}
-                </div>
+                </div> */}
+
+                {isAudio && <div className="mediaControls">
+                    <AudioPlayerFileControls file={file} />
+                </div>}
+
 
                 <Tooltip title={<div>
                     <div>uploaded at {file.uploadedAt.toLocaleString()} by {file.uploadedByUser?.name}</div>
@@ -751,16 +758,9 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
         <FileFilterAndSortControls value={filterSpec} onChange={(value) => setFilterSpec(value)} fileTags={props.fileTags} />
 
-
         <div className="searchRecordCount">
             {filteredItems.length === 0 ? "No items to show" : <>Displaying {filteredItems.length} items</>}
         </div>
-
-        {/* <NameValuePair
-            isReadOnly={false}
-            name={""}
-            value={}
-        /> */}
 
         <div className="EventFilesList">
             {filteredItems.map((fileTag, index) => <FileControl
@@ -776,3 +776,57 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     </FileDropWrapper>;
 };
 
+
+
+
+// File-specific audio controls that use the global media player
+type AudioPlayerFileControlsProps = { file: db3.FileWithTagsPayload };
+
+export function AudioPlayerFileControls({ file }: AudioPlayerFileControlsProps) {
+    const mediaPlayer = useMediaPlayer();
+    // Determine if this file is currently playing in the global player
+    const isCurrent = mediaPlayer.currentIndex != null &&
+        !!mediaPlayer.playlist[mediaPlayer.currentIndex]?.file &&
+        mediaPlayer.playlist[mediaPlayer.currentIndex]?.file?.id === file.id;
+    const isPlaying = isCurrent && mediaPlayer.isPlaying;
+
+    // Play this file via the global player
+    const handlePlay = () => {
+        if (isCurrent) {
+            mediaPlayer.unpause();
+        } else {
+            mediaPlayer.setPlaylist([
+                {
+                    file: {
+                        id: file.id,
+                        fileLeafName: file.fileLeafName,
+                        externalURI: file.externalURI,
+                        mimeType: file.mimeType,
+                        sizeBytes: file.sizeBytes,
+                        parentFileId: file.parentFileId,
+                        previewFileId: file.previewFileId,
+                        fileCreatedAt: file.fileCreatedAt,
+                        uploadedAt: file.uploadedAt,
+                    },
+                    url: file.externalURI || API.files.getURIForFile(file),
+                }
+            ], 0);
+        }
+    };
+
+    const handlePause = () => {
+        if (isCurrent) {
+            mediaPlayer.pause();
+        }
+    };
+
+    return (
+        <div className="audioPreviewGatewayContainer">
+            {isPlaying ? (
+                <div className='audioPreviewGatewayButton freeButton' onClick={handlePause}>{gIconMap.PauseCircleOutline()}</div>
+            ) : (
+                <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>{gIconMap.PlayCircleOutline()}</div>
+            )}
+        </div>
+    );
+}
