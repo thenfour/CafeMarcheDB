@@ -215,13 +215,18 @@ export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: strin
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSmallButtonProps {
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+    enabled?: boolean;
     variant?: "framed" | "default" | "technical";
     className?: string;
     style?: React.CSSProperties;
 };
 
-export const CMSmallButton = (props: React.PropsWithChildren<CMSmallButtonProps>) => {
-    return <div style={props.style} className={`variant_${props.variant || "default"} interactable freeButton CMSmallButton ${props.className}`} onClick={(e) => { props.onClick && props.onClick(e) }}>
+export const CMSmallButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMSmallButtonProps>) => {
+    return <div
+        style={props.style}
+        className={`variant_${props.variant || "default"} interactable freeButton CMSmallButton ${props.className} ${enabled ? "enabled" : "disabled"}`}
+        onClick={enabled ? (e) => { props.onClick && props.onClick(e) } : undefined}
+    >
         {props.children}
     </div>;
 };

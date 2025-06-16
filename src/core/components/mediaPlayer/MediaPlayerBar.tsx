@@ -2,14 +2,14 @@ import React from "react";
 import { MediaPlayerTrack, useMediaPlayer } from "./MediaPlayerContext";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { gIconMap } from "../../db3/components/IconMap";
-import { ArrowBack, ArrowForward, FastRewind, SkipNext, SkipPrevious } from "@mui/icons-material";
+import { SkipNext, SkipPrevious } from "@mui/icons-material";
 
-function formatTime(t?: number) {
-    if (!t || isNaN(t)) return "0:00";
-    const m = Math.floor(t / 60);
-    const s = Math.floor(t % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-}
+// function formatTime(t?: number) {
+//     if (!t || isNaN(t)) return "0:00";
+//     const m = Math.floor(t / 60);
+//     const s = Math.floor(t % 60);
+//     return `${m}:${s.toString().padStart(2, "0")}`;
+// }
 
 export const MediaPlayerBar: React.FC = () => {
     const mediaPlayer = useMediaPlayer();
@@ -55,13 +55,20 @@ export const MediaPlayerBar: React.FC = () => {
             boxShadow: "0 -2px 8px rgba(0,0,0,0.2)",
             minHeight: 56,
         }}>
-            <CMSmallButton style={{ opacity: 1 }} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
+            <CMSmallButton
+                style={{ opacity: 1 }}
+                onClick={() => mediaPlayer.setPlaylist([], undefined)}
+            >
+                {gIconMap.Close()}
+            </CMSmallButton>
+
             {/* {mediaPlayer.isPlaying ? (
                 <CMSmallButton onClick={() => mediaPlayer.pause()}>pause</CMSmallButton>
             ) : (
                 <CMSmallButton onClick={() => mediaPlayer.unpause()}>play</CMSmallButton>
             )} */}
-            <CMSmallButton style={{ opacity: 1 }} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
+            <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
+            <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
             {/* <div>
                 {formatTime(mediaPlayer.playheadSeconds)} / {formatTime(mediaPlayer.lengthSeconds)}
             </div> */}
@@ -77,15 +84,18 @@ export const MediaPlayerBar: React.FC = () => {
                 onEnded={() => mediaPlayer.next()}
                 style={{ flex: 1, maxWidth: "600px" }}
             />
-            <div
-                className="freeButton"
-                onClick={() => mediaPlayer.setPlaylist([], undefined)}
-            >
-                {gIconMap.Close()}
+            <div className="mediaPlayerTrackTitle">
+                <span>{mediaPlayer.getTrackTitle(current)}</span>
+                <div className={`equalizer ${mediaPlayer.isPlaying ? "enabled" : "disabled"}`} role="img" aria-label="Audio playing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
             </div>
-            <div style={{ marginLeft: 16, marginRight: 16 }}>
-                <strong>{mediaPlayer.getTrackTitle(current)}</strong>
-            </div>
+
+
         </div>
     );
 };

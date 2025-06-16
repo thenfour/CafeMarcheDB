@@ -51,6 +51,8 @@ export interface MediaPlayerContextType {
     playheadSeconds: number; // playhead
     lengthSeconds: number;
     getTrackTitle: (track: MediaPlayerTrack) => string;
+    previousEnabled: () => boolean;
+    nextEnabled: () => boolean;
 
     // 
     //play: (index?: number) => void;
@@ -81,13 +83,6 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [audioTime, setAudioTime] = useState<number>(0);
     const [audioDuration, setAudioDuration] = useState<number>(0);
-
-    // const play = useCallback((index?: number) => {
-    //     if (typeof index === "number") {
-    //         setCurrentIndex(index);
-    //     }
-    //     setIsPlaying(true);
-    // }, []);
 
     const pause = useCallback(() => setIsPlaying(false), []);
     const next = useCallback(() => {
@@ -155,6 +150,8 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 setPlayheadSeconds: setAudioTime,
                 setLengthSeconds: setAudioDuration,
                 unpause,
+                previousEnabled: () => currentIndex !== undefined && currentIndex > 0,
+                nextEnabled: () => currentIndex !== undefined && currentIndex < playlist.length - 1,
             }}
         >
             {children}
