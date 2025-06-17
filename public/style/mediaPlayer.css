@@ -1,0 +1,102 @@
+/* MediaPlayer specific styles extracted from global2.css */
+
+.mediaPlayerTrackTitle {
+    display: flex;
+    align-items: center;
+    font-size: 22px;
+    color: #dff;
+    /* font-weight: bold; */
+    margin-left: 10px;
+    background-color: #8ff7;
+    padding: 6px 12px;
+    text-shadow: #0004 0px 0px 7px;
+    box-shadow: inset 0 0 10px #0008;
+}
+
+/* === Equalizer animation ===================================== */
+.equalizer {
+    margin-left: 12px;
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    /* space between bars               */
+    /* width: 16px; */
+    /* overall footprint—scale as needed */
+    --equalizer-bar-height: 10px;
+    height: var(--equalizer-bar-height);
+    /* bars inherit the surrounding text/icon color */
+}
+
+/* individual bars */
+.equalizer span {
+    flex: 1 1 0;
+    width: 7px;
+    /* overall footprint—scale as needed */
+    height: var(--equalizer-bar-height);
+    background: #dff6;
+    border-radius: 2px;
+    transform-origin: bottom;
+    animation: equalize 1.8s ease-in-out infinite;
+}
+
+.equalizer.disabled span {
+    animation: none;
+    transform: scaleY(0.2);
+}
+
+/* staggered delays for nicer motion */
+.equalizer span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.equalizer span:nth-child(3) {
+    animation-delay: 0.40s;
+}
+
+.equalizer span:nth-child(4) {
+    animation-delay: 0.30s;
+}
+
+.equalizer span:nth-child(5) {
+    animation-delay: 0.50s;
+}
+
+/* keyframes */
+@keyframes equalize {
+
+    0%,
+    100% {
+        transform: scaleY(0.3);
+    }
+
+    20% {
+        transform: scaleY(1.0);
+    }
+
+    40% {
+        transform: scaleY(0.5);
+    }
+
+    60% {
+        transform: scaleY(0.8);
+    }
+
+    80% {
+        transform: scaleY(0.6);
+    }
+}
+
+/* 
+
+    25% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(0.4);
+    }
+
+    75% {
+        transform: scaleY(0.8);
+    }
+} */

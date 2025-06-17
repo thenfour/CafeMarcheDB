@@ -22,6 +22,7 @@ import '../../public/style/customFieldEditor.css';
 import '../../public/style/events2.css';
 import '../../public/style/filterControls.css';
 import '../../public/style/ImportEvents.css';
+import '../../public/style/mediaPlayer.css';
 import '../../public/style/metronome.css';
 import '../../public/style/setlistPlan.css';
 import '../../public/style/songSearch.css';

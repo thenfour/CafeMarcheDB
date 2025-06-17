@@ -1,3 +1,5 @@
+import { CMSmallButton, KeyValueTable } from "@/src/core/components/CMCoreComponents2";
+import { useMediaPlayer } from "@/src/core/components/mediaPlayer/MediaPlayerContext";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
@@ -20,6 +22,48 @@ const HomepageBigEventCalendar = () => {
   //return <BigEventCalendar selectedEventId={dashboardContext.relevantEventIds[0]} />;
 };
 
+const MediaPlayerTest = () => {
+  const mediaPlayer = useMediaPlayer();
+
+  return (<div>
+    <CMSmallButton
+      onClick={() => {
+        mediaPlayer.playUri(`https://citizen-dj.labs.loc.gov/audio/samplepacks/loc-fma/Chillin-Poupi_fma-169768_002_00-00-31.mp3`);
+      }}
+    >
+      [sample A]
+    </CMSmallButton>
+    <CMSmallButton
+      onClick={() => {
+        mediaPlayer.playUri(`https://file-examples.com/storage/feac45e876684fd51a206f4/2017/11/file_example_MP3_700KB.mp3`);
+      }}
+    >
+      [sample B]
+    </CMSmallButton>
+    <CMSmallButton onClick={() => {
+      mediaPlayer.unpause();
+    }}>play</CMSmallButton>
+    <CMSmallButton onClick={() => {
+      mediaPlayer.pause();
+    }}>pause</CMSmallButton>
+    <CMSmallButton onClick={() => {
+      mediaPlayer.setPlaylist([], undefined);
+    }}>
+      {"clear playlist"}
+    </CMSmallButton>
+    <KeyValueTable
+      data={{
+        "playlist length": mediaPlayer.playlist.length,
+        "current index": mediaPlayer.currentIndex,
+        "is playing": mediaPlayer.isPlaying,
+        "audio time": mediaPlayer.playheadSeconds.toFixed(2),
+        "audio duration": mediaPlayer.lengthSeconds.toFixed(2),
+      }}
+    />
+  </div>
+  );
+}
+
 const DynamicContent = () => {
   const [currentUser] = useCurrentUser();
   let noInstrumentsWarning = (currentUser?.instruments?.length || 0) < 1;
@@ -30,7 +74,7 @@ const DynamicContent = () => {
 
       {limitedAccountWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
         <div>{gIconMap.ErrorOutline()}</div>
-        <div>Your account has limited access; please ask Carl to grant you access 😊.
+        <div>Your account has limited access; please contact a site admin to grant you access 😊.
         </div>
       </CMSinglePageSurfaceCard>}
 
@@ -45,6 +89,7 @@ const DynamicContent = () => {
       <div className="DashboardHeader">
         <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
       </div>
+      <MediaPlayerTest />
 
       <WikiStandaloneControl
         canonicalWikiPath="special/announcements"
