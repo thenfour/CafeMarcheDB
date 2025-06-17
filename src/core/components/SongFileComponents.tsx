@@ -30,6 +30,7 @@ import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown } from "./markdown/Markdown";
 import { UserChip } from './userChip';
+import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
@@ -829,9 +830,18 @@ export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileCo
     return (
         <div className="audioPreviewGatewayContainer">
             {isPlaying ? (
-                <div className='audioPreviewGatewayButton freeButton' onClick={handlePause}>{gIconMap.PauseCircleOutline()}</div>
+                <div className='audioPreviewGatewayButton freeButton' onClick={handlePause}>
+                    {gIconMap.PauseCircleOutline()}
+                    <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} />
+                </div>
             ) : (
-                <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>{gIconMap.PlayCircleOutline()}</div>
+                <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>
+                    {gIconMap.PlayCircleOutline()}
+                    <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} style={{
+                        //"--equalizer-bar-color": "#888",
+                        visibility: "hidden"
+                    } as any} />
+                </div>
             )}
         </div>
     );

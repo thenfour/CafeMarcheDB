@@ -148,22 +148,6 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return { title: "Untitled Track" };
     }, []);
 
-    // const getTrackTitle = useCallback((track: MediaPlayerTrack) => {
-    //     if (track.songContext?.name) return track.songContext.name;
-    //     if (track.eventContext?.name) return track.eventContext.name;
-    //     if (track.file?.fileLeafName) return track.file.fileLeafName;
-    //     if (track.url) return track.url.split('/').pop() || "Untitled Track"; // Fallback to URL filename
-    //     return "Untitled Track";
-    // }, []);
-
-    // const getTrackSubtitle = useCallback((track: MediaPlayerTrack) => {
-    //     if (!track.file)
-    //     if (track.songContext) return `${track.songContext.name}`;
-    //     if (track.eventContext) return `Event ID: ${track.eventContext.id}`;
-    //     if (track.file?.id) return `File ID: ${track.file.id}`;
-    //     return "No subtitle available";
-    // }, []);
-
     const unpause = useCallback(() => {
         setIsPlaying(true);
     }, []);

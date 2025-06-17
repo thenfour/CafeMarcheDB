@@ -636,7 +636,10 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     align-items: center;
 }
 
-.EventFileValue .audioPreviewGatewayContainer {}
+.EventFileValue .audioPreviewGatewayContainer {
+    display: flex;
+    align-items: center;
+}
 
 .EventFileValue .audioPreviewGatewayContainer .audioPreviewGatewayButton {
     display: flex;

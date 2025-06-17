@@ -32,7 +32,7 @@
     margin-left: 10px;
     background-color: #8ff4;
     padding: 6px 12px;
-    text-shadow: #0004 0px 0px 7px;
+    /* text-shadow: #0004 0px 0px 7px; */
     text-shadow: #4ff8 0px 0px 3px;
     box-shadow: inset 0 0 10px #0008;
     height: 40px;
@@ -61,20 +61,31 @@
     align-items: flex-end;
     gap: 2px;
     /* space between bars               */
-    /* width: 16px; */
+    width: 28px;
     /* overall footprint—scale as needed */
     --equalizer-bar-height: 10px;
+    --equalizer-bar-color: #dff8;
     height: var(--equalizer-bar-height);
     /* bars inherit the surrounding text/icon color */
 }
 
+.audioPreviewGatewayButton .equalizer {
+    --equalizer-bar-color: #888;
+}
+
+.audioPreviewGatewayButton:hover .equalizer {
+    --equalizer-bar-color: #08f;
+}
+
+
+
 /* individual bars */
 .equalizer span {
     flex: 1 1 0;
-    width: 6px;
+    /* width: 6px; */
     /* overall footprint—scale as needed */
     height: var(--equalizer-bar-height);
-    background: #dff6;
+    background: var(--equalizer-bar-color);
     border-radius: 2px;
     transform-origin: bottom;
     animation: equalize 1.8s ease-in-out infinite;

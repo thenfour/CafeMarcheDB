@@ -1,17 +1,25 @@
 import React from "react";
-//import "public/style/mediaPlayer.css";
 import { MediaPlayerTrack, useMediaPlayer } from "./MediaPlayerContext";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SkipNext, SkipPrevious } from "@mui/icons-material";
 import { AdminInspectObject } from "../CMCoreComponents";
 
-// function formatTime(t?: number) {
-//     if (!t || isNaN(t)) return "0:00";
-//     const m = Math.floor(t / 60);
-//     const s = Math.floor(t % 60);
-//     return `${m}:${s.toString().padStart(2, "0")}`;
-// }
+export const AnimatedFauxEqualizer: React.FC<{
+    className?: string;
+    style?: React.CSSProperties;
+    enabled?: boolean;
+}> = (props) => {
+    return (
+        <div className={`equalizer ${props.className || ''} ${props.enabled ? 'enabled' : 'disabled'}`} style={props.style} role="img" aria-label="Audio playing">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    );
+}
 
 export const MediaPlayerBar: React.FC = () => {
     const mediaPlayer = useMediaPlayer();
@@ -64,17 +72,9 @@ export const MediaPlayerBar: React.FC = () => {
                 {gIconMap.Close()}
             </CMSmallButton>
 
-            {/* {mediaPlayer.isPlaying ? (
-                <CMSmallButton onClick={() => mediaPlayer.pause()}>pause</CMSmallButton>
-            ) : (
-                <CMSmallButton onClick={() => mediaPlayer.unpause()}>play</CMSmallButton>
-            )} */}
             <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
             <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
-            {/* <div>
-                {formatTime(mediaPlayer.playheadSeconds)} / {formatTime(mediaPlayer.lengthSeconds)}
-            </div> */}
-            {/* <div style={{ flexGrow: 1 }} /> */}
+
             {current && (
                 <audio
                     src={current.url}
@@ -84,7 +84,17 @@ export const MediaPlayerBar: React.FC = () => {
                     onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
                     onPlaying={() => mediaPlayer.setIsPlaying(true)}
                     onPause={() => mediaPlayer.setIsPlaying(false)}
-                    onEnded={() => mediaPlayer.next()}
+                    onEnded={() => {
+                        // don't auto-next if the playlist is ending.
+                        if (mediaPlayer.currentIndex == null || mediaPlayer.currentIndex + 1 >= mediaPlayer.playlist.length) {
+                            const audio = audioRef.current;
+                            if (!audio) return;
+                            // If we reach the end of the playlist, reset the player
+                            audio.currentTime = 0; // Reset time
+                            return;
+                        }
+                        mediaPlayer.next();
+                    }}
                     style={{ flex: 1, maxWidth: "600px" }}
                 />
             )}
@@ -93,13 +103,15 @@ export const MediaPlayerBar: React.FC = () => {
                     <span className="mediaPlayerTrackTitle">{title?.title}</span>
                     <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
                 </span>
-                <div className={`equalizer ${mediaPlayer.isPlaying ? "enabled" : "disabled"}`} role="img" aria-label="Audio playing">
+
+                <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
+                {/* <div className={`equalizer ${mediaPlayer.isPlaying ? "enabled" : "disabled"}`} role="img" aria-label="Audio playing">
                     <span></span>
                     <span></span>
                     <span></span>
                     <span></span>
                     <span></span>
-                </div>
+                </div> */}
             </div>
             <AdminInspectObject src={current} />
         </div>
