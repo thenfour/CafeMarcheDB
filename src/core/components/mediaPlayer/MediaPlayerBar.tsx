@@ -15,8 +15,15 @@ import { SkipNext, SkipPrevious } from "@mui/icons-material";
 export const MediaPlayerBar: React.FC = () => {
     const mediaPlayer = useMediaPlayer();
     const audioRef = React.useRef<HTMLAudioElement>(null);
+    const [visible, setVisible] = React.useState(false);
 
-    const current: undefined | MediaPlayerTrack = mediaPlayer.currentIndex == null ? undefined : mediaPlayer.playlist[mediaPlayer.currentIndex] || {};
+    const current: MediaPlayerTrack | undefined =
+        mediaPlayer.currentIndex == null ? undefined : mediaPlayer.playlist[mediaPlayer.currentIndex];
+
+    // Show/hide animation effect
+    React.useEffect(() => {
+        setVisible(!!current);
+    }, [current]);
 
     // Sync play/pause with isPlaying
     React.useEffect(() => {
@@ -39,23 +46,9 @@ export const MediaPlayerBar: React.FC = () => {
         mediaPlayer.setPlayheadSeconds(0);
     }, [mediaPlayer.currentIndex]);
 
-    if (!current) return null;
-
+    // Always render the bar for animation, but toggle visibility class
     return (
-        <div style={{
-            position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 2000,
-            background: "#222",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            padding: "0.5rem 1rem",
-            boxShadow: "0 -2px 8px rgba(0,0,0,0.2)",
-            minHeight: 56,
-        }}>
+        <div className={`mediaPlayerBar${visible ? ' mediaPlayerBar--visible' : ''}`}>
             <CMSmallButton
                 style={{ opacity: 1 }}
                 onClick={() => mediaPlayer.setPlaylist([], undefined)}
@@ -74,19 +67,21 @@ export const MediaPlayerBar: React.FC = () => {
                 {formatTime(mediaPlayer.playheadSeconds)} / {formatTime(mediaPlayer.lengthSeconds)}
             </div> */}
             {/* <div style={{ flexGrow: 1 }} /> */}
-            <audio
-                src={current.url}
-                controls
-                ref={audioRef}
-                onLoadedMetadata={e => mediaPlayer.setLengthSeconds(e.currentTarget.duration)}
-                onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
-                onPlaying={() => mediaPlayer.setIsPlaying(true)}
-                onPause={() => mediaPlayer.setIsPlaying(false)}
-                onEnded={() => mediaPlayer.next()}
-                style={{ flex: 1, maxWidth: "600px" }}
-            />
+            {current && (
+                <audio
+                    src={current.url}
+                    controls
+                    ref={audioRef}
+                    onLoadedMetadata={e => mediaPlayer.setLengthSeconds(e.currentTarget.duration)}
+                    onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
+                    onPlaying={() => mediaPlayer.setIsPlaying(true)}
+                    onPause={() => mediaPlayer.setIsPlaying(false)}
+                    onEnded={() => mediaPlayer.next()}
+                    style={{ flex: 1, maxWidth: "600px" }}
+                />
+            )}
             <div className="mediaPlayerTrackTitle">
-                <span>{mediaPlayer.getTrackTitle(current)}</span>
+                <span>{current ? mediaPlayer.getTrackTitle(current) : ""}</span>
                 <div className={`equalizer ${mediaPlayer.isPlaying ? "enabled" : "disabled"}`} role="img" aria-label="Audio playing">
                     <span></span>
                     <span></span>
@@ -95,8 +90,6 @@ export const MediaPlayerBar: React.FC = () => {
                     <span></span>
                 </div>
             </div>
-
-
         </div>
     );
 };
