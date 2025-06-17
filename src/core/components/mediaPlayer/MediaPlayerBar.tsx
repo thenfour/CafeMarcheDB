@@ -4,6 +4,7 @@ import { MediaPlayerTrack, useMediaPlayer } from "./MediaPlayerContext";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SkipNext, SkipPrevious } from "@mui/icons-material";
+import { AdminInspectObject } from "../CMCoreComponents";
 
 // function formatTime(t?: number) {
 //     if (!t || isNaN(t)) return "0:00";
@@ -30,10 +31,15 @@ export const MediaPlayerBar: React.FC = () => {
         const audio = audioRef.current;
         if (!audio) return;
         if (mediaPlayer.isPlaying) {
+            // the audio player won't start playing until the media is ready sometimes,
+            // so set autoplay any time we expect playing.
+            audio.autoplay = true;
+
             audio.play().catch(() => {
                 console.error("Failed to play audio:", audio.src);
             });
         } else {
+            audio.autoplay = false; // see above
             audio.pause();
         }
     }, [mediaPlayer.isPlaying, mediaPlayer.currentIndex]);
@@ -45,6 +51,8 @@ export const MediaPlayerBar: React.FC = () => {
         audio.currentTime = 0; // Reset time when track changes
         mediaPlayer.setPlayheadSeconds(0);
     }, [mediaPlayer.currentIndex]);
+
+    const title = current && mediaPlayer.getTrackTitle(current);
 
     // Always render the bar for animation, but toggle visibility class
     return (
@@ -80,8 +88,11 @@ export const MediaPlayerBar: React.FC = () => {
                     style={{ flex: 1, maxWidth: "600px" }}
                 />
             )}
-            <div className="mediaPlayerTrackTitle">
-                <span>{current ? mediaPlayer.getTrackTitle(current) : ""}</span>
+            <div className="mediaPlayerTrackMetadataDisplay">
+                <span className="mediaPlayerTrackMetadataCol1">
+                    <span className="mediaPlayerTrackTitle">{title?.title}</span>
+                    <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
+                </span>
                 <div className={`equalizer ${mediaPlayer.isPlaying ? "enabled" : "disabled"}`} role="img" aria-label="Audio playing">
                     <span></span>
                     <span></span>
@@ -90,6 +101,7 @@ export const MediaPlayerBar: React.FC = () => {
                     <span></span>
                 </div>
             </div>
+            <AdminInspectObject src={current} />
         </div>
     );
 };

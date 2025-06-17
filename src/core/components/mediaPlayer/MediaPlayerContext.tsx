@@ -1,19 +1,18 @@
 import { Prisma } from "db";
 import React, { createContext, useContext, useState, useCallback } from "react";
 
-type MediaPlayerSongContextPayload = Prisma.SongGetPayload<{
+export type MediaPlayerSongContextPayload = Prisma.SongGetPayload<{
     select: {
         id: true,
         name: true,
     }
 }>;
 
-type MediaPlayerEventContextPayload = Prisma.EventGetPayload<{
+export type MediaPlayerEventContextPayload = Prisma.EventGetPayload<{
     select: {
         id: true,
         name: true,
         startsAt: true,
-        endsAt: true,
         isAllDay: true,
         durationMillis: true,
         statusId: true,
@@ -21,7 +20,7 @@ type MediaPlayerEventContextPayload = Prisma.EventGetPayload<{
     }
 }>;
 
-type MediaPlayerFileContextPayload = Prisma.FileGetPayload<{
+export type MediaPlayerFileContextPayload = Prisma.FileGetPayload<{
     select: {
         id: true,
         fileLeafName: true,
@@ -43,6 +42,11 @@ export interface MediaPlayerTrack {
     url?: string;
 }
 
+export interface MediaPlayerTrackTitle {
+    title: string;
+    subtitle?: string;
+}
+
 export interface MediaPlayerContextType {
     // general props
     playlist: MediaPlayerTrack[];
@@ -50,7 +54,7 @@ export interface MediaPlayerContextType {
     isPlaying: boolean;
     playheadSeconds: number; // playhead
     lengthSeconds: number;
-    getTrackTitle: (track: MediaPlayerTrack) => string;
+    getTrackTitle: (track: MediaPlayerTrack) => MediaPlayerTrackTitle;
     previousEnabled: () => boolean;
     nextEnabled: () => boolean;
 
@@ -109,14 +113,6 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     }, []);
 
-    const getTrackTitle = useCallback((track: MediaPlayerTrack) => {
-        if (track.songContext?.name) return track.songContext.name;
-        if (track.eventContext?.name) return track.eventContext.name;
-        if (track.file?.fileLeafName) return track.file.fileLeafName;
-        if (track.url) return track.url.split('/').pop() || "Untitled Track"; // Fallback to URL filename
-        return "Untitled Track";
-    }, []);
-
     const playUri = (uri: string) => {
         const track: MediaPlayerTrack = {
             url: uri,
@@ -127,6 +123,46 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setAudioTime(0); // Reset playhead time
         setIsPlaying(true);
     };
+
+    // possibilities for track title and subtitle
+    // song name + event name
+    // song name + file name
+    // event name + file name
+    // file name
+    // url filename
+    // if none of these, use "Untitled Track" as fallback
+    const getTrackTitle = useCallback((track: MediaPlayerTrack): MediaPlayerTrackTitle => {
+        if (track.songContext?.name) {
+            return { title: track.songContext.name, subtitle: track.eventContext?.name || track.file?.fileLeafName };
+        }
+        if (track.eventContext?.name) {
+            return { title: track.eventContext.name, subtitle: track.file?.fileLeafName };
+        }
+        if (track.file?.fileLeafName) {
+            return { title: track.file.fileLeafName };
+        }
+        if (track.url) {
+            const filename = track.url.split('/').pop() || "Untitled Track";
+            return { title: filename };
+        }
+        return { title: "Untitled Track" };
+    }, []);
+
+    // const getTrackTitle = useCallback((track: MediaPlayerTrack) => {
+    //     if (track.songContext?.name) return track.songContext.name;
+    //     if (track.eventContext?.name) return track.eventContext.name;
+    //     if (track.file?.fileLeafName) return track.file.fileLeafName;
+    //     if (track.url) return track.url.split('/').pop() || "Untitled Track"; // Fallback to URL filename
+    //     return "Untitled Track";
+    // }, []);
+
+    // const getTrackSubtitle = useCallback((track: MediaPlayerTrack) => {
+    //     if (!track.file)
+    //     if (track.songContext) return `${track.songContext.name}`;
+    //     if (track.eventContext) return `Event ID: ${track.eventContext.id}`;
+    //     if (track.file?.id) return `File ID: ${track.file.id}`;
+    //     return "No subtitle available";
+    // }, []);
 
     const unpause = useCallback(() => {
         setIsPlaying(true);

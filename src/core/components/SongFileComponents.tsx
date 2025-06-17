@@ -19,7 +19,7 @@ import { ActivityFeature } from './featureReports/activityTracking';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
 //import { AudioPreviewBehindButton } from './AudioPreview';
-import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
+import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload, useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { CMDBUploadFile } from './CMDBUploadFile';
@@ -58,8 +58,8 @@ interface FileViewerProps {
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
     readonly: boolean;
     statHighlight: SortByKey;
-    contextEventId?: number;
-    contextSongId?: number;
+    contextEvent?: MediaPlayerEventContextPayload;
+    contextSong?: MediaPlayerSongContextPayload;
 };
 
 export const FileValueViewer = (props: FileViewerProps) => {
@@ -142,7 +142,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                 </div> */}
 
                 {isAudio && <div className="mediaControls">
-                    <AudioPlayerFileControls file={file} />
+                    <AudioPlayerFileControls file={file} song={props.contextSong} event={props.contextEvent} />
                 </div>}
 
 
@@ -625,8 +625,8 @@ interface FileControlProps {
     readonly: boolean;
     refetch: () => void;
     statHighlight: SortByKey;
-    contextEventId?: number;
-    contextSongId?: number;
+    contextEvent?: MediaPlayerEventContextPayload;
+    contextSong?: MediaPlayerSongContextPayload;
 };
 
 export const FileControl = (props: FileControlProps) => {
@@ -643,8 +643,8 @@ export const FileControl = (props: FileControlProps) => {
             onEnterEditMode={() => setEditMode(true)}
             readonly={props.readonly}
             statHighlight={props.statHighlight}
-            contextEventId={props.contextEventId}
-            contextSongId={props.contextSongId}
+            contextEvent={props.contextEvent}
+            contextSong={props.contextSong}
         />
     </>;
 };
@@ -655,8 +655,8 @@ export interface FilesTabContentProps {
     refetch: () => void;
     readonly: boolean;
     uploadTags: TClientFileUploadTags;
-    contextEventId?: number;
-    contextSongId?: number;
+    contextEvent?: MediaPlayerEventContextPayload;
+    contextSong?: MediaPlayerSongContextPayload;
 };
 
 export const FilesTabContent = (props: FilesTabContentProps) => {
@@ -769,8 +769,8 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
                 refetch={props.refetch}
                 value={fileTag.file}
                 statHighlight={filterSpec.sortBy}
-                contextEventId={props.contextEventId}
-                contextSongId={props.contextSongId}
+                contextEvent={props.contextEvent}
+                contextSong={props.contextSong}
             />)}
         </div>
     </FileDropWrapper>;
@@ -780,9 +780,13 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
 
 // File-specific audio controls that use the global media player
-type AudioPlayerFileControlsProps = { file: db3.FileWithTagsPayload };
+type AudioPlayerFileControlsProps = {
+    file: db3.FileWithTagsPayload,
+    song?: MediaPlayerSongContextPayload | undefined,
+    event?: MediaPlayerEventContextPayload | undefined,
+};
 
-export function AudioPlayerFileControls({ file }: AudioPlayerFileControlsProps) {
+export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileControlsProps) {
     const mediaPlayer = useMediaPlayer();
     // Determine if this file is currently playing in the global player
     const isCurrent = mediaPlayer.currentIndex != null &&
@@ -809,6 +813,8 @@ export function AudioPlayerFileControls({ file }: AudioPlayerFileControlsProps) 
                         uploadedAt: file.uploadedAt,
                     },
                     url: file.externalURI || API.files.getURIForFile(file),
+                    songContext: song,
+                    eventContext: event,
                 }
             ], 0);
         }

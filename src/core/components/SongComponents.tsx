@@ -581,7 +581,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                             taggedSongId: song.id,
                             fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
                         }}
-                        contextSongId={song.id}
+                        contextSong={song}
                     />
                 </AppContextMarker>
             </CMTab>
@@ -601,7 +601,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                             taggedSongId: song.id,
                             fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
                         }}
-                        contextSongId={song.id}
+                        contextSong={song}
                     />
                 </AppContextMarker>
             </CMTab>
@@ -620,7 +620,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                         uploadTags={{
                             taggedSongId: song.id,
                         }}
-                        contextSongId={song.id}
+                        contextSong={song}
                     />
                 </AppContextMarker>
             </CMTab>
