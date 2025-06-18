@@ -179,9 +179,6 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         >
             {children}
             <MediaPlayerBar mediaPlayer={contextValue} />
-            <div style={{ position: 'fixed', top: 0, right: 0, zIndex: 9999, width: 100, backgroundColor: '#fffc', height: 100 }}>
-                <input type="text" />
-            </div>
         </MediaPlayerContext.Provider>
     );
 };

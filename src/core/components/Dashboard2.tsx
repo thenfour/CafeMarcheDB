@@ -342,9 +342,16 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
         </ListSubheader>);
     }
     if (props.item.item.type === "link") {
+
+        // Check if the item is selected based on the current path and realm
+        const item = props.item?.item;
+
         let selected = false;
-        if (router.asPath == props.item.item.path) selected = true;
-        if ((props.item.item.realm !== undefined) && (props.realm !== undefined) && (props.item.item.realm === props.realm)) selected = true;
+        if (item?.realm && props.realm) {
+            selected = item.realm === props.realm;
+        } else if (item?.path) {
+            selected = router.pathname === item.path; // safer than asPath
+        }
 
         // Use Next.js Link for internal links, plain <a> for external
         const isExternal = props.item.item.openInNewTab;
