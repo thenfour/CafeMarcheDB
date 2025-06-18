@@ -37,9 +37,9 @@ import { gIconMap } from "../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
 import { AdminInspectObject } from "./CMCoreComponents";
-import { simulateLinkClick, simulateLinkClick2 } from "./CMCoreComponents2";
+import { simulateLinkClick } from "./CMCoreComponents2";
 import { ConfirmProvider } from "./ConfirmationDialog";
-import { DashboardContext, DashboardContextData, DashboardContextProvider, useFeatureRecorder } from "./DashboardContext";
+import { DashboardContext, DashboardContextData, DashboardContextProvider, useClientTelemetryEvent, useFeatureRecorder } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
 import { MainSiteSearch } from "./MainSiteSearch";
 import { MetronomeDialogButton } from "./Metronome";
@@ -332,7 +332,9 @@ interface MenuItemComponentProps {
 
 const MenuItemComponent = (props: MenuItemComponentProps) => {
     const router = useRouter();
-    const recordFeature = useFeatureRecorder();
+    //const recordFeature = useFeatureRecorder();
+    const recordFeature = useClientTelemetryEvent();
+
     if (props.item.item.type === "divider") {
         return <Divider className={`${props.item.group.className} divider`} />;
     }
@@ -360,42 +362,40 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
             <ListItemText primary={props.item.item.linkCaption} />
         </>;
 
-        if (isExternal) {
+        if (isExternal && props.item.item.type === "link") {
             // External link: open in new tab, use <a>
+            const linkItem = props.item.item;
             return (
                 <ListItemButton
                     component="a"
-                    href={props.item.item.path}
+                    href={linkItem.path}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}
-                    onClick={async (e) => {
-                        // Log activity for external link
-                        await recordFeature({
-                            feature: ActivityFeature.link_follow_internal,
+                    className={`linkMenuItem ${props.item.group.className} ${linkItem.className}`}
+                    onClick={e => {
+                        // Log activity for external link using beacon
+                        recordFeature({
+                            feature: ActivityFeature.link_follow_external,
                         });
                     }}
                 >
                     {buttonContent}
                 </ListItemButton>
             );
-        } else {
+        } else if (props.item.item.type === "link") {
             // Internal link: use Next.js Link for client-side navigation
+            const linkItem = props.item.item;
             return (
                 <ListItemButton
                     component={Link}
-                    href={props.item.item.path}
+                    href={linkItem.path}
                     selected={selected}
-                    className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}
-                    onClick={async (e) => {
-                        //e.preventDefault();
-                        //e.stopPropagation();
-                        //const menuLink = props.item.item as MenuItemLink;
-                        await recordFeature({
+                    className={`linkMenuItem ${props.item.group.className} ${linkItem.className}`}
+                    onClick={e => {
+                        // Log activity for internal link using beacon
+                        recordFeature({
                             feature: ActivityFeature.link_follow_internal,
-                            //context: menuLink.linkCaption,
                         });
-                        //simulateLinkClick2(menuLink.path, e);
                     }}
                 >
                     {buttonContent}

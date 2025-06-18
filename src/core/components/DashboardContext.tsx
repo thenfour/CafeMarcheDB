@@ -14,7 +14,9 @@ import * as db3 from "src/core/db3/db3";
 import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
 import { useAppContext } from './AppContext';
-import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from './featureReports/activityTracking';
+import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from './featureReports/activityTracking';
+import { z } from 'zod';
+import { getAntiCSRFToken } from "@blitzjs/auth";
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -222,7 +224,7 @@ export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFe
         void collectDeviceInfo().then(deviceInfo => {
             try {
                 void recordActionProc({
-                    ...appCtx,
+                    //...appCtx,
                     ...associations,
                     uri: window.location.href,
                     context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
@@ -242,10 +244,10 @@ export const useFeatureRecorder = () => {
     const [recordActionProc] = useMutation(recordActionMutation);
     const appCtx = useAppContext();
     return async ({ feature, context, ...associations }: ClientActivityParams) => {
-        const deviceInfo = await collectDeviceInfo();
         try {
+            const deviceInfo = await collectDeviceInfo();
             await recordActionProc({
-                ...appCtx,
+                //...appCtx,
                 ...associations,
                 uri: window.location.href,
                 context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
@@ -256,4 +258,48 @@ export const useFeatureRecorder = () => {
             console.error("Error recording feature use", e);
         }
     }
+}
+
+/**
+ * Beacon-based drop-in replacement for recordFeature (client-side only), as a hook.
+ * Usage: const recordFeatureBeacon = useClientTelemetryEvent();
+ *        recordFeatureBeacon({ feature, context, ...associations })
+ */
+export function useClientTelemetryEvent() {
+    const [currentUser] = useCurrentUser();
+    const appCtx = useAppContext();
+    return async ({ feature, context, ...associations }: ClientActivityParams) => {
+        const url = "/api/telemetry";
+        const deviceInfo = await collectDeviceInfo();
+        const event: z.infer<typeof ZTRecordActionArgs> = {
+            //...appCtx,
+            ...associations,
+            uri: window.location.href,
+            context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
+            feature,
+            deviceInfo,
+        };
+
+        // see blitz docs for manually invoking APIs / https://blitzjs.com/docs/session-management#manual-api-requests
+        const antiCSRFToken = getAntiCSRFToken();
+
+        const payload = JSON.stringify({ event, antiCSRFToken, userId: currentUser?.id });
+        const contentType = "application/json";
+
+        if (typeof window !== "undefined" && typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+            try {
+                const blob = new Blob([payload], { type: contentType, });
+                navigator.sendBeacon(url, blob);
+                return;
+            } catch (e) {
+                // Fallback to fetch below
+            }
+        }
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": contentType },
+            body: payload,
+            keepalive: true,
+        });
+    };
 }
