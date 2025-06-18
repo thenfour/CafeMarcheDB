@@ -28,6 +28,7 @@ import '../../public/style/setlistPlan.css';
 import '../../public/style/songSearch.css';
 import '../../public/style/tabs.css';
 import '../../public/style/workflow.css';
+import { MediaPlayerProvider } from "../core/components/mediaPlayer/MediaPlayerContext";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -89,7 +90,9 @@ function MyApp({
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ErrorBoundary FallbackComponent={RootErrorFallback}>
-          <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
+          <MediaPlayerProvider>
+            <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
+          </MediaPlayerProvider>
         </ErrorBoundary>
       </ThemeProvider>
     </CacheProvider>

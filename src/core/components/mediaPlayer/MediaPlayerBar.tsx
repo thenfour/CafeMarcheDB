@@ -1,5 +1,5 @@
 import React from "react";
-import { MediaPlayerTrack, useMediaPlayer } from "./MediaPlayerContext";
+import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerContext";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SkipNext, SkipPrevious } from "@mui/icons-material";
@@ -21,8 +21,7 @@ export const AnimatedFauxEqualizer: React.FC<{
     );
 }
 
-export const MediaPlayerBar: React.FC = () => {
-    const mediaPlayer = useMediaPlayer();
+export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> = ({ mediaPlayer }) => {
     const audioRef = React.useRef<HTMLAudioElement>(null);
     const [visible, setVisible] = React.useState(false);
 
@@ -105,15 +104,8 @@ export const MediaPlayerBar: React.FC = () => {
                 </span>
 
                 <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
-                {/* <div className={`equalizer ${mediaPlayer.isPlaying ? "enabled" : "disabled"}`} role="img" aria-label="Audio playing">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div> */}
             </div>
-            <AdminInspectObject src={current} />
         </div>
     );
 };
+

@@ -41,7 +41,6 @@ import { simulateLinkClick, simulateLinkClick2 } from "./CMCoreComponents2";
 import { ConfirmProvider } from "./ConfirmationDialog";
 import { DashboardContext, DashboardContextData, DashboardContextProvider, useFeatureRecorder } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
-import { MediaPlayerBar } from "./mediaPlayer/MediaPlayerBar";
 import { MainSiteSearch } from "./MainSiteSearch";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
@@ -737,7 +736,6 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
             <React.Suspense>
                 {forceLogin ? <LoginSignup /> : children}
             </React.Suspense>
-            <MediaPlayerBar />
         </Box>
     </>
     );

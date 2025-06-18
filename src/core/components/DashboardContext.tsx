@@ -15,7 +15,6 @@ import { GetStyleVariablesForColor } from "../components/Color";
 import recordActionMutation from '../db3/mutations/recordActionMutation';
 import { useAppContext } from './AppContext';
 import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams } from './featureReports/activityTracking';
-import { MediaPlayerProvider } from './mediaPlayer/MediaPlayerContext';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -210,9 +209,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 
     return (
         <DashboardContext.Provider value={valueRef.current}>
-            <MediaPlayerProvider>
-                {children}
-            </MediaPlayerProvider>
+            {children}
         </DashboardContext.Provider>
     );
 };

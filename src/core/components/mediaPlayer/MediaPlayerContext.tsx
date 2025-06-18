@@ -1,5 +1,6 @@
 import { Prisma } from "db";
 import React, { createContext, useContext, useState, useCallback } from "react";
+import { MediaPlayerBar } from "./MediaPlayerBar";
 
 export type MediaPlayerSongContextPayload = Prisma.SongGetPayload<{
     select: {
@@ -152,29 +153,35 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setIsPlaying(true);
     }, []);
 
+    const contextValue: MediaPlayerContextType = {
+        playlist,
+        currentIndex,
+        isPlaying,
+        playUri,
+        pause,
+        next,
+        prev,
+        setPlaylist,
+        setIsPlaying,
+        getTrackTitle,
+        lengthSeconds: audioDuration,
+        playheadSeconds: audioTime,
+        setPlayheadSeconds: setAudioTime,
+        setLengthSeconds: setAudioDuration,
+        unpause,
+        previousEnabled: () => currentIndex !== undefined && currentIndex > 0,
+        nextEnabled: () => currentIndex !== undefined && currentIndex < playlist.length - 1,
+    };
+
     return (
         <MediaPlayerContext.Provider
-            value={{
-                playlist,
-                currentIndex,
-                isPlaying,
-                playUri,
-                pause,
-                next,
-                prev,
-                setPlaylist,
-                setIsPlaying,
-                getTrackTitle,
-                lengthSeconds: audioDuration,
-                playheadSeconds: audioTime,
-                setPlayheadSeconds: setAudioTime,
-                setLengthSeconds: setAudioDuration,
-                unpause,
-                previousEnabled: () => currentIndex !== undefined && currentIndex > 0,
-                nextEnabled: () => currentIndex !== undefined && currentIndex < playlist.length - 1,
-            }}
+            value={contextValue}
         >
             {children}
+            <MediaPlayerBar mediaPlayer={contextValue} />
+            <div style={{ position: 'fixed', top: 0, right: 0, zIndex: 9999, width: 100, backgroundColor: '#fffc', height: 100 }}>
+                <input type="text" />
+            </div>
         </MediaPlayerContext.Provider>
     );
 };
