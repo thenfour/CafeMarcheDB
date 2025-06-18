@@ -347,26 +347,55 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
         if (router.asPath == props.item.item.path) selected = true;
         if ((props.item.item.realm !== undefined) && (props.realm !== undefined) && (props.item.item.realm === props.realm)) selected = true;
 
-        return (<ListItemButton
-            component={Link}
-            href={props.item.item.path}
-            onClick={async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const menuLink = props.item.item as MenuItemLink;
-                await recordFeature({
-                    feature: ActivityFeature.link_follow_internal,
-                    //context: menuLink.linkCaption,
-                });
-                simulateLinkClick2(menuLink.path, e);
-            }}
-            selected={selected}
-            className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}
-            target={props.item.item.openInNewTab ? "_blank" : undefined}
-        >
+        // Use Next.js Link for internal links, plain <a> for external
+        const isExternal = props.item.item.openInNewTab;
+        const buttonContent = <>
             {props.item.item.renderIcon && <ListItemIcon>{props.item.item.renderIcon()}</ListItemIcon>}
             <ListItemText primary={props.item.item.linkCaption} />
-        </ListItemButton>);
+        </>;
+
+        if (isExternal) {
+            // External link: open in new tab, use <a>
+            return (
+                <ListItemButton
+                    component="a"
+                    href={props.item.item.path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}
+                    onClick={async (e) => {
+                        // Log activity for external link
+                        await recordFeature({
+                            feature: ActivityFeature.link_follow_internal,
+                        });
+                    }}
+                >
+                    {buttonContent}
+                </ListItemButton>
+            );
+        } else {
+            // Internal link: use Next.js Link for client-side navigation
+            return (
+                <ListItemButton
+                    component={Link}
+                    href={props.item.item.path}
+                    selected={selected}
+                    className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}
+                    onClick={async (e) => {
+                        //e.preventDefault();
+                        //e.stopPropagation();
+                        //const menuLink = props.item.item as MenuItemLink;
+                        await recordFeature({
+                            feature: ActivityFeature.link_follow_internal,
+                            //context: menuLink.linkCaption,
+                        });
+                        //simulateLinkClick2(menuLink.path, e);
+                    }}
+                >
+                    {buttonContent}
+                </ListItemButton>
+            );
+        }
     }
     return <>??</>;
 };
