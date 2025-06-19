@@ -18,7 +18,6 @@ import { getURIForEvent, getURIForFile, getURIForSong } from "../db3/clientAPILL
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
-import { simulateLinkClickTargetBlank } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
@@ -268,14 +267,15 @@ export interface EventChipProps {
 export const EventChip = (props: EventChipProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
-    const clickHandler = props.onClick || (() => {
-        simulateLinkClickTargetBlank(getURIForEvent(props.value));
-    });
+    // const clickHandler = props.onClick || (() => {
+    //     simulateLinkClickTargetBlank(getURIForEvent(props.value));
+    // });
 
     return <CMChip
         variation={props.variation}
         size={props.size}
-        onClick={clickHandler}
+        //onClick={clickHandler}
+        href={getURIForEvent(props.value)}
         className={props.className}
         color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
     >
@@ -300,14 +300,15 @@ export interface SongChipProps {
 };
 
 export const SongChip = (props: SongChipProps) => {
-    const clickHandler = props.onClick || (() => {
-        simulateLinkClickTargetBlank(getURIForSong(props.value));
-    });
+    // const clickHandler = props.onClick || (() => {
+    //     simulateLinkClickTargetBlank(getURIForSong(props.value));
+    // });
 
     return <CMChip
         variation={props.variation}
         size={props.size}
-        onClick={clickHandler}
+        //onClick={clickHandler}
+        href={getURIForSong(props.value)}
         className={props.className}
     >
         {props.startAdornment}
@@ -332,14 +333,15 @@ export interface FileChipProps {
 };
 
 export const FileChip = (props: FileChipProps) => {
-    const clickHandler = props.onClick || (() => {
-        simulateLinkClickTargetBlank(getURIForFile(props.value));
-    });
+    // const clickHandler = props.onClick || (() => {
+    //     simulateLinkClickTargetBlank(getURIForFile(props.value));
+    // });
 
     return <CMChip
         variation={props.variation}
         size={props.size}
-        onClick={clickHandler}
+        //onClick={clickHandler}
+        href={getURIForFile(props.value)}
         className={props.className}
     >
         {props.startAdornment}
@@ -365,14 +367,15 @@ export interface WikiPageChipProps {
 
 export const WikiPageChip = (props: WikiPageChipProps) => {
     const wikiPath = wikiParseCanonicalWikiPath(props.slug);
-    const clickHandler = props.onClick || (() => {
-        simulateLinkClickTargetBlank(wikiPath.uriRelativeToHost);
-    });
+    // const clickHandler = props.onClick || (() => {
+    //     simulateLinkClickTargetBlank(wikiPath.uriRelativeToHost);
+    // });
 
     return <CMChip
         variation={props.variation}
         size={props.size}
-        onClick={clickHandler}
+        //onClick={clickHandler}
+        href={wikiPath.uriRelativeToHost}
         className={props.className}
     >
         {props.startAdornment}

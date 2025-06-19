@@ -37,7 +37,6 @@ import { gIconMap } from "../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
 import { AdminInspectObject } from "./CMCoreComponents";
-import { simulateLinkClick } from "./CMCoreComponents2";
 import { ConfirmProvider } from "./ConfirmationDialog";
 import { DashboardContext, DashboardContextData, DashboardContextProvider, useClientTelemetryEvent, useFeatureRecorder } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
@@ -52,7 +51,7 @@ const drawerWidth = 260;
 
 const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
     //const [logoutMutation] = useMutation(logout);
-    //const router = useRouter();
+    const router = useRouter();
     //const [currentUser] = useCurrentUser();
     const sess = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
@@ -135,7 +134,8 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
                 context: "AppBarAvatarMenu",
             });
             closeMenu();
-            simulateLinkClick(Routes.LogoutPage());
+            router.push(Routes.LogoutPage());
+            //simulateLinkClick(Routes.LogoutPage());
         }}>
             Log out
         </MenuItem>

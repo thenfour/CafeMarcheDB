@@ -367,32 +367,32 @@ export interface EventBreadcrumbProps {
 };
 export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
     return <Breadcrumbs aria-label="breadcrumb">
-        <Link
-            underline="hover"
-            color="inherit"
-            sx={{ display: 'flex', alignItems: 'center' }}
+        <CMLink
+            //underline="hover"
+            //color="inherit"
+            //sx={{ display: 'flex', alignItems: 'center' }}
             href="/backstage"
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
-        </Link>
-        <Link
-            underline="hover"
-            color="inherit"
+        </CMLink>
+        <CMLink
+            //underline="hover"
+            //color="inherit"
             href="/backstage/events"
-            sx={{ display: 'flex', alignItems: 'center' }}
+        //sx={{ display: 'flex', alignItems: 'center' }}
         >
             Events
-        </Link>
+        </CMLink>
 
-        <Link
-            underline="hover"
-            color="inherit"
+        <CMLink
+            //underline="hover"
+            //color="inherit"
             href={API.events.getURIForEvent(props.event)}
-            sx={{ display: 'flex', alignItems: 'center' }}
+        //sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.event.name}
-        </Link>
+        </CMLink>
 
 
         {/* <Typography color="text.primary">{params.idOrSlug}</Typography> */}

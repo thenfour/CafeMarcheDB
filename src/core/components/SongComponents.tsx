@@ -1,7 +1,7 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs, Button, Link, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { StandardVariationSpec } from 'shared/color';
@@ -32,6 +32,7 @@ import { VisibilityValue } from './VisibilityControl';
 import { CMTab, CMTabPanel } from './TabPanel';
 import { AppContextMarker } from './AppContext';
 import { ActivityFeature } from './featureReports/activityTracking';
+import { CMLink } from './CMLink';
 
 
 export const SongClientColumns = {
@@ -62,32 +63,32 @@ export interface SongBreadcrumbProps {
 };
 export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
     return <Breadcrumbs aria-label="breadcrumb">
-        <Link
-            underline="hover"
-            color="inherit"
-            sx={{ display: 'flex', alignItems: 'center' }}
+        <CMLink
+            // underline="hover"
+            // color="inherit"
+            // sx={{ display: 'flex', alignItems: 'center' }}
             href="/backstage"
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
-        </Link>
-        <Link
-            underline="hover"
-            color="inherit"
+        </CMLink>
+        <CMLink
+            // underline="hover"
+            // color="inherit"
             href="/backstage/songs"
-            sx={{ display: 'flex', alignItems: 'center' }}
+        //sx={{ display: 'flex', alignItems: 'center' }}
         >
             Songs
-        </Link>
+        </CMLink>
 
-        <Link
-            underline="hover"
-            color="inherit"
+        <CMLink
+            // underline="hover"
+            // color="inherit"
             href={API.songs.getURIForSong(props.song)}
-            sx={{ display: 'flex', alignItems: 'center' }}
+        // sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.song.name}
-        </Link>
+        </CMLink>
 
     </Breadcrumbs>
         ;
@@ -421,10 +422,10 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                             {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>{song.introducedYear}</span></Tooltip>}
                         </div>
                         :
-                        <Link href={songData.songURI} className="titleLink">
+                        <CMLink href={songData.songURI} className="titleLink">
                             <span className='title'>{song.name}</span>
                             {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>{song.introducedYear}</span></Tooltip>}
-                        </Link>}
+                        </CMLink>}
                     {!IsNullOrWhitespace(song.aliases) && <div className='subtitle songAliases'><Tooltip title={"Aliases"}><span>{song.aliases}</span></Tooltip></div>}
                 </div>
 

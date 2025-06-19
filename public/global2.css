@@ -2888,4 +2888,12 @@ textarea {
     display: flex;
 }
 
-/* MediaPlayer styles moved to style/mediaPlayer.css */
+nav a {
+    display: flex;
+    align-items: center;
+    color: inherit;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}

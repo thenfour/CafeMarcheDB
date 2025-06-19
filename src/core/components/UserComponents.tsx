@@ -1,6 +1,6 @@
 import { useQuery } from "@blitzjs/rpc";
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs, Button, Link } from "@mui/material";
+import { Breadcrumbs, Button } from "@mui/material";
 import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
@@ -26,6 +26,7 @@ import { UserChip } from "./userChip";
 import { Markdown } from "./markdown/Markdown";
 import { Permission } from "@/shared/permissions";
 import { EventShortDate } from "./EventComponentsBase";
+import { CMLink } from "./CMLink";
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -122,32 +123,23 @@ export interface UserBreadcrumbProps {
 };
 export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
     return <Breadcrumbs aria-label="breadcrumb">
-        <Link
-            underline="hover"
-            color="inherit"
-            sx={{ display: 'flex', alignItems: 'center' }}
+        <CMLink
             href="/backstage"
         >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
             Backstage
-        </Link>
-        <Link
-            underline="hover"
-            color="inherit"
+        </CMLink>
+        <CMLink
             href="/backstage/users"
-            sx={{ display: 'flex', alignItems: 'center' }}
         >
             Users
-        </Link>
+        </CMLink>
 
-        <Link
-            underline="hover"
-            color="inherit"
+        <CMLink
             href={getURIForUser(props.user)}
-            sx={{ display: 'flex', alignItems: 'center' }}
         >
             {IsNullOrWhitespace(props.user.name) ? props.user.id : props.user.name}
-        </Link>
+        </CMLink>
 
     </Breadcrumbs>
         ;

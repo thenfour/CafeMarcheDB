@@ -9,16 +9,15 @@ import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { useDb3Query } from "../db3/DB3Client";
 import getUserTagWithAssignments from "../db3/queries/getUserTagWithAssignments";
-import { ActivityFeature } from "./featureReports/activityTracking";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
-import { simulateLinkClick2 } from "./CMCoreComponents2";
-import { CMDivLink } from "./CMLink";
+import { CMLink } from "./CMLink";
 import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
-import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
 import { EventShortDate, EventStatusChip } from "./EventComponentsBase";
+import { ActivityFeature } from "./featureReports/activityTracking";
+import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
 
 
 export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {
@@ -41,9 +40,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
     ];
 
     return <AppContextMarker eventId={event.id}>
-        <CMDivLink trackingFeature={ActivityFeature.link_follow_internal} className={classes.join(" ")} style={typeStyle.style} onClick={async (e) => {
-            simulateLinkClick2(API.events.getURIForEvent(event), e);
-        }} >
+        <CMLink trackingFeature={ActivityFeature.link_follow_internal} className={classes.join(" ")} style={typeStyle.style} href={API.events.getURIForEvent(event)}>
             <div className="SubtleEventCardTitle">
                 <div>{event.name}</div>
             </div>
@@ -71,7 +68,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
                 }
 
             </div>
-        </CMDivLink>
+        </CMLink>
     </AppContextMarker>;
 };
 

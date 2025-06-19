@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { LoginForm } from "src/auth/components/LoginForm";
-import { simulateLinkClick } from "./CMCoreComponents2";
 import { AppContextMarker } from "./AppContext";
 import { CMLink } from "./CMLink";
 import { ActivityFeature } from "./featureReports/activityTracking";
@@ -26,8 +25,8 @@ export const LoginSignup = () => {
                     <LoginForm
                         onSuccess={(_user) => {
                             //const next = router.query.next ? decodeURIComponent(router.query.next as string) : "/"
-                            //return router.push(next)
-                            simulateLinkClick("/backstage");
+                            return router.push("/backstage");
+                            //simulateLinkClick("/backstage");
                         }}
                     />
                 </div>

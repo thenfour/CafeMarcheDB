@@ -133,62 +133,63 @@ const formatUrl = (url: UrlObject): string => {
     return `${pathname}${searchParams ? `?${searchParams}` : ''}${hash ? `#${hash}` : ''}`;
 };
 
-export const simulateLinkClick = (url: Url, as?: Url, options?: any) => {
-    let href: string;
 
-    if (typeof url === 'string') {
-        href = url;
-    } else {
-        href = formatUrl(url);
-    }
+// export const simulateLinkClick = (url: Url, as?: Url, options?: any) => {
+//     let href: string;
 
-    if (as) {
-        if (typeof as === 'string') {
-            href = as;
-        } else {
-            href = formatUrl(as);
-        }
-    }
+//     if (typeof url === 'string') {
+//         href = url;
+//     } else {
+//         href = formatUrl(url);
+//     }
 
-    const link = document.createElement('a');
-    link.href = href;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+//     if (as) {
+//         if (typeof as === 'string') {
+//             href = as;
+//         } else {
+//             href = formatUrl(as);
+//         }
+//     }
 
-export const simulateLinkClickTargetBlank = (url: Url) => {
-    let href: string;
+//     const link = document.createElement('a');
+//     link.href = href;
+//     link.style.display = 'none';
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+// };
 
-    if (typeof url === 'string') {
-        href = url;
-    } else {
-        href = formatUrl(url);
-    }
+// export const simulateLinkClickTargetBlank = (url: Url) => {
+//     let href: string;
 
-    const link = document.createElement('a');
-    link.href = href;
-    link.style.display = 'none';
-    link.rel = "noreferrer";
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+//     if (typeof url === 'string') {
+//         href = url;
+//     } else {
+//         href = formatUrl(url);
+//     }
 
-// reacts to ctrl key and prevents bubbling
-export const simulateLinkClick2 = (url: Url, e: React.MouseEvent) => {
-    if (IsNullOrWhitespace(url)) return;
-    e.stopPropagation();
-    e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
-        simulateLinkClickTargetBlank(url);
-    }
-    else {
-        simulateLinkClick(url);
-    }
-};
+//     const link = document.createElement('a');
+//     link.href = href;
+//     link.style.display = 'none';
+//     link.rel = "noreferrer";
+//     link.target = "_blank";
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+// };
+
+// // reacts to ctrl key and prevents bubbling
+// export const simulateLinkClick2 = (url: Url, e: React.MouseEvent) => {
+//     if (IsNullOrWhitespace(url)) return;
+//     e.stopPropagation();
+//     e.preventDefault();
+//     if (e.ctrlKey || e.metaKey) {
+//         simulateLinkClickTargetBlank(url);
+//     }
+//     else {
+//         simulateLinkClick(url);
+//     }
+// };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const DebugCollapsibleText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {

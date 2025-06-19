@@ -12,6 +12,7 @@ import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "sh
 import { IsNullOrWhitespace } from "shared/utils";
 import { gIconMap, RenderMuiIcon } from "../db3/components/IconMap";
 import { GetStyleVariablesForColor } from "./Color";
+import { CMLink } from "./CMLink";
 
 // but it means having a lot of color variations:
 // - main / contrast
@@ -34,6 +35,8 @@ export interface CMChipProps {
     className?: string;
     tooltip?: React.ReactNode;
     style?: React.CSSProperties | undefined;
+
+    href?: string; // if provided, the chip will be a link
 
     onDelete?: () => void;
     onClick?: () => void;
@@ -69,7 +72,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
     const computedStyle: React.CSSProperties = { ...style.style, ...props.style };
 
-    const chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick} ref={props.chipRef} >
+    let chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick} ref={props.chipRef} >
         <div className={chipClasses.join(" ")}>
             <div className='content'>
                 {props.onDelete && <span className="CMChipDeleteButton interactable" onClick={props.onDelete}>{gIconMap.Cancel()}</span>}
@@ -77,6 +80,10 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
             </div>
         </div>
     </div >;
+
+    if (!IsNullOrWhitespace(props.href)) {
+        chipNode = <CMLink href={props.href || ""}>{chipNode}</CMLink>
+    }
 
     if (IsNullOrWhitespace(props.tooltip)) return chipNode;
 

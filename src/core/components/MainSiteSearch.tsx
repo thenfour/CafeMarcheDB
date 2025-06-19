@@ -1,9 +1,10 @@
 import { QuickSearchItemType } from 'shared/quickFilter';
 import { AppContextMarker } from './AppContext';
-import { simulateLinkClick } from './CMCoreComponents2';
 import { AssociationAutocomplete } from './setlistPlan/ItemAssociation';
+import { useRouter } from 'next/router';
 
 export const MainSiteSearch = () => {
+    const router = useRouter();
     return <div className="MainSiteSearch">
         <AppContextMarker name="MainSearchBar">
             <AssociationAutocomplete
@@ -11,7 +12,8 @@ export const MainSiteSearch = () => {
                 defaultValue=''
                 onSelect={async (newValue) => {
                     if (newValue && newValue.absoluteUri) {
-                        simulateLinkClick(newValue.absoluteUri);
+                        //simulateLinkClick(newValue.absoluteUri);
+                        router.push(newValue.absoluteUri);
                     }
                 }}
             />
