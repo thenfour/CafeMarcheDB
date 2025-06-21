@@ -41,13 +41,15 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
             // the audio player won't start playing until the media is ready sometimes,
             // so set autoplay any time we expect playing.
             audio.autoplay = true;
-
             audio.play().catch(() => {
                 console.error("Failed to play audio:", audio.src);
             });
         } else {
             audio.autoplay = false; // see above
-            audio.pause();
+            if (!audio.paused) {
+                console.log("mediaPlayer.paused = false; setting PAUSED");
+                audio.pause();
+            }
         }
     }, [mediaPlayer.isPlaying, mediaPlayer.currentIndex]);
 
@@ -64,39 +66,44 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
     // Always render the bar for animation, but toggle visibility class
     return (
         <div className={`mediaPlayerBar${visible ? ' mediaPlayerBar--visible' : ''}`}>
-            <CMSmallButton
-                style={{ opacity: 1 }}
-                onClick={() => mediaPlayer.setPlaylist([], undefined)}
-            >
-                {gIconMap.Close()}
-            </CMSmallButton>
+            <div className="mediaPlayerBarTransport">
+                <CMSmallButton
+                    style={{ opacity: 1 }}
+                    onClick={() => mediaPlayer.setPlaylist([], undefined)}
+                >
+                    {gIconMap.Close()}
+                </CMSmallButton>
 
-            <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
-            <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
+                <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
+                <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
 
-            {current && (
-                <audio
-                    src={current.url}
-                    controls
-                    ref={audioRef}
-                    onLoadedMetadata={e => mediaPlayer.setLengthSeconds(e.currentTarget.duration)}
-                    onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
-                    onPlaying={() => mediaPlayer.setIsPlaying(true)}
-                    onPause={() => mediaPlayer.setIsPlaying(false)}
-                    onEnded={() => {
-                        // don't auto-next if the playlist is ending.
-                        if (mediaPlayer.currentIndex == null || mediaPlayer.currentIndex + 1 >= mediaPlayer.playlist.length) {
-                            const audio = audioRef.current;
-                            if (!audio) return;
-                            // If we reach the end of the playlist, reset the player
-                            audio.currentTime = 0; // Reset time
-                            return;
-                        }
-                        mediaPlayer.next();
-                    }}
-                    style={{ flex: 1, maxWidth: "600px" }}
-                />
-            )}
+                {current && (
+                    <audio
+                        src={current.url}
+                        controls
+                        ref={audioRef}
+                        onLoadedMetadata={e => mediaPlayer.setLengthSeconds(e.currentTarget.duration)}
+                        onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
+                        onPlaying={() => {
+                            mediaPlayer.setIsPlaying(true);
+                        }}
+                        onPause={() => {
+                            mediaPlayer.setIsPlaying(false);
+                        }}
+                        onEnded={() => {
+                            // don't auto-next if the playlist is ending.
+                            if (mediaPlayer.currentIndex == null || mediaPlayer.currentIndex + 1 >= mediaPlayer.playlist.length) {
+                                const audio = audioRef.current;
+                                if (!audio) return;
+                                // If we reach the end of the playlist, reset the player
+                                audio.currentTime = 0; // Reset time
+                                return;
+                            }
+                            mediaPlayer.next();
+                        }}
+                    />
+                )}
+            </div>
             <div className="mediaPlayerTrackMetadataDisplay">
                 <span className="mediaPlayerTrackMetadataCol1">
                     <span className="mediaPlayerTrackTitle">{title?.title}</span>
