@@ -1,4 +1,5 @@
 import { Button, DialogContent, DialogTitle } from "@mui/material";
+import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -11,7 +12,7 @@ import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../db3/components/IconMap";
-import { DialogActionsCM, simulateLinkClick } from "./CMCoreComponents2";
+import { DialogActionsCM } from "./CMCoreComponents2";
 import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
@@ -31,6 +32,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const dashboardContext = React.useContext(DashboardContext);
     const recordFeature = useFeatureRecorder();
+    const router = useRouter();
 
     const workflowQuery = DB3Client.useDb3Query(db3.xWorkflowDef_Search);
     const workflows = workflowQuery.items as db3.WorkflowDef_SearchPayload[];
@@ -118,13 +120,12 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         const payload: TinsertEventArgs = {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),
-        };
-        setGrayed(true);
+        }; setGrayed(true);
         mut.invoke(payload).then(async (ret) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
 
-            simulateLinkClick(API.events.getURIForEvent(ret.event));
+            router.push(API.events.getURIForEvent(ret.event));
 
         }).catch(err => {
             console.log(err);

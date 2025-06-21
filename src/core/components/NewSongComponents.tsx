@@ -11,7 +11,6 @@ import * as db3 from "src/core/db3/db3";
 import { DashboardContext } from './DashboardContext';
 import { TAnyModel } from "../db3/shared/apiTypes";
 import { gIconMap } from "../db3/components/IconMap";
-import { simulateLinkClick } from "./CMCoreComponents2";
 
 export const NewSongButton = () => {
     const router = useRouter();
@@ -58,12 +57,10 @@ export const NewSongButton = () => {
         clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.Mutation,
         tableSpec: songTableSpec,
-    });
-
-    const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+    }); const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         songTableClient.doInsertMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
-            simulateLinkClick(API.songs.getURIForSong(ret as any));
+            router.push(API.songs.getURIForSong(ret as any));
             api.closeDialog();
         }).catch(e => {
             console.log(e);

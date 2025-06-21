@@ -3,7 +3,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 import { Permission } from "shared/permissions";
-import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SongClientColumns } from "src/core/components/SongComponents";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
@@ -13,10 +12,9 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
-    const router = useRouter();
-    return <>
+    const router = useRouter(); return <>
         <Button onClick={() => {
-            simulateLinkClick({
+            router.push({
                 pathname: '/backstage/editSongCredits',
                 query: { songId: gridArgs.row.id },
             });

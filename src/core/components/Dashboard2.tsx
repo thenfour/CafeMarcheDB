@@ -135,7 +135,6 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
             });
             closeMenu();
             router.push(Routes.LogoutPage());
-            //simulateLinkClick(Routes.LogoutPage());
         }}>
             Log out
         </MenuItem>
@@ -261,7 +260,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         component="div"
                         sx={{ display: { xs: 'none', sm: 'block' } }}
                     >
-                        <a href={"/backstage"} className={`logo`}>Café Marché Backstage</a>
+                        <Link href={"/backstage"} className={`logo`}>Café Marché Backstage</Link>
                     </Typography>
 
                     <MetronomeDialogButton />

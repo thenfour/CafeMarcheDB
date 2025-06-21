@@ -5,7 +5,6 @@ import getUser from "../db3/queries/getUser";
 import * as db3 from "src/core/db3/db3";
 import { ColorVariationSpec } from "shared/color";
 import { getHashedColor } from "shared/utils";
-import { simulateLinkClickTargetBlank } from "./CMCoreComponents2";
 import { getURIForUser } from "../db3/clientAPILL";
 
 
@@ -35,16 +34,15 @@ type QueriedUserChipProps = UserChipBaseProps & {
 const ValuedUserChip = (props: ValuedUserChipProps) => {
 
     const userId = props.value?.id || null;
-    const ownClickHandler = userId ? () => {
-        simulateLinkClickTargetBlank(getURIForUser({ id: userId }));
-    } : undefined;
+    const userURI = userId ? getURIForUser({ id: userId }) : undefined;
 
-    const clickHandler = props.onClick || ownClickHandler;
+    const clickHandler = props.onClick;
 
     return <CMChip
         variation={props.variation}
         size={props.size}
         onClick={clickHandler}
+        href={userURI}
         className={props.className}
         color={props.color}
     >

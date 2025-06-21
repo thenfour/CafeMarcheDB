@@ -12,7 +12,6 @@ export const MainSiteSearch = () => {
                 defaultValue=''
                 onSelect={async (newValue) => {
                     if (newValue && newValue.absoluteUri) {
-                        //simulateLinkClick(newValue.absoluteUri);
                         router.push(newValue.absoluteUri);
                     }
                 }}

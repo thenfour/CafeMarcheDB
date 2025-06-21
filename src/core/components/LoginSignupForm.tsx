@@ -26,7 +26,6 @@ export const LoginSignup = () => {
                         onSuccess={(_user) => {
                             //const next = router.query.next ? decodeURIComponent(router.query.next as string) : "/"
                             return router.push("/backstage");
-                            //simulateLinkClick("/backstage");
                         }}
                     />
                 </div>

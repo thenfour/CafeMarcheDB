@@ -8,7 +8,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import impersonateUser from "src/auth/mutations/impersonateUser";
-import { DialogActionsCM, simulateLinkClick } from "src/core/components/CMCoreComponents2";
+import { DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -105,16 +105,14 @@ const UserListContent = () => {
         ],
     });
 
-    const [impersonateUserMutation] = useMutation(impersonateUser);
-
-    const extraActions = (args: DB3EditGridExtraActionsArgs) => {
+    const [impersonateUserMutation] = useMutation(impersonateUser); const extraActions = (args: DB3EditGridExtraActionsArgs) => {
         return <div>
             <Button onClick={() => {
                 impersonateUserMutation({
                     userId: args.row.id,
                 }).then(() => {
                     // navigate to home page
-                    simulateLinkClick(Routes.Home());
+                    router.push(Routes.Home());
                 }).catch((e) => {
                     console.log(e);
                 });

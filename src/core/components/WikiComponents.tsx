@@ -2,6 +2,7 @@
 import { useMutation } from "@blitzjs/rpc";
 import { History, LockOpen } from "@mui/icons-material";
 import { Button, ListItemIcon, MenuItem } from "@mui/material";
+import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
@@ -11,7 +12,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import wikiPageSetVisibility from "../wiki/mutations/wikiPageSetVisibility";
 import { UpdateWikiPageResultOutcome, WikiPath, getFileTagsForNamespace } from "../wiki/shared/wikiUtils";
 import { AdminContainer, AdminInspectObject, EventTextLink } from "./CMCoreComponents";
-import { DotMenu, KeyValueTable, NameValuePair, simulateLinkClick } from "./CMCoreComponents2";
+import { DotMenu, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { CMSelectNullBehavior } from "./CMSingleSelectDialog";
 import { CMTextInputBase } from "./CMTextField";
@@ -211,6 +212,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
     const dashboardContext = React.useContext(DashboardContext);
     const authorizedForEdit = !props.readonly && dashboardContext.isAuthorized(Permission.edit_wiki_pages);
     const snackbar = useSnackbar();
+    const router = useRouter();
     const endMenuItemRef = React.useRef<() => void>(() => { });
 
     const pageData = props.wikiPageApi.currentPageData;
@@ -238,10 +240,9 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                 {gIconMap.Share()}
             </ListItemIcon>
             Copy link to wiki page
-        </MenuItem>,
-        pageExists &&
+        </MenuItem>, pageExists &&
         <MenuItem key={"viewhistory"} onClick={async () => {
-            simulateLinkClick(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
+            router.push(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
             endMenuItemRef.current();
         }}>
             <ListItemIcon>

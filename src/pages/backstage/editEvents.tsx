@@ -3,7 +3,6 @@ import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 import React from 'react';
 import { Permission } from "shared/permissions";
-import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -13,16 +12,15 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
-    const router = useRouter();
-    return <>
+    const router = useRouter(); return <>
         <Button onClick={() => {
-            simulateLinkClick({
+            router.push({
                 pathname: '/backstage/editEventSegments',
                 query: { eventId: gridArgs.row.id },
             });
         }}>Segments</Button>
         <Button onClick={() => {
-            simulateLinkClick({
+            router.push({
                 pathname: '/backstage/editEventSongLists',
                 query: { eventId: gridArgs.row.id },
             });

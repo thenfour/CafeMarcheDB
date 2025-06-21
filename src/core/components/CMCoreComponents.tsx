@@ -267,14 +267,9 @@ export interface EventChipProps {
 export const EventChip = (props: EventChipProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
-    // const clickHandler = props.onClick || (() => {
-    //     simulateLinkClickTargetBlank(getURIForEvent(props.value));
-    // });
-
     return <CMChip
         variation={props.variation}
         size={props.size}
-        //onClick={clickHandler}
         href={getURIForEvent(props.value)}
         className={props.className}
         color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
@@ -300,14 +295,9 @@ export interface SongChipProps {
 };
 
 export const SongChip = (props: SongChipProps) => {
-    // const clickHandler = props.onClick || (() => {
-    //     simulateLinkClickTargetBlank(getURIForSong(props.value));
-    // });
-
     return <CMChip
         variation={props.variation}
         size={props.size}
-        //onClick={clickHandler}
         href={getURIForSong(props.value)}
         className={props.className}
     >
@@ -333,14 +323,9 @@ export interface FileChipProps {
 };
 
 export const FileChip = (props: FileChipProps) => {
-    // const clickHandler = props.onClick || (() => {
-    //     simulateLinkClickTargetBlank(getURIForFile(props.value));
-    // });
-
     return <CMChip
         variation={props.variation}
         size={props.size}
-        //onClick={clickHandler}
         href={getURIForFile(props.value)}
         className={props.className}
     >
@@ -367,14 +352,10 @@ export interface WikiPageChipProps {
 
 export const WikiPageChip = (props: WikiPageChipProps) => {
     const wikiPath = wikiParseCanonicalWikiPath(props.slug);
-    // const clickHandler = props.onClick || (() => {
-    //     simulateLinkClickTargetBlank(wikiPath.uriRelativeToHost);
-    // });
 
     return <CMChip
         variation={props.variation}
         size={props.size}
-        //onClick={clickHandler}
         href={wikiPath.uriRelativeToHost}
         className={props.className}
     >
@@ -397,7 +378,6 @@ export interface AttendanceChipProps {
     onClick?: () => void;
     className?: string;
     tooltipOverride?: string | undefined;
-    //shape?: CMChipShapeOptions;
 };
 
 export const AttendanceChip = ({ fadeNoResponse = false, showLabel = true, ...props }: AttendanceChipProps) => {
@@ -423,7 +403,6 @@ export const AttendanceChip = ({ fadeNoResponse = false, showLabel = true, ...pr
         onClick={props.onClick}
         className={`${props.className} AttendanceChip`}
         color={value?.color || null}
-        //shape={props.shape}
         shape="rectangle"
         tooltip={props.tooltipOverride || value?.description}
         style={style}

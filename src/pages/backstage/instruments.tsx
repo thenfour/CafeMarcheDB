@@ -3,7 +3,6 @@ import PageviewIcon from '@mui/icons-material/Pageview';
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
 import { Permission } from "shared/permissions";
-import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -35,14 +34,13 @@ const InstrumentListContent = () => {
     return <>
         <SettingMarkdown setting="instrumentList_markdown"></SettingMarkdown>
         <DB3EditGrid
-            tableSpec={tableSpec}
-            renderExtraActions={(args) => <GridActionsCellItem
+            tableSpec={tableSpec} renderExtraActions={(args) => <GridActionsCellItem
                 icon={<PageviewIcon />}
                 key="view"
                 label="View"
                 color="inherit"
                 onClick={() => {
-                    simulateLinkClick(`/backstage/instrument/${args.row["slug"]}`);
+                    router.push(`/backstage/instrument/${args.row["slug"]}`);
                 }}
             />}
         />
