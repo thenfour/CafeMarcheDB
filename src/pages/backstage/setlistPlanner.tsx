@@ -1210,14 +1210,6 @@ const SetlistPlannerPageContent = () => {
     </div >
 };
 
-// const NumberThingTester = () => {
-//     const [value, setValue] = React.useState<number | null>(null);
-//     return <div>
-//         <NumberField value={value} onChange={(e, val) => setValue(val)} />
-//         <Pre text={JSON.stringify(value)} />
-//     </div>;
-// };
-
 const SetlistPlannerPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Setlist Planner" basePermission={Permission.sysadmin}>

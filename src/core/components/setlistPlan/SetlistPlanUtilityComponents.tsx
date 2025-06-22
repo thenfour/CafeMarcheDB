@@ -21,7 +21,8 @@ const FIBONACCI_SEQUENCE = [0, ...generateFibonacci(100)];
 // a 2-hour rehearsal supports about 15 points
 
 type NumberFieldProps = {
-    value: number | null;
+    value?: number | null;
+    initialValue?: number | null;
     onChange?: (e: React.ChangeEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>, newValue: number | null) => void;
     className?: string;
     readonly?: boolean;
@@ -32,6 +33,12 @@ type NumberFieldProps = {
 
 export const NumberField = ({ inert = false, ...props }: NumberFieldProps) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
+    const [controlledValue, setControlledValue] = React.useState<number | null>(props.initialValue || null);
+
+    // if you specify initial value, then we keep the live value internally.
+    const weControlValue = props.initialValue !== undefined;
+
+    const useValue = weControlValue ? controlledValue : props.value;
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
         e.target.select();
@@ -39,26 +46,28 @@ export const NumberField = ({ inert = false, ...props }: NumberFieldProps) => {
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         // If there's no numeric value, treat it like 0 for arrow handling
-        const currentValue = props.value ?? 0;
+        const currentValue = useValue ?? 0;
 
         if (e.key === "ArrowUp") {
             e.preventDefault();
             // Find first Fibonacci number that is strictly greater than currentValue
             const nextFib = FIBONACCI_SEQUENCE.find((fib) => fib > currentValue);
             if (nextFib != null && props.onChange) {
+                if (weControlValue) {
+                    setControlledValue(nextFib);
+                }
                 props.onChange(e, nextFib);
-            } else {
-                // If currentValue is already above our max precomputed Fibonacci,
-                // do nothing or handle it in another way
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
             // Find the largest Fibonacci <= currentValue (previous Fib)
-            // One approach is to find the index of the first Fibonacci that is >= currentValue,
-            // then take one step back
             const idx = FIBONACCI_SEQUENCE.findIndex((fib) => fib >= currentValue);
             if (idx > 0 && props.onChange) {
-                props.onChange(e, FIBONACCI_SEQUENCE[idx - 1]!);
+                const prevFib = FIBONACCI_SEQUENCE[idx - 1]!;
+                if (weControlValue) {
+                    setControlledValue(prevFib);
+                }
+                props.onChange(e, prevFib);
             }
         }
     };
@@ -66,10 +75,16 @@ export const NumberField = ({ inert = false, ...props }: NumberFieldProps) => {
     // Standard onChange text -> number (or null) logic
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value ? parseInt(e.target.value) : null;
-        props.onChange && props.onChange(e, isNaN(newValue as number) ? null : newValue);
+        const finalValue = isNaN(newValue as number) ? null : newValue;
+
+        if (weControlValue) {
+            setControlledValue(finalValue);
+        }
+
+        props.onChange && props.onChange(e, finalValue);
     };
 
-    const valueAsText = props.value == null ? "" : (props.showPositiveSign && props.value > 0 ? `+${props.value}` : props.value.toString());
+    const valueAsText = useValue == null ? "" : (props.showPositiveSign && useValue > 0 ? `+${useValue}` : useValue.toString());
 
     return (
         <input

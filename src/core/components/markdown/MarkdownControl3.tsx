@@ -21,7 +21,8 @@ const kMaxImageDimension = 750;
 //////////////////////////////////////////////////
 interface Markdown3EditorPropsBase {
     readonly?: boolean;
-    value: string;
+    value?: string;
+    initialValue?: string;
     autoFocus?: boolean;
     nominalHeight: number;
     onChange: (v: string) => void;
@@ -66,9 +67,21 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
+    // Support for both controlled and uncontrolled usage
+    const [controlledValue, setControlledValue] = React.useState<string>(props.initialValue || "");
+    const weControlValue = props.initialValue !== undefined;
+    const useValue = weControlValue ? controlledValue : (props.value || "");
+
+    const handleChange = React.useCallback((newValue: string) => {
+        if (weControlValue) {
+            setControlledValue(newValue);
+        }
+        props.onChange(newValue);
+    }, [weControlValue, useValue.length, props.onChange]);
+
     //const [textAreaRef, setTextAreaRef] = React.useState<HTMLTextAreaElement | null>(null);
     const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
-    const controlledTextArea = useControlledTextArea(textAreaRef, props.value || "", props.onChange);
+    const controlledTextArea = useControlledTextArea(textAreaRef, useValue, handleChange);
     const [nativeFileInputRef, setNativeFileInputRef] = React.useState<HTMLInputElement | null>(null);
 
     const makeApi = (): MarkdownEditorCommandApi => ({
@@ -248,10 +261,10 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         <div className={`content`} ref={setPopoverAnchorEl}>
             <div className="editorContainer">
                 <MarkdownEditor
-                    onValueChanged={props.onChange}
+                    onValueChanged={handleChange}
                     onSave={props.handleSave}
                     nominalHeight={props.nominalHeight}
-                    value={props.value}
+                    value={useValue}
                     autoFocus={autoFocus}
 
                     uploadProgress={uploadProgress}
@@ -279,13 +292,12 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                     <div className={`freeButton saveButton saveAndCloseButton ${props.hasEdits ? "changed" : "unchanged disabled"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>Save & close</div>
                 </div>
             }
-
-            {!IsNullOrWhitespace(props.value) &&
+            {!IsNullOrWhitespace(useValue) &&
                 <div className="previewContainer">
                     <div className='previewTitle freeButton' onClick={() => setShowPreview(!showPreview)}>Preview {showPreview ? gCharMap.DownTriangle() : gCharMap.UpTriangle()}</div>
                     <Collapse in={showPreview}>
                         <div className='previewMarkdownContainer hatch'>
-                            <Markdown markdown={props.value} />
+                            <Markdown markdown={useValue} />
                         </div>
                     </Collapse>
                 </div>

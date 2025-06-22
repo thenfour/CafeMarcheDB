@@ -115,7 +115,8 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             <Tooltip title={`Amount of rehearsal points this song needs`} disableInteractive>
                 <div className="numberCell" style={{ backgroundColor: LerpColor(songStats.requiredPoints, props.stats.minSongRequiredPoints, props.stats.maxSongRequiredPoints, props.colorScheme.songRequiredPoints) }}>
                     <NumberField
-                        value={songStats.requiredPoints || null}
+                        //key={`points-required-${props.rowId}`}
+                        initialValue={songStats.requiredPoints || null}
                         onChange={(e, newValue) => { props.mutator.setRowPointsRequired(props.rowId, newValue || undefined) }}
                     />
                 </div>
@@ -180,10 +181,10 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 ) : "white";
 
                 style["backgroundColor"] = bgColor;
-
                 return <div key={index} className={`td segment numberCell pointAllocationCell ${cell?.autoFilled ? "autoFilled" : "notAutoFilled"} ${hasPointsAllocated ? "" : "hatch"}`} style={style}>
                     <NumberField
-                        value={hasPointsAllocated ? pointsAllocated : null}
+                        //key={`cell-${props.rowId}-${segment.columnId}`}
+                        initialValue={hasPointsAllocated ? pointsAllocated : null}
                         onChange={(e, newValue) => {
                             props.mutator.setManualCellPoints(props.rowId, segment.columnId, newValue == null ? undefined : newValue);
                         }}
@@ -446,7 +447,8 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </div>
                 <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, props.colorScheme.segmentPointsAvailable) }}>
                     <NumberField
-                        value={segment.pointsAvailable || null}
+                        //key={`segment-avail-${segment.columnId}`}
+                        initialValue={segment.pointsAvailable || null}
                         onChange={(e, newValue) => {
                             props.mutator.setColumnAvailablePoints(segment.columnId, newValue || undefined);
                         }}
@@ -592,7 +594,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
         <Markdown3Editor
             //beginInPreview={true}
-            value={docOrTempDoc.payload.notes || ""}
+            initialValue={docOrTempDoc.payload.notes || ""}
             onChange={(newMarkdown) => {
                 props.mutator.setNotes(newMarkdown);
             }}
@@ -837,7 +839,22 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
     //const confirm = useConfirm();
 
     const docOrTempDoc = props.tempValue || doc;
-    const isTempDoc = !!props.tempValue;
+    const isTempDoc = !!props.tempValue;    // Track when docOrTempDoc changes
+    const prevDoc = React.useRef(docOrTempDoc);
+
+    // React.useEffect(() => {
+    //     if (prevDoc.current !== docOrTempDoc) {
+    //         console.log('📄 docOrTempDoc changed:', {
+    //             prevId: prevDoc.current?.id,
+    //             newId: docOrTempDoc?.id,
+    //             prevName: prevDoc.current?.name,
+    //             newName: docOrTempDoc?.name,
+    //             same: prevDoc.current === docOrTempDoc,
+    //             isTempDoc,
+    //         });
+    //         prevDoc.current = docOrTempDoc;
+    //     }
+    // });
 
     const [stats, setStats] = React.useState<SetlistPlanStats>(() => CalculateSetlistPlanStats(docOrTempDoc, allSongs));
     React.useEffect(() => {
@@ -852,6 +869,32 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
         if (args.addedIndex === args.removedIndex) return; // no change
         props.mutator.reorderColumns(args);
     };
+
+    // Memoize the change handlers to prevent unnecessary re-renders
+    const handleNameChange = React.useCallback((e: any, newName: string) => {
+        props.mutator.setName(newName);
+    }, [props.mutator, docOrTempDoc.name]);
+
+    const handleGroupChange = React.useCallback((e: any, newGroup: string) => {
+        props.mutator.setGroupName(newGroup);
+    }, [props.mutator, docOrTempDoc.groupName]); const handleDescriptionChange = React.useCallback((newMarkdown: string) => {
+        props.mutator.setDescription(newMarkdown);
+    }, [props.mutator, docOrTempDoc.description]);    // Memoize segment change handlers
+    const handleSegmentNameChange = React.useCallback((columnId: string) => (e: any, newName: string) => {
+        props.mutator.setColumnName(columnId, newName);
+    }, [props.mutator]);
+
+    const handleSegmentPointsChange = React.useCallback((columnId: string) => (e: any, newTotal: number | null) => {
+        props.mutator.setColumnAvailablePoints(columnId, newTotal || undefined);
+    }, [props.mutator]);
+
+    const handleSegmentCommentChange = React.useCallback((columnId: string) => (newMarkdown: string) => {
+        props.mutator.setColumnComment(columnId, newMarkdown);
+    }, [props.mutator]);
+
+    const handleSongCommentChange = React.useCallback((rowId: string) => (newMarkdown: string) => {
+        props.mutator.setRowComment(rowId, newMarkdown);
+    }, [props.mutator]);
 
     return <div className="SetlistPlannerDocumentEditor">
         <div className="toolbar">
@@ -911,27 +954,22 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
             <CMTab thisTabId="plan" summaryTitle={"plan"}>
                 <NameValuePair name="Name" value={
                     <CMTextInputBase
+                        //key={`plan-name-${docOrTempDoc.id}`}
                         className="name"
-                        value={doc.name}
-                        onChange={(e, newName) => {
-                            props.mutator.setName(newName);
-                        }}
+                        initialValue={docOrTempDoc.name}
+                        onChange={handleNameChange}
                     />
                 } />
                 <NameValuePair name="Group" value={
                     <CMTextInputBase
+                        //key={`plan-group-${docOrTempDoc.id}`}
                         className="group"
-                        value={doc.groupName}
-                        onChange={(e, newGroup) => {
-                            props.mutator.setGroupName(newGroup);
-                        }}
+                        initialValue={docOrTempDoc.groupName}
+                        onChange={handleGroupChange}
                     />
-                } />
-                <Markdown3Editor
-                    onChange={(newMarkdown) => {
-                        props.mutator.setDescription(newMarkdown);
-                    }}
-                    value={doc.description}
+                } />                <Markdown3Editor
+                    onChange={handleDescriptionChange}
+                    initialValue={docOrTempDoc.description}
                     nominalHeight={75}
                 //beginInPreview={true}
                 />
@@ -952,19 +990,17 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                     </div>
                                     <NameValuePair name="Name" value={
                                         <CMTextInputBase
+                                            //key={`segment-name-${segment.columnId}`}
                                             className="segmentName"
-                                            value={segment.name}
-                                            onChange={(e, newName) => {
-                                                props.mutator.setColumnName(segment.columnId, newName);
-                                            }}
+                                            initialValue={segment.name}
+                                            onChange={handleSegmentNameChange(segment.columnId)}
                                         />
                                     } />
                                     <NameValuePair name="Points available" value={
                                         <NumberField
-                                            value={segment.pointsAvailable || null}
-                                            onChange={(e, newTotal) => {
-                                                props.mutator.setColumnAvailablePoints(segment.columnId, newTotal || undefined);
-                                            }} />
+                                            //key={`segment-points-${segment.columnId}`}
+                                            initialValue={segment.pointsAvailable || null}
+                                            onChange={handleSegmentPointsChange(segment.columnId)} />
                                     } />
                                     <ColorPick
                                         value={segment.color || null}
@@ -974,10 +1010,9 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                         allowNull={true}
                                     />
                                     <Markdown3Editor
-                                        onChange={(newMarkdown) => {
-                                            props.mutator.setColumnComment(segment.columnId, newMarkdown);
-                                        }}
-                                        value={segment.commentMarkdown || ""}
+                                        //key={`segment-comment-${segment.columnId}`}
+                                        onChange={handleSegmentCommentChange(segment.columnId)}
+                                        initialValue={segment.commentMarkdown || ""}
                                         nominalHeight={75}
                                     />
                                     <AssociationSelect
@@ -1036,11 +1071,10 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                 </div>
                             </div>
                             <Markdown3Editor
+                                //key={`song-comment-${song.rowId}`}
                                 nominalHeight={50}
-                                onChange={(newMarkdown) => {
-                                    props.mutator.setRowComment(song.rowId, newMarkdown);
-                                }}
-                                value={song.commentMarkdown || ""}
+                                onChange={handleSongCommentChange(song.rowId)}
+                                initialValue={song.commentMarkdown || ""}
                             //beginInPreview={true}
                             />
                         </div>
