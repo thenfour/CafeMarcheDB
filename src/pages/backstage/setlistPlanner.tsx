@@ -335,13 +335,30 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
     const dashboardContext = useDashboardContext();
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
 
-    const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.id });
-
-    // group by groupName
-    const groupedPlans = groupBy(plans, (x) => x.groupName || "");
+    const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.id });    // separate ungrouped from grouped plans
+    const ungroupedPlans = plans.filter(plan => IsNullOrWhitespace(plan.groupName));
+    const groupedPlans = groupBy(plans.filter(plan => !IsNullOrWhitespace(plan.groupName)), (x) => x.groupName!);
 
     return <div className="SetlistPlannerDocumentOverviewList">
 
+        {/* Display ungrouped plans at top level without accordion */}
+        {ungroupedPlans.map((dbPlan) => {
+            return <div
+                key={dbPlan.id}
+                className="SetlistPlannerDocumentOverviewItem"
+                onClick={() => {
+                    props.onSelect(dbPlan);
+                }}
+            >
+                <div className="name">{dbPlan.name}</div>
+                <Markdown
+                    markdown={dbPlan.description}
+                    compact
+                />
+            </div>;
+        })}
+
+        {/* Display grouped plans in accordions */}
         {Object.keys(groupedPlans).map((groupName) => {
             const groupPlans = groupedPlans[groupName]!;
             return <Accordion key={groupName} expanded={expandedGroup === groupName} onChange={() => setExpandedGroup(expandedGroup === groupName ? false : groupName)}>
@@ -349,7 +366,7 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                     expandIcon={gIconMap.ExpandMore()}
                     className="SetlistPlannerDocumentOverviewGroupHeader"
                 >
-                    <span className="title">{IsNullOrWhitespace(groupName) ? "Ungrouped" : groupName}</span>
+                    <span className="title">{groupName}</span>
                     <span className="subtitle">{groupPlans.length} plan(s)</span>
                 </AccordionSummary>
                 <div className="SetlistPlannerDocumentOverviewGroupItemList">
@@ -369,14 +386,14 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                         </div>;
                     })}
                 </div>
-                {!IsNullOrWhitespace(groupName) && <div className="actionButtons">
+                <div className="actionButtons">
                     <Button
                         onClick={() => {
                             const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", groupName, dashboardContext.currentUser!.id);
                             props.onSelect(newDoc);
                         }}
                     >Create new "{groupName}"</Button>
-                </div>}
+                </div>
             </Accordion>;
         })}
     </div>;
