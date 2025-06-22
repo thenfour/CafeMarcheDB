@@ -21,6 +21,11 @@
     flex-wrap: wrap;
 }
 
+.mediaPlayerBar .CMSmallButton.enabled {
+    /* by default cmsmallbuttons have 0.5 opacity (hm.) */
+    opacity: 1;
+}
+
 .mediaPlayerBar--visible {
     transform: translateY(0);
     opacity: 1;
@@ -45,10 +50,17 @@
 
 /* MediaPlayer specific styles extracted from global2.css */
 
-.mediaPlayerTrackMetadataDisplay {
+.mediaPlayerBarSegment {
     display: flex;
     align-items: center;
     margin-left: 10px;
+    flex-grow: 1;
+}
+
+.mediaPlayerTrackMetadataDisplay {
+    display: flex;
+    align-items: center;
+
     background-color: #8ff4;
     padding: 6px 12px;
     /* text-shadow: #0004 0px 0px 7px; */
@@ -64,6 +76,7 @@
 
 .mediaPlayerTrackMetadataDisplay .mediaPlayerTrackTitle {
     font-size: 18px;
+    white-space: nowrap;
     color: #dff;
 }
 

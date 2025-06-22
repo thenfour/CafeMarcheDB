@@ -1,9 +1,9 @@
-import React from "react";
-import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerContext";
-import { CMSmallButton } from "../CMCoreComponents2";
-import { gIconMap } from "../../db3/components/IconMap";
 import { SkipNext, SkipPrevious } from "@mui/icons-material";
-import { AdminInspectObject } from "../CMCoreComponents";
+import ListIcon from '@mui/icons-material/List';
+import React from "react";
+import { gIconMap } from "../../db3/components/IconMap";
+import { CMSmallButton } from "../CMCoreComponents2";
+import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerContext";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;
@@ -24,14 +24,15 @@ export const AnimatedFauxEqualizer: React.FC<{
 export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> = ({ mediaPlayer }) => {
     const audioRef = React.useRef<HTMLAudioElement>(null);
     const [visible, setVisible] = React.useState(false);
+    const [showingPlaylistDialog, setShowingPlaylistDialog] = React.useState(false);
 
     const current: MediaPlayerTrack | undefined =
         mediaPlayer.currentIndex == null ? undefined : mediaPlayer.playlist[mediaPlayer.currentIndex];
 
     // Show/hide animation effect
     React.useEffect(() => {
-        setVisible(!!current);
-    }, [current]);
+        setVisible(!!current || mediaPlayer.playlist.length > 0);
+    }, [current, mediaPlayer.playlist.length]);
 
     // Sync play/pause with isPlaying
     React.useEffect(() => {
@@ -63,20 +64,21 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
 
     const title = current && mediaPlayer.getTrackTitle(current);
 
+    const hasPlaylist = mediaPlayer.playlist.length > 1;
+    const trackNumberString = hasPlaylist && mediaPlayer.currentIndex != null
+        ? `${mediaPlayer.currentIndex + 1}.` : "";
+
     // Always render the bar for animation, but toggle visibility class
     return (
         <div className={`mediaPlayerBar${visible ? ' mediaPlayerBar--visible' : ''}`}>
             <div className="mediaPlayerBarTransport">
-                <CMSmallButton
-                    style={{ opacity: 1 }}
-                    onClick={() => mediaPlayer.setPlaylist([], undefined)}
-                >
-                    {gIconMap.Close()}
-                </CMSmallButton>
-
-                <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
-                <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
-
+                {mediaPlayer.playlist.length > 1 && (<>
+                    <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
+                    <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
+                    <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
+                        <ListIcon />
+                    </CMSmallButton>
+                </>)}
                 {current && (
                     <audio
                         src={current.url}
@@ -104,15 +106,25 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                     />
                 )}
             </div>
-            <div className="mediaPlayerTrackMetadataDisplay">
-                <span className="mediaPlayerTrackMetadataCol1">
-                    <span className="mediaPlayerTrackTitle">{title?.title}</span>
-                    <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
-                </span>
+            <div className="mediaPlayerBarSegment">
+                <div className="mediaPlayerTrackMetadataDisplay">
+                    <span className="mediaPlayerTrackMetadataCol1">
+                        <span className="mediaPlayerTrackTitle">{trackNumberString}{title?.title || "No media"}</span>
+                        <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
+                    </span>
 
-                <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
+                    <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
+                </div>
+                <div style={{ flexGrow: 1 }}></div>
+                <div>
+                    <CMSmallButton
+                        onClick={() => mediaPlayer.setPlaylist([], undefined)}
+                    >
+                        {gIconMap.Close()}
+                    </CMSmallButton>
+
+                </div>
             </div>
-        </div>
-    );
+        </div>);
 };
 

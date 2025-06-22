@@ -108,9 +108,19 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     const setPlaylist = useCallback((tracks: MediaPlayerTrack[], startIndex: number | undefined) => {
         setPlaylistState(tracks);
-        setCurrentIndex(startIndex);
+        if (tracks.length === 0) {
+            setCurrentIndex(undefined);
+            setIsPlaying(false);
+            setAudioTime(0);
+            setAudioDuration(0);
+            return;
+        }
+
+        setCurrentIndex(startIndex || 0);
         if (startIndex != null) {
             setIsPlaying(true);
+        } else {
+            setIsPlaying(false);
         }
     }, []);
 

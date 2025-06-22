@@ -35,10 +35,24 @@ const MediaPlayerTest = () => {
     </CMSmallButton>
     <CMSmallButton
       onClick={() => {
-        mediaPlayer.playUri(`https://file-examples.com/storage/feac45e876684fd51a206f4/2017/11/file_example_MP3_700KB.mp3`);
+        mediaPlayer.playUri(`https://cafemarche.be/api/files/download/o0Faqsf5AnnWlFrxSpAWh.mp3/the-scout.mp3`);
       }}
     >
       [sample B]
+    </CMSmallButton>
+    <CMSmallButton
+      onClick={() => {
+        mediaPlayer.setPlaylist([
+          {
+            url: `https://citizen-dj.labs.loc.gov/audio/samplepacks/loc-fma/Chillin-Poupi_fma-169768_002_00-00-31.mp3`,
+          },
+          {
+            url: `https://cafemarche.be/api/files/download/o0Faqsf5AnnWlFrxSpAWh.mp3/the-scout.mp3`,
+          },
+        ], undefined);
+      }}
+    >
+      [sample 2-song playlist]
     </CMSmallButton>
     <CMSmallButton onClick={() => {
       mediaPlayer.unpause();
