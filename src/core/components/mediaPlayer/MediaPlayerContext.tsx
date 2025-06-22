@@ -91,6 +91,13 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setIsPlaying(true);
     }, []);
 
+    const isPlayingFile = useCallback((fileId: number | undefined | null) => {
+        if (fileId == null) return false; // If fileId is null or undefined, return false
+        if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
+        const track = playlist[currentIndex]!;
+        return track.file?.id === fileId;
+    }, [currentIndex, playlist]);
+
     const contextValue: MediaPlayerContextType = {
         playlist,
         currentIndex,
@@ -109,6 +116,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         unpause,
         previousEnabled: () => currentIndex !== undefined && currentIndex > 0,
         nextEnabled: () => currentIndex !== undefined && currentIndex < playlist.length - 1,
+        isPlayingFile,
     };
 
     return (

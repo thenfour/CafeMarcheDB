@@ -48,7 +48,7 @@ export interface MediaPlayerTrackTitle {
 }
 
 export interface MediaPlayerContextType {
-    // general props
+    // general
     playlist: MediaPlayerTrack[];
     currentIndex?: number | undefined;
     isPlaying: boolean;
@@ -57,6 +57,7 @@ export interface MediaPlayerContextType {
     getTrackTitle: (track: MediaPlayerTrack) => MediaPlayerTrackTitle;
     previousEnabled: () => boolean;
     nextEnabled: () => boolean;
+    isPlayingFile: (fileId: number) => boolean;
 
     // 
     //play: (index?: number) => void;

@@ -10,17 +10,6 @@ import { formatSongLength } from "shared/time";
 import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import { getFormattedBPM } from "../clientAPILL";
 import { EventSongListDividerTextStyle } from "../db3";
-//import * as db3 from "src/core/db3/db3";
-
-// type LocalSongPayload = Prisma.SongGetPayload<{
-//     select: {
-//         id: true,
-//         name: true,
-//         lengthSeconds: true,
-//         startBPM: true,
-//         endBPM: true,
-//     }
-// }>;
 
 // make song nullable for "add new item" support
 export type EventSongListSongItemDb = Prisma.EventSongListSongGetPayload<{
@@ -48,6 +37,7 @@ export type EventSongListSongItemWithSong = Prisma.EventSongListSongGetPayload<{
                 startBPM: true,
                 endBPM: true,
                 tags: true,
+                pinnedRecordingId: true,
             },
         }
     }
@@ -106,6 +96,7 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
                         startBPM: true,
                         endBPM: true,
                         tags: true,
+                        pinnedRecordingId: true,
                     }
                 }
             }

@@ -909,10 +909,7 @@ type AudioPlayerFileControlsProps = {
 
 export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileControlsProps) {
     const mediaPlayer = useMediaPlayer();
-    // Determine if this file is currently playing in the global player
-    const isCurrent = mediaPlayer.currentIndex != null &&
-        !!mediaPlayer.playlist[mediaPlayer.currentIndex]?.file &&
-        mediaPlayer.playlist[mediaPlayer.currentIndex]?.file?.id === file.id;
+    const isCurrent = mediaPlayer.isPlayingFile(file.id);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
 
     // Play this file via the global player
