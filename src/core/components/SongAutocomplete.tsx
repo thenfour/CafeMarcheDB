@@ -22,24 +22,35 @@ export interface SongAutocompleteProps {
 
 export const SongAutocomplete = ({ value, onChange, fadedSongIds = [], autofocus = false, }: SongAutocompleteProps) => {
     const [inputValue, setInputValue] = React.useState(value?.name ?? ""); // value of the input
-    const [searchValue, setSearchValue] = React.useState<QuickSearchItemMatch | null>(null);
+    const [pendingSelection, setPendingSelection] = React.useState<QuickSearchItemMatch | null>(null);
 
-    const [fullResult, _] = useQuery(getFilteredSongs, { id: searchValue?.id || -1 }, {
+    const [fullResult, _] = useQuery(getFilteredSongs, { id: pendingSelection?.id || -1 }, {
         suspense: false,
     });
 
+    const handleSelection = React.useCallback((selection: QuickSearchItemMatch) => {
+        setPendingSelection(selection);
+    }, []);
+
     React.useEffect(() => {
-        if (!fullResult) {
+        if (!pendingSelection || !fullResult) {
             return;
         }
+
+        // Clear the pending selection first to allow the same item to be selected again
+        setPendingSelection(null);
         setInputValue(""); // assuming the caller will use this value and then wants the autocomplete to be reset
         onChange(fullResult.matchingItem);
-    }, [fullResult]);
+    }, [pendingSelection, fullResult, onChange]);
 
     return <AssociationAutocomplete
         allowedItemTypes={[QuickSearchItemType.song]}
         value={inputValue}
-        onSelect={setSearchValue}
+        onSelect={(value) => {
+            if (value) {
+                handleSelection(value);
+            }
+        }}
         autofocus={autofocus}
         onValueChange={setInputValue}
         getItemInfo={(item) => {
