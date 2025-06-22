@@ -30,10 +30,8 @@ type NumberFieldProps = {
     showPositiveSign?: boolean;
 };
 
-export const NumberField = ({ inert, ...props }: NumberFieldProps) => {
+export const NumberField = ({ inert = false, ...props }: NumberFieldProps) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
-
-    inert = CoalesceBool(inert, false);
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
         e.target.select();
@@ -88,7 +86,7 @@ export const NumberField = ({ inert, ...props }: NumberFieldProps) => {
 
             // Warning: Received `true` for a non-boolean attribute `inert`.
             // If you want to write it to the DOM, pass a string instead: inert="true" or inert={value.toString()}. Error Component Stack
-            inert={inert}
+            //inert={inert}
             style={props.style}
         />
     );
