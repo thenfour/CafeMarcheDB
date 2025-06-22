@@ -298,9 +298,6 @@ But this is a new paragraph.`}
                 </dl>
             </div>
         </Collapse>
-
-
-
         <Collapse in={tipsTab === "Attachments"}>
             <div className="toolbar toolBarRow formattingTipsContentRow">
                 <dl>
@@ -315,6 +312,16 @@ But this is a new paragraph.`}
                         <Pre
                             text={`[Meeting notes.pdf](/api/files/download/EjuATs-a13.pdf)`}
                         />
+                    </dd>
+
+                    {/* Copy from file menu */}
+                    <dt>
+                        <span className="highlight">Copy link from existing files</span>
+                    </dt>
+                    <dd>
+                        For files already uploaded to the system, you can copy the markdown link syntax directly.
+                        In any file list, click the ⋮ menu next to a file and select "Copy markdown link"
+                        to get the properly formatted link that you can paste here.
                     </dd>
 
                 </dl>

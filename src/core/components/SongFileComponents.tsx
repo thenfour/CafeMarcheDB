@@ -219,6 +219,22 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
                         Copy link
                     </MenuItem>
+                    <MenuItem
+                        onClick={async () => {
+                            await snackbar.invokeAsync(async () => {
+                                const markdownLink = `[${file.fileLeafName}](${uri})`;
+                                await navigator.clipboard.writeText(markdownLink);
+                                endMenuItemRef.current();
+                            }, "Link copied to clipboard");
+                        }}>
+                        <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
+                        <div>
+                            <div>Copy markdown link</div>
+                            <div style={{ fontSize: '0.8em', color: '#666', marginTop: '2px' }}>
+                                can be pasted in a markdown text field
+                            </div>
+                        </div>
+                    </MenuItem>
                     {!isPinned && isAudio && props.contextSong &&
                         <PinSongRecordingMenuItem contextSong={props.contextSong} value={props.value} closeProc={() => {
                             endMenuItemRef.current();
