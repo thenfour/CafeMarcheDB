@@ -47,9 +47,9 @@ export const getURIForFile = (value: Prisma.FileGetPayload<{ select: { id: true,
         return value.externalURI;
     }
     if (!value.fileLeafName) {
-        return `/api/files/download/${value.storedLeafName}`;
+        return getAbsoluteUrl(`/api/files/download/${value.storedLeafName}`);
     }
-    return `/api/files/download/${value.storedLeafName}/${slugifyWithDots(value.fileLeafName)}`;
+    return getAbsoluteUrl(`/api/files/download/${value.storedLeafName}/${slugifyWithDots(value.fileLeafName)}`);
 };
 
 

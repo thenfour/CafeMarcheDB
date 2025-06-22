@@ -40,7 +40,7 @@ const InstrumentListContent = () => {
                 label="View"
                 color="inherit"
                 onClick={() => {
-                    router.push(`/backstage/instrument/${args.row["slug"]}`);
+                    void router.push(`/backstage/instrument/${args.row["slug"]}`);
                 }}
             />}
         />

@@ -129,6 +129,7 @@ export const getColorForFeature = (feature: ActivityFeature): ColorPaletteEntry 
         [ActivityFeature.song_credit_add]: gSwatchColors.purple,
         [ActivityFeature.song_credit_edit]: gSwatchColors.purple,
         [ActivityFeature.song_credit_delete]: gSwatchColors.purple,
+        [ActivityFeature.song_pin_recording]: gSwatchColors.purple,
 
         [ActivityFeature.setlist_plan_create]: gSwatchColors.black,
         [ActivityFeature.setlist_plan_save]: gSwatchColors.black,

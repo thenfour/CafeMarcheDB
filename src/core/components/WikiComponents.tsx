@@ -242,7 +242,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
             Copy link to wiki page
         </MenuItem>, pageExists &&
         <MenuItem key={"viewhistory"} onClick={async () => {
-            router.push(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
+            void router.push(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
             endMenuItemRef.current();
         }}>
             <ListItemIcon>

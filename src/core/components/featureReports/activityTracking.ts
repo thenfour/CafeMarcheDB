@@ -69,6 +69,7 @@ export enum ActivityFeature {
     song_credit_add = "song_credit_add",
     song_credit_edit = "song_credit_edit",
     song_credit_delete = "song_credit_delete",
+    song_pin_recording = "song_pin_recording",
 
     setlist_plan_create = "setlist_plan_create",
     setlist_plan_save = "setlist_plan_save",

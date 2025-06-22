@@ -93,13 +93,15 @@ class FilesAPI {
     //     return `/api/files/download/${storedLeafName}`;
     // }
 
-    getURIForFile = (file: Prisma.FileGetPayload<{ select: { storedLeafName: true } }> & { fileLeafName?: undefined | string }) => {
-        //return this.getURIForStoredLeafName(file.storedLeafName);//`/api/files/download/${file.storedLeafName}`;
-        if (!file.fileLeafName) {
-            return `/api/files/download/${file.storedLeafName}`;
-        }
-        return `/api/files/download/${file.storedLeafName}/${slugifyWithDots(file.fileLeafName)}`;
-    }
+    // getURIForFile = (file: Prisma.FileGetPayload<{ select: { storedLeafName: true } }> & { fileLeafName?: undefined | string }) => {
+    //     //return this.getURIForStoredLeafName(file.storedLeafName);//`/api/files/download/${file.storedLeafName}`;
+    //     if (!file.fileLeafName) {
+    //         return `/api/files/download/${file.storedLeafName}`;
+    //     }
+    //     return `/api/files/download/${file.storedLeafName}/${slugifyWithDots(file.fileLeafName)}`;
+    // }
+
+    //getURIForFile
 
     getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
         const customData = getFileCustomData(file);
@@ -115,7 +117,7 @@ class FilesAPI {
     // if editParams is omitted, use the ones embedded in the post.
     // using FrontpageGalleryItemPayloadWithAncestorFile because it has looser requirements than others
     getGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayloadWithAncestorFile, editParams?: ImageEditParams) => {
-        const imageURI = API.files.getURIForFile(post.file);
+        const imageURI = ClientAPILL.getURIForFile(post.file);
         const fileDimensions = API.files.getImageFileDimensions(post.file)
 
         const displayParams = editParams || db3.getGalleryItemDisplayParams(post);

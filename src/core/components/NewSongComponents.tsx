@@ -60,7 +60,7 @@ export const NewSongButton = () => {
     }); const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         songTableClient.doInsertMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
-            router.push(API.songs.getURIForSong(ret as any));
+            void router.push(API.songs.getURIForSong(ret as any));
             api.closeDialog();
         }).catch(e => {
             console.log(e);

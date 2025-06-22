@@ -12,7 +12,7 @@ export const MainSiteSearch = () => {
                 defaultValue=''
                 onSelect={async (newValue) => {
                     if (newValue && newValue.absoluteUri) {
-                        router.push(newValue.absoluteUri);
+                        void router.push(newValue.absoluteUri);
                     }
                 }}
             />

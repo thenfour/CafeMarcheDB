@@ -77,6 +77,9 @@ export class GhostField extends FieldBase<number> {
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
         //assert(false, "ghost fields should not be applying to db model.");
+        // let's allow it; case in point: song pinned file is ghost field and should be able to participate in typical updates.
+        if (clientModel[this.member] === undefined) return;
+        mutationModel[this.member] = clientModel[this.member];
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
         if (dbModel[this.member] === undefined) return;

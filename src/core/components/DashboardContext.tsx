@@ -295,7 +295,7 @@ export function useClientTelemetryEvent() {
                 // Fallback to fetch below
             }
         }
-        fetch(url, {
+        await fetch(url, {
             method: "POST",
             headers: { "Content-Type": contentType },
             body: payload,

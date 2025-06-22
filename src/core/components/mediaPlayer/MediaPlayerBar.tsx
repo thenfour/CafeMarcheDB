@@ -1,9 +1,8 @@
 import { SkipNext, SkipPrevious } from "@mui/icons-material";
-import ListIcon from '@mui/icons-material/List';
 import React from "react";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
-import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerContext";
+import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;
@@ -75,9 +74,9 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                 {mediaPlayer.playlist.length > 1 && (<>
                     <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
                     <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
-                    <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
+                    {/* <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
                         <ListIcon />
-                    </CMSmallButton>
+                    </CMSmallButton> */}
                 </>)}
                 {current && (
                     <audio

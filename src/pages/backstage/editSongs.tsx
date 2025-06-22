@@ -14,7 +14,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter(); return <>
         <Button onClick={() => {
-            router.push({
+            void router.push({
                 pathname: '/backstage/editSongCredits',
                 query: { songId: gridArgs.row.id },
             });

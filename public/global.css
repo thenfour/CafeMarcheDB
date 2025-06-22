@@ -935,3 +935,7 @@ solution is to
   font-family: var(--ff-mono);
   letter-spacing: -0.3px;
 }
+
+svg.pinnedFile {
+  fill: #080;
+}

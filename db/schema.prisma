@@ -107,9 +107,9 @@ model Action {
   browserName  String? @db.VarChar(30) // lowercase.
 
   operatingSystem String? @db.VarChar(30) // lowercase.
-  language        String? @db.VarChar(30)// lowercase. "en"
-  locale          String? @db.VarChar(30)// lowercase. "en-us"
-  timezone        String? @db.VarChar(90)// lowercase. e.g. "europe/brussels"
+  language        String? @db.VarChar(30) // lowercase. "en"
+  locale          String? @db.VarChar(30) // lowercase. "en-us"
+  timezone        String? @db.VarChar(90) // lowercase. e.g. "europe/brussels"
 
   fileId         Int?
   file           File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)
@@ -313,6 +313,10 @@ model Song {
   createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+
+  // Pinned recording - the canonical recording for this song
+  pinnedRecordingId Int?
+  pinnedRecording   File? @relation("pinnedRecordings", fields: [pinnedRecordingId], references: [id], onDelete: SetNull)
 
   taggedFiles FileSongTag[]
   tags        SongTagAssociation[]
@@ -911,6 +915,9 @@ model File {
   previewForFile File[]   @relation("previewFiles")
   childFiles     File[]   @relation("fileHierarchy")
   actions        Action[]
+
+  // Songs that have this file as their pinned recording
+  pinnedForSongs Song[] @relation("pinnedRecordings")
 
   @@index([fileLeafName])
   @@index([storedLeafName])

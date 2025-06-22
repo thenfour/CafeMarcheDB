@@ -112,7 +112,7 @@ const UserListContent = () => {
                     userId: args.row.id,
                 }).then(() => {
                     // navigate to home page
-                    router.push(Routes.Home());
+                    void router.push(Routes.Home());
                 }).catch((e) => {
                     console.log(e);
                 });

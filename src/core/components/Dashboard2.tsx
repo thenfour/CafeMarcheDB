@@ -134,7 +134,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
                 context: "AppBarAvatarMenu",
             });
             closeMenu();
-            router.push(Routes.LogoutPage());
+            void router.push(Routes.LogoutPage());
         }}>
             Log out
         </MenuItem>
@@ -373,7 +373,7 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
                     className={`linkMenuItem ${props.item.group.className} ${linkItem.className}`}
                     onClick={e => {
                         // Log activity for external link using beacon
-                        recordFeature({
+                        void recordFeature({
                             feature: ActivityFeature.link_follow_external,
                         });
                     }}
@@ -392,7 +392,7 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
                     className={`linkMenuItem ${props.item.group.className} ${linkItem.className}`}
                     onClick={e => {
                         // Log activity for internal link using beacon
-                        recordFeature({
+                        void recordFeature({
                             feature: ActivityFeature.link_follow_internal,
                         });
                     }}

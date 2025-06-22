@@ -52,6 +52,7 @@ export enum Permission {
     admin_songs = "admin_songs",
     manage_songs = "manage_songs",
     view_songs = "view_songs",
+    pin_song_recordings = "pin_song_recordings",
 
     // ******************** file permissions.
     admin_files = "admin_files",

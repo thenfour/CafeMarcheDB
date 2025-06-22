@@ -17,7 +17,7 @@ import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
 import { CMChipContainer, CMStandardDBChip } from "./CMChip";
 import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, InstrumentChip, SongChip } from "./CMCoreComponents";
-import { CMTable, EventDateField, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
+import { CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
 import { SongsProvider, useSongsContext } from "./SongsContext";

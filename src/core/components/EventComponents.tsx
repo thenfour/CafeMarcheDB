@@ -12,7 +12,7 @@ import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
-import { ColorVariationSpec, gAppColors, gLightSwatchColors, StandardVariationSpec } from 'shared/color';
+import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { slugify } from 'shared/rootroot';
 import { Timing } from 'shared/time';

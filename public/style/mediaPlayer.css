@@ -78,6 +78,7 @@
     font-size: 18px;
     white-space: nowrap;
     color: #dff;
+    min-width: 150px;
 }
 
 .mediaPlayerTrackMetadataDisplay .mediaPlayerTrackSubtitle {

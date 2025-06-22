@@ -314,6 +314,7 @@ const xSongArgs_Base: db3.TableDesc = {
         }), // tags
 
         new GhostField({ memberName: "credits", authMap: xSongAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "pinnedRecordingId", authMap: xSongAuthMap_R_EOwn_EManagers }),
     ]
 };
 

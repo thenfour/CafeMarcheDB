@@ -1,6 +1,6 @@
 
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { Button, Tooltip } from "@mui/material";
+import { Button, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
@@ -9,28 +9,33 @@ import { SplitQuickFilter } from 'shared/quickFilter';
 import { SortDirection, formatFileSize } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
-import { ActivityFeature } from './featureReports/activityTracking';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
+import { ActivityFeature } from './featureReports/activityTracking';
 //import { AudioPreviewBehindButton } from './AudioPreview';
-import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload, useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
+import { useMutation } from '@blitzjs/rpc';
+import { PushPin } from '@mui/icons-material';
+import { getURIForFile } from '../db3/clientAPILL';
+import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
+import { DotMenu } from './CMCoreComponents2';
 import { CMDBUploadFile } from './CMDBUploadFile';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
-import { DashboardContext, useFeatureRecorder } from './DashboardContext';
+import { DashboardContext, useDashboardContext, useFeatureRecorder } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown } from "./markdown/Markdown";
-import { UserChip } from './userChip';
 import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
+import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
+import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from './mediaPlayer/MediaPlayerTypes';
+import { UserChip } from './userChip';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
@@ -50,7 +55,82 @@ export interface FileTagBase {
     // plus a songId, eventId, whatever...
 };
 
+//////////////////////////////////////////////////////////////////
+interface PinSongRecordingMenuItemProps {
+    value: EnrichedFile;
+    contextSong: MediaPlayerSongContextPayload;
+    closeProc: () => void; // proc to close the menu.
+    refetch?: () => void; // optional, if provided, will be called after pinning the file.
+};
 
+export const PinSongRecordingMenuItem = (props: PinSongRecordingMenuItemProps) => {
+    const dashboardContext = useDashboardContext();
+    const snackbar = useSnackbar();
+    const [pinMutation] = useMutation(updateSongPinnedRecording);
+    const recordFeature = useFeatureRecorder();
+
+    if (!dashboardContext.isAuthorized(Permission.pin_song_recordings)) {
+        return null;
+    }
+
+    return <MenuItem
+        onClick={async () => {
+            await snackbar.invokeAsync(async () => {
+                await pinMutation({
+                    songId: props.contextSong.id,
+                    fileId: props.value.id,
+                });
+                if (props.refetch) {
+                    void props.refetch();
+                }
+                void recordFeature({
+                    feature: ActivityFeature.song_pin_recording,
+                    fileId: props.value.id,
+                    songId: props.contextSong.id,
+                });
+                props.closeProc();
+            },
+                "File pinned successfully");
+        }}
+    >
+        <ListItemIcon><PushPin /></ListItemIcon>
+        Pin as song recording
+    </MenuItem>;
+}
+
+export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemProps, "value">) => {
+    const dashboardContext = useDashboardContext();
+    const snackbar = useSnackbar();
+    const [pinMutation] = useMutation(updateSongPinnedRecording);
+    const recordFeature = useFeatureRecorder();
+
+    if (!dashboardContext.isAuthorized(Permission.pin_song_recordings)) {
+        return null;
+    }
+
+    return <MenuItem
+        onClick={async () => {
+            await snackbar.invokeAsync(async () => {
+                await pinMutation({
+                    songId: props.contextSong.id,
+                    fileId: null,
+                });
+                if (props.refetch) {
+                    void props.refetch();
+                }
+                void recordFeature({
+                    feature: ActivityFeature.song_pin_recording,
+                    songId: props.contextSong.id,
+                });
+                props.closeProc();
+            },
+                "File unpinned successfully");
+        }}
+    >
+        {/* <ListItemIcon><PushPin /></ListItemIcon> */}
+        Unpin as song recording
+    </MenuItem>;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,11 +141,13 @@ interface FileViewerProps {
     statHighlight: SortByKey;
     contextEvent?: MediaPlayerEventContextPayload;
     contextSong?: MediaPlayerSongContextPayload;
+    refetch?: () => void;
 };
 
 export const FileValueViewer = (props: FileViewerProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
-    //const [currentUser] = useCurrentUser();
+    const endMenuItemRef = React.useRef<() => void>(() => { });
+    const dashboardContext = useDashboardContext();
+    const snackbar = useSnackbar();
     const file = props.value;
     const visInfo = dashboardContext.getVisibilityInfo(file);
 
@@ -84,6 +166,9 @@ export const FileValueViewer = (props: FileViewerProps) => {
     }
 
     const variation = StandardVariationSpec.Weak;
+    const uri = file.externalURI || getURIForFile(file);
+
+    const isPinned = props.contextSong?.pinnedRecordingId === file.id;
 
     return <div className={classes.join(" ")}>
         <AppContextMarker fileId={props.value.id}>
@@ -91,14 +176,14 @@ export const FileValueViewer = (props: FileViewerProps) => {
             <div className="header">
 
                 {file.externalURI ? (
-                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={file.externalURI}>
+                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={uri}>
                         {gIconMap.Link()}
                         <Tooltip title={file.fileLeafName}>
                             <div className="filename">{smartTruncate(file.fileLeafName)}</div>
                         </Tooltip>
                     </CMLink>
                 ) : (
-                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={API.files.getURIForFile(file)}>
+                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={uri}>
                         <FileDownloadIcon />
                         <Tooltip title={file.fileLeafName}>
                             <div className="filename">{smartTruncate(file.fileLeafName)}</div>
@@ -107,8 +192,42 @@ export const FileValueViewer = (props: FileViewerProps) => {
                 }
 
                 <div className="flex-spacer"></div>
+
                 <VisibilityValue permissionId={file.visiblePermissionId} variant="minimal" />
-                {!props.readonly && <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>}
+
+                {isPinned && <Tooltip title="This file is pinned as the song recording for this song">
+                    <PushPin className='pinnedFile' />
+                </Tooltip>}
+                {/* {!props.readonly && <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>} */}
+
+                <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
+                    {!props.readonly && props.onEnterEditMode && <MenuItem
+                        onClick={() => {
+                            endMenuItemRef.current();
+                            props.onEnterEditMode!();
+                        }}>
+                        <ListItemIcon>{gIconMap.Edit()}</ListItemIcon>
+                        Edit
+                    </MenuItem>}
+                    <MenuItem
+                        onClick={async () => {
+                            await snackbar.invokeAsync(async () => {
+                                await navigator.clipboard.writeText(uri);
+                                endMenuItemRef.current();
+                            }, "Link copied to clipboard");
+                        }}>
+                        <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
+                        Copy link
+                    </MenuItem>
+                    {!isPinned && isAudio && props.contextSong &&
+                        <PinSongRecordingMenuItem contextSong={props.contextSong} value={props.value} closeProc={() => {
+                            endMenuItemRef.current();
+                        }} refetch={props.refetch} />}
+                    {isPinned &&
+                        <UnpinSongRecordingMenuItem contextSong={props.contextSong!} closeProc={() => {
+                            endMenuItemRef.current();
+                        }} refetch={props.refetch} />}
+                </DotMenu>
             </div>
             <div className="content">
                 <CMChipContainer>
@@ -646,6 +765,7 @@ export const FileControl = (props: FileControlProps) => {
             statHighlight={props.statHighlight}
             contextEvent={props.contextEvent}
             contextSong={props.contextSong}
+            refetch={props.refetch}
         />
     </>;
 };
@@ -813,7 +933,7 @@ export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileCo
                         fileCreatedAt: file.fileCreatedAt,
                         uploadedAt: file.uploadedAt,
                     },
-                    url: file.externalURI || API.files.getURIForFile(file),
+                    url: file.externalURI || getURIForFile(file),
                     songContext: song,
                     eventContext: event,
                 }

@@ -14,13 +14,13 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter(); return <>
         <Button onClick={() => {
-            router.push({
+            void router.push({
                 pathname: '/backstage/editEventSegments',
                 query: { eventId: gridArgs.row.id },
             });
         }}>Segments</Button>
         <Button onClick={() => {
-            router.push({
+            void router.push({
                 pathname: '/backstage/editEventSongLists',
                 query: { eventId: gridArgs.row.id },
             });
