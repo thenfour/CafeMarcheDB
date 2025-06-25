@@ -3,10 +3,10 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { gIconOptions } from "shared/utils";
 import { DynamicMenuLinkApplicationPage, DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
-import { ConstEnumStringField, GenericIntegerField, GenericStringField, MakeCreatedAtField, MakeIconField, PKField } from "../db3basicFields";
+import { ConstEnumStringField, GenericStringField, MakeCreatedAtField, MakeIconField, MakePKfield, MakeSortOrderField, MakeTitleField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { UserMinimalSelect } from "./prismArgs";
-import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.public,
@@ -53,19 +53,16 @@ export const xMenuLink = new db3.xTable({
         iconName: row.iconName,
         ownerUserId: row.createdByUserId,
     }),
-    visibilitySpec: {
-        ownerUserIDColumnName: "createdByUserId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
     tableAuthMap: xTableAuthMap,
     columns: [
-        new PKField({ columnName: "id" }),
-        new GenericIntegerField({
-            columnName: "sortOrder",
-            allowNull: false,
-            allowSearchingThisField: false,
-            authMap: xAuthMap,
-        }),
+        MakePKfield(),
+        MakeIconField("iconName", gIconOptions, { authMap: xAuthMap, }),
+        MakeSortOrderField({ authMap: xAuthMap, }),
+        MakeCreatedAtField({}),
+        MakeCreatedByField(),
+        MakeVisiblePermissionField({ authMap: xAuthMap }),
+        MakeTitleField("caption", { authMap: xAuthMap, }),
+
         new ConstEnumStringField({
             columnName: "realm",
             allowNull: true,
@@ -117,25 +114,6 @@ export const xMenuLink = new db3.xTable({
             format: "raw",
             authMap: xAuthMap,
         }),
-        MakeIconField("iconName", gIconOptions, { authMap: xAuthMap, }),
-        new GenericStringField({
-            columnName: "caption",
-            allowNull: false,
-            format: "title",
-            authMap: xAuthMap,
-        }),
-        MakeCreatedAtField("createdAt", { authMap: xAuthMap, }),
-        new CreatedByUserField({
-            columnName: "createdByUser",
-            fkMember: "createdByUserId",
-            authMap: xAuthMap,
-        }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-            authMap: xAuthMap,
-        }),
-
     ]
 });
 

@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { GetBasicVisFilterExpressionForEvent, GetBasicVisFilterExpressionForSong } from "../db3";
+import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance } from "../shared/apiTypes";
 import { assertIsNumberArray } from "shared/arrayUtils";
@@ -86,7 +86,7 @@ export default resolver.pipe(
                     Song s
                     left join SongTagAssociation sta on sta.songId = s.id
                 where
-                    ${GetBasicVisFilterExpressionForSong(u, "s")}
+                    ${db3.xSong.SqlGetVisFilterExpression(u, "s")}
                     AND (${songFilters.join(" AND ")})
                 group by
                     s.id
@@ -98,7 +98,7 @@ export default resolver.pipe(
                     Event e
                     left join EventTagAssignment eta on eta.eventId = e.id
                 where
-                    ${GetBasicVisFilterExpressionForEvent(u, "e")}
+                    ${db3.xEvent.SqlGetVisFilterExpression(u, "e")}
                     AND (e.startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
                     AND (${eventFilters.join(" AND ")})
                 group by
@@ -152,7 +152,7 @@ export default resolver.pipe(
                     Event e
                     left join EventTagAssignment eta on eta.eventId = e.id
                 where
-                    ${GetBasicVisFilterExpressionForEvent(u, "e")}
+                    ${db3.xEvent.SqlGetVisFilterExpression(u, "e")}
                     AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
                     AND (${eventFilters.join(" AND ")})
                 group by

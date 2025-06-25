@@ -1,6 +1,6 @@
 
 import React from "react";
-import { CoalesceBool, generateFibonacci } from "shared/utils";
+import { generateFibonacci } from "shared/utils";
 
 const FIBONACCI_SEQUENCE = [0, ...generateFibonacci(100)];
 

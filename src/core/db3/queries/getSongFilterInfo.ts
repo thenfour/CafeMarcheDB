@@ -3,15 +3,15 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
+import { assertIsNumberArray } from "shared/arrayUtils";
+import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
+import { SplitQuickFilter } from "shared/quickFilter";
 import { IsNullOrWhitespace } from "shared/utils";
-import { GetBasicVisFilterExpressionForSong, SongPayload_Verbose, SongTableParams, xSong_Verbose } from "../db3";
+import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
-import { SplitQuickFilter } from "shared/quickFilter";
-import { assertIsNumberArray } from "shared/arrayUtils";
-import { MysqlEscape } from "shared/mysqlUtils";
 
 interface TArgs {
     filterSpec: {
@@ -66,7 +66,7 @@ export default resolver.pipe(
             const songFilterExpression = songFilterExpressions.length > 0 ? `(${songFilterExpressions.join(" and ")})` : "";
 
             const AND: string[] = [];
-            AND.push(GetBasicVisFilterExpressionForSong(u, "Song"));
+            AND.push(db3.xSong.SqlGetVisFilterExpression(u, "Song"));
 
             if (!IsNullOrWhitespace(songFilterExpression)) {
                 AND.push(songFilterExpression);
@@ -171,17 +171,17 @@ export default resolver.pipe(
 
 
             // FULL EVENT DETAILS USING DB3.
-            let fullSongs: SongPayload_Verbose[] = [];
+            let fullSongs: db3.SongPayload_Verbose[] = [];
             if (songIds.length) {
-                const tableParams: SongTableParams = {
+                const tableParams: db3.SongTableParams = {
                     songIds: songIds.map(e => e.SongId), // prevent fetching the entire table!
                 };
 
                 const queryResult = await DB3QueryCore2({
                     clientIntention: { intention: "user", currentUser: u, mode: "primary" },
                     cmdbQueryContext: "getSongFilterInfo",
-                    tableID: xSong_Verbose.tableID,
-                    tableName: xSong_Verbose.tableName,
+                    tableID: db3.xSong_Verbose.tableID,
+                    tableName: db3.xSong_Verbose.tableName,
                     filter: {
                         items: [],
                         tableParams,
@@ -189,7 +189,7 @@ export default resolver.pipe(
                     orderBy: undefined,
                 }, u);
 
-                fullSongs = queryResult.items as SongPayload_Verbose[];
+                fullSongs = queryResult.items as db3.SongPayload_Verbose[];
             }
 
 

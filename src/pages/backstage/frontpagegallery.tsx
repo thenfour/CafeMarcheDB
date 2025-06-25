@@ -18,9 +18,12 @@ import { KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
 import { DashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/FileDrop";
-import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { Markdown } from "src/core/components/markdown/Markdown";
+import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 //import { Markdown2Control } from "src/core/components/MarkdownControl2";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { getURIForFile } from "@/src/core/db3/clientAPILL";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
@@ -31,8 +34,6 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { AppContextMarker } from "src/core/components/AppContext";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 
 
 
@@ -498,7 +499,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
             <div className="buttonRow">
                 <Button onClick={() => setEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
             </div>
-            <img src={API.files.getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
+            <img src={getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
         </div>
     );
 };

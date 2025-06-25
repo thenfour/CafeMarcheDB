@@ -1,30 +1,11 @@
-//
-// field types:
-//
-// - PKField
-// - GenericStringField
-// - GenericIntegerField
-// - ColorField
-// - BoolField
-// - ConstEnumStringField
-// - ForeignSingleField
-// - TagsField
-// - DateTimeField
-// - CreatedAtField
-// - SlugField
-
-// other places in code may also define more...
-// - CalculatedEventDateRangeField
-
 
 import { assert } from "blitz";
+import { assertIsNumberArray } from "shared/arrayUtils";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gSwatchColors } from "shared/color";
-import { slugify } from "shared/rootroot";
+import { MysqlEscape } from "shared/mysqlUtils";
 import { CoalesceBool, CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, isValidURL } from "shared/utils";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, EventFutureFilterExpression, EventPast60DaysFilterExpression, EventPastFilterExpression, EventRelevantFilterExpression, SearchResultsFacetOption, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
-import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
-import { MysqlEscape } from "shared/mysqlUtils";
-import { assertIsNumberArray } from "shared/arrayUtils";
+import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 
 export type DB3AuthSpec = {
     authMap: DB3AuthContextPermissionMap;
@@ -52,6 +33,7 @@ export class GhostField extends FieldBase<number> {
             _customAuth: (args as any)._customAuth || null,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
+            specialFunction: undefined,
         });
     }
 
@@ -105,10 +87,8 @@ export class PKField extends FieldBase<number> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
-            //label: args.columnName,
-            //authMap: (args as any).authMap || null,
-            //_customAuth: (args as any)._customAuth || null,
             authMap: createAuthContextMap_PK(),
+            specialFunction: SqlSpecialColumnFunction.pk,
             _customAuth: null,
         });
     }
@@ -180,10 +160,9 @@ export type GenericStringFieldArgs = {
     columnName: string;
     format: StringFieldFormatOptions;
     allowNull: boolean;
-    // minLength?: number;
     caseSensitive?: boolean;
-    // doTrim?: boolean;
     allowQuickFilter?: boolean;
+    specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
 export class GenericStringField extends FieldBase<string> {
@@ -199,7 +178,7 @@ export class GenericStringField extends FieldBase<string> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : "",
-            //label: args.columnName,
+            specialFunction: args.specialFunction,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
@@ -354,6 +333,7 @@ export type GenericIntegerFieldArgs = {
     columnName: string;
     allowNull: boolean;
     allowSearchingThisField?: boolean;
+    specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
 export class GenericIntegerField extends FieldBase<number> {
@@ -366,7 +346,7 @@ export class GenericIntegerField extends FieldBase<number> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : 0,
-            //label: args.columnName,
+            specialFunction: args.specialFunction,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
@@ -461,6 +441,8 @@ export class GenericIntegerField extends FieldBase<number> {
 export type DateTimeFieldArgs = {
     columnName: string;
     allowNull: boolean;
+    specialFunction?: SqlSpecialColumnFunction | undefined;
+
 } & DB3AuthSpec;
 
 export class DateTimeField extends FieldBase<Date> {
@@ -474,6 +456,7 @@ export class DateTimeField extends FieldBase<Date> {
             defaultValue: args.allowNull ? null : new Date(),
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
+            specialFunction: args.specialFunction,
         });
         this.allowNull = args.allowNull;
     }
@@ -590,6 +573,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
             defaultValue: args.allowNull ? null : args.palette.defaultEntry,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
+            specialFunction: SqlSpecialColumnFunction.color,
         });
         this.allowNull = args.allowNull;
         this.palette = args.palette;
@@ -658,6 +642,7 @@ export type BoolFieldArgs = {
     columnName: string;
     defaultValue: boolean | null;
     allowNull: boolean;
+    specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
 export class BoolField extends FieldBase<boolean> {
@@ -670,6 +655,7 @@ export class BoolField extends FieldBase<boolean> {
             defaultValue: args.defaultValue,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
+            specialFunction: args.specialFunction,
         });
         this.allowNull = args.allowNull;
     }
@@ -733,6 +719,7 @@ export type ConstEnumStringFieldArgs = {
     options: TAnyModel,
     defaultValue: string | null;
     allowNull: boolean,
+    specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
 export class ConstEnumStringField extends FieldBase<string> {
@@ -747,6 +734,7 @@ export class ConstEnumStringField extends FieldBase<string> {
             defaultValue: args.defaultValue,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
+            specialFunction: args.specialFunction,
         });
         this.options = args.options;
         this.defaultValue = args.defaultValue;
@@ -814,22 +802,20 @@ export class ConstEnumStringField extends FieldBase<string> {
 // on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
 export type ForeignSingleFieldArgs<TForeign> = {
     columnName: string; // "instrumentType"
-    fkMember: string; // "instrumentTypeId"
+    fkidMember: string; // "instrumentTypeId"
     foreignTableID: string; // for circular referencing don't force caller to use the xTable.
     allowNull: boolean;
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    // doesItemExactlyMatchText?: (item: TForeign, filterText: string) => boolean,
+    specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
-    fkMember: string;
     foreignTableID: string;
     localTableSpec: xTable;
     allowNull: boolean;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    // doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean;
 
     getForeignTableSchema = () => {
         return GetTableById(this.foreignTableID);
@@ -842,9 +828,11 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             defaultValue: args.defaultValue || null,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
+            specialFunction: args.specialFunction,
+            fkidMember: args.fkidMember,
             _matchesMemberForAuthorization: (memberName: string) => {
                 const mnl = memberName.toLowerCase();
-                return mnl === this.member.toLowerCase() || mnl === this.fkMember.toLowerCase();
+                return mnl === this.member.toLowerCase() || mnl === this.fkidMember!.toLowerCase();
             },
         });
 
@@ -859,7 +847,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         //     return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
         // }
 
-        this.fkMember = args.fkMember;
+        //this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
         this.defaultValue = args.defaultValue || null;
         this.foreignTableID = args.foreignTableID;
@@ -908,18 +896,18 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         const foreignPk = this.getForeignTableSchema().pkMember;
         if (clientModel[this.member] !== undefined) {
             if (clientModel[this.member] === null) {
-                mutationModel[this.fkMember] = null; // assumes foreign pk is 'id'
+                mutationModel[this.fkidMember!] = null; // assumes foreign pk is 'id'
             } else {
-                mutationModel[this.fkMember] = clientModel[this.member][foreignPk]; // assumes foreign pk is 'id'
+                mutationModel[this.fkidMember!] = clientModel[this.member][foreignPk]; // assumes foreign pk is 'id'
             }
             return;
         }
 
-        if (clientModel[this.fkMember] !== undefined) {
-            if (clientModel[this.fkMember] === null) {
-                mutationModel[this.fkMember] = null; // assumes foreign pk is 'id'
+        if (clientModel[this.fkidMember!] !== undefined) {
+            if (clientModel[this.fkidMember!] === null) {
+                mutationModel[this.fkidMember!] = null; // assumes foreign pk is 'id'
             } else {
-                mutationModel[this.fkMember] = clientModel[this.fkMember]; // assumes foreign pk is 'id'
+                mutationModel[this.fkidMember!] = clientModel[this.fkidMember!]; // assumes foreign pk is 'id'
             }
             return;
         }
@@ -943,27 +931,27 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     ValidateAndParse = (args: ValidateAndParseArgs<TForeign>): ValidateAndParseResult<TForeign | null> => {
         let value = args.row[this.member];
         if (value === undefined) {
-            let fkvalue = args.row[this.fkMember];
+            let fkvalue = args.row[this.fkidMember!];
             if (fkvalue === undefined) return UndefinedValidateAndParseResult(); // both are undefined.
 
             // operate on fk instead of object.
-            if (fkvalue === null && !this.allowNull) return ErrorValidateAndParseResult("field is required", { [this.fkMember]: fkvalue });
-            return SuccessfulValidateAndParseResult({ [this.fkMember]: fkvalue });
+            if (fkvalue === null && !this.allowNull) return ErrorValidateAndParseResult("field is required", { [this.fkidMember!]: fkvalue });
+            return SuccessfulValidateAndParseResult({ [this.fkidMember!]: fkvalue });
         }
 
         if (value === null) {
             if (!this.allowNull) return ErrorValidateAndParseResult("field is required", {
                 [this.member]: null,
-                [this.fkMember]: null,
+                [this.fkidMember!]: null,
             });
             return SuccessfulValidateAndParseResult({
                 [this.member]: null,
-                [this.fkMember]: null,
+                [this.fkidMember!]: null,
             });
         }
         return SuccessfulValidateAndParseResult({
             [this.member]: value,
-            [this.fkMember]: value.id,
+            [this.fkidMember!]: value.id,
         });
     };
 
@@ -982,13 +970,13 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             hasAny: () => { // no options considered
                 return {
                     error: undefined,
-                    whereAnd: `(${this.fkMember} is not null)`,
+                    whereAnd: `(${this.fkidMember} is not null)`,
                 };
             },
             hasNone: () => { // no options considered
                 return {
                     error: undefined,
-                    whereAnd: `(${this.fkMember} is null)`,
+                    whereAnd: `(${this.fkidMember} is null)`,
                 };
             },
             hasSomeOf: () => {
@@ -1000,11 +988,11 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
                 };
                 if (crit.options.length === 1) return {
                     error: undefined,
-                    whereAnd: `(${this.fkMember} = ${crit.options[0]})`,
+                    whereAnd: `(${this.fkidMember} = ${crit.options[0]})`,
                 };
                 return {
                     error: undefined,
-                    whereAnd: `(${this.fkMember} in (${crit.options.join(",")}))`,
+                    whereAnd: `(${this.fkidMember} in (${crit.options.join(",")}))`,
                 };
             },
             hasAllOf: () => {
@@ -1015,15 +1003,15 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
                 // similar to hasSomeOf with 0 items, treat 0 items as a synonym for null.
                 if (crit.options.length === 0) return {
                     error: "Select options to filter on",
-                    whereAnd: `(${this.fkMember} is not null)`,
+                    whereAnd: `(${this.fkidMember} is not null)`,
                 };
                 if (crit.options.length === 1) return {
                     error: undefined,
-                    whereAnd: `(${this.fkMember} != ${crit.options[0]})`,
+                    whereAnd: `(${this.fkidMember} != ${crit.options[0]})`,
                 };
                 return {
                     error: undefined,
-                    whereAnd: `(${this.fkMember} not in (${crit.options.join(",")}))`,
+                    whereAnd: `(${this.fkidMember} not in (${crit.options.join(",")}))`,
                 };
             },
             doesntHaveAllOf: () => {
@@ -1041,7 +1029,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         // a query that returns 1 row per option
         const foreignSchema = this.getForeignTableSchema();
         const foreignTable = foreignSchema.tableName;
-        const foreignMembers = foreignSchema.SqlGetSpecialColumns;
+        const foreignMembers = foreignSchema.SqlSpecialColumns;
 
         // we actually need to exclude this field from search
         return {
@@ -1061,22 +1049,22 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             FIQ -- filtered events
             inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the statusId field
         where
-            P.${this.fkMember} is null
+            P.${this.fkidMember} is null
 
         union all
 
         SELECT
             FT.${foreignSchema.pkMember} id,
-            ${foreignMembers.label ? `FT.${foreignMembers.label}` : "null"} label,
-            ${foreignMembers.color ? `FT.${foreignMembers.color}` : "null"} color,
-            ${foreignMembers.iconName ? `FT.${foreignMembers.iconName}` : "null"} iconName,
-            ${foreignMembers.tooltip ? `FT.${foreignMembers.tooltip}` : "null"} tooltip,
+            ${foreignMembers.name ? `FT.${foreignMembers.name.member}` : "null"} label,
+            ${foreignMembers.color ? `FT.${foreignMembers.color.member}` : "null"} color,
+            ${foreignMembers.iconName ? `FT.${foreignMembers.iconName.member}` : "null"} iconName,
+            ${foreignMembers.tooltip ? `FT.${foreignMembers.tooltip.member}` : "null"} tooltip,
             count(distinct(FIQ.id)) AS rowCount,
-            FT.${foreignMembers.sortOrder || foreignSchema.pkMember} sortOrder
+            FT.${foreignMembers.sortOrder?.member || foreignSchema.pkMember} sortOrder
         FROM
             FIQ -- filtered events
             inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the statusId field
-            right join ${foreignTable} as FT on FT.${foreignSchema.pkMember} = P.${this.fkMember}            -- like eventStatus
+            right join ${foreignTable} as FT on FT.${foreignSchema.pkMember} = P.${this.fkidMember}            -- like eventStatus
         where
             ${foreignSchema.SqlGetVisFilterExpression(currentUser, "FT")} -- account for delete, visibility
         GROUP BY 
@@ -1159,6 +1147,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             member: args.columnName,
             fieldTableAssociation: "associationRecord",
             defaultValue: [],
+            specialFunction: undefined,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
@@ -1346,7 +1335,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         //return null;
         const foreignSchema = this.getForeignTableShema();
         const foreignTable = foreignSchema.tableName;
-        const foreignMembers = foreignSchema.SqlGetSpecialColumns;
+        const foreignMembers = foreignSchema.SqlSpecialColumns;
         const filteredQuery = filteredItemsQueryExcludingThisCriterion;
         return {
             sql: `
@@ -1371,12 +1360,12 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     
             select
                 FT.${foreignSchema.pkMember} AS id,
-                ${foreignMembers.label ? `FT.${foreignMembers.label}` : "null"} AS label,
-                ${foreignMembers.color ? `FT.${foreignMembers.color}` : "null"} AS color,
-                ${foreignMembers.iconName ? `FT.${foreignMembers.iconName}` : "null"} AS iconName,
-                ${foreignMembers.tooltip ? `FT.${foreignMembers.tooltip}` : "null"} AS tooltip,
+                ${foreignMembers.name ? `FT.${foreignMembers.name.member}` : "null"} AS label,
+                ${foreignMembers.color ? `FT.${foreignMembers.color.member}` : "null"} AS color,
+                ${foreignMembers.iconName ? `FT.${foreignMembers.iconName.member}` : "null"} AS iconName,
+                ${foreignMembers.tooltip ? `FT.${foreignMembers.tooltip.member}` : "null"} AS tooltip,
                 count(distinct(FIQ.id)) AS rowCount,
-                FT.${foreignMembers.sortOrder || foreignSchema.pkMember} AS sortOrder
+                FT.${foreignMembers.sortOrder?.member || foreignSchema.pkMember} AS sortOrder
             from
                 FIQ
                 inner join ${this.getAssociationTableShema().tableName} ASS on ASS.${this.associationLocalIDMember} = FIQ.id
@@ -1448,6 +1437,7 @@ export class EventStartsAtField extends FieldBase<Date> {
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : new Date(),
             authMap: (args as any).authMap || null,
+            specialFunction: undefined,
             _customAuth: (args as any)._customAuth || null,
         });
         this.allowNull = args.allowNull;
@@ -1873,7 +1863,8 @@ export class EventStartsAtField extends FieldBase<Date> {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export type CreatedAtFieldArgs = {
     columnName: string;
-} & DB3AuthSpec;
+    specialFunction?: SqlSpecialColumnFunction;
+};
 
 export class CreatedAtField extends FieldBase<Date> {
     constructor(args: CreatedAtFieldArgs) {
@@ -1881,6 +1872,7 @@ export class CreatedAtField extends FieldBase<Date> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: new Date(),
+            specialFunction: args.specialFunction || SqlSpecialColumnFunction.createdAt,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
@@ -1961,6 +1953,7 @@ export class RevisionField extends FieldBase<number> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: 0,
+            specialFunction: undefined,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
@@ -2020,89 +2013,14 @@ export class RevisionField extends FieldBase<number> {
 
 
 
-export type SlugFieldFieldArgs = {
-    columnName: string;
-    sourceColumnName: string;
-} & DB3AuthSpec;
-
-export class SlugField extends FieldBase<string> {
-    sourceColumnName: string;
-
-    constructor(args: SlugFieldFieldArgs) {
-        super({
-            member: args.columnName,
-            fieldTableAssociation: "tableColumn",
-            defaultValue: "",
-            authMap: (args as any).authMap || null,
-            _customAuth: (args as any)._customAuth || null,
-        });
-        this.sourceColumnName = args.sourceColumnName;
-    }
-
-    connectToTable = (table: xTable) => { };
-
-    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        return { [this.member]: { contains: query } };
-    };
-    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
-
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
-
-    // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
-
-    ValidateAndParse = (args: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
-        let value = args.row[this.member];
-        let objValue = { [this.member]: value };
-        if (value === undefined) return UndefinedValidateAndParseResult();
-
-        //let slugValue = val.value; // by default, for editing, allow users to enter a custom value.
-        if (args.mode === "new") {
-            // calculate the slug value
-            const src = args.row[this.sourceColumnName];
-            if (src == null) return ErrorValidateAndParseResult("source column required", objValue);
-            if (typeof src !== 'string') return ErrorValidateAndParseResult("source column unknown type", objValue);
-            value = slugify(src);
-            objValue[this.member] = value;
-        }
-
-        if (value == null) return ErrorValidateAndParseResult("required", objValue);
-        if (typeof value !== 'string') return ErrorValidateAndParseResult("unknown type", objValue);
-        if (value.length < 1) return ErrorValidateAndParseResult("required", objValue);
-
-        return SuccessfulValidateAndParseResult(objValue);
-    };
-
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
-        args[this.member] = this.defaultValue;
-    };
-
-    isEqual = (a: string, b: string) => {
-        return a.toLowerCase() === b.toLowerCase();
-    };
-
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
-        if (clientModel[this.member] === undefined) return;
-        mutationModel[this.member] = clientModel[this.member];
-    };
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
-        if (dbModel[this.member] === undefined) return;
-        clientModel[this.member] = dbModel[this.member];
-    }
-
-    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
-    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
-    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
-};
-
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // higher-level conveniences
+
+export const MakePKfield = () => new PKField({
+    columnName: "id",
+});
+
 export const MakePlainTextField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
         columnName: columnName,
@@ -2141,10 +2059,22 @@ export const MakeTitleField = (columnName: string, authSpec: DB3AuthSpec) => (
         columnName: columnName,
         allowNull: false,
         format: "title",
+        specialFunction: SqlSpecialColumnFunction.name,
         allowQuickFilter: true,
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     }));
+
+export const MakeDescriptionField = ({ columnName = "description", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
+    new GenericStringField({
+        columnName,
+        allowNull: false,
+        format: "markdown",
+        specialFunction: SqlSpecialColumnFunction.description,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
+    })
+);
 
 export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericIntegerField({
@@ -2156,7 +2086,7 @@ export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
     }));
 
 // color fields convert to colorpaletteentry on query
-export const MakeColorField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakeColorField = ({ columnName = "color", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
     new ColorField({
         columnName,
         allowNull: true,
@@ -2166,20 +2096,21 @@ export const MakeColorField = (columnName: string, authSpec: DB3AuthSpec) => (
     }));
 
 // this does not convert to colorpaletteentry
-export const MakeColorAsStringField = (columnName: string, authSpec: DB3AuthSpec, allowNull?: boolean | undefined) => (
+export const MakeColorAsStringField = ({ columnName = "color", allowNull = true, ...authSpec }: { columnName?: string, allowNull?: boolean } & DB3AuthSpec) => (
     new GenericStringField({
         columnName,
-        allowNull: CoalesceBool(allowNull, true),
+        allowNull,
         format: "raw",
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeSortOrderField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakeSortOrderField = ({ columnName = "sortOrder", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
     new GenericIntegerField({
         columnName,
         allowSearchingThisField: false,
         allowNull: false,
+        specialFunction: SqlSpecialColumnFunction.sortOrder,
         authMap: createAuthContextMap_GrantAll(), // safe enough to never hide this field.
     }));
 
@@ -2199,26 +2130,36 @@ export const MakeIconField = (columnName: string, options: TAnyModel, authSpec: 
         allowNull: true,
         defaultValue: null,
         options,
+        specialFunction: SqlSpecialColumnFunction.iconName,
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeSlugField = (columnName: string, sourceColumnName: string, authSpec: DB3AuthSpec) => (
-    new SlugField({
+export const MakeCreatedAtField = (args?: { columnName?: string }) => (
+    new CreatedAtField({
+        columnName: args?.columnName || "createdAt",
+        specialFunction: SqlSpecialColumnFunction.createdAt,
+    })
+);
+
+export const MakeUpdatedAtField = (args?: { columnName?: string }) => (
+    new CreatedAtField({
+        columnName: args?.columnName || "updatedAt",
+        specialFunction: SqlSpecialColumnFunction.updatedAt,
+    })
+);
+
+export const MakeIsDeletedField = ({ columnName = "isDeleted", ...authSpec }: { columnName?: string } & DB3AuthSpec) => (
+    new BoolField({
         columnName,
-        sourceColumnName,
+        allowNull: false,
+        defaultValue: false,
+        specialFunction: SqlSpecialColumnFunction.isDeleted,
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     })
 );
 
-export const MakeCreatedAtField = (columnName: string, authSpec: DB3AuthSpec) => (
-    new CreatedAtField({
-        columnName,
-        authMap: (authSpec as any).authMap || null,
-        _customAuth: (authSpec as any)._customAuth || null,
-    })
-);
 
 
 
@@ -2230,8 +2171,6 @@ export const MakeCreatedAtField = (columnName: string, authSpec: DB3AuthSpec) =>
 export interface separateMutationValuesArgs {
     table: xTable;
     fields: TAnyModel;
-    // rowMode: DB3RowMode;
-    // clientIntention: xTableClientUsageContext;
 };
 export interface separateMutationValuesResult {
     associationFields: TAnyModel;
@@ -2256,12 +2195,12 @@ export const separateMutationValues = ({ table, fields }: separateMutationValues
                 if (fields[typedColumn.member] !== undefined) {
                     ret.localFields[typedColumn.member] = fields[typedColumn.member];
                 }
-                if (fields[typedColumn.fkMember] !== undefined) {
-                    ret.localFields[typedColumn.fkMember] = fields[typedColumn.fkMember];
+                if (fields[typedColumn.fkidMember!] !== undefined) {
+                    ret.localFields[typedColumn.fkidMember!] = fields[typedColumn.fkidMember!];
                 }
-                if (!fields[typedColumn.fkMember] && !!fields[typedColumn.member]) {
+                if (!fields[typedColumn.fkidMember!] && !!fields[typedColumn.member]) {
                     // if we're able to populate the fk member go ahead. assumes the foreign model's pk is 'id'
-                    ret.localFields[typedColumn.fkMember] = fields[typedColumn.member].id;
+                    ret.localFields[typedColumn.fkidMember!] = fields[typedColumn.member].id;
                 }
                 break;
             case "associationRecord":

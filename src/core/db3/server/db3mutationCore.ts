@@ -285,11 +285,15 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
     // create new associations
     for (let i = 0; i < cp.create.length; ++i) {
         const tagId = cp.create[i]!;
+        const data = {
+            [args.column.associationLocalIDMember]: args.localId,
+            [args.column.associationForeignIDMember]: tagId,
+        };
+        // Note: updatedby / createdby are not supported for associations, because i can't
+        // access that table column information from here. i'm also not sure it
+        // would be helpful or accurate.
         const newAssoc = await transactionalDb[associationTableName].create({
-            data: {
-                [args.column.associationLocalIDMember]: args.localId,
-                [args.column.associationForeignIDMember]: tagId,
-            },
+            data,
         });
 
         await RegisterChange({
@@ -314,10 +318,10 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 
         // TODO: delete row authorization
 
-        if (table.softDeleteSpec && deleteType === "softWhenPossible") {
+        if (table.SqlSpecialColumns.isDeleted && deleteType === "softWhenPossible") {
             // perform a soft delete.
             await updateImpl(table, id, {
-                [table.softDeleteSpec.isDeletedColumnName]: true,
+                [table.SqlSpecialColumns.isDeleted.member]: true,
             }, ctx, clientIntention);
             return true;
         }
@@ -416,6 +420,15 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 throw new Error(`unauthorized (0 columns); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
             }
 
+            // createdBy and updatedBy.
+            if (table.SqlSpecialColumns.createdByUser) {
+                localFields[table.SqlSpecialColumns.createdByUser.fkidMember!] = ctx.session.userId;
+            }
+            if (table.SqlSpecialColumns.updatedByUser) {
+                localFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = ctx.session.userId;
+            }
+            // createdAt and updatedAt are done automatically by prisma.
+
             obj = await dbTableClient.create({
                 data: localFields,
             });
@@ -505,10 +518,15 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                 throw new Error(`unauthorized (0 columns); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
             }
 
+            // updatedBy.
+            if (table.SqlSpecialColumns.updatedByUser) {
+                localFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = ctx.session.userId;
+            }
+            // updatedAt are done automatically by prisma.
+
             obj = await dbTableClient.update({
                 where: { [table.pkMember]: pkid },
-                data: localFields,// authResult.authorizedModel,
-                //include,
+                data: localFields,
             });
 
             const d = ObjectDiff(oldValues, obj);

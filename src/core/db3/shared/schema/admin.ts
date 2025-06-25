@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, PKField } from "../db3basicFields";
+import { ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakePKfield } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { ChangeNaturalOrderBy, ChangePayload } from "./prismArgs";
 
@@ -73,7 +73,7 @@ export const xChange = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
 
         new GenericStringField({
             columnName: "action",
@@ -133,14 +133,13 @@ export const xChange = new db3.xTable({
 
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
-            fkMember: "userId",
+            fkidMember: "userId",
             allowNull: false,
             foreignTableID: "User",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xSysadminColumnAuthMap,
         }),
 
-        // changedAt     DateTime @default(now())
         new GhostField({
             authMap: xSysadminColumnAuthMap,
             memberName: "changedAt",

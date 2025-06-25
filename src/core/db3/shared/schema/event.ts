@@ -4,12 +4,13 @@
 
 import { assert } from "blitz";
 import { Prisma } from "db";
+import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, SearchCustomDataHookId, TAnyModel } from "../apiTypes";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, RevisionField, TagsField } from "../db3basicFields";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakeMarkdownTextField, MakeNullableRawTextField, MakePKfield, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import {
     DashboardContextDataBase,
@@ -33,9 +34,8 @@ import {
     InstrumentPayload,
     UserWithInstrumentsPayload
 } from "./prismArgs";
-import { CreatedByUserField, EventResponses_ExpectedUserTag, VisiblePermissionField } from "./user";
+import { EventResponses_ExpectedUserTag, MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
 import { WorkflowDef_Minimum } from "./workflow";
-import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
@@ -109,47 +109,6 @@ export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
 
 
 
-
-
-
-/*
-
-let's think workflow for events.
-someone creates the event as a vague option.
-    dates TBD
-    slug auto-generated from name and date (pukkelpop-2023)
-    event approval is requested from directors (business logic?)
-    event attendance is requested from any active musicians.
-adds a comment, ok
-dates added
-
-who are active musicians? let's say users who have been active in the past 2 years in any way.
-- suggests the possibility of keeping track of lidgeld
-- weekend?
-- car sharing...
-leave all that for later.
-
-*/
-
-// concerts vs. rehearsals? i originally thought these would be tags, but should it just be a dropdown?
-// disadvantages of tag:
-// - events may not get a type assignment; that's probably not a good idea.
-// - events can get multiple conflicting types
-// - type is used for things; tag significance is sorta a lame way to accomplish this.
-// advantages of dropdown:
-// - field is required, structured, queryable, and obvious, and only 1 possible
-
-// to go further i could make events & rehearsals separate tables. but i don't think that's a good idea; the idea would be that
-// they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
-// nothing here is specific to any type of event. should that be the case it can be attached somehow.
-
-
-// const x : Prisma.EventInclude = {
-
-// };
-
-
-
 export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) => {
     return new DateTimeRange({
         startsAtDateTime: segment.startsAt,
@@ -196,23 +155,13 @@ export const xEventType = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
-    SqlGetSpecialColumns: {
-        color: "color",
-        iconName: "iconName",
-        label: "text",
-        sortOrder: "sortOrder",
-        tooltip: "description",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        MakePKfield(),
+        MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSignificanceField("significance", EventTypeSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GhostField({ memberName: "events", authMap: xEventAuthMap_R_EOwn_EManagers }),
@@ -244,23 +193,13 @@ export const xEventStatus = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
-    SqlGetSpecialColumns: {
-        label: "label",
-        sortOrder: "sortOrder",
-        color: "color",
-        iconName: "iconName",
-        tooltip: "description",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        MakePKfield(),
+        MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeTitleField("label", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSignificanceField("significance", EventStatusSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GhostField({ memberName: "events", authMap: xEventAuthMap_R_EOwn_EManagers }),
@@ -294,20 +233,13 @@ export const xEventTag = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    SqlGetSpecialColumns: {
-        label: "text",
-        sortOrder: "sortOrder",
-        color: "color",
-        iconName: undefined,
-        tooltip: "description",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "visibleOnFrontpage", defaultValue: false, authMap: xEventAuthMap_Homepage, allowNull: false }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSignificanceField("significance", EventTagSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GhostField({ memberName: "events", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
@@ -334,10 +266,10 @@ export const xEventTagAssignment = new db3.xTable({
         };
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.EventTagGetPayload<{}>>({
             columnName: "eventTag",
-            fkMember: "eventTagId",
+            fkidMember: "eventTagId",
             allowNull: false,
             foreignTableID: "EventTag",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -369,12 +301,12 @@ export const xEventCustomField = new db3.xTable({
         };
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
 
-        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSignificanceField("significance", EventCustomFieldSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
 
@@ -404,7 +336,7 @@ export const xEventCustomFieldValue = new db3.xTable({
         return xEventCustomField.getRowInfo(row.customField);
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new GenericStringField({
             columnName: "jsonValue",
             allowNull: false,
@@ -413,22 +345,13 @@ export const xEventCustomFieldValue = new db3.xTable({
         }),
         new ForeignSingleField<EventCustomFieldPayload>({
             columnName: "customField",
-            fkMember: "customFieldId",
+            fkidMember: "customFieldId",
             allowNull: false,
             foreignTableID: "EventCustomField",
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "dataType", defaultValue: EventCustomFieldDataType.SimpleText, options: EventCustomFieldDataType }),
-        //new GhostField({memberName:"event"})
-        // new ForeignSingleField<Prisma.EventGetPayload<{}>>({
-        //     columnName: "event",
-        //     fkMember: "eventId",
-        //     allowNull: false,
-        //     foreignTableID: "Event",
-        //     authMap: xEventAuthMap_R_EOwn_EManagers,
-        //     getQuickFilterWhereClause: (query: string) => false,
-        // }),
     ]
 });
 
@@ -439,7 +362,6 @@ export interface EventTableParams {
     eventId?: number;
     eventIds?: number[];
     eventUids?: string[];
-    //eventSlug?: string;
     eventTypeIds?: number[];
     eventStatusIds?: number[];
     minDate?: Date;
@@ -575,20 +497,16 @@ export const xEventArgs_Base: db3.TableDesc = {
 
         return ret;
     },
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
-    visibilitySpec: {
-        ownerUserIDColumnName: "createdByUserId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xEventAuthMap_Homepage, }),
-        //MakeSlugField("slug", "name", { authMap: xEventAuthMap_R_EAdmin, }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakePlainTextField("locationDescription", { authMap: xEventAuthMap_Homepage, }),
-        //MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeVisiblePermissionField({ authMap: xEventAuthMap_R_EOwn_EManagers }),
+        MakeCreatedAtField(),
+        MakeCreatedByField(),
+        MakeUpdatedAtField(),
+        MakeUpdatedByField(),
 
         new GenericStringField({
             columnName: "locationURL",
@@ -600,8 +518,6 @@ export const xEventArgs_Base: db3.TableDesc = {
 
         new RevisionField({ columnName: "revision", authMap: xEventAuthMap_CreatedAt, applyToUpdates: false }),
 
-        //new CalculatedEventDateRangeField(),
-        MakeCreatedAtField("createdAt", { authMap: xEventAuthMap_CreatedAt, }),
         new ConstEnumStringField({
             columnName: "segmentBehavior",
             allowNull: true,
@@ -611,25 +527,15 @@ export const xEventArgs_Base: db3.TableDesc = {
         }),
         new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
             columnName: "type",
-            fkMember: "typeId",
+            fkidMember: "typeId",
             allowNull: true,
             foreignTableID: "EventType",
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new CreatedByUserField({
-            columnName: "createdByUser",
-            fkMember: "createdByUserId",
-            authMap: xEventAuthMap_CreatedAt,
-        }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-        }),
         new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
             columnName: "status",
-            fkMember: "statusId",
+            fkidMember: "statusId",
             allowNull: true,
             foreignTableID: "EventStatus",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -637,7 +543,7 @@ export const xEventArgs_Base: db3.TableDesc = {
         }),
         new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
             columnName: "expectedAttendanceUserTag",
-            fkMember: "expectedAttendanceUserTagId",
+            fkidMember: "expectedAttendanceUserTagId",
             allowNull: true,
             foreignTableID: "UserTag",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -713,7 +619,6 @@ export const xEventArgs_Base: db3.TableDesc = {
         new GhostField({ memberName: "segments", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "updatedAt", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "descriptionWikiPageId", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "descriptionWikiPage", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
@@ -721,7 +626,7 @@ export const xEventArgs_Base: db3.TableDesc = {
         //new GhostField({ memberName: "workflowDefId", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new ForeignSingleField<WorkflowDef_Minimum>({
             columnName: "workflowDef",
-            fkMember: "workflowDefId",
+            fkidMember: "workflowDefId",
             allowNull: true,
             foreignTableID: "WorkflowDef",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -865,14 +770,15 @@ export const xEventSegment = new db3.xTable({
         return false;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
+        MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+
         new GenericStringField({ // allow 0-length names in segments. sometimes it's not easy to know what to name them and it's not that important
             columnName: "name",
             allowNull: false,
             format: "plain",
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new EventStartsAtField({
             allowNull: true,
             columnName: "startsAt",
@@ -892,7 +798,7 @@ export const xEventSegment = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
             columnName: "status",
-            fkMember: "statusId",
+            fkidMember: "statusId",
             allowNull: true,
             foreignTableID: "EventStatus",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -901,7 +807,7 @@ export const xEventSegment = new db3.xTable({
 
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
-            fkMember: "eventId",
+            fkidMember: "eventId",
             allowNull: false,
             foreignTableID: "Event",
             getQuickFilterWhereClause: (query: string) => false,
@@ -934,21 +840,19 @@ export const xEventAttendance = new db3.xTable({
     activeAsSelectable: (row: EventAttendancePayload) => {
         return row.isActive;
     },
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIsDeletedField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+
+        MakeIntegerField("strength", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GenericStringField({ allowNull: false, columnName: "personalText", format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GenericStringField({ allowNull: false, columnName: "pastText", format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GenericStringField({ allowNull: false, columnName: "pastPersonalText", format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeIntegerField("strength", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         new BoolField({ columnName: "isActive", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
@@ -979,12 +883,14 @@ export const xEventSegmentUserResponse = new db3.xTable({
         return ret;
     },
     columns: [
-        new PKField({ columnName: "id" }),
-        //MakeMarkdownTextField("attendanceComment"),
-        //new BoolField({ columnName: "expectAttendance", defaultValue: false }),
+        MakePKfield(),
+        MakeCreatedAtField(),
+        MakeCreatedByField(),
+        MakeUpdatedAtField(),
+        MakeUpdatedByField(),
         new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
             columnName: "eventSegment",
-            fkMember: "eventSegmentId",
+            fkidMember: "eventSegmentId",
             allowNull: false,
             foreignTableID: "EventSegment",
             getQuickFilterWhereClause: (query: string) => false,
@@ -992,27 +898,21 @@ export const xEventSegmentUserResponse = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
-            fkMember: "userId",
+            fkidMember: "userId",
             allowNull: false,
             foreignTableID: "User",
+            specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponse,
         }),
         new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
             columnName: "attendance",
-            fkMember: "attendanceId",
+            fkidMember: "attendanceId",
             allowNull: true,
             foreignTableID: "EventAttendance",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponse,
         }),
-        // new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
-        //     columnName: "instrument",
-        //     fkMember: "instrumentId",
-        //     allowNull: true,
-        //     foreignTableID: "Instrument",
-        //     getQuickFilterWhereClause: (query: string) => false,
-        // }),
     ]
 });
 
@@ -1040,7 +940,7 @@ export const xEventUserResponse = new db3.xTable({
         return ret;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new GenericStringField({
             columnName: "userComment",
             allowNull: true,
@@ -1050,31 +950,18 @@ export const xEventUserResponse = new db3.xTable({
         }),
         new BoolField({ columnName: "isInvited", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: true }),
         MakeIntegerField("eventId", { authMap: xEventAuthMap_UserResponse, }),
-        // new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
-        //     columnName: "eventSegment",
-        //     fkMember: "eventSegmentId",
-        //     allowNull: false,
-        //     foreignTableID: "EventSegment",
-        //     getQuickFilterWhereClause: (query: string) => false,
-        // }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
-            fkMember: "userId",
+            fkidMember: "userId",
             allowNull: false,
             foreignTableID: "User",
+            specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        // new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
-        //     columnName: "attendance",
-        //     fkMember: "attendanceId",
-        //     allowNull: false,
-        //     foreignTableID: "EventAttendance",
-        //     getQuickFilterWhereClause: (query: string) => false,
-        // }),
         new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
             columnName: "instrument",
-            fkMember: "instrumentId",
+            fkidMember: "instrumentId",
             allowNull: true,
             foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string) => false,
@@ -1117,17 +1004,17 @@ export const xEventSongList = new db3.xTable({
         return ret;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeDescriptionField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
 
         new BoolField({ columnName: "isOrdered", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         new BoolField({ columnName: "isActuallyPlayed", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
 
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
-            fkMember: "eventId",
+            fkidMember: "eventId",
             allowNull: false,
             foreignTableID: "Event",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -1146,7 +1033,7 @@ export const xEventSongList = new db3.xTable({
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
         }),
         new GhostField({ memberName: "dividers", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "userId", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "userId", authMap: xEventAuthMap_R_EOwn_EManagers }), // what is this??
     ]
 });
 
@@ -1175,12 +1062,12 @@ export const xEventSongListSong = new db3.xTable({
         return ret;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
             columnName: "song",
-            fkMember: "songId",
+            fkidMember: "songId",
             allowNull: false,
             foreignTableID: "Song",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -1188,7 +1075,7 @@ export const xEventSongListSong = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "eventSongList",
-            fkMember: "eventSongListId",
+            fkidMember: "eventSongListId",
             allowNull: false,
             foreignTableID: "EventSongList",
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -1223,15 +1110,15 @@ export const xEventSongListDivider = new db3.xTable({
         return ret;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "isInterruption", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "textStyle", defaultValue: EventSongListDividerTextStyle.Default, options: EventSongListDividerTextStyle }),
-        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "eventSongList",
-            fkMember: "eventSongListId",
+            fkidMember: "eventSongListId",
             allowNull: false,
             foreignTableID: "EventSongList",
             authMap: xEventAuthMap_R_EOwn_EManagers,

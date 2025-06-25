@@ -3,9 +3,9 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { ForeignSingleField, GenericStringField, GhostField, MakeCreatedAtField, MakeTitleField, PKField } from "../db3basicFields";
+import { ForeignSingleField, GenericStringField, GhostField, MakeCreatedAtField, MakePKfield, MakeTitleField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.visibility_logged_in_users,
@@ -52,16 +52,14 @@ export const xWikiPage = new db3.xTable({
         ownerUserId: null,
     }),
     tableAuthMap: xTableAuthMap,
-    visibilitySpec: {
-        visiblePermissionIDColumnName: "visiblePermissionId",
-        ownerUserIDColumnName: undefined,
-    },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
+        MakeVisiblePermissionField({ authMap: xAuthMap, }),
         new GenericStringField({
             columnName: "slug",
             allowNull: false,
             format: "title",
+            specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xAuthMap,
         }),
         new GhostField({
@@ -92,12 +90,6 @@ export const xWikiPage = new db3.xTable({
             authMap: xAuthMap,
             memberName: "lockId",
         }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-            authMap: xAuthMap,
-        }),
-
     ]
 });
 
@@ -143,24 +135,20 @@ export const xWikiPageRevision = new db3.xTable({
     }),
     tableAuthMap: xTableAuthMap,
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xAuthMap, }),
+        MakeCreatedByField(),
+        MakeCreatedAtField(),
         new GenericStringField({
             columnName: "content",
             allowNull: false,
             format: "markdown",
             authMap: xAuthMap,
         }),
-        new CreatedByUserField({
-            columnName: "createdByUser",
-            fkMember: "createdByUserId",
-            authMap: xAuthMap,
-        }),
-        MakeCreatedAtField("createdAt", { authMap: xAuthMap, }),
 
         new ForeignSingleField<Prisma.WikiPageGetPayload<{}>>({
             columnName: "wikiPage",
-            fkMember: "wikiPageId",
+            fkidMember: "wikiPageId",
             allowNull: false,
             foreignTableID: "WikiPage",
             getQuickFilterWhereClause: (query: string) => false,

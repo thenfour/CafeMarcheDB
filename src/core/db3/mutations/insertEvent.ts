@@ -19,8 +19,9 @@ export default resolver.pipe(
 
             // verbose on purpose in order to validate args type against UncheckedUpdateInput
             const eventFields: Prisma.EventUncheckedCreateInput & { tags: number[] } = {
-                createdAt: new Date(), // this is automatic though right?
-                createdByUserId: currentUser.id,
+                //createdAt: new Date(), // this is automatic though right?
+                //createdByUserId: currentUser.id, // done in impl
+                //updatedAt: new Date(), // this is automatic though right?
                 name: args.event.name,
                 locationDescription: args.event.locationDescription || "",
                 //description: args.event.description || "",
@@ -53,14 +54,11 @@ export default resolver.pipe(
             if (args.songList) {
                 // create the song list
                 const songListFields: Partial<db3.EventSongListPayload> = {
-                    userId: currentUser.id,
                     eventId: newEvent.id,
                     description: "",
                     event: newEvent,
                     name: "Setlist",
                     sortOrder: 0,
-                    //songs: [],
-                    //id: 0,
                 };
                 const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx, clientIntention) as db3.EventSongListPayload;
                 // add songs.

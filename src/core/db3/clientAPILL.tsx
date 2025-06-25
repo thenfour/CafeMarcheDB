@@ -42,7 +42,7 @@ export const getURIForInstrument = (instrument: Prisma.InstrumentGetPayload<{ se
     return getAbsoluteUrl(`/backstage/instrument/${parts.join("/")}`);
 };
 
-export const getURIForFile = (value: Prisma.FileGetPayload<{ select: { id: true, storedLeafName: true, fileLeafName: true, externalURI: true } }>) => {
+export const getURIForFile = (value: Prisma.FileGetPayload<{ select: { storedLeafName: true, fileLeafName: true, externalURI: true } }>) => {
     if (value.externalURI) {
         return value.externalURI;
     }

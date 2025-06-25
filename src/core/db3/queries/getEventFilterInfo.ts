@@ -98,7 +98,8 @@ export default resolver.pipe(
 
             const AND: string[] = [];
 
-            AND.push(db3.GetBasicVisFilterExpressionForEvent(u, "Event"));
+            //AND.push(db3.GetBasicVisFilterExpressionForEvent(u, "Event"));
+            AND.push(db3.xEvent.SqlGetVisFilterExpression(u, "Event"));
 
             if (!IsNullOrWhitespace(eventFilterExpression)) {
                 AND.push(eventFilterExpression);

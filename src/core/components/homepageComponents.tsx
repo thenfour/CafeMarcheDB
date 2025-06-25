@@ -1,11 +1,12 @@
 import { nanoid } from 'nanoid';
 import React from "react";
+import { EnNlFr, LangSelectString } from 'shared/lang';
 import { IsNullOrWhitespace, modulo } from "shared/utils";
 import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
+import { getURIForFile } from '../db3/clientAPILL';
 import { gIconMap } from '../db3/components/IconMap';
 import * as db3 from "../db3/db3";
 import { Markdown } from "./markdown/Markdown";
-import { EnNlFr, LangSelectString } from 'shared/lang';
 
 const gSettings = {
     backstageURL: `/backstage`,
@@ -201,11 +202,11 @@ class Gallery {
 
         const thisPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${post.id}`);
         if (thisPostImage) {
-            thisPostImage.setAttribute('href', API.files.getURIForFile(post.file))
+            thisPostImage.setAttribute('href', getURIForFile(post.file))
         }
         const nextPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${nextPost.id}`);
         if (nextPostImage) {
-            nextPostImage.setAttribute('href', API.files.getURIForFile(nextPost.file));
+            nextPostImage.setAttribute('href', getURIForFile(nextPost.file));
         }
 
         const a = this.ab ? this.mainSVGRefs.galleryPhoto2Ref : this.mainSVGRefs.galleryPhoto1Ref;

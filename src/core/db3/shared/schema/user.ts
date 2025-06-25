@@ -1,14 +1,14 @@
 
 import { Prisma } from "db";
+import { assertIsNumberArray } from "shared/arrayUtils";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TableAccessor } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
-import { BoolField, DB3AuthSpec, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, DB3AuthSpec, ForeignSingleField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, PermissionSignificance, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
-import { assertIsNumberArray } from "shared/arrayUtils";
 
 // for basic user fields.
 // everyone can view
@@ -106,11 +106,15 @@ export const xUserMinimum = new db3.xTable({
         return false;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
+        MakeCreatedAtField(),
+        MakeIsDeletedField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+
         new GenericStringField({
             columnName: "name",
             allowNull: false,
             format: "plain",
+            specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
         new GenericStringField({
@@ -143,8 +147,6 @@ export const xUserMinimum = new db3.xTable({
             allowNull: true,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
-        MakeCreatedAtField("createdAt", { authMap: xUserAuthMap_R_EAdmins }),
-        new GhostField({ memberName: "isDeleted", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "uid", authMap: xUserAuthMap_R_EOwn_EManagers }),
@@ -169,25 +171,16 @@ export const xPermissionBaseArgs: db3.TableDesc = {
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new GenericStringField({
             columnName: "name",
             allowNull: false,
             format: "plain",
+            specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
-        new GenericStringField({
-            columnName: "description",
-            allowNull: false,
-            format: "markdown",
-            authMap: xUserAuthMap_R_EOwn_EManagers,
-        }),
-        new GenericIntegerField({
-            columnName: "sortOrder",
-            allowNull: false,
-            allowSearchingThisField: false,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
-        }),
+        MakeDescriptionField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeSortOrderField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
         new BoolField({
             columnName: "isVisibility",
             defaultValue: false,
@@ -195,7 +188,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             allowNull: false,
         }),
         MakeSignificanceField("significance", PermissionSignificance, { authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeColorField("color", { authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeColorField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeIconField("iconName", gIconOptions, { authMap: xUserAuthMap_R_EOwn_EManagers }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "roles",
@@ -256,10 +249,10 @@ export const xRolePermissionAssociation = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<PermissionPayload>({
             columnName: "permission",
-            fkMember: "permissionId",
+            fkidMember: "permissionId",
             allowNull: false,
             foreignTableID: "Permission",
             getQuickFilterWhereClause: (query: string) => false,
@@ -267,7 +260,7 @@ export const xRolePermissionAssociation = new db3.xTable({
         }),
         new ForeignSingleField<RolePayload>({
             columnName: "role",
-            fkMember: "roleId",
+            fkidMember: "roleId",
             allowNull: false,
             foreignTableID: "Role",
             getQuickFilterWhereClause: (query: string) => false,
@@ -300,19 +293,15 @@ export const xRole = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new GenericStringField({
             columnName: "name",
             allowNull: false,
             format: "plain",
+            specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserAuthMap_R_EAdmins,
         }),
-        new GenericStringField({
-            columnName: "description",
-            allowNull: false,
-            format: "markdown",
-            authMap: xUserAuthMap_R_EAdmins,
-        }),
+        MakeDescriptionField({ authMap: xUserAuthMap_R_EAdmins }),
         new BoolField({
             columnName: "isRoleForNewUsers",
             defaultValue: false,
@@ -325,13 +314,8 @@ export const xRole = new db3.xTable({
             authMap: xUserAuthMap_R_EAdmins,
             allowNull: false,
         }),
-        new GenericIntegerField({
-            columnName: "sortOrder",
-            allowSearchingThisField: false,
-            allowNull: false,
-            authMap: xUserAuthMap_R_EAdmins,
-        }),
-        MakeColorField("color", { authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeSortOrderField({ authMap: xUserAuthMap_R_EAdmins }),
+        MakeColorField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeSignificanceField("significance", RoleSignificance, { authMap: xUserAuthMap_R_EAdmins }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",
@@ -377,11 +361,11 @@ export const xUserInstrument = new db3.xTable({
         };
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new BoolField({ columnName: "isPrimary", defaultValue: false, authMap: xUserAuthMap_R_EOwn_EManagers, allowNull: false }),
         new ForeignSingleField<Prisma.UserInstrumentGetPayload<{}>>({ // tags field should include the foreign object (tag object)
             columnName: "instrument",
-            fkMember: "instrumentId",
+            fkidMember: "instrumentId",
             allowNull: false,
             foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string) => false,
@@ -389,7 +373,7 @@ export const xUserInstrument = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({ // tags field should include the foreign object (tag object)
             columnName: "user",
-            fkMember: "userId",
+            fkidMember: "userId",
             allowNull: false,
             foreignTableID: "user",
             getQuickFilterWhereClause: (query: string) => false,
@@ -457,11 +441,11 @@ const userTagBaseArgs: db3.TableDesc =
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("text", { authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeMarkdownTextField("description", { authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeSortOrderField("sortOrder", { authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeColorField("color", { authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeDescriptionField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeSortOrderField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeColorField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GenericStringField({
             columnName: "cssClass",
             allowNull: true,
@@ -540,10 +524,10 @@ export const xUserTagAssignment = new db3.xTable({
     }
     ,
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
             columnName: "userTag",
-            fkMember: "userTagId",
+            fkidMember: "userTagId",
             allowNull: false,
             foreignTableID: "UserTag",
             getQuickFilterWhereClause: (query: string) => false,
@@ -590,15 +574,15 @@ const userBaseArgs: db3.TableDesc = {
         }
         return ret;
     },
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
+        MakeIsDeletedField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeCreatedAtField(),
         new GenericStringField({
             columnName: "name",
             allowNull: false,
             format: "plain",
+            specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
         new GenericStringField({
@@ -619,10 +603,6 @@ const userBaseArgs: db3.TableDesc = {
             format: "raw",
             authMap: xUserAuthMap_R_EAdmins,
         }),
-        // new BoolField({
-        //     columnName: "isActive",
-        //     defaultValue: false,
-        // }),
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
@@ -632,7 +612,7 @@ const userBaseArgs: db3.TableDesc = {
         new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
             columnName: "role",
             allowNull: false,
-            fkMember: "roleId",
+            fkidMember: "roleId",
             foreignTableID: "Role",
             authMap: xUserAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
@@ -642,17 +622,6 @@ const userBaseArgs: db3.TableDesc = {
                 ]
             }),
         }),
-        // new GenericStringField({
-        //     columnName: "hashedPassword",
-        //     allowNull: true,
-        //     format: "plain",
-        // }),
-        // new GenericStringField({
-        //     columnName: "googleId",
-        //     format: "plain",
-        //     allowNull: true,
-        // }),
-        MakeCreatedAtField("createdAt", { authMap: xUserAuthMap_R_EAdmins }),
         new TagsField<UserInstrumentPayload>({
             columnName: "instruments",
             associationForeignIDMember: "instrumentId",
@@ -691,7 +660,6 @@ const userBaseArgs: db3.TableDesc = {
             },
         }), // column: tags
 
-        new GhostField({ memberName: "isDeleted", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "googleId", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
@@ -716,16 +684,18 @@ export const xUserWithInstrument = new db3.xTable({
 // automatically populated with current user on creation (see ApplyToNewRow)
 export type CreatedByUserFieldArgs = {
     columnName?: string; // "instrumentType"
-    fkMember?: string; // "instrumentTypeId"
-} & DB3AuthSpec;
+    fkidMember?: string; // "instrumentTypeId"
+    specialFunction?: db3.SqlSpecialColumnFunction;
+};
 
 export class CreatedByUserField extends ForeignSingleField<UserPayload> {
     constructor(args: CreatedByUserFieldArgs) {
         super({
             columnName: args.columnName || "createdByUser",
-            fkMember: args.fkMember || "createdByUserId",
+            fkidMember: args.fkidMember || "createdByUserId",
             foreignTableID: "User",
             allowNull: true,
+            specialFunction: args.specialFunction || db3.SqlSpecialColumnFunction.createdByUser,
             getQuickFilterWhereClause: () => false,
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
@@ -744,6 +714,19 @@ export class CreatedByUserField extends ForeignSingleField<UserPayload> {
     }
 };
 
+export const MakeCreatedByField = (args?: CreatedByUserFieldArgs) => (
+    new CreatedByUserField(args || {})
+);
+
+export const MakeUpdatedByField = (args?: CreatedByUserFieldArgs) => (
+    new CreatedByUserField({
+        specialFunction: db3.SqlSpecialColumnFunction.updatedByUser,
+        columnName: "updatedByUser",
+        fkidMember: "updatedByUserId",
+        ...args || {},
+    })
+);
+
 
 // let's create a "visiblePermission" column which is ForeignSingle for a permission, but only for "visibility" permissions.
 // in theory this will apply a filter over permissions for isVisibility = TRUE; however that is already done in a different way.
@@ -756,8 +739,9 @@ export class VisiblePermissionField extends ForeignSingleField<PermissionPayload
     constructor(args: VisiblePermissionFieldArgs) {
         super({
             columnName: args.columnName || "visiblePermission",
-            fkMember: args.fkMember || "visiblePermissionId",
+            fkidMember: args.fkMember || "visiblePermissionId",
             foreignTableID: "xPermissionForVisibility",
+            specialFunction: db3.SqlSpecialColumnFunction.visiblePermission,
             allowNull: true,
             getQuickFilterWhereClause: () => false,
             authMap: (args as any).authMap || null,
@@ -765,6 +749,10 @@ export class VisiblePermissionField extends ForeignSingleField<PermissionPayload
         });
     }
 };
+
+export const MakeVisiblePermissionField = (args: DB3AuthSpec) => (
+    new VisiblePermissionField(args)
+);
 
 
 ////////////////////////////////////////////////////////////////

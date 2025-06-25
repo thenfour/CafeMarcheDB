@@ -6,10 +6,10 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
-import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeSignificanceField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeDescriptionField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
-import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 
 export const xSongAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
@@ -81,22 +81,13 @@ export const xSongTag = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    SqlGetSpecialColumns: {
-        label: "text",
-        sortOrder: "sortOrder",
-        color: "color",
-        iconName: undefined,
-        tooltip: "description",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("text", { authMap: xSongAuthMap_R_EOwn_EManagers }),
-        new GenericStringField({
-            columnName: "description",
-            allowNull: false,
-            format: "markdown",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
+        MakeDescriptionField({ authMap: xSongAuthMap_R_EOwn_EManagers }),
+        MakeSortOrderField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
+        MakeColorField({ authMap: xSongAuthMap_R_EOwn_EManagers }),
+
         new GenericStringField({
             columnName: "indicator",
             allowNull: true,
@@ -107,18 +98,6 @@ export const xSongTag = new db3.xTable({
             columnName: "indicatorCssClass",
             allowNull: true,
             format: "plain",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
-        new GenericIntegerField({
-            columnName: "sortOrder",
-            allowSearchingThisField: false,
-            allowNull: false,
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
-        new ColorField({
-            columnName: "color",
-            allowNull: true,
-            palette: gGeneralPaletteList,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new ConstEnumStringField({
@@ -156,10 +135,10 @@ export const xSongTagAssociation = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.SongTagGetPayload<{}>>({
             columnName: "tag",
-            fkMember: "tagId",
+            fkidMember: "tagId",
             allowNull: false,
             foreignTableID: "SongTag",
             authMap: xSongAuthMap_R_EOwn_EManagers,
@@ -202,23 +181,14 @@ const xSongArgs_Base: db3.TableDesc = {
 
         return ret;
     },
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
-    visibilitySpec: {
-        ownerUserIDColumnName: "createdByUserId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xSongAuthMap_R_EOwn_EManagers, }),
-        //MakeSlugField("slug", "name", { authMap: xSongAuthMap_R_EAdmin, }),
-        new GenericStringField({
-            columnName: "description",
-            allowNull: false,
-            format: "markdown",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
+        MakeDescriptionField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
+        MakeIsDeletedField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
+        MakeCreatedByField(),
+        MakeVisiblePermissionField({ authMap: xSongAuthMap_R_EOwn_EManagers, }),
+
         new GenericStringField({
             columnName: "aliases",
             allowNull: false,
@@ -244,12 +214,6 @@ const xSongArgs_Base: db3.TableDesc = {
             allowNull: true,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
-        new BoolField({
-            columnName: "isDeleted",
-            defaultValue: false,
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-            allowNull: false,
-        }),
         new GenericIntegerField({ // todo: a column type specifically for song lengths
             columnName: "lengthSeconds",
             allowSearchingThisField: false,
@@ -257,16 +221,6 @@ const xSongArgs_Base: db3.TableDesc = {
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
 
-        new CreatedByUserField({
-            columnName: "createdByUser",
-            fkMember: "createdByUserId",
-            authMap: xSongAuthMap_R_EAdmin,
-        }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
         new TagsField<SongTagAssociationPayload>({
             columnName: "tags",
             associationForeignIDMember: "tagId",
@@ -352,7 +306,7 @@ export const xSongCreditType = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("text", { authMap: xSongAuthMap_R_EManagers }),
         MakeSignificanceField("significance", SongCreditTypeSignificance, { authMap: xSongAuthMap_R_EManagers, }),
         new GenericStringField({
@@ -404,10 +358,10 @@ export const xSongCredit = new db3.xTable({
         return false;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
-            fkMember: "userId",
+            fkidMember: "userId",
             allowNull: true,
             foreignTableID: "User",
             authMap: xSongAuthMap_R_EManagers,
@@ -428,7 +382,7 @@ export const xSongCredit = new db3.xTable({
 
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
             columnName: "song",
-            fkMember: "songId",
+            fkidMember: "songId",
             allowNull: false,
             foreignTableID: "Song",
             authMap: xSongAuthMap_R_EManagers,
@@ -436,7 +390,7 @@ export const xSongCredit = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.SongCreditTypeGetPayload<{}>>({
             columnName: "type",
-            fkMember: "typeId",
+            fkidMember: "typeId",
             allowNull: false,
             authMap: xSongAuthMap_R_EManagers,
             foreignTableID: "SongCreditType",

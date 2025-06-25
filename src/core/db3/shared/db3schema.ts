@@ -7,8 +7,8 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { GenericStringField, PKField } from "./db3basicFields";
-import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, xTable } from "./db3core";
+import { GenericStringField, MakePKfield } from "./db3basicFields";
+import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, SqlSpecialColumnFunction, xTable } from "./db3core";
 
 
 export const xSettingsAuthMap: DB3AuthContextPermissionMap = {
@@ -45,11 +45,12 @@ export const xSetting = new xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new GenericStringField({
             columnName: "name",
             allowNull: false,
             format: "plain",
+            specialFunction: SqlSpecialColumnFunction.name,
             authMap: xSettingsAuthMap,
         }),
         new GenericStringField({

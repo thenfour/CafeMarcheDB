@@ -194,19 +194,21 @@ model User {
 
   cssClass String?
 
-  taggedFiles              FileUserTag[]
-  uploadedFiles            File[]
-  eventSegmentResponses    EventSegmentUserResponse[]
-  eventResponses           EventUserResponse[]
-  songCredits              SongCredit[]
-  instruments              UserInstrument[]
-  createdCustomLinks       CustomLink[]
-  createdMenuLinks         MenuLink[]
-  createdWikiPageRevisions WikiPageRevision[]
+  taggedFiles                    FileUserTag[]
+  uploadedFiles                  File[]
+  eventSegmentResponses          EventSegmentUserResponse[] @relation("EventSegmentUserResponseUser")
+  eventSegmentResponsesUpdatedBy EventSegmentUserResponse[] @relation("EventSegmentUserResponseUpdatedBy")
+  eventSegmentResponsesCreatedBy EventSegmentUserResponse[] @relation("EventSegmentUserResponseCreatedBy")
+  eventResponses                 EventUserResponse[]
+  songCredits                    SongCredit[]
+  instruments                    UserInstrument[]
+  createdCustomLinks             CustomLink[]
+  createdMenuLinks               MenuLink[]
+  createdWikiPageRevisions       WikiPageRevision[]
 
   creatorForSongs                Song[]
-  creatorForEvents               Event[]
-  creatorForEventSongLists       EventSongList[]
+  creatorForEvents               Event[]                @relation("EventCreatedBy")
+  updatedForEvents               Event[]                @relation("EventUpdatedBy")
   creatorForFrontpageGalleryItem FrontpageGalleryItem[]
 
   workflowNodeDefaultAssignees      WorkflowDefNodeDefaultAssignee[]
@@ -516,9 +518,7 @@ model Event {
   // don't do this because it's redundant with status. bring it back only if there's a true need.
   // isCancelled Boolean   @default(false) // used as an input for calculating status
 
-  createdAt DateTime
-  updatedAt DateTime @default(now()) @updatedAt
-  uid       String   @default(uuid())
+  uid String @default(uuid())
 
   // conforms to DateTimeRangeSpec, to encompass all segments. the idea is to be able to sort by event date.
   // normally these are stored in EventSegment, but sorting based on relation like that is not possible (and if it was, it would be VERY messy to manage)
@@ -533,8 +533,14 @@ model Event {
   isAllDay       Boolean   @default(true)
   endDateTime    DateTime? // after calculating the date range, this is the "end time" or TBD
 
-  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  createdByUserId Int? // required in order to know visibility when visiblePermissionId is NULL
+  createdByUser   User?    @relation("EventCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  updatedAt       DateTime @default(now()) @updatedAt
+  updatedByUserId Int? // required in order to know visibility when visiblePermissionId is NULL
+  updatedByUser   User?    @relation("EventUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
@@ -740,10 +746,6 @@ model EventSongList {
   isOrdered        Boolean @default(true)
   isActuallyPlayed Boolean @default(true)
 
-  // this is really not necessary but it's here so ...
-  User   User? @relation(fields: [userId], references: [id])
-  userId Int?
-
   actions Action[]
 
   @@index([sortOrder])
@@ -834,13 +836,20 @@ model EventUserResponse {
 model EventSegmentUserResponse {
   id     Int  @id @default(autoincrement())
   userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User @relation("EventSegmentUserResponseUser", fields: [userId], references: [id], onDelete: Cascade)
 
   eventSegmentId Int
   eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Cascade)
 
   attendanceId Int?
   attendance   EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime @default(now())
+  createdByUserId Int?
+  createdByUser   User?    @relation("EventSegmentUserResponseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime @default(now()) @updatedAt
+  updatedByUserId Int?
+  updatedByUser   User?    @relation("EventSegmentUserResponseUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([userId, eventSegmentId]) // 
 }

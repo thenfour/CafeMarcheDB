@@ -7,14 +7,6 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
-
-// new PKField({ columnName: "id" }),
-// MakeTitleField("text"),
-// MakeMarkdownTextField("description"),
-// MakeSortOrderField("sortOrder"),
-// MakeColorField("color"),
-// MakeSignificanceField("significance", FileTagSignificance),
-
 const tableSpec = new DB3Client.xTableClientSpec({
     table: db3.xFileTag,
     columns: [

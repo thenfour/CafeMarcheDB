@@ -2,9 +2,9 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { BoolField, ConstEnumStringField, GenericStringField, GhostField, MakeCreatedAtField, MakeTitleField, PKField } from "../db3basicFields";
+import { BoolField, ConstEnumStringField, GenericStringField, GhostField, MakeCreatedAtField, MakeDescriptionField, MakePKfield, MakeTitleField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { CreatedByUserField } from "./user";
+import { MakeCreatedByField } from "./user";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.view_custom_links,
@@ -66,14 +66,11 @@ export const xCustomLink = new db3.xTable({
     }),
     tableAuthMap: xTableAuthMap,
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xAuthMap, }),
-        new GenericStringField({
-            columnName: "description",
-            allowNull: false,
-            format: "markdown",
-            authMap: xAuthMap,
-        }),
+        MakeDescriptionField({ authMap: xAuthMap, }),
+        MakeCreatedAtField(),
+        MakeCreatedByField(),
         new GenericStringField({
             columnName: "slug",
             allowNull: false,
@@ -103,12 +100,6 @@ export const xCustomLink = new db3.xTable({
             columnName: "forwardQuery",
             defaultValue: true,
             allowNull: false,
-            authMap: xAuthMap,
-        }),
-        MakeCreatedAtField("createdAt", { authMap: xAuthMap, }),
-        new CreatedByUserField({
-            columnName: "createdByUser",
-            fkMember: "createdByUserId",
             authMap: xAuthMap,
         }),
         new GhostField({

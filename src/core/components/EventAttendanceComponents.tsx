@@ -137,6 +137,28 @@ import { ActivityFeature } from "./featureReports/activityTracking";
 import { AppContextMarker } from "./AppContext";
 
 
+
+type CreatedUpdatedObj = {
+  id: number;
+  createdAt?: Date | null | undefined;
+  updatedAt?: Date | null | undefined;
+  createdByUserId?: number | null | undefined;
+  updatedByUserId?: number | null | undefined;
+};
+
+export const CreatedUpdatedView = (props: { obj: CreatedUpdatedObj, caption: string }) => {
+  const { id, createdAt, createdByUserId, updatedAt, updatedByUserId } = props.obj;
+  return <AdminInspectObject src={{
+    id,
+    createdAt,
+    createdByUserId,
+    updatedAt,
+    updatedByUserId,
+  }} label={props.caption} />
+};
+
+
+
 const gCaptionMap = {};
 gCaptionMap[Timing.Past] = [
   "Did you go?",// any non-responses
@@ -533,7 +555,6 @@ export interface EventAttendanceControlProps {
   //alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };
 
-
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const dashboardContext = useDashboardContext();
 
@@ -553,7 +574,10 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   const editMode = userSelectedEdit || !y.allowViewMode;
 
-  const debugView = <AdminInspectObject src={y} label="AttendanceControl" />;
+  const debugView = <>
+    <AdminInspectObject src={y} label="AttendanceControl" />
+    {y.segmentUserResponses.map(sr => <CreatedUpdatedView key={sr.segment.id} obj={sr.response as any} caption={`Seg${sr.segment.id}`} />)}
+  </>;
 
   if (!y.visible) return debugView;
 

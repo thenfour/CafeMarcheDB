@@ -1,62 +1,15 @@
 import { EmptyPublicData } from "@blitzjs/auth";
 import { assert } from "blitz";
 import db, { Prisma } from "db";
+import { isEmptyArray } from "shared/arrayUtils";
+import { CalculateChanges, CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
 import { ColorPaletteEntry } from "shared/color";
+import { SqlCombineAndExpression } from "shared/mysqlUtils";
 import { Permission, gPublicPermissions } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { PublicDataType } from "types";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
-import { CalculateChanges, CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
-import { SqlCombineAndExpression } from "shared/mysqlUtils";
-import { isEmptyArray } from "shared/arrayUtils";
-
-
-// server-side code for db schema expression.
-// this is meant to describe behaviors of the schema that we need from code but can't get from Prisma.* directly.
-// for example:
-// - validation of fields, whether they're nullable or not, case sensitivity
-// - which items get included in queries (include clause)
-// - permissions required
-// - default values
-
-
-// ok parameterization.
-// in order to drill down to stuff there needs to be parameters given for a table view.
-// so far i have avoided this by showing ALL rows for a given table view, and any filtering is done by the user and has no impact on the data.
-// but for example i need to be able to see comments for an event.
-// i should see a link in the event row to see comments.
-// when i view the comments table then (on a new page), it will have the eventId as a parameter.
-// easy right? just add like a "parameters" thing which gets added to the where clause.
-// then when i create new, we also need that parameter to be used to populate a field in the new object.
-// and that field should probably not be editable in the edit page. or for admins maybe yes? not sure there.
-
-// ok special / common field handling...
-// createdAt
-// updatedAt
-// isDeleted - soft delete
-// these types of fields are not really editable by users and get intercepted by actions.
-// what is the best way to generalize these fields' behaviors'?
-// 1. column flag
-// benefits: very clear in column defs
-// potential issue where the core may not always do the right thing. the backend now will need
-// to understand the user action rather than the db action. maybe that's not a bad idea too.
-// so like, all mutations should specify what type of symbolic user action it is.
-//
-// 2. just let clients do it.
-// benefits: avoids complexifying the design, in many ways a more direct design.
-// already possible.
-// so for soft delete, the client will just send an update with isDeleted=true.
-
-// considering #2 is already possible and potentially a step towards #1, just go #2.
-
-////////////////////////////////////////////////////////////////
-// in order for mutations to understand how to handle each field; this could be a boolean but this is more expressive.
-// associations must be inserted / updated very differently from the local row.
-// export const FieldAssociationWithTableOptions = {
-//     tableColumn: "tableColumn", // normal table column
-//     associationRecord: "associationRecord", // for many-to-many relations
-// } as const;
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
@@ -150,8 +103,6 @@ export const UndefinedValidateAndParseResult = <FieldType>(): ValidateAndParseRe
 export interface ValidateAndComputeDiffResultFields {
     success: boolean;
     errors: { [key: string]: string };
-    //hasChanges: boolean; // only meaningful if success
-    //changes: { [key: string]: [any, any] }; // only meaningful if success
     // a complete validated model based on the incoming model. because validation can sanitize values, after validating you should use this
     // **IF** successful.
     successfulModel: TAnyModel;
@@ -161,8 +112,6 @@ export interface ValidateAndComputeDiffResultFields {
 export class ValidateAndComputeDiffResult implements ValidateAndComputeDiffResultFields {
     success: boolean = true;
     errors: { [key: string]: string } = {};
-    //hasChanges: boolean = false; // only meaningful if success
-    //changes: { [key: string]: [any, any] } = {}; // only meaningful if success
     changeResult: CalculateChangesResult;
     successfulModel: TAnyModel;
 
@@ -202,32 +151,6 @@ export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
 });
 
 export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
-
-
-// AND this into your query to apply visibility & soft delete logic.
-export const GetBasicVisFilterExpressionForSong = (u: UserWithRolesPayload, songTableName: string) => {
-    return `(
-        (${songTableName}.isDeleted = false)
-        AND
-        (
-            (${songTableName}.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
-            OR (${songTableName}.visiblePermissionId is NULL AND ${songTableName}.createdByUserId = ${u.id})
-        )
-    )`;
-}
-
-// AND this into your query to apply visibility & soft delete logic.
-export const GetBasicVisFilterExpressionForEvent = (u: UserWithRolesPayload, eventTableName: string) => {
-    return `(
-        (${eventTableName}.isDeleted = false)
-        AND
-        (
-            (${eventTableName}.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
-            OR (${eventTableName}.visiblePermissionId is NULL AND ${eventTableName}.createdByUserId = ${u.id})
-        )
-    )`;
-}
-
 
 
 ////////////////////////////////////////////////////////////////
@@ -284,12 +207,30 @@ export type DB3AuthTablePermissionMap = {
 
 export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMap;// "PostQuery" | "PostQueryAsOwner" | "PreInsert" | "PreMutate" | "PreMutateAsOwner";
 
+export enum SqlSpecialColumnFunction {
+    pk = "pk",
+    sortOrder = "sortOrder",
+    color = "color",
+    iconName = "iconName",
+    isDeleted = "isDeleted",
+    visiblePermission = "visiblePermission",
+    ownerUser = "ownerUser",
+    name = "name",
+    tooltip = "tooltip",
+    description = "description",
+    createdByUser = "createdByUser",
+    updatedByUser = "updatedByUser",
+    createdAt = "createdAt",
+    updatedAt = "updatedAt",
+};
+
 export type FieldBaseArgs<FieldDataType> = {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
-    //label: string;
     defaultValue: FieldDataType | null;
     authMap: DB3AuthContextPermissionMap | null;
+    specialFunction: SqlSpecialColumnFunction | undefined;
+    fkidMember?: string | undefined;
     _customAuth: ((args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean) | null;
     _matchesMemberForAuthorization?: ((memberName: string) => boolean) | null;
 }
@@ -366,7 +307,9 @@ export interface SqlGetSortableQueryElementsAPI {
 export abstract class FieldBase<FieldDataType> {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
+    fkidMember?: string | undefined; // if this is a foreign key field, this is the member name of the foreign key column.
     defaultValue: FieldDataType | null;
+    specialFunction: SqlSpecialColumnFunction | undefined;
 
     authMap: DB3AuthContextPermissionMap | null;
     _customAuth: ((args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean) | null;
@@ -415,7 +358,18 @@ export abstract class FieldBase<FieldDataType> {
         if (!!this._customAuth) {
             return this._customAuth(args);
         }
-        assert(!!this.authMap, `one of authMap or customAuth are required; field:${this.member}, contextDesc:${args.contextDesc}`);
+        if (!this.authMap) {
+            switch (this.specialFunction) {
+                case SqlSpecialColumnFunction.createdAt:
+                case SqlSpecialColumnFunction.updatedAt:
+                case SqlSpecialColumnFunction.createdByUser:
+                case SqlSpecialColumnFunction.updatedByUser:
+                    // exempt from any authorization checks.
+                    return true;
+                default:
+                    assert(false, `one of authMap or customAuth are required; field:${this.member}, contextDesc:${args.contextDesc}`);
+            }
+        }
         if (args.publicData.isSysAdmin) return true;
         const requiredPermission = this.authMap[args.authContext];
         if (!args.publicData.permissions) {
@@ -493,6 +447,9 @@ export interface RowInfo {
     ownerUserId: number | null; // if the row has an "owner" set this. helps with authorization
 };
 
+export type SqlSpecialColumnFunctionMap = {
+    [K in SqlSpecialColumnFunction]: FieldBase<unknown> | undefined;
+};
 
 export interface CalculateWhereClauseArgs {
     filterModel: CMDBTableFilterModel;
@@ -500,21 +457,10 @@ export interface CalculateWhereClauseArgs {
     skipVisibilityCheck?: boolean;
 };
 
-export interface SoftDeleteSpec {
-    isDeletedColumnName: string;
-};
-export interface VisibilitySpec {
-    visiblePermissionIDColumnName: string;
-    ownerUserIDColumnName: string | undefined;
-};
-
 export interface TableDesc {
     tableName: string;
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
     columns: FieldBase<unknown>[];
-
-    softDeleteSpec?: SoftDeleteSpec;
-    visibilitySpec?: VisibilitySpec; // visibility
 
     getInclude: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
@@ -530,29 +476,15 @@ export interface TableDesc {
 
     // this allows tables to supplement search results with extra "customdata".
     SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
-    SqlGetSpecialColumns?: SqlSpecialColumns;
-
-};
-
-export interface SqlSpecialColumns {
-    sortOrder?: string | undefined,
-    label?: string | undefined,
-
-    color?: string | undefined,
-    iconName?: string | undefined,
-    tooltip?: string | undefined,
 };
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
-export class xTable implements TableDesc {
+export class xTable /* implements TableDesc*/ {
     tableName: string;
     tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
     getInclude: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel;
-
-    softDeleteSpec?: SoftDeleteSpec;
-    visibilitySpec?: VisibilitySpec; // visibility
 
     pkMember: string;
     rowNameMember?: string;
@@ -567,7 +499,7 @@ export class xTable implements TableDesc {
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText: (row: TAnyModel, filterText: string) => boolean;
-    SqlGetSpecialColumns: SqlSpecialColumns;
+    SqlSpecialColumns: SqlSpecialColumnFunctionMap;
 
     SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 
@@ -587,7 +519,21 @@ export class xTable implements TableDesc {
         this.tableID = args.tableUniqueName || args.tableName;
         gAllTables[this.tableID.toLowerCase()] = this;
 
-        this.SqlGetSpecialColumns = this.SqlGetSpecialColumns || {};
+        // for each sql special column, find its field.
+        const findFieldWithFunction = (functionName: SqlSpecialColumnFunction): FieldBase<unknown> | undefined => {
+            const ret = args.columns.find(c => c.specialFunction === functionName);
+            // if (ret) {
+            //     console.log(`on table ${this.tableID} -> Found SQL special column "${ret.member}" as "${functionName}"`);
+            // }
+            return ret;
+        };
+
+        // for each value of SqlSpecialColumnFunction, find the field with that function.
+
+        this.SqlSpecialColumns = {} as SqlSpecialColumnFunctionMap;
+        for (const functionName of Object.values(SqlSpecialColumnFunction)) {
+            this.SqlSpecialColumns[functionName] = findFieldWithFunction(functionName);
+        }
 
         args.columns.forEach(field => {
             field.connectToTable(this);
@@ -597,13 +543,13 @@ export class xTable implements TableDesc {
     // AND this into your query to apply visibility & soft delete logic.
     SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string) {
         const AND: string[] = [];
-        if (this.softDeleteSpec?.isDeletedColumnName) {
+        if (this.SqlSpecialColumns.isDeleted) {
             AND.push(`(${tableAlias}.isDeleted = false)`);
         }
-        if (this.visibilitySpec?.ownerUserIDColumnName) {
+        if (this.SqlSpecialColumns.ownerUser) {
             AND.push(`
             (${tableAlias}.visiblePermissionId IN (${currentUser.role?.permissions.map(p => p.permissionId)}))
-            OR (${tableAlias}.visiblePermissionId is NULL AND ${tableAlias}.createdByUserId = ${currentUser.id})
+            OR (${tableAlias}.visiblePermissionId is NULL AND ${tableAlias}.${this.SqlSpecialColumns.ownerUser.fkidMember} = ${currentUser.id})
             `);
         }
         return SqlCombineAndExpression(AND);
@@ -910,14 +856,14 @@ export class xTable implements TableDesc {
         and.push(...overallWhere);
 
         // add soft delete clause.
-        if (this.softDeleteSpec) {
+        if (this.SqlSpecialColumns.isDeleted) {
             if (clientIntention.intention !== "admin") {
-                and.push({ [this.softDeleteSpec.isDeletedColumnName || "isDeleted"]: false });
+                and.push({ [this.SqlSpecialColumns.isDeleted.member]: false });
             }
         }
 
         // and visibility
-        if (this.visibilitySpec && !skipVisibilityCheck) {
+        if (this.SqlSpecialColumns.visiblePermission && !skipVisibilityCheck) {
             if (clientIntention.intention === "public") {
                 const publicRole = await db.role.findFirst({
                     where: {
@@ -930,25 +876,25 @@ export class xTable implements TableDesc {
                 assert(!!publicRole, "expecting a public role to be assigned in the db");
                 const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
                     // current user has access to the specified visibile permission
-                    [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: publicRole.permissions.map(p => p.permissionId) }
+                    [this.SqlSpecialColumns.visiblePermission.fkidMember!]: { in: publicRole.permissions.map(p => p.permissionId) }
                 };
                 and.push(spec);
             } else {
                 assert(!!clientIntention.currentUser, "current user is required in this line.");
                 let spec: Prisma.EventWhereInput = {};
 
-                if (this.visibilitySpec.ownerUserIDColumnName !== undefined) {
+                if (this.SqlSpecialColumns.ownerUser) {
                     spec = { // EventWhereInput for practical type checking.
                         OR: [
                             {
                                 // current user has access to the specified visibile permission
-                                [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) }
+                                [this.SqlSpecialColumns.visiblePermission.fkidMember!]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) }
                             },
                             {
                                 // private visibility and you are the creator
                                 AND: [
-                                    { [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: null },
-                                    { [this.visibilitySpec.ownerUserIDColumnName || "createdByUserId"]: clientIntention.currentUser!.id }
+                                    { [this.SqlSpecialColumns.visiblePermission.fkidMember!]: null },
+                                    { [this.SqlSpecialColumns.ownerUser.fkidMember!]: clientIntention.currentUser!.id }
                                 ]
                             }
                         ]
@@ -956,7 +902,7 @@ export class xTable implements TableDesc {
 
                 } else {
                     // current user has access to the specified visibile permission
-                    spec = { [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) } };
+                    spec = { [this.SqlSpecialColumns.visiblePermission.fkidMember!]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) } };
                 }
 
                 and.push(spec);

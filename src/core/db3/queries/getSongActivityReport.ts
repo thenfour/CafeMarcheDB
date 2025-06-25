@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { GetBasicVisFilterExpressionForEvent, GetBasicVisFilterExpressionForSong } from "../db3";
+import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetSongActivityReportArgs, GetSongActivityReportRet, GetSongActivityReportRetEvent } from "../shared/apiTypes";
 import { assertIsNumberArray } from "shared/arrayUtils";
@@ -73,7 +73,7 @@ export default resolver.pipe(
                     Event e
                     left join EventTagAssignment eta on eta.eventId = e.id
                 where
-                    ${GetBasicVisFilterExpressionForEvent(u, "e")}
+                    ${db3.xEvent.SqlGetVisFilterExpression(u, "e")}
                     AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
                     AND (${filters.join(" AND ")})
                 group by
@@ -94,7 +94,7 @@ export default resolver.pipe(
                 inner join e on e.id = esl.eventId
             where
                 s.id = ${songId}
-                AND ${GetBasicVisFilterExpressionForSong(u, "s")}
+                AND ${db3.xSong.SqlGetVisFilterExpression(u, "s")}
             group by
                 e.id                
         `;

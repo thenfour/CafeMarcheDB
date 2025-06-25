@@ -1,3 +1,4 @@
+import { getURIForFile } from "@/src/core/db3/clientAPILL";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
@@ -8,7 +9,6 @@ import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTable, CMTableSlot, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
-import { API } from "src/core/db3/clientAPI";
 import { ActivityLogUserChip } from "src/core/db3/DB3Client";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import getServerHealth from "src/core/db3/queries/getServerHealth";
@@ -64,9 +64,10 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                     if (args.slot === CMTableSlot.Footer) {
                         return args.row.fileName;
                     }
-                    return <a href={!args.row.fileName ? undefined : API.files.getURIForFile({
+                    return <a href={!args.row.fileName ? undefined : getURIForFile({
                         fileLeafName: args.row.leafName || "?",
                         storedLeafName: args.row.fileName,
+                        externalURI: args.row.externalURI || null,
                     })} target="_blank" rel="noreferrer">{args.row.fileName}</a>
                 }
             },

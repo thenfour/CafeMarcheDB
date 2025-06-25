@@ -30,7 +30,6 @@ export default resolver.pipe(
         // verbose on purpose in order to validate args type against UncheckedUpdateInput
         const fields: Prisma.EventSongListUncheckedUpdateInput = {
             name: args.name,
-            userId: currentUser.id,
             description: args.description,
             sortOrder: args.sortOrder,
             isActuallyPlayed: args.isActuallyPlayed,

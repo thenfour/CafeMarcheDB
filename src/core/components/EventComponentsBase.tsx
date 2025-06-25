@@ -206,6 +206,10 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
                 userId: user.id,
                 user: user,
                 eventSegment: null as any,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                createdByUserId: null,
+                updatedByUserId: null,
             }
         },
         (event, user, isInvited) => {
@@ -221,6 +225,10 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
                 instrumentId: null,
                 isInvited,
                 instrument: null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                createdByUserId: null,
+                updatedByUserId: null,
             }
         },
     );
@@ -400,6 +408,10 @@ export const CalculateEventSearchResultsMetadata = ({ event, results }: EventLis
                 eventSegmentId: segment.id,
                 id: -1,
                 userId: user.id,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                createdByUserId: null,
+                updatedByUserId: null,
             }
         },
         (event, user, isInvited) => { // makeMockEventUserResponse
@@ -413,6 +425,10 @@ export const CalculateEventSearchResultsMetadata = ({ event, results }: EventLis
                 userId: user.id,
                 instrumentId: null,
                 isInvited,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                createdByUserId: null,
+                updatedByUserId: null,
             }
         },
     );

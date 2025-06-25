@@ -3,10 +3,10 @@ import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, Prisma } fro
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIsDeletedField, MakeMarkdownTextField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
-import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.basic_trust,
@@ -104,11 +104,11 @@ export const xFileTag = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("text", { authMap: xFileAuthMap_AdminObjects }),
         MakeMarkdownTextField("description", { authMap: xFileAuthMap_AdminObjects }),
-        MakeSortOrderField("sortOrder", { authMap: xFileAuthMap_AdminObjects }),
-        MakeColorField("color", { authMap: xFileAuthMap_AdminObjects }),
+        MakeSortOrderField({ authMap: xFileAuthMap_AdminObjects }),
+        MakeColorField({ authMap: xFileAuthMap_AdminObjects }),
         MakeSignificanceField("significance", FileTagSignificance, { authMap: xFileAuthMap_AdminObjects }),
         new GhostField({ memberName: "fileAssignments", authMap: xFileAuthMap_AdminObjects }),
     ]
@@ -133,10 +133,10 @@ export const xFileTagAssignment = new db3.xTable({
     }
     ,
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
             columnName: "fileTag",
-            fkMember: "fileTagId",
+            fkidMember: "fileTagId",
             allowNull: false,
             foreignTableID: "FileTag",
             authMap: xFileAuthMap_FileObjects,
@@ -181,10 +181,10 @@ export const xFileUserTag = new db3.xTable({
         };
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.FileUserTagGetPayload<{}>>({
             columnName: "user",
-            fkMember: "userId",
+            fkidMember: "userId",
             allowNull: false,
             foreignTableID: "User",
             authMap: xFileAuthMap_FileObjects,
@@ -227,10 +227,10 @@ export const xFileSongTag = new db3.xTable({
         };
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.FileSongTagGetPayload<{}>>({
             columnName: "song",
-            fkMember: "songId",
+            fkidMember: "songId",
             allowNull: false,
             authMap: xFileAuthMap_FileObjects,
             foreignTableID: "Song",
@@ -268,10 +268,10 @@ export const xFileEventTag = new db3.xTable({
         };
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
-            fkMember: "eventId",
+            fkidMember: "eventId",
             allowNull: false,
             foreignTableID: "Event",
             authMap: xFileAuthMap_FileObjects,
@@ -279,7 +279,7 @@ export const xFileEventTag = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.FileGetPayload<{}>>({
             columnName: "file",
-            fkMember: "fileId",
+            fkidMember: "fileId",
             allowNull: false,
             foreignTableID: "File",
             authMap: xFileAuthMap_FileObjects,
@@ -319,10 +319,10 @@ export const xFileInstrumentTag = new db3.xTable({
         };
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new ForeignSingleField<Prisma.FileInstrumentTagGetPayload<{}>>({
             columnName: "instrument",
-            fkMember: "instrumentId",
+            fkidMember: "instrumentId",
             allowNull: false,
             foreignTableID: "Instrument",
             authMap: xFileAuthMap_FileObjects,
@@ -369,13 +369,6 @@ export const xFile = new db3.xTable({
         return FileArgs.include;
     },
     tableAuthMap: xFileTableAuth_FileObjects,
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
-    visibilitySpec: {
-        ownerUserIDColumnName: "uploadedByUserId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
     naturalOrderBy: FileNaturalOrderBy,
     getParameterizedWhereClause: (params: xFileFilterParams, clientIntention: db3.xTableClientUsageContext): (Prisma.FileWhereInput[]) => {
         const ret: Prisma.FileWhereInput[] = [];
@@ -391,8 +384,18 @@ export const xFile = new db3.xTable({
         ownerUserId: row.uploadedByUserId,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("fileLeafName", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
+        MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
+        MakeCreatedAtField({ columnName: "uploadedAt", authMap: xFileAuthMap_FileObjects }),
+        MakeIsDeletedField({ authMap: xFileAuthMap_FileObjects, }),
+        new CreatedByUserField({
+            columnName: "uploadedByUser",
+            fkidMember: "uploadedByUserId",
+            authMap: xFileAuthMap_FileObjects_AdminEdit,
+        }),
+        MakeVisiblePermissionField({ authMap: xFileAuthMap_FileObjects }),
+
         new GenericIntegerField({
             columnName: "sizeBytes",
             allowNull: true,
@@ -404,12 +407,6 @@ export const xFile = new db3.xTable({
             allowNull: false,
             format: "raw",
             authMap: xFileAuthMap_FileObjects_AdminEdit,
-        }),
-        new GenericStringField({
-            columnName: "description",
-            allowNull: false,
-            format: "markdown",
-            authMap: xFileAuthMap_FileObjects,
         }),
         new GenericStringField({
             columnName: "mimeType",
@@ -434,23 +431,9 @@ export const xFile = new db3.xTable({
             allowNull: true,
             authMap: xFileAuthMap_FileObjects,
         }),
-        MakeCreatedAtField("uploadedAt", { authMap: xFileAuthMap_FileObjects }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFileAuthMap_FileObjects, allowNull: false }),
-
-        new CreatedByUserField({
-            columnName: "uploadedByUser",
-            fkMember: "uploadedByUserId",
-            authMap: xFileAuthMap_FileObjects_AdminEdit,
-        }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-            authMap: xFileAuthMap_FileObjects,
-        }),
-
         new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
             columnName: "previewFile",
-            fkMember: "previewFileId",
+            fkidMember: "previewFileId",
             allowNull: true,
             foreignTableID: "File",
             authMap: xFileAuthMap_FileObjects,
@@ -458,7 +441,7 @@ export const xFile = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
             columnName: "parentFile",
-            fkMember: "parentFileId",
+            fkidMember: "parentFileId",
             allowNull: true,
             foreignTableID: "File",
             authMap: xFileAuthMap_FileObjects,
@@ -619,13 +602,6 @@ export const xFrontpageGalleryItem = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemInclude => {
         return FrontpageGalleryItemArgs.include;
     },
-    visibilitySpec: {
-        ownerUserIDColumnName: "createdByUserId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
-    softDeleteSpec: {
-        isDeletedColumnName: "isDeleted",
-    },
     tableAuthMap: xFrontpageTableAuthMap,
     naturalOrderBy: FrontpageGalleryItemNaturalOrderBy,
     getParameterizedWhereClause: (params: any, clientIntention: db3.xTableClientUsageContext): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
@@ -636,15 +612,19 @@ export const xFrontpageGalleryItem = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFrontpageAuthMap_Basic, allowNull: false }),
-        //new BoolField({ columnName: "isPublished", defaultValue: false }),
+        MakePKfield(),
+        MakeIsDeletedField({ authMap: xFrontpageAuthMap_Basic }),
+        MakeSortOrderField({ authMap: xFrontpageAuthMap_Basic }),
+        MakeCreatedByField({ authMap: xFrontpageAuthMap_Basic }),
+        MakeVisiblePermissionField({ authMap: xFrontpageAuthMap_Basic }),
         new GenericStringField({
             columnName: "caption",
             allowNull: false,
             format: "markdown",
+            specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xFrontpageAuthMap_Basic,
         }),
+
         new GenericStringField({
             columnName: "caption_nl",
             allowNull: false,
@@ -657,7 +637,6 @@ export const xFrontpageGalleryItem = new db3.xTable({
             format: "markdown",
             authMap: xFrontpageAuthMap_Basic,
         }),
-        MakeSortOrderField("sortOrder", { authMap: xFrontpageAuthMap_Basic }),
         new GenericStringField({
             columnName: "displayParams",
             allowNull: false,
@@ -666,24 +645,12 @@ export const xFrontpageGalleryItem = new db3.xTable({
         }),
         new ForeignSingleField<Prisma.FileGetPayload<{}>>({
             columnName: "file",
-            fkMember: "fileId",
+            fkidMember: "fileId",
             allowNull: false,
             foreignTableID: "File",
             authMap: xFrontpageAuthMap_Basic,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-
-        new CreatedByUserField({
-            columnName: "createdByUser",
-            fkMember: "createdByUserId",
-            authMap: xFrontpageAuthMap_Basic,
-        }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-            authMap: xFrontpageAuthMap_Basic,
-        }),
-
     ]
 
 });

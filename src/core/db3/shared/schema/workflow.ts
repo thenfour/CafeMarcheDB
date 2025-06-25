@@ -3,7 +3,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel, TUpdateEventWorkflowInstanceArgs, WorkflowNodeProgressState } from "../apiTypes";
-import { BoolField, GhostField, MakeColorAsStringField, MakeMarkdownTextField, MakeSortOrderField, MakeTitleField, PKField } from "../db3basicFields";
+import { BoolField, GhostField, MakeColorAsStringField, MakeDescriptionField, MakeIsDeletedField, MakePKfield, MakeSortOrderField, MakeTitleField } from "../db3basicFields";
 import * as db3 from "../db3core";
 
 // (todo: refine these)
@@ -68,13 +68,12 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
         return false;
     },
     columns: [
-        new PKField({ columnName: "id" }),
-
+        MakePKfield(),
         MakeTitleField("name", { authMap: xColumnAuthMap, }),
-        MakeMarkdownTextField("description", { authMap: xColumnAuthMap, }),
-        MakeSortOrderField("sortOrder", { authMap: xColumnAuthMap, }),
-        MakeColorAsStringField("color", { authMap: xColumnAuthMap, }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),
+        MakeDescriptionField({ authMap: xColumnAuthMap, }),
+        MakeSortOrderField({ authMap: xColumnAuthMap, }),
+        MakeColorAsStringField({ authMap: xColumnAuthMap, }),
+        MakeIsDeletedField({ authMap: xColumnAuthMap, }),
 
         new BoolField({ columnName: "isDefaultForEvents", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),
 
@@ -130,7 +129,7 @@ export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getInclude"> = {
         return false;
     },
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         new GhostField({ memberName: "lastEvaluatedWorkflowDefId", authMap: xColumnAuthMap }),
 
         new GhostField({ memberName: "logItems", authMap: xColumnAuthMap }),

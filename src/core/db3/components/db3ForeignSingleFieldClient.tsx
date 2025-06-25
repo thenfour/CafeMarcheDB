@@ -279,7 +279,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     }
 
     ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
-        updateModel[this.typedSchemaColumn.fkMember] = clientRow[this.typedSchemaColumn.fkMember];
+        updateModel[this.typedSchemaColumn.fkidMember!] = clientRow[this.typedSchemaColumn.fkidMember!];
         updateModel[this.columnName] = clientRow[this.columnName];
     };
 
@@ -349,8 +349,8 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         };
 
 
-        if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember] != null) {
-            const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember]);
+        if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!] != null) {
+            const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!]);
 
             const queryInput: db3.QueryInput = {
                 tableID: this.typedSchemaColumn.getForeignTableSchema().tableID,
@@ -369,7 +369,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
 
             const [{ items }, { refetch }] = useQuery(db3queries, queryInput, gQueryOptions.default);
             if (items.length !== 1) {
-                console.error(`table params ${JSON.stringify(tableClient.args.filterModel?.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
+                console.error(`table params ${JSON.stringify(tableClient.args.filterModel?.tableParams)} object not found for ${this.typedSchemaColumn.fkidMember!}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
             else {
                 this.fixedValue = items[0] as any;
@@ -428,7 +428,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
                 value = this.fixedValue;
                 params.api.setFieldValues({
                     [this.args.columnName]: value,
-                    [this.typedSchemaColumn.fkMember]: !!value ? value[foreignPkMember] : null,
+                    [this.typedSchemaColumn.fkidMember!]: !!value ? value[foreignPkMember] : null,
                 });
             }
         }
@@ -453,7 +453,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
                         const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
                         params.api.setFieldValues({
                             [this.args.columnName]: newValue,
-                            [this.typedSchemaColumn.fkMember]: !!newValue ? newValue[foreignPkMember] : null,
+                            [this.typedSchemaColumn.fkidMember!]: !!newValue ? newValue[foreignPkMember] : null,
                         });
                     }}
                 />

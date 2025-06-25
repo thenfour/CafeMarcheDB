@@ -9,7 +9,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakePKfield, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 
@@ -54,7 +54,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
         sortOrder: 0,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers }),
         new GenericStringField({
             columnName: "description",
@@ -103,7 +103,7 @@ export const xInstrumentTag = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("text", { authMap: xInstrumentAuthMap_R_EManagers }),
         new GenericStringField({
             columnName: "description",
@@ -155,13 +155,13 @@ export const xInstrumentTagAssociation = new db3.xTable({
         ownerUserId: null,
     }),
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         // do not add the `instrument` column here; this is used only as an association FROM the instrument table; excluding it
         // 1. enforces this purpose (minor)
         // 2. avoids a circular reference to xInstrument (major)
         new ForeignSingleField<Prisma.InstrumentTagGetPayload<{}>>({
             columnName: "tag",
-            fkMember: "tagId",
+            fkidMember: "tagId",
             allowNull: false,
             foreignTableID: "InstrumentTag",
             authMap: xInstrumentAuthMap_R_EManagers,
@@ -188,7 +188,7 @@ export const xInstrument = new db3.xTable({
     createInsertModelFromString: undefined, // because you must set things like functional group. don't allow simple create.
     tableAuthMap: xInstrumentTableAuthMap,
     columns: [
-        new PKField({ columnName: "id" }),
+        MakePKfield(),
         MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers, }),
         // new GenericStringField({
         //     columnName: "slug",
@@ -209,15 +209,10 @@ export const xInstrument = new db3.xTable({
             authMap: xInstrumentAuthMap_R_EManagers,
         }),
 
-        new GenericIntegerField({
-            columnName: "sortOrder",
-            allowSearchingThisField: false,
-            allowNull: false,
-            authMap: xInstrumentAuthMap_R_EManagers,
-        }),
+        MakeSortOrderField({ authMap: xInstrumentAuthMap_R_EManagers }),
         new ForeignSingleField<InstrumentFunctionalGroupPayload>({
             columnName: "functionalGroup",
-            fkMember: "functionalGroupId",
+            fkidMember: "functionalGroupId",
             foreignTableID: "InstrumentFunctionalGroup",
             allowNull: false,
             authMap: xInstrumentAuthMap_R_EManagers,
@@ -253,10 +248,3 @@ export const xInstrument = new db3.xTable({
 });
 
 
-
-
-////////////////////////////////////////////////////////////////
-// server API...
-
-
-////////////////////////////////////////////////////////////////
