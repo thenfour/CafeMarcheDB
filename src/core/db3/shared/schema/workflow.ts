@@ -73,7 +73,7 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
         MakeDescriptionField({ authMap: xColumnAuthMap, }),
         MakeSortOrderField({ authMap: xColumnAuthMap, }),
         MakeColorAsStringField({ authMap: xColumnAuthMap, }),
-        MakeIsDeletedField({ authMap: xColumnAuthMap, }),
+        //MakeIsDeletedField({ authMap: xColumnAuthMap, }),
 
         new BoolField({ columnName: "isDefaultForEvents", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),
 

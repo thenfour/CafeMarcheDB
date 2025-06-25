@@ -1162,6 +1162,10 @@ export function enrichSearchResultEvent<T extends EnrichEventInput>(
         type: data.eventType.getById(event.typeId),
         visiblePermission: data.permission.getById(event.visiblePermissionId),
         tags: (event.tags || []).map((t) => {
+            const tag = data.eventTag.getById(t.eventTagId);
+            if (!tag) {
+                assert(false, `Event ${event.id} has tag ${t.eventTagId} which is not yet cached.`);
+            }
             const ret = {
                 ...t,
                 eventTag: data.eventTag.getById(t.eventTagId)! // enrich!
