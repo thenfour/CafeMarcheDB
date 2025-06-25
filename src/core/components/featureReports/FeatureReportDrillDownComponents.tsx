@@ -140,18 +140,6 @@ export const GeneralFeatureDetailArea = ({ excludeYourself, features, contextBeg
                 renderFn: (item) => <ContextLabel value={item.context!} />,
                 getlabel: (item) => item.context!,
             },
-            // [ActivityDetailTabId.attendance]:
-            // {
-            //     id: ActivityDetailTabId.attendance,
-            //     label: "Attendance",
-            //     filterFn: (item) => !!item.attendanceId,
-            //     keyFn: (item) => item.attendanceId!.toString(),
-            //     renderFn: (item) => <AttendanceChip value={item.attendanceId!} />,
-            //     getlabel: (item) => {
-            //         const att = dashboardContext.eventAttendance.getById(item.attendanceId!);
-            //         return att?.text!;
-            //     },
-            // },
             [ActivityDetailTabId.customLink]:
             {
                 id: ActivityDetailTabId.customLink,

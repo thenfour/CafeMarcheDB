@@ -664,7 +664,14 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
                 <td className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
                     <div className='responseCellContents'>
                         {iseg === 0 && <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch, userMap }} />}</div>}
-                        {!!attendance ? <AttendanceChip value={attendance} variation={attendanceVariant} /> : "--"}
+                        {!!attendance ? <AttendanceChip
+                            value={attendance}
+                            variation={attendanceVariant}
+                            event={event}
+                            eventSegment={segment}
+                            segmentResponse={segmentResponse.response}
+                            eventResponse={eventResponse.response}
+                        /> : "--"}
                     </div>
                 </td>
             </React.Fragment>;

@@ -27,7 +27,7 @@ export function SongsProvider({ children }: SongsProviderProps) {
     //const [error, setError] = useState<string | null>(null);
     //useDashboardContext
 
-    const client = DB3Client.useDb3Query(db3.xSong);
+    const client = DB3Client.useDb3Query({ schema: db3.xSong });
 
     // React.useEffect(() => {
     //     // const fetchSongs = async () => {

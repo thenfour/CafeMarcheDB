@@ -81,7 +81,7 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
 
     const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
 
-    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>(db3.xUser);
+    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>({ schema: db3.xUser });
     const getUserById = (id: number) => {
         const ret = queryStatus.items.find(u => u.id === id);
         if (!ret) throw new Error(`user not found ${id}`);
@@ -150,7 +150,7 @@ export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps)
 
     const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
 
-    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>(db3.xUser);
+    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>({ schema: db3.xUser });
     const getUserById = (id: number) => {
         const ret = queryStatus.items.find(u => u.id === id);
         if (!ret) throw new Error(`user not found ${id}`);

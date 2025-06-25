@@ -352,7 +352,7 @@ const GeneralFeatureReportDetailItem = ({ value, index, ...props }: GeneralFeatu
             {value.setlistPlanId && <CMChip>Setlist plan #{value.setlistPlanId}</CMChip>}
             {value.songCreditTypeId && <CMChip>Song credit #{value.songCreditTypeId}</CMChip>}
 
-            {value.attendanceId && <AttendanceChip value={value.attendanceId} />}
+            {value.attendanceId && <AttendanceChip value={value.attendanceId} event={value.event || undefined} eventSegment={value.eventSegment || undefined} />}
             {value.instrumentId && <InstrumentChip value={value.instrumentId} />}
         </td>
         <td>{value.uri && <a href={value.uri} target="_blank" rel="noreferrer" >{smartTruncate(value.uri, 60)}</a>}</td>

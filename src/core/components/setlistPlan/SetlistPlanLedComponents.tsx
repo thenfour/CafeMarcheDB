@@ -77,7 +77,9 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
                 <div>{props.def.name}: {props.value?.text || ""}</div>
                 {props.def.associatedItem && <AssociationValueLink value={{ ...props.def.associatedItem, matchingField: undefined, matchStrength: 0 }} />}
                 {userAttendance && <ul>
-                    {userAttendance.segmentResponses.map((x, i) => <li key={i}>{x.name}: <AttendanceChip value={x.attendanceId} /></li>)}
+                    {userAttendance.segmentResponses.map((x, i) => <li key={i}>
+                        {x.name}: <AttendanceChip value={x.attendanceId} />
+                    </li>)}
                 </ul>}
                 <Markdown markdown={props.def.descriptionMarkdown || ""} />
             </div>}

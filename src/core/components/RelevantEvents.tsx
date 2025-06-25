@@ -92,11 +92,13 @@ export const RelevantEvents = () => {
     if (!dashboardContext) return null;
     if (dashboardContext.relevantEventIds.length < 1) return null;
 
-    const tableClient = useDb3Query(db3.xEventVerbose, {
-        pks: dashboardContext.relevantEventIds,
-        items: [],
+    const tableClient = useDb3Query<db3.EventVerbose_Event>({
+        schema: db3.xEventVerbose, filterSpec: {
+            pks: dashboardContext.relevantEventIds,
+            items: [],
+        }
     });
-    const items = tableClient.items as db3.EventVerbose_Event[];
+    const items = tableClient.items;
 
     let enrichedEvents: db3.EnrichedSearchEventPayload[] = items.map(e => db3.enrichSearchResultEvent(e, dashboardContext));
 

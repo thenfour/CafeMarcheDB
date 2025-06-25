@@ -1036,8 +1036,26 @@ export const useInsertMutationClient = (schema: db3.xTable) => {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const useDb3Query = <Trow extends TAnyModel,>(schema: db3.xTable, filterSpec?: CMDBTableFilterModel | undefined) => {
+export interface UseDb3QueryArgs {
+    schema: db3.xTable;
+    filterSpec?: CMDBTableFilterModel | undefined;
+    enable?: boolean;
+};
+
+export interface UseDb3QueryArgsWithEnable extends UseDb3QueryArgs {
+    enable: boolean;
+};
+
+// Overload: when enable is explicitly provided, return type includes undefined
+export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgsWithEnable): DB3ClientCore.xTableRenderClient<Trow> | undefined;
+// Overload: when enable is not provided (or optional), return type never includes undefined  
+export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgs): DB3ClientCore.xTableRenderClient<Trow>;
+// Implementation
+export function useDb3Query<Trow extends TAnyModel>({ enable = true, schema, filterSpec }: UseDb3QueryArgs): DB3ClientCore.xTableRenderClient<Trow> | undefined {
     const ctx = useDashboardContext();
+    if (!enable) {
+        return undefined;
+    }
     const mutationCtx = DB3ClientCore.useTableRenderContext<Trow>({
         clientIntention: ctx.userClientIntention,
         requestedCaps: DB3ClientCore.xTableClientCaps.Query,

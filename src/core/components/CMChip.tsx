@@ -26,7 +26,6 @@ export type CMChipSizeOptions = "small" | "big";
 export type CMChipBorderOption = "default" | "border" | "noBorder";
 
 export interface CMChipProps {
-    chipRef?: React.Ref<HTMLDivElement>;
     color?: ColorPaletteEntry | string | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
@@ -72,7 +71,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
     const computedStyle: React.CSSProperties = { ...style.style, ...props.style };
 
-    let chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick} ref={props.chipRef} >
+    let chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick}>
         <div className={chipClasses.join(" ")}>
             <div className='content'>
                 {props.onDelete && <span className="CMChipDeleteButton interactable" onClick={props.onDelete}>{gIconMap.Cancel()}</span>}

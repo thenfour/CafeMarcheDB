@@ -591,7 +591,9 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
         {y.uncancelledSegmentUserResponses.map((r, i) => <AttendanceChip
           key={r.segment.id}
           value={dashboardContext.eventAttendance.getById(r.response.attendanceId)}
-          tooltipOverride={r.segment.name}
+          //tooltipOverride={r.segment.name}
+          event={props.eventData.event}
+          eventSegment={r.segment}
         />)}
       </CMChipContainer>
     </div>;

@@ -34,7 +34,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const recordFeature = useFeatureRecorder();
     const router = useRouter();
 
-    const workflowQuery = DB3Client.useDb3Query(db3.xWorkflowDef_Search);
+    const workflowQuery = DB3Client.useDb3Query({ schema: db3.xWorkflowDef_Search });
     const workflows = workflowQuery.items as db3.WorkflowDef_SearchPayload[];
 
     // EVENT table bindings

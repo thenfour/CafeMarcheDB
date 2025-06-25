@@ -239,7 +239,17 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                         return <CMChipContainer>
                             {segs.map(seg => {
                                 const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
-                                return <AttendanceChip key={seg.id} size={"small"} fadeNoResponse={true} showLabel={false} value={att} tooltipOverride={db3.EventAPI.getLabel(seg)} />
+                                return <AttendanceChip
+                                    key={seg.id}
+                                    size={"small"}
+                                    fadeNoResponse={true}
+                                    showLabel={false}
+                                    value={att}
+
+                                    event={row.row}
+                                    eventSegment={seg}
+                                // todo: eventSegmentResponse and eventResponse.
+                                />
                             })}
                         </CMChipContainer>;
                     }
