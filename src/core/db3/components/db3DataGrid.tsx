@@ -37,6 +37,7 @@ import * as db3 from '../db3';
 import { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
+import { useDashboardContext } from 'src/core/components/DashboardContext';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
@@ -103,6 +104,7 @@ export type DB3EditGridProps = {
 
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = useDashboardContext();
     const readOnly = CoerceToBoolean(props.readOnly, false);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
 
@@ -291,6 +293,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         tableClient.doInsertMutation(obj).then((newRow) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             tableClient.refetch();
+            dashboardContext.refreshCachedData();
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "insert error", severity: 'error' });

@@ -115,6 +115,8 @@ export const useDB3SingleSelectLogic = <T extends TAnyModel,>(
             if (!model) throw new Error(`model couldn't be created`);
             const newObj = await insMutation.doInsertMutation(model) as T;
             snackbar.showMessage({ children: "created new success", severity: 'success' });
+            // Refresh dashboard context to include the newly created item
+            ctx.refreshCachedData();
             props.onInsert && props.onInsert(newObj);
             return newObj;
         } catch (err) {
@@ -376,6 +378,8 @@ export const useDB3MultiSelectLogic = <T extends TAnyModel,>(
             if (!model) throw new Error(`model couldn't be created`);
             const newObj = await insMutation.doInsertMutation(model) as T;
             snackbar.showMessage({ children: "created new success", severity: 'success' });
+            // Refresh dashboard context to include the newly created item
+            ctx.refreshCachedData();
             props.onInsert && props.onInsert(newObj);
             return newObj;
         } catch (err) {

@@ -26,6 +26,7 @@ import getSetting from 'src/auth/queries/getSetting';
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
 import { CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
 import { SearchInput } from 'src/core/components/CMTextField';
+import { useDashboardContext } from 'src/core/components/DashboardContext';
 import { ReactiveInputDialog } from 'src/core/components/ReactiveInputDialog';
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -74,6 +75,7 @@ function DB3SelectTagsDialogList<TAssociation extends TAnyModel>(props: DB3Selec
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const publicData = useAuthenticatedSession();
     const currentUser = useCurrentUser()[0]!;
+    const dashboardContext = useDashboardContext();
 
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
 
@@ -97,6 +99,8 @@ function DB3SelectTagsDialogList<TAssociation extends TAnyModel>(props: DB3Selec
                 //props.onChange(newValue);
                 showSnackbar({ children: "created new success", severity: 'success' });
                 dbctx.refetch();
+                // Refresh dashboard context to include the newly created tag
+                dashboardContext.refreshCachedData();
                 props.handleItemToggle(newObj);
             }).catch((err => {
                 console.log(err);

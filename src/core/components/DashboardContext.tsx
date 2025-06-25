@@ -27,6 +27,7 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     userClientIntention: db3.xTableClientUsageContext;
 
     session: ClientSession | null;
+    refetchDashboardData: (() => void) | null = null;
 
     constructor() {
         super();
@@ -151,6 +152,13 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     recordAction(args: { feature: ActivityFeature, properties?: any }): Promise<void> {
         return Promise.resolve();
     }
+
+    // Method to refresh dashboard data when needed (e.g., after creating new tags)
+    refreshCachedData(): void {
+        if (this.refetchDashboardData) {
+            this.refetchDashboardData();
+        }
+    }
 };
 
 
@@ -187,6 +195,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     }, []);
 
     const [dashboardData, { refetch }] = useQuery(getDashboardData, {});
+    valueRef.current.refetchDashboardData = refetch;
     valueRef.current.userClientIntention = { intention: currentUser ? "user" : 'public', mode: 'primary', currentUser }
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag);
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
