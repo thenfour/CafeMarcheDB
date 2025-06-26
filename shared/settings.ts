@@ -48,6 +48,7 @@ export enum Setting {
     EditUserTagsPage_markdown = "EditUserTagsPage_markdown",
     events_markdown = "events_markdown",
     frontpage_gallery_markdown = "frontpage_gallery_markdown",
+    files_markdown = "files_markdown",
     info_text = "info_text",
     InstrumentFunctionalGroupList_markdown = "InstrumentFunctionalGroupList_markdown",
     instrumentList_markdown = "instrumentList_markdown",
