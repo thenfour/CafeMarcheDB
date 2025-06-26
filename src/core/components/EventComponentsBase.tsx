@@ -249,7 +249,6 @@ export interface CalcEventAttendanceArgs {
         db3.EventResponses_MinimalEventSegmentUserResponse
     >;
     userMap: db3.UserInstrumentList,
-    //alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };
 
 export interface EventAttendanceResult {

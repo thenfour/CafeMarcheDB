@@ -561,8 +561,6 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const y = CalcEventAttendance({
     eventData: props.eventData,
     userMap: props.userMap,
-    //minimalWhenNotAlert: props.minimalWhenNotAlert,
-    //alertOnly: props.alertOnly,
   });
 
   // never show attendance alert control for cancelled events
@@ -576,25 +574,25 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   const debugView = <>
     <AdminInspectObject src={y} label="AttendanceControl" />
-    {y.segmentUserResponses.map(sr => <CreatedUpdatedView key={sr.segment.id} obj={sr.response as any} caption={`Seg${sr.segment.id}`} />)}
+    {/* {y.segmentUserResponses.map(sr => <CreatedUpdatedView key={sr.segment.id} obj={sr.response as any} caption={`Seg${sr.segment.id}`} />)} */}
   </>;
 
   if (!y.visible) return debugView;
 
   const mapIndex = !y.allUncancelledSegmentsAnswered ? 0 : (y.allUncancelledSegmentsAffirmative ? 1 : (y.allUncancelledSegmentResponsesNegative ? 2 : 3));
 
-  // require any answered otherwise you get "you responded: no response".
-  if (y.visible && !y.alertFlag && y.anyAnswered && props.minimalWhenNotAlert) {
+  if (!userSelectedEdit && y.visible && !y.alertFlag && y.anyAnswered && props.minimalWhenNotAlert) {
     return <div className={`eventAttendanceControl minimalView`}>
       <CMChipContainer>
         <div className="caption">You responded</div>
         {y.uncancelledSegmentUserResponses.map((r, i) => <AttendanceChip
           key={r.segment.id}
           value={dashboardContext.eventAttendance.getById(r.response.attendanceId)}
-          //tooltipOverride={r.segment.name}
+          onClick={() => setUserSelectedEdit(true)} // todo: concept of a read-only view if you are not allowed to change the response.
           event={props.eventData.event}
           eventSegment={r.segment}
         />)}
+        {debugView}
       </CMChipContainer>
     </div>;
   }
