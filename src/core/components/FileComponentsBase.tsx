@@ -20,15 +20,15 @@ export interface FilesFilterSpec {
     orderByDirection: SortDirection;
 
     // File-specific filters
-    typeFilter: DiscreteCriterion; // MIME types
+    //typeFilter: DiscreteCriterion; // MIME types
     tagFilter: DiscreteCriterion; // file tags
-    uploaderFilter: DiscreteCriterion; // uploaded by user
-    sizeFilter: DiscreteCriterion; // file size ranges
+    //uploaderFilter: DiscreteCriterion; // uploaded by user
+    //sizeFilter: DiscreteCriterion; // file size ranges
 
     // Association filters
-    taggedUserFilter: DiscreteCriterion;
-    taggedEventFilter: DiscreteCriterion;
-    taggedSongFilter: DiscreteCriterion;
+    // taggedUserFilter: DiscreteCriterion;
+    // taggedEventFilter: DiscreteCriterion;
+    // taggedSongFilter: DiscreteCriterion;
     taggedInstrumentFilter: DiscreteCriterion;
 }
 
