@@ -14,6 +14,7 @@ import { getURIForUser } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import getUserCredits from "../db3/queries/getUserCredits";
 import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
+import getUserWikiContributions from "../db3/queries/getUserWikiContributions";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
 import { CMChipContainer, CMStandardDBChip } from "./CMChip";
 import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, InstrumentChip, SongChip } from "./CMCoreComponents";
@@ -31,6 +32,7 @@ import { CMLink } from "./CMLink";
 export enum UserDetailTabSlug {
     credits = "credits",
     attendance = "attendance",
+    wiki = "wiki",
 };
 
 
@@ -341,6 +343,76 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
 
 
 ////////////////////////////////////////////////////////////////
+type UserWikiContributionsTabContentProps = {
+    user: db3.EnrichedVerboseUser;
+};
+export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
+    const dashboardContext = useDashboardContext();
+    const [qr, refetch] = useQuery(getUserWikiContributions, { userId: props.user.id });
+
+    const wikiContributionsWithAddl = qr.wikiContributions.map((contribution, index) => ({
+        ...contribution,
+        rowIndex: index,
+        totalRevisions: contribution.revisions.length,
+        lastRevisionDate: contribution.revisions[0]?.createdAt,
+        firstRevisionDate: contribution.revisions[contribution.revisions.length - 1]?.createdAt,
+    }));
+
+    return <div className="UserWikiContributionsTabContent">
+        <AdminInspectObject src={qr} label="wiki contributions" />
+
+        <CMTable
+            rows={wikiContributionsWithAddl}
+            columns={[
+                {
+                    header: "#",
+                    allowSort: false,
+                    memberName: "rowIndex",
+                    render: (row) => {
+                        return <span className="pre">#{row.rowIndex + 1}</span>;
+                    },
+                },
+                {
+                    header: "Wiki Page",
+                    memberName: "slug",
+                    allowSort: true,
+                    render: (row) => {
+                        return <CMLink href={`/backstage/wiki/${row.row.slug}`}>{row.row.slug}</CMLink>;
+                    },
+                },
+                {
+                    header: "Revisions",
+                    memberName: "totalRevisions",
+                    allowSort: true,
+                    render: (row) => {
+                        return <span>{row.row.totalRevisions}</span>;
+                    },
+                }, {
+                    header: "First Contribution",
+                    memberName: "firstRevisionDate",
+                    allowSort: true,
+                    render: (row) => {
+                        if (!row.row.firstRevisionDate) return <span>-</span>;
+                        const date = new Date(row.row.firstRevisionDate);
+                        return <span>{date.toLocaleDateString()}</span>;
+                    },
+                },
+                {
+                    header: "Last Contribution",
+                    memberName: "lastRevisionDate",
+                    allowSort: true,
+                    render: (row) => {
+                        if (!row.row.lastRevisionDate) return <span>-</span>;
+                        const date = new Date(row.row.lastRevisionDate);
+                        return <span>{date.toLocaleDateString()}</span>;
+                    },
+                },
+            ]}
+        />
+    </div>;
+};
+
+////////////////////////////////////////////////////////////////
 export interface UserDetailArgs {
     user: db3.EnrichedVerboseUser;
     tableClient: DB3Client.xTableRenderClient;
@@ -449,6 +521,15 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                             <SongsProvider>
                                 <UserCreditsTabContent user={user} />
                             </SongsProvider>
+                        </Suspense>
+                    </CMTab>
+                    <CMTab
+                        thisTabId={UserDetailTabSlug.wiki}
+                        summaryTitle={"Wiki Contributions"}
+                        summaryIcon={gIconMap.Article()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <UserWikiContributionsTabContent user={user} />
                         </Suspense>
                     </CMTab>
                 </CMTabPanel>
