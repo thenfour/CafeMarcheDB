@@ -60,6 +60,7 @@ export enum ActivityFeature {
     file_upload_url = "file_upload_url",
     file_edit = "file_edit",
     file_delete = "file_delete",
+    file_detail_view = "file_detail_view",
 
     song_view = "song_view",
     song_edit = "song_edit",

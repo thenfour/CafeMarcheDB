@@ -1,6 +1,6 @@
 
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { Button, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
+import { Button, Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
@@ -17,10 +17,9 @@ import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
 import { ActivityFeature } from './featureReports/activityTracking';
-//import { AudioPreviewBehindButton } from './AudioPreview';
 import { useMutation } from '@blitzjs/rpc';
 import { PushPin } from '@mui/icons-material';
-import { getURIForFile } from '../db3/clientAPILL';
+import { getURIForFile, getURIForFileLandingPage } from '../db3/clientAPILL';
 import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
@@ -133,6 +132,25 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
 }
 
 
+export const FileExternalLink = ({ file }: { file: EnrichedFile }) => {
+    return file.externalURI ? (
+        <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={file.externalURI}>
+            {gIconMap.Link()}
+            <Tooltip title={file.fileLeafName}>
+                <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+            </Tooltip>
+        </CMLink>
+    ) : (
+        <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={getURIForFile(file)}>
+            <FileDownloadIcon />
+            <Tooltip title={file.fileLeafName}>
+                <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+            </Tooltip>
+        </CMLink>)
+
+};
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileViewerProps {
     value: EnrichedFile;
@@ -175,21 +193,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
             <div className="header">
 
-                {file.externalURI ? (
-                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={uri}>
-                        {gIconMap.Link()}
-                        <Tooltip title={file.fileLeafName}>
-                            <div className="filename">{smartTruncate(file.fileLeafName)}</div>
-                        </Tooltip>
-                    </CMLink>
-                ) : (
-                    <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={uri}>
-                        <FileDownloadIcon />
-                        <Tooltip title={file.fileLeafName}>
-                            <div className="filename">{smartTruncate(file.fileLeafName)}</div>
-                        </Tooltip>
-                    </CMLink>)
-                }
+                <FileExternalLink file={file} />
 
                 <div className="flex-spacer"></div>
 
@@ -235,6 +239,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                             </div>
                         </div>
                     </MenuItem>
+                    <Divider />
                     {!isPinned && isAudio && props.contextSong &&
                         <PinSongRecordingMenuItem contextSong={props.contextSong} value={props.value} closeProc={() => {
                             endMenuItemRef.current();
@@ -243,6 +248,13 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         <UnpinSongRecordingMenuItem contextSong={props.contextSong!} closeProc={() => {
                             endMenuItemRef.current();
                         }} refetch={props.refetch} />}
+                    <Divider />
+                    {dashboardContext.isAuthorized(Permission.access_file_landing_page) &&
+                        <MenuItem>
+                            <ListItemIcon>{gIconMap.Link()}</ListItemIcon>
+                            <CMLink href={getURIForFileLandingPage(file)}>Visit file landing page</CMLink>
+                        </MenuItem>
+                    }
                 </DotMenu>
             </div>
             <div className="content">

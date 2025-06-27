@@ -24,6 +24,7 @@ import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
 import { CMLink } from "./CMLink";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { useDb3Query } from "../db3/DB3Client";
+import { Markdown } from "./markdown/Markdown";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -337,6 +338,36 @@ export const FileChip = (props: FileChipProps) => {
         {props.endAdornment}
     </CMChip>
 }
+
+
+
+export interface FileTagChipProps {
+    value: number | { id: number };
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+};
+
+export const FileTagChip = (props: FileTagChipProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+    let tagId = typeof (props.value) === "number" ? props.value : props.value.id;
+    let tag = dashboardContext.fileTag.getById(tagId);
+
+    return <CMChip
+        variation={undefined}
+        size={props.size}
+        onClick={props.onClick}
+        className={props.className}
+        color={tag?.color}
+        shape={"rectangle"}
+        border={"noBorder"}
+        tooltip={tag?.description && <Markdown markdown={tag.description} />}
+    >
+        {tag?.text || "<null>"}
+    </CMChip>
+}
+
+
 
 
 export interface WikiPageChipProps {

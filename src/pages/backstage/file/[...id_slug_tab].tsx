@@ -1,0 +1,301 @@
+import { formatFileSize } from "@/shared/rootroot";
+import { CMChipContainer } from "@/src/core/components/CMChip";
+import { AdminInspectObject, DateValue, EventChip, FileTagChip, InspectObject, InstrumentChip, SongChip } from "@/src/core/components/CMCoreComponents";
+import { KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
+import { CMLink } from "@/src/core/components/CMLink";
+import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
+import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
+import { useSnackbar } from "@/src/core/components/SnackbarContext";
+import { AudioPlayerFileControls, FileExternalLink } from "@/src/core/components/SongFileComponents";
+import { VisibilityValue } from "@/src/core/components/VisibilityControl";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { Markdown } from "@/src/core/components/markdown/Markdown";
+import { UserChip } from "@/src/core/components/userChip";
+import { gIconMap } from "@/src/core/db3/components/IconMap";
+import { BlitzPage, useParams } from "@blitzjs/next";
+import HomeIcon from '@mui/icons-material/Home';
+import { Breadcrumbs } from "@mui/material";
+import db from "db";
+import React, { Suspense } from 'react';
+import { Permission } from "shared/permissions";
+import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
+import { NavRealm } from "src/core/components/Dashboard2";
+import { DashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
+import { FileTableClientColumns } from "src/core/components/FileComponentsBase";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
+import * as db3 from "src/core/db3/db3";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
+
+////////////////////////////////////////////////////////////////
+export interface FileBreadcrumbProps {
+    file: db3.EnrichedFile<db3.FilePayload>,
+};
+export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
+    return <Breadcrumbs aria-label="breadcrumb">
+        <CMLink
+            href="/backstage"
+        >
+            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+            Backstage
+        </CMLink>
+        <CMLink
+            href="/backstage/files"
+        >
+            Files
+        </CMLink>
+
+        <CMLink
+            href={getURIForFile(props.file)}
+        >
+            {props.file.fileLeafName}
+        </CMLink>
+    </Breadcrumbs>
+        ;
+};
+
+
+interface FileDetailProps {
+    file: db3.EnrichedFile<db3.FilePayload>;
+    readonly: boolean;
+    tableClient: DB3Client.xTableRenderClient<db3.FilePayload>;
+};
+
+
+// Basic file detail component - very minimal for now
+const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+    const visInfo = dashboardContext.getVisibilityInfo(file);
+    const recordFeature = useFeatureRecorder();
+    const snackbar = useSnackbar();
+
+    const mimeInfo = parseMimeType(file.mimeType);
+    const isAudio = mimeInfo?.type === 'audio';
+
+    const refetch = tableClient.refetch;
+
+    return (
+        <div className={`fileDetail ${visInfo.className}`} style={{ maxWidth: '800px', margin: '20px 0' }}>
+
+            {tableClient && <EditFieldsDialogButton
+                dialogTitle='Edit song'
+                dialogDescription={<SettingMarkdown setting='EditSongDialogDescription' />}
+                readonly={readonly}
+                initialValue={file}
+                renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
+                tableSpec={tableClient.tableSpec}
+                onCancel={() => { }}
+                onOK={async (obj, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    void recordFeature({
+                        feature: ActivityFeature.file_edit,
+                        context: "file edit dialog",
+                    });
+                    await snackbar.invokeAsync(async () => {
+                        await tableClient.doUpdateMutation(obj);
+                        api.close();
+                    });
+                    refetch();
+                }}
+                onDelete={async (api: EditFieldsDialogButtonApi) => {
+                    void recordFeature({
+                        feature: ActivityFeature.file_delete,
+                        context: "file edit dialog",
+                    });
+
+                    await snackbar.invokeAsync(async () => {
+                        await tableClient.doDeleteMutation(file.id, 'softWhenPossible');
+                        api.close();
+                    });
+                    refetch();
+                }}
+            />}
+
+            <VisibilityValue permissionId={file.visiblePermissionId} variant='minimal' />
+
+            <div className="fileDetailHeader" style={{ marginBottom: '20px' }}>
+                <h1 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>{file.fileLeafName}</h1>
+                <AdminInspectObject src={file} label="FileObj" />
+                {file.description && (
+                    <div className="fileDescription" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                        <Markdown markdown={file.description} />
+                    </div>
+                )}
+            </div>
+
+            <KeyValueTable
+                data={{
+                    'Created At': file.fileCreatedAt ? <DateValue value={file.fileCreatedAt} /> : "",
+                    'Uploaded At': <><DateValue value={file.uploadedAt} /> {file.uploadedByUser && <>by <UserChip value={file.uploadedByUser} /></>}</>,
+                    'Stored Leaf Name': <Pre>{file.storedLeafName}</Pre>,
+                    'External URI': file.externalURI ? <a href={file.externalURI} target="_blank" rel="noopener noreferrer">{file.externalURI}</a> : '',
+                    "Audio controls": isAudio ? (
+                        <AudioPlayerFileControls file={file} />
+                    ) : '',
+                    "Mime Type": file.mimeType || 'Unknown',
+                    'Size': file.sizeBytes ? formatFileSize(file.sizeBytes) : 'Unknown',
+                    "Tags": (file.tags && file.tags.length > 0) ? (
+                        <CMChipContainer>
+                            {file.tags.map((tag, index) => (
+                                <FileTagChip key={index} value={tag} />))}
+                        </CMChipContainer>) : "",
+                    "Tagged Users": (file.taggedUsers && file.taggedUsers.length > 0) ? (
+                        <CMChipContainer>
+                            {file.taggedUsers.map((taggedUser, index) => (
+                                <UserChip key={index} value={taggedUser.user} />
+                            ))}
+                        </CMChipContainer>) : "",
+                    "Tagged Songs": (file.taggedSongs && file.taggedSongs.length > 0) ?
+                        (<CMChipContainer>
+                            {file.taggedSongs.map((taggedSong, index) => (
+                                <SongChip key={index} value={taggedSong.song} />
+                            ))}
+                        </CMChipContainer>) : "",
+                    "Tagged Events": (file.taggedEvents && file.taggedEvents.length > 0) ?
+                        (<CMChipContainer>
+                            {file.taggedEvents.map((taggedEvent, index) => (
+                                <EventChip key={index} value={taggedEvent.event} />
+                            ))}
+                        </CMChipContainer>) : "",
+                    "Tagged Instruments": (file.taggedInstruments && file.taggedInstruments.length >
+                        0) ? (
+                        <CMChipContainer>
+                            {file.taggedInstruments.map((taggedInstrument, index) => (
+                                <InstrumentChip key={index} value={taggedInstrument.instrument} />
+                            ))}
+                        </CMChipContainer>) : "",
+                    "Parent File": <>(todo: verbose query){file.parentFileId ? <CMLink href={getURIForFileLandingPage({ id: file.parentFileId })}>{file.parentFileId}</CMLink> : ''}</>,
+                    "Child files": "(todo: verbose data query)",
+                    "Preview File": file.previewFileId ? <CMLink href={getURIForFileLandingPage({ id: file.previewFileId })}>{file.previewFileId}</CMLink> : '',
+                    "Custom Data": file.customData ? <InspectObject src={file.customData} label="Custom data" /> : '',
+                    "Actions": (
+                        <div>
+                            <FileExternalLink file={file} />
+                        </div>
+                    ),
+                }}
+            />
+        </div>
+    );
+};
+
+const MyComponent = ({ fileId }: { fileId: number | null }) => {
+    const params = useParams();
+    const [id__, slug, tab] = params.id_slug_tab as string[];
+
+    const dashboardContext = React.useContext(DashboardContext); if (!fileId) throw new Error(`file not found`);
+
+    useRecordFeatureUse({ feature: ActivityFeature.file_detail_view, fileId });
+
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = {
+        intention: 'user',
+        mode: 'primary',
+        currentUser: currentUser,
+    };
+
+    const queryArgs: DB3Client.xTableClientArgs = {
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention,
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xFile,
+            columns: [
+                FileTableClientColumns.id,
+                FileTableClientColumns.fileLeafName,
+                FileTableClientColumns.description,
+                FileTableClientColumns.tags,
+                FileTableClientColumns.taggedEvents,
+                FileTableClientColumns.taggedUsers,
+                FileTableClientColumns.taggedInstruments,
+                FileTableClientColumns.taggedSongs,
+                FileTableClientColumns.visiblePermission,
+
+                FileTableClientColumns.mimeType,
+                FileTableClientColumns.sizeBytes,
+                FileTableClientColumns.customData,
+            ],
+        }),
+        filterModel: {
+            items: [],
+            tableParams: {}
+        }
+    };
+
+    queryArgs.filterModel!.tableParams!.fileId = fileId;
+
+    const tableClient = DB3Client.useTableRenderContext<db3.FilePayload>(queryArgs);
+    if (tableClient.items.length > 1) throw new Error(`db returned too many files; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
+    if (tableClient.items.length < 1) throw new Error(`File not found`);
+
+    const fileRaw = tableClient.items[0]!;
+    const file = db3.enrichFile(fileRaw, dashboardContext);
+
+    return (
+        <div className="fileDetailComponent">
+            {file ? (
+                <>
+                    <FileBreadcrumbs file={file} />
+                    <FileDetail readonly={false} file={file} tableClient={tableClient} />
+                </>
+            ) : (
+                <>
+                    <p>No file was found. Some possibilities:</p>
+                    <ul>
+                        <li>The file was deleted or you don't have permission to view it</li>
+                        <li>The file's slug (name) or ID changed</li>
+                    </ul>
+                </>
+            )}
+        </div>
+    );
+};
+
+interface PageProps {
+    title: string;
+    fileId: number | null;
+}
+
+export const getServerSideProps = async ({ params }) => {
+    const [id__, slug, tab] = params.id_slug_tab as string[];
+    const id = CoerceToNumberOrNull(id__);
+    if (!id) throw new Error(`no id`);
+
+    const ret: { props: PageProps } = {
+        props: {
+            title: "File",
+            fileId: null,
+        }
+    };
+
+    const file = await db.file.findFirst({
+        select: {
+            id: true,
+            fileLeafName: true,
+        },
+        where: {
+            id,
+        }
+    });
+
+    if (file) {
+        ret.props.title = `${file.fileLeafName}`;
+        ret.props.fileId = file.id;
+    }
+
+    return ret;
+};
+
+const FileDetailPage: BlitzPage = (x: PageProps) => {
+    return (
+        <DashboardLayout title={x.title} navRealm={NavRealm.files} basePermission={Permission.access_file_landing_page}>
+            <AppContextMarker name="file page" fileId={x.fileId || undefined}>
+                <Suspense>
+                    <MyComponent fileId={x.fileId} />
+                </Suspense>
+            </AppContextMarker>
+        </DashboardLayout>
+    );
+};
+
+export default FileDetailPage;

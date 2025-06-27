@@ -631,9 +631,10 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 
 
-.EventFileValue .downloadLink {
+.downloadLink {
     display: flex;
     align-items: center;
+    white-space: nowrap;
 }
 
 .EventFileValue .audioPreviewGatewayContainer {

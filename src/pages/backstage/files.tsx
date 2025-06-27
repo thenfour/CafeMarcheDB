@@ -17,12 +17,13 @@ import { useFileListData } from "src/core/components/FileSearch";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
-import { getURIForFile } from "src/core/db3/clientAPILL";
+import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { NavRealm } from "src/core/components/Dashboard2";
+import { CMLink } from "@/src/core/components/CMLink";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {
@@ -131,9 +132,9 @@ const FileListItem = (props: FileListItemProps) => {
     return <div className={`songListItem ${visInfo.className}`}>
         <div className="titleLine">
             <div className="topTitleLine">
-                <a className="nameLink" href={`/backstage/file/${props.file.id}/${props.file.fileLeafName}/details`}>
+                <CMLink className="nameLink" href={getURIForFileLandingPage(props.file)}>
                     {props.file.fileLeafName}
-                </a>
+                </CMLink>
                 <div style={{ flexGrow: 1 }}>
                     <AdminInspectObject src={props.file} label="Obj" />
                 </div>
@@ -620,7 +621,7 @@ const FileListOuter = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const FilesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Files" basePermission={Permission.view_files} navRealm={NavRealm.files}>
+        <DashboardLayout title="Files" basePermission={Permission.access_file_landing_page} navRealm={NavRealm.files}>
             <AppContextMarker name="Files search page">
                 <div className="eventsMainContent searchPage">
                     <Suspense>

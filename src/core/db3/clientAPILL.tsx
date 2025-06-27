@@ -52,6 +52,13 @@ export const getURIForFile = (value: Prisma.FileGetPayload<{ select: { storedLea
     return getAbsoluteUrl(`/api/files/download/${value.storedLeafName}/${slugifyWithDots(value.fileLeafName)}`);
 };
 
+export const getURIForFileLandingPage = (value: { id: number, slug?: string | null | undefined }) => {
+    if (IsNullOrWhitespace(value.slug)) {
+        return getAbsoluteUrl(`/backstage/file/${value.id}`);
+    };
+    return getAbsoluteUrl(`/backstage/file/${value.id}/${slugifyWithDots(value.slug || "")}`);
+};
+
 
 export function getURLClass(url: string, baseDomain: string = window.location.hostname): "internalPage" | "internalAPI" | "external" {
     try {

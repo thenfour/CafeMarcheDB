@@ -387,12 +387,12 @@ export const xFile = new db3.xTable({
         MakePKfield(),
         MakeTitleField("fileLeafName", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
         MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
-        MakeCreatedAtField({ columnName: "uploadedAt", authMap: xFileAuthMap_FileObjects }),
+        MakeCreatedAtField({ columnName: "uploadedAt" }),
         MakeIsDeletedField({ authMap: xFileAuthMap_FileObjects, }),
         new CreatedByUserField({
             columnName: "uploadedByUser",
             fkidMember: "uploadedByUserId",
-            authMap: xFileAuthMap_FileObjects_AdminEdit,
+            //authMap: xFileAuthMap_FileObjects_AdminEdit,
         }),
         MakeVisiblePermissionField({ authMap: xFileAuthMap_FileObjects }),
 
@@ -615,7 +615,7 @@ export const xFrontpageGalleryItem = new db3.xTable({
         MakePKfield(),
         MakeIsDeletedField({ authMap: xFrontpageAuthMap_Basic }),
         MakeSortOrderField({ authMap: xFrontpageAuthMap_Basic }),
-        MakeCreatedByField({ authMap: xFrontpageAuthMap_Basic }),
+        MakeCreatedByField(),
         MakeVisiblePermissionField({ authMap: xFrontpageAuthMap_Basic }),
         new GenericStringField({
             columnName: "caption",

@@ -120,6 +120,7 @@ export const getColorForFeature = (feature: ActivityFeature): ColorPaletteEntry 
         [ActivityFeature.file_upload_url]: gSwatchColors.maroon,
         [ActivityFeature.file_edit]: gSwatchColors.maroon,
         [ActivityFeature.file_delete]: gSwatchColors.maroon,
+        [ActivityFeature.file_detail_view]: gSwatchColors.maroon,
 
         [ActivityFeature.song_view]: gSwatchColors.purple,
         [ActivityFeature.song_edit]: gSwatchColors.purple,
