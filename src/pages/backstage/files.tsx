@@ -1,25 +1,18 @@
-import { CMLink } from "@/src/core/components/CMLink";
+import { FileListItem } from "@/src/core/components/file/FileListItem";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
-import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-
 import { AppContextMarker } from "src/core/components/AppContext";
-import { CMChip } from "src/core/components/CMChip";
-import { AdminInspectObject } from "src/core/components/CMCoreComponents2";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/FileComponentsBase";
 import { useFileListData } from "src/core/components/FileSearch";
-import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
-import { SearchResultsList } from "src/core/components/SearchResultsList";
+import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-
-import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
-
+import { getURIForFile } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -59,111 +52,6 @@ const gDefaultStaticFilterValue: FilesFilterSpecStatic = {
 const gStaticFilters: FilesFilterSpecStatic[] = []
 
 
-
-type FileListItemProps = {
-    index: number;
-    file: db3.EnrichedFile<db3.FilePayload>;
-    results: SearchResultsRet;
-    refetch: () => void;
-    filterSpec: FilesFilterSpec;
-};
-
-const FileListItem = (props: FileListItemProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
-    const visInfo = dashboardContext.getVisibilityInfo(props.file);
-
-    return <div className={`songListItem ${visInfo.className}`}>
-        <div className="titleLine">
-            <div className="topTitleLine">
-                <CMLink className="nameLink" href={getURIForFileLandingPage(props.file)}>
-                    {props.file.fileLeafName}
-                </CMLink>
-                <div style={{ flexGrow: 1 }}>
-                    <AdminInspectObject src={props.file} label="Obj" />
-                </div>
-                <span className="resultIndex">#{props.index}</span>
-            </div>
-        </div>
-
-        <div className="credits">
-            <div className="credit row">
-                <div className="fieldItem">{props.file.description}</div>
-            </div>
-            <div className="credit row">
-                <div className="fieldCaption">Uploaded:</div>
-                <div className="fieldItem">{props.file.uploadedAt?.toLocaleDateString()}</div>
-                <div className="fieldCaption">By:</div>
-                <div className="fieldItem">{props.file.uploadedByUser?.name}</div>
-                <div className="fieldCaption">Size:</div>
-                <div className="fieldItem">{props.file.sizeBytes ? `${Math.round(props.file.sizeBytes / 1024)} KB` : 'Unknown'}</div>
-                <div className="fieldCaption">Type:</div>
-                <div className="fieldItem">{props.file.mimeType || 'Unknown'}</div>
-            </div>
-        </div>
-
-        <div className="chips">
-            {(props.file.tags || []).map(tag => (
-                <CMChip
-                    key={tag.id}
-                    color={tag.fileTag.color}
-                    variation={StandardVariationSpec.Weak}
-                    size="small"
-                    shape="rectangle"
-                >
-                    {tag.fileTag.text}
-                </CMChip>
-            ))}
-        </div>    </div>;
-};
-
-interface FilesListArgs {
-    filterSpec: FilesFilterSpec,
-    results: SearchResultsRet;
-    files: db3.EnrichedFile<db3.FilePayload>[],
-    refetch: () => void;
-    loadMoreData: () => void;
-    hasMore: boolean;
-}
-
-const FilesList = ({ filterSpec, results, files, refetch, loadMoreData, hasMore }: FilesListArgs) => {
-    const csvExporter = {
-        itemToCSVRow: (file: db3.EnrichedFile<db3.FilePayload>, index: number) => ({
-            Order: (index + 1).toString(),
-            ID: file.id.toString(),
-            Name: file.fileLeafName,
-            Description: file.description || "",
-            MimeType: file.mimeType || "",
-            SizeBytes: file.sizeBytes?.toString() || "",
-            UploadedAt: file.uploadedAt?.toISOString() || "",
-            UploadedBy: file.uploadedByUser?.name || "",
-            URL: getURIForFile(file),
-        })
-    };
-
-    return (
-        <SearchResultsList
-            items={files}
-            results={results}
-            filterSpec={filterSpec}
-            loadMoreData={loadMoreData}
-            hasMore={hasMore}
-            refetch={refetch}
-            csvExporter={csvExporter}
-            contextMarkerName="Files list"
-            renderItem={(file, index) => (
-                <FileListItem
-                    key={file.id}
-                    index={index}
-                    file={file}
-                    results={results}
-                    refetch={refetch}
-                    filterSpec={filterSpec} />
-            )}
-            getItemKey={(file) => file.id}
-            className="filesListContainer" // Custom class for files styling
-        />
-    );
-};
 
 const FileListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
@@ -221,35 +109,72 @@ const FileListOuter = () => {
             };
             return staticSpec;
         }
-    }); const { enrichedFiles, results, loadMoreData } = useFileListData(searchPage.filterSpec);
+    });
 
-    // Configure filter groups for the generic component
-    const filterGroups = [
-        createFilterGroupConfig("tags", "File tags", "tags", "tags", tagFilter),
-        createFilterGroupConfig("taggedInstruments", "Tagged instruments", "tags", "taggedInstruments", taggedInstrumentFilter),
+    // Configuration for the generic SearchPageContent component
+    const config: SearchPageContentConfig<FilesFilterSpecStatic, FilesFilterSpec, db3.EnrichedFile<db3.FilePayload>> = {
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnOptions: FileOrderByColumnOptions,
+        useDataHook: useFileListData,
+        renderItem: (file, index, filterSpec, results, refetch) => (
+            <FileListItem
+                index={index}
+                file={file}
+                results={results}
+                refetch={refetch}
+                filterSpec={filterSpec}
+            />
+        ),
+        getItemKey: (file) => file.id,
+        contextMarkerName: "Files list",
+        csvExporter: {
+            itemToCSVRow: (file, index) => ({
+                Order: (index + 1).toString(),
+                ID: file.id.toString(),
+                Name: file.fileLeafName,
+                Description: file.description || "",
+                MimeType: file.mimeType || "",
+                SizeBytes: file.sizeBytes?.toString() || "",
+                UploadedAt: file.uploadedAt?.toISOString() || "",
+                UploadedBy: file.uploadedByUser?.name || "",
+                URL: getURIForFile(file),
+            })
+        },
+        className: "filesListContainer",
+        showAdminControls: true,
+    };
+
+    // Filter hooks for passing to the generic component
+    const filterHooks = {
+        tags: tagFilter,
+        taggedInstruments: taggedInstrumentFilter,
+    };
+
+    // Filter group definitions
+    const filterGroupDefinitions: FilterGroupDefinition[] = [
+        {
+            key: "tags",
+            label: "File tags",
+            type: "tags",
+            column: "tags",
+        },
+        {
+            key: "taggedInstruments",
+            label: "Tagged instruments",
+            type: "tags",
+            column: "taggedInstruments",
+        },
     ];
 
-    return <>
-        <SearchPageFilterControls
-            searchPage={searchPage}
-            staticFilters={gStaticFilters}
-            filterGroups={filterGroups}
-            sortConfig={{
-                columnOptions: Object.keys(FileOrderByColumnOptions),
-                columnOptionsEnum: FileOrderByColumnOptions,
-            }}
-            results={results}
-            showAdminControls={true}
+    return (
+        <SearchPageContent
+            config={config}
+            filterHooks={filterHooks}
+            filterGroupDefinitions={filterGroupDefinitions}
+            searchPageHook={searchPage}
         />
-        <FilesList
-            filterSpec={searchPage.filterSpec}
-            files={enrichedFiles}
-            results={results}
-            loadMoreData={loadMoreData}
-            hasMore={enrichedFiles.length < results.rowCount}
-            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
-        />
-    </>;
+    );
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

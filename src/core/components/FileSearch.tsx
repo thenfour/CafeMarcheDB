@@ -98,5 +98,5 @@ export function useFileListData(filterSpec: FilesFilterSpec, pageSize: number = 
         void fetchData(enrichedFiles.length);
     }, [enrichedFiles]);
 
-    return { enrichedFiles, results, loadMoreData };
+    return { enrichedItems: enrichedFiles, results, loadMoreData };
 }

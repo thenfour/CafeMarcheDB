@@ -6,8 +6,7 @@ import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/NewSongComponents";
-import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
-import { SearchResultsList } from "src/core/components/SearchResultsList";
+import { SearchPageContent, FilterGroupDefinition, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { EnrichedVerboseSong, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/SongComponentsBase";
 import { useSongListData } from "src/core/components/SongSearch";
@@ -30,48 +29,6 @@ interface SongsFilterSpecStatic {
     tagFilterOptions: number[];
 };
 
-interface SongsListArgs {
-    filterSpec: SongsFilterSpec,
-    results: SearchResultsRet;
-    songs: EnrichedVerboseSong[],
-    refetch: () => void;
-    loadMoreData: () => void;
-    hasMore: boolean;
-};
-
-const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore }: SongsListArgs) => {
-    return (
-        <SearchResultsList
-            items={songs}
-            results={results}
-            filterSpec={filterSpec}
-            loadMoreData={loadMoreData}
-            hasMore={hasMore}
-            refetch={refetch}
-            csvExporter={{
-                itemToCSVRow: (song, index) => ({
-                    Order: index.toString(),
-                    ID: song.id.toString(),
-                    Name: song.name,
-                    URL: getURIForSong(song),
-                }),
-                filename: "songs"
-            }}
-            contextMarkerName="SongList"
-            renderItem={(song, index) => (
-                <SongListItem
-                    index={index}
-                    song={song}
-                    filterSpec={filterSpec}
-                    refetch={refetch}
-                    results={results}
-                />
-            )}
-            getItemKey={(song) => song.id}
-        />
-    );
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 const gStaticFilters: SongsFilterSpecStatic[] = [
@@ -88,7 +45,6 @@ const gStaticFilters: SongsFilterSpecStatic[] = [
 
 const gDefaultStaticFilterName = "All" as const;
 const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultStaticFilterName)!;
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SongListOuter = () => {
@@ -134,44 +90,71 @@ const SongListOuter = () => {
             };
             return staticSpec;
         }
-    }); const { enrichedItems, results, loadMoreData } = useSongListData(searchPage.filterSpec);
+    });
 
-    // Configure filter groups for the generic component
-    const filterGroups = [
-        createFilterGroupConfig("tags", "Tags", "tags", "tags", tagFilter, (x) => {
-            if (!x.id) return x;
-            const tag = dashboardContext.songTag.getById(x.id)!;
-            return {
-                ...x,
-                color: tag.color,
-                label: tag.text,
-                shape: "rounded",
-                tooltip: tag.description,
-            };
-        }),
+    // Configuration for the generic SearchPageContent component
+    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, EnrichedVerboseSong> = {
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnOptions: SongOrderByColumnOptions,
+        useDataHook: useSongListData,
+        renderItem: (song, index, filterSpec, results, refetch) => (
+            <SongListItem
+                index={index}
+                song={song}
+                filterSpec={filterSpec}
+                refetch={refetch}
+                results={results}
+            />
+        ),
+        getItemKey: (song) => song.id,
+        contextMarkerName: "SongList",
+        csvExporter: {
+            itemToCSVRow: (song, index) => ({
+                Order: index.toString(),
+                ID: song.id.toString(),
+                Name: song.name,
+                URL: getURIForSong(song),
+            }),
+            filename: "songs"
+        },
+        showAdminControls: true,
+    };
+
+    // Filter hooks for passing to the generic component
+    const filterHooks = {
+        tags: tagFilter,
+    };
+
+    // Filter group definitions
+    const filterGroupDefinitions: FilterGroupDefinition[] = [
+        {
+            key: "tags",
+            label: "Tags",
+            type: "tags",
+            column: "tags",
+            chipTransformer: (x) => {
+                if (!x.id) return x;
+                const tag = dashboardContext.songTag.getById(x.id)!;
+                return {
+                    ...x,
+                    color: tag.color,
+                    label: tag.text,
+                    shape: "rounded",
+                    tooltip: tag.description,
+                };
+            }
+        },
     ];
 
-    return <>
-        <SearchPageFilterControls
-            searchPage={searchPage}
-            staticFilters={gStaticFilters}
-            filterGroups={filterGroups}
-            sortConfig={{
-                columnOptions: Object.keys(SongOrderByColumnOptions),
-                columnOptionsEnum: SongOrderByColumnOptions,
-            }}
-            results={results}
-            showAdminControls={true}
+    return (
+        <SearchPageContent
+            config={config}
+            filterHooks={filterHooks}
+            filterGroupDefinitions={filterGroupDefinitions}
+            searchPageHook={searchPage}
         />
-        <SongsList
-            filterSpec={searchPage.filterSpec}
-            songs={enrichedItems}
-            results={results}
-            loadMoreData={loadMoreData}
-            hasMore={enrichedItems.length < results.rowCount}
-            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
-        />
-    </>;
+    );
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

@@ -8,8 +8,7 @@ import { EventListItem } from "src/core/components/EventComponents";
 import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
 import { useEventListData } from 'src/core/components/EventSearch';
 import { NewEventButton } from "src/core/components/NewEventComponents";
-import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
-import { SearchResultsList } from "src/core/components/SearchResultsList";
+import { SearchPageContent, FilterGroupDefinition, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
@@ -40,56 +39,6 @@ interface EventsFilterSpecStatic {
     dateFilterEnabled: boolean;
     dateFilterBehavior: DiscreteCriterionFilterType;
     dateFilterOptions: number[];
-};
-
-interface EventsListArgs {
-    filterSpec: EventsFilterSpec,
-    results: SearchResultsRet;
-    events: db3.EnrichedSearchEventPayload[],
-    refetch: () => void;
-    loadMoreData: () => void;
-    hasMore: boolean;
-};
-
-const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMore }: EventsListArgs) => {
-    return (
-        <SearchResultsList
-            items={events}
-            results={results}
-            filterSpec={filterSpec}
-            loadMoreData={loadMoreData}
-            hasMore={hasMore}
-            refetch={refetch}
-            csvExporter={{
-                itemToCSVRow: (event, index) => ({
-                    Order: index.toString(),
-                    ID: event.id.toString(),
-                    Name: event.name,
-                    Type: event.type?.text || "",
-                    Status: event.status?.label || "",
-                    StartsAt: event.startsAt?.toISOString() || "TBD",
-                    IsAllDay: event.isAllDay ? "yes" : "no",
-                    DurationMinutes: (new Number(event.durationMillis).valueOf() / 60000).toString(),
-                    Location: event.locationDescription || "",
-                    LocationURL: event.locationURL || "",
-                    URL: getURIForEvent(event),
-                }),
-                filename: "events"
-            }}
-            contextMarkerName="Events list"
-            renderItem={(event, index) => (
-                <EventListItem
-                    key={event.id}
-                    event={event}
-                    filterSpec={filterSpec}
-                    refetch={refetch}
-                    results={results}
-                    showTabs={false}
-                />
-            )}
-            getItemKey={(event) => event.id}
-        />
-    );
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -299,37 +248,84 @@ const EventListOuter = () => {
             };
             return staticSpec;
         }
-    }); const { enrichedEvents, results, loadMoreData } = useEventListData(searchPage.filterSpec);
+    });    // Configuration for the generic SearchPageContent component
+    const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EnrichedSearchEventPayload> = {
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnOptions: EventOrderByColumnOptions,
+        useDataHook: useEventListData,
+        renderItem: (event, index, filterSpec, results, refetch) => (
+            <EventListItem
+                event={event}
+                filterSpec={filterSpec}
+                refetch={refetch}
+                results={results}
+            />
+        ),
+        getItemKey: (event) => event.id,
+        contextMarkerName: "EventList", csvExporter: {
+            itemToCSVRow: (event, index) => ({
+                Order: index.toString(),
+                ID: event.id.toString(),
+                Name: event.name,
+                Type: event.type?.text || "",
+                Status: event.status?.label || "",
+                StartsAt: event.startsAt?.toISOString() || "TBD",
+                IsAllDay: event.isAllDay ? "yes" : "no",
+                DurationMinutes: (new Number(event.durationMillis).valueOf() / 60000).toString(),
+                Location: event.locationDescription || "",
+                LocationURL: event.locationURL || "",
+                URL: getURIForEvent(event),
+            }),
+            filename: "events"
+        },
+        showAdminControls: true,
+    };
 
-    // Configure filter groups for the generic component
-    const filterGroups = [
-        createFilterGroupConfig("status", "Status", "foreignSingle", "status", statusFilter),
-        createFilterGroupConfig("type", "Type", "foreignSingle", "type", typeFilter),
-        createFilterGroupConfig("tags", "Tags", "tags", "tags", tagFilter),
-        createFilterGroupConfig("date", "Date", "radio", "startsAt", dateFilter),
+    // Filter hooks for passing to the generic component
+    const filterHooks = {
+        status: statusFilter,
+        type: typeFilter,
+        tags: tagFilter,
+        date: dateFilter,
+    };
+
+    // Filter group definitions
+    const filterGroupDefinitions: FilterGroupDefinition[] = [
+        {
+            key: "status",
+            label: "Status",
+            type: "foreignSingle",
+            column: "status",
+        },
+        {
+            key: "type",
+            label: "Type",
+            type: "foreignSingle",
+            column: "type",
+        },
+        {
+            key: "tags",
+            label: "Tags",
+            type: "tags",
+            column: "tags",
+        },
+        {
+            key: "date",
+            label: "Date",
+            type: "radio",
+            column: "startsAt",
+        },
     ];
 
-    return <>
-        <SearchPageFilterControls
-            searchPage={searchPage}
-            staticFilters={gStaticFilters}
-            filterGroups={filterGroups}
-            sortConfig={{
-                columnOptions: Object.keys(EventOrderByColumnOptions),
-                columnOptionsEnum: EventOrderByColumnOptions,
-            }}
-            results={results}
-            showAdminControls={true}
+    return (
+        <SearchPageContent
+            config={config}
+            filterHooks={filterHooks}
+            filterGroupDefinitions={filterGroupDefinitions}
+            searchPageHook={searchPage}
         />
-        <EventsList
-            filterSpec={searchPage.filterSpec}
-            events={enrichedEvents}
-            results={results}
-            loadMoreData={loadMoreData}
-            hasMore={enrichedEvents.length < results.rowCount}
-            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
-        />
-    </>;
+    );
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

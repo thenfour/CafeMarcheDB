@@ -3,12 +3,9 @@ import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { arrayToTSV } from "shared/utils";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
-import { SearchResultsList } from "src/core/components/SearchResultsList";
+import { SearchPageContent, FilterGroupDefinition, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "src/core/components/UserComponents";
 import { useUserListData } from "src/core/components/UserSearch";
 import { getURIForUser } from "src/core/db3/clientAPILL";
@@ -42,64 +39,6 @@ interface UsersFilterSpecStatic {
 
 
 
-async function CopyUserListCSV(snackbarContext: SnackbarContextType, value: EnrichedVerboseUser[]) {
-    const obj = value.map((e, i) => ({
-        Order: (i + 1).toString(),
-        ID: e.id.toString(),
-        Name: e.name,
-        URL: getURIForUser(e),
-    }));
-    const txt = arrayToTSV(obj);
-    await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-}
-
-
-
-
-interface UsersListArgs {
-    filterSpec: UsersFilterSpec,
-    results: SearchResultsRet;
-    users: EnrichedVerboseUser[],
-    refetch: () => void;
-    loadMoreData: () => void;
-    hasMore: boolean;
-};
-
-const UsersList = ({ filterSpec, results, users, refetch, loadMoreData, hasMore }: UsersListArgs) => {
-    return (
-        <SearchResultsList
-            items={users}
-            results={results}
-            filterSpec={filterSpec}
-            loadMoreData={loadMoreData}
-            hasMore={hasMore}
-            refetch={refetch}
-            csvExporter={{
-                itemToCSVRow: (user, index) => ({
-                    Order: index.toString(),
-                    ID: user.id.toString(),
-                    Name: user.name,
-                    URL: getURIForUser(user),
-                }),
-                filename: "users"
-            }}
-            // Note: Users page doesn't use AppContextMarker in the original
-            renderItem={(user, index) => (
-                <UserListItem
-                    index={index}
-                    key={user.id}
-                    user={user}
-                    filterSpec={filterSpec}
-                    refetch={refetch}
-                    results={results}
-                />
-            )}
-            getItemKey={(user) => user.id}
-        />
-    );
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 const gStaticFilters: UsersFilterSpecStatic[] = [
@@ -127,7 +66,6 @@ const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultS
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const UserListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    const snackbarContext = React.useContext(SnackbarContext);
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
@@ -195,69 +133,110 @@ const UserListOuter = () => {
             };
             return staticSpec;
         }
-    }); const { enrichedItems, results, loadMoreData } = useUserListData(searchPage.filterSpec);
+    });
 
-    // Configure filter groups for the generic component
-    const filterGroups = [
-        createFilterGroupConfig("tags", "Tags", "tags", "tags", tagFilter, (x) => {
-            if (!x.id) return x;
-            const tag = dashboardContext.userTag.getById(x.id)!;
-            return {
-                ...x,
-                color: tag.color || null,
-                label: tag.text,
-                shape: "rounded",
-                tooltip: tag.description,
-            };
-        }),
-        createFilterGroupConfig("role", "Role", "foreignSingle", "role", roleFilter, (x) => {
-            if (!x.id) return x;
-            const role = dashboardContext.role.getById(x.id)!;
-            return {
-                ...x,
-                color: role.color || null,
-                label: role.name,
-                shape: "rectangle",
-                tooltip: role.description,
-            };
-        }),
-        createFilterGroupConfig("instruments", "Instruments", "tags", "instruments", instrumentFilter, (x) => {
-            if (!x.id) return x;
-            const instrument = dashboardContext.instrument.getById(x.id);
-            if (!instrument) return x;
-            const instrumentGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
-            if (!instrumentGroup) return x;
-            return {
-                ...x,
-                color: instrumentGroup.color || null,
-                label: instrument.name,
-                shape: "rounded",
-                tooltip: instrument.description,
-            };
-        }),
+    // Configuration for the generic SearchPageContent component
+    const config: SearchPageContentConfig<UsersFilterSpecStatic, UsersFilterSpec, EnrichedVerboseUser> = {
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnOptions: UserOrderByColumnOptions,
+        useDataHook: useUserListData,
+        renderItem: (user, index, filterSpec, results, refetch) => (
+            <UserListItem
+                index={index}
+                key={user.id}
+                user={user}
+                filterSpec={filterSpec}
+                refetch={refetch}
+                results={results}
+            />
+        ),
+        getItemKey: (user) => user.id,
+        csvExporter: {
+            itemToCSVRow: (user, index) => ({
+                Order: index.toString(),
+                ID: user.id.toString(),
+                Name: user.name,
+                URL: getURIForUser(user),
+            }),
+            filename: "users"
+        },
+        showAdminControls: true,
+    };
+
+    // Filter hooks for passing to the generic component
+    const filterHooks = {
+        tags: tagFilter,
+        role: roleFilter,
+        instruments: instrumentFilter,
+    };
+
+    // Filter group definitions
+    const filterGroupDefinitions: FilterGroupDefinition[] = [
+        {
+            key: "tags",
+            label: "Tags",
+            type: "tags",
+            column: "tags",
+            chipTransformer: (x) => {
+                if (!x.id) return x;
+                const tag = dashboardContext.userTag.getById(x.id)!;
+                return {
+                    ...x,
+                    color: tag.color || null,
+                    label: tag.text,
+                    shape: "rounded",
+                    tooltip: tag.description,
+                };
+            }
+        },
+        {
+            key: "role",
+            label: "Role",
+            type: "foreignSingle",
+            column: "role",
+            chipTransformer: (x) => {
+                if (!x.id) return x;
+                const role = dashboardContext.role.getById(x.id)!;
+                return {
+                    ...x,
+                    color: role.color || null,
+                    label: role.name,
+                    shape: "rectangle",
+                    tooltip: role.description,
+                };
+            }
+        },
+        {
+            key: "instruments",
+            label: "Instruments",
+            type: "tags",
+            column: "instruments",
+            chipTransformer: (x) => {
+                if (!x.id) return x;
+                const instrument = dashboardContext.instrument.getById(x.id);
+                if (!instrument) return x;
+                const instrumentGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
+                if (!instrumentGroup) return x;
+                return {
+                    ...x,
+                    color: instrumentGroup.color || null,
+                    label: instrument.name,
+                    shape: "rounded",
+                    tooltip: instrument.description,
+                };
+            }
+        },
     ];
 
-    return <>
-        <SearchPageFilterControls
-            searchPage={searchPage}
-            staticFilters={gStaticFilters}
-            filterGroups={filterGroups}
-            sortConfig={{
-                columnOptions: Object.keys(UserOrderByColumnOptions),
-                columnOptionsEnum: UserOrderByColumnOptions,
-            }}
-            results={results}
-            showAdminControls={true}
+    return (
+        <SearchPageContent
+            config={config}
+            filterHooks={filterHooks}
+            filterGroupDefinitions={filterGroupDefinitions}
+            searchPageHook={searchPage}
         />
-        <UsersList
-            filterSpec={searchPage.filterSpec}
-            users={enrichedItems}
-            results={results}
-            loadMoreData={loadMoreData}
-            hasMore={enrichedItems.length < results.rowCount}
-            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
-        />
-    </>;
+    );
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

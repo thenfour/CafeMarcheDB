@@ -102,6 +102,6 @@ export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number 
         void fetchData(enrichedEvents.length);
     }, [enrichedEvents]);
 
-    return { enrichedEvents, results, loadMoreData };
+    return { enrichedItems: enrichedEvents, results, loadMoreData };
 }
 
