@@ -1,22 +1,20 @@
 import { BlitzPage } from "@blitzjs/next";
-import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
-import InfiniteScroll from "react-infinite-scroll-component";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/EventComponents";
 import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
 import { useEventListData } from 'src/core/components/EventSearch';
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
+import { SearchResultsList } from "src/core/components/SearchResultsList";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
-import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
@@ -81,77 +79,35 @@ interface EventsListArgs {
 };
 
 const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMore }: EventsListArgs) => {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const [autoLoadCount, setAutoLoadCount] = React.useState(0);
-    const MAX_AUTO_LOADS = 15;
-
-    const handleCopy = async () => {
-        await CopyEventListCSV(snackbarContext, events);
+    const handleCopyCSV = async (items: db3.EnrichedSearchEventPayload[]) => {
+        await CopyEventListCSV(snackbarContext, items);
     };
 
-    // useEffect hook to check if more data needs to be loaded
-    React.useEffect(() => {
-        const checkIfNeedsMoreData = () => {
-            const contentElement = document.querySelector('.eventList.searchResults');
-            if (contentElement) {
-                const contentHeight = contentElement.scrollHeight;
-                const viewportHeight = window.innerHeight;
-
-                if (contentHeight <= viewportHeight && hasMore && autoLoadCount < MAX_AUTO_LOADS) {
-                    setAutoLoadCount(prevCount => prevCount + 1);
-                    loadMoreData();
-                }
-            }
-        };
-
-        // Delay the check to ensure the DOM has updated
-        setTimeout(checkIfNeedsMoreData, 0);
-    }, [events]);
-
-    return <div className="eventList searchResults">
-        <AppContextMarker name="Events list" queryText={filterSpec.quickFilter}>
-            <div className="searchRecordCount">
-                {results.rowCount === 0 ? "No items to show" : <>Displaying {events.length} items of {results.rowCount} total</>}
-                <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
-                <Menu
-                    id="menu-searchResults"
-                    anchorEl={anchorEl}
-                    keepMounted
-                    open={Boolean(anchorEl)}
-                    onClose={() => setAnchorEl(null)}
-                >
-                    <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
-                        <ListItemIcon>
-                            {gIconMap.ContentCopy()}
-                        </ListItemIcon>
-                        Copy CSV
-                    </MenuItem>
-                </Menu>
-            </div>
-
-            <InfiniteScroll
-                dataLength={events.length}
-                next={loadMoreData}
-                hasMore={hasMore}
-                loader={<h4>Loading...</h4>}
-            >
-                {events.map((event, i) => (
-                    <EventListItem
-                        key={event.id}
-                        event={event}
-                        filterSpec={filterSpec}
-                        refetch={refetch}
-                        results={results}
-                        showTabs={false}
-                    //queryText={filterSpec.quickFilter}
-                    />
-                ))}
-            </InfiniteScroll>
-            {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
-        </AppContextMarker>
-    </div>;
+    return (
+        <SearchResultsList
+            items={events}
+            results={results}
+            filterSpec={filterSpec}
+            loadMoreData={loadMoreData}
+            hasMore={hasMore}
+            refetch={refetch}
+            onCopyCSV={handleCopyCSV}
+            contextMarkerName="Events list"
+            renderItem={(event, index) => (
+                <EventListItem
+                    key={event.id}
+                    event={event}
+                    filterSpec={filterSpec}
+                    refetch={refetch}
+                    results={results}
+                    showTabs={false}
+                />
+            )}
+            getItemKey={(event) => event.id}
+        />
+    );
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

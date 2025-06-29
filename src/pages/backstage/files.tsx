@@ -1,24 +1,23 @@
 import { CMLink } from "@/src/core/components/CMLink";
 import { BlitzPage } from "@blitzjs/next";
-import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
-import InfiniteScroll from "react-infinite-scroll-component";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip } from "src/core/components/CMChip";
-import { AdminInspectObject, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { AdminInspectObject } from "src/core/components/CMCoreComponents2";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/FileComponentsBase";
 import { useFileListData } from "src/core/components/FileSearch";
 import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
+import { SearchResultsList } from "src/core/components/SearchResultsList";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
-import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
@@ -32,33 +31,9 @@ interface FilesFilterSpecStatic {
     orderByColumn: FileOrderByColumnOption;
     orderByDirection: SortDirection;
 
-    // typeFilterEnabled: boolean;
-    // typeFilterBehavior: DiscreteCriterionFilterType;
-    // typeFilterOptions: number[];
-
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
     tagFilterOptions: number[];
-
-    // uploaderFilterEnabled: boolean;
-    // uploaderFilterBehavior: DiscreteCriterionFilterType;
-    // uploaderFilterOptions: number[];
-
-    // sizeFilterEnabled: boolean;
-    // sizeFilterBehavior: DiscreteCriterionFilterType;
-    // sizeFilterOptions: number[];
-
-    // taggedUserFilterEnabled: boolean;
-    // taggedUserFilterBehavior: DiscreteCriterionFilterType;
-    // taggedUserFilterOptions: number[];
-
-    // taggedEventFilterEnabled: boolean;
-    // taggedEventFilterBehavior: DiscreteCriterionFilterType;
-    // taggedEventFilterOptions: number[];
-
-    // taggedSongFilterEnabled: boolean;
-    // taggedSongFilterBehavior: DiscreteCriterionFilterType;
-    // taggedSongFilterOptions: number[];
 
     taggedInstrumentFilterEnabled: boolean;
     taggedInstrumentFilterBehavior: DiscreteCriterionFilterType;
@@ -71,27 +46,11 @@ const gDefaultStaticFilterValue: FilesFilterSpecStatic = {
     helpText: "",
     orderByColumn: FileOrderByColumnOptions.uploadedAt,
     orderByDirection: "desc",
-    // typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    // typeFilterOptions: [],
-    // typeFilterEnabled: false,
+
     tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
     tagFilterOptions: [],
     tagFilterEnabled: false,
-    // uploaderFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    // uploaderFilterOptions: [],
-    // uploaderFilterEnabled: false,
-    // sizeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    // sizeFilterOptions: [],
-    // sizeFilterEnabled: false,
-    // taggedUserFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    // taggedUserFilterOptions: [],
-    // taggedUserFilterEnabled: false,
-    // taggedEventFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    // taggedEventFilterOptions: [],
-    // taggedEventFilterEnabled: false,
-    // taggedSongFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    // taggedSongFilterOptions: [],
-    // taggedSongFilterEnabled: false,
+
     taggedInstrumentFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
     taggedInstrumentFilterOptions: [],
     taggedInstrumentFilterEnabled: false,
@@ -182,78 +141,35 @@ interface FilesListArgs {
 }
 
 const FilesList = ({ filterSpec, results, files, refetch, loadMoreData, hasMore }: FilesListArgs) => {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const [autoLoadCount, setAutoLoadCount] = React.useState(0);
-    const MAX_AUTO_LOADS = 15;
-
-    const handleCopy = async () => {
-        await CopyFileListCSV(snackbarContext, files);
+    const handleCopyCSV = async (items: db3.EnrichedFile<db3.FilePayload>[]) => {
+        await CopyFileListCSV(snackbarContext, items);
     };
 
-    // useEffect hook to check if more data needs to be loaded
-    React.useEffect(() => {
-        const checkIfNeedsMoreData = () => {
-            const contentElement = document.querySelector('.eventList.searchResults');
-            if (contentElement) {
-                const contentHeight = contentElement.scrollHeight;
-                const viewportHeight = window.innerHeight;
-
-                if (contentHeight <= viewportHeight && hasMore && autoLoadCount < MAX_AUTO_LOADS) {
-                    setAutoLoadCount(prevCount => prevCount + 1);
-                    loadMoreData();
-                }
-            }
-        };
-
-        // Delay the check to ensure the DOM has updated
-        setTimeout(checkIfNeedsMoreData, 0);
-    }, [files]);
-
-    return <div className="eventList searchResults">
-        <AppContextMarker name="Files list" queryText={filterSpec.quickFilter}>
-            <div className="searchRecordCount">
-                {results.rowCount === 0 ? "No items to show" : <>Displaying {files.length} items of {results.rowCount} total</>}
-                <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
-                <Menu
-                    id="menu-searchResults"
-                    anchorEl={anchorEl}
-                    keepMounted
-                    open={Boolean(anchorEl)}
-                    onClose={() => setAnchorEl(null)}
-                >
-                    <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
-                        <ListItemIcon>
-                            {gIconMap.ContentCopy()}
-                        </ListItemIcon>
-                        Copy CSV
-                    </MenuItem>
-                </Menu>
-            </div>
-
-            <InfiniteScroll
-                dataLength={files.length}
-                next={loadMoreData}
-                hasMore={hasMore}
-                loader={<h4>Loading...</h4>}
-            >
-                <div className="filesList">
-                    {files.map((file, index) => (
-                        <FileListItem
-                            key={file.id}
-                            index={index + 1}
-                            file={file}
-                            results={results}
-                            refetch={refetch}
-                            filterSpec={filterSpec}
-                        />
-                    ))}
-                </div>
-            </InfiniteScroll>
-            {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
-        </AppContextMarker>
-    </div>;
+    return (
+        <SearchResultsList
+            items={files}
+            results={results}
+            filterSpec={filterSpec}
+            loadMoreData={loadMoreData}
+            hasMore={hasMore}
+            refetch={refetch}
+            onCopyCSV={handleCopyCSV}
+            contextMarkerName="Files list"
+            renderItem={(file, index) => (
+                <FileListItem
+                    key={file.id}
+                    index={index}
+                    file={file}
+                    results={results}
+                    refetch={refetch}
+                    filterSpec={filterSpec} />
+            )}
+            getItemKey={(file) => file.id}
+            className="filesListContainer" // Custom class for files styling
+        />
+    );
 };
 
 const FileListOuter = () => {
