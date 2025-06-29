@@ -2,7 +2,6 @@ import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/EventComponents";
@@ -12,9 +11,7 @@ import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SearchResultsList } from "src/core/components/SearchResultsList";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
-import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
@@ -45,30 +42,6 @@ interface EventsFilterSpecStatic {
     dateFilterOptions: number[];
 };
 
-
-
-async function CopyEventListCSV(snackbarContext: SnackbarContextType, value: db3.EnrichedSearchEventPayload[]) {
-    const obj = value.map((e, i) => ({
-        Order: (i + 1).toString(),
-        ID: e.id.toString(),
-        Name: e.name,
-        Type: e.type?.text || "",
-        Status: e.status?.label || "",
-        StartsAt: e.startsAt?.toISOString() || "TBD",
-        IsAllDay: e.isAllDay ? "yes" : "no",
-        DurationMinutes: (new Number(e.durationMillis).valueOf() / 60000).toString(),
-        Location: e.locationDescription,
-        LocationURL: e.locationURL,
-        URL: getURIForEvent(e),
-    }));
-    const txt = arrayToTSV(obj);
-    await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-}
-
-
-
-
 interface EventsListArgs {
     filterSpec: EventsFilterSpec,
     results: SearchResultsRet;
@@ -79,12 +52,6 @@ interface EventsListArgs {
 };
 
 const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMore }: EventsListArgs) => {
-    const snackbarContext = React.useContext(SnackbarContext);
-
-    const handleCopyCSV = async (items: db3.EnrichedSearchEventPayload[]) => {
-        await CopyEventListCSV(snackbarContext, items);
-    };
-
     return (
         <SearchResultsList
             items={events}
@@ -93,7 +60,22 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
             loadMoreData={loadMoreData}
             hasMore={hasMore}
             refetch={refetch}
-            onCopyCSV={handleCopyCSV}
+            csvExporter={{
+                itemToCSVRow: (event, index) => ({
+                    Order: index.toString(),
+                    ID: event.id.toString(),
+                    Name: event.name,
+                    Type: event.type?.text || "",
+                    Status: event.status?.label || "",
+                    StartsAt: event.startsAt?.toISOString() || "TBD",
+                    IsAllDay: event.isAllDay ? "yes" : "no",
+                    DurationMinutes: (new Number(event.durationMillis).valueOf() / 60000).toString(),
+                    Location: event.locationDescription || "",
+                    LocationURL: event.locationURL || "",
+                    URL: getURIForEvent(event),
+                }),
+                filename: "events"
+            }}
             contextMarkerName="Events list"
             renderItem={(event, index) => (
                 <EventListItem
@@ -236,7 +218,6 @@ const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultS
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const EventListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    const snackbarContext = React.useContext(SnackbarContext);
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({

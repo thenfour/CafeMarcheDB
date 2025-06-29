@@ -4,7 +4,7 @@ import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { arrayToTSV } from "shared/utils";
+
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip } from "src/core/components/CMChip";
 import { AdminInspectObject } from "src/core/components/CMCoreComponents2";
@@ -15,9 +15,9 @@ import { useFileListData } from "src/core/components/FileSearch";
 import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SearchResultsList } from "src/core/components/SearchResultsList";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
+
 import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
-import { gIconMap } from "src/core/db3/components/IconMap";
+
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
@@ -58,22 +58,7 @@ const gDefaultStaticFilterValue: FilesFilterSpecStatic = {
 
 const gStaticFilters: FilesFilterSpecStatic[] = []
 
-async function CopyFileListCSV(snackbarContext: SnackbarContextType, value: db3.EnrichedFile<db3.FilePayload>[]) {
-    const obj = value.map((e, i) => ({
-        Order: (i + 1).toString(),
-        ID: e.id.toString(),
-        Name: e.fileLeafName,
-        Description: e.description || "",
-        MimeType: e.mimeType || "",
-        SizeBytes: e.sizeBytes?.toString() || "",
-        UploadedAt: e.uploadedAt?.toISOString() || "",
-        UploadedBy: e.uploadedByUser?.name || "",
-        URL: getURIForFile(e),
-    }));
-    const txt = arrayToTSV(obj);
-    await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-}
+
 
 type FileListItemProps = {
     index: number;
@@ -141,10 +126,18 @@ interface FilesListArgs {
 }
 
 const FilesList = ({ filterSpec, results, files, refetch, loadMoreData, hasMore }: FilesListArgs) => {
-    const snackbarContext = React.useContext(SnackbarContext);
-
-    const handleCopyCSV = async (items: db3.EnrichedFile<db3.FilePayload>[]) => {
-        await CopyFileListCSV(snackbarContext, items);
+    const csvExporter = {
+        itemToCSVRow: (file: db3.EnrichedFile<db3.FilePayload>, index: number) => ({
+            Order: (index + 1).toString(),
+            ID: file.id.toString(),
+            Name: file.fileLeafName,
+            Description: file.description || "",
+            MimeType: file.mimeType || "",
+            SizeBytes: file.sizeBytes?.toString() || "",
+            UploadedAt: file.uploadedAt?.toISOString() || "",
+            UploadedBy: file.uploadedByUser?.name || "",
+            URL: getURIForFile(file),
+        })
     };
 
     return (
@@ -155,7 +148,7 @@ const FilesList = ({ filterSpec, results, files, refetch, loadMoreData, hasMore 
             loadMoreData={loadMoreData}
             hasMore={hasMore}
             refetch={refetch}
-            onCopyCSV={handleCopyCSV}
+            csvExporter={csvExporter}
             contextMarkerName="Files list"
             renderItem={(file, index) => (
                 <FileListItem
@@ -174,7 +167,6 @@ const FilesList = ({ filterSpec, results, files, refetch, loadMoreData, hasMore 
 
 const FileListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    const snackbarContext = React.useContext(SnackbarContext);
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({

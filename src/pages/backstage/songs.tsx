@@ -3,14 +3,12 @@ import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SearchResultsList } from "src/core/components/SearchResultsList";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { EnrichedVerboseSong, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/SongComponentsBase";
 import { useSongListData } from "src/core/components/SongSearch";
 import { getURIForSong } from "src/core/db3/clientAPILL";
@@ -32,23 +30,6 @@ interface SongsFilterSpecStatic {
     tagFilterOptions: number[];
 };
 
-
-
-async function CopySongListCSV(snackbarContext: SnackbarContextType, value: EnrichedVerboseSong[]) {
-    const obj = value.map((e, i) => ({
-        Order: (i + 1).toString(),
-        ID: e.id.toString(),
-        Name: e.name,
-        URL: getURIForSong(e),
-    }));
-    const txt = arrayToTSV(obj);
-    await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-}
-
-
-
-
 interface SongsListArgs {
     filterSpec: SongsFilterSpec,
     results: SearchResultsRet;
@@ -59,12 +40,6 @@ interface SongsListArgs {
 };
 
 const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore }: SongsListArgs) => {
-    const snackbarContext = React.useContext(SnackbarContext);
-
-    const handleCopyCSV = async (items: EnrichedVerboseSong[]) => {
-        await CopySongListCSV(snackbarContext, items);
-    };
-
     return (
         <SearchResultsList
             items={songs}
@@ -73,7 +48,15 @@ const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore 
             loadMoreData={loadMoreData}
             hasMore={hasMore}
             refetch={refetch}
-            onCopyCSV={handleCopyCSV}
+            csvExporter={{
+                itemToCSVRow: (song, index) => ({
+                    Order: index.toString(),
+                    ID: song.id.toString(),
+                    Name: song.name,
+                    URL: getURIForSong(song),
+                }),
+                filename: "songs"
+            }}
             contextMarkerName="SongList"
             renderItem={(song, index) => (
                 <SongListItem
@@ -110,7 +93,6 @@ const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultS
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SongListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    const snackbarContext = React.useContext(SnackbarContext);
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({

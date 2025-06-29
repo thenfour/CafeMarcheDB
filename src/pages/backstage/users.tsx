@@ -67,12 +67,6 @@ interface UsersListArgs {
 };
 
 const UsersList = ({ filterSpec, results, users, refetch, loadMoreData, hasMore }: UsersListArgs) => {
-    const snackbarContext = React.useContext(SnackbarContext);
-
-    const handleCopyCSV = async (items: db3.EnrichedVerboseUser[]) => {
-        await CopyUserListCSV(snackbarContext, items);
-    };
-
     return (
         <SearchResultsList
             items={users}
@@ -81,7 +75,15 @@ const UsersList = ({ filterSpec, results, users, refetch, loadMoreData, hasMore 
             loadMoreData={loadMoreData}
             hasMore={hasMore}
             refetch={refetch}
-            onCopyCSV={handleCopyCSV}
+            csvExporter={{
+                itemToCSVRow: (user, index) => ({
+                    Order: index.toString(),
+                    ID: user.id.toString(),
+                    Name: user.name,
+                    URL: getURIForUser(user),
+                }),
+                filename: "users"
+            }}
             // Note: Users page doesn't use AppContextMarker in the original
             renderItem={(user, index) => (
                 <UserListItem

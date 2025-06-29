@@ -1,6 +1,7 @@
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -23,7 +24,14 @@ export interface SearchResultsListProps<TItem, TFilterSpec> {
 
     // Actions
     refetch: () => void;
-    onCopyCSV?: (items: TItem[]) => Promise<void>;
+
+    // CSV Export - flexible approach allowing custom columns per model
+    csvExporter?: {
+        // Function to convert each item to a CSV row object
+        itemToCSVRow: (item: TItem, index: number) => Record<string, string | number>;
+        // Optional filename (defaults to "export")
+        filename?: string;
+    };
 
     // Rendering
     renderItem: (item: TItem, index: number) => React.ReactNode;
@@ -45,7 +53,7 @@ export interface SearchResultsListProps<TItem, TFilterSpec> {
  * 
  * This component handles:
  * - Search result count display
- * - Dot menu with copy CSV functionality
+ * - Dot menu with copy CSV functionality (with flexible column definitions)
  * - Infinite scroll
  * - Auto-loading when content height is less than viewport
  * - Load more button
@@ -57,7 +65,7 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
     loadMoreData,
     hasMore,
     refetch,
-    onCopyCSV,
+    csvExporter,
     renderItem,
     getItemKey,
     contextMarkerName,
@@ -68,11 +76,23 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
 }: SearchResultsListProps<TItem, TFilterSpec>): React.JSX.Element => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
-    const [autoLoadCount, setAutoLoadCount] = React.useState(0);
-
-    const handleCopy = async () => {
-        if (onCopyCSV) {
-            await onCopyCSV(items);
+    const [autoLoadCount, setAutoLoadCount] = React.useState(0); const handleCopyCSV = async () => {
+        if (csvExporter) {
+            // Convert numbers to strings for TSV compatibility
+            const csvData = items.map((item, index) => {
+                const row = csvExporter.itemToCSVRow(item, index + 1);
+                const stringRow: Record<string, string> = {};
+                Object.entries(row).forEach(([key, value]) => {
+                    stringRow[key] = String(value);
+                });
+                return stringRow;
+            });
+            const csvText = arrayToTSV(csvData);
+            await navigator.clipboard.writeText(csvText);
+            snackbarContext.showMessage({
+                severity: "success",
+                children: `Copied ${csvText.length} chars to clipboard`
+            });
         }
     };
 
@@ -97,31 +117,30 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
     }, [items, hasMore, autoLoadCount, maxAutoLoads, loadMoreData, autoLoadSelector]);
 
     const content = (
-        <>
-            <div className="searchRecordCount">
-                {results.rowCount === 0 ? "No items to show" : <>Displaying {items.length} items of {results.rowCount} total</>}
-                {onCopyCSV && (
-                    <>
-                        <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>
-                            {gCharMap.VerticalEllipses()}
-                        </CMSmallButton>
-                        <Menu
-                            id="menu-searchResults"
-                            anchorEl={anchorEl}
-                            keepMounted
-                            open={Boolean(anchorEl)}
-                            onClose={() => setAnchorEl(null)}
-                        >
-                            <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
-                                <ListItemIcon>
-                                    {gIconMap.ContentCopy()}
-                                </ListItemIcon>
-                                Copy CSV
-                            </MenuItem>
-                        </Menu>
-                    </>
-                )}
-            </div>
+        <>            <div className="searchRecordCount">
+            {results.rowCount === 0 ? "No items to show" : <>Displaying {items.length} items of {results.rowCount} total</>}
+            {csvExporter && (
+                <>
+                    <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>
+                        {gCharMap.VerticalEllipses()}
+                    </CMSmallButton>
+                    <Menu
+                        id="menu-searchResults"
+                        anchorEl={anchorEl}
+                        keepMounted
+                        open={Boolean(anchorEl)}
+                        onClose={() => setAnchorEl(null)}
+                    >
+                        <MenuItem onClick={async () => { await handleCopyCSV(); setAnchorEl(null); }}>
+                            <ListItemIcon>
+                                {gIconMap.ContentCopy()}
+                            </ListItemIcon>
+                            Copy CSV
+                        </MenuItem>
+                    </Menu>
+                </>
+            )}
+        </div>
 
             <InfiniteScroll
                 dataLength={items.length}
