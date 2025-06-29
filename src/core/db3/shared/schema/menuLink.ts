@@ -27,8 +27,8 @@ const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 const MenuLinkArgs = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
     include: {
-        //visiblePermission: true,
         createdByUser: { select: UserMinimalSelect },
+        visiblePermission: true, // for creating new items, the payload should include this object.
     }
 });
 

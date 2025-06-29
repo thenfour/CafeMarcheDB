@@ -22,10 +22,10 @@ import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { NavRealm } from "src/core/components/Dashboard2";
-import { DashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
+import { DashboardContext, useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { FileTableClientColumns } from "src/core/components/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
+import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -48,7 +48,7 @@ export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
         </CMLink>
 
         <CMLink
-            href={getURIForFile(props.file)}
+            href={getURIForFileLandingPage(props.file)}
         >
             {props.file.fileLeafName}
         </CMLink>
@@ -112,8 +112,6 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                 }}
             />}
 
-            <VisibilityValue permissionId={file.visiblePermissionId} variant='minimal' />
-
             <div className="fileDetailHeader" style={{ marginBottom: '20px' }}>
                 <h1 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>{file.fileLeafName}</h1>
                 <AdminInspectObject src={file} label="FileObj" />
@@ -122,6 +120,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         <Markdown markdown={file.description} />
                     </div>
                 )}
+                <VisibilityValue permissionId={file.visiblePermissionId} variant='minimal' />
             </div>
 
             <KeyValueTable
@@ -189,21 +188,15 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
 const MyComponent = ({ fileId }: { fileId: number | null }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
+    if (!fileId) throw new Error(`file not found`);
 
-    const dashboardContext = React.useContext(DashboardContext); if (!fileId) throw new Error(`file not found`);
+    const dashboardContext = useDashboardContext();
 
     useRecordFeatureUse({ feature: ActivityFeature.file_detail_view, fileId });
 
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = {
-        intention: 'user',
-        mode: 'primary',
-        currentUser: currentUser,
-    };
-
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
+        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xFile,
             columns: [

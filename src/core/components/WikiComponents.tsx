@@ -10,7 +10,7 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import wikiPageSetVisibility from "../wiki/mutations/wikiPageSetVisibility";
-import { UpdateWikiPageResultOutcome, WikiPath, getFileTagsForNamespace } from "../wiki/shared/wikiUtils";
+import { UpdateWikiPageResultOutcome, WikiPath, getFileUploadContext } from "../wiki/shared/wikiUtils";
 import { AdminContainer, AdminInspectObject, EventTextLink } from "./CMCoreComponents";
 import { DotMenu, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
@@ -143,7 +143,7 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
                         handleCancel={props.onClose}
                         handleSave={handleSave}
                         handleSaveAndClose={handleSaveAndClose}
-                        uploadFileContext={getFileTagsForNamespace(props.wikiPageApi.wikiPath)}
+                        uploadFileContext={getFileUploadContext(props.wikiPageApi.basePage?.id, props.wikiPageApi.wikiPath)}
                     />
                 </div>
 

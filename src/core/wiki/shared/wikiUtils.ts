@@ -1,25 +1,33 @@
-// Returns file tag context for uploads based on wiki namespace/slug
-export function getFileTagsForNamespace(wikiPath: WikiPath): {
-    taggedEventId?: number;
-    // Add more tags as needed for other namespaces
-} | undefined {
-    if (wikiPath.namespace === SpecialWikiNamespace.EventDescription) {
-        const eventId = Number(wikiPath.slugWithoutNamespace);
-        if (!isNaN(eventId)) {
-            return { taggedEventId: eventId };
-        }
-    }
-    return undefined;
-}
 import { Prisma } from "db";
 import { z } from "zod";
 import { slugify } from "../../../../shared/rootroot";
 import { diffChars, diffLines } from 'diff';
 
+
 export const enum SpecialWikiNamespace {
     EventDescription = "EventDescription",
 };
 
+// Returns file tag context for uploads based on wiki namespace/slug
+export function getFileUploadContext(wikiPageId: number | undefined, wikiPath: WikiPath): {
+    taggedEventId: number | undefined;
+    taggedWikiPageId: number | undefined;
+    // Add more tags as needed for other namespaces
+} {
+    if (wikiPath.namespace === SpecialWikiNamespace.EventDescription) {
+        const eventId = Number(wikiPath.slugWithoutNamespace);
+        if (!isNaN(eventId)) {
+            return {
+                taggedWikiPageId: wikiPageId,
+                taggedEventId: eventId,
+            };
+        }
+    }
+    return {
+        taggedWikiPageId: wikiPageId,
+        taggedEventId: undefined,
+    };
+}
 // lock refreshing is not a perfect science.
 // it's tempting to have a kind of auto-renewal, but it defeats the purpose
 // of expiration (auto renewal when you forget about a background tab would hold the lock forever).

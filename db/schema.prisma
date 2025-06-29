@@ -844,12 +844,12 @@ model EventSegmentUserResponse {
   attendanceId Int?
   attendance   EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
 
-  createdAt       DateTime @default(now())
+  createdAt       DateTime? @default(now())
   createdByUserId Int?
-  createdByUser   User?    @relation("EventSegmentUserResponseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  updatedAt       DateTime @default(now()) @updatedAt
+  createdByUser   User?     @relation("EventSegmentUserResponseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedAt       DateTime? @default(now()) @updatedAt
   updatedByUserId Int?
-  updatedByUser   User?    @relation("EventSegmentUserResponseUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedByUser   User?     @relation("EventSegmentUserResponseUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([userId, eventSegmentId]) // 
 }

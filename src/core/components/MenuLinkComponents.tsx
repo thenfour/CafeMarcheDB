@@ -16,7 +16,7 @@ import { ActivityFeature } from "./featureReports/activityTracking";
 import { TAnyModel } from "../db3/shared/apiTypes";
 import { KeyValueDisplay } from './CMCoreComponents2';
 import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
-import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
+import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { VisibilityValue } from "./VisibilityControl";
 import { AppContextMarker } from "./AppContext";
 
@@ -31,6 +31,7 @@ interface MenuLinkItemProps {
 
 export const MenuLinkItem = (props: MenuLinkItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
@@ -42,6 +43,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
         props.client.doUpdateMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
             props.client.refetch();
+            dashboardContext.refetchDashboardData();
             api.closeDialog();
         }).catch(e => {
             console.log(e);
@@ -61,7 +63,10 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "delete error", severity: 'error' });
-        }).finally(props.client.refetch);
+        }).finally(() => {
+            props.client.refetch();
+            dashboardContext.refetchDashboardData();
+        });
     }
 
     const loggable = {
@@ -213,29 +218,22 @@ export const MenuLinkList = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const recordFeature = useFeatureRecorder();
 
-    const [user] = useCurrentUser()!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
-
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention,
+        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xMenuLink,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
-                //new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
 
                 new DB3Client.GenericStringColumnClient({ columnName: "groupName", cellWidth: 250, fieldCaption: "Group name" }),
                 new DB3Client.GenericStringColumnClient({ columnName: "caption", cellWidth: 250, fieldCaption: "Item text", className: "titleText" }),
                 new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120, fieldCaption: "Icon" }),
 
-                //new DB3Client.ConstEnumStringFieldClient({ columnName: "realm", cellWidth: 120 }),
                 new DB3Client.ConstEnumStringFieldClient({ columnName: "linkType", cellWidth: 120, fieldCaption: "Type" }),
-                //new DB3Client.ConstEnumStringFieldClient({ columnName: "applicationPage", cellWidth: 120 }),
                 new DB3Client.GenericStringColumnClient({ columnName: "externalURI", cellWidth: 250, fieldCaption: "External URL" }),
                 new SearchableWikiSlugColumnClient({ columnName: "wikiSlug", cellWidth: 250 }),
 
-                //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, }),
                 new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, }),
 
                 new DB3Client.GenericStringColumnClient({ columnName: "groupCssClass", cellWidth: 250, fieldCaption: "Group CSS class" }),
@@ -248,11 +246,11 @@ export const MenuLinkList = () => {
 
     const canEdit = dashboardContext.isAuthorized(Permission.customize_menu);
 
-    const newObj = db3.xMenuLink.createNew(clientIntention) as db3.MenuLinkPayload;
+    const newObj = db3.xMenuLink.createNew(dashboardContext.userClientIntention) as db3.MenuLinkPayload;
     newObj.iconName = "Link" as keyof typeof gIconMap;
     newObj.linkType = DynamicMenuLinkType.Wiki;
-    //    newObj.visiblePermission = dashboardContext.getDefaultVisibilityPermission();
-    newObj.visiblePermissionId = dashboardContext.getDefaultVisibilityPermission().id;
+    newObj.visiblePermission = dashboardContext.getDefaultVisibilityPermission();
+    newObj.visiblePermissionId = newObj.visiblePermission?.id;
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({
@@ -262,6 +260,7 @@ export const MenuLinkList = () => {
         client.doInsertMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
             client.refetch();
+            dashboardContext.refetchDashboardData();
             api.closeDialog();
         }).catch(e => {
             console.log(e);
@@ -295,6 +294,7 @@ export const MenuLinkList = () => {
             newPositionItemId: newPositionItem.id,
         }).then(() => {
             showSnackbar({ severity: "success", children: "reorder successful" });
+            dashboardContext.refetchDashboardData();
             client.refetch();
         }).catch((e) => {
             console.log(e);

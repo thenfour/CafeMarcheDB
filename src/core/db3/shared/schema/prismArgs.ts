@@ -1192,7 +1192,7 @@ export const FileInstrumentTagNaturalOrderBy: Prisma.FileInstrumentTagOrderByWit
 ////////////////////////////////////////////////////////////////
 export const FileWikiPageTagArgs = Prisma.validator<Prisma.FileWikiPageTagArgs>()({
     include: {
-        file: true,
+        //file: true,
         wikiPage: true,
     }
 });

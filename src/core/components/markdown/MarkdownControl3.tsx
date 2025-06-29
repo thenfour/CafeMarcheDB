@@ -35,6 +35,7 @@ interface Markdown3EditorPropsBase {
         taggedSongId?: number;
         taggedEventId?: number;
         taggedInstrumentId?: number;
+        taggedWikiPageId?: number;
         taggedUserId?: number;
         fileTagId?: number;
         visiblePermissionId?: number;

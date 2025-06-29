@@ -27,7 +27,7 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     userClientIntention: db3.xTableClientUsageContext;
 
     session: ClientSession | null;
-    refetchDashboardData: (() => void) | null = null;
+    refetchDashboardData: (() => void) = () => { };
 
     constructor() {
         super();
@@ -155,9 +155,7 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
 
     // Method to refresh dashboard data when needed (e.g., after creating new tags)
     refreshCachedData(): void {
-        if (this.refetchDashboardData) {
-            this.refetchDashboardData();
-        }
+        this.refetchDashboardData();
     }
 };
 
