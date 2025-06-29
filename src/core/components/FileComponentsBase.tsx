@@ -48,6 +48,7 @@ export const FileTableClientColumns = {
     taggedSongs: new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName: "taggedSongs", cellWidth: 150, allowDeleteFromCell: false }),
     taggedEvents: new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({ columnName: "taggedEvents", cellWidth: 150, allowDeleteFromCell: false }),
     taggedInstruments: new DB3Client.TagsFieldClient<db3.FileInstrumentTagPayload>({ columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false }),
+    taggedWikiPages: new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName: "taggedWikiPages", cellWidth: 150, allowDeleteFromCell: false }),
     previewFile: new DB3Client.ForeignSingleFieldClient({ columnName: "previewFile", cellWidth: 120 }),
     parentFile: new DB3Client.ForeignSingleFieldClient({ columnName: "parentFile", cellWidth: 120 }),
     externalURI: new DB3Client.GenericStringColumnClient({ columnName: "externalURI", cellWidth: 200 }),

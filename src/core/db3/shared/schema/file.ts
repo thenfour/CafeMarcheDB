@@ -1,11 +1,10 @@
-
-import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, Prisma } from "db";
+import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, FileWikiPageTag, Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIsDeletedField, MakeMarkdownTextField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
+import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FileWikiPageTagArgs, FileWikiPageTagNaturalOrderBy, FileWikiPageTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
@@ -565,6 +564,29 @@ export const xFile = new db3.xTable({
             }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedInstruments
+
+        new TagsField<FileWikiPageTag>({
+            columnName: "taggedWikiPages",
+            associationForeignIDMember: "wikiPageId",
+            associationForeignObjectMember: "wikiPage",
+            associationLocalIDMember: "fileId",
+            associationLocalObjectMember: "file",
+            associationTableID: "FileWikiPageTag",
+            foreignTableID: "WikiPage",
+            authMap: xFileAuthMap_FileObjects,
+            getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
+                taggedWikiPages: {
+                    some: {
+                        wikiPage: {
+                            slug: {
+                                contains: query
+                            }
+                        }
+                    }
+                }
+            }),
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
+        }), // column: taggedWikiPages
     ]
 
 });
@@ -653,4 +675,33 @@ export const xFrontpageGalleryItem = new db3.xTable({
         }),
     ]
 
+});
+
+
+////////////////////////////////////////////////////////////////
+export const xFileWikiPageTag = new db3.xTable({
+    tableName: "FileWikiPageTag",
+    tableAuthMap: xFileTableAuth_FileObjects,
+    naturalOrderBy: FileWikiPageTagNaturalOrderBy,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileWikiPageTagInclude => {
+        return FileWikiPageTagArgs.include;
+    },
+    getRowInfo: (row: FileWikiPageTagPayload) => {
+        return {
+            pk: row.id,
+            name: row.wikiPage?.slug || "",
+            ownerUserId: null,
+        };
+    },
+    columns: [
+        MakePKfield(),
+        new ForeignSingleField<Prisma.FileWikiPageTagGetPayload<{}>>({
+            columnName: "wikiPage",
+            fkidMember: "wikiPageId",
+            allowNull: false,
+            foreignTableID: "WikiPage",
+            authMap: xFileAuthMap_FileObjects,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
 });

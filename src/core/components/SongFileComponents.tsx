@@ -22,7 +22,7 @@ import { PushPin } from '@mui/icons-material';
 import { getURIForFile, getURIForFileLandingPage } from '../db3/clientAPILL';
 import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
-import { EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
+import { EventChip, InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
 import { DotMenu } from './CMCoreComponents2';
 import { CMDBUploadFile } from './CMDBUploadFile';
 import { CMLink } from './CMLink';
@@ -43,7 +43,7 @@ type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
 //const gMaximumFilterTagsPerType = 10 as const;
 
 type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt"; // keyof File
-type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments";
+type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments" | "taggedWikiPages";
 
 //////////////////////////////////////////////////////////////////
 
@@ -278,6 +278,10 @@ export const FileValueViewer = (props: FileViewerProps) => {
                     {(file.taggedInstruments.length > 0) && (
                         file.taggedInstruments.map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
                     )}
+
+                    {(file.taggedWikiPages.length > 0) && (
+                        file.taggedWikiPages.map(a => <WikiPageChip key={a.id} slug={a.wikiPage.slug} size="small" variation={variation} />)
+                    )}
                 </CMChipContainer>
 
 
@@ -371,6 +375,7 @@ export const FileEditor = (props: FileEditorProps) => {
                     return <EventChip value={value.event} />;
                 }
             }),
+            new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName: "taggedWikiPages", cellWidth: 150, allowDeleteFromCell: false }),
         ],
     });
 
@@ -421,6 +426,7 @@ interface FileFilterAndSortSpec {
     taggedInstrumentIds: number[];
     taggedSongIds: number[];
     taggedEventIds: number[];
+    taggedWikiPageIds: number[];
     mimeTypes: string[];
 
     sortBy: SortByKey;
@@ -446,6 +452,9 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const eventIds = item.file.taggedEvents.map(event => event.event.id);
         if (spec.taggedEventIds.length && !eventIds.some(id => spec.taggedEventIds.includes(id))) return false;
 
+        const wikiPageIds = item.file.taggedWikiPages.map(wikiPage => wikiPage.wikiPage.id);
+        if (spec.taggedWikiPageIds.length && !wikiPageIds.some(id => spec.taggedWikiPageIds.includes(id))) return false;
+
         if (spec.mimeTypes.length) {
             if (!item.file.mimeType) return false; // we're filtering mime types but this file has none.
             const parsedMimeType = parseMimeType(item.file.mimeType);
@@ -466,6 +475,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
             item.file.taggedUsers.map(i => i.user.name.toLocaleLowerCase()),
             item.file.taggedEvents.map(i => i.event.name.toLocaleLowerCase()),
             item.file.taggedSongs.map(i => i.song.name.toLocaleLowerCase()),
+            item.file.taggedWikiPages.map(i => i.wikiPage.slug.toLocaleLowerCase()),
             item.file.tags.map(i => i.fileTag.text.toLocaleLowerCase()),
         ];
 
@@ -589,6 +599,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
     const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedEvents', foreignSelector: "event", fileTags: props.fileTags });
     const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ selector: 'taggedUsers', foreignSelector: "user", fileTags: props.fileTags });
     const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ selector: 'taggedSongs', foreignSelector: "song", fileTags: props.fileTags });
+    const uniqueWikiPageTags = CalculateUniqueTags<db3.WikiPagePayload>({ selector: 'taggedWikiPages', foreignSelector: "wikiPage", fileTags: props.fileTags });
     const uniqueMimeTypes = CalculateUniqueMimeTypes({ fileTags: props.fileTags });
 
     const sortedInstrumentTags = dashboardContext.sortInstruments(uniqueInstrumentTags.map(t => ({ count: t.count, ...t.tag })));
@@ -721,6 +732,24 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                 </div>
                             </div>
 
+                            <div className={`EventsFilterControlsValue`}>
+                                <div className="row">
+                                    {uniqueWikiPageTags.length > 1 && <CMChipContainer>
+                                        {uniqueWikiPageTags.map(t => (
+                                            <CMChip
+                                                key={t.tag.id}
+                                                tooltip={"Wiki Page"}
+                                                size='small'
+                                                variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedWikiPageIds, t.tag.id) }}
+                                                onClick={() => props.onChange({ ...props.value, taggedWikiPageIds: toggleValueInArray(props.value.taggedWikiPageIds, t.tag.id) })}
+                                            >
+                                                {t.tag.slug} ({t.count})
+                                            </CMChip>))}
+                                    </CMChipContainer>}
+
+                                </div>
+                            </div>
+
                             <div className="divider"></div>
 
                             <div className="row">
@@ -826,6 +855,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         taggedInstrumentIds: [],
         taggedSongIds: [],
         taggedUserIds: [],
+        taggedWikiPageIds: [],
         mimeTypes: [],
         sortBy: "uploadedAt",
         sortDirection: "desc",

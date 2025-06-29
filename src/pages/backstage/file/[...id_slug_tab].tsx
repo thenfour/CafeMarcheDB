@@ -1,6 +1,6 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
-import { AdminInspectObject, DateValue, EventChip, FileTagChip, InspectObject, InstrumentChip, SongChip } from "@/src/core/components/CMCoreComponents";
+import { AdminInspectObject, DateValue, EventChip, FileTagChip, InspectObject, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
 import { KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
@@ -165,6 +165,12 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                                 <InstrumentChip key={index} value={taggedInstrument.instrument} />
                             ))}
                         </CMChipContainer>) : "",
+                    "Tagged Wiki Pages": (file.taggedWikiPages && file.taggedWikiPages.length > 0) ?
+                        (<CMChipContainer>
+                            {file.taggedWikiPages.map((taggedWikiPage, index) => (
+                                <WikiPageChip key={index} slug={taggedWikiPage.wikiPage.slug} />
+                            ))}
+                        </CMChipContainer>) : "",
                     "Parent File": <>(todo: verbose query){file.parentFileId ? <CMLink href={getURIForFileLandingPage({ id: file.parentFileId })}>{file.parentFileId}</CMLink> : ''}</>,
                     "Child files": "(todo: verbose data query)",
                     "Preview File": file.previewFileId ? <CMLink href={getURIForFileLandingPage({ id: file.previewFileId })}>{file.previewFileId}</CMLink> : '',
@@ -209,6 +215,7 @@ const MyComponent = ({ fileId }: { fileId: number | null }) => {
                 FileTableClientColumns.taggedUsers,
                 FileTableClientColumns.taggedInstruments,
                 FileTableClientColumns.taggedSongs,
+                FileTableClientColumns.taggedWikiPages,
                 FileTableClientColumns.visiblePermission,
 
                 FileTableClientColumns.mimeType,

@@ -919,6 +919,7 @@ model File {
   taggedSongs           FileSongTag[]
   taggedEvents          FileEventTag[]
   taggedInstruments     FileInstrumentTag[]
+  taggedWikiPages       FileWikiPageTag[]
   frontpageGalleryItems FrontpageGalleryItem[]
 
   previewForFile File[]   @relation("previewFiles")
@@ -984,6 +985,18 @@ model FileInstrumentTag {
   @@unique([fileId, instrumentId]) // 
   @@index([fileId])
   @@index([instrumentId])
+}
+
+model FileWikiPageTag {
+  id         Int      @id @default(autoincrement())
+  fileId     Int
+  file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  wikiPage   WikiPage @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
+  wikiPageId Int
+
+  @@unique([fileId, wikiPageId]) // 
+  @@index([fileId])
+  @@index([wikiPageId])
 }
 
 model FrontpageGalleryItem {
@@ -1065,6 +1078,8 @@ model WikiPage {
 
   events  Event?   @relation("eventDescriptionWikiPage")
   actions Action[]
+
+  taggedFiles FileWikiPageTag[]
 
   @@unique([slug])
   @@unique([currentRevisionId])

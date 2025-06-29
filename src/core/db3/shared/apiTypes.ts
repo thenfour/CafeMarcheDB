@@ -265,6 +265,7 @@ export interface TClientFileUploadTags {
     taggedSongId?: number;
     taggedEventId?: number;
     taggedInstrumentId?: number;
+    taggedWikiPageId?: number;
     fileTagId?: number;
 };
 
@@ -287,6 +288,7 @@ export interface TClientUpdateFile {
     taggedSongIds?: number[];
     taggedEventIds?: number[];
     taggedInstrumentIds?: number[];
+    taggedWikiPageIds?: number[];
 };
 
 

@@ -522,6 +522,11 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
                 },
             }
         },
+        taggedWikiPages: {
+            include: {
+                wikiPage: true,
+            }
+        },
     },
 }
 );
@@ -1184,6 +1189,20 @@ export const FileInstrumentTagNaturalOrderBy: Prisma.FileInstrumentTagOrderByWit
     { instrument: { id: 'asc' } },
 ];
 
+////////////////////////////////////////////////////////////////
+export const FileWikiPageTagArgs = Prisma.validator<Prisma.FileWikiPageTagArgs>()({
+    include: {
+        file: true,
+        wikiPage: true,
+    }
+});
+export type FileWikiPageTagPayload = Prisma.FileWikiPageTagGetPayload<typeof FileWikiPageTagArgs>;
+
+export const FileWikiPageTagNaturalOrderBy: Prisma.FileWikiPageTagOrderByWithRelationInput[] = [
+    { wikiPage: { slug: 'asc' } },
+    { wikiPage: { id: 'asc' } },
+];
+
 export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
     include: {
         visiblePermission: {
@@ -1198,6 +1217,7 @@ export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
         taggedSongs: FileSongTagArgs,
         taggedEvents: FileEventTagArgs,
         taggedInstruments: FileInstrumentTagArgs,
+        taggedWikiPages: FileWikiPageTagArgs,
     }
 });
 
