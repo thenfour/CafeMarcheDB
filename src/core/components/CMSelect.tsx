@@ -82,6 +82,8 @@ interface CMMultiSelectProps<Toption> {
     allowInsertFromString?: boolean | undefined;
     doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
     doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
+
+    className?: string | undefined;
 };
 
 export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => {
@@ -117,7 +119,7 @@ export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => {
     const noneSelected = msl.selectedOptionsX.length === 0;
 
     return (
-        <div className="CMMultiSelect">
+        <div className={`CMMultiSelect ${props.className || ""}`}>
             {displayStyle === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender!(handleDialog) :
                 <CMChipContainer>
 

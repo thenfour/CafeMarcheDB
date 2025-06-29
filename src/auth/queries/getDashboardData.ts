@@ -175,6 +175,7 @@ export default resolver.pipe(
                 db.songCreditType.findMany(),
                 menuItemsCall,
                 db.eventCustomField.findMany(),
+                db.wikiPageTag.findMany(),
                 relevantEventsCall,
             ]);
 
@@ -197,6 +198,7 @@ export default resolver.pipe(
                 songCreditType,
                 dynMenuLinks,
                 eventCustomField,
+                wikiPageTag,
                 relevantEventIds,
             ] = results;
 
@@ -217,6 +219,7 @@ export default resolver.pipe(
                 songCreditType,
                 dynMenuLinks: dynMenuLinks.items as Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>[],
                 eventCustomField,
+                wikiPageTag,
                 sessionPermissionsChanged: rsp,
                 serverStartupState: getServerStartState(),
                 relevantEventIds,

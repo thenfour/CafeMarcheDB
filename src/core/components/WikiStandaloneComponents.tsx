@@ -87,6 +87,7 @@ const WikiStandaloneControlInner = ({ floatingHeader = false, ...props }: WikiSt
             showNamespace={false}
             showVisiblePermission={false}
             showTitle={false}
+            showTags={false}
         /> :
             <WikiStandaloneViewMode
                 onEnterEditMode={handleEnterEditMode}

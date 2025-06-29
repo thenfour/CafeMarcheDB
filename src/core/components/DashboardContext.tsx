@@ -208,6 +208,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.userClientIntention = { intention: currentUser ? "user" : 'public', mode: 'primary', currentUser }
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag);
+    valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
     valueRef.current.role = new TableAccessor(dashboardData.role);
     valueRef.current.rolePermission = new TableAccessor(dashboardData.rolePermission);

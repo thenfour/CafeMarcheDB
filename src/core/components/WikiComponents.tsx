@@ -13,7 +13,7 @@ import wikiPageSetVisibility from "../wiki/mutations/wikiPageSetVisibility";
 import { UpdateWikiPageResultOutcome, WikiPath, getFileUploadContext } from "../wiki/shared/wikiUtils";
 import { EventTextLink } from "./CMCoreComponents";
 import { AdminContainer, AdminInspectObject, DotMenu, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
-import { CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
+import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { CMSelectNullBehavior } from "./CMSingleSelectDialog";
 import { CMTextInputBase } from "./CMTextField";
 import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
@@ -24,6 +24,8 @@ import { AgeRelativeToNow } from "./RelativeTimeComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityValue } from "./VisibilityControl";
 import { ActivityFeature } from "./featureReports/activityTracking";
+import * as db3 from "../db3/db3";
+import * as DB3Client from "../db3/DB3Client";
 
 
 //////////////////////////////////////////////////
@@ -59,6 +61,71 @@ const WikiTitleControl = (props: WikiTitleControlProps) => {
 };
 
 
+
+
+//////////////////////////////////////////////////
+interface WikiPageTagsControlProps {
+    wikiPageApi: WikiPageApi,
+    readonly: boolean;
+    refetch?: () => void; // optional callback to call after updating tags
+};
+
+export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
+    const dashboardContext = useDashboardContext();
+    const snackbar = useSnackbar();
+    const wikiPageId = props.wikiPageApi.currentPageData?.wikiPage?.id
+    if (!wikiPageId) return null;
+
+    const tableClient = DB3Client.useTableRenderContext<db3.WikiPagePayload>({
+        clientIntention: dashboardContext.userClientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xWikiPage,
+            columns: [
+                new DB3Client.TagsFieldClient<db3.WikiPageTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags" }),
+            ],
+        }),
+        filterModel: {
+            items: [],
+            pks: [wikiPageId],
+        }
+    });
+
+    const wikiPageRecord = tableClient.items[0];
+    if (!wikiPageRecord) return null;
+    const tagsCollection = wikiPageRecord.tags.map(t => t.tag);
+
+    return <CMMultiSelect
+        className="noSelectedOutline"
+        value={tagsCollection}
+        readonly={props.readonly}
+        displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+        getOptionInfo={(tag) => ({
+            id: tag.id,
+            color: tag.color,
+            name: tag.text,
+            tooltip: tag.description,
+        })}
+        getOptions={() => dashboardContext.wikiPageTag.items}
+        renderOption={tag => tag.text}
+        onChange={async (newTags) => {
+            snackbar.invokeAsync(async () => {
+                await tableClient.doUpdateMutation({
+                    id: wikiPageId,
+                    tags: newTags.map(t => ({
+                        id: -1,
+                        tagId: t.id,
+                        tag: t,
+                        wikiPageId: wikiPageId,
+                    })) satisfies db3.WikiPageTagAssignmentPayload[],
+                });
+                if (props.refetch) props.refetch();
+            });
+        }}
+    />;
+};
+
+
 // //////////////////////////////////////////////////
 interface WikiPageContentEditorProps {
     onClose: () => void;
@@ -66,10 +133,11 @@ interface WikiPageContentEditorProps {
     showNamespace?: boolean;
     showVisiblePermission?: boolean;
     showTitle?: boolean;
+    showTags?: boolean;
 };
 
 
-export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermission = true, showTitle = true, ...props }: WikiPageContentEditorProps) => {
+export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermission = true, showTitle = true, showTags = true, ...props }: WikiPageContentEditorProps) => {
     const [title, setTitle] = React.useState<string>(props.wikiPageApi.coalescedCurrentPageData.title);
     const [content, setContent] = React.useState<string>(props.wikiPageApi.coalescedCurrentPageData.content);
     const snackbar = useSnackbar();
@@ -126,6 +194,14 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
                     name="Title"
                     value={
                         <WikiTitleControl isEditing={true} onChange={setTitle} potentiallyEditedTitle={title} wikiPageApi={props.wikiPageApi} />
+                    }
+                />}
+
+            {showTags &&
+                <NameValuePair
+                    name="Tags"
+                    value={
+                        <WikiPageTagsControl readonly={false} wikiPageApi={props.wikiPageApi} refetch={props.wikiPageApi.refetch} />
                     }
                 />}
 
@@ -196,7 +272,6 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
         }}
     />;
 };
-
 
 //////////////////////////////////////////////////
 interface WikiPageViewModeProps {
@@ -308,6 +383,7 @@ export const WikiPageViewMode = (props: WikiPageViewModeProps) => {
         <div className="content">
             <div className="wikiTitle">
                 <WikiTitleControl wikiPageApi={props.wikiPageApi} isEditing={false} potentiallyEditedTitle={props.wikiPageApi.coalescedCurrentPageData.title} />
+                <WikiPageTagsControl wikiPageApi={props.wikiPageApi} readonly={true} refetch={props.wikiPageApi.refetch} />
 
                 {pageData?.specialWikiNamespace === "EventDescription" && <div className="wikiPageSpecialNamespaceSubtitle wikiPageEventDescription">
                     This is the description for <EventTextLink event={pageData.eventContext!} />

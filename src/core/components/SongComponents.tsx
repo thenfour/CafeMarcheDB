@@ -454,6 +454,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                             feature: ActivityFeature.song_edit,
                             context: "song detail dialog",
                         });
+                        console.log(`song update`, obj);
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();

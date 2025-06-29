@@ -263,6 +263,9 @@ input.CMTextInputBase.titleText {
     z-index: 999;
 }
 
+.noSelectedOutline .CMChip.selected {
+    outline: none;
+}
 
 .CMChip.rounded {
     border-radius: 19px;

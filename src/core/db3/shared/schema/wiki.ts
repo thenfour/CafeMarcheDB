@@ -30,6 +30,11 @@ const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
 const WikiPageArgs = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
     include: {
         visiblePermission: true,
+        tags: {
+            include: {
+                tag: true,
+            }
+        }
     }
 });
 
