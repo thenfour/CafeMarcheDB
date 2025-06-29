@@ -1132,3 +1132,11 @@ export type GetUserAttendanceRet = {
 
 };
 
+
+export const PermissionSignificance = {
+    General: "General",
+    Visibility_Public: "Visibility_Public",
+    Visibility_LoggedInUsers: "Visibility_LoggedInUsers",
+    Visibility_Members: "Visibility_Members",
+    Visibility_Editors: "Visibility_Editors",
+} as const satisfies Record<string, string>;

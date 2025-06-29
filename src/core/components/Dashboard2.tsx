@@ -36,7 +36,6 @@ import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
-import { AdminInspectObject } from "./CMCoreComponents";
 import { ConfirmProvider } from "./ConfirmationDialog";
 import { DashboardContext, DashboardContextData, DashboardContextProvider, useClientTelemetryEvent, useFeatureRecorder } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
@@ -45,6 +44,7 @@ import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
 import { MessageBoxProvider } from "./context/MessageBoxContext";
 import { ActivityFeature } from "./featureReports/activityTracking";
+import { AdminInspectObject } from "./CMCoreComponents2";
 
 const drawerWidth = 260;
 

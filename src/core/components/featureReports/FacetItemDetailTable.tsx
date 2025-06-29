@@ -3,8 +3,8 @@ import { useQuery } from "@blitzjs/rpc";
 import { Tooltip as MuiTooltip } from "@mui/material";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
-import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
-import { CMSmallButton } from "../CMCoreComponents2";
+import { AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
+import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
 import { AgeRelativeToNow } from "../RelativeTimeComponents";
 //
 import { TGetFeatureReportDetailResult } from "./activityReportTypes";

@@ -6,8 +6,8 @@ import { QuickSearchItemType, QuickSearchItemTypeSets } from "shared/quickFilter
 import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
-import { InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
+import { CMSmallButton, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
@@ -942,7 +942,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     }}
                 />
             </ButtonGroup>
-            < InspectObject src={docOrTempDoc} label="doc" />
+            <InspectObject src={docOrTempDoc} label="doc" />
             <InspectObject src={stats} label="stats" />
             <div className="nameHeader">{docOrTempDoc.name}</div>
         </div>

@@ -3,7 +3,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel, TUpdateEventWorkflowInstanceArgs, WorkflowNodeProgressState } from "../apiTypes";
-import { BoolField, GhostField, MakeColorAsStringField, MakeDescriptionField, MakeIsDeletedField, MakePKfield, MakeSortOrderField, MakeTitleField } from "../db3basicFields";
+import { BoolField, GhostField, MakeColorAsStringField, MakeDescriptionField, MakePKfield, MakeSortOrderField, MakeTitleField } from "../db3basicFields";
 import * as db3 from "../db3core";
 
 // (todo: refine these)

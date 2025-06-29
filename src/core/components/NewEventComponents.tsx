@@ -12,12 +12,12 @@ import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../db3/components/IconMap";
+import { AppContextMarker } from "./AppContext";
 import { DialogActionsCM } from "./CMCoreComponents2";
 import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { AppContextMarker } from "./AppContext";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -67,7 +67,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//
-        ret.visiblePermission = (dashboardContext.permission.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null) as any;
+        ret.visiblePermission = dashboardContext.getDefaultVisibilityPermission() as any;
         const defaultWorkflow = workflows.find(w => w.isDefaultForEvents);
         if (defaultWorkflow) {
             ret.workflowDef = defaultWorkflow;

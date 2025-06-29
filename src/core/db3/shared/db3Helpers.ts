@@ -1,12 +1,18 @@
 import { assert } from "blitz";
-import db, { Prisma } from "db";
+import db, { Prisma, PrismaClient } from "db";
+import { PermissionSignificance, TransactionalPrismaClient } from "./apiTypes";
 
 // PermissionSignificance.Visibility_Members
-export const GetPermissionIdBySignificance = async (significance: string): Promise<number | null> => {
-    const p = await db.permission.findFirst({
+export const GetDefaultVisibilityPermission = async (dbt: TransactionalPrismaClient) => {
+    return await GetPermissionBySignificance(dbt, PermissionSignificance.Visibility_Members);
+};
+
+// PermissionSignificance.Visibility_Members
+export const GetPermissionBySignificance = async (dbt: TransactionalPrismaClient, significance: string) => {
+    const p = await (dbt as PrismaClient).permission.findFirst({
         where: { significance }
     });
-    return p?.id || null;
+    return p;
 };
 
 export const GetSoftDeleteWhereExpression = (isDeletedColumnName?: string | undefined | null) => {

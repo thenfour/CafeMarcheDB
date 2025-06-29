@@ -10,10 +10,10 @@ import { SettingMarkdown } from './SettingMarkdown';
 import { EnrichedVerboseSong } from './SongComponentsBase';
 
 import { EventAPI } from '../db3/db3';
-import { AdminInspectObject } from './CMCoreComponents';
 import { DashboardContext } from './DashboardContext';
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from './FilterControl';
 import { arraysContainSameValues } from 'shared/arrayUtils';
+import { AdminInspectObject } from './CMCoreComponents2';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

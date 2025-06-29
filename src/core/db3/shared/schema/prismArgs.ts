@@ -124,14 +124,6 @@ export const UserTagSignificance = {
     DefaultInvitation: "DefaultInvitation",
 } as const satisfies Record<string, string>;
 
-export const PermissionSignificance = {
-    General: "General",
-    Visibility_Public: "Visibility_Public",
-    Visibility_LoggedInUsers: "Visibility_LoggedInUsers",
-    Visibility_Members: "Visibility_Members",
-    Visibility_Editors: "Visibility_Editors",
-} as const satisfies Record<string, string>;
-
 export const RoleSignificance = {
     General: "General",
 } as const satisfies Record<string, string>;

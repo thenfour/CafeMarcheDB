@@ -3,10 +3,11 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
+import { SplitQuickFilter } from "shared/quickFilter";
 import { gMillisecondsPerDay } from "shared/time";
 import * as db3 from "../db3";
 import { TGetImportEventDataArgs, TGetImportEventDataRet } from "../shared/apiTypes";
-import { SplitQuickFilter } from "shared/quickFilter";
+import { GetDefaultVisibilityPermission } from "../shared/db3Helpers";
 
 
 
@@ -204,11 +205,7 @@ export default resolver.pipe(
         try {
 
             // visibility
-            ret.event.visiblePermissionId = (await db.permission.findFirst({
-                where: {
-                    significance: db3.PermissionSignificance.Visibility_Members,
-                }
-            }))!.id;
+            ret.event.visiblePermissionId = (await GetDefaultVisibilityPermission(db))?.id || null;
 
             const edr = ExtractDescription(args.text);
             const eventTxt = edr.beforeSeparator;

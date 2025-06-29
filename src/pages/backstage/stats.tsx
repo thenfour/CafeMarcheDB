@@ -1,3 +1,4 @@
+import { AdminInspectObject } from "@/src/core/components/CMCoreComponents2";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import React, { Suspense } from 'react';
@@ -7,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { getEnumValues } from "shared/utils";
 import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
 import { CMChip } from "src/core/components/CMChip";
-import { AdminInspectObject, CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
+import { CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";

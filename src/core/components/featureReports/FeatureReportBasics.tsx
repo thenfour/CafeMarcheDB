@@ -7,11 +7,12 @@ import Identicon from 'react-identicons';
 import { Pie, PieChart, Tooltip } from 'recharts';
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
-import { AdminInspectObject, AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
+import { AttendanceChip, EventChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
 import { AgeRelativeToNow } from "../RelativeTimeComponents";
 //
 import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
 import { ActivityFeature, BrowserIconMap, Browsers, DeviceClasses, DeviceClassIconMap, OperatingSystem, OSIconMap, PointerTypeIconMap, PointerTypes } from "./activityTracking";
+import { AdminInspectObject } from "../CMCoreComponents2";
 
 export const CMAdhocChipContainer = ({ children }: { children: React.ReactNode }) => {
     return <div className="adHocChipContainer">

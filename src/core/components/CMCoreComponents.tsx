@@ -2,7 +2,6 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { useSession } from "@blitzjs/auth";
 //import dynamic from 'next/dynamic';
 import { Prisma } from "db";
 import React, { Suspense } from "react";
@@ -13,17 +12,17 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Icon, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { CalcRelativeTimingFromNow, formatTimeSpan, Timing } from "shared/time";
+import { Timing, formatTimeSpan } from "shared/time";
 import { getURIForEvent, getURIForFile, getURIForSong } from "../db3/clientAPILL";
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
+import { RenderMuiIcon } from "../db3/components/IconMap";
+import { useDb3Query } from "../db3/DB3Client";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
+import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
 import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
+import { CMLink } from "./CMLink";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
-import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
-import { CMLink } from "./CMLink";
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { useDb3Query } from "../db3/DB3Client";
 import { Markdown } from "./markdown/Markdown";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
@@ -111,38 +110,6 @@ export const EditTextField = (props: EditTextFieldProps) => {
         value={props.value}
     />;
 };
-
-export const AdminContainer = (props: React.PropsWithChildren<{}>) => {
-    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-    const show = sess.isSysAdmin && sess.showAdminControls;
-    if (!show) return null;
-    return <>{props.children}</>;
-};
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export const InspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
-    return <div className='debugInspectorOpen' onClick={() => {
-        if (props.label || props.tooltip) {
-            console.log(`Dumping object: ${props.label || props.tooltip}`);
-        }
-        console.log(props.src);
-    }}>{gIconMap.Visibility()} {props.label}</div>
-};
-
-
-export const AdminInspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
-    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-    const show = sess.isSysAdmin && sess.showAdminControls;
-    if (!show) return null;
-    return <InspectObject {...props} />;
-};
-
-
-
 
 ////////////////////////////////////////////////////////////////
 interface TabPanelProps {
@@ -402,7 +369,6 @@ export const WikiPageChip = (props: WikiPageChipProps) => {
 export const DateValue = (props: { value: Date | undefined | null }) => {
     if (!props.value) return <span className="DateValue null">--</span>;
     const now = React.useMemo(() => new Date(), []);
-    //const rel = CalcRelativeTimingFromNow(props.value); // this will update the relative timing in the future, so we don't need to do it here.
     return <span className="DateValue">{props.value.toLocaleDateString()} ({formatTimeSpan(props.value, now)} ago)</span>
 }
 

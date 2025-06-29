@@ -7,6 +7,7 @@ import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TAcquireLockOnWikiPageArgs, WikiPageApiPayload, WikiPageApiPayloadArgs, wikiParseCanonicalWikiPath, ZTAcquireLockOnWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
+import { GetDefaultVisibilityPermission } from "../../db3/shared/db3Helpers";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -40,11 +41,12 @@ export default resolver.pipe(
             // page must be created in order to store lock info.
             if (!currentPage) {
                 const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
+                const visPerm = await GetDefaultVisibilityPermission(dbt);
                 currentPage = await dbt.wikiPage.create({
                     data: {
                         slug: args.canonicalWikiPath,
                         namespace: wikiPath.namespace,
-                        visiblePermissionId: null,
+                        visiblePermissionId: visPerm?.id || null,
                         createdByUserId: currentUser.id,
                     },
                     ...WikiPageApiPayloadArgs,

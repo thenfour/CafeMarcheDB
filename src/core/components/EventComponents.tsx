@@ -28,8 +28,8 @@ import { GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet }
 import { wikiMakeWikiPathFromEventDescription } from '../wiki/shared/wikiUtils';
 import { AppContextMarker } from './AppContext';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
-import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
-import { CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { AttendanceChip, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
+import { AdminInspectObject, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
@@ -1310,21 +1310,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
             </CMChipContainer>
 
 
-            {
-                isShowingAdminControls && <>
-                    <NameValuePair
-                        isReadOnly={true}
-                        name={"eventId"}
-                        value={eventData.event.id}
-                    />
-                    <NameValuePair
-                        isReadOnly={true}
-                        name={"revision"}
-                        value={eventData.event.revision}
-                    />
-                    <InspectObject src={eventData} />
-                </>
-            }
+            <AdminInspectObject src={eventData} />
 
             {tableClient &&
                 <EditFieldsDialogButton
@@ -1668,21 +1654,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
                 </CMChipContainer>
 
-                {
-                    dashboardContext.isShowingAdminControls && <>
-                        <NameValuePair
-                            isReadOnly={true}
-                            name={"eventId"}
-                            value={event.id}
-                        />
-                        <NameValuePair
-                            isReadOnly={true}
-                            name={"revision"}
-                            value={event.revision}
-                        />
-                        <InspectObject src={event} />
-                    </>
-                }
+                <AdminInspectObject src={event} />
 
                 {!reducedInfo &&
                     <EventDotMenu event={event} showVisibility={false} />}

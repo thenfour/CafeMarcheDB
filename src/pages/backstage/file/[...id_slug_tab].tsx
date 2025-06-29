@@ -1,7 +1,7 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
-import { AdminInspectObject, DateValue, EventChip, FileTagChip, InspectObject, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
-import { KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
+import { DateValue, EventChip, FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
+import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
 import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
@@ -19,7 +19,6 @@ import db from "db";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext, useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";

@@ -598,3 +598,30 @@ export const DotMenu = (props: React.PropsWithChildren<{ setCloseMenuProc: (proc
     </>;
 };
 
+
+export const AdminContainer = (props: React.PropsWithChildren<{}>) => {
+    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
+    const show = sess.isSysAdmin && sess.showAdminControls;
+    if (!show) return null;
+    return <>{props.children}</>;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export const InspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
+    return <div className='debugInspectorOpen' onClick={() => {
+        if (props.label || props.tooltip) {
+            console.log(`Dumping object: ${props.label || props.tooltip}`);
+        }
+        console.log(props.src);
+    }}>{gIconMap.Visibility()} {props.label}</div>
+};
+
+
+export const AdminInspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
+    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
+    const show = sess.isSysAdmin && sess.showAdminControls;
+    if (!show) return null;
+    return <InspectObject {...props} />;
+};
+

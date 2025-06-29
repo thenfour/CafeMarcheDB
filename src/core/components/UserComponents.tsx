@@ -17,8 +17,8 @@ import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../db3/queries/getUserWikiContributions";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
 import { CMChipContainer, CMStandardDBChip } from "./CMChip";
-import { AdminInspectObject, AttendanceChip, EventTextLink, InspectObject, InstrumentChip, SongChip } from "./CMCoreComponents";
-import { CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
+import { AttendanceChip, EventTextLink, InstrumentChip, SongChip } from "./CMCoreComponents";
+import { AdminInspectObject, CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
 import { SongsProvider, useSongsContext } from "./SongsContext";
@@ -457,14 +457,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
                 <div className='flex-spacer'></div>
 
-                {
-                    dashboardContext.isShowingAdminControls && <>
-                        <KeyValueTable
-                            data={{ userId: user.id }}
-                        />
-                        <InspectObject src={user} />
-                    </>
-                }
+                <AdminInspectObject src={user} />
 
             </div>{/* title line */}
 

@@ -9,8 +9,7 @@ import { callAsync, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace } from
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
-import { AdminContainer, AdminInspectObject, InspectObject } from "./CMCoreComponents";
-import { NameValuePair } from "./CMCoreComponents2";
+import { AdminContainer, AdminInspectObject, InspectObject, NameValuePair } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";

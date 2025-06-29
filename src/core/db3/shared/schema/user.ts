@@ -5,10 +5,10 @@ import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TableAccessor } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
-import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
+import { CMDBTableFilterModel, PermissionSignificance, TAnyModel } from "../apiTypes";
 import { BoolField, DB3AuthSpec, ForeignSingleField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, PermissionSignificance, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 
 // for basic user fields.
 // everyone can view
