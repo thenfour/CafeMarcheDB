@@ -1,3 +1,4 @@
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { BlitzPage } from "@blitzjs/next";
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
@@ -8,23 +9,21 @@ import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { IsNullOrWhitespace, arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { AdminInspectObject, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
+import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { CMLink } from "src/core/components/CMLink";
 import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
-import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewSongButton } from "src/core/components/NewSongComponents";
+import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/SongComponentsBase";
 import { useSongListData } from "src/core/components/SongSearch";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 type SongListItemProps = {
     index: number;
@@ -280,83 +279,35 @@ const SongListOuter = () => {
             };
             return staticSpec;
         }
-    });
+    }); const { enrichedItems, results, loadMoreData } = useSongListData(searchPage.filterSpec);
 
-    const { enrichedItems, results, loadMoreData } = useSongListData(searchPage.filterSpec); return <>
-        <CMSinglePageSurfaceCard className="filterControls">
-            <div className="content">
+    // Configure filter groups for the generic component
+    const filterGroups = [
+        createFilterGroupConfig("tags", "Tags", "tags", "tags", tagFilter, (x) => {
+            if (!x.id) return x;
+            const tag = dashboardContext.songTag.getById(x.id)!;
+            return {
+                ...x,
+                color: tag.color,
+                label: tag.text,
+                shape: "rounded",
+                tooltip: tag.description,
+            };
+        }),
+    ];
 
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
-                <AdminInspectObject src={results} label="Results obj" />
-                <FilterControls
-                    inCard={false}
-                    onQuickFilterChange={searchPage.setQuickFilter}
-                    onResetFilter={searchPage.resetToDefaults}
-                    hasAnyFilters={searchPage.hasAnyFilters}
-                    hasExtraFilters={searchPage.hasExtraFilters}
-                    quickFilterText={searchPage.filterSpec.quickFilter}
-                    primaryFilter={
-                        <div>
-                            <CMChipContainer>
-                                {
-                                    gStaticFilters.map(e => {
-                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
-                                        return <CMChip
-                                            key={e.label}
-                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
-                                            variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
-                                            shape="rectangle"
-                                        >
-                                            {e.label}
-                                        </CMChip>;
-                                    })
-                                }
-                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
-                            </CMChipContainer>
-                        </div>
-                    }
-                    extraFilter={
-                        <div>
-                            <TagsFilterGroup
-                                label={"Tags"}
-                                style="tags" filterEnabled={tagFilter.enabled}
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
-                                value={tagFilter.criterion}
-                                onChange={(n, enabled) => {
-                                    tagFilter.setEnabled(enabled);
-                                    tagFilter.setCriterion(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "tags")?.items || []}
-                                sanitize={x => {
-                                    if (!x.id) return x;
-                                    const tag = dashboardContext.songTag.getById(x.id)!;
-                                    return {
-                                        ...x,
-                                        color: tag.color,
-                                        label: tag.text,
-                                        shape: "rounded",
-                                        tooltip: tag.description,
-                                    };
-                                }}
-                            />
-
-                        </div>
-                    } // extra filter
-                    footerFilter={
-                        <div>
-                            <div className="divider" />
-                            <SortByGroup
-                                columnOptions={Object.keys(SongOrderByColumnOptions)}
-                                setValue={searchPage.setSortModel}
-                                value={searchPage.sortModel}
-                            />
-                        </div>
-                    }
-                />
-            </div>
-
-        </CMSinglePageSurfaceCard >
+    return <>
+        <SearchPageFilterControls
+            searchPage={searchPage}
+            staticFilters={gStaticFilters}
+            filterGroups={filterGroups}
+            sortConfig={{
+                columnOptions: Object.keys(SongOrderByColumnOptions),
+                columnOptionsEnum: SongOrderByColumnOptions,
+            }}
+            results={results}
+            showAdminControls={true}
+        />
         <SongsList
             filterSpec={searchPage.filterSpec}
             songs={enrichedItems}

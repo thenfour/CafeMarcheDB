@@ -1,3 +1,4 @@
+import { CMLink } from "@/src/core/components/CMLink";
 import { BlitzPage } from "@blitzjs/next";
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
@@ -7,23 +8,21 @@ import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/FileComponentsBase";
 import { useFileListData } from "src/core/components/FileSearch";
-import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
+import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { NavRealm } from "src/core/components/Dashboard2";
-import { CMLink } from "@/src/core/components/CMLink";
+import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {
@@ -316,135 +315,24 @@ const FileListOuter = () => {
         }
     }); const { enrichedFiles, results, loadMoreData } = useFileListData(searchPage.filterSpec);
 
-    return <>
-        <CMSinglePageSurfaceCard className="filterControls">
-            <div className="content">
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
-                <AdminInspectObject src={results} label="Results obj" />
+    // Configure filter groups for the generic component
+    const filterGroups = [
+        createFilterGroupConfig("tags", "File tags", "tags", "tags", tagFilter),
+        createFilterGroupConfig("taggedInstruments", "Tagged instruments", "tags", "taggedInstruments", taggedInstrumentFilter),
+    ];
 
-                <FilterControls
-                    inCard={false}
-                    onQuickFilterChange={searchPage.setQuickFilter}
-                    onResetFilter={searchPage.resetToDefaults}
-                    hasAnyFilters={searchPage.hasAnyFilters}
-                    hasExtraFilters={searchPage.hasExtraFilters}
-                    quickFilterText={searchPage.filterSpec.quickFilter} primaryFilter={
-                        <div>
-                            <CMChipContainer>
-                                {
-                                    gStaticFilters.map(e => {
-                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
-                                        return <CMChip
-                                            key={e.label}
-                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
-                                            variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
-                                            shape="rectangle"
-                                        >
-                                            {e.label}
-                                        </CMChip>;
-                                    })
-                                }
-                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
-                            </CMChipContainer>
-                        </div>
-                    }
-                    extraFilter={
-                        <div>                            <TagsFilterGroup
-                            style="tags"
-                            filterEnabled={tagFilter.enabled}
-                            items={results.facets?.find(f => f.db3Column === "tags")?.items || []}
-                            value={tagFilter.criterion}
-                            onChange={(v, enabled) => {
-                                tagFilter.setEnabled(enabled);
-                                tagFilter.setCriterion(v);
-                            }}
-                            errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "tags")?.error}
-                            label="File tags"
-                        />
-                            <div className="divider" />
-                            {/* <TagsFilterGroup
-                                style="foreignSingle"
-                                filterEnabled={uploaderFilterEnabled}
-                                items={results.facets?.find(f => f.db3Column === "uploadedByUser")?.items || []}
-                                value={uploaderFilterWhenEnabled}
-                                onChange={(v, enabled) => {
-                                    setUploaderFilterEnabled(enabled);
-                                    setUploaderFilterBehaviorWhenEnabled(v.behavior);
-                                    setUploaderFilterOptionsWhenEnabled(v.options as number[]);
-                                }}
-                                errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "uploadedByUser")?.error}
-                                label="Uploaded by"
-                            />
-                            <div className="divider" />
-                            <TagsFilterGroup
-                                style="tags"
-                                filterEnabled={taggedUserFilterEnabled}
-                                items={results.facets?.find(f => f.db3Column === "taggedUsers")?.items || []}
-                                value={taggedUserFilterWhenEnabled}
-                                onChange={(v, enabled) => {
-                                    setTaggedUserFilterEnabled(enabled);
-                                    setTaggedUserFilterBehaviorWhenEnabled(v.behavior);
-                                    setTaggedUserFilterOptionsWhenEnabled(v.options as number[]);
-                                }}
-                                errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "taggedUsers")?.error}
-                                label="Tagged users"
-                            />
-                            <div className="divider" />
-                            <TagsFilterGroup
-                                style="tags"
-                                filterEnabled={taggedEventFilterEnabled}
-                                items={results.facets?.find(f => f.db3Column === "taggedEvents")?.items || []}
-                                value={taggedEventFilterWhenEnabled}
-                                onChange={(v, enabled) => {
-                                    setTaggedEventFilterEnabled(enabled);
-                                    setTaggedEventFilterBehaviorWhenEnabled(v.behavior);
-                                    setTaggedEventFilterOptionsWhenEnabled(v.options as number[]);
-                                }}
-                                errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "taggedEvents")?.error}
-                                label="Tagged events"
-                            />
-                            <div className="divider" />
-                            <TagsFilterGroup
-                                style="tags"
-                                filterEnabled={taggedSongFilterEnabled}
-                                items={results.facets?.find(f => f.db3Column === "taggedSongs")?.items || []}
-                                value={taggedSongFilterWhenEnabled}
-                                onChange={(v, enabled) => {
-                                    setTaggedSongFilterEnabled(enabled);
-                                    setTaggedSongFilterBehaviorWhenEnabled(v.behavior);
-                                    setTaggedSongFilterOptionsWhenEnabled(v.options as number[]);
-                                }}
-                                errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "taggedSongs")?.error}
-                                label="Tagged songs"
-                            />
-                            <div className="divider" /> */}                            <TagsFilterGroup
-                                style="tags"
-                                filterEnabled={taggedInstrumentFilter.enabled}
-                                items={results.facets?.find(f => f.db3Column === "taggedInstruments")?.items || []}
-                                value={taggedInstrumentFilter.criterion}
-                                onChange={(v, enabled) => {
-                                    taggedInstrumentFilter.setEnabled(enabled);
-                                    taggedInstrumentFilter.setCriterion(v);
-                                }}
-                                errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "taggedInstruments")?.error}
-                                label="Tagged instruments"
-                            />
-                        </div>
-                    }
-                    footerFilter={
-                        <div>
-                            <div className="divider" />
-                            <SortByGroup
-                                columnOptions={Object.keys(FileOrderByColumnOptions)}
-                                setValue={searchPage.setSortModel}
-                                value={searchPage.sortModel}
-                            />
-                        </div>
-                    }
-                />
-            </div>
-        </CMSinglePageSurfaceCard>
+    return <>
+        <SearchPageFilterControls
+            searchPage={searchPage}
+            staticFilters={gStaticFilters}
+            filterGroups={filterGroups}
+            sortConfig={{
+                columnOptions: Object.keys(FileOrderByColumnOptions),
+                columnOptionsEnum: FileOrderByColumnOptions,
+            }}
+            results={results}
+            showAdminControls={true}
+        />
         <FilesList
             filterSpec={searchPage.filterSpec}
             files={enrichedFiles}

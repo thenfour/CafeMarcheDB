@@ -2,28 +2,25 @@ import { BlitzPage } from "@blitzjs/next";
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { AdminInspectObject, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/EventComponents";
 import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
 import { useEventListData } from 'src/core/components/EventSearch';
-import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewEventButton } from "src/core/components/NewEventComponents";
+import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -365,114 +362,28 @@ const EventListOuter = () => {
             };
             return staticSpec;
         }
-    });
+    }); const { enrichedEvents, results, loadMoreData } = useEventListData(searchPage.filterSpec);
 
-    const { enrichedEvents, results, loadMoreData } = useEventListData(searchPage.filterSpec); return <>
-        <CMSinglePageSurfaceCard className="filterControls">
-            <div className="content">
+    // Configure filter groups for the generic component
+    const filterGroups = [
+        createFilterGroupConfig("status", "Status", "foreignSingle", "status", statusFilter),
+        createFilterGroupConfig("type", "Type", "foreignSingle", "type", typeFilter),
+        createFilterGroupConfig("tags", "Tags", "tags", "tags", tagFilter),
+        createFilterGroupConfig("date", "Date", "radio", "startsAt", dateFilter),
+    ];
 
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
-                <AdminInspectObject src={results} label="Results obj" />
-                {/* <AdminInspectObject src={fetchHistory} label="Fetch history" /> */}
-
-                {/* <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} /> */}
-                <FilterControls
-                    inCard={false}
-                    onQuickFilterChange={searchPage.setQuickFilter}
-                    onResetFilter={searchPage.resetToDefaults}
-                    hasAnyFilters={searchPage.hasAnyFilters}
-                    hasExtraFilters={searchPage.hasExtraFilters}
-                    quickFilterText={searchPage.filterSpec.quickFilter}
-                    primaryFilter={
-                        <div>
-                            <CMChipContainer>
-                                {
-                                    gStaticFilters.map(e => {
-                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
-                                        return <CMChip
-                                            key={e.label}
-                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
-                                            variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
-                                            shape="rectangle"
-                                        >
-                                            {e.label}
-                                        </CMChip>;
-                                    })
-                                }
-                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
-                            </CMChipContainer>
-                        </div>
-                    }
-                    extraFilter={
-                        <div>                            <TagsFilterGroup
-                            label={"Status"}
-                            style="foreignSingle"
-                            errorMessage={results?.filterQueryResult.errors.find(x => x.column === "status")?.error}
-                            value={statusFilter.criterion}
-                            filterEnabled={statusFilter.enabled}
-                            onChange={(n, enabled) => {
-                                statusFilter.setEnabled(enabled);
-                                statusFilter.setCriterion(n);
-                            }}
-                            items={results.facets.find(f => f.db3Column === "status")?.items || []}
-                        />
-                            <div className="divider" />
-                            <TagsFilterGroup
-                                label={"Type"}
-                                style="foreignSingle"
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "type")?.error}
-                                value={typeFilter.criterion}
-                                filterEnabled={typeFilter.enabled}
-                                onChange={(n, enabled) => {
-                                    typeFilter.setEnabled(enabled);
-                                    typeFilter.setCriterion(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "type")?.items || []}
-                            />
-                            <div className="divider" />
-                            <TagsFilterGroup
-                                label={"Tags"}
-                                style="tags"
-                                filterEnabled={tagFilter.enabled}
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
-                                value={tagFilter.criterion}
-                                onChange={(n, enabled) => {
-                                    tagFilter.setEnabled(enabled);
-                                    tagFilter.setCriterion(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "tags")?.items || []}
-                            />
-                            <div className="divider" />
-                            <TagsFilterGroup
-                                label={"Date"}
-                                style="radio"
-                                filterEnabled={dateFilter.enabled}
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
-                                value={dateFilter.criterion}
-                                onChange={(n, enabled) => {
-                                    dateFilter.setEnabled(enabled);
-                                    dateFilter.setCriterion(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "startsAt")?.items || []}
-                            />
-
-                        </div>
-                    } // extra filter
-                    footerFilter={
-                        <div>
-                            <div className="divider" />
-                            <SortByGroup
-                                columnOptions={Object.keys(EventOrderByColumnOptions)}
-                                setValue={searchPage.setSortModel}
-                                value={searchPage.sortModel}
-                            />
-                        </div>
-                    }
-                />
-            </div>
-
-        </CMSinglePageSurfaceCard >
+    return <>
+        <SearchPageFilterControls
+            searchPage={searchPage}
+            staticFilters={gStaticFilters}
+            filterGroups={filterGroups}
+            sortConfig={{
+                columnOptions: Object.keys(EventOrderByColumnOptions),
+                columnOptionsEnum: EventOrderByColumnOptions,
+            }}
+            results={results}
+            showAdminControls={true}
+        />
         <EventsList
             filterSpec={searchPage.filterSpec}
             events={enrichedEvents}

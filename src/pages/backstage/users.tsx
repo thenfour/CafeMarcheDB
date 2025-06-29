@@ -7,10 +7,9 @@ import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { arrayToTSV } from "shared/utils";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { AdminInspectObject, CMSmallButton, GoogleIconSmall } from "src/core/components/CMCoreComponents2";
 import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
-import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
+import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "src/core/components/UserComponents";
@@ -18,9 +17,9 @@ import { useUserListData } from "src/core/components/UserSearch";
 import { getURIForUser } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 
 type UserListItemProps = {
@@ -316,131 +315,58 @@ const UserListOuter = () => {
         }
     }); const { enrichedItems, results, loadMoreData } = useUserListData(searchPage.filterSpec);
 
+    // Configure filter groups for the generic component
+    const filterGroups = [
+        createFilterGroupConfig("tags", "Tags", "tags", "tags", tagFilter, (x) => {
+            if (!x.id) return x;
+            const tag = dashboardContext.userTag.getById(x.id)!;
+            return {
+                ...x,
+                color: tag.color || null,
+                label: tag.text,
+                shape: "rounded",
+                tooltip: tag.description,
+            };
+        }),
+        createFilterGroupConfig("role", "Role", "foreignSingle", "role", roleFilter, (x) => {
+            if (!x.id) return x;
+            const role = dashboardContext.role.getById(x.id)!;
+            return {
+                ...x,
+                color: role.color || null,
+                label: role.name,
+                shape: "rectangle",
+                tooltip: role.description,
+            };
+        }),
+        createFilterGroupConfig("instruments", "Instruments", "tags", "instruments", instrumentFilter, (x) => {
+            if (!x.id) return x;
+            const instrument = dashboardContext.instrument.getById(x.id);
+            if (!instrument) return x;
+            const instrumentGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
+            if (!instrumentGroup) return x;
+            return {
+                ...x,
+                color: instrumentGroup.color || null,
+                label: instrument.name,
+                shape: "rounded",
+                tooltip: instrument.description,
+            };
+        }),
+    ];
+
     return <>
-        <CMSinglePageSurfaceCard className="filterControls">
-            <div className="content">
-
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
-                <AdminInspectObject src={results} label="Results obj" />
-                <FilterControls
-                    inCard={false}
-                    onQuickFilterChange={searchPage.setQuickFilter}
-                    onResetFilter={searchPage.resetToDefaults}
-                    hasAnyFilters={searchPage.hasAnyFilters}
-                    hasExtraFilters={searchPage.hasExtraFilters}
-                    quickFilterText={searchPage.filterSpec.quickFilter} primaryFilter={
-                        <div>
-                            <CMChipContainer>
-                                {
-                                    gStaticFilters.map(e => {
-                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
-                                        return <CMChip
-                                            key={e.label}
-                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
-                                            variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
-                                            shape="rectangle"
-                                        >
-                                            {e.label}
-                                        </CMChip>;
-                                    })
-                                }
-                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
-                            </CMChipContainer>
-                        </div>
-                    }
-                    extraFilter={
-                        <div>                            <TagsFilterGroup
-                            label={"Tags"}
-                            style="tags"
-                            filterEnabled={tagFilter.enabled}
-                            errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
-                            value={tagFilter.criterion}
-                            onChange={(n, enabled) => {
-                                tagFilter.setEnabled(enabled);
-                                tagFilter.setCriterion(n);
-                            }}
-                            items={results.facets.find(f => f.db3Column === "tags")?.items || []}
-                            sanitize={x => {
-                                if (!x.id) return x;
-                                const tag = dashboardContext.userTag.getById(x.id)!;
-                                return {
-                                    ...x,
-                                    color: tag.color || null,
-                                    label: tag.text,
-                                    shape: "rounded",
-                                    tooltip: tag.description,
-                                };
-                            }}
-                        />
-
-                            <div className="divider" />                            <TagsFilterGroup
-                                label={"Role"}
-                                style="foreignSingle"
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "role")?.error}
-                                value={roleFilter.criterion}
-                                filterEnabled={roleFilter.enabled}
-                                onChange={(n, enabled) => {
-                                    roleFilter.setEnabled(enabled);
-                                    roleFilter.setCriterion(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "role")?.items || []}
-                                sanitize={x => {
-                                    if (!x.id) return x;
-                                    const role = dashboardContext.role.getById(x.id)!;
-                                    return {
-                                        ...x,
-                                        color: role.color || null,
-                                        label: role.name,
-                                        shape: "rectangle",
-                                        tooltip: role.description,
-                                    };
-                                }}
-                            />
-
-                            <div className="divider" />                            <TagsFilterGroup
-                                label={"Instruments"}
-                                style="tags"
-                                filterEnabled={instrumentFilter.enabled}
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "instruments")?.error}
-                                value={instrumentFilter.criterion}
-                                onChange={(n, enabled) => {
-                                    instrumentFilter.setEnabled(enabled);
-                                    instrumentFilter.setCriterion(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "instruments")?.items || []}
-                                sanitize={x => {
-                                    if (!x.id) return x;
-                                    const instrument = dashboardContext.instrument.getById(x.id);
-                                    if (!instrument) return x;
-                                    const instrumentGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
-                                    if (!instrumentGroup) return x;
-                                    return {
-                                        ...x,
-                                        color: instrumentGroup.color || null,
-                                        label: instrument.name,
-                                        shape: "rounded",
-                                        tooltip: instrument.description,
-                                    };
-                                }}
-                            />
-
-                        </div>
-                    } // extra filter
-                    footerFilter={
-                        <div>
-                            <div className="divider" />
-                            <SortByGroup
-                                columnOptions={Object.keys(UserOrderByColumnOptions)}
-                                setValue={searchPage.setSortModel}
-                                value={searchPage.sortModel}
-                            />
-                        </div>
-                    }
-                />
-            </div>
-
-        </CMSinglePageSurfaceCard>
+        <SearchPageFilterControls
+            searchPage={searchPage}
+            staticFilters={gStaticFilters}
+            filterGroups={filterGroups}
+            sortConfig={{
+                columnOptions: Object.keys(UserOrderByColumnOptions),
+                columnOptionsEnum: UserOrderByColumnOptions,
+            }}
+            results={results}
+            showAdminControls={true}
+        />
         <UsersList
             filterSpec={searchPage.filterSpec}
             users={enrichedItems}
