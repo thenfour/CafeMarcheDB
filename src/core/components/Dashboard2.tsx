@@ -617,7 +617,7 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
 
     for (let iItem = 0; iItem < items.length; ++iItem) {
         const item = items[iItem]!;
-        if (!dashboardContext.isAuthorizedPermissionId(item.visiblePermissionId)) continue;
+        if (!dashboardContext.isAuthorizedForVisibility(item.visiblePermissionId, item.createdByUserId)) continue;
         const menuItem = DynMenuToMenuItem(item, dashboardContext);
         if (!menuItem) continue;
 

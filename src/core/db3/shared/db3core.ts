@@ -522,9 +522,6 @@ export class xTable /* implements TableDesc*/ {
         // for each sql special column, find its field.
         const findFieldWithFunction = (functionName: SqlSpecialColumnFunction): FieldBase<unknown> | undefined => {
             const ret = args.columns.find(c => c.specialFunction === functionName);
-            // if (ret) {
-            //     console.log(`on table ${this.tableID} -> Found SQL special column "${ret.member}" as "${functionName}"`);
-            // }
             return ret;
         };
 
@@ -538,6 +535,18 @@ export class xTable /* implements TableDesc*/ {
         args.columns.forEach(field => {
             field.connectToTable(this);
         });
+
+        // sanity checks.
+        // we could check if there are conflicting or dupilcate columns / functions.
+        if (this.SqlSpecialColumns.visiblePermission && !this.SqlSpecialColumns.ownerUser) {
+            // fallback to a createdByUser
+            if (this.SqlSpecialColumns.createdByUser) {
+                this.SqlSpecialColumns.ownerUser = this.SqlSpecialColumns.createdByUser;
+            } else {
+                // if no owner user, then we cannot have a visiblePermission column. this allows "private" visibility.
+                assert(false, `table ${this.tableID} has a visiblePermission column but no owner column. this is not allowed.`);
+            }
+        }
     }
 
     // AND this into your query to apply visibility & soft delete logic.

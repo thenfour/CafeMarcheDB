@@ -210,6 +210,7 @@ model User {
   creatorForEvents               Event[]                @relation("EventCreatedBy")
   updatedForEvents               Event[]                @relation("EventUpdatedBy")
   creatorForFrontpageGalleryItem FrontpageGalleryItem[]
+  creatorForWikiPages            WikiPage[]             @relation("WikiPageCreatedBy")
 
   workflowNodeDefaultAssignees      WorkflowDefNodeDefaultAssignee[]
   workflowNodeInstanceAssignees     WorkflowInstanceNodeAssignee[]
@@ -1075,6 +1076,10 @@ model WikiPage {
   lockExpiresAt  DateTime?
   lockId         String? // users can open a pagk more than once; this is associated to the specific rendering tree of this editing page.
   lastEditPingAt DateTime? // last time the page automatically sent an "I'm editing" ping. used to detect stale locks early.
+
+  createdByUserId Int?
+  createdByUser   User?     @relation(name: "WikiPageCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime? @default(now())
 
   events  Event?   @relation("eventDescriptionWikiPage")
   actions Action[]

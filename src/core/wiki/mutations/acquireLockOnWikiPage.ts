@@ -45,6 +45,7 @@ export default resolver.pipe(
                         slug: args.canonicalWikiPath,
                         namespace: wikiPath.namespace,
                         visiblePermissionId: null,
+                        createdByUserId: currentUser.id,
                     },
                     ...WikiPageApiPayloadArgs,
                 });

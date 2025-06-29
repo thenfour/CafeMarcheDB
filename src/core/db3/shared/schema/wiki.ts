@@ -54,6 +54,8 @@ export const xWikiPage = new db3.xTable({
     tableAuthMap: xTableAuthMap,
     columns: [
         MakePKfield(),
+        MakeCreatedByField(),
+        MakeCreatedAtField(),
         MakeVisiblePermissionField({ authMap: xAuthMap, }),
         new GenericStringField({
             columnName: "slug",

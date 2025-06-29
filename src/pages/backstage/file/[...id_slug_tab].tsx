@@ -120,7 +120,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                         <Markdown markdown={file.description} />
                     </div>
                 )}
-                <VisibilityValue permissionId={file.visiblePermissionId} variant='minimal' />
+                <div style={{ display: "flex" }}><VisibilityValue permissionId={file.visiblePermissionId} variant='minimal' /></div>
             </div>
 
             <KeyValueTable

@@ -1458,7 +1458,7 @@ export abstract class DashboardContextDataBase {
     instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
     eventCustomField: TableAccessor<Prisma.EventCustomFieldGetPayload<{}>>;
 
-    dynMenuLinks: TableAccessor<Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>>;
+    dynMenuLinks: TableAccessor<Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>>;
 
     permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     role: TableAccessor<Prisma.RoleGetPayload<{}>>;

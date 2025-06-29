@@ -170,6 +170,7 @@ const CreateWikiPage = async (args: TUpdateWikiPageArgs, currentUserId: number, 
             slug: args.canonicalWikiPath,
             namespace: wikiPath.namespace,
             visiblePermissionId: visiblePermission?.id,
+            createdByUserId: currentUserId,
         },
         ...WikiPageApiPayloadArgs,
     });

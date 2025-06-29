@@ -40,10 +40,22 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
         return !!(this.session.permissions?.some(pp => pp === p));
     }
 
-    isAuthorizedPermissionId(pid: number | null) {
-        const pobj = this.permission.getById(pid);
+    // isAuthorizedPermissionId(pid: number | null) {
+    //     const pobj = this.permission.getById(pid);
+    //     if (!pobj) {
+    //         return false;
+    //     }
+    //     return this.isAuthorized(pobj.name);
+    // }
+
+    isAuthorizedForVisibility(visibilityPermissionId: number | null, ownerUserId: number | null) {
+        if (visibilityPermissionId == null) {
+            return ownerUserId === null || ownerUserId === this.currentUser?.id;
+        }
+        const pobj = this.permission.getById(visibilityPermissionId);
         if (!pobj) {
-            return false;
+            console.error(`Unknown visibility permission ID: ${visibilityPermissionId}`);
+            return false; // unknown permission??
         }
         return this.isAuthorized(pobj.name);
     }
@@ -208,12 +220,18 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(dashboardData.instrumentFunctionalGroup);
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
-    valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks);
     valueRef.current.eventCustomField = new TableAccessor(dashboardData.eventCustomField);
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
 
-    // because of enrichment, this is at the end of the list.
+    // do enrichment after fundamentals are set up.
+    valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks.map(link => {
+        return {
+            ...link,
+            visiblePermission: valueRef.current.permission.getById(link.visiblePermissionId),
+        }
+    }));
+
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => db3.enrichInstrument(i, valueRef.current)));
 
     return (
