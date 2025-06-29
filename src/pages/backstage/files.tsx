@@ -2,7 +2,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { arraysContainSameValues } from "shared/arrayUtils";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
@@ -10,11 +9,11 @@ import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { AdminInspectObject, CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
+import { AdminInspectObject, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/FileComponentsBase";
 import { useFileListData } from "src/core/components/FileSearch";
-import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
+import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { getURIForFile, getURIForFileLandingPage } from "src/core/db3/clientAPILL";
@@ -24,7 +23,7 @@ import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { CMLink } from "@/src/core/components/CMLink";
-import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
+import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {
@@ -262,21 +261,7 @@ const FileListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const [refreshSerial, setRefreshSerial] = React.useState<number>(1);
-
-    // URL state management
-    const [quickFilter, setQuickFilter] = useURLState<string>("f", "");
-    const [sortColumn, setSortColumn] = useURLState<FileOrderByColumnOption>("sc", FileOrderByColumnOptions.uploadedAt);
-    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", "desc"); const sortModel: SortBySpec = {
-        columnName: sortColumn,
-        direction: sortDirection,
-    };
-    const setSortModel = (x: SortBySpec) => {
-        setSortColumn(x.columnName as FileOrderByColumnOption);
-        setSortDirection(x.direction);
-    };
-
-    // "ta" prefix - Using useDiscreteFilter hook
+    // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
         urlPrefix: "ta",
         db3Column: "tags",
@@ -285,182 +270,74 @@ const FileListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
     });
 
-    // "ti" prefix - Using useDiscreteFilter hook
     const taggedInstrumentFilter = useDiscreteFilter({
         urlPrefix: "ti",
         db3Column: "taggedInstruments",
         defaultBehavior: gDefaultStaticFilterValue.taggedInstrumentFilterBehavior,
         defaultOptions: gDefaultStaticFilterValue.taggedInstrumentFilterOptions,
         defaultEnabled: gDefaultStaticFilterValue.taggedInstrumentFilterEnabled,
-    });    // Build the filter spec
-    //const typeFilterWhenEnabled: DiscreteCriterion = { db3Column: "mimeType", behavior: typeFilterBehaviorWhenEnabled, options: typeFilterOptionsWhenEnabled };
-    //const uploaderFilterWhenEnabled: DiscreteCriterion = { db3Column: "uploadedByUser", behavior: uploaderFilterBehaviorWhenEnabled, options: uploaderFilterOptionsWhenEnabled };
-    //const sizeFilterWhenEnabled: DiscreteCriterion = { db3Column: "sizeBytes", behavior: sizeFilterBehaviorWhenEnabled, options: sizeFilterOptionsWhenEnabled };
-    // const taggedUserFilterWhenEnabled: DiscreteCriterion = { db3Column: "taggedUsers", behavior: taggedUserFilterBehaviorWhenEnabled, options: taggedUserFilterOptionsWhenEnabled };
-    // const taggedEventFilterWhenEnabled: DiscreteCriterion = { db3Column: "taggedEvents", behavior: taggedEventFilterBehaviorWhenEnabled, options: taggedEventFilterOptionsWhenEnabled };
-    // const taggedSongFilterWhenEnabled: DiscreteCriterion = { db3Column: "taggedSongs", behavior: taggedSongFilterBehaviorWhenEnabled, options: taggedSongFilterOptionsWhenEnabled };
+    });
 
-    const filterSpec: FilesFilterSpec = {
-        refreshSerial,
-        quickFilter,
-        orderByColumn: sortColumn as any,
-        orderByDirection: sortDirection,
-
-        //typeFilter: typeFilterEnabled ? typeFilterWhenEnabled : { db3Column: "mimeType", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        //uploaderFilter: uploaderFilterEnabled ? uploaderFilterWhenEnabled : { db3Column: "uploadedByUser", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        //sizeFilter: sizeFilterEnabled ? sizeFilterWhenEnabled : { db3Column: "sizeBytes", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        // taggedUserFilter: taggedUserFilterEnabled ? taggedUserFilterWhenEnabled : { db3Column: "taggedUsers", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        // taggedEventFilter: taggedEventFilterEnabled ? taggedEventFilterWhenEnabled : { db3Column: "taggedEvents", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        // taggedSongFilter: taggedSongFilterEnabled ? taggedSongFilterWhenEnabled : { db3Column: "taggedSongs", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        taggedInstrumentFilter: taggedInstrumentFilter.enabled ? taggedInstrumentFilter.criterion : { db3Column: "taggedInstruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-    }; const { enrichedFiles, results, loadMoreData } = useFileListData(filterSpec); const handleCopyFilterspec = () => {
-        const o: FilesFilterSpecStatic = {
-            label: "(n/a)",
-            helpText: "",
-            orderByColumn: sortColumn as any,
-            orderByDirection: sortDirection,
-
-            // typeFilterEnabled,
-            // typeFilterBehavior: typeFilterBehaviorWhenEnabled,
-            // typeFilterOptions: typeFilterOptionsWhenEnabled,
-
-            tagFilterEnabled: tagFilter.enabled,
-            tagFilterBehavior: tagFilter.criterion.behavior,
-            tagFilterOptions: tagFilter.criterion.options as number[],
-
-            // uploaderFilterEnabled,
-            // uploaderFilterBehavior: uploaderFilterBehaviorWhenEnabled,
-            // uploaderFilterOptions: uploaderFilterOptionsWhenEnabled,
-
-            // sizeFilterEnabled,
-            // sizeFilterBehavior: sizeFilterBehaviorWhenEnabled,
-            // sizeFilterOptions: sizeFilterOptionsWhenEnabled,
-
-            // taggedUserFilterEnabled,
-            // taggedUserFilterBehavior: taggedUserFilterBehaviorWhenEnabled,
-            // taggedUserFilterOptions: taggedUserFilterOptionsWhenEnabled,
-
-            // taggedEventFilterEnabled,
-            // taggedEventFilterBehavior: taggedEventFilterBehaviorWhenEnabled,
-            // taggedEventFilterOptions: taggedEventFilterOptionsWhenEnabled,
-
-            // taggedSongFilterEnabled,
-            // taggedSongFilterBehavior: taggedSongFilterBehaviorWhenEnabled,
-            // taggedSongFilterOptions: taggedSongFilterOptionsWhenEnabled,
-
-            taggedInstrumentFilterEnabled: taggedInstrumentFilter.enabled,
-            taggedInstrumentFilterBehavior: taggedInstrumentFilter.criterion.behavior,
-            taggedInstrumentFilterOptions: taggedInstrumentFilter.criterion.options as number[],
+    // Using useSearchPage hook for centralized search page logic
+    const searchPage = useSearchPage<FilesFilterSpecStatic, FilesFilterSpec>({
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnKey: "orderByColumn",
+        sortDirectionKey: "orderByDirection",
+        filterMappings: [
+            { filterHook: tagFilter, columnKey: "tagFilter" },
+            { filterHook: taggedInstrumentFilter, columnKey: "taggedInstrumentFilter" },
+        ],
+        buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
+            const filterSpec: FilesFilterSpec = {
+                refreshSerial,
+                quickFilter,
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                taggedInstrumentFilter: taggedInstrumentFilter.enabled ? taggedInstrumentFilter.criterion : { db3Column: "taggedInstruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+            };
+            return filterSpec;
+        },
+        buildStaticFilterSpec: ({ sortColumn, sortDirection, filterMappings }) => {
+            const staticSpec: FilesFilterSpecStatic = {
+                label: "(n/a)",
+                helpText: "",
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                tagFilterEnabled: tagFilter.enabled,
+                tagFilterBehavior: tagFilter.criterion.behavior,
+                tagFilterOptions: tagFilter.criterion.options as number[],
+                taggedInstrumentFilterEnabled: taggedInstrumentFilter.enabled,
+                taggedInstrumentFilterBehavior: taggedInstrumentFilter.criterion.behavior,
+                taggedInstrumentFilterOptions: taggedInstrumentFilter.criterion.options as number[],
+            };
+            return staticSpec;
         }
-        const txt = JSON.stringify(o, null, 2);
-        console.log(o);
-        navigator.clipboard.writeText(txt).then(() => {
-            snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-        }).catch(() => {
-            // nop
-        });
-    }; const handleClickStaticFilter = (x: FilesFilterSpecStatic) => {
-        setSortColumn(x.orderByColumn);
-        setSortDirection(x.orderByDirection);
-
-        // setTypeFilterEnabled(x.typeFilterEnabled);
-        // setTypeFilterBehaviorWhenEnabled(x.typeFilterBehavior);
-        // setTypeFilterOptionsWhenEnabled(x.typeFilterOptions);
-
-        tagFilter.setEnabled(x.tagFilterEnabled);
-        tagFilter.setBehavior(x.tagFilterBehavior);
-        tagFilter.setOptions(x.tagFilterOptions);
-
-        // setUploaderFilterEnabled(x.uploaderFilterEnabled);
-        // setUploaderFilterBehaviorWhenEnabled(x.uploaderFilterBehavior);
-        // setUploaderFilterOptionsWhenEnabled(x.uploaderFilterOptions);
-
-        // setSizeFilterEnabled(x.sizeFilterEnabled);
-        // setSizeFilterBehaviorWhenEnabled(x.sizeFilterBehavior);
-        // setSizeFilterOptionsWhenEnabled(x.sizeFilterOptions);
-
-        // setTaggedUserFilterEnabled(x.taggedUserFilterEnabled);
-        // setTaggedUserFilterBehaviorWhenEnabled(x.taggedUserFilterBehavior);
-        // setTaggedUserFilterOptionsWhenEnabled(x.taggedUserFilterOptions);
-
-        // setTaggedEventFilterEnabled(x.taggedEventFilterEnabled);
-        // setTaggedEventFilterBehaviorWhenEnabled(x.taggedEventFilterBehavior);
-        // setTaggedEventFilterOptionsWhenEnabled(x.taggedEventFilterOptions);
-
-        // setTaggedSongFilterEnabled(x.taggedSongFilterEnabled);
-        // setTaggedSongFilterBehaviorWhenEnabled(x.taggedSongFilterBehavior);
-        // setTaggedSongFilterOptionsWhenEnabled(x.taggedSongFilterOptions);
-
-        taggedInstrumentFilter.setEnabled(x.taggedInstrumentFilterEnabled);
-        taggedInstrumentFilter.setBehavior(x.taggedInstrumentFilterBehavior);
-        taggedInstrumentFilter.setOptions(x.taggedInstrumentFilterOptions);
-
-        setRefreshSerial(old => old + 1);
-    }; const matchingStaticFilter = gStaticFilters.find(f => {
-        return f.orderByColumn === sortColumn &&
-            f.orderByDirection === sortDirection &&
-            //f.typeFilterEnabled === typeFilterEnabled &&
-            f.tagFilterEnabled === tagFilter.enabled &&
-            // f.uploaderFilterEnabled === uploaderFilterEnabled &&
-            //f.sizeFilterEnabled === sizeFilterEnabled &&
-            // f.taggedUserFilterEnabled === taggedUserFilterEnabled &&
-            // f.taggedEventFilterEnabled === taggedEventFilterEnabled &&
-            // f.taggedSongFilterEnabled === taggedSongFilterEnabled &&
-            f.taggedInstrumentFilterEnabled === taggedInstrumentFilter.enabled &&
-            //arraysContainSameValues(f.typeFilterOptions, typeFilterOptionsWhenEnabled) &&
-            arraysContainSameValues(f.tagFilterOptions, tagFilter.criterion.options as number[]) &&
-            // arraysContainSameValues(f.uploaderFilterOptions, uploaderFilterOptionsWhenEnabled) &&
-            //arraysContainSameValues(f.sizeFilterOptions, sizeFilterOptionsWhenEnabled) &&
-            // arraysContainSameValues(f.taggedUserFilterOptions, taggedUserFilterOptionsWhenEnabled) &&
-            // arraysContainSameValues(f.taggedEventFilterOptions, taggedEventFilterOptionsWhenEnabled) &&
-            // arraysContainSameValues(f.taggedSongFilterOptions, taggedSongFilterOptionsWhenEnabled) &&
-            arraysContainSameValues(f.taggedInstrumentFilterOptions, taggedInstrumentFilter.criterion.options as number[]);
-    }); const hasExtraFilters = () => {
-        const def = gDefaultStaticFilterValue;
-        //if (typeFilterEnabled !== def.typeFilterEnabled) return true;
-        // if (uploaderFilterEnabled !== def.uploaderFilterEnabled) return true;
-        //if (sizeFilterEnabled !== def.sizeFilterEnabled) return true;
-        // if (taggedUserFilterEnabled !== def.taggedUserFilterEnabled) return true;
-        // if (taggedEventFilterEnabled !== def.taggedEventFilterEnabled) return true;
-        // if (taggedSongFilterEnabled !== def.taggedSongFilterEnabled) return true;
-        if (taggedInstrumentFilter.enabled !== def.taggedInstrumentFilterEnabled) return true;
-        return false;
-    };
-
-    const hasAnyFilters = () => {
-        const def = gDefaultStaticFilterValue;
-        if (sortColumn !== def.orderByColumn) return true;
-        if (sortDirection !== def.orderByDirection) return true;
-        if (tagFilter.enabled !== def.tagFilterEnabled) return true;
-        return hasExtraFilters();
-    };
+    }); const { enrichedFiles, results, loadMoreData } = useFileListData(searchPage.filterSpec);
 
     return <>
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={filterSpec} label="Filter spec" />
+                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
                 <AdminInspectObject src={results} label="Results obj" />
 
                 <FilterControls
                     inCard={false}
-                    onQuickFilterChange={(v) => setQuickFilter(v)}
-                    onResetFilter={() => {
-                        handleClickStaticFilter(gDefaultStaticFilterValue);
-                    }}
-                    hasAnyFilters={hasAnyFilters()}
-                    hasExtraFilters={hasExtraFilters()}
-                    quickFilterText={filterSpec.quickFilter}
-                    primaryFilter={
+                    onQuickFilterChange={searchPage.setQuickFilter}
+                    onResetFilter={searchPage.resetToDefaults}
+                    hasAnyFilters={searchPage.hasAnyFilters}
+                    hasExtraFilters={searchPage.hasExtraFilters}
+                    quickFilterText={searchPage.filterSpec.quickFilter} primaryFilter={
                         <div>
                             <CMChipContainer>
                                 {
                                     gStaticFilters.map(e => {
-                                        const doesMatch = e.label === matchingStaticFilter?.label;
+                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
                                         return <CMChip
                                             key={e.label}
-                                            onClick={() => handleClickStaticFilter(e)} size="small"
+                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
                                             variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
                                             shape="rectangle"
                                         >
@@ -468,7 +345,7 @@ const FileListOuter = () => {
                                         </CMChip>;
                                     })
                                 }
-                                {matchingStaticFilter && <div className="tinyCaption">{matchingStaticFilter.helpText}</div>}
+                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
                             </CMChipContainer>
                         </div>
                     }
@@ -560,8 +437,8 @@ const FileListOuter = () => {
                             <div className="divider" />
                             <SortByGroup
                                 columnOptions={Object.keys(FileOrderByColumnOptions)}
-                                setValue={setSortModel}
-                                value={sortModel}
+                                setValue={searchPage.setSortModel}
+                                value={searchPage.sortModel}
                             />
                         </div>
                     }
@@ -569,12 +446,12 @@ const FileListOuter = () => {
             </div>
         </CMSinglePageSurfaceCard>
         <FilesList
-            filterSpec={filterSpec}
+            filterSpec={searchPage.filterSpec}
             files={enrichedFiles}
             results={results}
             loadMoreData={loadMoreData}
             hasMore={enrichedFiles.length < results.rowCount}
-            refetch={() => setRefreshSerial(refreshSerial + 1)}
+            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
         />
     </>;
 };

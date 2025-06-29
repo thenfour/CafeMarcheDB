@@ -2,7 +2,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { arraysContainSameValues } from "shared/arrayUtils";
 import { StandardVariationSpec } from "shared/color";
 import { SelectEnglishNoun } from "shared/lang";
 import { Permission } from "shared/permissions";
@@ -11,10 +10,10 @@ import { IsNullOrWhitespace, arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { AdminInspectObject, CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
+import { AdminInspectObject, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { CMLink } from "src/core/components/CMLink";
 import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
-import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
+import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
@@ -25,7 +24,7 @@ import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
+import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 
 type SongListItemProps = {
     index: number;
@@ -241,23 +240,7 @@ const SongListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
-
-    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
-
-    const [sortColumn, setSortColumn] = useURLState<string>("sc", gDefaultStaticFilterValue.orderByColumn);
-    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection);
-
-    const sortModel: SortBySpec = {
-        columnName: sortColumn,
-        direction: sortDirection,
-    };
-    const setSortModel = (x: SortBySpec) => {
-        setSortColumn(x.columnName);
-        setSortDirection(x.direction);
-    };
-
-    // "tg" prefix - Using useDiscreteFilter hook
+    // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
         urlPrefix: "tg",
         db3Column: "tags",
@@ -266,92 +249,62 @@ const SongListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
     });
 
-    // the default basic filter spec when no params specified.
-    const filterSpec: SongsFilterSpec = {
-        refreshSerial,
-
-        // in dto...
-        quickFilter,
-
-        orderByColumn: sortColumn as any,
-        orderByDirection: sortDirection,
-
-        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-    };
-
-    const { enrichedItems, results, loadMoreData } = useSongListData(filterSpec);
-
-    const handleCopyFilterspec = () => {
-        const o: SongsFilterSpecStatic = {
-            label: "(n/a)",
-            helpText: "",
-            orderByColumn: sortColumn as any,
-            orderByDirection: sortDirection, tagFilterEnabled: tagFilter.enabled,
-            tagFilterBehavior: tagFilter.criterion.behavior,
-            tagFilterOptions: tagFilter.criterion.options as number[],
+    // Using useSearchPage hook for centralized search page logic
+    const searchPage = useSearchPage<SongsFilterSpecStatic, SongsFilterSpec>({
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnKey: "orderByColumn",
+        sortDirectionKey: "orderByDirection",
+        filterMappings: [
+            { filterHook: tagFilter, columnKey: "tagFilter" },
+        ],
+        buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
+            const filterSpec: SongsFilterSpec = {
+                refreshSerial,
+                quickFilter,
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+            };
+            return filterSpec;
+        },
+        buildStaticFilterSpec: ({ sortColumn, sortDirection, filterMappings }) => {
+            const staticSpec: SongsFilterSpecStatic = {
+                label: "(n/a)",
+                helpText: "",
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                tagFilterEnabled: tagFilter.enabled,
+                tagFilterBehavior: tagFilter.criterion.behavior,
+                tagFilterOptions: tagFilter.criterion.options as number[],
+            };
+            return staticSpec;
         }
-        const txt = JSON.stringify(o, null, 2);
-        console.log(o);
-        navigator.clipboard.writeText(txt).then(() => {
-            snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-        }).catch(() => {
-            // nop
-        });
-    };
+    });
 
-    const handleClickStaticFilter = (x: SongsFilterSpecStatic) => {
-        setSortColumn(x.orderByColumn);
-        setSortDirection(x.orderByDirection); tagFilter.setEnabled(x.tagFilterEnabled);
-        tagFilter.setBehavior(x.tagFilterBehavior);
-        tagFilter.setOptions(x.tagFilterOptions);
-    };
-
-    const MatchesStaticFilter = (x: SongsFilterSpecStatic): boolean => {
-        if (sortColumn !== x.orderByColumn) return false;
-        if (sortDirection !== x.orderByDirection) return false; if (x.tagFilterEnabled !== tagFilter.enabled) return false;
-        if (tagFilter.enabled) {
-            if (tagFilter.criterion.behavior !== x.tagFilterBehavior) return false;
-            if (!arraysContainSameValues(tagFilter.criterion.options as number[], x.tagFilterOptions)) return false;
-        }
-
-        return true;
-    };
-
-    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x));
-
-    const hasExtraFilters = ((): boolean => {
-        if (!!matchingStaticFilter) return false;
-        if (tagFilter.enabled) return true;
-        return false;
-    })();
-
-    const hasAnyFilters = hasExtraFilters;
-
-    return <>
+    const { enrichedItems, results, loadMoreData } = useSongListData(searchPage.filterSpec); return <>
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
 
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={filterSpec} label="Filter spec" />
+                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
                 <AdminInspectObject src={results} label="Results obj" />
                 <FilterControls
                     inCard={false}
-                    onQuickFilterChange={(v) => setQuickFilter(v)}
-                    onResetFilter={() => {
-                        handleClickStaticFilter(gDefaultStaticFilterValue);
-                    }}
-                    hasAnyFilters={hasAnyFilters}
-                    hasExtraFilters={hasExtraFilters}
-                    quickFilterText={filterSpec.quickFilter}
+                    onQuickFilterChange={searchPage.setQuickFilter}
+                    onResetFilter={searchPage.resetToDefaults}
+                    hasAnyFilters={searchPage.hasAnyFilters}
+                    hasExtraFilters={searchPage.hasExtraFilters}
+                    quickFilterText={searchPage.filterSpec.quickFilter}
                     primaryFilter={
                         <div>
                             <CMChipContainer>
                                 {
                                     gStaticFilters.map(e => {
-                                        const doesMatch = e.label === matchingStaticFilter?.label;// MatchesStaticFilter(e[1]);
+                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
                                         return <CMChip
                                             key={e.label}
-                                            onClick={() => handleClickStaticFilter(e)} size="small"
+                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
                                             variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
                                             shape="rectangle"
                                         >
@@ -359,7 +312,7 @@ const SongListOuter = () => {
                                         </CMChip>;
                                     })
                                 }
-                                {matchingStaticFilter && <div className="tinyCaption">{matchingStaticFilter.helpText}</div>}
+                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
                             </CMChipContainer>
                         </div>
                     }
@@ -395,8 +348,8 @@ const SongListOuter = () => {
                             <div className="divider" />
                             <SortByGroup
                                 columnOptions={Object.keys(SongOrderByColumnOptions)}
-                                setValue={setSortModel}
-                                value={sortModel}
+                                setValue={searchPage.setSortModel}
+                                value={searchPage.sortModel}
                             />
                         </div>
                     }
@@ -405,12 +358,12 @@ const SongListOuter = () => {
 
         </CMSinglePageSurfaceCard >
         <SongsList
-            filterSpec={filterSpec}
+            filterSpec={searchPage.filterSpec}
             songs={enrichedItems}
             results={results}
             loadMoreData={loadMoreData}
             hasMore={enrichedItems.length < results.rowCount}
-            refetch={() => setRefreshSerial(refreshSerial + 1)}
+            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
         />
     </>;
 };

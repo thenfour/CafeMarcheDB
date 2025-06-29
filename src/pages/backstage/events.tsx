@@ -2,7 +2,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { arraysContainSameValues } from "shared/arrayUtils";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
@@ -10,12 +9,12 @@ import { arrayToTSV } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { AdminInspectObject, CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
+import { AdminInspectObject, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/EventComponents";
 import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
 import { useEventListData } from 'src/core/components/EventSearch';
-import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
+import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
@@ -24,7 +23,7 @@ import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
+import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -286,23 +285,7 @@ const EventListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    //const [page, setPage] = useURLState<number>("p", 0);
-    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
-
-    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
-
-    const [sortColumn, setSortColumn] = useURLState<string>("sc", gDefaultStaticFilterValue.orderByColumn);
-    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection);
-
-    const sortModel: SortBySpec = {
-        columnName: sortColumn,
-        direction: sortDirection,
-    }; const setSortModel = (x: SortBySpec) => {
-        setSortColumn(x.columnName);
-        setSortDirection(x.direction);
-    };
-
-    // "tg" prefix - Using useDiscreteFilter hook
+    // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
         urlPrefix: "tg",
         db3Column: "tags",
@@ -311,7 +294,6 @@ const EventListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
     });
 
-    // "st" prefix - Using useDiscreteFilter hook
     const statusFilter = useDiscreteFilter({
         urlPrefix: "st",
         db3Column: "status",
@@ -320,7 +302,6 @@ const EventListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.statusFilterEnabled,
     });
 
-    // "tp" prefix - Using useDiscreteFilter hook
     const typeFilter = useDiscreteFilter({
         urlPrefix: "tp",
         db3Column: "type",
@@ -329,7 +310,6 @@ const EventListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.typeFilterEnabled,
     });
 
-    // "dt" prefix - Using useDiscreteFilter hook
     const dateFilter = useDiscreteFilter({
         urlPrefix: "dt",
         db3Column: "startsAt",
@@ -338,149 +318,81 @@ const EventListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.dateFilterEnabled,
     });
 
-    // the default basic filter spec when no params specified.
-    const filterSpec: EventsFilterSpec = {
-        //pageSize: gPageSize,
-        refreshSerial,
-        //page,
-
-        // in dto...
-        quickFilter,
-
-        orderByColumn: sortColumn as any,
-        orderByDirection: sortDirection,
-
-        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        statusFilter: statusFilter.enabled ? statusFilter.criterion : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        typeFilter: typeFilter.enabled ? typeFilter.criterion : { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        dateFilter: dateFilter.enabled ? dateFilter.criterion : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-    };
-
-    const { enrichedEvents, results, /*hasMore, */loadMoreData } = useEventListData(filterSpec);
-
-
-    // // check if all history has the same total IDs in order; check each against previous
-    // for (var i = 1; i < fetchHistory.length; ++i) {
-    //     const a = JSON.stringify(fetchHistory[i - 1]?.allIdsInOrder);
-    //     const b = JSON.stringify(fetchHistory[i]?.allIdsInOrder);
-    //     if (a !== b) {
-    //         console.warn(`SORT ORDER SEEEMS TO HAVE CHANGED on fetch ${i}`);
-    //     }
-    // }
-
-    const handleCopyFilterspec = () => {
-        const o: EventsFilterSpecStatic = {
-            label: "(n/a)",
-            helpText: "",
-            orderByColumn: sortColumn as any,
-            orderByDirection: sortDirection, statusFilterEnabled: statusFilter.enabled,
-            statusFilterBehavior: statusFilter.criterion.behavior,
-            statusFilterOptions: statusFilter.criterion.options as number[],
-
-            typeFilterEnabled: typeFilter.enabled,
-            typeFilterBehavior: typeFilter.criterion.behavior,
-            typeFilterOptions: typeFilter.criterion.options as number[],
-
-            tagFilterEnabled: tagFilter.enabled,
-            tagFilterBehavior: tagFilter.criterion.behavior,
-            tagFilterOptions: tagFilter.criterion.options as number[],
-
-            dateFilterEnabled: dateFilter.enabled,
-            dateFilterBehavior: dateFilter.criterion.behavior,
-            dateFilterOptions: dateFilter.criterion.options as number[],
+    // Using useSearchPage hook for centralized search page logic
+    const searchPage = useSearchPage<EventsFilterSpecStatic, EventsFilterSpec>({
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnKey: "orderByColumn",
+        sortDirectionKey: "orderByDirection",
+        filterMappings: [
+            { filterHook: tagFilter, columnKey: "tagFilter" },
+            { filterHook: statusFilter, columnKey: "statusFilter" },
+            { filterHook: typeFilter, columnKey: "typeFilter" },
+            { filterHook: dateFilter, columnKey: "dateFilter" },
+        ],
+        buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
+            // Build the filter spec using the hook's filter mappings
+            const filterSpec: EventsFilterSpec = {
+                refreshSerial,
+                quickFilter,
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                statusFilter: statusFilter.enabled ? statusFilter.criterion : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                typeFilter: typeFilter.enabled ? typeFilter.criterion : { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                dateFilter: dateFilter.enabled ? dateFilter.criterion : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+            };
+            return filterSpec;
+        },
+        buildStaticFilterSpec: ({ sortColumn, sortDirection, filterMappings }) => {
+            const staticSpec: EventsFilterSpecStatic = {
+                label: "(n/a)",
+                helpText: "",
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                statusFilterEnabled: statusFilter.enabled,
+                statusFilterBehavior: statusFilter.criterion.behavior,
+                statusFilterOptions: statusFilter.criterion.options as number[],
+                typeFilterEnabled: typeFilter.enabled,
+                typeFilterBehavior: typeFilter.criterion.behavior,
+                typeFilterOptions: typeFilter.criterion.options as number[],
+                tagFilterEnabled: tagFilter.enabled,
+                tagFilterBehavior: tagFilter.criterion.behavior,
+                tagFilterOptions: tagFilter.criterion.options as number[],
+                dateFilterEnabled: dateFilter.enabled,
+                dateFilterBehavior: dateFilter.criterion.behavior,
+                dateFilterOptions: dateFilter.criterion.options as number[],
+            };
+            return staticSpec;
         }
-        const txt = JSON.stringify(o, null, 2);
-        console.log(o);
-        navigator.clipboard.writeText(txt).then(() => {
-            snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-        }).catch(() => {
-            // nop
-        });
-    }; const handleClickStaticFilter = (x: EventsFilterSpecStatic) => {
-        setSortColumn(x.orderByColumn);
-        setSortDirection(x.orderByDirection);
+    });
 
-        typeFilter.setEnabled(x.typeFilterEnabled);
-        typeFilter.setBehavior(x.typeFilterBehavior);
-        typeFilter.setOptions(x.typeFilterOptions);
-
-        statusFilter.setEnabled(x.statusFilterEnabled);
-        statusFilter.setBehavior(x.statusFilterBehavior);
-        statusFilter.setOptions(x.statusFilterOptions);
-
-        tagFilter.setEnabled(x.tagFilterEnabled);
-        tagFilter.setBehavior(x.tagFilterBehavior);
-        tagFilter.setOptions(x.tagFilterOptions);
-
-        dateFilter.setEnabled(x.dateFilterEnabled);
-        dateFilter.setBehavior(x.dateFilterBehavior);
-        dateFilter.setOptions(x.dateFilterOptions);
-    }; const MatchesStaticFilter = (x: EventsFilterSpecStatic): boolean => {
-        if (sortColumn !== x.orderByColumn) return false;
-        if (sortDirection !== x.orderByDirection) return false;
-
-        if (x.typeFilterEnabled !== typeFilter.enabled) return false;
-        if (typeFilter.enabled) {
-            if (typeFilter.criterion.behavior !== x.typeFilterBehavior) return false;
-            if (!arraysContainSameValues(typeFilter.criterion.options as number[], x.typeFilterOptions)) return false;
-        } if (x.statusFilterEnabled !== statusFilter.enabled) return false;
-        if (statusFilter.enabled) {
-            if (statusFilter.criterion.behavior !== x.statusFilterBehavior) return false;
-            if (!arraysContainSameValues(statusFilter.criterion.options as number[], x.statusFilterOptions)) return false;
-        } if (x.tagFilterEnabled !== tagFilter.enabled) return false;
-        if (tagFilter.enabled) {
-            if (tagFilter.criterion.behavior !== x.tagFilterBehavior) return false;
-            if (!arraysContainSameValues(tagFilter.criterion.options as number[], x.tagFilterOptions)) return false;
-        } if (x.dateFilterEnabled !== dateFilter.enabled) return false;
-        if (dateFilter.enabled) {
-            if (dateFilter.criterion.behavior !== x.dateFilterBehavior) return false;
-            if (!arraysContainSameValues(dateFilter.criterion.options as number[], x.dateFilterOptions)) return false;
-        }
-
-        return true;
-    };
-
-    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x));
-
-    const hasExtraFilters = ((): boolean => {
-        if (!!matchingStaticFilter) return false;
-        if (typeFilter.enabled) return true;
-        if (statusFilter.enabled) return true;
-        if (tagFilter.enabled) return true;
-        if (dateFilter.enabled) return true;
-        return false;
-    })();
-
-    const hasAnyFilters = hasExtraFilters;
-
-    return <>
+    const { enrichedEvents, results, loadMoreData } = useEventListData(searchPage.filterSpec); return <>
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
 
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={filterSpec} label="Filter spec" />
+                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
                 <AdminInspectObject src={results} label="Results obj" />
                 {/* <AdminInspectObject src={fetchHistory} label="Fetch history" /> */}
 
                 {/* <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} /> */}
                 <FilterControls
                     inCard={false}
-                    onQuickFilterChange={(v) => setQuickFilter(v)}
-                    onResetFilter={() => {
-                        handleClickStaticFilter(gDefaultStaticFilterValue);
-                    }}
-                    hasAnyFilters={hasAnyFilters}
-                    hasExtraFilters={hasExtraFilters}
-                    quickFilterText={filterSpec.quickFilter}
+                    onQuickFilterChange={searchPage.setQuickFilter}
+                    onResetFilter={searchPage.resetToDefaults}
+                    hasAnyFilters={searchPage.hasAnyFilters}
+                    hasExtraFilters={searchPage.hasExtraFilters}
+                    quickFilterText={searchPage.filterSpec.quickFilter}
                     primaryFilter={
                         <div>
                             <CMChipContainer>
                                 {
                                     gStaticFilters.map(e => {
-                                        const doesMatch = e.label === matchingStaticFilter?.label;// MatchesStaticFilter(e[1]);
+                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
                                         return <CMChip
                                             key={e.label}
-                                            onClick={() => handleClickStaticFilter(e)} size="small"
+                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
                                             variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
                                             shape="rectangle"
                                         >
@@ -488,7 +400,7 @@ const EventListOuter = () => {
                                         </CMChip>;
                                     })
                                 }
-                                {matchingStaticFilter && <div className="tinyCaption">{matchingStaticFilter.helpText}</div>}
+                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
                             </CMChipContainer>
                         </div>
                     }
@@ -552,8 +464,8 @@ const EventListOuter = () => {
                             <div className="divider" />
                             <SortByGroup
                                 columnOptions={Object.keys(EventOrderByColumnOptions)}
-                                setValue={setSortModel}
-                                value={sortModel}
+                                setValue={searchPage.setSortModel}
+                                value={searchPage.sortModel}
                             />
                         </div>
                     }
@@ -562,12 +474,12 @@ const EventListOuter = () => {
 
         </CMSinglePageSurfaceCard >
         <EventsList
-            filterSpec={filterSpec}
+            filterSpec={searchPage.filterSpec}
             events={enrichedEvents}
             results={results}
             loadMoreData={loadMoreData}
             hasMore={enrichedEvents.length < results.rowCount}
-            refetch={() => setRefreshSerial(refreshSerial + 1)}
+            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
         />
     </>;
 };

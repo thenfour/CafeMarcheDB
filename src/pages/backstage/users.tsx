@@ -2,16 +2,15 @@ import { BlitzPage } from "@blitzjs/next";
 import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { arraysContainSameValues } from "shared/arrayUtils";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { arrayToTSV } from "shared/utils";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { AdminInspectObject, CMSmallButton, GoogleIconSmall, useURLState } from "src/core/components/CMCoreComponents2";
+import { AdminInspectObject, CMSmallButton, GoogleIconSmall } from "src/core/components/CMCoreComponents2";
 import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
-import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
+import { FilterControls, SortByGroup, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "src/core/components/UserComponents";
@@ -21,7 +20,7 @@ import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
+import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 
 type UserListItemProps = {
@@ -249,21 +248,7 @@ const UserListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
-
-    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
-
-    const [sortColumn, setSortColumn] = useURLState<string>("sc", gDefaultStaticFilterValue.orderByColumn);
-    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection); const sortModel: SortBySpec = {
-        columnName: sortColumn,
-        direction: sortDirection,
-    };
-    const setSortModel = (x: SortBySpec) => {
-        setSortColumn(x.columnName);
-        setSortDirection(x.direction);
-    };
-
-    // "tg" prefix - Using useDiscreteFilter hook
+    // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
         urlPrefix: "tg",
         db3Column: "tags",
@@ -272,7 +257,6 @@ const UserListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
     });
 
-    // "rl" prefix - Using useDiscreteFilter hook
     const roleFilter = useDiscreteFilter({
         urlPrefix: "rl",
         db3Column: "role",
@@ -281,129 +265,79 @@ const UserListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.roleFilterEnabled,
     });
 
-    // "in" prefix - Using useDiscreteFilter hook
     const instrumentFilter = useDiscreteFilter({
         urlPrefix: "in",
         db3Column: "instruments",
         defaultBehavior: gDefaultStaticFilterValue.instrumentFilterBehavior,
         defaultOptions: gDefaultStaticFilterValue.instrumentFilterOptions,
         defaultEnabled: gDefaultStaticFilterValue.instrumentFilterEnabled,
-    });    // the default basic filter spec when no params specified.
-    const filterSpec: UsersFilterSpec = {
-        refreshSerial,
+    });
 
-        // in dto...
-        quickFilter,
-
-        orderByColumn: sortColumn as any,
-        orderByDirection: sortDirection,
-
-        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        instrumentFilter: instrumentFilter.enabled ? instrumentFilter.criterion : { db3Column: "instruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        roleFilter: roleFilter.enabled ? roleFilter.criterion : { db3Column: "role", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-    };
-
-    const { enrichedItems, results, loadMoreData } = useUserListData(filterSpec); const handleCopyFilterspec = () => {
-        const o: UsersFilterSpecStatic = {
-            label: "(n/a)",
-            helpText: "",
-            orderByColumn: sortColumn as any,
-            orderByDirection: sortDirection,
-
-            tagFilterEnabled: tagFilter.enabled,
-            tagFilterBehavior: tagFilter.criterion.behavior,
-            tagFilterOptions: tagFilter.criterion.options as number[],
-
-            roleFilterEnabled: roleFilter.enabled,
-            roleFilterBehavior: roleFilter.criterion.behavior,
-            roleFilterOptions: roleFilter.criterion.options as number[],
-
-            instrumentFilterEnabled: instrumentFilter.enabled,
-            instrumentFilterBehavior: instrumentFilter.criterion.behavior,
-            instrumentFilterOptions: instrumentFilter.criterion.options as number[],
+    // Using useSearchPage hook for centralized search page logic
+    const searchPage = useSearchPage<UsersFilterSpecStatic, UsersFilterSpec>({
+        staticFilters: gStaticFilters,
+        defaultStaticFilter: gDefaultStaticFilterValue,
+        sortColumnKey: "orderByColumn",
+        sortDirectionKey: "orderByDirection",
+        filterMappings: [
+            { filterHook: tagFilter, columnKey: "tagFilter" },
+            { filterHook: roleFilter, columnKey: "roleFilter" },
+            { filterHook: instrumentFilter, columnKey: "instrumentFilter" },
+        ],
+        buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
+            const filterSpec: UsersFilterSpec = {
+                refreshSerial,
+                quickFilter,
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                instrumentFilter: instrumentFilter.enabled ? instrumentFilter.criterion : { db3Column: "instruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                roleFilter: roleFilter.enabled ? roleFilter.criterion : { db3Column: "role", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+            };
+            return filterSpec;
+        },
+        buildStaticFilterSpec: ({ sortColumn, sortDirection, filterMappings }) => {
+            const staticSpec: UsersFilterSpecStatic = {
+                label: "(n/a)",
+                helpText: "",
+                orderByColumn: sortColumn as any,
+                orderByDirection: sortDirection,
+                tagFilterEnabled: tagFilter.enabled,
+                tagFilterBehavior: tagFilter.criterion.behavior,
+                tagFilterOptions: tagFilter.criterion.options as number[],
+                roleFilterEnabled: roleFilter.enabled,
+                roleFilterBehavior: roleFilter.criterion.behavior,
+                roleFilterOptions: roleFilter.criterion.options as number[],
+                instrumentFilterEnabled: instrumentFilter.enabled,
+                instrumentFilterBehavior: instrumentFilter.criterion.behavior,
+                instrumentFilterOptions: instrumentFilter.criterion.options as number[],
+            };
+            return staticSpec;
         }
-        const txt = JSON.stringify(o, null, 2);
-        console.log(o);
-        navigator.clipboard.writeText(txt).then(() => {
-            snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
-        }).catch(() => {
-            // nop
-        });
-    }; const handleClickStaticFilter = (x: UsersFilterSpecStatic) => {
-        setSortColumn(x.orderByColumn);
-        setSortDirection(x.orderByDirection);
-
-        tagFilter.setEnabled(x.tagFilterEnabled);
-        tagFilter.setBehavior(x.tagFilterBehavior);
-        tagFilter.setOptions(x.tagFilterOptions);
-
-        roleFilter.setEnabled(x.roleFilterEnabled);
-        roleFilter.setBehavior(x.roleFilterBehavior);
-        roleFilter.setOptions(x.roleFilterOptions);
-
-        instrumentFilter.setEnabled(x.instrumentFilterEnabled);
-        instrumentFilter.setBehavior(x.instrumentFilterBehavior);
-        instrumentFilter.setOptions(x.instrumentFilterOptions);
-    }; const MatchesStaticFilter = (x: UsersFilterSpecStatic): boolean => {
-        if (sortColumn !== x.orderByColumn) return false;
-        if (sortDirection !== x.orderByDirection) return false;
-
-        if (x.tagFilterEnabled !== tagFilter.enabled) return false;
-        if (tagFilter.enabled) {
-            if (tagFilter.criterion.behavior !== x.tagFilterBehavior) return false;
-            if (!arraysContainSameValues(tagFilter.criterion.options as number[], x.tagFilterOptions)) return false;
-        }
-
-        if (x.roleFilterEnabled !== roleFilter.enabled) return false;
-        if (roleFilter.enabled) {
-            if (roleFilter.criterion.behavior !== x.roleFilterBehavior) return false;
-            if (!arraysContainSameValues(roleFilter.criterion.options as number[], x.roleFilterOptions)) return false;
-        }
-
-        if (x.instrumentFilterEnabled !== instrumentFilter.enabled) return false;
-        if (instrumentFilter.enabled) {
-            if (instrumentFilter.criterion.behavior !== x.instrumentFilterBehavior) return false;
-            if (!arraysContainSameValues(instrumentFilter.criterion.options as number[], x.instrumentFilterOptions)) return false;
-        }
-
-        return true;
-    };
-
-    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x)); const hasExtraFilters = ((): boolean => {
-        if (!!matchingStaticFilter) return false;
-        if (tagFilter.enabled) return true;
-        if (roleFilter.enabled) return true;
-        if (instrumentFilter.enabled) return true;
-        return false;
-    })();
-
-    const hasAnyFilters = hasExtraFilters;
+    }); const { enrichedItems, results, loadMoreData } = useUserListData(searchPage.filterSpec);
 
     return <>
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
 
-                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
-                <AdminInspectObject src={filterSpec} label="Filter spec" />
+                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={searchPage.handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+                <AdminInspectObject src={searchPage.filterSpec} label="Filter spec" />
                 <AdminInspectObject src={results} label="Results obj" />
                 <FilterControls
                     inCard={false}
-                    onQuickFilterChange={(v) => setQuickFilter(v)}
-                    onResetFilter={() => {
-                        handleClickStaticFilter(gDefaultStaticFilterValue);
-                    }}
-                    hasAnyFilters={hasAnyFilters}
-                    hasExtraFilters={hasExtraFilters}
-                    quickFilterText={filterSpec.quickFilter}
-                    primaryFilter={
+                    onQuickFilterChange={searchPage.setQuickFilter}
+                    onResetFilter={searchPage.resetToDefaults}
+                    hasAnyFilters={searchPage.hasAnyFilters}
+                    hasExtraFilters={searchPage.hasExtraFilters}
+                    quickFilterText={searchPage.filterSpec.quickFilter} primaryFilter={
                         <div>
                             <CMChipContainer>
                                 {
                                     gStaticFilters.map(e => {
-                                        const doesMatch = e.label === matchingStaticFilter?.label;// MatchesStaticFilter(e[1]);
+                                        const doesMatch = e.label === searchPage.matchingStaticFilter?.label;
                                         return <CMChip
                                             key={e.label}
-                                            onClick={() => handleClickStaticFilter(e)} size="small"
+                                            onClick={() => searchPage.handleClickStaticFilter(e)} size="small"
                                             variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
                                             shape="rectangle"
                                         >
@@ -411,7 +345,7 @@ const UserListOuter = () => {
                                         </CMChip>;
                                     })
                                 }
-                                {matchingStaticFilter && <div className="tinyCaption">{matchingStaticFilter.helpText}</div>}
+                                {searchPage.matchingStaticFilter && <div className="tinyCaption">{searchPage.matchingStaticFilter.helpText}</div>}
                             </CMChipContainer>
                         </div>
                     }
@@ -498,8 +432,8 @@ const UserListOuter = () => {
                             <div className="divider" />
                             <SortByGroup
                                 columnOptions={Object.keys(UserOrderByColumnOptions)}
-                                setValue={setSortModel}
-                                value={sortModel}
+                                setValue={searchPage.setSortModel}
+                                value={searchPage.sortModel}
                             />
                         </div>
                     }
@@ -508,12 +442,12 @@ const UserListOuter = () => {
 
         </CMSinglePageSurfaceCard>
         <UsersList
-            filterSpec={filterSpec}
+            filterSpec={searchPage.filterSpec}
             users={enrichedItems}
             results={results}
             loadMoreData={loadMoreData}
             hasMore={enrichedItems.length < results.rowCount}
-            refetch={() => setRefreshSerial(refreshSerial + 1)}
+            refetch={() => searchPage.setRefreshSerial(searchPage.refreshSerial + 1)}
         />
     </>;
 };
