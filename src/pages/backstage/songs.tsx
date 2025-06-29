@@ -23,8 +23,9 @@ import { useSongListData } from "src/core/components/SongSearch";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
 
 type SongListItemProps = {
     index: number;
@@ -256,19 +257,14 @@ const SongListOuter = () => {
         setSortDirection(x.direction);
     };
 
-    // "tg" prefix
-    const [tagFilterBehaviorWhenEnabled, setTagFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tgb", gDefaultStaticFilterValue.tagFilterBehavior);
-    const [tagFilterOptionsWhenEnabled, setTagFilterOptionsWhenEnabled] = useURLState<number[]>("tgo", gDefaultStaticFilterValue.tagFilterOptions);
-    const [tagFilterEnabled, setTagFilterEnabled] = useURLState<boolean>("tge", gDefaultStaticFilterValue.tagFilterEnabled);
-    const tagFilterWhenEnabled: DiscreteCriterion = {
+    // "tg" prefix - Using useDiscreteFilter hook
+    const tagFilter = useDiscreteFilter({
+        urlPrefix: "tg",
         db3Column: "tags",
-        behavior: tagFilterBehaviorWhenEnabled,
-        options: tagFilterOptionsWhenEnabled,
-    };
-    const setTagFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setTagFilterBehaviorWhenEnabled(x.behavior);
-        setTagFilterOptionsWhenEnabled(x.options as any);
-    };
+        defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.tagFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
+    });
 
     // the default basic filter spec when no params specified.
     const filterSpec: SongsFilterSpec = {
@@ -280,7 +276,7 @@ const SongListOuter = () => {
         orderByColumn: sortColumn as any,
         orderByDirection: sortDirection,
 
-        tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
     const { enrichedItems, results, loadMoreData } = useSongListData(filterSpec);
@@ -290,11 +286,9 @@ const SongListOuter = () => {
             label: "(n/a)",
             helpText: "",
             orderByColumn: sortColumn as any,
-            orderByDirection: sortDirection,
-
-            tagFilterEnabled,
-            tagFilterBehavior: tagFilterBehaviorWhenEnabled,
-            tagFilterOptions: tagFilterOptionsWhenEnabled,
+            orderByDirection: sortDirection, tagFilterEnabled: tagFilter.enabled,
+            tagFilterBehavior: tagFilter.criterion.behavior,
+            tagFilterOptions: tagFilter.criterion.options as number[],
         }
         const txt = JSON.stringify(o, null, 2);
         console.log(o);
@@ -307,21 +301,17 @@ const SongListOuter = () => {
 
     const handleClickStaticFilter = (x: SongsFilterSpecStatic) => {
         setSortColumn(x.orderByColumn);
-        setSortDirection(x.orderByDirection);
-
-        setTagFilterEnabled(x.tagFilterEnabled);
-        setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
-        setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+        setSortDirection(x.orderByDirection); tagFilter.setEnabled(x.tagFilterEnabled);
+        tagFilter.setBehavior(x.tagFilterBehavior);
+        tagFilter.setOptions(x.tagFilterOptions);
     };
 
     const MatchesStaticFilter = (x: SongsFilterSpecStatic): boolean => {
         if (sortColumn !== x.orderByColumn) return false;
-        if (sortDirection !== x.orderByDirection) return false;
-
-        if (x.tagFilterEnabled !== tagFilterEnabled) return false;
-        if (tagFilterEnabled) {
-            if (tagFilterBehaviorWhenEnabled !== x.tagFilterBehavior) return false;
-            if (!arraysContainSameValues(tagFilterOptionsWhenEnabled, x.tagFilterOptions)) return false;
+        if (sortDirection !== x.orderByDirection) return false; if (x.tagFilterEnabled !== tagFilter.enabled) return false;
+        if (tagFilter.enabled) {
+            if (tagFilter.criterion.behavior !== x.tagFilterBehavior) return false;
+            if (!arraysContainSameValues(tagFilter.criterion.options as number[], x.tagFilterOptions)) return false;
         }
 
         return true;
@@ -331,7 +321,7 @@ const SongListOuter = () => {
 
     const hasExtraFilters = ((): boolean => {
         if (!!matchingStaticFilter) return false;
-        if (tagFilterEnabled) return true;
+        if (tagFilter.enabled) return true;
         return false;
     })();
 
@@ -377,13 +367,12 @@ const SongListOuter = () => {
                         <div>
                             <TagsFilterGroup
                                 label={"Tags"}
-                                style="tags"
-                                filterEnabled={tagFilterEnabled}
+                                style="tags" filterEnabled={tagFilter.enabled}
                                 errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
-                                value={tagFilterWhenEnabled}
+                                value={tagFilter.criterion}
                                 onChange={(n, enabled) => {
-                                    setTagFilterEnabled(enabled);
-                                    setTagFilterWhenEnabled(n);
+                                    tagFilter.setEnabled(enabled);
+                                    tagFilter.setCriterion(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "tags")?.items || []}
                                 sanitize={x => {

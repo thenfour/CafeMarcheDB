@@ -22,8 +22,9 @@ import { SnackbarContext, SnackbarContextType } from "src/core/components/Snackb
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -296,69 +297,46 @@ const EventListOuter = () => {
     const sortModel: SortBySpec = {
         columnName: sortColumn,
         direction: sortDirection,
-    };
-    const setSortModel = (x: SortBySpec) => {
+    }; const setSortModel = (x: SortBySpec) => {
         setSortColumn(x.columnName);
         setSortDirection(x.direction);
     };
 
-    // "tg" prefix
-    const [tagFilterBehaviorWhenEnabled, setTagFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tgb", gDefaultStaticFilterValue.tagFilterBehavior);
-    const [tagFilterOptionsWhenEnabled, setTagFilterOptionsWhenEnabled] = useURLState<number[]>("tgo", gDefaultStaticFilterValue.tagFilterOptions);
-    const [tagFilterEnabled, setTagFilterEnabled] = useURLState<boolean>("tge", gDefaultStaticFilterValue.tagFilterEnabled);
-    const tagFilterWhenEnabled: DiscreteCriterion = {
+    // "tg" prefix - Using useDiscreteFilter hook
+    const tagFilter = useDiscreteFilter({
+        urlPrefix: "tg",
         db3Column: "tags",
-        behavior: tagFilterBehaviorWhenEnabled,
-        options: tagFilterOptionsWhenEnabled,
-    };
-    const setTagFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setTagFilterBehaviorWhenEnabled(x.behavior);
-        setTagFilterOptionsWhenEnabled(x.options as any);
-    };
+        defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.tagFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
+    });
 
-    // "st" prefix
-    const [statusFilterBehaviorWhenEnabled, setStatusFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("stb", gDefaultStaticFilterValue.statusFilterBehavior);
-    const [statusFilterOptionsWhenEnabled, setStatusFilterOptionsWhenEnabled] = useURLState<number[]>("sto", gDefaultStaticFilterValue.statusFilterOptions);
-    const [statusFilterEnabled, setStatusFilterEnabled] = useURLState<boolean>("ste", gDefaultStaticFilterValue.statusFilterEnabled);
-    const statusFilterWhenEnabled: DiscreteCriterion = {
+    // "st" prefix - Using useDiscreteFilter hook
+    const statusFilter = useDiscreteFilter({
+        urlPrefix: "st",
         db3Column: "status",
-        behavior: statusFilterBehaviorWhenEnabled,
-        options: statusFilterOptionsWhenEnabled,
-    };
-    const setStatusFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setStatusFilterBehaviorWhenEnabled(x.behavior);
-        setStatusFilterOptionsWhenEnabled(x.options as any);
-    };
+        defaultBehavior: gDefaultStaticFilterValue.statusFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.statusFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.statusFilterEnabled,
+    });
 
-    // "tp" prefix
-    const [typeFilterBehaviorWhenEnabled, setTypeFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tpb", gDefaultStaticFilterValue.typeFilterBehavior);
-    const [typeFilterOptionsWhenEnabled, setTypeFilterOptionsWhenEnabled] = useURLState<number[]>("tpo", gDefaultStaticFilterValue.typeFilterOptions);
-    const [typeFilterEnabled, setTypeFilterEnabled] = useURLState<boolean>("tpe", gDefaultStaticFilterValue.typeFilterEnabled);
-
-    const typeFilterWhenEnabled: DiscreteCriterion = {
+    // "tp" prefix - Using useDiscreteFilter hook
+    const typeFilter = useDiscreteFilter({
+        urlPrefix: "tp",
         db3Column: "type",
-        behavior: typeFilterBehaviorWhenEnabled,
-        options: typeFilterOptionsWhenEnabled,
-    };
-    const setTypeFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setTypeFilterBehaviorWhenEnabled(x.behavior);
-        setTypeFilterOptionsWhenEnabled(x.options as any);
-    };
+        defaultBehavior: gDefaultStaticFilterValue.typeFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.typeFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.typeFilterEnabled,
+    });
 
-    // "dt" prefix
-    const [dateFilterBehaviorWhenEnabled, setDateFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("dtb", gDefaultStaticFilterValue.dateFilterBehavior);
-    const [dateFilterOptionsWhenEnabled, setDateFilterOptionsWhenEnabled] = useURLState<number[]>("dto", gDefaultStaticFilterValue.dateFilterOptions);
-    const [dateFilterEnabled, setDateFilterEnabled] = useURLState<boolean>("dte", gDefaultStaticFilterValue.dateFilterEnabled);
-
-    const dateFilterWhenEnabled: DiscreteCriterion = {
+    // "dt" prefix - Using useDiscreteFilter hook
+    const dateFilter = useDiscreteFilter({
+        urlPrefix: "dt",
         db3Column: "startsAt",
-        behavior: dateFilterBehaviorWhenEnabled,
-        options: dateFilterOptionsWhenEnabled,
-    };
-    const setDateFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setDateFilterBehaviorWhenEnabled(x.behavior);
-        setDateFilterOptionsWhenEnabled(x.options as any);
-    };
+        defaultBehavior: gDefaultStaticFilterValue.dateFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.dateFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.dateFilterEnabled,
+    });
 
     // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
@@ -372,10 +350,10 @@ const EventListOuter = () => {
         orderByColumn: sortColumn as any,
         orderByDirection: sortDirection,
 
-        tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        statusFilter: statusFilterEnabled ? statusFilterWhenEnabled : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        typeFilter: typeFilterEnabled ? typeFilterWhenEnabled : { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        dateFilter: dateFilterEnabled ? dateFilterWhenEnabled : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        statusFilter: statusFilter.enabled ? statusFilter.criterion : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        typeFilter: typeFilter.enabled ? typeFilter.criterion : { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        dateFilter: dateFilter.enabled ? dateFilter.criterion : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
     const { enrichedEvents, results, /*hasMore, */loadMoreData } = useEventListData(filterSpec);
@@ -395,23 +373,21 @@ const EventListOuter = () => {
             label: "(n/a)",
             helpText: "",
             orderByColumn: sortColumn as any,
-            orderByDirection: sortDirection,
+            orderByDirection: sortDirection, statusFilterEnabled: statusFilter.enabled,
+            statusFilterBehavior: statusFilter.criterion.behavior,
+            statusFilterOptions: statusFilter.criterion.options as number[],
 
-            statusFilterEnabled,
-            statusFilterBehavior: statusFilterBehaviorWhenEnabled,
-            statusFilterOptions: statusFilterOptionsWhenEnabled,
+            typeFilterEnabled: typeFilter.enabled,
+            typeFilterBehavior: typeFilter.criterion.behavior,
+            typeFilterOptions: typeFilter.criterion.options as number[],
 
-            typeFilterEnabled,
-            typeFilterBehavior: typeFilterBehaviorWhenEnabled,
-            typeFilterOptions: typeFilterOptionsWhenEnabled,
+            tagFilterEnabled: tagFilter.enabled,
+            tagFilterBehavior: tagFilter.criterion.behavior,
+            tagFilterOptions: tagFilter.criterion.options as number[],
 
-            tagFilterEnabled,
-            tagFilterBehavior: tagFilterBehaviorWhenEnabled,
-            tagFilterOptions: tagFilterOptionsWhenEnabled,
-
-            dateFilterEnabled,
-            dateFilterBehavior: dateFilterBehaviorWhenEnabled,
-            dateFilterOptions: dateFilterOptionsWhenEnabled,
+            dateFilterEnabled: dateFilter.enabled,
+            dateFilterBehavior: dateFilter.criterion.behavior,
+            dateFilterOptions: dateFilter.criterion.options as number[],
         }
         const txt = JSON.stringify(o, null, 2);
         console.log(o);
@@ -420,55 +396,45 @@ const EventListOuter = () => {
         }).catch(() => {
             // nop
         });
-    };
-
-    const handleClickStaticFilter = (x: EventsFilterSpecStatic) => {
+    }; const handleClickStaticFilter = (x: EventsFilterSpecStatic) => {
         setSortColumn(x.orderByColumn);
         setSortDirection(x.orderByDirection);
 
-        setTypeFilterEnabled(x.typeFilterEnabled);
-        setTypeFilterBehaviorWhenEnabled(x.typeFilterBehavior);
-        setTypeFilterOptionsWhenEnabled(x.typeFilterOptions);
+        typeFilter.setEnabled(x.typeFilterEnabled);
+        typeFilter.setBehavior(x.typeFilterBehavior);
+        typeFilter.setOptions(x.typeFilterOptions);
 
-        setStatusFilterEnabled(x.statusFilterEnabled);
-        setStatusFilterBehaviorWhenEnabled(x.statusFilterBehavior);
-        setStatusFilterOptionsWhenEnabled(x.statusFilterOptions);
+        statusFilter.setEnabled(x.statusFilterEnabled);
+        statusFilter.setBehavior(x.statusFilterBehavior);
+        statusFilter.setOptions(x.statusFilterOptions);
 
-        setTagFilterEnabled(x.tagFilterEnabled);
-        setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
-        setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+        tagFilter.setEnabled(x.tagFilterEnabled);
+        tagFilter.setBehavior(x.tagFilterBehavior);
+        tagFilter.setOptions(x.tagFilterOptions);
 
-        setDateFilterEnabled(x.dateFilterEnabled);
-        setDateFilterBehaviorWhenEnabled(x.dateFilterBehavior);
-        setDateFilterOptionsWhenEnabled(x.dateFilterOptions);
-    };
-
-    const MatchesStaticFilter = (x: EventsFilterSpecStatic): boolean => {
+        dateFilter.setEnabled(x.dateFilterEnabled);
+        dateFilter.setBehavior(x.dateFilterBehavior);
+        dateFilter.setOptions(x.dateFilterOptions);
+    }; const MatchesStaticFilter = (x: EventsFilterSpecStatic): boolean => {
         if (sortColumn !== x.orderByColumn) return false;
         if (sortDirection !== x.orderByDirection) return false;
 
-        if (x.typeFilterEnabled !== typeFilterEnabled) return false;
-        if (typeFilterEnabled) {
-            if (typeFilterBehaviorWhenEnabled !== x.typeFilterBehavior) return false;
-            if (!arraysContainSameValues(typeFilterOptionsWhenEnabled, x.typeFilterOptions)) return false;
-        }
-
-        if (x.statusFilterEnabled !== statusFilterEnabled) return false;
-        if (statusFilterEnabled) {
-            if (statusFilterBehaviorWhenEnabled !== x.statusFilterBehavior) return false;
-            if (!arraysContainSameValues(statusFilterOptionsWhenEnabled, x.statusFilterOptions)) return false;
-        }
-
-        if (x.tagFilterEnabled !== tagFilterEnabled) return false;
-        if (tagFilterEnabled) {
-            if (tagFilterBehaviorWhenEnabled !== x.tagFilterBehavior) return false;
-            if (!arraysContainSameValues(tagFilterOptionsWhenEnabled, x.tagFilterOptions)) return false;
-        }
-
-        if (x.dateFilterEnabled !== dateFilterEnabled) return false;
-        if (dateFilterEnabled) {
-            if (dateFilterBehaviorWhenEnabled !== x.dateFilterBehavior) return false;
-            if (!arraysContainSameValues(dateFilterOptionsWhenEnabled, x.dateFilterOptions)) return false;
+        if (x.typeFilterEnabled !== typeFilter.enabled) return false;
+        if (typeFilter.enabled) {
+            if (typeFilter.criterion.behavior !== x.typeFilterBehavior) return false;
+            if (!arraysContainSameValues(typeFilter.criterion.options as number[], x.typeFilterOptions)) return false;
+        } if (x.statusFilterEnabled !== statusFilter.enabled) return false;
+        if (statusFilter.enabled) {
+            if (statusFilter.criterion.behavior !== x.statusFilterBehavior) return false;
+            if (!arraysContainSameValues(statusFilter.criterion.options as number[], x.statusFilterOptions)) return false;
+        } if (x.tagFilterEnabled !== tagFilter.enabled) return false;
+        if (tagFilter.enabled) {
+            if (tagFilter.criterion.behavior !== x.tagFilterBehavior) return false;
+            if (!arraysContainSameValues(tagFilter.criterion.options as number[], x.tagFilterOptions)) return false;
+        } if (x.dateFilterEnabled !== dateFilter.enabled) return false;
+        if (dateFilter.enabled) {
+            if (dateFilter.criterion.behavior !== x.dateFilterBehavior) return false;
+            if (!arraysContainSameValues(dateFilter.criterion.options as number[], x.dateFilterOptions)) return false;
         }
 
         return true;
@@ -478,10 +444,10 @@ const EventListOuter = () => {
 
     const hasExtraFilters = ((): boolean => {
         if (!!matchingStaticFilter) return false;
-        if (typeFilterEnabled) return true;
-        if (statusFilterEnabled) return true;
-        if (tagFilterEnabled) return true;
-        if (dateFilterEnabled) return true;
+        if (typeFilter.enabled) return true;
+        if (statusFilter.enabled) return true;
+        if (tagFilter.enabled) return true;
+        if (dateFilter.enabled) return true;
         return false;
     })();
 
@@ -527,29 +493,28 @@ const EventListOuter = () => {
                         </div>
                     }
                     extraFilter={
-                        <div>
-                            <TagsFilterGroup
-                                label={"Status"}
-                                style="foreignSingle"
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "status")?.error}
-                                value={statusFilterWhenEnabled}
-                                filterEnabled={statusFilterEnabled}
-                                onChange={(n, enabled) => {
-                                    setStatusFilterEnabled(enabled);
-                                    setStatusFilterWhenEnabled(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "status")?.items || []}
-                            />
+                        <div>                            <TagsFilterGroup
+                            label={"Status"}
+                            style="foreignSingle"
+                            errorMessage={results?.filterQueryResult.errors.find(x => x.column === "status")?.error}
+                            value={statusFilter.criterion}
+                            filterEnabled={statusFilter.enabled}
+                            onChange={(n, enabled) => {
+                                statusFilter.setEnabled(enabled);
+                                statusFilter.setCriterion(n);
+                            }}
+                            items={results.facets.find(f => f.db3Column === "status")?.items || []}
+                        />
                             <div className="divider" />
                             <TagsFilterGroup
                                 label={"Type"}
                                 style="foreignSingle"
                                 errorMessage={results?.filterQueryResult.errors.find(x => x.column === "type")?.error}
-                                value={typeFilterWhenEnabled}
-                                filterEnabled={typeFilterEnabled}
+                                value={typeFilter.criterion}
+                                filterEnabled={typeFilter.enabled}
                                 onChange={(n, enabled) => {
-                                    setTypeFilterEnabled(enabled);
-                                    setTypeFilterWhenEnabled(n);
+                                    typeFilter.setEnabled(enabled);
+                                    typeFilter.setCriterion(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "type")?.items || []}
                             />
@@ -557,12 +522,12 @@ const EventListOuter = () => {
                             <TagsFilterGroup
                                 label={"Tags"}
                                 style="tags"
-                                filterEnabled={tagFilterEnabled}
+                                filterEnabled={tagFilter.enabled}
                                 errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
-                                value={tagFilterWhenEnabled}
+                                value={tagFilter.criterion}
                                 onChange={(n, enabled) => {
-                                    setTagFilterEnabled(enabled);
-                                    setTagFilterWhenEnabled(n);
+                                    tagFilter.setEnabled(enabled);
+                                    tagFilter.setCriterion(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "tags")?.items || []}
                             />
@@ -570,12 +535,12 @@ const EventListOuter = () => {
                             <TagsFilterGroup
                                 label={"Date"}
                                 style="radio"
-                                filterEnabled={dateFilterEnabled}
+                                filterEnabled={dateFilter.enabled}
                                 errorMessage={results?.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
-                                value={dateFilterWhenEnabled}
+                                value={dateFilter.criterion}
                                 onChange={(n, enabled) => {
-                                    setDateFilterEnabled(enabled);
-                                    setDateFilterWhenEnabled(n);
+                                    dateFilter.setEnabled(enabled);
+                                    dateFilter.setCriterion(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "startsAt")?.items || []}
                             />

@@ -24,6 +24,7 @@ import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { CMLink } from "@/src/core/components/CMLink";
+import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {
@@ -266,9 +267,7 @@ const FileListOuter = () => {
     // URL state management
     const [quickFilter, setQuickFilter] = useURLState<string>("f", "");
     const [sortColumn, setSortColumn] = useURLState<FileOrderByColumnOption>("sc", FileOrderByColumnOptions.uploadedAt);
-    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", "desc");
-
-    const sortModel: SortBySpec = {
+    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", "desc"); const sortModel: SortBySpec = {
         columnName: sortColumn,
         direction: sortDirection,
     };
@@ -277,55 +276,29 @@ const FileListOuter = () => {
         setSortDirection(x.direction);
     };
 
-    // Type filter
-    // const [typeFilterEnabled, setTypeFilterEnabled] = useURLState<boolean>("tfe", false);
-    // const [typeFilterBehaviorWhenEnabled, setTypeFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tfb", DiscreteCriterionFilterType.hasSomeOf);
-    // const [typeFilterOptionsWhenEnabled, setTypeFilterOptionsWhenEnabled] = useURLState<number[]>("tfo", []);
+    // "ta" prefix - Using useDiscreteFilter hook
+    const tagFilter = useDiscreteFilter({
+        urlPrefix: "ta",
+        db3Column: "tags",
+        defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.tagFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
+    });
 
-    // Tag filter
-    const [tagFilterEnabled, setTagFilterEnabled] = useURLState<boolean>("tafe", false);
-    const [tagFilterBehaviorWhenEnabled, setTagFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tafb", DiscreteCriterionFilterType.hasAllOf);
-    const [tagFilterOptionsWhenEnabled, setTagFilterOptionsWhenEnabled] = useURLState<number[]>("tafo", []);
-
-    // Uploader filter
-    // const [uploaderFilterEnabled, setUploaderFilterEnabled] = useURLState<boolean>("ufe", false);
-    // const [uploaderFilterBehaviorWhenEnabled, setUploaderFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("ufb", DiscreteCriterionFilterType.hasSomeOf);
-    // const [uploaderFilterOptionsWhenEnabled, setUploaderFilterOptionsWhenEnabled] = useURLState<number[]>("ufo", []);
-
-    // Size filter
-    // const [sizeFilterEnabled, setSizeFilterEnabled] = useURLState<boolean>("sfe", false);
-    // const [sizeFilterBehaviorWhenEnabled, setSizeFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("sfb", DiscreteCriterionFilterType.hasSomeOf);
-    // const [sizeFilterOptionsWhenEnabled, setSizeFilterOptionsWhenEnabled] = useURLState<number[]>("sfo", []);
-
-    // // Associated users filter
-    // const [taggedUserFilterEnabled, setTaggedUserFilterEnabled] = useURLState<boolean>("tufe", false);
-    // const [taggedUserFilterBehaviorWhenEnabled, setTaggedUserFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tufb", DiscreteCriterionFilterType.hasSomeOf);
-    // const [taggedUserFilterOptionsWhenEnabled, setTaggedUserFilterOptionsWhenEnabled] = useURLState<number[]>("tufo", []);
-
-    // // Associated events filter
-    // const [taggedEventFilterEnabled, setTaggedEventFilterEnabled] = useURLState<boolean>("tefe", false);
-    // const [taggedEventFilterBehaviorWhenEnabled, setTaggedEventFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tefb", DiscreteCriterionFilterType.hasSomeOf);
-    // const [taggedEventFilterOptionsWhenEnabled, setTaggedEventFilterOptionsWhenEnabled] = useURLState<number[]>("tefo", []);
-
-    // // Associated songs filter
-    // const [taggedSongFilterEnabled, setTaggedSongFilterEnabled] = useURLState<boolean>("tsfe", false);
-    // const [taggedSongFilterBehaviorWhenEnabled, setTaggedSongFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tsfb", DiscreteCriterionFilterType.hasSomeOf);
-    // const [taggedSongFilterOptionsWhenEnabled, setTaggedSongFilterOptionsWhenEnabled] = useURLState<number[]>("tsfo", []);
-
-    // Associated instruments filter
-    const [taggedInstrumentFilterEnabled, setTaggedInstrumentFilterEnabled] = useURLState<boolean>("tife", false);
-    const [taggedInstrumentFilterBehaviorWhenEnabled, setTaggedInstrumentFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tifb", DiscreteCriterionFilterType.hasSomeOf);
-    const [taggedInstrumentFilterOptionsWhenEnabled, setTaggedInstrumentFilterOptionsWhenEnabled] = useURLState<number[]>("tifo", []);
-
-    // Build the filter spec
+    // "ti" prefix - Using useDiscreteFilter hook
+    const taggedInstrumentFilter = useDiscreteFilter({
+        urlPrefix: "ti",
+        db3Column: "taggedInstruments",
+        defaultBehavior: gDefaultStaticFilterValue.taggedInstrumentFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.taggedInstrumentFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.taggedInstrumentFilterEnabled,
+    });    // Build the filter spec
     //const typeFilterWhenEnabled: DiscreteCriterion = { db3Column: "mimeType", behavior: typeFilterBehaviorWhenEnabled, options: typeFilterOptionsWhenEnabled };
-    const tagFilterWhenEnabled: DiscreteCriterion = { db3Column: "tags", behavior: tagFilterBehaviorWhenEnabled, options: tagFilterOptionsWhenEnabled };
     //const uploaderFilterWhenEnabled: DiscreteCriterion = { db3Column: "uploadedByUser", behavior: uploaderFilterBehaviorWhenEnabled, options: uploaderFilterOptionsWhenEnabled };
     //const sizeFilterWhenEnabled: DiscreteCriterion = { db3Column: "sizeBytes", behavior: sizeFilterBehaviorWhenEnabled, options: sizeFilterOptionsWhenEnabled };
     // const taggedUserFilterWhenEnabled: DiscreteCriterion = { db3Column: "taggedUsers", behavior: taggedUserFilterBehaviorWhenEnabled, options: taggedUserFilterOptionsWhenEnabled };
     // const taggedEventFilterWhenEnabled: DiscreteCriterion = { db3Column: "taggedEvents", behavior: taggedEventFilterBehaviorWhenEnabled, options: taggedEventFilterOptionsWhenEnabled };
     // const taggedSongFilterWhenEnabled: DiscreteCriterion = { db3Column: "taggedSongs", behavior: taggedSongFilterBehaviorWhenEnabled, options: taggedSongFilterOptionsWhenEnabled };
-    const taggedInstrumentFilterWhenEnabled: DiscreteCriterion = { db3Column: "taggedInstruments", behavior: taggedInstrumentFilterBehaviorWhenEnabled, options: taggedInstrumentFilterOptionsWhenEnabled };
 
     const filterSpec: FilesFilterSpec = {
         refreshSerial,
@@ -334,16 +307,14 @@ const FileListOuter = () => {
         orderByDirection: sortDirection,
 
         //typeFilter: typeFilterEnabled ? typeFilterWhenEnabled : { db3Column: "mimeType", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         //uploaderFilter: uploaderFilterEnabled ? uploaderFilterWhenEnabled : { db3Column: "uploadedByUser", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         //sizeFilter: sizeFilterEnabled ? sizeFilterWhenEnabled : { db3Column: "sizeBytes", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         // taggedUserFilter: taggedUserFilterEnabled ? taggedUserFilterWhenEnabled : { db3Column: "taggedUsers", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         // taggedEventFilter: taggedEventFilterEnabled ? taggedEventFilterWhenEnabled : { db3Column: "taggedEvents", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         // taggedSongFilter: taggedSongFilterEnabled ? taggedSongFilterWhenEnabled : { db3Column: "taggedSongs", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        taggedInstrumentFilter: taggedInstrumentFilterEnabled ? taggedInstrumentFilterWhenEnabled : { db3Column: "taggedInstruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-    }; const { enrichedFiles, results, loadMoreData } = useFileListData(filterSpec);
-
-    const handleCopyFilterspec = () => {
+        taggedInstrumentFilter: taggedInstrumentFilter.enabled ? taggedInstrumentFilter.criterion : { db3Column: "taggedInstruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+    }; const { enrichedFiles, results, loadMoreData } = useFileListData(filterSpec); const handleCopyFilterspec = () => {
         const o: FilesFilterSpecStatic = {
             label: "(n/a)",
             helpText: "",
@@ -354,9 +325,9 @@ const FileListOuter = () => {
             // typeFilterBehavior: typeFilterBehaviorWhenEnabled,
             // typeFilterOptions: typeFilterOptionsWhenEnabled,
 
-            tagFilterEnabled,
-            tagFilterBehavior: tagFilterBehaviorWhenEnabled,
-            tagFilterOptions: tagFilterOptionsWhenEnabled,
+            tagFilterEnabled: tagFilter.enabled,
+            tagFilterBehavior: tagFilter.criterion.behavior,
+            tagFilterOptions: tagFilter.criterion.options as number[],
 
             // uploaderFilterEnabled,
             // uploaderFilterBehavior: uploaderFilterBehaviorWhenEnabled,
@@ -378,9 +349,9 @@ const FileListOuter = () => {
             // taggedSongFilterBehavior: taggedSongFilterBehaviorWhenEnabled,
             // taggedSongFilterOptions: taggedSongFilterOptionsWhenEnabled,
 
-            taggedInstrumentFilterEnabled,
-            taggedInstrumentFilterBehavior: taggedInstrumentFilterBehaviorWhenEnabled,
-            taggedInstrumentFilterOptions: taggedInstrumentFilterOptionsWhenEnabled,
+            taggedInstrumentFilterEnabled: taggedInstrumentFilter.enabled,
+            taggedInstrumentFilterBehavior: taggedInstrumentFilter.criterion.behavior,
+            taggedInstrumentFilterOptions: taggedInstrumentFilter.criterion.options as number[],
         }
         const txt = JSON.stringify(o, null, 2);
         console.log(o);
@@ -389,9 +360,7 @@ const FileListOuter = () => {
         }).catch(() => {
             // nop
         });
-    };
-
-    const handleClickStaticFilter = (x: FilesFilterSpecStatic) => {
+    }; const handleClickStaticFilter = (x: FilesFilterSpecStatic) => {
         setSortColumn(x.orderByColumn);
         setSortDirection(x.orderByDirection);
 
@@ -399,9 +368,9 @@ const FileListOuter = () => {
         // setTypeFilterBehaviorWhenEnabled(x.typeFilterBehavior);
         // setTypeFilterOptionsWhenEnabled(x.typeFilterOptions);
 
-        setTagFilterEnabled(x.tagFilterEnabled);
-        setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
-        setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+        tagFilter.setEnabled(x.tagFilterEnabled);
+        tagFilter.setBehavior(x.tagFilterBehavior);
+        tagFilter.setOptions(x.tagFilterOptions);
 
         // setUploaderFilterEnabled(x.uploaderFilterEnabled);
         // setUploaderFilterBehaviorWhenEnabled(x.uploaderFilterBehavior);
@@ -423,35 +392,31 @@ const FileListOuter = () => {
         // setTaggedSongFilterBehaviorWhenEnabled(x.taggedSongFilterBehavior);
         // setTaggedSongFilterOptionsWhenEnabled(x.taggedSongFilterOptions);
 
-        setTaggedInstrumentFilterEnabled(x.taggedInstrumentFilterEnabled);
-        setTaggedInstrumentFilterBehaviorWhenEnabled(x.taggedInstrumentFilterBehavior);
-        setTaggedInstrumentFilterOptionsWhenEnabled(x.taggedInstrumentFilterOptions);
+        taggedInstrumentFilter.setEnabled(x.taggedInstrumentFilterEnabled);
+        taggedInstrumentFilter.setBehavior(x.taggedInstrumentFilterBehavior);
+        taggedInstrumentFilter.setOptions(x.taggedInstrumentFilterOptions);
 
         setRefreshSerial(old => old + 1);
-    };
-
-    const matchingStaticFilter = gStaticFilters.find(f => {
+    }; const matchingStaticFilter = gStaticFilters.find(f => {
         return f.orderByColumn === sortColumn &&
             f.orderByDirection === sortDirection &&
             //f.typeFilterEnabled === typeFilterEnabled &&
-            f.tagFilterEnabled === tagFilterEnabled &&
+            f.tagFilterEnabled === tagFilter.enabled &&
             // f.uploaderFilterEnabled === uploaderFilterEnabled &&
             //f.sizeFilterEnabled === sizeFilterEnabled &&
             // f.taggedUserFilterEnabled === taggedUserFilterEnabled &&
             // f.taggedEventFilterEnabled === taggedEventFilterEnabled &&
             // f.taggedSongFilterEnabled === taggedSongFilterEnabled &&
-            f.taggedInstrumentFilterEnabled === taggedInstrumentFilterEnabled &&
+            f.taggedInstrumentFilterEnabled === taggedInstrumentFilter.enabled &&
             //arraysContainSameValues(f.typeFilterOptions, typeFilterOptionsWhenEnabled) &&
-            arraysContainSameValues(f.tagFilterOptions, tagFilterOptionsWhenEnabled) &&
+            arraysContainSameValues(f.tagFilterOptions, tagFilter.criterion.options as number[]) &&
             // arraysContainSameValues(f.uploaderFilterOptions, uploaderFilterOptionsWhenEnabled) &&
             //arraysContainSameValues(f.sizeFilterOptions, sizeFilterOptionsWhenEnabled) &&
             // arraysContainSameValues(f.taggedUserFilterOptions, taggedUserFilterOptionsWhenEnabled) &&
             // arraysContainSameValues(f.taggedEventFilterOptions, taggedEventFilterOptionsWhenEnabled) &&
             // arraysContainSameValues(f.taggedSongFilterOptions, taggedSongFilterOptionsWhenEnabled) &&
-            arraysContainSameValues(f.taggedInstrumentFilterOptions, taggedInstrumentFilterOptionsWhenEnabled);
-    });
-
-    const hasExtraFilters = () => {
+            arraysContainSameValues(f.taggedInstrumentFilterOptions, taggedInstrumentFilter.criterion.options as number[]);
+    }); const hasExtraFilters = () => {
         const def = gDefaultStaticFilterValue;
         //if (typeFilterEnabled !== def.typeFilterEnabled) return true;
         // if (uploaderFilterEnabled !== def.uploaderFilterEnabled) return true;
@@ -459,7 +424,7 @@ const FileListOuter = () => {
         // if (taggedUserFilterEnabled !== def.taggedUserFilterEnabled) return true;
         // if (taggedEventFilterEnabled !== def.taggedEventFilterEnabled) return true;
         // if (taggedSongFilterEnabled !== def.taggedSongFilterEnabled) return true;
-        if (taggedInstrumentFilterEnabled !== def.taggedInstrumentFilterEnabled) return true;
+        if (taggedInstrumentFilter.enabled !== def.taggedInstrumentFilterEnabled) return true;
         return false;
     };
 
@@ -467,7 +432,7 @@ const FileListOuter = () => {
         const def = gDefaultStaticFilterValue;
         if (sortColumn !== def.orderByColumn) return true;
         if (sortDirection !== def.orderByDirection) return true;
-        if (tagFilterEnabled !== def.tagFilterEnabled) return true;
+        if (tagFilter.enabled !== def.tagFilterEnabled) return true;
         return hasExtraFilters();
     };
 
@@ -508,20 +473,18 @@ const FileListOuter = () => {
                         </div>
                     }
                     extraFilter={
-                        <div>
-                            <TagsFilterGroup
-                                style="tags"
-                                filterEnabled={tagFilterEnabled}
-                                items={results.facets?.find(f => f.db3Column === "tags")?.items || []}
-                                value={tagFilterWhenEnabled}
-                                onChange={(v, enabled) => {
-                                    setTagFilterEnabled(enabled);
-                                    setTagFilterBehaviorWhenEnabled(v.behavior);
-                                    setTagFilterOptionsWhenEnabled(v.options as number[]);
-                                }}
-                                errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "tags")?.error}
-                                label="File tags"
-                            />
+                        <div>                            <TagsFilterGroup
+                            style="tags"
+                            filterEnabled={tagFilter.enabled}
+                            items={results.facets?.find(f => f.db3Column === "tags")?.items || []}
+                            value={tagFilter.criterion}
+                            onChange={(v, enabled) => {
+                                tagFilter.setEnabled(enabled);
+                                tagFilter.setCriterion(v);
+                            }}
+                            errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "tags")?.error}
+                            label="File tags"
+                        />
                             <div className="divider" />
                             {/* <TagsFilterGroup
                                 style="foreignSingle"
@@ -578,16 +541,14 @@ const FileListOuter = () => {
                                 errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "taggedSongs")?.error}
                                 label="Tagged songs"
                             />
-                            <div className="divider" /> */}
-                            <TagsFilterGroup
+                            <div className="divider" /> */}                            <TagsFilterGroup
                                 style="tags"
-                                filterEnabled={taggedInstrumentFilterEnabled}
+                                filterEnabled={taggedInstrumentFilter.enabled}
                                 items={results.facets?.find(f => f.db3Column === "taggedInstruments")?.items || []}
-                                value={taggedInstrumentFilterWhenEnabled}
+                                value={taggedInstrumentFilter.criterion}
                                 onChange={(v, enabled) => {
-                                    setTaggedInstrumentFilterEnabled(enabled);
-                                    setTaggedInstrumentFilterBehaviorWhenEnabled(v.behavior);
-                                    setTaggedInstrumentFilterOptionsWhenEnabled(v.options as number[]);
+                                    taggedInstrumentFilter.setEnabled(enabled);
+                                    taggedInstrumentFilter.setCriterion(v);
                                 }}
                                 errorMessage={results.filterQueryResult?.errors?.find(e => e.column === "taggedInstruments")?.error}
                                 label="Tagged instruments"

@@ -21,6 +21,7 @@ import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { useDiscreteFilter } from "src/core/hooks/useSearchFilters";
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 
 type UserListItemProps = {
@@ -253,9 +254,7 @@ const UserListOuter = () => {
     const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
 
     const [sortColumn, setSortColumn] = useURLState<string>("sc", gDefaultStaticFilterValue.orderByColumn);
-    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection);
-
-    const sortModel: SortBySpec = {
+    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection); const sortModel: SortBySpec = {
         columnName: sortColumn,
         direction: sortDirection,
     };
@@ -264,49 +263,32 @@ const UserListOuter = () => {
         setSortDirection(x.direction);
     };
 
-    // "tg" prefix
-    const [tagFilterBehaviorWhenEnabled, setTagFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tgb", gDefaultStaticFilterValue.tagFilterBehavior);
-    const [tagFilterOptionsWhenEnabled, setTagFilterOptionsWhenEnabled] = useURLState<number[]>("tgo", gDefaultStaticFilterValue.tagFilterOptions);
-    const [tagFilterEnabled, setTagFilterEnabled] = useURLState<boolean>("tge", gDefaultStaticFilterValue.tagFilterEnabled);
-    const tagFilterWhenEnabled: DiscreteCriterion = {
+    // "tg" prefix - Using useDiscreteFilter hook
+    const tagFilter = useDiscreteFilter({
+        urlPrefix: "tg",
         db3Column: "tags",
-        behavior: tagFilterBehaviorWhenEnabled,
-        options: tagFilterOptionsWhenEnabled,
-    };
-    const setTagFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setTagFilterBehaviorWhenEnabled(x.behavior);
-        setTagFilterOptionsWhenEnabled(x.options as any);
-    };
+        defaultBehavior: gDefaultStaticFilterValue.tagFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.tagFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
+    });
 
-    // "rl" prefix
-    const [roleFilterBehaviorWhenEnabled, setRoleFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("rlb", gDefaultStaticFilterValue.roleFilterBehavior);
-    const [roleFilterOptionsWhenEnabled, setRoleFilterOptionsWhenEnabled] = useURLState<number[]>("rlo", gDefaultStaticFilterValue.roleFilterOptions);
-    const [roleFilterEnabled, setRoleFilterEnabled] = useURLState<boolean>("rle", gDefaultStaticFilterValue.roleFilterEnabled);
-    const roleFilterWhenEnabled: DiscreteCriterion = {
+    // "rl" prefix - Using useDiscreteFilter hook
+    const roleFilter = useDiscreteFilter({
+        urlPrefix: "rl",
         db3Column: "role",
-        behavior: roleFilterBehaviorWhenEnabled,
-        options: roleFilterOptionsWhenEnabled,
-    };
-    const setRoleFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setRoleFilterBehaviorWhenEnabled(x.behavior);
-        setRoleFilterOptionsWhenEnabled(x.options as any);
-    };
+        defaultBehavior: gDefaultStaticFilterValue.roleFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.roleFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.roleFilterEnabled,
+    });
 
-    // "in" prefix
-    const [instrumentFilterBehaviorWhenEnabled, setInstrumentFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("inb", gDefaultStaticFilterValue.instrumentFilterBehavior);
-    const [instrumentFilterOptionsWhenEnabled, setInstrumentFilterOptionsWhenEnabled] = useURLState<number[]>("ino", gDefaultStaticFilterValue.instrumentFilterOptions);
-    const [instrumentFilterEnabled, setInstrumentFilterEnabled] = useURLState<boolean>("ine", gDefaultStaticFilterValue.instrumentFilterEnabled);
-    const instrumentFilterWhenEnabled: DiscreteCriterion = {
+    // "in" prefix - Using useDiscreteFilter hook
+    const instrumentFilter = useDiscreteFilter({
+        urlPrefix: "in",
         db3Column: "instruments",
-        behavior: instrumentFilterBehaviorWhenEnabled,
-        options: instrumentFilterOptionsWhenEnabled,
-    };
-    const setInstrumentFilterWhenEnabled = (x: DiscreteCriterion) => {
-        setInstrumentFilterBehaviorWhenEnabled(x.behavior);
-        setInstrumentFilterOptionsWhenEnabled(x.options as any);
-    };
-
-    // the default basic filter spec when no params specified.
+        defaultBehavior: gDefaultStaticFilterValue.instrumentFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.instrumentFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.instrumentFilterEnabled,
+    });    // the default basic filter spec when no params specified.
     const filterSpec: UsersFilterSpec = {
         refreshSerial,
 
@@ -316,31 +298,29 @@ const UserListOuter = () => {
         orderByColumn: sortColumn as any,
         orderByDirection: sortDirection,
 
-        tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        instrumentFilter: instrumentFilterEnabled ? instrumentFilterWhenEnabled : { db3Column: "instruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-        roleFilter: roleFilterEnabled ? roleFilterWhenEnabled : { db3Column: "role", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        instrumentFilter: instrumentFilter.enabled ? instrumentFilter.criterion : { db3Column: "instruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        roleFilter: roleFilter.enabled ? roleFilter.criterion : { db3Column: "role", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
-    const { enrichedItems, results, loadMoreData } = useUserListData(filterSpec);
-
-    const handleCopyFilterspec = () => {
+    const { enrichedItems, results, loadMoreData } = useUserListData(filterSpec); const handleCopyFilterspec = () => {
         const o: UsersFilterSpecStatic = {
             label: "(n/a)",
             helpText: "",
             orderByColumn: sortColumn as any,
             orderByDirection: sortDirection,
 
-            tagFilterEnabled,
-            tagFilterBehavior: tagFilterBehaviorWhenEnabled,
-            tagFilterOptions: tagFilterOptionsWhenEnabled,
+            tagFilterEnabled: tagFilter.enabled,
+            tagFilterBehavior: tagFilter.criterion.behavior,
+            tagFilterOptions: tagFilter.criterion.options as number[],
 
-            roleFilterEnabled,
-            roleFilterBehavior: roleFilterBehaviorWhenEnabled,
-            roleFilterOptions: roleFilterOptionsWhenEnabled,
+            roleFilterEnabled: roleFilter.enabled,
+            roleFilterBehavior: roleFilter.criterion.behavior,
+            roleFilterOptions: roleFilter.criterion.options as number[],
 
-            instrumentFilterEnabled,
-            instrumentFilterBehavior: instrumentFilterBehaviorWhenEnabled,
-            instrumentFilterOptions: instrumentFilterOptionsWhenEnabled,
+            instrumentFilterEnabled: instrumentFilter.enabled,
+            instrumentFilterBehavior: instrumentFilter.criterion.behavior,
+            instrumentFilterOptions: instrumentFilter.criterion.options as number[],
         }
         const txt = JSON.stringify(o, null, 2);
         console.log(o);
@@ -349,57 +329,51 @@ const UserListOuter = () => {
         }).catch(() => {
             // nop
         });
-    };
-
-    const handleClickStaticFilter = (x: UsersFilterSpecStatic) => {
+    }; const handleClickStaticFilter = (x: UsersFilterSpecStatic) => {
         setSortColumn(x.orderByColumn);
         setSortDirection(x.orderByDirection);
 
-        setTagFilterEnabled(x.tagFilterEnabled);
-        setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
-        setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+        tagFilter.setEnabled(x.tagFilterEnabled);
+        tagFilter.setBehavior(x.tagFilterBehavior);
+        tagFilter.setOptions(x.tagFilterOptions);
 
-        setRoleFilterEnabled(x.roleFilterEnabled);
-        setRoleFilterBehaviorWhenEnabled(x.roleFilterBehavior);
-        setRoleFilterOptionsWhenEnabled(x.roleFilterOptions);
+        roleFilter.setEnabled(x.roleFilterEnabled);
+        roleFilter.setBehavior(x.roleFilterBehavior);
+        roleFilter.setOptions(x.roleFilterOptions);
 
-        setInstrumentFilterEnabled(x.instrumentFilterEnabled);
-        setInstrumentFilterBehaviorWhenEnabled(x.instrumentFilterBehavior);
-        setInstrumentFilterOptionsWhenEnabled(x.instrumentFilterOptions);
-    };
-
-    const MatchesStaticFilter = (x: UsersFilterSpecStatic): boolean => {
+        instrumentFilter.setEnabled(x.instrumentFilterEnabled);
+        instrumentFilter.setBehavior(x.instrumentFilterBehavior);
+        instrumentFilter.setOptions(x.instrumentFilterOptions);
+    }; const MatchesStaticFilter = (x: UsersFilterSpecStatic): boolean => {
         if (sortColumn !== x.orderByColumn) return false;
         if (sortDirection !== x.orderByDirection) return false;
 
-        if (x.tagFilterEnabled !== tagFilterEnabled) return false;
-        if (tagFilterEnabled) {
-            if (tagFilterBehaviorWhenEnabled !== x.tagFilterBehavior) return false;
-            if (!arraysContainSameValues(tagFilterOptionsWhenEnabled, x.tagFilterOptions)) return false;
+        if (x.tagFilterEnabled !== tagFilter.enabled) return false;
+        if (tagFilter.enabled) {
+            if (tagFilter.criterion.behavior !== x.tagFilterBehavior) return false;
+            if (!arraysContainSameValues(tagFilter.criterion.options as number[], x.tagFilterOptions)) return false;
         }
 
-        if (x.roleFilterEnabled !== roleFilterEnabled) return false;
-        if (roleFilterEnabled) {
-            if (roleFilterBehaviorWhenEnabled !== x.roleFilterBehavior) return false;
-            if (!arraysContainSameValues(roleFilterOptionsWhenEnabled, x.roleFilterOptions)) return false;
+        if (x.roleFilterEnabled !== roleFilter.enabled) return false;
+        if (roleFilter.enabled) {
+            if (roleFilter.criterion.behavior !== x.roleFilterBehavior) return false;
+            if (!arraysContainSameValues(roleFilter.criterion.options as number[], x.roleFilterOptions)) return false;
         }
 
-        if (x.instrumentFilterEnabled !== instrumentFilterEnabled) return false;
-        if (instrumentFilterEnabled) {
-            if (instrumentFilterBehaviorWhenEnabled !== x.instrumentFilterBehavior) return false;
-            if (!arraysContainSameValues(instrumentFilterOptionsWhenEnabled, x.instrumentFilterOptions)) return false;
+        if (x.instrumentFilterEnabled !== instrumentFilter.enabled) return false;
+        if (instrumentFilter.enabled) {
+            if (instrumentFilter.criterion.behavior !== x.instrumentFilterBehavior) return false;
+            if (!arraysContainSameValues(instrumentFilter.criterion.options as number[], x.instrumentFilterOptions)) return false;
         }
 
         return true;
     };
 
-    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x));
-
-    const hasExtraFilters = ((): boolean => {
+    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x)); const hasExtraFilters = ((): boolean => {
         if (!!matchingStaticFilter) return false;
-        if (tagFilterEnabled) return true;
-        if (roleFilterEnabled) return true;
-        if (instrumentFilterEnabled) return true;
+        if (tagFilter.enabled) return true;
+        if (roleFilter.enabled) return true;
+        if (instrumentFilter.enabled) return true;
         return false;
     })();
 
@@ -442,41 +416,39 @@ const UserListOuter = () => {
                         </div>
                     }
                     extraFilter={
-                        <div>
-                            <TagsFilterGroup
-                                label={"Tags"}
-                                style="tags"
-                                filterEnabled={tagFilterEnabled}
-                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
-                                value={tagFilterWhenEnabled}
-                                onChange={(n, enabled) => {
-                                    setTagFilterEnabled(enabled);
-                                    setTagFilterWhenEnabled(n);
-                                }}
-                                items={results.facets.find(f => f.db3Column === "tags")?.items || []}
-                                sanitize={x => {
-                                    if (!x.id) return x;
-                                    const tag = dashboardContext.userTag.getById(x.id)!;
-                                    return {
-                                        ...x,
-                                        color: tag.color || null,
-                                        label: tag.text,
-                                        shape: "rounded",
-                                        tooltip: tag.description,
-                                    };
-                                }}
-                            />
+                        <div>                            <TagsFilterGroup
+                            label={"Tags"}
+                            style="tags"
+                            filterEnabled={tagFilter.enabled}
+                            errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
+                            value={tagFilter.criterion}
+                            onChange={(n, enabled) => {
+                                tagFilter.setEnabled(enabled);
+                                tagFilter.setCriterion(n);
+                            }}
+                            items={results.facets.find(f => f.db3Column === "tags")?.items || []}
+                            sanitize={x => {
+                                if (!x.id) return x;
+                                const tag = dashboardContext.userTag.getById(x.id)!;
+                                return {
+                                    ...x,
+                                    color: tag.color || null,
+                                    label: tag.text,
+                                    shape: "rounded",
+                                    tooltip: tag.description,
+                                };
+                            }}
+                        />
 
-                            <div className="divider" />
-                            <TagsFilterGroup
+                            <div className="divider" />                            <TagsFilterGroup
                                 label={"Role"}
                                 style="foreignSingle"
                                 errorMessage={results?.filterQueryResult.errors.find(x => x.column === "role")?.error}
-                                value={roleFilterWhenEnabled}
-                                filterEnabled={roleFilterEnabled}
+                                value={roleFilter.criterion}
+                                filterEnabled={roleFilter.enabled}
                                 onChange={(n, enabled) => {
-                                    setRoleFilterEnabled(enabled);
-                                    setRoleFilterWhenEnabled(n);
+                                    roleFilter.setEnabled(enabled);
+                                    roleFilter.setCriterion(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "role")?.items || []}
                                 sanitize={x => {
@@ -492,16 +464,15 @@ const UserListOuter = () => {
                                 }}
                             />
 
-                            <div className="divider" />
-                            <TagsFilterGroup
+                            <div className="divider" />                            <TagsFilterGroup
                                 label={"Instruments"}
                                 style="tags"
-                                filterEnabled={instrumentFilterEnabled}
+                                filterEnabled={instrumentFilter.enabled}
                                 errorMessage={results?.filterQueryResult.errors.find(x => x.column === "instruments")?.error}
-                                value={instrumentFilterWhenEnabled}
+                                value={instrumentFilter.criterion}
                                 onChange={(n, enabled) => {
-                                    setInstrumentFilterEnabled(enabled);
-                                    setInstrumentFilterWhenEnabled(n);
+                                    instrumentFilter.setEnabled(enabled);
+                                    instrumentFilter.setCriterion(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "instruments")?.items || []}
                                 sanitize={x => {
