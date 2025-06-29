@@ -1085,6 +1085,7 @@ model WikiPage {
   actions Action[]
 
   taggedFiles FileWikiPageTag[]
+  tags        WikiPageTagAssignment[]
 
   @@unique([slug])
   @@unique([currentRevisionId])
@@ -1123,6 +1124,32 @@ model WikiPageRevision {
   @@index([name])
   @@index([consolidationKey])
   @@index([wikiPageId])
+}
+
+model WikiPageTag {
+  id           Int                     @id @default(autoincrement())
+  text         String                  @db.VarChar(768)
+  description  String                  @db.MediumText
+  color        String?
+  significance String? // for special behavioral tags
+  sortOrder    Int                     @default(0)
+  wikiPages    WikiPageTagAssignment[]
+
+  @@index([text])
+  @@index([significance])
+  @@index([sortOrder])
+}
+
+model WikiPageTagAssignment {
+  id         Int         @id @default(autoincrement())
+  wikiPageId Int
+  wikiPage   WikiPage    @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
+  tagId      Int
+  tag        WikiPageTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([wikiPageId, tagId])
+  @@index([wikiPageId])
+  @@index([tagId])
 }
 
 model MenuLink {

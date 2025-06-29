@@ -45,6 +45,7 @@ export enum Setting {
     editSongCreditTypes_markdown = "editSongCreditTypes_markdown",
     editSongs_markdown = "editSongs_markdown",
     editSongTags_markdown = "editSongTags_markdown",
+    editWikiPageTags_markdown = "editWikiPageTags_markdown",
     EditUserTagsPage_markdown = "EditUserTagsPage_markdown",
     events_markdown = "events_markdown",
     frontpage_gallery_markdown = "frontpage_gallery_markdown",

@@ -1195,6 +1195,30 @@ export const FileWikiPageTagNaturalOrderBy: Prisma.FileWikiPageTagOrderByWithRel
     { wikiPage: { id: 'asc' } },
 ];
 
+//////////////////////////////////////////////////////////////
+export const WikiPageTagArgs = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()({
+    include: {}
+});
+export type WikiPageTagPayload = Prisma.WikiPageTagGetPayload<typeof WikiPageTagArgs>;
+
+export const WikiPageTagNaturalOrderBy: Prisma.WikiPageTagOrderByWithRelationInput[] = [
+    { sortOrder: 'asc' },
+    { text: 'asc' },
+];
+
+//////////////////////////////////////////////////////////////
+export const WikiPageTagAssignmentArgs = Prisma.validator<Prisma.WikiPageTagAssignmentDefaultArgs>()({
+    include: {
+        tag: true,
+    }
+});
+export type WikiPageTagAssignmentPayload = Prisma.WikiPageTagAssignmentGetPayload<typeof WikiPageTagAssignmentArgs>;
+
+export const WikiPageTagAssignmentNaturalOrderBy: Prisma.WikiPageTagAssignmentOrderByWithRelationInput[] = [
+    { tag: { sortOrder: 'asc' } },
+    { tag: { text: 'asc' } },
+];
+
 export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
     include: {
         visiblePermission: {
@@ -1450,11 +1474,11 @@ export abstract class DashboardContextDataBase {
     instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
     eventCustomField: TableAccessor<Prisma.EventCustomFieldGetPayload<{}>>;
 
-    dynMenuLinks: TableAccessor<Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>>;
-
-    permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
+    dynMenuLinks: TableAccessor<Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>>; permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     role: TableAccessor<Prisma.RoleGetPayload<{}>>;
     rolePermission: TableAccessor<Prisma.RolePermissionGetPayload<{}>>;
+    // UNCOMMENT AFTER PRISMA GENERATE
+    // wikiPageTag: TableAccessor<Prisma.WikiPageTagGetPayload<{}>>;
 
     instrument: TableAccessor<EnrichedInstrument<Prisma.InstrumentGetPayload<{ include: { instrumentTags: true } }>>>;
     instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;
@@ -1568,8 +1592,6 @@ export function enrichSong<T extends EnrichSongInput>(
         }).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder), // respect ordering
     };
 }
-
-
 
 
 

@@ -1130,8 +1130,52 @@ const main = async () => {
   gState.gAllAttendanceOptions = await gState.prisma.eventAttendance.findMany();
 
   await SeedEvents_VeryRandom(gState);
-
   await SeedWikiPages(gState);
+
+  await SeedTable("wikiPageTag", gState.prisma.wikiPageTag, [
+    {
+      "text": "Documentation",
+      "description": "Technical documentation and how-to guides",
+      "sortOrder": 0,
+      "color": "blue",
+      "significance": "Documentation"
+    },
+    {
+      "text": "Tutorial",
+      "description": "Step-by-step tutorials and learning materials",
+      "sortOrder": 10,
+      "color": "green",
+      "significance": "Tutorial"
+    },
+    {
+      "text": "Policy",
+      "description": "Organizational policies and procedures",
+      "sortOrder": 20,
+      "color": "orange",
+      "significance": "Policy"
+    },
+    {
+      "text": "Meeting",
+      "description": "Meeting notes and minutes",
+      "sortOrder": 30,
+      "color": "purple",
+      "significance": "Meeting"
+    },
+    {
+      "text": "Project",
+      "description": "Project-related pages and documentation",
+      "sortOrder": 40,
+      "color": "red",
+      "significance": "Project"
+    },
+    {
+      "text": "Archive",
+      "description": "Archived or deprecated content",
+      "sortOrder": 50,
+      "color": "gray",
+      "significance": "Archive"
+    }
+  ]);
 
   await SeedActivity(gState);
 };

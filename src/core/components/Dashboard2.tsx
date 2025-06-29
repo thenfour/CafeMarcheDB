@@ -531,6 +531,13 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         ],
     },
     {
+        name: "Admin Wiki",
+        className: "admin wiki",
+        items: [
+            { type: "link", path: "/backstage/editWikiPageTags", linkCaption: "Wiki Page Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
+        ],
+    },
+    {
         name: "Admin Settings",
         className: "admin settings",
         items: [
