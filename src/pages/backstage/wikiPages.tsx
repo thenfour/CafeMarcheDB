@@ -1,60 +1,58 @@
-import { FileListItem } from "@/src/core/components/file/FileListItem";
+import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
+import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
 import { BlitzPage } from "@blitzjs/next";
-import React, { Suspense } from "react";
+import React from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/FileComponentsBase";
-import { useSearchableList } from "src/core/hooks/useSearchableList";
-import { fileSearchConfig } from "src/core/hooks/searchConfigs";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/SearchPageContent";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { getURIForFile } from "src/core/db3/clientAPILL";
+import { EnrichedVerboseWikiPage, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "src/core/components/WikiPageComponentsBase";
+import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
+import { wikiPageSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 // for serializing in compact querystring
-interface FilesFilterSpecStatic {
+interface WikiPagesFilterSpecStatic {
     label: string,
     helpText: string,
 
-    orderByColumn: FileOrderByColumnOption;
+    orderByColumn: WikiPageOrderByColumnOption;
     orderByDirection: SortDirection;
 
     tagFilterEnabled: boolean;
     tagFilterBehavior: DiscreteCriterionFilterType;
     tagFilterOptions: number[];
 
-    taggedInstrumentFilterEnabled: boolean;
-    taggedInstrumentFilterBehavior: DiscreteCriterionFilterType;
-    taggedInstrumentFilterOptions: number[];
+    namespaceFilterEnabled: boolean;
+    namespaceFilterBehavior: DiscreteCriterionFilterType;
+    namespaceFilterOptions: string[];
 }
 
 // predefined filter sets
-const gDefaultStaticFilterValue: FilesFilterSpecStatic = {
-    label: "All files",
+const gDefaultStaticFilterValue: WikiPagesFilterSpecStatic = {
+    label: "All wiki pages",
     helpText: "",
-    orderByColumn: FileOrderByColumnOptions.uploadedAt,
-    orderByDirection: "desc",
+    orderByColumn: WikiPageOrderByColumnOptions.slug,
+    orderByDirection: "asc",
 
     tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
     tagFilterOptions: [],
     tagFilterEnabled: false,
 
-    taggedInstrumentFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    taggedInstrumentFilterOptions: [],
-    taggedInstrumentFilterEnabled: false,
+    namespaceFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+    namespaceFilterOptions: [],
+    namespaceFilterEnabled: false,
+
 };
 
-const gStaticFilters: FilesFilterSpecStatic[] = []
+const gStaticFilters: WikiPagesFilterSpecStatic[] = []
 
-
-
-const FileListOuter = () => {
+const WikiPageListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
 
     // Individual filter hooks - still needed for the search page hook
@@ -66,37 +64,37 @@ const FileListOuter = () => {
         defaultEnabled: gDefaultStaticFilterValue.tagFilterEnabled,
     });
 
-    const taggedInstrumentFilter = useDiscreteFilter({
-        urlPrefix: "ti",
-        db3Column: "taggedInstruments",
-        defaultBehavior: gDefaultStaticFilterValue.taggedInstrumentFilterBehavior,
-        defaultOptions: gDefaultStaticFilterValue.taggedInstrumentFilterOptions,
-        defaultEnabled: gDefaultStaticFilterValue.taggedInstrumentFilterEnabled,
+    const namespaceFilter = useDiscreteFilter<string>({
+        urlPrefix: "ns",
+        db3Column: "namespace",
+        defaultBehavior: gDefaultStaticFilterValue.namespaceFilterBehavior,
+        defaultOptions: gDefaultStaticFilterValue.namespaceFilterOptions,
+        defaultEnabled: gDefaultStaticFilterValue.namespaceFilterEnabled,
     });
 
     // Using useSearchPage hook for centralized search page logic
-    const searchPage = useSearchPage<FilesFilterSpecStatic, FilesFilterSpec>({
+    const searchPage = useSearchPage<WikiPagesFilterSpecStatic, WikiPagesFilterSpec>({
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnKey: "orderByColumn",
         sortDirectionKey: "orderByDirection",
         filterMappings: [
             { filterHook: tagFilter, columnKey: "tagFilter" },
-            { filterHook: taggedInstrumentFilter, columnKey: "taggedInstrumentFilter" },
+            //{ filterHook: namespaceFilter, columnKey: "namespaceFilter" },
         ],
         buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
-            const filterSpec: FilesFilterSpec = {
+            const filterSpec: WikiPagesFilterSpec = {
                 refreshSerial,
                 quickFilter,
                 orderByColumn: sortColumn as any,
                 orderByDirection: sortDirection,
                 tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-                taggedInstrumentFilter: taggedInstrumentFilter.enabled ? taggedInstrumentFilter.criterion : { db3Column: "taggedInstruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                namespaceFilter: namespaceFilter.enabled ? namespaceFilter.criterion : { db3Column: "namespace", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
             };
             return filterSpec;
         },
         buildStaticFilterSpec: ({ sortColumn, sortDirection, filterMappings }) => {
-            const staticSpec: FilesFilterSpecStatic = {
+            const staticSpec: WikiPagesFilterSpecStatic = {
                 label: "(n/a)",
                 helpText: "",
                 orderByColumn: sortColumn as any,
@@ -104,68 +102,67 @@ const FileListOuter = () => {
                 tagFilterEnabled: tagFilter.enabled,
                 tagFilterBehavior: tagFilter.criterion.behavior,
                 tagFilterOptions: tagFilter.criterion.options as number[],
-                taggedInstrumentFilterEnabled: taggedInstrumentFilter.enabled,
-                taggedInstrumentFilterBehavior: taggedInstrumentFilter.criterion.behavior,
-                taggedInstrumentFilterOptions: taggedInstrumentFilter.criterion.options as number[],
+                namespaceFilterEnabled: namespaceFilter.enabled,
+                namespaceFilterBehavior: namespaceFilter.criterion.behavior,
+                namespaceFilterOptions: namespaceFilter.criterion.options as string[],
             };
             return staticSpec;
         }
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<FilesFilterSpecStatic, FilesFilterSpec, db3.FilePayload, db3.EnrichedFile<db3.FilePayload>> = {
+    const config: SearchPageContentConfig<WikiPagesFilterSpecStatic, WikiPagesFilterSpec, db3.WikiPagePayload, EnrichedVerboseWikiPage> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
-        sortColumnOptions: FileOrderByColumnOptions,
-        searchConfig: fileSearchConfig,
-        renderItem: (file, index, filterSpec, results, refetch) => (
-            <FileListItem
+        sortColumnOptions: WikiPageOrderByColumnOptions,
+        searchConfig: wikiPageSearchConfig,
+        renderItem: (wikiPage, index, filterSpec, results, refetch) => (
+            <WikiPageListItem
                 index={index}
-                file={file}
+                wikiPage={wikiPage}
                 results={results}
                 refetch={refetch}
                 filterSpec={filterSpec}
             />
         ),
-        getItemKey: (file) => file.id,
-        contextMarkerName: "Files list",
+        getItemKey: (wikiPage) => wikiPage.id,
+        contextMarkerName: "Wiki pages list",
         csvExporter: {
-            itemToCSVRow: (file, index) => ({
-                Order: (index + 1).toString(),
-                ID: file.id.toString(),
-                Name: file.fileLeafName,
-                Description: file.description || "",
-                MimeType: file.mimeType || "",
-                SizeBytes: file.sizeBytes?.toString() || "",
-                UploadedAt: file.uploadedAt?.toISOString() || "",
-                UploadedBy: file.uploadedByUser?.name || "",
-                URL: getURIForFile(file),
-            })
+            itemToCSVRow: (wikiPage, index) => {
+                const path = wikiParseCanonicalWikiPath(wikiPage.slug);
+                return {
+                    Order: (index + 1).toString(),
+                    ID: wikiPage.id.toString(),
+                    Slug: wikiPage.slug,
+                    Namespace: wikiPage.namespace || "",
+                    URL: getAbsoluteUrl(path.uriRelativeToHost),
+                }
+            }
         },
-        className: "filesListContainer",
+        className: "wikiPagesListContainer",
         showAdminControls: true,
     };
 
     // Filter hooks for passing to the generic component
     const filterHooks = {
         tags: tagFilter,
-        taggedInstruments: taggedInstrumentFilter,
+        namespace: namespaceFilter,
     };
 
     // Filter group definitions
     const filterGroupDefinitions: FilterGroupDefinition[] = [
         {
             key: "tags",
-            label: "File tags",
+            label: "Wiki page tags",
             type: "tags",
             column: "tags",
         },
-        {
-            key: "taggedInstruments",
-            label: "Tagged instruments",
-            type: "tags",
-            column: "taggedInstruments",
-        },
+        // {
+        //     key: "namespace",
+        //     label: "Namespace",
+        //     type: "foreignSingle",
+        //     column: "namespace",
+        // },
     ];
 
     return (
@@ -179,19 +176,16 @@ const FileListOuter = () => {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-const FilesPage: BlitzPage = () => {
+const WikiPagesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Files" basePermission={Permission.access_file_landing_page} navRealm={NavRealm.files}>
-            <AppContextMarker name="Files search page">
+        <DashboardLayout title="Wiki Pages" basePermission={Permission.view_wiki_pages} navRealm={NavRealm.wikiPages}>
+            <AppContextMarker name="Wiki pages search page">
                 <div className="eventsMainContent searchPage">
-                    <Suspense>
-                        <SettingMarkdown setting="files_markdown"></SettingMarkdown>
-                    </Suspense>
-                    <FileListOuter />
+                    <WikiPageListOuter />
                 </div>
             </AppContextMarker>
         </DashboardLayout>
     )
 }
 
-export default FilesPage;
+export default WikiPagesPage;

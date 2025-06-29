@@ -4,6 +4,7 @@ import { SongsFilterSpec, EnrichedVerboseSong } from 'src/core/components/SongCo
 import { EventsFilterSpec } from 'src/core/components/EventComponentsBase';
 import { UsersFilterSpec } from 'src/core/components/UserComponents';
 import { FilesFilterSpec, EnrichedVerboseFile } from 'src/core/components/FileComponentsBase';
+import { WikiPagesFilterSpec, EnrichedVerboseWikiPage } from 'src/core/components/WikiPageComponentsBase';
 
 // Song search configuration
 export const songSearchConfig: SearchableListConfig<
@@ -123,4 +124,32 @@ export const fileSearchConfig: SearchableListConfig<
         db3.enrichFile(rawItem, dashboardContext),
 
     errorMessage: 'Failed to load more files.',
+};
+
+// Wiki page search configuration
+export const wikiPageSearchConfig: SearchableListConfig<
+    WikiPagesFilterSpec,
+    db3.WikiPagePayload,
+    EnrichedVerboseWikiPage
+> = {
+    getQueryArgs: (filterSpec: WikiPagesFilterSpec, offset: number, take: number) => ({
+        offset,
+        take,
+        tableID: db3.xWikiPage.tableID,
+        refreshSerial: filterSpec.refreshSerial,
+        sort: [{
+            db3Column: filterSpec.orderByColumn,
+            direction: filterSpec.orderByDirection,
+        }],
+        quickFilter: filterSpec.quickFilter,
+        discreteCriteria: [
+            filterSpec.tagFilter,
+            //filterSpec.namespaceFilter,
+            //filterSpec.visibilityFilter,
+        ],
+    }),
+
+    enrichItem: (rawItem: db3.WikiPagePayload, dashboardContext) => rawItem, // Wiki pages don't need enrichment
+
+    errorMessage: 'Failed to load more wiki pages.',
 };

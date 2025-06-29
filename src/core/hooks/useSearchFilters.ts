@@ -69,7 +69,7 @@ export function useDiscreteFilter<T extends number | boolean | string = number>(
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface SearchPageFilterMapping {
-    filterHook: DiscreteFilterState;
+    filterHook: DiscreteFilterState<any>;
     columnKey: string; // Key in the static filter spec (e.g., "tagFilter", "statusFilter")
 }
 

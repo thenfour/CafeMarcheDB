@@ -4,6 +4,7 @@ import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/comp
 import { SearchResultsList } from "src/core/components/SearchResultsList";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { DiscreteFilterState, useSearchPage } from "src/core/hooks/useSearchFilters";
+import { SearchableListConfig, useSearchableList } from "src/core/hooks/useSearchableList";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Configuration interfaces for SearchPageContent
@@ -17,20 +18,14 @@ export interface FilterGroupDefinition {
     chipTransformer?: (option: any) => any; // Optional chip transformer
 }
 
-export interface SearchPageContentConfig<TStaticFilterSpec extends Record<string, any>, TFilterSpec, TItem> {
+export interface SearchPageContentConfig<TStaticFilterSpec extends Record<string, any>, TFilterSpec, TRawItem, TItem> {
     // Static filters configuration
     staticFilters: TStaticFilterSpec[];
     defaultStaticFilter: TStaticFilterSpec;
 
     // Sort configuration
-    sortColumnOptions: Record<string, string>; // Available sort options enum
-
-    // Data fetching
-    useDataHook: (filterSpec: TFilterSpec) => {
-        enrichedItems: TItem[] | undefined;
-        results: SearchResultsRet;
-        loadMoreData: () => void;
-    };
+    sortColumnOptions: Record<string, string>; // Available sort options enum    // Data fetching configuration
+    searchConfig: SearchableListConfig<TFilterSpec, TRawItem, TItem>;
 
     // Rendering configuration
     renderItem: (item: TItem, index: number, filterSpec: TFilterSpec, results: SearchResultsRet, refetch: () => void) => React.ReactNode;
@@ -48,10 +43,10 @@ export interface SearchPageContentConfig<TStaticFilterSpec extends Record<string
     showAdminControls?: boolean;
 }
 
-export interface SearchPageContentProps<TStaticFilterSpec extends Record<string, any>, TFilterSpec, TItem> {
-    config: SearchPageContentConfig<TStaticFilterSpec, TFilterSpec, TItem>;
+export interface SearchPageContentProps<TStaticFilterSpec extends Record<string, any>, TFilterSpec, TRawItem, TItem> {
+    config: SearchPageContentConfig<TStaticFilterSpec, TFilterSpec, TRawItem, TItem>;
     // The calling component must pass these due to React hook constraints
-    filterHooks: Record<string, DiscreteFilterState>;
+    filterHooks: Record<string, DiscreteFilterState<any>>;
     filterGroupDefinitions: FilterGroupDefinition[];
     searchPageHook: ReturnType<typeof useSearchPage<TStaticFilterSpec, TFilterSpec>>;
 }
@@ -66,17 +61,17 @@ export interface SearchPageContentProps<TStaticFilterSpec extends Record<string,
  */
 export const SearchPageContent = <
     TStaticFilterSpec extends Record<string, any> & { label: string; helpText: string },
-    TFilterSpec extends { quickFilter?: string }
+    TFilterSpec extends { quickFilter?: string },
+    TRawItem,
+    TItem
 >({
     config,
     filterHooks,
     filterGroupDefinitions,
     searchPageHook
-}: SearchPageContentProps<TStaticFilterSpec, TFilterSpec, any>): React.JSX.Element => {
-    const dashboardContext = React.useContext(DashboardContext);
-
-    // Get data using the configured hook
-    const dataHookRet = config.useDataHook(searchPageHook.filterSpec);    // Configure filter groups based on definitions
+}: SearchPageContentProps<TStaticFilterSpec, TFilterSpec, TRawItem, TItem>): React.JSX.Element => {
+    const dashboardContext = React.useContext(DashboardContext);    // Get data using the configured search config
+    const dataHookRet = useSearchableList(searchPageHook.filterSpec, config.searchConfig);
     const { enrichedItems = [], results, loadMoreData } = dataHookRet;
 
     const filterGroups = filterGroupDefinitions.map(def => {

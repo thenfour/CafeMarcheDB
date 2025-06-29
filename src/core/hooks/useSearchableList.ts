@@ -48,7 +48,9 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
 
         try {
             const queryArgs = config.getQueryArgs(filterSpec, offset, pageSize);
-            const searchResult = await fetchSearchResultsApi(queryArgs); const enrichmentArgs = config.getEnrichmentArgs ? config.getEnrichmentArgs(dashboardContext) : [];
+            //console.log('Fetching search results with args:', queryArgs);
+            const searchResult = await fetchSearchResultsApi(queryArgs);
+            const enrichmentArgs = config.getEnrichmentArgs ? config.getEnrichmentArgs(dashboardContext) : [];
 
             const newItemsDb = searchResult.results.map(rawItem =>
                 config.enrichItem(rawItem as TRawItem, dashboardContext, ...enrichmentArgs)

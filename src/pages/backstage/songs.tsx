@@ -14,6 +14,7 @@ import { songSearchConfig } from "src/core/hooks/searchConfigs";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
@@ -94,11 +95,11 @@ const SongListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, EnrichedVerboseSong> = {
+    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, db3.SongPayload_Verbose, EnrichedVerboseSong> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: SongOrderByColumnOptions,
-        useDataHook: (filterSpec) => useSearchableList(filterSpec, songSearchConfig),
+        searchConfig: songSearchConfig,
         renderItem: (song, index, filterSpec, results, refetch) => (
             <SongListItem
                 index={index}

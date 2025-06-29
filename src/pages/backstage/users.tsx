@@ -1,3 +1,4 @@
+import * as db3 from "src/core/db3/db3";
 import { UserListItem } from "@/src/core/components/user/UserListItem";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
@@ -136,11 +137,12 @@ const UserListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<UsersFilterSpecStatic, UsersFilterSpec, EnrichedVerboseUser> = {
+    const config: SearchPageContentConfig<UsersFilterSpecStatic, UsersFilterSpec, db3.UserPayload, EnrichedVerboseUser> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: UserOrderByColumnOptions,
-        useDataHook: (filterSpec) => useSearchableList(filterSpec, userSearchConfig),
+        //useDataHook: (filterSpec) => useSearchableList(filterSpec, userSearchConfig),
+        searchConfig: userSearchConfig,
         renderItem: (user, index, filterSpec, results, refetch) => (
             <UserListItem
                 index={index}

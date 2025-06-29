@@ -17,7 +17,7 @@ export interface FilterGroupConfig {
     label: React.ReactNode;
     style: "tags" | "foreignSingle" | "radio";
     db3Column: string; // for finding facet data and errors
-    filterHook: DiscreteFilterState;
+    filterHook: DiscreteFilterState<any>;
 
     // Optional customization
     sanitize?: (item: any) => any; // for transforming facet items (e.g., adding colors, tooltips)

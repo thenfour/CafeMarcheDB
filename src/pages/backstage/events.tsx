@@ -6,14 +6,13 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/EventComponents";
 import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
-import { useSearchableList } from 'src/core/hooks/useSearchableList';
-import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { NewEventButton } from "src/core/components/NewEventComponents";
-import { SearchPageContent, FilterGroupDefinition, SearchPageContentConfig } from "src/core/components/SearchPageContent";
+import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
+import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -249,12 +248,14 @@ const EventListOuter = () => {
             };
             return staticSpec;
         }
-    });    // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EnrichedSearchEventPayload> = {
+    });
+
+    // Configuration for the generic SearchPageContent component
+    const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EventVerbose_Event, db3.EnrichedSearchEventPayload> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: EventOrderByColumnOptions,
-        useDataHook: (filterSpec) => useSearchableList(filterSpec, eventSearchConfig),
+        searchConfig: eventSearchConfig,
         renderItem: (event, index, filterSpec, results, refetch) => (
             <EventListItem
                 event={event}

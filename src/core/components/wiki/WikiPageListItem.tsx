@@ -1,0 +1,82 @@
+import React from "react";
+import { StandardVariationSpec } from "shared/color";
+import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
+import { AdminInspectObject } from "src/core/components/CMCoreComponents2";
+import { DashboardContext } from "src/core/components/DashboardContext";
+import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "src/core/components/WikiPageComponentsBase";
+import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
+
+export interface WikiPageListItemProps {
+    index: number;
+    wikiPage: EnrichedVerboseWikiPage;
+    results: SearchResultsRet;
+    refetch: () => void;
+    filterSpec: WikiPagesFilterSpec;
+}
+
+export function WikiPageListItem(props: WikiPageListItemProps) {
+    const { wikiPage } = props;
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const wikiUrl = getAbsoluteUrl(`/backstage/wiki/${wikiPage.slug}`);
+    const visInfo = dashboardContext.getVisibilityInfo(wikiPage);
+
+    return (
+        <div className={`songListItem ${visInfo.className}`}>
+            <div className="titleLine">
+                <div className="topTitleLine">
+                    <a className="nameLink" href={wikiUrl} target="_blank" rel="noopener noreferrer">
+                        {wikiPage.slug}
+                    </a>
+                    <div style={{ flexGrow: 1 }}>
+                        <AdminInspectObject src={wikiPage} label="Obj" />
+                    </div>
+                    <span className="resultIndex">#{props.index + 1}</span>
+                </div>
+            </div>
+
+            <div className="credits">
+                <div className="credit row">
+                    <div className="fieldCaption">ID:</div>
+                    <div className="fieldItem">{wikiPage.id}</div>
+                    {wikiPage.namespace && (
+                        <>
+                            <div className="fieldCaption">Namespace:</div>
+                            <div className="fieldItem">{wikiPage.namespace}</div>
+                        </>
+                    )}
+                    {wikiPage.createdAt && (
+                        <>
+                            <div className="fieldCaption">Created:</div>
+                            <div className="fieldItem">{wikiPage.createdAt.toLocaleDateString()}</div>
+                        </>
+                    )}
+                    {wikiPage.createdByUser && (
+                        <>
+                            <div className="fieldCaption">By:</div>
+                            <div className="fieldItem">{wikiPage.createdByUser.name}</div>
+                        </>
+                    )}
+                </div>            </div>
+
+            <div className="chips">
+                <CMChipContainer>
+                    {wikiPage.tags?.map(tagAssignment => (
+                        <CMStandardDBChip
+                            key={tagAssignment.id}
+                            size="small"
+                            model={tagAssignment.tag}
+                            variation={{
+                                ...StandardVariationSpec.Weak,
+                                selected: props.filterSpec.tagFilter.options.includes(tagAssignment.tag.id)
+                            }}
+                            getTooltip={() => tagAssignment.tag.description}
+                        />
+                    )) || []}
+
+                </CMChipContainer>
+            </div>
+        </div>
+    );
+}
