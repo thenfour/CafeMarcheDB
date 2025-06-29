@@ -1,10 +1,9 @@
 import React from "react";
-import { SortDirection } from "shared/rootroot";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { SearchPageFilterControls, createFilterGroupConfig, FilterGroupConfig } from "src/core/components/SearchPageFilterControls";
+import { SearchPageFilterControls, createFilterGroupConfig } from "src/core/components/SearchPageFilterControls";
 import { SearchResultsList } from "src/core/components/SearchResultsList";
-import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
-import { useDiscreteFilter, useSearchPage, DiscreteFilterState } from "src/core/hooks/useSearchFilters";
+import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteFilterState, useSearchPage } from "src/core/hooks/useSearchFilters";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Configuration interfaces for SearchPageContent

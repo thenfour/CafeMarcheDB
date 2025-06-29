@@ -6,13 +6,14 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/EventComponents";
 import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
-import { useEventListData } from 'src/core/components/EventSearch';
+import { useSearchableList } from 'src/core/hooks/useSearchableList';
+import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SearchPageContent, FilterGroupDefinition, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -253,7 +254,7 @@ const EventListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: EventOrderByColumnOptions,
-        useDataHook: useEventListData,
+        useDataHook: (filterSpec) => useSearchableList(filterSpec, eventSearchConfig),
         renderItem: (event, index, filterSpec, results, refetch) => (
             <EventListItem
                 event={event}

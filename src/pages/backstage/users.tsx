@@ -7,10 +7,10 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { SearchPageContent, FilterGroupDefinition, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "src/core/components/UserComponents";
-import { useUserListData } from "src/core/components/UserSearch";
+import { useSearchableList } from "src/core/hooks/useSearchableList";
+import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { getURIForUser } from "src/core/db3/clientAPILL";
-import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { EnrichedVerboseUser } from "./wikiPageHistory";
@@ -140,7 +140,7 @@ const UserListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: UserOrderByColumnOptions,
-        useDataHook: useUserListData,
+        useDataHook: (filterSpec) => useSearchableList(filterSpec, userSearchConfig),
         renderItem: (user, index, filterSpec, results, refetch) => (
             <UserListItem
                 index={index}

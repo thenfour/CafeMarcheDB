@@ -9,9 +9,10 @@ import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SearchPageContent, FilterGroupDefinition, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { EnrichedVerboseSong, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/SongComponentsBase";
-import { useSongListData } from "src/core/components/SongSearch";
+import { useSearchableList } from "src/core/hooks/useSearchableList";
+import { songSearchConfig } from "src/core/hooks/searchConfigs";
 import { getURIForSong } from "src/core/db3/clientAPILL";
-import { DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -97,7 +98,7 @@ const SongListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: SongOrderByColumnOptions,
-        useDataHook: useSongListData,
+        useDataHook: (filterSpec) => useSearchableList(filterSpec, songSearchConfig),
         renderItem: (song, index, filterSpec, results, refetch) => (
             <SongListItem
                 index={index}

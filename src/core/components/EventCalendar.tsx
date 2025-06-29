@@ -15,7 +15,8 @@ import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { EventListItem } from './EventComponents';
 import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
-import { useEventListData } from "./EventSearch";
+import { useSearchableList } from 'src/core/hooks/useSearchableList';
+import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 
 
 // attach useful data to the event for passing around the calendar.
@@ -321,7 +322,7 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
         dateFilter: { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
-    const { enrichedEvents, results } = useEventListData(filterSpec, 100);
+    const { enrichedItems: enrichedEvents, results } = useSearchableList(filterSpec, eventSearchConfig, 100);
     const eventsWithSearch = enrichedEvents.map(e => ({
         event: e,
         result: results,

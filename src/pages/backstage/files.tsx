@@ -7,7 +7,8 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/FileComponentsBase";
-import { useFileListData } from "src/core/components/FileSearch";
+import { useSearchableList } from "src/core/hooks/useSearchableList";
+import { fileSearchConfig } from "src/core/hooks/searchConfigs";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForFile } from "src/core/db3/clientAPILL";
@@ -116,7 +117,7 @@ const FileListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: FileOrderByColumnOptions,
-        useDataHook: useFileListData,
+        useDataHook: (filterSpec) => useSearchableList(filterSpec, fileSearchConfig),
         renderItem: (file, index, filterSpec, results, refetch) => (
             <FileListItem
                 index={index}
