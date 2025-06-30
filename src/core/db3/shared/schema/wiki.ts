@@ -3,11 +3,12 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { ForeignSingleField, GenericStringField, GhostField, MakeCreatedAtField, MakePKfield, MakeTitleField, TagsField } from "../db3basicFields";
+import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { WikiPageTagAssignmentPayload } from "./prismArgs";
 import { CMDBTableFilterModel } from "../apiTypes";
+import { GenericStringField, MakeTitleField } from "../genericStringField";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.visibility_logged_in_users,

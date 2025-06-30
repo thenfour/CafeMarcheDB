@@ -1,6 +1,6 @@
-import { Prisma } from "db";
 import { useQuery } from "@blitzjs/rpc";
 import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
+import { Prisma } from "db";
 import React from "react";
 import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
 import { StandardVariationSpec } from 'shared/color';
@@ -16,7 +16,7 @@ import { CMLink } from "./CMLink";
 import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
-import { EventStatusChip, EventStatusMinimal } from "./EventComponentsBase";
+import { EventStatusMinimal } from "./EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
 

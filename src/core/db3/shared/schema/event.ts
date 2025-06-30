@@ -10,7 +10,7 @@ import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { gIconOptions, smartTruncate } from "shared/utils";
 import { CMDBTableFilterModel, SearchCustomDataHookId, TAnyModel } from "../apiTypes";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakeMarkdownTextField, MakeNullableRawTextField, MakePKfield, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import {
     DashboardContextDataBase,
@@ -36,6 +36,7 @@ import {
 } from "./prismArgs";
 import { EventResponses_ExpectedUserTag, MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
 import { WorkflowDef_Minimum } from "./workflow";
+import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../genericStringField";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {

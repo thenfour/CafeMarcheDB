@@ -6,9 +6,10 @@ import { Permission } from "shared/permissions";
 import { TableAccessor } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, PermissionSignificance, TAnyModel } from "../apiTypes";
-import { BoolField, DB3AuthSpec, ForeignSingleField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
+import { BoolField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 
 // for basic user fields.
 // everyone can view
@@ -733,7 +734,7 @@ export const MakeUpdatedByField = (args?: CreatedByUserFieldArgs) => (
 export type VisiblePermissionFieldArgs = {
     columnName?: string; // "visiblePermission"
     fkMember?: string; // "visiblePermissionId"
-} & DB3AuthSpec;
+} & db3.DB3AuthSpec;
 
 export class VisiblePermissionField extends ForeignSingleField<PermissionPayload> {
     constructor(args: VisiblePermissionFieldArgs) {
@@ -750,7 +751,7 @@ export class VisiblePermissionField extends ForeignSingleField<PermissionPayload
     }
 };
 
-export const MakeVisiblePermissionField = (args: DB3AuthSpec) => (
+export const MakeVisiblePermissionField = (args: db3.DB3AuthSpec) => (
     new VisiblePermissionField(args)
 );
 

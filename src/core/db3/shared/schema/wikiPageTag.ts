@@ -5,8 +5,9 @@ import {
     WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, WikiPageTagAssignmentPayload
 } from "./prismArgs";
 import { gGeneralPaletteList } from "@/shared/color";
-import { ForeignSingleField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeTitleField, TagsField } from "../db3basicFields";
+import { ForeignSingleField, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../db3basicFields";
 import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, xTable, xTableClientUsageContext } from "../db3core";
+import { MakeDescriptionField, MakeTitleField } from "../genericStringField";
 
 ////////////////////////////////////////////////////////////////
 export enum WikiPageTagSignificance {

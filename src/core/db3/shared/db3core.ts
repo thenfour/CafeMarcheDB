@@ -204,6 +204,12 @@ export type DB3AuthTablePermissionMap = {
 
 
 
+export type DB3AuthSpec = {
+    authMap: DB3AuthContextPermissionMap;
+} | {
+    _customAuth: (args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
+};
+
 
 export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMap;// "PostQuery" | "PostQueryAsOwner" | "PreInsert" | "PreMutate" | "PreMutateAsOwner";
 

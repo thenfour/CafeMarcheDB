@@ -2,9 +2,10 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { BoolField, ConstEnumStringField, GenericStringField, GhostField, MakeCreatedAtField, MakeDescriptionField, MakePKfield, MakeTitleField } from "../db3basicFields";
+import { BoolField, ConstEnumStringField, GhostField, MakeCreatedAtField, MakePKfield } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { MakeCreatedByField } from "./user";
+import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.view_custom_links,

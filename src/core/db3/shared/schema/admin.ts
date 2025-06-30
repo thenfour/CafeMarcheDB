@@ -1,8 +1,9 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakePKfield } from "../db3basicFields";
+import { ForeignSingleField, GenericIntegerField, GhostField, MakePKfield } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { ChangeNaturalOrderBy, ChangePayload } from "./prismArgs";
+import { GenericStringField } from "../genericStringField";
 
 
 export const xSysadminTableAuthMap: db3.DB3AuthTablePermissionMap = {
