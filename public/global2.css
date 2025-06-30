@@ -1167,9 +1167,14 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     background-color: #eee;
 }
 
+.CMMenu .admin.Mui-selected {
+    background-color: #ddd;
+}
+
+/* 
 .CMMenu .admin.events {
     color: #008;
-}
+} */
 
 .CMMenu .admin.linkMenuItem:hover {
     background-color: #ccc;

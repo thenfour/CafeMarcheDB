@@ -445,7 +445,7 @@ const gMenuItemGroup1: MenuItemGroup[] = [
             { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.login },
             { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.view_events_nonpublic },
             { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
-            // { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon />, permission: Permission.visibility_members },
+            { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
             { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
         ],
     },
@@ -454,21 +454,10 @@ const gMenuItemGroup2: MenuItemGroup[] = [
     {
         name: "Explore",
         items: [
+            { type: "link", path: "/backstage/stats", linkCaption: "Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_nonpublic },
             { type: "link", path: "/backstage/files", realm: NavRealm.files, linkCaption: "Files", renderIcon: () => gIconMap.AttachFile(), permission: Permission.access_file_landing_page },
             { type: "link", path: "/backstage/users", realm: NavRealm.users, linkCaption: "Users", renderIcon: gIconMap.Person, permission: Permission.admin_users },
             { type: "link", path: "/backstage/wikiPages", realm: NavRealm.wikiPages, linkCaption: "Wiki pages", renderIcon: () => gIconMap.Article(), permission: Permission.view_wiki_pages },
-        ],
-    },
-    {
-        name: "Analyze",
-        items: [
-            { type: "link", path: "/backstage/stats", linkCaption: "Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_nonpublic },
-        ],
-    },
-    {
-        name: "Plan",
-        items: [
-            { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
         ],
     },
     {
@@ -726,6 +715,7 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
 
 const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission; }>) => {
     const dashboardContext = React.useContext(DashboardContext);
+    const router = useRouter();
     let forceLogin = false;
 
     if (basePermission && !dashboardContext.isAuthorized(basePermission)) {
@@ -739,9 +729,7 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
     } const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
-    const [open, setOpen] = React.useState(false);
-
-    // Initialize expanded sections with default expanded groups
+    const [open, setOpen] = React.useState(false);// Initialize expanded sections with default expanded groups
     const getInitialExpandedSections = React.useCallback(() => {
         const expanded = new Set<string>();
 
@@ -753,9 +741,63 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
         });
 
         return expanded;
-    }, []);
+    }, []);    // Find which group contains the current page and ensure it's expanded
+    const getCurrentPageGroup = React.useCallback(() => {
+        const currentPath = router.pathname;
 
-    const [expandedSections, setExpandedSections] = React.useState<Set<string>>(getInitialExpandedSections);
+        // Check all groups for a matching path
+        const allGroups = [...gMenuItemGroup1, ...gMenuItemGroup2];
+        for (const group of allGroups) {
+            if (!group.name) continue; // Skip groups without names
+
+            for (const item of group.items) {
+                if (item.type === "link" && item.path === currentPath) {
+                    return group.name;
+                }
+            }
+        }
+
+        // Also check dynamic menu items if they exist
+        if (dashboardContext?.dynMenuLinks?.items) {
+            for (const item of dashboardContext.dynMenuLinks.items) {
+                let itemPath = "";
+                switch (item.linkType as keyof typeof DynMenu.DynamicMenuLinkType) {
+                    case "Wiki":
+                        itemPath = item.wikiSlug ? `/backstage/wiki/${slugify(item.wikiSlug)}` : "";
+                        break;
+                    case "ExternalURL":
+                        itemPath = item.externalURI || "";
+                        break;
+                }
+                if (itemPath === currentPath && !IsNullOrWhitespace(item.groupName)) {
+                    return item.groupName;
+                }
+            }
+        }
+
+        return null;
+    }, [router.pathname, dashboardContext]);
+
+    const [expandedSections, setExpandedSections] = React.useState<Set<string>>(() => {
+        const initial = getInitialExpandedSections();
+        const currentGroup = getCurrentPageGroup();
+        if (currentGroup) {
+            initial.add(currentGroup);
+        }
+        return initial;
+    });
+
+    // Update expanded sections when the route changes
+    React.useEffect(() => {
+        const currentGroup = getCurrentPageGroup();
+        if (currentGroup) {
+            setExpandedSections(prev => {
+                const newSet = new Set(prev);
+                newSet.add(currentGroup);
+                return newSet;
+            });
+        }
+    }, [getCurrentPageGroup]);
 
     const toggleSection = React.useCallback((groupId: string) => {
         setExpandedSections(prev => {
