@@ -32,6 +32,7 @@ import { arraysContainSameValues } from "shared/arrayUtils";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
 import { MediaPlayerBarTester } from "@/src/core/components/mediaPlayer/MediaPlayerBarTester";
+import AbcNotationRenderer from "@/src/core/components/AbcNotationRenderer";
 
 interface FilterSpec {
     qfText: string;
@@ -322,6 +323,24 @@ const ClientInfoTester = () => {
 };
 
 
+const AbcTester = () => {
+    const [customNotation, setCustomNotation] = React.useState<string>(`a b c`);
+    return <>
+        <h2>ABC Notation Renderer</h2>
+        <div>
+            <p>Enter ABC notation below:</p>
+            <textarea style={{ width: '100%', height: '100px' }} value={customNotation} onChange={(e) => setCustomNotation(e.target.value)} />
+
+            <AbcNotationRenderer
+                notation={customNotation}
+                width={740}
+                scale={1.0}
+                style={{ marginTop: '20px', border: '1px solid #ccc', padding: '10px' }}
+            />
+        </div>
+    </>;
+};
+
 
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
@@ -334,6 +353,8 @@ const MainContent = () => {
     return <div>
 
         <MediaPlayerBarTester />
+
+        <AbcTester />
 
         <div>
             <a href="test/CMSelectTest">CMSelectTest.tsx</a>

@@ -58,10 +58,12 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
         </Backdrop>
         ;
 
+    const titleText = `CM: ${title}`;
+
     return (
         <>
             <Head>
-                <title>{`CM: ${title}`}</title>
+                <title>{titleText}</title>
                 <meta charSet="utf-8" /> { /* needed for Draft.js */}
 
                 {/* for mobile, this sets the initial zoom for the page, so

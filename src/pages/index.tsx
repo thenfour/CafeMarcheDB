@@ -93,10 +93,11 @@ const PublicIndex: BlitzPage = () => {
     };
 
     const lang = userSelectedLang || toEnNlFr(locale) || "en";
+    const titleText = `Café Marché | Brussels fanfare-orkest`;
 
     return <>
         <Head>
-            <title>Café Marché | Brussels fanfare-orkest</title>
+            <title>{titleText}</title>
             <meta charSet="utf-8" />
             <link rel="icon" type="image/png" href="/favicon.png" />
 
