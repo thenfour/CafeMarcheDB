@@ -1,12 +1,13 @@
-
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield } from "../db3basicFields";
+import { CMDBTableFilterModel } from "../apiTypes";
+import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../genericStringField";
+import { WikiPageTagAssignmentPayload } from "./prismArgs";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.visibility_logged_in_users,
@@ -71,9 +72,32 @@ export const xWikiPage = new db3.xTable({
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xAuthMap,
         }),
-        new GhostField({
+        new GenericStringField({
+            columnName: "namespace",
+            allowNull: true,
+            format: "plain",
+            allowDiscreteCriteria: true,
             authMap: xAuthMap,
-            memberName: "namespace",
+        }),
+        new TagsField<WikiPageTagAssignmentPayload>({
+            columnName: "tags",
+            associationForeignIDMember: "tagId",
+            associationForeignObjectMember: "tag",
+            associationLocalIDMember: "wikiPageId",
+            associationLocalObjectMember: "wikiPage",
+            associationTableID: "WikiPageTagAssignment",
+            foreignTableID: "WikiPageTag",
+            authMap: xAuthMap,
+            getQuickFilterWhereClause: (query: string): Prisma.WikiPageWhereInput => ({
+                tags: {
+                    some: {
+                        tag: {
+                            text: { contains: query }
+                        }
+                    }
+                }
+            }),
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
         new GhostField({
             authMap: xAuthMap,

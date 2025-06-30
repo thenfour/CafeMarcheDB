@@ -6,6 +6,8 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "src/core/components/WikiPageComponentsBase";
 import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { UserChip } from "../userChip";
+import { DateValue } from "../DateTime/DateTimeComponents";
 
 export interface WikiPageListItemProps {
     index: number;
@@ -38,27 +40,20 @@ export function WikiPageListItem(props: WikiPageListItemProps) {
 
             <div className="credits">
                 <div className="credit row">
-                    <div className="fieldCaption">ID:</div>
-                    <div className="fieldItem">{wikiPage.id}</div>
-                    {wikiPage.namespace && (
-                        <>
-                            <div className="fieldCaption">Namespace:</div>
-                            <div className="fieldItem">{wikiPage.namespace}</div>
-                        </>
-                    )}
                     {wikiPage.createdAt && (
                         <>
                             <div className="fieldCaption">Created:</div>
-                            <div className="fieldItem">{wikiPage.createdAt.toLocaleDateString()}</div>
+                            <div className="fieldItem"><DateValue value={wikiPage.createdAt} /></div>
                         </>
                     )}
                     {wikiPage.createdByUser && (
                         <>
                             <div className="fieldCaption">By:</div>
-                            <div className="fieldItem">{wikiPage.createdByUser.name}</div>
+                            <div className="fieldItem"><UserChip value={wikiPage.createdByUser} /></div>
                         </>
                     )}
-                </div>            </div>
+                </div>
+            </div>
 
             <div className="chips">
                 <CMChipContainer>

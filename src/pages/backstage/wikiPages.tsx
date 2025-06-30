@@ -80,7 +80,7 @@ const WikiPageListOuter = () => {
         sortDirectionKey: "orderByDirection",
         filterMappings: [
             { filterHook: tagFilter, columnKey: "tagFilter" },
-            //{ filterHook: namespaceFilter, columnKey: "namespaceFilter" },
+            { filterHook: namespaceFilter, columnKey: "namespaceFilter" },
         ],
         buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
             const filterSpec: WikiPagesFilterSpec = {
@@ -157,12 +157,12 @@ const WikiPageListOuter = () => {
             type: "tags",
             column: "tags",
         },
-        // {
-        //     key: "namespace",
-        //     label: "Namespace",
-        //     type: "foreignSingle",
-        //     column: "namespace",
-        // },
+        {
+            key: "namespace",
+            label: "Namespace",
+            type: "foreignSingle",
+            column: "namespace",
+        },
     ];
 
     return (

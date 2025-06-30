@@ -1,7 +1,7 @@
 
 import { MysqlEscape } from "shared/mysqlUtils";
 import { CoalesceBool, CoerceToBoolean, isValidURL } from "shared/utils";
-import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
+import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { DB3AuthSpec, ErrorValidateAndParseResult, FieldBase, SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -14,6 +14,7 @@ export type GenericStringFieldArgs = {
     allowNull: boolean;
     caseSensitive?: boolean;
     allowQuickFilter?: boolean;
+    allowDiscreteCriteria?: boolean;
     specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
@@ -24,6 +25,8 @@ export class GenericStringField extends FieldBase<string> {
     doTrim: boolean;
     format: StringFieldFormatOptions;
     allowQuickFilter: boolean;
+    allowDiscreteCriteria: boolean;
+    table?: xTable;
 
     constructor(args: GenericStringFieldArgs) {
         super({
@@ -38,6 +41,7 @@ export class GenericStringField extends FieldBase<string> {
         this.format = args.format;
         this.allowNull = args.allowNull;
         this.allowQuickFilter = CoerceToBoolean(args.allowQuickFilter, args.format !== "markdown");
+        this.allowDiscreteCriteria = CoerceToBoolean(args.allowDiscreteCriteria, false);
 
         switch (args.format) {
             case "customLinkSlug":
@@ -80,7 +84,9 @@ export class GenericStringField extends FieldBase<string> {
         }
     }
 
-    connectToTable = (table: xTable) => { };
+    connectToTable = (table: xTable) => {
+        this.table = table;
+    };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         if (!this.allowQuickFilter) return false;
@@ -172,15 +178,141 @@ export class GenericStringField extends FieldBase<string> {
             }],
         };
     };
+
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
         return `(${this.member} like '%${MysqlEscape(token)}%')`;
-    }
+    };
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion, tableAlias: string): CriterionQueryElements | null => {
-        return null;
-    }
+        // Only support discrete criteria if explicitly enabled for this field
+        if (!this.allowDiscreteCriteria) return null;
 
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+        const assertIsStringArray = (options: any[]): options is string[] => {
+            return options.every(opt => typeof opt === 'string');
+        };
+
+        assertIsStringArray(crit.options);
+        const map: { [key in DiscreteCriterionFilterType]: () => CriterionQueryElements | null } = {
+            alwaysMatch: () => {
+                return {
+                    error: undefined,
+                    whereAnd: `( /* ${this.member} */ true)`,
+                }
+            },
+            hasAny: () => { // no options considered
+                return {
+                    error: undefined,
+                    whereAnd: `( /* ${this.member} */ ${tableAlias}.${this.member} is not null and ${tableAlias}.${this.member} != '')`,
+                };
+            },
+            hasNone: () => { // no options considered
+                return {
+                    error: undefined,
+                    whereAnd: `( /* ${this.member} */ ${tableAlias}.${this.member} is null or ${tableAlias}.${this.member} = '')`,
+                };
+            },
+            hasSomeOf: () => {
+                if (crit.options.length === 0) return {
+                    error: "Select options to filter on",
+                    whereAnd: `( /* ${this.member} */ false)`,
+                };
+                const escapedOptions = crit.options.map(opt => `'${MysqlEscape(opt)}'`);
+                if (crit.options.length === 1) return {
+                    error: undefined,
+                    whereAnd: `( /* ${this.member} */ ${tableAlias}.${this.member} = ${escapedOptions[0]})`,
+                };
+                return {
+                    error: undefined,
+                    whereAnd: `( /* ${this.member} */ ${tableAlias}.${this.member} in (${escapedOptions.join(",")}))`,
+                };
+            },
+            hasAllOf: () => {
+                // For string fields, "hasAllOf" doesn't make sense since a field can only have one value
+                throw new Error(`query type 'hasAllOf' is impossible for string fields. make sure your filter spec doesn't invoke it. field:${crit.db3Column}`);
+            },
+            doesntHaveAnyOf: () => {
+                if (crit.options.length === 0) return {
+                    error: "Select options to filter on",
+                    whereAnd: `( /* ${this.member} */ ${tableAlias}.${this.member} is not null and ${tableAlias}.${this.member} != '')`,
+                };
+                const escapedOptions = crit.options.map(opt => `'${MysqlEscape(opt)}'`);
+                if (crit.options.length === 1) return {
+                    error: undefined,
+                    whereAnd: `( /* ${this.member} */ ${tableAlias}.${this.member} != ${escapedOptions[0]} or ${tableAlias}.${this.member} is null)`,
+                };
+                return {
+                    error: undefined,
+                    whereAnd: `( /* ${this.member} */ ${tableAlias}.${this.member} not in (${escapedOptions.join(",")}) or ${tableAlias}.${this.member} is null)`,
+                };
+            },
+            doesntHaveAllOf: () => {
+                // This also doesn't make sense for string fields
+                throw new Error(`query type 'doesntHaveAllOf' is impossible for string fields. make sure your filter spec doesn't invoke it; maybe you mean to use 'doesntHaveAnyOf'.`);
+            },
+        };
+        return map[crit.behavior]();
+    };
+
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => {
+        // Only support facet queries if explicitly enabled for this field
+        if (!this.allowDiscreteCriteria) return null;
+
+        const filteredQuery = filteredItemsQueryExcludingThisCriterion;
+
+        // Return a query that gets distinct values for this string field along with their counts
+        return {
+            sql: `with FIQ as (
+                ${filteredQuery}
+            )
+            -- null/empty option
+            SELECT
+                '(empty)' as id,
+                '(empty)' as label,
+                null as color,
+                null as iconName,
+                null as tooltip,
+                count(distinct(FIQ.id)) AS rowCount,
+                0 as sortOrder
+            FROM
+                FIQ
+                inner join ${this.table!.tableName} as P on P.${this.table!.pkMember} = FIQ.id
+            where
+                (P.${this.member} is null or P.${this.member} = '')
+
+            union all
+
+            SELECT
+                P.${this.member} as id,
+                P.${this.member} as label,
+                null as color,
+                null as iconName,
+                null as tooltip,
+                count(distinct(FIQ.id)) AS rowCount,
+                1 as sortOrder
+            FROM
+                FIQ
+                inner join ${this.table!.tableName} as P on P.${this.table!.pkMember} = FIQ.id
+            where
+                P.${this.member} is not null and P.${this.member} != ''
+            GROUP BY 
+                P.${this.member}
+            order by
+                sortOrder asc, label asc
+                `,
+            transformResult: (row: { id: string, label: string | null, color: string | null, iconName: string | null, tooltip: string | null, rowCount: bigint }) => {
+                const rowCount = new Number(row.rowCount).valueOf();
+                return {
+                    id: row.id,
+                    rowCount,
+                    label: row.label || '(empty)',
+                    color: row.color,
+                    iconName: row.iconName,
+                    tooltip: row.tooltip,
+                    shape: undefined,
+                };
+            },
+        };
+    };
 };
 
 

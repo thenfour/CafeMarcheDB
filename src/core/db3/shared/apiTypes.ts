@@ -688,7 +688,7 @@ export interface TGetImportEventDataRet {
 ///////////////////////////////////////////////////////
 
 export interface SearchResultsFacetOption {
-    id: number;
+    id: number | string;
     rowCount: number;
     extraInfo?: unknown; // for things like filtering by date facets, this could specify what kind of facet it is, or additional type-specific info about the facet.
 

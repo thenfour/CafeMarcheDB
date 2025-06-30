@@ -144,8 +144,7 @@ export const wikiPageSearchConfig: SearchableListConfig<
         quickFilter: filterSpec.quickFilter,
         discreteCriteria: [
             filterSpec.tagFilter,
-            //filterSpec.namespaceFilter,
-            //filterSpec.visibilityFilter,
+            filterSpec.namespaceFilter,
         ],
     }),
 
