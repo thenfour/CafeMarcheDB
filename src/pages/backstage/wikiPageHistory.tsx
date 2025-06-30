@@ -238,7 +238,7 @@ const WikiRevisionHistoryPageContent = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const WikiPageHistoryPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Wiki revision history" basePermission={Permission.view_wiki_pages}>
+        <DashboardLayout title="Wiki revision history" basePermission={Permission.view_wiki_page_revisions}>
             <WikiRevisionHistoryPageContent {...props} />
         </DashboardLayout>
     )

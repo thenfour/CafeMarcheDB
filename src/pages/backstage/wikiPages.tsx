@@ -177,7 +177,7 @@ const WikiPageListOuter = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const WikiPagesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Wiki Pages" basePermission={Permission.view_wiki_pages} navRealm={NavRealm.wikiPages}>
+        <DashboardLayout title="Wiki Pages" basePermission={Permission.search_wiki_pages} navRealm={NavRealm.wikiPages}>
             <AppContextMarker name="Wiki pages search page">
                 <div className="eventsMainContent searchPage">
                     <WikiPageListOuter />

@@ -9,7 +9,7 @@ import { GetUserVisibilityWhereExpression } from "src/core/db3/shared/db3Helpers
 import { TGetWikiPageRevisionsArgs, ZTGetWikiPageRevisionsArgs } from "../shared/wikiUtils";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_wiki_pages),
+    resolver.authorize(Permission.view_wiki_page_revisions),
     resolver.zod(ZTGetWikiPageRevisionsArgs),
     async (args: TGetWikiPageRevisionsArgs, ctx: AuthenticatedCtx) => {
         const currentUser = (await getCurrentUserCore(ctx))!;
