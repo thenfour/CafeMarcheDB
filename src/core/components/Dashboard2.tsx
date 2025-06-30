@@ -445,8 +445,6 @@ const gMenuItemGroup1: MenuItemGroup[] = [
             { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.login },
             { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.view_events_nonpublic },
             { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
-            { type: "link", path: "/backstage/wikiPages", realm: NavRealm.wikiPages, linkCaption: "Wiki pages", renderIcon: () => gIconMap.Article(), permission: Permission.view_wiki_pages },
-            { type: "link", path: "/backstage/files", realm: NavRealm.files, linkCaption: "Files", renderIcon: () => gIconMap.AttachFile(), permission: Permission.access_file_landing_page },
             { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
             // { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon />, permission: Permission.visibility_members },
             { type: "link", path: "/backstage/stats", linkCaption: "Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_nonpublic },
@@ -455,6 +453,14 @@ const gMenuItemGroup1: MenuItemGroup[] = [
     },
 ];
 const gMenuItemGroup2: MenuItemGroup[] = [
+    {
+        name: "Explore",
+        items: [
+            { type: "link", path: "/backstage/files", realm: NavRealm.files, linkCaption: "Files", renderIcon: () => gIconMap.AttachFile(), permission: Permission.access_file_landing_page },
+            { type: "link", path: "/backstage/users", realm: NavRealm.users, linkCaption: "Users", renderIcon: gIconMap.Person, permission: Permission.admin_users },
+            { type: "link", path: "/backstage/wikiPages", realm: NavRealm.wikiPages, linkCaption: "Wiki pages", renderIcon: () => gIconMap.Article(), permission: Permission.view_wiki_pages },
+        ],
+    },
     {
         name: "Public",
         className: "public",
@@ -481,7 +487,6 @@ const gMenuItemGroup2: MenuItemGroup[] = [
             { type: "link", path: "/backstage/adminLogs", linkCaption: "Logs", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/calendarPreview", linkCaption: "iCal Preview", renderIcon: () => gIconMap.CalendarMonth(), permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/users", realm: NavRealm.users, linkCaption: "Users (search)", renderIcon: gIconMap.Search, permission: Permission.admin_users },
             { type: "link", path: "/backstage/adminUsers", linkCaption: "Users (adm)", renderIcon: () => <PersonIcon />, permission: Permission.admin_users },
             { type: "link", path: "/backstage/editUserTags", linkCaption: "Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.admin_users },
             { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
