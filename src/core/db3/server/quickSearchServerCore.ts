@@ -1,5 +1,6 @@
 // consider unifying with the normal search api for consistency and simplicity.
 
+import { Permission } from "@/shared/permissions";
 import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
 import { CalculateMatchStrength, CalculateMatchStrengthForTags, MakeWhereCondition, MakeWhereConditionForTags, ParseQuickFilter, ParseQuickFilterResult, QuickSearchItemMatch, QuickSearchItemType, SearchableTableFieldSpec } from "shared/quickFilter";
@@ -22,6 +23,13 @@ interface QuickSearchPlugin {
     }) => Promise<QuickSearchItemMatch[]>;
 };
 
+const IsAuthorized = (user: db3.UserWithRolesPayload, permission: Permission): boolean => {
+    if (!user || !user.role) {
+        return false; // no user, no permissions.
+    }
+    return user.role.permissions.some(p => p.permission.name === permission);
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const SongQuickSearchPlugin: QuickSearchPlugin = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.song || type == "s",
@@ -32,6 +40,10 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
             { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
             { fieldName: "description", fieldType: "string", strengthMultiplier: 0.5 },
         ];
+
+        if (!IsAuthorized(user, Permission.view_songs)) {
+            return [];
+        }
 
         const songTagField: SearchableTableFieldSpec = { fieldName: "text", fieldType: "string", strengthMultiplier: 1 };
 
@@ -114,6 +126,10 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
 const EventQuickSearchPlugin: QuickSearchPlugin = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.event || type == "e",
     getMatches: async ({ user, query, publicRole }) => {
+
+        if (!IsAuthorized(user, Permission.view_events)) {
+            return [];
+        }
 
         const eventFields: SearchableTableFieldSpec[] = [
             { fieldName: "id", fieldType: "pk", strengthMultiplier: 1 },
@@ -226,6 +242,11 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
 const UserQuickSearchPlugin: QuickSearchPlugin = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.user || type == "u",
     getMatches: async ({ user, query, publicRole }) => {
+
+        if (!IsAuthorized(user, Permission.search_users)) {
+            return [];
+        }
+
         const userFields: SearchableTableFieldSpec[] = [
             { fieldName: "name", fieldType: "string", strengthMultiplier: 1 },
         ];
@@ -266,6 +287,11 @@ const UserQuickSearchPlugin: QuickSearchPlugin = {
 const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
     matchesTypeFilter: (type: string) => type === QuickSearchItemType.wikiPage || type == "w",
     getMatches: async ({ user, query, publicRole }) => {
+
+        if (!IsAuthorized(user, Permission.search_wiki_pages)) {
+            return [];
+        }
+
         const wikiPageFields: SearchableTableFieldSpec[] = [
             { fieldName: "slug", fieldType: "string", strengthMultiplier: 1 },
         ];
@@ -284,7 +310,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
                             { namespace: null },
                         ]
                     },
-                    //GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
+                    GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
                     {
                         OR: [
                             ...MakeWhereCondition(wikiPageFields, query).OR,
