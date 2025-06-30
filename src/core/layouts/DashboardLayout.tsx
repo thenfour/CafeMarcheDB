@@ -6,8 +6,9 @@ import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { CoerceToBoolean } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import Dashboard2, { NavRealm } from "../components/Dashboard2";
+import Dashboard2 from "../components/Dashboard2";
 import { LoginSignup } from "../components/LoginSignupForm";
+import { NavRealm } from "../components/MenuStructure";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;

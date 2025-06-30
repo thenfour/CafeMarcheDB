@@ -1,10 +1,10 @@
 import { FileListItem } from "@/src/core/components/file/FileListItem";
+import { NavRealm } from "@/src/core/components/MenuStructure";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/FileComponentsBase";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/SearchPageContent";

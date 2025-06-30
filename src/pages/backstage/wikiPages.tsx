@@ -1,3 +1,4 @@
+import { NavRealm } from "@/src/core/components/MenuStructure";
 import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
 import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
 import { BlitzPage } from "@blitzjs/next";
@@ -5,7 +6,6 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/SearchPageContent";
 import { EnrichedVerboseWikiPage, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "src/core/components/WikiPageComponentsBase";

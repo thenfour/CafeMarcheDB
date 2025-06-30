@@ -9,7 +9,7 @@ import CollectionsIcon from '@mui/icons-material/Collections';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
-import { Box, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
+import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import { assert } from "blitz";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -154,7 +154,6 @@ export const gMenuSections: MenuSection[] = [
     {
         name: "Admin",
         className: "admin general",
-        expandedByDefault: true,
         groups: [
             {
                 links: [
@@ -217,7 +216,6 @@ export const gMenuSections: MenuSection[] = [
     {
         name: "Admin events",
         className: "admin events",
-        expandedByDefault: true,
         groups: [
             {
                 className: "admin events",
@@ -241,7 +239,6 @@ export const gMenuSections: MenuSection[] = [
     {
         name: "Admin files",
         className: "admin files",
-        expandedByDefault: true,
         groups: [
             {
                 className: "admin files",
@@ -256,7 +253,6 @@ export const gMenuSections: MenuSection[] = [
     {
         name: "Admin wiki",
         className: "admin wiki",
-        expandedByDefault: true,
         groups: [
             {
                 className: "admin wiki",
@@ -269,7 +265,6 @@ export const gMenuSections: MenuSection[] = [
     {
         name: "Admin settings",
         className: "admin settings",
-        expandedByDefault: true,
         groups: [
             {
                 className: "admin settings",
@@ -481,6 +476,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                 component="div"
                 onClick={() => props.onToggleSection(sectionId)}
                 className={`${props.item.sectionInfo.className} sectionHeader expandable`}
+                style={{ cursor: "pointer" }}
             >
                 <Typography variant="button" noWrap>
                     {props.item.item.sectionName}
@@ -492,35 +488,54 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
         );
     }
     if (props.item.item.type === "link") {
-        // Check if this link should be hidden because its section is collapsed
         const linkItem = props.item.item;
         if (linkItem.sectionId) {
             const isSectionExpanded = props.expandedSections.has(linkItem.sectionId);
-            if (!isSectionExpanded) {
-                return null; // Don't render this item if its section is collapsed
-            }
+            // Animate the appearance/disappearance of the links
+            return (
+                <Collapse in={isSectionExpanded} timeout="auto" unmountOnExit>
+                    {linkItem.openInNewTab ? (
+                        <ListItemButton
+                            component="a"
+                            href={linkItem.path}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
+                            onClick={e => {
+                                void recordFeature({ feature: ActivityFeature.link_follow_external });
+                            }}
+                        >
+                            {linkItem.renderIcon && <ListItemIcon>{linkItem.renderIcon()}</ListItemIcon>}
+                            <ListItemText primary={linkItem.linkCaption} />
+                        </ListItemButton>
+                    ) : (
+                        <ListItemButton
+                            component={Link}
+                            href={linkItem.path}
+                            selected={
+                                linkItem.realm && props.realm
+                                    ? linkItem.realm === props.realm
+                                    : router.pathname === linkItem.path
+                            }
+                            className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
+                            onClick={e => {
+                                void recordFeature({ feature: ActivityFeature.link_follow_internal });
+                            }}
+                        >
+                            {linkItem.renderIcon && <ListItemIcon>{linkItem.renderIcon()}</ListItemIcon>}
+                            <ListItemText primary={linkItem.linkCaption} />
+                        </ListItemButton>
+                    )}
+                </Collapse>
+            );
         }
-
-        // Check if the item is selected based on the current path and realm
-        const item = props.item?.item;
-
-        let selected = false;
-        if (item?.realm && props.realm) {
-            selected = item.realm === props.realm;
-        } else if (item?.path) {
-            selected = router.pathname === item.path; // safer than asPath
-        }
-
-        // Use Next.js Link for internal links, plain <a> for external
-        const isExternal = props.item.item.openInNewTab;
+        // If not in a section, render as before
+        const isExternal = linkItem.openInNewTab;
         const buttonContent = <>
-            {props.item.item.renderIcon && <ListItemIcon>{props.item.item.renderIcon()}</ListItemIcon>}
-            <ListItemText primary={props.item.item.linkCaption} />
+            {linkItem.renderIcon && <ListItemIcon>{linkItem.renderIcon()}</ListItemIcon>}
+            <ListItemText primary={linkItem.linkCaption} />
         </>;
-
-        if (isExternal && props.item.item.type === "link") {
-            // External link: open in new tab, use <a>
-            const linkItem = props.item.item;
+        if (isExternal) {
             return (
                 <ListItemButton
                     component="a"
@@ -529,29 +544,21 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     rel="noopener noreferrer"
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {
-                        // Log activity for external link using beacon
-                        void recordFeature({
-                            feature: ActivityFeature.link_follow_external,
-                        });
+                        void recordFeature({ feature: ActivityFeature.link_follow_external });
                     }}
                 >
                     {buttonContent}
                 </ListItemButton>
             );
-        } else if (props.item.item.type === "link") {
-            // Internal link: use Next.js Link for client-side navigation
-            const linkItem = props.item.item;
+        } else {
             return (
                 <ListItemButton
                     component={Link}
                     href={linkItem.path}
-                    selected={selected}
+                    selected={router.pathname === linkItem.path}
                     className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {
-                        // Log activity for internal link using beacon
-                        void recordFeature({
-                            feature: ActivityFeature.link_follow_internal,
-                        });
+                        void recordFeature({ feature: ActivityFeature.link_follow_internal });
                     }}
                 >
                     {buttonContent}

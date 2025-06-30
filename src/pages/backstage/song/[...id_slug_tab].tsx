@@ -5,7 +5,6 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/SongComponents";
@@ -13,6 +12,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { NavRealm } from "@/src/core/components/MenuStructure";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();

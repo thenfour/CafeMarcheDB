@@ -1,9 +1,9 @@
+import { NavRealm } from "@/src/core/components/MenuStructure";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
-import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { UserBreadcrumbs, UserDetail } from "src/core/components/UserComponents";
 import * as DB3Client from "src/core/db3/DB3Client";

@@ -5,6 +5,7 @@ import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/cor
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
+import { NavRealm } from "@/src/core/components/MenuStructure";
 import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
 import { useSnackbar } from "@/src/core/components/SnackbarContext";
 import { AudioPlayerFileControls, FileExternalLink } from "@/src/core/components/SongFileComponents";
@@ -21,7 +22,6 @@ import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext, useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { FileTableClientColumns } from "src/core/components/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
