@@ -6,6 +6,8 @@ import { useMutation } from "@blitzjs/rpc";
 import {
     AudioFileOutlined,
     CalendarMonthOutlined as CalendarMonthOutlinedIcon,
+    ExpandLess,
+    ExpandMore,
     MusicNote as MusicNoteIcon,
     MusicNoteOutlined as MusicNoteOutlinedIcon,
     Settings as SettingsIcon
@@ -33,7 +35,7 @@ import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
-import { gIconMap } from "../db3/components/IconMap";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
 import { ConfirmProvider } from "./ConfirmationDialog";
@@ -301,6 +303,7 @@ interface MenuItemDivider {
 interface MenuItemSectionHeader {
     type: "sectionHeader";
     sectionName: string;
+    groupId?: string; // Add groupId to track which section this belongs to
 };
 
 interface MenuItemLink {
@@ -320,6 +323,7 @@ interface MenuItemGroup {
     name: string | null;
     className?: string;
     items: MenuItemSpec[];
+    expandedByDefault?: boolean; // Add flag for default expansion
 };
 
 
@@ -329,6 +333,8 @@ type MenuItemAndGroup = { group: MenuItemGroup, item: MenuItemSpec };
 interface MenuItemComponentProps {
     item: MenuItemAndGroup;
     realm: NavRealm | undefined;
+    expandedSections: Set<string>;
+    onToggleSection: (groupId: string) => void;
 };
 
 const MenuItemComponent = (props: MenuItemComponentProps) => {
@@ -340,9 +346,23 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
         return <Divider className={`${props.item.group.className} divider`} />;
     }
     if (props.item.item.type === "sectionHeader") {
-        return (<ListSubheader component="div" className={`${props.item.group.className} sectionHeader`}>
-            <Typography variant="button" noWrap>{props.item.item.sectionName}</Typography>
-        </ListSubheader>);
+        const groupId = props.item.item.groupId || props.item.item.sectionName;
+        const isExpanded = props.expandedSections.has(groupId);
+
+        return (
+            <ListSubheader
+                component="div"
+                onClick={() => props.onToggleSection(groupId)}
+                className={`${props.item.group.className} sectionHeader expandable`}
+            >
+                <Typography variant="button" noWrap>
+                    {props.item.item.sectionName}
+                </Typography>
+                <div className="icon">
+                    {isExpanded ? gCharMap.DownTriangle() : gCharMap.RightTriangle()}
+                </div>
+            </ListSubheader>
+        );
     }
     if (props.item.item.type === "link") {
 
@@ -411,6 +431,7 @@ const gMenuItemGroup1: MenuItemGroup[] = [
     {
         name: "Backstage",
         className: "backstage",
+        expandedByDefault: true, // Main sections expanded by default
         items: [
             { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.login },
             { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.view_events_nonpublic },
@@ -428,6 +449,7 @@ const gMenuItemGroup2: MenuItemGroup[] = [
     {
         name: "Configuration",
         className: "backstage",
+        expandedByDefault: true, // Configuration expanded by default
         items: [
             { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
             { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
@@ -550,17 +572,20 @@ const gMenuItemGroup2: MenuItemGroup[] = [
     },
 ];
 
-const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups: MenuItemGroup[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
+const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups: MenuItemGroup[], expandedSections: Set<string>): { group: MenuItemGroup, item: MenuItemSpec }[] => {
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
 
     for (let iGroup = 0; iGroup < groups.length; ++iGroup) {
         const g = groups[iGroup]!;
         let firstItemInGroup: boolean = true;
+        const groupId = g.name || `group-${iGroup}`;
+        const isGroupExpanded = expandedSections.has(groupId);
+
         for (let iItem = 0; iItem < g.items.length; ++iItem) {
             const item = g.items[iItem] as MenuItemLink;
             assert(g.items[iItem]?.type === "link", "only link menu items should be added here; other types are created dynamically");
             if (dashboardContext.isAuthorized(item.permission)) {
-                // add it to the flat list.
+                // add group header and divider if this is the first authorized item in the group
                 if (firstItemInGroup) {
                     if (menuItems.length) {
                         // add a divider because we know other items are already there.
@@ -578,15 +603,20 @@ const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups: MenuI
                             item: {
                                 type: "sectionHeader",
                                 sectionName: g.name,
+                                groupId: groupId,
                             }
                         });
                     }
                     firstItemInGroup = false;
                 }
-                menuItems.push({
-                    group: g,
-                    item,
-                });
+
+                // only add the item if the group is expanded (or has no name)
+                if (isGroupExpanded || !g.name) {
+                    menuItems.push({
+                        group: g,
+                        item,
+                    });
+                }
             }
         }
     }
@@ -620,7 +650,7 @@ const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: Dashboar
     };
 };
 
-const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.MenuLinkPayload[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
+const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.MenuLinkPayload[], expandedSections: Set<string>): { group: MenuItemGroup, item: MenuItemSpec }[] => {
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
     let currentGroupName = "<never>";
 
@@ -637,6 +667,8 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
             className: item.groupCssClass,
             items: [],
         };
+        const groupId = currentGroupName || `dyn-group-${iItem}`;
+        const isGroupExpanded = expandedSections.has(groupId);
 
         if (firstItemInGroup) {
             if (menuItems.length) {
@@ -655,14 +687,19 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
                     item: {
                         type: "sectionHeader",
                         sectionName: currentGroupName,
+                        groupId: groupId,
                     }
                 });
             }
         }
-        menuItems.push({
-            group: fakeGroup,
-            item: menuItem,
-        });
+
+        // only add the item if the group is expanded (or has no name)
+        if (isGroupExpanded || IsNullOrWhitespace(currentGroupName)) {
+            menuItems.push({
+                group: fakeGroup,
+                item: menuItem,
+            });
+        }
     }
 
     return menuItems;
@@ -680,12 +717,38 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
         } else {
             throw new Error(`unauthorized`);
         }
-    }
-
-    const theme = useTheme();
+    } const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     const [open, setOpen] = React.useState(false);
+
+    // Initialize expanded sections with default expanded groups
+    const getInitialExpandedSections = React.useCallback(() => {
+        const expanded = new Set<string>();
+
+        // Add sections that should be expanded by default
+        [...gMenuItemGroup1, ...gMenuItemGroup2].forEach((group, index) => {
+            if (group.expandedByDefault && group.name) {
+                expanded.add(group.name);
+            }
+        });
+
+        return expanded;
+    }, []);
+
+    const [expandedSections, setExpandedSections] = React.useState<Set<string>>(getInitialExpandedSections);
+
+    const toggleSection = React.useCallback((groupId: string) => {
+        setExpandedSections(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(groupId)) {
+                newSet.delete(groupId);
+            } else {
+                newSet.add(groupId);
+            }
+            return newSet;
+        });
+    }, []);
 
 
     const toggleDrawer = event => {
@@ -701,9 +764,9 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
 
     // flatten our list of menu groups & items based on permissions.
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [
-        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup1),
-        ...FlattenDynMenuItems(dashboardContext, dashboardContext.dynMenuLinks.items),
-        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup2),
+        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup1, expandedSections),
+        ...FlattenDynMenuItems(dashboardContext, dashboardContext.dynMenuLinks.items, expandedSections),
+        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup2, expandedSections),
     ];
 
     const getMenuItemName = (item: MenuItemSpec): string => {
@@ -730,12 +793,17 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
         >
             <Box sx={{ ...theme.mixins.toolbar }} />
             <AppContextMarker name="dashboardMenu">
-                <List component="nav" className="CMMenu">
-                    {
-                        menuItems.map((item, index) => <AppContextMarker name={getMenuItemName(item.item)} key={index}>
-                            <MenuItemComponent key={index} item={item} realm={navRealm} />
-                        </AppContextMarker>)
-                    }
+                <List component="nav" className="CMMenu">                    {
+                    menuItems.map((item, index) => <AppContextMarker name={getMenuItemName(item.item)} key={index}>
+                        <MenuItemComponent
+                            key={index}
+                            item={item}
+                            realm={navRealm}
+                            expandedSections={expandedSections}
+                            onToggleSection={toggleSection}
+                        />
+                    </AppContextMarker>)
+                }
                     <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
                 </List>
             </AppContextMarker>

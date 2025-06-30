@@ -2921,3 +2921,18 @@ nav a:hover {
     width: var(--icon-size);
     height: var(--icon-size);
 }
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+}
+
+.sectionHeader.expandable {
+    cursor: pointer;
+}
+
+.sectionHeader .icon {
+    opacity: 25%;
+}
