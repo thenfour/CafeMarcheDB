@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import { getAbsoluteUrl } from '../../db3/clientAPILL';
 
+// block only
 export function AbcNotationMarkdownPlugin(md: MarkdownIt) {
     const defaultCodeBlockRender = md.renderer.rules.fence ||
         ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));

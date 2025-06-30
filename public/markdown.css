@@ -555,7 +555,7 @@ test cases:
 .markdown .abc-notation-inline {
     display: inline;
     vertical-align: middle;
-    /* max-height: 2em; */
+    max-height: 100px;
     margin: 0 2px;
     padding: 1px 3px;
 }

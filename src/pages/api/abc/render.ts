@@ -3,6 +3,91 @@ import { JSDOM } from 'jsdom';
 // @ts-ignore - abcjs may not have perfect types
 import * as abcjs from 'abcjs';
 
+// Function to crop SVG to actual content bounds using coordinate parsing
+function cropSvgToContent(svgElement: Element): string {
+    try {
+        // Get all elements that might contain coordinates
+        const contentElements = svgElement.querySelectorAll('path, circle, rect, text, line, g');
+
+        if (contentElements.length === 0) {
+            return svgElement.outerHTML;
+        }
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        // Parse coordinates from various element types
+        contentElements.forEach(element => {
+            // Handle text elements
+            if (element.tagName === 'text') {
+                const x = parseFloat(element.getAttribute('x') || '0');
+                const y = parseFloat(element.getAttribute('y') || '0');
+                if (!isNaN(x) && !isNaN(y)) {
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x + 50); // Estimate text width
+                    minY = Math.min(minY, y - 10); // Text baseline adjustment
+                    maxY = Math.max(maxY, y + 5);
+                }
+            }
+
+            // Handle path elements (most musical notation)
+            if (element.tagName === 'path') {
+                const d = element.getAttribute('d');
+                if (d) {
+                    // Extract all numbers from path data
+                    const coords = d.match(/[-+]?[0-9]*\.?[0-9]+/g); if (coords) {
+                        for (let i = 0; i < coords.length - 1; i += 2) {
+                            const xStr = coords[i];
+                            const yStr = coords[i + 1];
+                            if (xStr && yStr) {
+                                const x = parseFloat(xStr);
+                                const y = parseFloat(yStr);
+                                if (!isNaN(x) && !isNaN(y)) {
+                                    minX = Math.min(minX, x);
+                                    maxX = Math.max(maxX, x);
+                                    minY = Math.min(minY, y);
+                                    maxY = Math.max(maxY, y);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Handle simple shapes (rect, circle, line)
+            const x = parseFloat(element.getAttribute('x') || element.getAttribute('cx') || element.getAttribute('x1') || '0');
+            const y = parseFloat(element.getAttribute('y') || element.getAttribute('cy') || element.getAttribute('y1') || '0');
+            if (!isNaN(x) && !isNaN(y)) {
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y);
+            }
+        });
+
+        // If no valid coordinates found, return original
+        if (minX === Infinity || minY === Infinity) {
+            return svgElement.outerHTML;
+        }
+
+        // Add padding
+        const padding = 5;
+        const newX = Math.max(0, minX - padding);
+        const newY = Math.max(0, minY - padding);
+        const newWidth = maxX - minX + (padding * 2);
+        const newHeight = maxY - minY + (padding * 2);
+
+        // Update SVG attributes
+        svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
+        svgElement.setAttribute('width', newWidth.toString());
+        svgElement.setAttribute('height', newHeight.toString());
+
+        return svgElement.outerHTML;
+    } catch (error) {
+        console.warn('SVG cropping failed, returning original:', error);
+        return svgElement.outerHTML;
+    }
+}
+
 // Custom ABC to SVG renderer using abcjs and jsdom
 function renderAbcToSvg(abcNotation: string, options: any = {}): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -64,41 +149,13 @@ function renderAbcToSvg(abcNotation: string, options: any = {}): Promise<string>
                         return;
                     }
 
-                    // Get the raw SVG content
-                    let svgContent = svgElement.outerHTML;
+                    // Crop SVG to content bounds
+                    const croppedSvg = cropSvgToContent(svgElement);
 
                     // Ensure the SVG has proper attributes for standalone rendering
+                    let svgContent = croppedSvg;
                     if (!svgContent.includes('xmlns=')) {
                         svgContent = svgContent.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
-                    }
-
-                    // Ensure SVG has explicit width and height for img tag compatibility
-                    const svgEl = svgElement as SVGSVGElement;
-                    //const viewBox = svgEl.getAttribute('viewBox');
-                    const width = svgEl.getAttribute('width') || (options.width ? `${options.width}px` : '740px');
-                    const height = svgEl.getAttribute('height') || '200px';
-
-                    // // If no width/height but has viewBox, extract dimensions
-                    // if ((!svgEl.getAttribute('width') || !svgEl.getAttribute('height')) && viewBox) {
-                    //     const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
-                    //     if (vbWidth && vbHeight) {
-                    //         //const scale = options.scale || 1.0;
-                    //         // const scaledWidth = Math.round(vbWidth * scale);
-                    //         // const scaledHeight = Math.round(vbHeight * scale);
-
-                    //         // svgContent = svgContent.replace(
-                    //         //     /<svg([^>]*)>/,
-                    //         //     `<svg$1 width="${scaledWidth}" height="${scaledHeight}">`
-                    //         // );
-                    //     }
-                    // }
-
-                    // Ensure we have width and height attributes
-                    if (!svgContent.includes('width=')) {
-                        svgContent = svgContent.replace('<svg', `<svg width="${width}"`);
-                    }
-                    if (!svgContent.includes('height=')) {
-                        svgContent = svgContent.replace('<svg', `<svg height="${height}"`);
                     }
 
                     // Clean up globals
@@ -128,7 +185,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const renderSvg = renderAbcToSvg;
 
         // Extract and validate query parameters
-        const { notation, width, scale } = req.query;
+        const { notation, width, scale, crop } = req.query;
 
         if (!notation || typeof notation !== "string") {
             return res.status(400).json({
@@ -149,6 +206,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Parse optional parameters
         const renderWidth = width && typeof width === "string" ? parseInt(width, 10) : undefined;
         const renderScale = scale && typeof scale === "string" ? parseFloat(scale) : undefined;
+        const cropEnabled = crop !== "false" && crop !== "0"; // Default to true unless explicitly disabled
 
         // Validate numeric parameters
         if (renderWidth !== undefined && (isNaN(renderWidth) || renderWidth <= 0)) {
@@ -164,7 +222,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Configure rendering options
-        const options: any = {};
+        const options: any = {
+            crop: cropEnabled
+        };
         if (renderWidth) {
             options.width = renderWidth;
         }
