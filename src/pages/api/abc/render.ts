@@ -70,7 +70,7 @@ function cropSvgToContent(svgElement: Element): string {
         }
 
         // Add padding
-        const padding = 5;
+        const padding = 0;
         const newX = Math.max(0, minX - padding);
         const newY = Math.max(0, minY - padding);
         const newWidth = maxX - minX + (padding * 2);
@@ -120,12 +120,12 @@ function renderAbcToSvg(abcNotation: string, options: any = {}): Promise<string>
             // Configure abcjs rendering options
             const renderOptions = {
                 responsive: "resize",
-                staffwidth: options.width || 740,
+                staffwidth: options.width || 540,
                 scale: options.scale || 1.0,
-                paddingtop: 15,
-                paddingbottom: 15,
-                paddingleft: 15,
-                paddingright: 15,
+                // paddingtop: 15,
+                // paddingbottom: 15,
+                // paddingleft: 15,
+                // paddingright: 15,
                 add_classes: true,
                 ...options
             };

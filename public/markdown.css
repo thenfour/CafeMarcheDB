@@ -551,11 +551,17 @@ test cases:
     color: #f99;
 }
 
-/* ABC Notation Inline Styling */
-.markdown .abc-notation-inline {
-    display: inline;
+/* ABC Notation Styling */
+.abc-notation-block-container {
+    display: flex;
+    justify-content: center;
+    /* todo: options for justification, system width... */
+}
+
+.abc-notation-inline {
+    display: inline-block;
     vertical-align: middle;
-    max-height: 100px;
-    margin: 0 2px;
-    padding: 1px 3px;
+    max-height: 80px;
+    margin-top: -15px;
+    /* border: 1px solid black; */
 }

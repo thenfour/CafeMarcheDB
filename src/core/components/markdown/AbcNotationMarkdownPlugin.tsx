@@ -16,7 +16,7 @@ export function AbcNotationMarkdownPlugin(md: MarkdownIt) {
             const encodedAbc = encodeURIComponent(token.content.trim());
 
             // Generate the image tag pointing to our ABC rendering API
-            return `<img src="${getAbsoluteUrl(`/api/abc/render`)}?notation=${encodedAbc}" alt="ABC Notation" class="abc-notation-rendered" />`;
+            return `<div class="abc-notation-block-container"><img src="${getAbsoluteUrl(`/api/abc/render`)}?notation=${encodedAbc}" alt="ABC Notation" class="abc-notation-rendered" /></div>`;
         }
 
         // For all other code blocks, use the default renderer
