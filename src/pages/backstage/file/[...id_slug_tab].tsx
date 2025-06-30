@@ -171,9 +171,29 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                                 <WikiPageChip key={index} slug={taggedWikiPage.wikiPage.slug} />
                             ))}
                         </CMChipContainer>) : "",
-                    "Parent File": <>(todo: verbose query){file.parentFileId ? <CMLink href={getURIForFileLandingPage({ id: file.parentFileId })}>{file.parentFileId}</CMLink> : ''}</>,
-                    "Child files": "(todo: verbose data query)",
+                    "Frontpage gallery usage": file.frontpageGalleryItems && file.frontpageGalleryItems.length || "",
+                    "Parent File": <>{file.parentFileId ? <CMLink href={getURIForFileLandingPage({ id: file.parentFileId })}>{file.parentFileId}</CMLink> : ''}</>,
+                    "Child files": <CMChipContainer>
+                        {file.childFiles && file.childFiles.length > 0 && (
+                            file.childFiles.map((childFile, index) => (
+                                <CMLink key={index} href={getURIForFileLandingPage(childFile)}>{childFile.id}</CMLink>
+                            ))
+                        )}
+                    </CMChipContainer>,
                     "Preview File": file.previewFileId ? <CMLink href={getURIForFileLandingPage({ id: file.previewFileId })}>{file.previewFileId}</CMLink> : '',
+                    "Preview for": <CMChipContainer>
+                        {file.previewForFile && file.previewForFile.length > 0 && (
+                            file.previewForFile.map((previewForFile, index) => (
+                                <CMLink key={index} href={getURIForFileLandingPage(previewForFile)}>{previewForFile.id}</CMLink>
+                            ))
+                        )}
+                    </CMChipContainer>,
+                    "Pinned for songs": <CMChipContainer>
+                        {file.pinnedForSongs && file.pinnedForSongs.length > 0 && (
+                            file.pinnedForSongs.map((pinnedSong, index) => (
+                                <SongChip key={index} value={pinnedSong} />
+                            ))
+                        )}</CMChipContainer>,
                     "Custom Data": file.customData ? <InspectObject src={file.customData} label="Custom data" /> : '',
                     "Actions": (
                         <div>

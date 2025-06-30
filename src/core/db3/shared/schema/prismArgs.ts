@@ -1234,6 +1234,13 @@ export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
         taggedEvents: FileEventTagArgs,
         taggedInstruments: FileInstrumentTagArgs,
         taggedWikiPages: FileWikiPageTagArgs,
+
+        parentFile: true,
+        childFiles: true,
+        frontpageGalleryItems: true,
+        pinnedForSongs: true,
+        previewFile: true,
+        previewForFile: true,
     }
 });
 

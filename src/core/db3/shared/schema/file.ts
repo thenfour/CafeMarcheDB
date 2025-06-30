@@ -363,7 +363,7 @@ export interface xFileFilterParams {
     fileTagIds: number[];
 };
 
-export const xFile = new db3.xTable({
+const xFileBaseArgs = {
     tableName: "File",
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInclude => {
         return FileArgs.include;
@@ -588,9 +588,19 @@ export const xFile = new db3.xTable({
             }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedWikiPages
+
+        new GhostField({ memberName: "parentFile", authMap: xFileAuthMap_FileObjects }),
+        new GhostField({ memberName: "childFiles", authMap: xFileAuthMap_FileObjects }),
+        new GhostField({ memberName: "frontpageGalleryItems", authMap: xFileAuthMap_FileObjects }),
+        new GhostField({ memberName: "pinnedForSongs", authMap: xFileAuthMap_FileObjects }),
+        new GhostField({ memberName: "previewFile", authMap: xFileAuthMap_FileObjects }),
+        new GhostField({ memberName: "previewForFile", authMap: xFileAuthMap_FileObjects }),
     ]
 
-});
+};
+
+export const xFile = new db3.xTable(xFileBaseArgs);
+export const xFileVerbose = new db3.xTable(xFileBaseArgs);
 
 
 
