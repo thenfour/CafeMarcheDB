@@ -8,6 +8,7 @@ import { CMHighlightIcon, InsertSpecialCharacterToolItemWithDropdown, SurroundTe
 import { MarkdownHyperlinkCommand } from "./MarkdownEditorHyperlinkCommand";
 import { MarkdownEditorMentionCommand } from "./MarkdownEditorMentionCommand";
 import { WikiReferenceCommand } from "./MarkdownEditorWikiReferenceCommand";
+import { gIconMap } from "../../db3/components/IconMap";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const BoldCommand: MarkdownEditorCommand = {
@@ -375,6 +376,30 @@ const CodeCommand: MarkdownEditorCommand = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const AbcNotationCommand: MarkdownEditorCommand = {
+    id: "AbcNotationCommand",
+    toolbarTooltip: "ABC music notation",
+    toolbarIcon:
+        gIconMap.MusicNote()
+    // <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-musical-note">
+    //     <path d="M12.5 1.5a.5.5 0 0 0-.5.5v6.5a2.5 2.5 0 1 0 1 2V2a.5.5 0 0 0-.5-.5zm-1 8.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM4 8.5v3.5a2.5 2.5 0 1 0 1 2V8.5c0-.828.672-1.5 1.5-1.5h.5a.5.5 0 0 0 0-1h-.5C5.122 6 4 7.122 4 8.5zM4 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+    // </svg>
+    ,
+    invoke: async (args) => {
+        const selection = args.api.controlledTextArea.getText();
+        if (selection.length > 0) {
+            // If text is selected, wrap it in ABC code block
+            await args.api.controlledTextArea.surroundSelectionWithText("```abc\n", "\n```", "");
+        } else {
+            // If no selection, insert a sample ABC notation
+            const sampleAbc = `X:1
+C D E F | G A B c |`;
+            await args.api.controlledTextArea.replaceSelectionWithText(`\`\`\`abc\n${sampleAbc}\n\`\`\``, { select: "change" });
+        }
+    },
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const MarkdownInspectCommand: MarkdownEditorCommand = {
     id: "MarkdownInspectCommand",
     isEnabled: (api) => {
@@ -472,7 +497,7 @@ export const gMarkdownEditorCommandGroups: MarkdownEditorCommand[][] = [
     [UndoCommand, RedoCommand],
     [BoldCommand, ItalicCommand, StrikethroughCommand, EncloseCommand, HighlightCommand],
     [UnorderedListCommand, OrderedListCommand, DecreaseIndentCommand, IndentCommand],
-    [Heading1Command, QuoteCommand, CodeCommand, CharacterSizeCommand],
+    [Heading1Command, QuoteCommand, CodeCommand, AbcNotationCommand, CharacterSizeCommand],
     [SpecialCharactersCommand],
     [FileAttachCommand,
         WikiReferenceCommand,

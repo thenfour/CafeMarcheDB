@@ -202,7 +202,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.setHeader("Access-Control-Allow-Origin", "*"); // Allow cross-origin requests
 
         // Debug: log the SVG content (first 200 chars)
-        console.log("Generated SVG preview:", svgContent.substring(0, 200) + "...");
+        // console.log("Generated SVG preview:", svgContent.substring(0, 200) + "...");
 
         // Return the SVG content
         return res.status(200).send(svgContent);

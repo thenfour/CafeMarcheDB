@@ -25,6 +25,7 @@ import { IsNullOrWhitespace } from "shared/utils";
 
 import { NoSsr } from '@mui/material';
 import { getURLClass } from "../../db3/clientAPILL";
+import { AbcNotationMarkdownPlugin } from './AbcNotationMarkdownPlugin';
 import { CMDBLinkMarkdownPlugin } from './CMDBLinkMarkdownPlugin';
 import { ImageDimensionsMarkdownPlugin } from './ImageDimensionsMarkdownPlugin';
 import { ReactInlineMarkdownPlugin } from './ReactInlineMarkdownPlugin';
@@ -110,6 +111,7 @@ export const Markdown = (props: MarkdownProps) => {
         md.use(md => ReactInlineMarkdownPlugin(md));
         md.use(ImageDimensionsMarkdownPlugin);
         md.use(CMDBLinkMarkdownPlugin);
+        md.use(md => AbcNotationMarkdownPlugin(md));
 
         setHtml(md.render(props.markdown));
 

@@ -112,6 +112,17 @@ console.log(example);
 \`\`\``} />
                     </dd>
 
+                    {/* ABC Music Notation */}
+                    <dt>
+                        <span className="highlight">Music Notation</span>: Use triple backticks
+                        with "abc" language tag.
+                    </dt>
+                    <dd>
+                        <Pre text={`\`\`\`abc
+C D E F | G A B c |
+\`\`\``} />
+                    </dd>
+
                     {/* Block Quotes */}
                     <dt>
                         <span className="highlight">Block Quotes</span>: Use the &quot;&gt;&quot;
