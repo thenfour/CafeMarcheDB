@@ -315,6 +315,7 @@ interface MenuItemLink {
     openInNewTab?: boolean;
     realm?: NavRealm;
     renderIcon: () => React.ReactNode;
+    groupId?: string; // Add groupId to track which section this link belongs to
 };
 
 type MenuItemSpec = MenuItemDivider | MenuItemSectionHeader | MenuItemLink;
@@ -365,6 +366,14 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
         );
     }
     if (props.item.item.type === "link") {
+        // Check if this link should be hidden because its section is collapsed
+        const linkItem = props.item.item;
+        if (linkItem.groupId) {
+            const isGroupExpanded = props.expandedSections.has(linkItem.groupId);
+            if (!isGroupExpanded) {
+                return null; // Don't render this item if its group is collapsed
+            }
+        }
 
         // Check if the item is selected based on the current path and realm
         const item = props.item?.item;
@@ -447,23 +456,21 @@ const gMenuItemGroup1: MenuItemGroup[] = [
 ];
 const gMenuItemGroup2: MenuItemGroup[] = [
     {
-        name: "Configuration",
-        className: "backstage",
-        expandedByDefault: true, // Configuration expanded by default
-        items: [
-            { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
-            { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
-            { type: "link", path: "/backstage/workflows", linkCaption: "Workflows", renderIcon: gIconMap.AccountTree, permission: Permission.view_workflow_defs },
-        ],
-    },
-
-    {
         name: "Public",
         className: "public",
         items: [
             { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public, },
             { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Homepage Photos", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
             { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Homepage Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage },
+        ],
+    },
+    {
+        name: "Configuration",
+        className: "backstage",
+        items: [
+            { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
+            { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
+            { type: "link", path: "/backstage/workflows", linkCaption: "Workflows", renderIcon: gIconMap.AccountTree, permission: Permission.view_workflow_defs },
         ],
     },
     {
@@ -610,13 +617,12 @@ const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups: MenuI
                     firstItemInGroup = false;
                 }
 
-                // only add the item if the group is expanded (or has no name)
-                if (isGroupExpanded || !g.name) {
-                    menuItems.push({
-                        group: g,
-                        item,
-                    });
-                }
+                // Always add the item, but mark it with the groupId so we can filter it during rendering
+                const itemWithGroupId = { ...item, groupId };
+                menuItems.push({
+                    group: g,
+                    item: itemWithGroupId,
+                });
             }
         }
     }
@@ -668,7 +674,6 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
             items: [],
         };
         const groupId = currentGroupName || `dyn-group-${iItem}`;
-        const isGroupExpanded = expandedSections.has(groupId);
 
         if (firstItemInGroup) {
             if (menuItems.length) {
@@ -693,13 +698,12 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
             }
         }
 
-        // only add the item if the group is expanded (or has no name)
-        if (isGroupExpanded || IsNullOrWhitespace(currentGroupName)) {
-            menuItems.push({
-                group: fakeGroup,
-                item: menuItem,
-            });
-        }
+        // Always add the item, but mark it with the groupId so we can filter it during rendering
+        const menuItemWithGroupId = { ...menuItem, groupId };
+        menuItems.push({
+            group: fakeGroup,
+            item: menuItemWithGroupId,
+        });
     }
 
     return menuItems;
