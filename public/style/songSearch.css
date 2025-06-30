@@ -53,6 +53,7 @@
 
 .songListItem .row {
     display: flex;
+    align-items: center;
 }
 
 .songListItem .fieldItem {

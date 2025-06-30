@@ -41,16 +41,10 @@ export function WikiPageListItem(props: WikiPageListItemProps) {
             <div className="credits">
                 <div className="credit row">
                     {wikiPage.createdAt && (
-                        <>
-                            <div className="fieldCaption">Created:</div>
-                            <div className="fieldItem"><DateValue value={wikiPage.createdAt} /></div>
-                        </>
+                        <div className="fieldItem">Created on <DateValue value={wikiPage.createdAt} /></div>
                     )}
                     {wikiPage.createdByUser && (
-                        <>
-                            <div className="fieldCaption">By:</div>
-                            <div className="fieldItem"><UserChip value={wikiPage.createdByUser} /></div>
-                        </>
+                        <div className="fieldItem">by <UserChip value={wikiPage.createdByUser} /></div>
                     )}
                 </div>
             </div>
