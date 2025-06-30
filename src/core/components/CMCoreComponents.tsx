@@ -6,28 +6,24 @@
 import { Prisma } from "db";
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
+import { ColorVariationSpec } from 'shared/color';
 import { Coalesce, getHashedColor } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Icon, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { Timing } from "shared/time";
 import { getURIForEvent, getURIForFile, getURIForSong } from "../db3/clientAPILL";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { useDb3Query } from "../db3/DB3Client";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
-import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
+import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { DateValue } from "./DateTime/DateTimeComponents";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { Markdown } from "./markdown/Markdown";
-
-//const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
-
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
 export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {
@@ -214,44 +210,6 @@ export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupCh
     </CMChip>
 }
 
-
-export interface EventChipProps {
-    value: Prisma.EventGetPayload<{
-        select: {
-            id: true,
-            name: true,
-            startsAt: true,
-            statusId: true,
-            typeId: true
-        }
-    }>;
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    onClick?: () => void;
-    className?: string;
-    startAdornment?: React.ReactNode;
-    endAdornment?: React.ReactNode;
-    useHashedColor?: boolean;
-};
-
-export const EventChip = (props: EventChipProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
-
-    return <CMChip
-        variation={props.variation}
-        size={props.size}
-        href={getURIForEvent(props.value)}
-        className={props.className}
-        color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
-        tooltip={db3.EventAPI.getLabel(props.value, { showDate: true, truncate: false })}
-    >
-        {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
-            {db3.EventAPI.getLabel(props.value)}
-        </span>
-        {props.endAdornment}
-    </CMChip>
-}
 
 
 export interface SongChipProps {
@@ -601,16 +559,6 @@ export const OpenCloseIcon = ({ isOpen }: { isOpen: boolean }) => {
     // 
     return isOpen ? <>&#9207;</> : <>&#9205;</>;
 };
-
-
-export const TimingChip = ({ value, tooltip, children }: React.PropsWithChildren<{ value: Timing, tooltip: string }>) => {
-    const configMap: { [key in Timing]: CMChipProps } = {
-        [Timing.Past]: { color: gSwatchColors.light_gray, variation: { ...StandardVariationSpec.Weak, fillOption: "hollow" }, shape: "rectangle" },
-        [Timing.Present]: { color: gSwatchColors.orange, variation: { ...StandardVariationSpec.Weak, fillOption: "hollow" }, shape: "rectangle" },
-        [Timing.Future]: { color: gSwatchColors.purple, variation: { ...StandardVariationSpec.Weak, fillOption: "hollow" }, shape: "rectangle" },
-    };
-    return <CMChip {...configMap[value]} tooltip={tooltip}>{children}</CMChip>;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

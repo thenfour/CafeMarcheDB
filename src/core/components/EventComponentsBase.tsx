@@ -1,66 +1,17 @@
 
-import { StandardVariationSpec } from '@/shared/color';
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from 'react';
 import { SortDirection } from 'shared/rootroot';
 import { DateTimeRange, Timing } from 'shared/time';
-import { getUniqueNegativeID, IsNullOrWhitespace } from 'shared/utils';
-import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
+import { getUniqueNegativeID } from 'shared/utils';
+import { DashboardContext } from "src/core/components/DashboardContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../db3/components/DB3ClientCore';
 import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
-import { CMStandardDBChip } from './CMChip';
-import { CMStatusIndicator } from './CMCoreComponents';
 import { DashboardContextData } from './DashboardContext';
-import { RenderMuiIcon } from '../db3/components/IconMap';
-import { GetStyleVariablesForColor } from './Color';
-import { Tooltip } from '@mui/material';
-import { Markdown } from './markdown/Markdown';
-
-export interface EventStatusChipProps {
-    statusId: number | null | undefined;
-    highlightStatusIds?: number[];
-    displayStyle?: "default" | "iconOnly";
-    size?: "small" | "big";
-};
-
-
-export const EventStatusChip = ({ statusId, highlightStatusIds = [], displayStyle = "default", size }: EventStatusChipProps) => {
-    const dashboardContext = useDashboardContext();
-    const status = dashboardContext.eventStatus.getById(statusId);
-    if (!status) return null;
-    return <CMStandardDBChip
-        variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(statusId || -1) }}
-        border='border'
-        shape="rectangle"
-        model={status}
-        getTooltip={_ => status?.description || null}
-        iconOnly={displayStyle === "iconOnly"}
-        size={size}
-    />
-
-};
-
-
-export const EventStatusMinimal = ({ statusId }: { statusId: number | null | undefined }) => {
-    const dashboardContext = useDashboardContext();
-    const status = dashboardContext.eventStatus.getById(statusId);
-    if (!status) return null;
-    const style = GetStyleVariablesForColor({ color: status.color, ...StandardVariationSpec.Strong });
-
-    return <Tooltip title={<div>
-        <div className="tooltipTitle">{status.label}</div>
-        <Markdown markdown={status.description || ""} />
-    </div>}>
-        <span className={`iconIndicator ${style.cssClass}`} style={style.style}>
-            {IsNullOrWhitespace(status.iconName) ? status.label : RenderMuiIcon(status.iconName)}
-        </span>
-    </Tooltip>;
-
-};
 
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
@@ -450,19 +401,6 @@ export interface EventsFilterSpec {
     tagFilter: DiscreteCriterion;
     statusFilter: DiscreteCriterion;
     dateFilter: DiscreteCriterion;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export interface EventStatusValueProps {
-    onClick?: () => void;
-    statusId: number | null | undefined;
-    size: "small";
-};
-export const EventStatusValue = (props: EventStatusValueProps) => {
-    const dashboardContext = useDashboardContext();
-    const status = dashboardContext.eventStatus.getById(props.statusId);
-    return status && (<CMStatusIndicator size={props.size} model={status} onClick={props.onClick} getText={o => o?.label || ""} />);
 };
 
 export const EventTableClientColumns = {

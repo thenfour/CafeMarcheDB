@@ -4,13 +4,14 @@ import { useQuery } from '@blitzjs/rpc';
 import * as React from 'react';
 import { gIconMap } from '../../db3/components/IconMap';
 import { CMChip } from '../CMChip';
-import { EventChip, SongChip, WikiPageChip } from '../CMCoreComponents';
+import { SongChip, WikiPageChip } from '../CMCoreComponents';
 import { useDashboardContext } from "../DashboardContext";
 import { CMTab, CMTabPanel, CMTabPanelChild } from '../TabPanel';
 import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
 import { ActivityFeature } from "./activityTracking";
 import { AnonymizedUserChip, ContextLabel, ContextObjectTabData, DistinctContextObjectTabContent, FeatureLabel, GeneralFeatureDetailTable, getContextObjectTabData } from './FeatureReportBasics';
 import getGeneralFeatureDetail from './queries/getGeneralFeatureDetail';
+import { EventChip } from '../event/EventChips';
 
 interface GeneralFeatureDetailAreaProps {
     features: ActivityFeature[];

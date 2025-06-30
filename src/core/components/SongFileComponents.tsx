@@ -22,7 +22,7 @@ import { PushPin } from '@mui/icons-material';
 import { getURIForFile, getURIForFileLandingPage } from '../db3/clientAPILL';
 import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
-import { EventChip, InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
+import { InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
 import { DotMenu } from './CMCoreComponents2';
 import { CMDBUploadFile } from './CMDBUploadFile';
 import { CMLink } from './CMLink';
@@ -35,6 +35,7 @@ import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from './mediaPlayer/MediaPlayerTypes';
 import { UserChip } from './userChip';
+import { EventChip } from './event/EventChips';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

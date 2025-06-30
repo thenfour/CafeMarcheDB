@@ -10,7 +10,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
-import { assert } from "blitz";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';

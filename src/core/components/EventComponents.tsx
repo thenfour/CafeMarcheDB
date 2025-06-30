@@ -37,7 +37,7 @@ import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventStatusChip, EventWithMetadata } from './EventComponentsBase';
+import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -54,6 +54,7 @@ import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from './markdown/Markdown';
 import { Markdown3Editor } from './markdown/MarkdownControl3';
 import { UserChip } from './userChip';
+import { EventStatusChip } from './event/EventChips';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {

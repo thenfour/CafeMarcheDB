@@ -8,7 +8,7 @@ import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { gIconOptions, smartTruncate } from "shared/utils";
+import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import { CMDBTableFilterModel, SearchCustomDataHookId, TAnyModel } from "../apiTypes";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
@@ -393,7 +393,8 @@ export const EventAPI = {
         showDate?: boolean, // default true
     }) => {
         const truncatedName = options?.truncate !== false ? smartTruncate(e.name, options?.truncateLength || 20) : e.name;
-        if (options?.showDate === false || !e.startsAt) {
+        const showDate = CoalesceBool(options?.showDate, true);
+        if (!showDate) {
             return truncatedName;
         }
         return `${truncatedName} (${e.startsAt ? e.startsAt.toLocaleDateString() : "TBD"})`;

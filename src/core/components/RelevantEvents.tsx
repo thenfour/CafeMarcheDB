@@ -16,9 +16,9 @@ import { CMLink } from "./CMLink";
 import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
-import { EventStatusMinimal } from "./EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
+import { EventStatusMinimal } from "./event/EventChips";
 
 function formatShortDate(date: Date, locale: string = navigator.language): string {
     const now = new Date();

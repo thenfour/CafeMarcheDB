@@ -19,11 +19,12 @@ import clearEventSegmentResponses from "../db3/mutations/clearEventSegmentRespon
 import copyEventSegmentResponses from "../db3/mutations/copyEventSegmentResponses";
 import { useConfirm } from "./ConfirmationDialog";
 import { useDashboardContext } from "./DashboardContext";
-import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
+import { EventTableClientColumns } from "./EventComponentsBase";
 import { Markdown } from "./markdown/Markdown";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
 import { Prisma } from "db";
+import { EventStatusValue } from "./event/EventChips";
 
 
 

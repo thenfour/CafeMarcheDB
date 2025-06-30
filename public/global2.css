@@ -2910,6 +2910,9 @@ nav a:hover {
 
 .DateValue {
     white-space: nowrap;
+    font-size: 11px;
+    font-family: var(--ff-mono);
+    letter-spacing: -.5px;
 }
 
 .iconIndicator {
@@ -2940,4 +2943,9 @@ nav a:hover {
 
 .sectionHeader .icon {
     opacity: 25%;
+}
+
+
+.eventChip.Cancelled {
+    text-decoration: line-through;
 }

@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { SortDirection } from "shared/rootroot";
-import { getHashedColor, IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
+import { IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
@@ -18,7 +18,7 @@ import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../db3/queries/getUserWikiContributions";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "./CMChip";
-import { AttendanceChip, EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
+import { AttendanceChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { AdminInspectObject, CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { CMLink } from "./CMLink";
 import { ChooseItemDialog } from "./ChooseItemDialog";
@@ -26,6 +26,7 @@ import { useDashboardContext } from "./DashboardContext";
 import { DateValue } from "./DateTime/DateTimeComponents";
 import { SongsProvider, useSongsContext } from "./SongsContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
+import { EventChip } from "./event/EventChips";
 import { Markdown } from "./markdown/Markdown";
 import { UserAdminPanel } from "./user/UserAdminPanel";
 import { UserChip } from "./userChip";
@@ -182,17 +183,17 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
     return <div className="UserAttendanceTabContent">
         <AdminInspectObject src={qr} label="results" />
 
-        <CMChipContainer>
-            <span># of items to show: </span>
-            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 50 }} onClick={() => setTake(50)}>50</CMChip>
-            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 100 }} onClick={() => setTake(100)}>100</CMChip>
-            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 250 }} onClick={() => setTake(250)}>250</CMChip>
-            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 500 }} onClick={() => setTake(500)}>500</CMChip>
-            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 1000 }} onClick={() => setTake(1000)}>1000</CMChip>
-        </CMChipContainer>
 
         {agg.totalSegmentCount > 0 &&
             <KeyValueTable data={{
+                "Show": <CMChipContainer>
+                    <CMChip shape="rectangle" size="small" variation={{ ...StandardVariationSpec.Strong, selected: take === 50 }} onClick={() => setTake(50)}>50</CMChip>
+                    <CMChip shape="rectangle" size="small" variation={{ ...StandardVariationSpec.Strong, selected: take === 100 }} onClick={() => setTake(100)}>100</CMChip>
+                    <CMChip shape="rectangle" size="small" variation={{ ...StandardVariationSpec.Strong, selected: take === 250 }} onClick={() => setTake(250)}>250</CMChip>
+                    <CMChip shape="rectangle" size="small" variation={{ ...StandardVariationSpec.Strong, selected: take === 500 }} onClick={() => setTake(500)}>500</CMChip>
+                    <CMChip shape="rectangle" size="small" variation={{ ...StandardVariationSpec.Strong, selected: take === 1000 }} onClick={() => setTake(1000)}>1000</CMChip>
+                    <span>items</span>
+                </CMChipContainer>,
                 ...agg,
                 "Response rate": <>{(agg.responseCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
                 "Attendance rate (overall)": <>{(agg.goingCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
@@ -202,12 +203,17 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
         <CMTable
             className="userAttendanceTable"
             getRowStyle={(row) => {
-                const year = row.row.startsAt ? new Date(row.row.startsAt).getFullYear() : 0;
-                const month = row.row.startsAt ? new Date(row.row.startsAt).getMonth() : 0;
-                const yearColorA = getHashedColor(`${year}`, { alpha: "5%" });
-                const yearColorB = getHashedColor(`${year}`, { alpha: "15%" });
+                const now = new Date();
+                const eventDate = row.row.startsAt ? new Date(row.row.startsAt) : null;
+                const month = eventDate ? eventDate.getMonth() : 0;
+                let isFuture = !eventDate || eventDate > now;
+                // Past color scheme
+                const pastColors = ["#fff", "#f7f7f7"];
+                // Future color scheme
+                const futureColors = ["#e6f7ff", "#d0ebff"];
+                const colorSet = isFuture ? futureColors : pastColors;
                 return {
-                    backgroundColor: month % 2 === 0 ? yearColorA : yearColorB,
+                    backgroundColor: colorSet[month % 2],
                 }
             }}
             rows={sortedQrWithIndex} columns={[
@@ -222,7 +228,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                     allowSort: false,
                     header: "Event",
                     //render: (row) => <EventTextLink event={row.row} />,
-                    render: (row) => <EventChip value={row.row} size="small" />,
+                    render: (row) => <EventChip value={row.row} size="small" showDate={false} />,
                     compareFn: (a, b) => {
                         const aName = a.name || "";
                         const bName = b.name || "";
@@ -243,7 +249,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                     header: "Instrument",
                     render: (row) => {
                         const inst = dashboardContext.instrument.getById(row.row.instrumentId);
-                        return inst ? <InstrumentChip value={inst} /> : <span>--</span>;
+                        return inst ? <InstrumentChip size="small" value={inst} /> : <span>--</span>;
                     },
                     compareFn: (a, b) => {
                         const aInst = dashboardContext.instrument.getById(a.instrumentId);

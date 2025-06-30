@@ -2,13 +2,14 @@ import { clearArray, isOneOf } from "@/shared/arrayUtils";
 import { gGeneralPaletteList } from "@/shared/color";
 import { getHashedColor } from "@/shared/utils";
 import { gIconMap } from "../../db3/components/IconMap";
-import { EventChip, SongChip, WikiPageChip } from "../CMCoreComponents";
+import { SongChip, WikiPageChip } from "../CMCoreComponents";
 import { CMSmallButton } from "../CMCoreComponents2";
 //
 import { FacetedBreakdownResult, FacetResultBase } from "./activityReportTypes";
 import { ActivityFeature, OperatingSystem } from "./activityTracking";
 import { AnonymizedUserChip, BrowserChip, CMAdhocChip, CMAdhocChipContainer, ContextLabel, DeviceClassChip, FeatureLabel, getColorForFeature, OperatingSystemChip, PointerTypeChip } from "./FeatureReportBasics";
 import { FeatureReportFilterSpec } from "./server/facetProcessor";
+import { EventChip } from "../event/EventChips";
 
 
 interface ScreenSizeIndicatorProps {

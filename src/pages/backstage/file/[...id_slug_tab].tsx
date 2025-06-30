@@ -1,6 +1,6 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
-import { EventChip, FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
+import { FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
 import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
@@ -10,6 +10,7 @@ import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
 import { useSnackbar } from "@/src/core/components/SnackbarContext";
 import { AudioPlayerFileControls, FileExternalLink } from "@/src/core/components/SongFileComponents";
 import { VisibilityValue } from "@/src/core/components/VisibilityControl";
+import { EventChip } from "@/src/core/components/event/EventChips";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { Markdown } from "@/src/core/components/markdown/Markdown";
 import { UserChip } from "@/src/core/components/userChip";
