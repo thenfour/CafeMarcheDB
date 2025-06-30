@@ -971,6 +971,6 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): Relativ
 
 
 
-export function CalcRelativeTimingFromNow(date: Date): RelativeTimingInfo {
-    return CalcRelativeTiming(new Date(), new DateTimeRange({ startsAtDateTime: date, isAllDay: false, durationMillis: 0 }));
+export function CalcRelativeTimingFromNow(date: Date, now?: Date | undefined): RelativeTimingInfo {
+    return CalcRelativeTiming(now || new Date(), new DateTimeRange({ startsAtDateTime: date, isAllDay: false, durationMillis: 0 }));
 }

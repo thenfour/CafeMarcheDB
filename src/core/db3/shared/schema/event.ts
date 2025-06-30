@@ -8,7 +8,7 @@ import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { gIconOptions } from "shared/utils";
+import { gIconOptions, smartTruncate } from "shared/utils";
 import { CMDBTableFilterModel, SearchCustomDataHookId, TAnyModel } from "../apiTypes";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeDescriptionField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakeMarkdownTextField, MakeNullableRawTextField, MakePKfield, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
@@ -386,8 +386,16 @@ export interface EventSearchCustomData {
 };
 
 export const EventAPI = {
-    getLabel: (e: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>) => {
-        return `${e.name} (${e.startsAt ? e.startsAt.toLocaleDateString() : "TBD"})`;
+    getLabel: (e: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>, options?: {
+        truncate?: boolean, // default true
+        truncateLength?: number, // default 20
+        showDate?: boolean, // default true
+    }) => {
+        const truncatedName = options?.truncate !== false ? smartTruncate(e.name, options?.truncateLength || 20) : e.name;
+        if (options?.showDate === false || !e.startsAt) {
+            return truncatedName;
+        }
+        return `${truncatedName} (${e.startsAt ? e.startsAt.toLocaleDateString() : "TBD"})`;
     }
 };
 

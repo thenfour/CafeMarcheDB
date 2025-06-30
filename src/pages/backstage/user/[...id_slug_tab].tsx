@@ -3,7 +3,6 @@ import db from "db";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { UserBreadcrumbs, UserDetail } from "src/core/components/UserComponents";
@@ -24,7 +23,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
 
     if (!userId) throw new Error(`user not found`);
 
-    const currentUser = useCurrentUser()[0]!;
+    //const currentUser = useCurrentUser()[0]!;
     //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: currentUser, };
 
     const queryArgs: DB3Client.xTableClientArgs = {
@@ -33,6 +32,19 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xUser,
             columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
+                //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
+                new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
+                new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
+                new DB3Client.GenericStringColumnClient({ columnName: "cssClass", cellWidth: 150 }),
+                new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
+                new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
+                //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
+                new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
+                new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+                new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, }),
+
             ],
         }),
         filterModel: {

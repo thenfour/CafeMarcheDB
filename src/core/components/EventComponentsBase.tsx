@@ -1,9 +1,10 @@
 
+import { StandardVariationSpec } from '@/shared/color';
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from 'react';
 import { SortDirection } from 'shared/rootroot';
-import { CalcRelativeTimingFromNow, DateTimeRange, Timing } from 'shared/time';
+import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
 import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
 import * as db3 from "src/core/db3/db3";
@@ -11,44 +12,9 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../db3/components/DB3ClientCore';
 import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
-import { DashboardContextData } from './DashboardContext';
-import { CMStatusIndicator } from './CMCoreComponents';
 import { CMStandardDBChip } from './CMChip';
-import { StandardVariationSpec } from '@/shared/color';
-
-function formatShortDate(date: Date, locale: string = navigator.language): string {
-    const now = new Date();
-    const showYear = date.getFullYear() !== now.getFullYear();
-    const formatter = new Intl.DateTimeFormat(locale, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        ...(showYear ? { year: "numeric" } : {})
-    });
-    // Use formatToParts to filter out punctuation
-    const parts = formatter.formatToParts(date);
-    return parts
-        .filter(part => part.type !== "literal")
-        .map(part => part.value)
-        .join(" ");
-}
-
-export interface EventShortDateProps {
-    event: Prisma.EventGetPayload<{
-        select: {
-            startsAt: true;
-        }
-    }>;
-};
-
-export const EventShortDate = ({ event }: EventShortDateProps) => {
-    if (!event.startsAt) return null;
-    const relativeTiming = CalcRelativeTimingFromNow(event.startsAt);
-    return <>
-        {formatShortDate(event.startsAt)}
-        <span className={`EventDateField container ${relativeTiming.bucket}`}><span className="RelativeIndicator">{relativeTiming.label}</span></span>
-    </>
-};
+import { CMStatusIndicator } from './CMCoreComponents';
+import { DashboardContextData } from './DashboardContext';
 
 export interface EventStatusChipProps {
     statusId: number | null | undefined;

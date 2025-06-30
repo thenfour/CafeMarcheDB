@@ -1,8 +1,9 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
-import { DateValue, EventChip, FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
+import { EventChip, FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
 import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
+import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
 import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
 import { useSnackbar } from "@/src/core/components/SnackbarContext";

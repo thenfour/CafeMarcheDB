@@ -16,8 +16,8 @@ import getUserCredits from "../db3/queries/getUserCredits";
 import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../db3/queries/getUserWikiContributions";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
-import { CMChipContainer, CMStandardDBChip } from "./CMChip";
-import { AttendanceChip, EventTextLink, InstrumentChip, SongChip } from "./CMCoreComponents";
+import { CMChip, CMChipContainer, CMStandardDBChip } from "./CMChip";
+import { AttendanceChip, EventChip, EventTextLink, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { AdminInspectObject, CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
@@ -26,8 +26,9 @@ import { CMTab, CMTabPanel } from "./TabPanel";
 import { UserChip } from "./userChip";
 import { Markdown } from "./markdown/Markdown";
 import { Permission } from "@/shared/permissions";
-import { EventShortDate } from "./EventComponentsBase";
 import { CMLink } from "./CMLink";
+import { UserAdminPanel } from "./user/UserAdminPanel";
+import { DateValue } from "./DateTime/DateTimeComponents";
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -153,7 +154,9 @@ type UserAttendanceTabContentProps = {
 };
 export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) => {
     const dashboardContext = useDashboardContext();
-    const [qr, refetch] = useQuery(getUserEventAttendance, { userId: props.user.id });
+    const [take, setTake] = React.useState<number>(50);
+
+    const [qr, refetch] = useQuery(getUserEventAttendance, { userId: props.user.id, take });
     const agg = qr.events.reduce((acc, event) => {
         const segAgg = event.segments.reduce((segAcc, seg) => {
             const hasResponse = seg.attendanceId != null;
@@ -179,6 +182,23 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
     return <div className="UserAttendanceTabContent">
         <AdminInspectObject src={qr} label="results" />
 
+        <CMChipContainer>
+            <span># of items to show: </span>
+            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 50 }} onClick={() => setTake(50)}>50</CMChip>
+            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 100 }} onClick={() => setTake(100)}>100</CMChip>
+            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 250 }} onClick={() => setTake(250)}>250</CMChip>
+            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 500 }} onClick={() => setTake(500)}>500</CMChip>
+            <CMChip shape="rectangle" variation={{ ...StandardVariationSpec.Strong, selected: take === 1000 }} onClick={() => setTake(1000)}>1000</CMChip>
+        </CMChipContainer>
+
+        {agg.totalSegmentCount > 0 &&
+            <KeyValueTable data={{
+                ...agg,
+                "Response rate": <>{(agg.responseCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
+                "Attendance rate (overall)": <>{(agg.goingCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
+                "Attendance rate (when responding)": <>{(agg.goingCount * 100 / agg.responseCount).toFixed(1)}%</>,
+            }} />}
+
         <CMTable
             className="userAttendanceTable"
             getRowStyle={(row) => {
@@ -201,7 +221,8 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                 {
                     allowSort: false,
                     header: "Event",
-                    render: (row) => <EventTextLink event={row.row} />,
+                    //render: (row) => <EventTextLink event={row.row} />,
+                    render: (row) => <EventChip value={row.row} size="small" />,
                     compareFn: (a, b) => {
                         const aName = a.name || "";
                         const bName = b.name || "";
@@ -213,7 +234,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                     memberName: "startsAt",
                     header: "Date",
                     render: (row) => {
-                        return <EventShortDate event={row.row} />;
+                        return <DateValue value={row.row.startsAt} />;
                     }
                 },
                 {
@@ -264,14 +285,6 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                 }
             ]} />
 
-        {agg.totalSegmentCount > 0 &&
-            <KeyValueTable data={{
-                ...agg,
-                "Response rate": <>{(agg.responseCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
-                "Attendance rate (overall)": <>{(agg.goingCount * 100 / agg.totalSegmentCount).toFixed(1)}%</>,
-                "Attendance rate (when responding)": <>{(agg.goingCount * 100 / agg.responseCount).toFixed(1)}%</>,
-            }} />}
-
     </div>;
 };
 
@@ -283,7 +296,7 @@ type UserCreditsTabContentProps = {
 export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const dashboardContext = useDashboardContext();
     const allSongs = useSongsContext().songs;
-    const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id });
+    const [qr, refetch] = useQuery(getUserCredits, { userId: props.user.id, take: 100 });
 
     const songCreditsWithAddl = qr.songCredits.map((credit, index) => ({
         ...credit,
@@ -460,6 +473,13 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 <AdminInspectObject src={user} />
 
             </div>{/* title line */}
+
+            <UserAdminPanel
+                user={user}
+                tableClient={tableClient}
+                readonly={props.readonly}
+                refetch={refetch}
+            />
 
             {dashboardContext.isAuthorized(Permission.search_users) &&
                 <CMChipContainer>

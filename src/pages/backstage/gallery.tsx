@@ -31,6 +31,7 @@ import { ChipFilterGroup, FilterControls } from "../../core/components/FilterCon
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
+import { MediaPlayerBarTester } from "@/src/core/components/mediaPlayer/MediaPlayerBarTester";
 
 interface FilterSpec {
     qfText: string;
@@ -331,6 +332,8 @@ const MainContent = () => {
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <div>
+
+        <MediaPlayerBarTester />
 
         <div>
             <a href="test/CMSelectTest">CMSelectTest.tsx</a>

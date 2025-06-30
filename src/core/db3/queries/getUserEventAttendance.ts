@@ -63,6 +63,7 @@ export default resolver.pipe(
                 },
                 orderBy: { startsAt: "asc" },
                 select: { startsAt: true },
+                take: 1,
             });
 
             // Find the earliest event that this user responded to:
@@ -77,6 +78,7 @@ export default resolver.pipe(
                 },
                 orderBy: { startsAt: "asc" },
                 select: { startsAt: true },
+                take: 1,
             });
 
             // If the user has responded to events, we start from the earliest one.
@@ -108,7 +110,12 @@ export default resolver.pipe(
                         // TODO: visibility permission.
                         { startsAt: { gte: earliestDateFilter } }
                     ]
-                }
+                },
+                take: args.take || 100,
+                orderBy: [
+                    { startsAt: "desc" }, // take the most recent / latest events first so the list is not stagnant
+                    { id: "desc" },
+                ],
             });
 
             // only include events between the requested user's first response

@@ -1,9 +1,10 @@
+import { Prisma } from "db";
 import { useQuery } from "@blitzjs/rpc";
 import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
 import React from "react";
 import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
 import { StandardVariationSpec } from 'shared/color';
-import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, Timing } from "shared/time";
+import { CalcRelativeTiming, CalcRelativeTimingFromNow, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, Timing } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
@@ -15,9 +16,43 @@ import { CMLink } from "./CMLink";
 import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
-import { EventShortDate, EventStatusChip } from "./EventComponentsBase";
+import { EventStatusChip } from "./EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
+
+function formatShortDate(date: Date, locale: string = navigator.language): string {
+    const now = new Date();
+    const showYear = date.getFullYear() !== now.getFullYear();
+    const formatter = new Intl.DateTimeFormat(locale, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        ...(showYear ? { year: "numeric" } : {})
+    });
+    // Use formatToParts to filter out punctuation
+    const parts = formatter.formatToParts(date);
+    return parts
+        .filter(part => part.type !== "literal")
+        .map(part => part.value)
+        .join(" ");
+}
+
+export interface EventShortDateProps {
+    event: Prisma.EventGetPayload<{
+        select: {
+            startsAt: true;
+        }
+    }>;
+};
+
+export const EventShortDate = ({ event }: EventShortDateProps) => {
+    if (!event.startsAt) return null;
+    const relativeTiming = CalcRelativeTimingFromNow(event.startsAt);
+    return <>
+        {formatShortDate(event.startsAt)}
+        <span className={`EventDateField container ${relativeTiming.bucket}`}><span className="RelativeIndicator">{relativeTiming.label}</span></span>
+    </>
+};
 
 
 export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {

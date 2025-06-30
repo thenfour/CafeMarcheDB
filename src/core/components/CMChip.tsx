@@ -81,7 +81,9 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
     </div >;
 
     if (!IsNullOrWhitespace(props.href)) {
-        chipNode = <CMLink href={props.href || ""}>{chipNode}</CMLink>
+        chipNode = <div className={wrapperClasses.join(" ")} style={computedStyle} onClick={props.onClick}>
+            <CMLink href={props.href || ""}>{chipNode}</CMLink>
+        </div>;
     }
 
     if (IsNullOrWhitespace(props.tooltip)) return chipNode;

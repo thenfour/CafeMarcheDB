@@ -12,7 +12,7 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Icon, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { Timing, formatTimeSpan } from "shared/time";
+import { Timing } from "shared/time";
 import { getURIForEvent, getURIForFile, getURIForSong } from "../db3/clientAPILL";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { useDb3Query } from "../db3/DB3Client";
@@ -22,6 +22,7 @@ import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSize
 import { CMLink } from "./CMLink";
 import { CMTextField } from "./CMTextField";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { DateValue } from "./DateTime/DateTimeComponents";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { Markdown } from "./markdown/Markdown";
 
@@ -242,6 +243,7 @@ export const EventChip = (props: EventChipProps) => {
         href={getURIForEvent(props.value)}
         className={props.className}
         color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
+        tooltip={db3.EventAPI.getLabel(props.value, { showDate: true, truncate: false })}
     >
         {props.startAdornment}
         <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
@@ -366,11 +368,6 @@ export const WikiPageChip = (props: WikiPageChipProps) => {
     </CMChip>
 }
 
-export const DateValue = (props: { value: Date | undefined | null }) => {
-    if (!props.value) return <span className="DateValue null">--</span>;
-    const now = React.useMemo(() => new Date(), []);
-    return <span className="DateValue">{props.value.toLocaleDateString()} ({formatTimeSpan(props.value, now)} ago)</span>
-}
 
 // we want the tooltip to actually be quite complete.
 // - the attendance response & description

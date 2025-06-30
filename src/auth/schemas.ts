@@ -150,4 +150,5 @@ export const UpdateBulkSettingsSchema = z.array(UpdateSettingSchema);
 
 export const ZGetUserEventAttendanceArgrs = z.object({
   userId: z.number(),
+  take: z.number(),
 });
