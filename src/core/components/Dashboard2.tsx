@@ -445,9 +445,7 @@ const gMenuItemGroup1: MenuItemGroup[] = [
             { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.login },
             { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.view_events_nonpublic },
             { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
-            { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
             // { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon />, permission: Permission.visibility_members },
-            { type: "link", path: "/backstage/stats", linkCaption: "Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_nonpublic },
             { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
         ],
     },
@@ -462,6 +460,18 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         ],
     },
     {
+        name: "Analyze",
+        items: [
+            { type: "link", path: "/backstage/stats", linkCaption: "Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_nonpublic },
+        ],
+    },
+    {
+        name: "Plan",
+        items: [
+            { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
+        ],
+    },
+    {
         name: "Public",
         className: "public",
         items: [
@@ -471,7 +481,7 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         ],
     },
     {
-        name: "Configuration",
+        name: "Configure",
         className: "backstage",
         items: [
             { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
@@ -480,28 +490,30 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         ],
     },
     {
-        name: "Admin Users",
+        name: "Admin",
         className: "admin users",
+        expandedByDefault: true,
         items: [
+            { type: "link", path: "/backstage/eventImport", linkCaption: "Import events", renderIcon: gIconMap.CalendarMonth, permission: Permission.admin_events },
             { type: "link", path: "/backstage/featureReports", linkCaption: "Feature Usage", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/adminLogs", linkCaption: "Logs", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/calendarPreview", linkCaption: "iCal Preview", renderIcon: () => gIconMap.CalendarMonth(), permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/adminUsers", linkCaption: "Users (adm)", renderIcon: () => <PersonIcon />, permission: Permission.admin_users },
+            { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+        ],
+    },
+    {
+        name: "Admin Users",
+        className: "admin users",
+        items: [
+            //{ type: "link", path: "/backstage/adminUsers", linkCaption: "Users (adm)", renderIcon: () => <PersonIcon />, permission: Permission.admin_users },
             { type: "link", path: "/backstage/editUserTags", linkCaption: "Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.admin_users },
             { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
             { type: "link", path: "/backstage/permissions", linkCaption: "Permissions", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
             { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
         ],
     },
-    {
-        name: "Admin-Temporary",
-        className: "admin temporary",
-        items: [
-            { type: "link", path: "/backstage/eventImport", linkCaption: "Import events", renderIcon: gIconMap.CalendarMonth, permission: Permission.admin_events },
-        ],
-    },
-
     {
         name: "Admin Instruments",
         className: "admin instruments",
@@ -578,8 +590,6 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         className: "admin settings",
         items: [
             { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
         ],
     },
 ];
