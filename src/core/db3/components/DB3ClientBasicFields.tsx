@@ -33,6 +33,7 @@ import { useDashboardContext } from "src/core/components/DashboardContext";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { ColorPick } from "src/core/components/ColorPick";
 import { SettingKey } from "shared/settings";
+import { GenericStringField } from "../shared/genericStringField";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -82,7 +83,7 @@ export interface GenericStringColumnArgs {
 };
 
 export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
-    typedSchemaColumn: db3fields.GenericStringField;
+    typedSchemaColumn: GenericStringField;
     renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 
     constructor(args: GenericStringColumnArgs) {
@@ -103,7 +104,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
-        this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
+        this.typedSchemaColumn = this.schemaColumn as GenericStringField;
 
         assert(this.typedSchemaColumn.format === "raw" ||
             this.typedSchemaColumn.format === "plain" ||
@@ -171,7 +172,7 @@ export interface MarkdownStringColumnArgs {
 };
 
 export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
-    typedSchemaColumn: db3fields.GenericStringField;
+    typedSchemaColumn: GenericStringField;
 
     constructor(args: MarkdownStringColumnArgs) {
         super({
@@ -189,7 +190,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
     ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
-        this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
+        this.typedSchemaColumn = this.schemaColumn as GenericStringField;
 
         if (this.typedSchemaColumn.format !== "markdown") {
             debugger;

@@ -162,8 +162,6 @@ export class GenericStringField extends FieldBase<string> {
         clientModel[this.member] = dbModel[this.member];
     }
 
-    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
     SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
         return {
             join: [],
@@ -177,6 +175,12 @@ export class GenericStringField extends FieldBase<string> {
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
         return `(${this.member} like '%${MysqlEscape(token)}%')`;
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion, tableAlias: string): CriterionQueryElements | null => {
+        return null;
+    }
+
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
 };
 
 

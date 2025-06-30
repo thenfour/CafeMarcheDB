@@ -3,11 +3,9 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
-import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield, TagsField } from "../db3basicFields";
+import { ForeignSingleField, GhostField, MakeCreatedAtField, MakePKfield } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
-import { WikiPageTagAssignmentPayload } from "./prismArgs";
-import { CMDBTableFilterModel } from "../apiTypes";
 import { GenericStringField, MakeTitleField } from "../genericStringField";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
@@ -31,7 +29,7 @@ const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
 const WikiPageArgs = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
     include: {
         visiblePermission: true,
-        createdByUser: true,
+        createdByUser: AuxUserArgs,
         tags: {
             include: {
                 tag: true,
@@ -100,27 +98,6 @@ export const xWikiPage = new db3.xTable({
         new GhostField({
             authMap: xAuthMap,
             memberName: "lockId",
-        }),
-        new TagsField<WikiPageTagAssignmentPayload>({
-            columnName: "tags",
-            associationForeignIDMember: "tagId",
-            associationForeignObjectMember: "tag",
-            associationLocalIDMember: "wikiPageId",
-            associationLocalObjectMember: "wikiPage",
-            associationTableID: "WikiPageTagAssignment",
-            foreignTableID: "WikiPageTag",
-            authMap: xAuthMap,
-            getQuickFilterWhereClause: () => false, // Disable quick search like other models
-            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => {
-                if (!query.tagIds?.length) return false;
-                const tagIds = query.tagIds;
-
-                return {
-                    AND: tagIds.map(tagId => ({
-                        tags: { some: { tagId: { equals: tagId } } }
-                    }))
-                };
-            },
         }),
     ]
 });

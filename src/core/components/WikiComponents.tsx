@@ -9,23 +9,23 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
+import * as db3 from "../db3/db3";
+import * as DB3Client from "../db3/DB3Client";
 import wikiPageSetVisibility from "../wiki/mutations/wikiPageSetVisibility";
-import { UpdateWikiPageResultOutcome, WikiPath, getFileUploadContext } from "../wiki/shared/wikiUtils";
+import { getFileUploadContext, UpdateWikiPageResultOutcome, WikiPath } from "../wiki/shared/wikiUtils";
 import { EventTextLink } from "./CMCoreComponents";
 import { AdminContainer, AdminInspectObject, DotMenu, KeyValueTable, NameValuePair } from "./CMCoreComponents2";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { CMSelectNullBehavior } from "./CMSingleSelectDialog";
 import { CMTextInputBase } from "./CMTextField";
 import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
-import { Markdown3Editor } from "./markdown/MarkdownControl3";
+import { ActivityFeature } from "./featureReports/activityTracking";
 import { Markdown } from "./markdown/Markdown";
+import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { useWikiPageApi, WikiPageApi } from "./markdown/useWikiPageApi";
 import { AgeRelativeToNow } from "./RelativeTimeComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { VisibilityValue } from "./VisibilityControl";
-import { ActivityFeature } from "./featureReports/activityTracking";
-import * as db3 from "../db3/db3";
-import * as DB3Client from "../db3/DB3Client";
 
 
 //////////////////////////////////////////////////
@@ -109,7 +109,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
         getOptions={() => dashboardContext.wikiPageTag.items}
         renderOption={tag => tag.text}
         onChange={async (newTags) => {
-            snackbar.invokeAsync(async () => {
+            await snackbar.invokeAsync(async () => {
                 await tableClient.doUpdateMutation({
                     id: wikiPageId,
                     tags: newTags.map(t => ({

@@ -34,8 +34,8 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
                 tableSpec={props.tableClient.tableSpec}
                 initialValue={props.user}
                 onCancel={() => { }}
-                onOK={(updatedUser, tableClient, api) => {
-                    snackbar.invokeAsync(async () => {
+                onOK={async (updatedUser, tableClient, api) => {
+                    await snackbar.invokeAsync(async () => {
                         await props.tableClient.doUpdateMutation(updatedUser);
                         if (props.refetch) {
                             props.refetch();

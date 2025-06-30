@@ -1,3 +1,4 @@
+import { Permission } from "@/shared/permissions";
 import { useQuery } from "@blitzjs/rpc";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Button } from "@mui/material";
@@ -17,18 +18,17 @@ import getUserEventAttendance from "../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../db3/queries/getUserWikiContributions";
 import { DiscreteCriterion } from "../db3/shared/apiTypes";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "./CMChip";
-import { AttendanceChip, EventChip, EventTextLink, InstrumentChip, SongChip } from "./CMCoreComponents";
+import { AttendanceChip, EventChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { AdminInspectObject, CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
+import { CMLink } from "./CMLink";
 import { ChooseItemDialog } from "./ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
+import { DateValue } from "./DateTime/DateTimeComponents";
 import { SongsProvider, useSongsContext } from "./SongsContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
-import { UserChip } from "./userChip";
 import { Markdown } from "./markdown/Markdown";
-import { Permission } from "@/shared/permissions";
-import { CMLink } from "./CMLink";
 import { UserAdminPanel } from "./user/UserAdminPanel";
-import { DateValue } from "./DateTime/DateTimeComponents";
+import { UserChip } from "./userChip";
 
 export enum UserDetailTabSlug {
     credits = "credits",

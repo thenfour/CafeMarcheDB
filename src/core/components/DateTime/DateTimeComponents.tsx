@@ -1,7 +1,6 @@
 import { Tooltip } from "@mui/material";
-import { Prisma } from "db";
 import React from "react";
-import { CalcRelativeTiming, CalcRelativeTimingFromNow, formatTimeSpan, RelativeTimingBucket } from "shared/time";
+import { CalcRelativeTimingFromNow } from "shared/time";
 
 
 function formatShortDate(date: Date, locale: string = navigator.language): string {

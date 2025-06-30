@@ -2,10 +2,9 @@
 import { assert } from "blitz";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gSwatchColors } from "shared/color";
-import { MysqlEscape } from "shared/mysqlUtils";
-import { CoalesceBool, CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, isValidURL } from "shared/utils";
+import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull } from "shared/utils";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, EventFutureFilterExpression, EventPast60DaysFilterExpression, EventPastFilterExpression, EventRelevantFilterExpression, SearchResultsFacetOption, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
-import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthSpec, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
+import { ApplyIncludeFilteringToRelation, DB3AuthSpec, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 
 // export type DB3AuthSpec = {
 //     authMap: DB3AuthContextPermissionMap;

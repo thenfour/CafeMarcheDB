@@ -1,5 +1,3 @@
-import { CMSmallButton, KeyValueTable } from "@/src/core/components/CMCoreComponents2";
-import { useMediaPlayer } from "@/src/core/components/mediaPlayer/MediaPlayerContext";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";

@@ -1,11 +1,11 @@
 import React from "react";
 import { StandardVariationSpec } from "shared/color";
-import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
+import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "src/core/components/WikiPageComponentsBase";
 import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
+import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 
 export interface WikiPageListItemProps {
     index: number;

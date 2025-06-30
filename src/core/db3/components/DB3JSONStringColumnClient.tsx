@@ -16,15 +16,15 @@ import { EventAPI } from "../db3";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
 import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
-import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
+import { Notes } from "@mui/icons-material";
+import { gGeneralPaletteList, gStrong } from "shared/color";
 import { MutationArgsToWorkflowDef, TWorkflowMutationResult, WorkflowDef } from "shared/workflowEngine";
 import { ColorSwatch } from "src/core/components/Color";
-import { gGeneralPaletteList, gStrong } from "shared/color";
-import { Notes } from "@mui/icons-material";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { GenericStringField } from "../shared/genericStringField";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -692,7 +692,7 @@ export interface JSONStringColumnClientArgs {
 type TRow = Prisma.ChangeGetPayload<{}>;
 
 export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
-    typedSchemaColumn: db3fields.GenericStringField;
+    typedSchemaColumn: GenericStringField;
     cacheData: ActivityLogCacheData;
     renderWorkflow: undefined | ((workflowDef: WorkflowDef) => React.ReactNode);
 
@@ -715,7 +715,7 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
     ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
-        this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
+        this.typedSchemaColumn = this.schemaColumn as GenericStringField;
 
         assert(this.typedSchemaColumn.format === "raw", `JSONStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type.`);
 
