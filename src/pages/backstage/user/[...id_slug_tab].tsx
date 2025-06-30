@@ -112,7 +112,7 @@ export const getServerSideProps = async ({ params }) => {
 
 const UserDetailPage: BlitzPage = (x: PageProps) => {
     return (
-        <DashboardLayout title={x.title} navRealm={NavRealm.users} basePermission={Permission.view_songs}>
+        <DashboardLayout title={x.title} navRealm={NavRealm.users} basePermission={Permission.view_users_basic_info}>
             <Suspense>
                 <MyComponent userId={x.userId}></MyComponent>
             </Suspense>

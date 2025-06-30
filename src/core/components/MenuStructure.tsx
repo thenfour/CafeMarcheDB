@@ -451,6 +451,12 @@ export const FlattenDynMenuItems = (
     return menuItems;
 };
 
+function MenuItemMatchesRealm(linkPath: string | undefined, linkRealm: NavRealm | undefined, realm: NavRealm | undefined, router: ReturnType<typeof useRouter>): boolean {
+    return linkRealm && realm
+        ? linkRealm === realm
+        : router.pathname === linkPath;
+}
+
 // Menu item component props
 export interface MenuItemComponentProps {
     item: FlatMenuItemAndSection;
@@ -512,11 +518,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                         <ListItemButton
                             component={Link}
                             href={linkItem.path}
-                            selected={
-                                linkItem.realm && props.realm
-                                    ? linkItem.realm === props.realm
-                                    : router.pathname === linkItem.path
-                            }
+                            selected={MenuItemMatchesRealm(linkItem.path, linkItem.realm, props.realm, router)}
                             className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                             onClick={e => {
                                 void recordFeature({ feature: ActivityFeature.link_follow_internal });
@@ -614,7 +616,8 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
         for (const section of gMenuSections) {
             for (const group of section.groups) {
                 for (const link of group.links) {
-                    if (link.path === currentPath) {
+                    const matches = MenuItemMatchesRealm(link.path, link.realm, navRealm, router);
+                    if (matches) {
                         return section.name;
                     }
                 }

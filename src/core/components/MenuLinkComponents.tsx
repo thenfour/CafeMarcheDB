@@ -19,6 +19,7 @@ import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
 import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { VisibilityValue } from "./VisibilityControl";
 import { AppContextMarker } from "./AppContext";
+import { CMLink } from "./CMLink";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -115,10 +116,10 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki") &&
-                <a href={`/backstage/wiki/${slugify(props.item.wikiSlug || "")}`} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
+                <CMLink href={`/backstage/wiki/${slugify(props.item.wikiSlug || "")}`} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
                     <div>Test wiki link</div>
                     {gIconMap.Launch()}
-                </a>
+                </CMLink>
             }
         </div>
     </div>;

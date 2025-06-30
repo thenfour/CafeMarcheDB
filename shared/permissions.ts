@@ -70,6 +70,7 @@ export enum Permission {
     admin_users = "admin_users", // creating / deleting / editing users in general.
     manage_users = "manage_users",
     search_users = "search_users",
+    view_users_basic_info = "view_users_basic_info", // user landing page
 
     // ******************** custom links
     // VISITING custom links is always permitted.

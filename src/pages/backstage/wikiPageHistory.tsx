@@ -1,3 +1,4 @@
+import { CMLink } from "@/src/core/components/CMLink";
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Button, DialogContent, DialogTitle, Tooltip } from "@mui/material";
@@ -137,7 +138,7 @@ const WikiRevisionHistoryPageContent = () => {
             void qExtra.refetch();
         }} />}
         <h1>
-            <a href={wikiPath.uriRelativeToHost} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</a>
+            <CMLink href={wikiPath.uriRelativeToHost} rel="noreferrer">{currentRevision.name || pageWithRevisions.slug}</CMLink>
         </h1>
         <table>
             <thead>

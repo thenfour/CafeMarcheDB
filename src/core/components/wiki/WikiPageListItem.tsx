@@ -8,6 +8,7 @@ import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { UserChip } from "../userChip";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { CMLink } from "../CMLink";
 
 export interface WikiPageListItemProps {
     index: number;
@@ -28,9 +29,9 @@ export function WikiPageListItem(props: WikiPageListItemProps) {
         <div className={`songListItem ${visInfo.className}`}>
             <div className="titleLine">
                 <div className="topTitleLine">
-                    <a className="nameLink" href={wikiUrl} target="_blank" rel="noopener noreferrer">
+                    <CMLink className="nameLink" href={wikiUrl}>
                         {wikiPage.slug}
-                    </a>
+                    </CMLink>
                     <div style={{ flexGrow: 1 }}>
                         <AdminInspectObject src={wikiPage} label="Obj" />
                     </div>
