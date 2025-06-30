@@ -1372,7 +1372,16 @@ export const FrontpageGalleryItemArgsWithAncestorFile = Prisma.validator<Prisma.
                 roles: true
             }
         },
-        file: true,
+        file: {
+            include: {
+                visiblePermission: {
+                    include: {
+                        roles: true
+                    }
+                },
+                parentFile: true,
+            }
+        },
     },
 });
 export type FrontpageGalleryItemPayloadWithAncestorFile = Prisma.FrontpageGalleryItemGetPayload<typeof FrontpageGalleryItemArgsWithAncestorFile>;

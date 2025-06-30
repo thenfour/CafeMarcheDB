@@ -9,7 +9,7 @@ import { Prisma } from "db";
 import { EnNlFr, LangSelectString } from "shared/lang";
 import { SettingKey } from "shared/settings";
 import { DateTimeRange } from "shared/time";
-import { Clamp, CoerceToNumberOr, gMinImageDimension, gQueryOptions } from "shared/utils";
+import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
@@ -26,7 +26,7 @@ import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateSongBasicFields from "./mutations/updateSongBasicFields";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
-import { AddCoord2DSize, Coord2D, ImageEditParams, Size, TAnyModel, getFileCustomData } from "./shared/apiTypes";
+import { TAnyModel } from "./shared/apiTypes";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -88,97 +88,6 @@ export interface SongListStats {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class FilesAPI {
-    // getURIForStoredLeafName = (storedLeafName: string) => {
-    //     return `/api/files/download/${storedLeafName}`;
-    // }
-
-    // getURIForFile = (file: Prisma.FileGetPayload<{ select: { storedLeafName: true } }> & { fileLeafName?: undefined | string }) => {
-    //     //return this.getURIForStoredLeafName(file.storedLeafName);//`/api/files/download/${file.storedLeafName}`;
-    //     if (!file.fileLeafName) {
-    //         return `/api/files/download/${file.storedLeafName}`;
-    //     }
-    //     return `/api/files/download/${file.storedLeafName}/${slugifyWithDots(file.fileLeafName)}`;
-    // }
-
-    //getURIForFile
-
-    // getImageFileDimensions = (file: db3.FilePayloadMinimum): Size | undefined => {
-    //     const customData = getFileCustomData(file);
-
-    //     if (customData.imageMetadata?.height != null && customData.imageMetadata?.width != null) {
-    //         return {
-    //             width: customData.imageMetadata!.width!,
-    //             height: customData.imageMetadata!.height!,
-    //         };
-    //     }
-    //     return undefined;
-    //     //return { width: gMinImageDimension, height: gMinImageDimension };
-    // };
-
-    // // if editParams is omitted, use the ones embedded in the post.
-    // // using FrontpageGalleryItemPayloadWithAncestorFile because it has looser requirements than others
-    // getGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayloadWithAncestorFile, editParams?: ImageEditParams) => {
-    //     const imageURI = ClientAPILL.getURIForFile(post.file);
-    //     const fileDimensions = API.files.getImageFileDimensions(post.file) || { width: gMinImageDimension, height: gMinImageDimension };
-
-    //     const displayParams = editParams || db3.getGalleryItemDisplayParams(post);
-
-    //     const cropBegin: Coord2D = { ...displayParams.cropBegin };
-
-    //     const cropSize: Size = displayParams.cropSize ? { ...displayParams.cropSize } : { ...fileDimensions };
-    //     // crop size needs to be adjusted if we clamped cropbegin.
-    //     if (cropBegin.x < 0) {
-    //         cropSize.width += displayParams.cropBegin.x;
-    //         cropBegin.x = 0;
-    //     }
-    //     if (cropBegin.y < 0) {
-    //         cropSize.height += displayParams.cropBegin.y;
-    //         cropBegin.y = 0;
-    //     }
-    //     const cropMax: Coord2D = {
-    //         x: fileDimensions.width - gMinImageDimension,
-    //         y: fileDimensions.height - gMinImageDimension,
-    //     }
-    //     if (cropBegin.x > cropMax.x) {
-    //         cropSize.width -= cropMax.x - cropBegin.x;
-    //         cropBegin.x = cropMax.x;
-    //     }
-    //     if (cropBegin.y > cropMax.y) {
-    //         cropSize.height -= cropMax.y - cropBegin.y;
-    //         cropBegin.y = cropMax.y;
-    //     }
-
-    //     // if the cropsize would put cropend beyond the image, clamp it.
-    //     cropSize.width = Clamp(cropSize.width, gMinImageDimension, fileDimensions.width - cropBegin.x);
-    //     cropSize.height = Clamp(cropSize.height, gMinImageDimension, fileDimensions.height - cropBegin.y);
-    //     const cropEnd = AddCoord2DSize(cropBegin, cropSize);
-    //     const cropCenter: Coord2D = {
-    //         x: (cropBegin.x + cropEnd.x) / 2,
-    //         y: (cropBegin.y + cropEnd.y) / 2,
-    //     };
-
-    //     const rotate = displayParams.rotate;
-
-    //     const maskTopHeight = cropBegin.y;
-    //     const maskBottomHeight = fileDimensions.height - cropEnd.y;
-    //     const maskRightWidth = fileDimensions.width - cropEnd.x;
-    //     const maskLeftWidth = cropBegin.x;
-
-    //     return {
-    //         imageURI,
-    //         fileDimensions, // raw
-    //         displayParams, // raw from db
-    //         cropBegin, // clamped / sanitized
-    //         cropEnd,// clamped / sanitized
-    //         cropCenter,// clamped / sanitized
-    //         cropSize,// coalesced / clamped / sanitized
-    //         rotate,
-    //         maskTopHeight, // some precalcs for mask display
-    //         maskBottomHeight,
-    //         maskRightWidth,
-    //         maskLeftWidth,
-    //     };
-    // };
 
     updateGalleryItemImageMutation = CreateAPIMutationFunction(updateGalleryItemImage);
 

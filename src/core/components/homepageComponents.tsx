@@ -2,10 +2,11 @@ import { nanoid } from 'nanoid';
 import React from "react";
 import { EnNlFr, LangSelectString } from 'shared/lang';
 import { IsNullOrWhitespace, modulo } from "shared/utils";
-import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
+import { HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
 import { getURIForFile } from '../db3/clientAPILL';
 import { gIconMap } from '../db3/components/IconMap';
 import * as db3 from "../db3/db3";
+import { SharedAPI } from '../db3/shared/sharedAPI';
 import { Markdown } from "./markdown/Markdown";
 
 const gSettings = {
@@ -34,7 +35,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 
     const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
 
-    const info = API.files.getGalleryItemImageInfo(post);
+    const info = SharedAPI.files.getGalleryItemImageInfo(post);
 
     return <pattern
         id={id("galleryPattern")}
@@ -62,7 +63,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
     const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
-    const info = API.files.getGalleryItemImageInfo(post);
+    const info = SharedAPI.files.getGalleryItemImageInfo(post);
 
     /*
         (0,0)+-------------------------------+ (fdwidth, 0)          <- y= 0

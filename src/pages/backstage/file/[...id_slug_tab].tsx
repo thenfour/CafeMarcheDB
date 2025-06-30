@@ -1,6 +1,6 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
-import { CMSinglePageSurfaceCard, FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
+import { FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
 import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
@@ -15,10 +15,10 @@ import { ActivityFeature } from "@/src/core/components/featureReports/activityTr
 import { Markdown } from "@/src/core/components/markdown/Markdown";
 import { UserChip } from "@/src/core/components/userChip";
 import { gIconMap } from "@/src/core/db3/components/IconMap";
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs, Typography, Box, Divider, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Breadcrumbs } from "@mui/material";
 import db from "db";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
@@ -28,10 +28,8 @@ import { DashboardContext, useDashboardContext, useFeatureRecorder, useRecordFea
 import { FileTableClientColumns } from "src/core/components/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
-import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 
 ////////////////////////////////////////////////////////////////
 export interface FileBreadcrumbProps {

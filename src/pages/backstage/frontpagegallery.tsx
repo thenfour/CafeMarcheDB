@@ -34,6 +34,7 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 
 
 
@@ -281,12 +282,12 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 
         //     console.log(`grafting parent file ${ev.file.storedLeafName}`);
         // } else {
-        const info = API.files.getGalleryItemImageInfo(props.value);
+        const info = SharedAPI.files.getGalleryItemImageInfo(props.value);
         editParams = { ...info.displayParams }; // we need to adjust the file & edit params; start with a copy of existing edit params
         //}
 
         if (!editParams.cropSize) {// coalesce cropSize for convenience / simplicity.
-            const info = API.files.getGalleryItemImageInfo(props.value);
+            const info = SharedAPI.files.getGalleryItemImageInfo(props.value);
             editParams.cropSize = { ...info.fileDimensions };
         }
         ev.displayParams = JSON.stringify(editParams);
@@ -297,7 +298,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     //console.log(`editing file: ${editingValue.file.storedLeafName}`);
 
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
-    const info = API.files.getGalleryItemImageInfo(editingValue);
+    const info = SharedAPI.files.getGalleryItemImageInfo(editingValue);
 
     const reducedDimensions = calculateNewDimensions(info.cropSize, gDefaultImageArea);
 
