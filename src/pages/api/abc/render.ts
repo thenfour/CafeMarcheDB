@@ -131,43 +131,60 @@ function renderAbcToSvg(abcNotation: string, options: any = {}): Promise<string>
             };
 
             // Render ABC notation
-            const visualObj = abcjs.renderAbc(targetElement, abcNotation, renderOptions);            // Wait a bit for rendering to complete
-            setTimeout(() => {
+            const visualObj = abcjs.renderAbc(targetElement, abcNotation, renderOptions);
+
+            // Poll for SVG completion with early exit and max timeout
+            const pollInterval = 20; // Check every
+            const maxTimeout = 2000; // Maximum wait time of 2 seconds
+            const startTime = Date.now();
+
+            const pollForSvg = () => {
                 try {
-                    // Extract SVG content
+                    // Check if SVG has been generated
                     const svgElements = targetElement.querySelectorAll('svg');
 
-                    if (svgElements.length === 0) {
-                        reject(new Error('No SVG generated from ABC notation'));
+                    if (svgElements.length > 0) {
+                        // SVG found! Process it immediately
+                        const svgElement = svgElements[0];
+                        if (!svgElement) {
+                            reject(new Error('SVG element is undefined'));
+                            return;
+                        }
+
+                        // Crop SVG to content bounds
+                        const croppedSvg = cropSvgToContent(svgElement);
+
+                        // Ensure the SVG has proper attributes for standalone rendering
+                        let svgContent = croppedSvg;
+                        if (!svgContent.includes('xmlns=')) {
+                            svgContent = svgContent.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+                        }
+
+                        // Clean up globals
+                        delete (global as any).window;
+                        delete (global as any).document;
+                        delete (global as any).navigator;
+
+                        resolve(svgContent);
                         return;
                     }
 
-                    // Get the first SVG element
-                    const svgElement = svgElements[0];
-                    if (!svgElement) {
-                        reject(new Error('SVG element is undefined'));
+                    // Check if we've exceeded the maximum timeout
+                    if (Date.now() - startTime > maxTimeout) {
+                        reject(new Error('Timeout: No SVG generated from ABC notation within 2 seconds'));
                         return;
                     }
 
-                    // Crop SVG to content bounds
-                    const croppedSvg = cropSvgToContent(svgElement);
+                    // Continue polling
+                    setTimeout(pollForSvg, pollInterval);
 
-                    // Ensure the SVG has proper attributes for standalone rendering
-                    let svgContent = croppedSvg;
-                    if (!svgContent.includes('xmlns=')) {
-                        svgContent = svgContent.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
-                    }
-
-                    // Clean up globals
-                    delete (global as any).window;
-                    delete (global as any).document;
-                    delete (global as any).navigator;
-
-                    resolve(svgContent);
                 } catch (extractError) {
                     reject(extractError);
                 }
-            }, 100); // Small delay to ensure rendering completes
+            };
+
+            // Start polling
+            pollForSvg();
 
         } catch (error) {
             reject(error);
