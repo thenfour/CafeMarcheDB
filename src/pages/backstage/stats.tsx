@@ -303,7 +303,7 @@ const MainContent = () => {
 
 const StatsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Global Stats" basePermission={Permission.view_events_nonpublic}>
+        <DashboardLayout title="Global Stats" basePermission={Permission.view_events_reports}>
             <MainContent />
         </DashboardLayout>
     )

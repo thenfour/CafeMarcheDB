@@ -8,7 +8,7 @@ import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGloba
 import { assertIsNumberArray } from "shared/arrayUtils";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_songs),
+    resolver.authorize(Permission.view_events_reports),
     async (args: GetGlobalStatsArgs, ctx: AuthenticatedCtx): Promise<GetGlobalStatsRet> => {
         try {
             const u = (await getCurrentUserCore(ctx))!;
