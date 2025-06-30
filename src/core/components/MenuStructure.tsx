@@ -37,18 +37,8 @@ export enum NavRealm {
     MenuLinks = "MenuLinks",
 }
 
-// Menu item type definitions
-export interface MenuItemDivider {
-    type: "divider";
-}
-
-export interface MenuItemSectionHeader {
-    type: "sectionHeader";
-    sectionName: string;
-    groupId?: string;
-}
-
-export interface MenuItemLink {
+// New hierarchical menu schema types
+export interface MenuLink {
     type: "link";
     permission: Permission;
     className?: string;
@@ -57,166 +47,242 @@ export interface MenuItemLink {
     openInNewTab?: boolean;
     realm?: NavRealm;
     renderIcon: () => React.ReactNode;
-    groupId?: string;
 }
 
-export type MenuItemSpec = MenuItemDivider | MenuItemSectionHeader | MenuItemLink;
+export interface MenuGroup {
+    links: MenuLink[];
+    className?: string; // CSS classes for visual styling of this group
+}
 
-export interface MenuItemGroup {
-    name: string | null;
+export interface MenuSection {
+    name: string;
     className?: string;
-    items: MenuItemSpec[];
     expandedByDefault?: boolean;
+    groups: MenuGroup[];
 }
 
-export type MenuItemAndGroup = { group: MenuItemGroup, item: MenuItemSpec };
+// Flattened types for rendering (used internally by flattening functions)
+export interface FlatMenuItemDivider {
+    type: "divider";
+}
 
-// Menu data definitions
-export const gMenuItemGroup1: MenuItemGroup[] = [
+export interface FlatMenuItemSectionHeader {
+    type: "sectionHeader";
+    sectionName: string;
+    sectionId: string;
+}
+
+export interface FlatMenuItemLink {
+    type: "link";
+    permission: Permission;
+    className?: string;
+    linkCaption: string;
+    path: string;
+    openInNewTab?: boolean;
+    realm?: NavRealm;
+    renderIcon: () => React.ReactNode;
+    sectionId?: string; // Which section this link belongs to (for collapse/expand)
+}
+
+export type FlatMenuItemSpec = FlatMenuItemDivider | FlatMenuItemSectionHeader | FlatMenuItemLink;
+
+// Container type for flattened menu items with their originating section
+export interface FlatMenuSection {
+    section: MenuSection;
+    className?: string;
+}
+
+export type FlatMenuItemAndSection = { sectionInfo: FlatMenuSection, item: FlatMenuItemSpec };
+
+// New hierarchical menu data structure
+export const gMenuSections: MenuSection[] = [
     {
         name: "Backstage",
         className: "backstage",
         expandedByDefault: true,
-        items: [
-            { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.login },
-            { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.view_events_nonpublic },
-            { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
-            { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
-            { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
-        ],
+        groups: [
+            {
+                links: [
+                    { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.login },
+                    { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.view_events_nonpublic },
+                    { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
+                    { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
+                    { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
+                ]
+            }
+        ]
     },
-];
-
-export const gMenuItemGroup2: MenuItemGroup[] = [
     {
         name: "Explore",
-        items: [
-            { type: "link", path: "/backstage/stats", linkCaption: "Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_nonpublic },
-            { type: "link", path: "/backstage/files", realm: NavRealm.files, linkCaption: "Files", renderIcon: () => gIconMap.AttachFile(), permission: Permission.access_file_landing_page },
-            { type: "link", path: "/backstage/users", realm: NavRealm.users, linkCaption: "Users", renderIcon: gIconMap.Person, permission: Permission.admin_users },
-            { type: "link", path: "/backstage/wikiPages", realm: NavRealm.wikiPages, linkCaption: "Wiki pages", renderIcon: () => gIconMap.Article(), permission: Permission.view_wiki_pages },
-        ],
+        groups: [
+            {
+                links: [
+                    { type: "link", path: "/backstage/stats", linkCaption: "Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_nonpublic },
+                    { type: "link", path: "/backstage/files", realm: NavRealm.files, linkCaption: "Files", renderIcon: () => gIconMap.AttachFile(), permission: Permission.access_file_landing_page },
+                    { type: "link", path: "/backstage/users", realm: NavRealm.users, linkCaption: "Users", renderIcon: gIconMap.Person, permission: Permission.admin_users },
+                    { type: "link", path: "/backstage/wikiPages", realm: NavRealm.wikiPages, linkCaption: "Wiki pages", renderIcon: () => gIconMap.Article(), permission: Permission.view_wiki_pages },
+                ]
+            }
+        ]
     },
     {
         name: "Public",
         className: "public",
-        items: [
-            { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public, },
-            { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Homepage Photos", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
-            { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Homepage Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage },
-        ],
+        groups: [
+            {
+                links: [
+                    { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public },
+                    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Homepage Photos", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
+                    { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Homepage Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage },
+                ]
+            }
+        ]
     },
     {
         name: "Configure",
         className: "backstage",
-        items: [
-            { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
-            { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
-            { type: "link", path: "/backstage/workflows", linkCaption: "Workflows", renderIcon: gIconMap.AccountTree, permission: Permission.view_workflow_defs },
-        ],
+        groups: [
+            {
+                links: [
+                    { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
+                    { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
+                    { type: "link", path: "/backstage/workflows", linkCaption: "Workflows", renderIcon: gIconMap.AccountTree, permission: Permission.view_workflow_defs },
+                ]
+            }
+        ]
     },
     {
         name: "Admin",
-        className: "admin users",
+        className: "admin general",
         expandedByDefault: true,
-        items: [
-            { type: "link", path: "/backstage/eventImport", linkCaption: "Import events", renderIcon: gIconMap.CalendarMonth, permission: Permission.admin_events },
-            { type: "link", path: "/backstage/featureReports", linkCaption: "Feature Usage", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/adminLogs", linkCaption: "Logs", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/calendarPreview", linkCaption: "iCal Preview", renderIcon: () => gIconMap.CalendarMonth(), permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-        ],
+        groups: [
+            {
+                links: [
+                    { type: "link", path: "/backstage/eventImport", linkCaption: "Import events", renderIcon: gIconMap.CalendarMonth, permission: Permission.admin_events },
+                    { type: "link", path: "/backstage/featureReports", linkCaption: "Feature Usage", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/adminLogs", linkCaption: "Logs", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/calendarPreview", linkCaption: "iCal Preview", renderIcon: () => gIconMap.CalendarMonth(), permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                ]
+            },
+        ]
     },
     {
-        name: "Admin Users",
+        name: "Admin users",
         className: "admin users",
-        items: [
-            { type: "link", path: "/backstage/editUserTags", linkCaption: "Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.admin_users },
-            { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
-            { type: "link", path: "/backstage/permissions", linkCaption: "Permissions", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
-            { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
-        ],
+        groups: [
+            {
+                className: "admin users",
+                links: [
+                    { type: "link", path: "/backstage/editUserTags", linkCaption: "Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.admin_users },
+                    { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
+                    { type: "link", path: "/backstage/permissions", linkCaption: "Permissions", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
+                    { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
+                ]
+            },
+        ]
     },
     {
-        name: "Admin Instruments",
-        className: "admin instruments",
-        items: [
-            { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-        ],
+        name: "Admin instruments",
+        className: "admin users",
+        groups: [
+            {
+                className: "admin instruments",
+                links: [
+                    { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
+                ]
+            },
+        ]
     },
     {
-        name: null,
-        className: "admin instruments",
-        items: [
-            { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
-        ],
-    },
-    {
-        name: "Admin Songs",
+        name: "Admin songs",
         className: "admin songs",
-        items: [
-            { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-        ],
+        groups: [
+            {
+                className: "admin songs",
+                links: [
+                    { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Credit Types", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                ]
+            },
+        ]
     },
     {
-        name: null,
-        className: "admin songs",
-        items: [
-            { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Credit Types", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-        ],
-    },
-    {
-        name: "Admin Events",
+        name: "Admin events",
         className: "admin events",
-        items: [
-            { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editEventSegments", linkCaption: "Event Segments", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
-        ],
+        expandedByDefault: true,
+        groups: [
+            {
+                className: "admin events",
+                links: [
+                    { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editEventCustomFields", linkCaption: "CustomFields", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                ]
+            },
+            {
+                className: "admin events",
+                links: [
+                    { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editEventSegments", linkCaption: "Event Segments", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
+                ]
+            },
+        ]
     },
     {
-        name: null,
-        className: "admin events",
-        items: [
-            { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editEventCustomFields", linkCaption: "CustomFields", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-        ],
-    },
-    {
-        name: "Admin Files",
+        name: "Admin files",
         className: "admin files",
-        items: [
-            { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.Tag, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/editFrontpageGalleryItems", linkCaption: "Front page gallery", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
-        ],
+        expandedByDefault: true,
+        groups: [
+            {
+                className: "admin files",
+                links: [
+                    { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.Tag, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/editFrontpageGalleryItems", linkCaption: "Front page gallery", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
+                ]
+            },
+        ]
     },
     {
-        name: "Admin Wiki",
+        name: "Admin wiki",
         className: "admin wiki",
-        items: [
-            { type: "link", path: "/backstage/editWikiPageTags", linkCaption: "Wiki Page Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
-        ],
+        expandedByDefault: true,
+        groups: [
+            {
+                className: "admin wiki",
+                links: [
+                    { type: "link", path: "/backstage/editWikiPageTags", linkCaption: "Wiki Page Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
+                ]
+            },
+        ]
     },
     {
-        name: "Admin Settings",
+        name: "Admin settings",
         className: "admin settings",
-        items: [
-            { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-        ],
+        expandedByDefault: true,
+        groups: [
+            {
+                className: "admin settings",
+                links: [
+                    { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                ]
+            },
+        ]
     },
 ];
 
 // Helper function to convert dynamic menu items to static menu items
-export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: DashboardContextData): MenuItemLink | null => {
+export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: DashboardContextData): MenuLink | null => {
     let path = "";
     let openInNewTab = false;
     switch (item.linkType as keyof typeof DynMenu.DynamicMenuLinkType) {
@@ -242,50 +308,87 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: D
     };
 };
 
-// Flatten menu groups into a single array with proper groupId assignment
-export const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups: MenuItemGroup[], expandedSections: Set<string>): { group: MenuItemGroup, item: MenuItemSpec }[] => {
-    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
+// New flattening function for hierarchical menu structure
+export const FlattenMenuSections = (
+    dashboardContext: DashboardContextData,
+    sections: MenuSection[],
+    expandedSections: Set<string>
+): FlatMenuItemAndSection[] => {
+    const menuItems: FlatMenuItemAndSection[] = [];
 
-    for (let iGroup = 0; iGroup < groups.length; ++iGroup) {
-        const g = groups[iGroup]!;
-        let firstItemInGroup: boolean = true;
-        const groupId = g.name || `group-${iGroup}`;
+    for (let iSection = 0; iSection < sections.length; ++iSection) {
+        const section = sections[iSection]!;
+        const sectionId = section.name;
+        let hasAuthorizedItems = false;
 
-        for (let iItem = 0; iItem < g.items.length; ++iItem) {
-            const item = g.items[iItem] as MenuItemLink;
-            assert(g.items[iItem]?.type === "link", "only link menu items should be added here; other types are created dynamically");
-            if (dashboardContext.isAuthorized(item.permission)) {
-                // add group header and divider if this is the first authorized item in the group
-                if (firstItemInGroup) {
-                    if (menuItems.length) {
-                        // add a divider because we know other items are already there.
-                        menuItems.push({
-                            group: g,
-                            item: {
-                                type: "divider",
-                            }
-                        });
-                    }
-                    // add the group heading
-                    if (g.name) {
-                        menuItems.push({
-                            group: g,
-                            item: {
-                                type: "sectionHeader",
-                                sectionName: g.name,
-                                groupId: groupId,
-                            }
-                        });
-                    }
-                    firstItemInGroup = false;
+        // Check if any items in this section are authorized
+        const checkAuthorizedItems = (links: MenuLink[]): boolean => {
+            return links.some(link => dashboardContext.isAuthorized(link.permission));
+        };
+
+        const hasAuthorizedLinks = section.groups.some(group =>
+            checkAuthorizedItems(group.links)
+        );
+
+        if (!hasAuthorizedLinks) continue;
+
+        // Add divider if this is not the first section
+        if (menuItems.length > 0) {
+            menuItems.push({
+                sectionInfo: { section: section, className: section.className },
+                item: {
+                    type: "divider"
                 }
+            });
+        }
 
-                // Always add the item, but mark it with the groupId so we can filter it during rendering
-                const itemWithGroupId = { ...item, groupId };
-                menuItems.push({
-                    group: g,
-                    item: itemWithGroupId,
-                });
+        // Add section header
+        menuItems.push({
+            sectionInfo: { section: section, className: section.className },
+            item: {
+                type: "sectionHeader",
+                sectionName: section.name,
+                sectionId: sectionId
+            }
+        });
+
+        // Add groups and their links
+        for (let iGroup = 0; iGroup < section.groups.length; ++iGroup) {
+            const group = section.groups[iGroup]!;
+            const hasAuthorizedLinksInGroup = checkAuthorizedItems(group.links);
+            if (!hasAuthorizedLinksInGroup) continue;
+
+            // Add visual divider between groups (but not before the first group)
+            if (iGroup > 0) {
+                // Check if previous group had any authorized items to determine if we need a divider
+                let prevGroupHasItems = false;
+                for (let iPrevGroup = iGroup - 1; iPrevGroup >= 0; iPrevGroup--) {
+                    if (checkAuthorizedItems(section.groups[iPrevGroup]!.links)) {
+                        prevGroupHasItems = true;
+                        break;
+                    }
+                }
+                if (prevGroupHasItems) {
+                    menuItems.push({
+                        sectionInfo: { section: section, className: group.className || section.className },
+                        item: {
+                            type: "divider"
+                        }
+                    });
+                }
+            }
+
+            // Add links from this group
+            for (const link of group.links) {
+                if (dashboardContext.isAuthorized(link.permission)) {
+                    menuItems.push({
+                        sectionInfo: { section: section, className: group.className || section.className },
+                        item: {
+                            ...link,
+                            sectionId: sectionId
+                        }
+                    });
+                }
             }
         }
     }
@@ -293,9 +396,13 @@ export const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups
     return menuItems;
 };
 
-// Flatten dynamic menu items
-export const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.MenuLinkPayload[], expandedSections: Set<string>): { group: MenuItemGroup, item: MenuItemSpec }[] => {
-    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
+// Flatten dynamic menu items with new structure
+export const FlattenDynMenuItems = (
+    dashboardContext: DashboardContextData,
+    items: db3.MenuLinkPayload[],
+    expandedSections: Set<string>
+): FlatMenuItemAndSection[] => {
+    const menuItems: FlatMenuItemAndSection[] = [];
     let currentGroupName = "<never>";
 
     for (let iItem = 0; iItem < items.length; ++iItem) {
@@ -306,41 +413,43 @@ export const FlattenDynMenuItems = (dashboardContext: DashboardContextData, item
 
         const firstItemInGroup = (item.groupName !== currentGroupName);
         currentGroupName = item.groupName;
-        const fakeGroup: MenuItemGroup = {
+        const fakeSection: MenuSection = {
             name: currentGroupName,
             className: item.groupCssClass,
-            items: [],
+            groups: [],
         };
-        const groupId = currentGroupName || `dyn-group-${iItem}`;
+        const sectionId = currentGroupName || `dyn-group-${iItem}`;
 
         if (firstItemInGroup) {
             if (menuItems.length) {
                 // add a divider because we know other items are already there.
                 menuItems.push({
-                    group: fakeGroup,
+                    sectionInfo: { section: fakeSection, className: item.groupCssClass },
                     item: {
-                        type: "divider",
+                        type: "divider"
                     }
                 });
             }
             // add the group heading
             if (!IsNullOrWhitespace(currentGroupName)) {
                 menuItems.push({
-                    group: fakeGroup,
+                    sectionInfo: { section: fakeSection, className: item.groupCssClass },
                     item: {
                         type: "sectionHeader",
                         sectionName: currentGroupName,
-                        groupId: groupId,
+                        sectionId: sectionId
                     }
                 });
             }
         }
 
-        // Always add the item, but mark it with the groupId so we can filter it during rendering
-        const menuItemWithGroupId = { ...menuItem, groupId };
+        // Always add the item, but mark it with the parentSectionId
         menuItems.push({
-            group: fakeGroup,
-            item: menuItemWithGroupId,
+            sectionInfo: { section: fakeSection, className: item.groupCssClass },
+            item: {
+                ...menuItem,
+                sectionId: sectionId
+            }
         });
     }
 
@@ -349,10 +458,10 @@ export const FlattenDynMenuItems = (dashboardContext: DashboardContextData, item
 
 // Menu item component props
 export interface MenuItemComponentProps {
-    item: MenuItemAndGroup;
+    item: FlatMenuItemAndSection;
     realm: NavRealm | undefined;
     expandedSections: Set<string>;
-    onToggleSection: (groupId: string) => void;
+    onToggleSection: (sectionId: string) => void;
 }
 
 // Menu item component
@@ -361,17 +470,17 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
     const recordFeature = useClientTelemetryEvent();
 
     if (props.item.item.type === "divider") {
-        return <Divider className={`${props.item.group.className} divider`} />;
+        return <Divider className={`${props.item.sectionInfo.className} divider`} />;
     }
     if (props.item.item.type === "sectionHeader") {
-        const groupId = props.item.item.groupId || props.item.item.sectionName;
-        const isExpanded = props.expandedSections.has(groupId);
+        const sectionId = props.item.item.sectionId;
+        const isExpanded = props.expandedSections.has(sectionId);
 
         return (
             <ListSubheader
                 component="div"
-                onClick={() => props.onToggleSection(groupId)}
-                className={`${props.item.group.className} sectionHeader expandable`}
+                onClick={() => props.onToggleSection(sectionId)}
+                className={`${props.item.sectionInfo.className} sectionHeader expandable`}
             >
                 <Typography variant="button" noWrap>
                     {props.item.item.sectionName}
@@ -385,10 +494,10 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
     if (props.item.item.type === "link") {
         // Check if this link should be hidden because its section is collapsed
         const linkItem = props.item.item;
-        if (linkItem.groupId) {
-            const isGroupExpanded = props.expandedSections.has(linkItem.groupId);
-            if (!isGroupExpanded) {
-                return null; // Don't render this item if its group is collapsed
+        if (linkItem.sectionId) {
+            const isSectionExpanded = props.expandedSections.has(linkItem.sectionId);
+            if (!isSectionExpanded) {
+                return null; // Don't render this item if its section is collapsed
             }
         }
 
@@ -418,7 +527,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     href={linkItem.path}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`linkMenuItem ${props.item.group.className} ${linkItem.className}`}
+                    className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {
                         // Log activity for external link using beacon
                         void recordFeature({
@@ -437,7 +546,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
                     component={Link}
                     href={linkItem.path}
                     selected={selected}
-                    className={`linkMenuItem ${props.item.group.className} ${linkItem.className}`}
+                    className={`linkMenuItem ${props.item.sectionInfo.className} ${linkItem.className}`}
                     onClick={e => {
                         // Log activity for internal link using beacon
                         void recordFeature({
@@ -454,7 +563,7 @@ export const MenuItemComponent = (props: MenuItemComponentProps) => {
 };
 
 // Helper function to get menu item name for context
-export const getMenuItemName = (item: MenuItemSpec): string => {
+export const getMenuItemName = (item: FlatMenuItemSpec): string => {
     if (item.type === "link") {
         return item.linkCaption;
     }
@@ -476,34 +585,31 @@ interface SideMenuProps {
 
 export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme }: SideMenuProps) => {
     const dashboardContext = React.useContext(DashboardContext);
-    const router = useRouter();
-
-    // Initialize expanded sections with default expanded groups
+    const router = useRouter();    // Initialize expanded sections with default expanded sections
     const getInitialExpandedSections = React.useCallback(() => {
         const expanded = new Set<string>();
 
         // Add sections that should be expanded by default
-        [...gMenuItemGroup1, ...gMenuItemGroup2].forEach((group, index) => {
-            if (group.expandedByDefault && group.name) {
-                expanded.add(group.name);
+        gMenuSections.forEach((section) => {
+            if (section.expandedByDefault && section.name) {
+                expanded.add(section.name);
             }
         });
 
         return expanded;
     }, []);
 
-    // Find which group contains the current page and ensure it's expanded
-    const getCurrentPageGroup = React.useCallback(() => {
+    // Find which section contains the current page and ensure it's expanded
+    const getCurrentPageSection = React.useCallback(() => {
         const currentPath = router.pathname;
 
-        // Check all groups for a matching path
-        const allGroups = [...gMenuItemGroup1, ...gMenuItemGroup2];
-        for (const group of allGroups) {
-            if (!group.name) continue; // Skip groups without names
-
-            for (const item of group.items) {
-                if (item.type === "link" && item.path === currentPath) {
-                    return group.name;
+        // Check all sections for a matching path
+        for (const section of gMenuSections) {
+            for (const group of section.groups) {
+                for (const link of group.links) {
+                    if (link.path === currentPath) {
+                        return section.name;
+                    }
                 }
             }
         }
@@ -531,42 +637,41 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
 
     const [expandedSections, setExpandedSections] = React.useState<Set<string>>(() => {
         const initial = getInitialExpandedSections();
-        const currentGroup = getCurrentPageGroup();
-        if (currentGroup) {
-            initial.add(currentGroup);
+        const currentSection = getCurrentPageSection();
+        if (currentSection) {
+            initial.add(currentSection);
         }
         return initial;
     });
 
     // Update expanded sections when the route changes
     React.useEffect(() => {
-        const currentGroup = getCurrentPageGroup();
-        if (currentGroup) {
+        const currentSection = getCurrentPageSection();
+        if (currentSection) {
             setExpandedSections(prev => {
                 const newSet = new Set(prev);
-                newSet.add(currentGroup);
+                newSet.add(currentSection);
                 return newSet;
             });
         }
-    }, [getCurrentPageGroup]);
+    }, [getCurrentPageSection]);
 
-    const toggleSection = React.useCallback((groupId: string) => {
+    const toggleSection = React.useCallback((sectionId: string) => {
         setExpandedSections(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(groupId)) {
-                newSet.delete(groupId);
+            if (newSet.has(sectionId)) {
+                newSet.delete(sectionId);
             } else {
-                newSet.add(groupId);
+                newSet.add(sectionId);
             }
             return newSet;
         });
     }, []);
 
-    // flatten our list of menu groups & items based on permissions.
-    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [
-        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup1, expandedSections),
+    // flatten our list of menu sections & items based on permissions.
+    const menuItems: FlatMenuItemAndSection[] = [
+        ...FlattenMenuSections(dashboardContext, gMenuSections, expandedSections),
         ...FlattenDynMenuItems(dashboardContext, dashboardContext.dynMenuLinks.items, expandedSections),
-        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup2, expandedSections),
     ];
 
     return (
