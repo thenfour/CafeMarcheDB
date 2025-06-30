@@ -306,7 +306,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                 endMenuItemRef.current();
             }} />
         </MenuItem>,
-        pageExists &&
+        pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"copylink"} onClick={async () => {
             await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPageApi.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
             endMenuItemRef.current();
@@ -315,7 +315,8 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
                 {gIconMap.Share()}
             </ListItemIcon>
             Copy link to wiki page
-        </MenuItem>, pageExists &&
+        </MenuItem>,
+        pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"viewhistory"} onClick={async () => {
             void router.push(`/backstage/wikiPageHistory?path=${props.wikiPageApi.wikiPath.canonicalWikiPath}`);
             endMenuItemRef.current();
