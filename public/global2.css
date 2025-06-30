@@ -2906,3 +2906,14 @@ nav a:hover {
 .DateValue {
     white-space: nowrap;
 }
+
+.iconIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    /* our color system is odd, but this is the best look for the moment.*/
+    --color-background: #ddd;
+    color: var(--color-background);
+}

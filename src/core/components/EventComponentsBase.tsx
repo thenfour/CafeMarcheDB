@@ -5,7 +5,7 @@ import { Prisma } from "db";
 import React from 'react';
 import { SortDirection } from 'shared/rootroot';
 import { DateTimeRange, Timing } from 'shared/time';
-import { getUniqueNegativeID } from 'shared/utils';
+import { getUniqueNegativeID, IsNullOrWhitespace } from 'shared/utils';
 import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -15,6 +15,10 @@ import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
 import { CMStandardDBChip } from './CMChip';
 import { CMStatusIndicator } from './CMCoreComponents';
 import { DashboardContextData } from './DashboardContext';
+import { RenderMuiIcon } from '../db3/components/IconMap';
+import { GetStyleVariablesForColor } from './Color';
+import { Tooltip } from '@mui/material';
+import { Markdown } from './markdown/Markdown';
 
 export interface EventStatusChipProps {
     statusId: number | null | undefined;
@@ -39,6 +43,25 @@ export const EventStatusChip = ({ statusId, highlightStatusIds = [], displayStyl
     />
 
 };
+
+
+export const EventStatusMinimal = ({ statusId }: { statusId: number | null | undefined }) => {
+    const dashboardContext = useDashboardContext();
+    const status = dashboardContext.eventStatus.getById(statusId);
+    if (!status) return null;
+    const style = GetStyleVariablesForColor({ color: status.color, ...StandardVariationSpec.Strong });
+
+    return <Tooltip title={<div>
+        <div className="tooltipTitle">{status.label}</div>
+        <Markdown markdown={status.description || ""} />
+    </div>}>
+        <span className={`iconIndicator ${style.cssClass}`} style={style.style}>
+            {IsNullOrWhitespace(status.iconName) ? status.label : RenderMuiIcon(status.iconName)}
+        </span>
+    </Tooltip>;
+
+};
+
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {

@@ -16,7 +16,7 @@ import { CMLink } from "./CMLink";
 import { GetStyleVariablesForColor } from "./Color";
 import { useDashboardContext } from "./DashboardContext";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
-import { EventStatusChip } from "./EventComponentsBase";
+import { EventStatusChip, EventStatusMinimal } from "./EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { SearchItemBigCardLink } from "./SearchItemBigCardLink";
 
@@ -80,7 +80,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
                 <div>{event.name}</div>
             </div>
             <div className="SubtleEventCardDate">
-                <EventStatusChip statusId={event.statusId} displayStyle="iconOnly" size="small" />
+                <EventStatusMinimal statusId={event.statusId} />
                 <EventShortDate event={event} />
             </div>
             <div className='SearchItemBigCardLinkContainer'>
