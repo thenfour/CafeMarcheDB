@@ -74,24 +74,24 @@ function renderAbcToSvg(abcNotation: string, options: any = {}): Promise<string>
 
                     // Ensure SVG has explicit width and height for img tag compatibility
                     const svgEl = svgElement as SVGSVGElement;
-                    const viewBox = svgEl.getAttribute('viewBox');
+                    //const viewBox = svgEl.getAttribute('viewBox');
                     const width = svgEl.getAttribute('width') || (options.width ? `${options.width}px` : '740px');
                     const height = svgEl.getAttribute('height') || '200px';
 
-                    // If no width/height but has viewBox, extract dimensions
-                    if ((!svgEl.getAttribute('width') || !svgEl.getAttribute('height')) && viewBox) {
-                        const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
-                        if (vbWidth && vbHeight) {
-                            const scale = options.scale || 1.0;
-                            const scaledWidth = Math.round(vbWidth * scale);
-                            const scaledHeight = Math.round(vbHeight * scale);
+                    // // If no width/height but has viewBox, extract dimensions
+                    // if ((!svgEl.getAttribute('width') || !svgEl.getAttribute('height')) && viewBox) {
+                    //     const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
+                    //     if (vbWidth && vbHeight) {
+                    //         //const scale = options.scale || 1.0;
+                    //         // const scaledWidth = Math.round(vbWidth * scale);
+                    //         // const scaledHeight = Math.round(vbHeight * scale);
 
-                            svgContent = svgContent.replace(
-                                /<svg([^>]*)>/,
-                                `<svg$1 width="${scaledWidth}" height="${scaledHeight}">`
-                            );
-                        }
-                    }
+                    //         // svgContent = svgContent.replace(
+                    //         //     /<svg([^>]*)>/,
+                    //         //     `<svg$1 width="${scaledWidth}" height="${scaledHeight}">`
+                    //         // );
+                    //     }
+                    // }
 
                     // Ensure we have width and height attributes
                     if (!svgContent.includes('width=')) {

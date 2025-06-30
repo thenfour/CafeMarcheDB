@@ -70,11 +70,14 @@ export const MarkdownEditorFormattingTips = (props: { in: boolean }) => {
                         <Pre>{`{{highlightgreen:this text is green}}`}</Pre>
                         <Pre>{`{{highlightblue:this text is blue}}`}</Pre>
                         <Pre>{`{{highlightred:this text is red}}`}</Pre>
-                    </dd>
-
-                    <dt><span className='highlight'>Enclosure</span></dt>
+                    </dd>                    <dt><span className='highlight'>Enclosure</span></dt>
                     <dd>
                         <Pre>Cut from rehearsal mark {`{{enclosed:D}}`} to {`{{enclosed:F}}`}</Pre>
+                    </dd>
+
+                    <dt><span className='highlight'>Inline Music Notation</span></dt>
+                    <dd>
+                        <Pre>{`Play this scale: {{abc:C D E F G}} and then this chord: {{abc:[CEG]}}`}</Pre>
                     </dd>
 
                 </dl>

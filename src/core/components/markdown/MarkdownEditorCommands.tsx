@@ -400,6 +400,28 @@ C D E F | G A B c |`;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const InlineAbcCommand: MarkdownEditorCommand = {
+    id: "InlineAbcCommand",
+    toolbarTooltip: "Inline ABC notation",
+    toolbarIcon:
+        gIconMap.MusicNote()
+    // <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-musical-note-inline">
+    //     <path d="M2 12.5a2.5 2.5 0 1 0 5 0v-7L12 7v3.5a2.5 2.5 0 1 0 5 0V5.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v1.793L8 5.5a.5.5 0 0 0-.5-.5h-3A.5.5 0 0 0 4 5.5v7z" />
+    // </svg>
+    ,
+    invoke: async (args) => {
+        const selection = args.api.controlledTextArea.getText();
+        if (selection.length > 0) {
+            // If text is selected, wrap it in inline ABC notation
+            await args.api.controlledTextArea.surroundSelectionWithText("{{abc:", "}}", "");
+        } else {
+            // If no selection, insert a sample inline ABC notation
+            await args.api.controlledTextArea.replaceSelectionWithText("{{abc:C D E F}}", { select: "afterChange" });
+        }
+    },
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const MarkdownInspectCommand: MarkdownEditorCommand = {
     id: "MarkdownInspectCommand",
     isEnabled: (api) => {
@@ -495,7 +517,7 @@ const RedoCommand: MarkdownEditorCommand = {
 export const gMarkdownEditorCommandGroups: MarkdownEditorCommand[][] = [
     // MarkdownInspectCommand
     [UndoCommand, RedoCommand],
-    [BoldCommand, ItalicCommand, StrikethroughCommand, EncloseCommand, HighlightCommand],
+    [BoldCommand, ItalicCommand, StrikethroughCommand, EncloseCommand, HighlightCommand, InlineAbcCommand],
     [UnorderedListCommand, OrderedListCommand, DecreaseIndentCommand, IndentCommand],
     [Heading1Command, QuoteCommand, CodeCommand, AbcNotationCommand, CharacterSizeCommand],
     [SpecialCharactersCommand],

@@ -1,5 +1,6 @@
 import { getHashedColor } from '@/shared/utils';
 import MarkdownIt from 'markdown-it';
+import { getAbsoluteUrl } from '../../db3/clientAPILL';
 
 export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
     const originalTextRule = md.renderer.rules.text ||
@@ -12,6 +13,25 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
         output = output.replace(/\{\{(\w+)(:.*?)?\}\}/g, (match, componentName, propsString = '') => {
             if (propsString && propsString.length > 1) {
                 propsString = propsString.slice(1).replaceAll("\\}", "}");
+            }
+            if (componentName === "abc") {
+                // Generate ABC notation image for inline display
+                const abcContent = propsString.trim();
+                if (!abcContent) {
+                    return match; // Return original if empty
+                }
+
+                // Create minimal ABC notation with required headers
+                const fullAbcNotation = `X:1\nK:C\n${abcContent}`;
+                const encodedNotation = encodeURIComponent(fullAbcNotation);
+
+                // Create img element for inline ABC notation
+                const img = document.createElement('img');
+                img.src = getAbsoluteUrl(`/api/abc/render?notation=${encodedNotation}`);
+                img.className = 'abc-notation-inline';
+                img.alt = `ABC notation: ${abcContent}`;
+
+                return img.outerHTML;
             }
             if (componentName === "hashhighlight") {
                 // Hash the text and map to a color using getHashedColor

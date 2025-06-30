@@ -550,3 +550,12 @@ test cases:
     padding: 4px;
     color: #f99;
 }
+
+/* ABC Notation Inline Styling */
+.markdown .abc-notation-inline {
+    display: inline;
+    vertical-align: middle;
+    /* max-height: 2em; */
+    margin: 0 2px;
+    padding: 1px 3px;
+}
