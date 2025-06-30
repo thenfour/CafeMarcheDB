@@ -2911,9 +2911,13 @@ nav a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    --icon-size: 30px;
     /* our color system is odd, but this is the best look for the moment.*/
     --color-background: #ddd;
     color: var(--color-background);
+}
+
+.iconIndicator svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
 }

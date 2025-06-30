@@ -44,10 +44,9 @@ const gDefaultStaticFilterValue: WikiPagesFilterSpecStatic = {
     tagFilterOptions: [],
     tagFilterEnabled: false,
 
-    namespaceFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    namespaceFilterOptions: [],
-    namespaceFilterEnabled: false,
-
+    namespaceFilterBehavior: DiscreteCriterionFilterType.doesntHaveAnyOf,
+    namespaceFilterOptions: ["EventDescription"],
+    namespaceFilterEnabled: true,
 };
 
 const gStaticFilters: WikiPagesFilterSpecStatic[] = []
