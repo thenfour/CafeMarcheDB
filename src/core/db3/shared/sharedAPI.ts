@@ -13,21 +13,23 @@ class FilesSharedAPI {
         return `/api/files/download/${file.storedLeafName}`;
     }
 
-    getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
+    getImageFileDimensions = (file: db3.FilePayloadMinimum): Size | undefined => {
         const customData = getFileCustomData(file);
+
         if (customData.imageMetadata?.height != null && customData.imageMetadata?.width != null) {
             return {
                 width: customData.imageMetadata!.width!,
                 height: customData.imageMetadata!.height!,
             };
         }
-        return { width: gMinImageDimension, height: gMinImageDimension };
+        return undefined;
     };
+
 
     // if editParams is omitted, use the ones embedded in the post.
     getImageFileEditInfo = (file: db3.FilePayloadMinimum, editParams: ImageEditParams) => {
         const imageURI = this.getURIForFile(file);
-        const fileDimensions = this.getImageFileDimensions(file)
+        const fileDimensions = this.getImageFileDimensions(file) || { width: gMinImageDimension, height: gMinImageDimension };
 
         //const displayParams = editParams || db3.getGalleryItemDisplayParams(post);
 

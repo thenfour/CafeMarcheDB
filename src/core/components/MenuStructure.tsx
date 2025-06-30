@@ -125,14 +125,14 @@ export const gMenuSections: MenuSection[] = [
         ]
     },
     {
-        name: "Public",
+        name: "Homepage",
         className: "public",
         groups: [
             {
                 links: [
                     { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public },
-                    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Homepage Photos", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
-                    { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Homepage Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage },
+                    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Gallery", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
+                    { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage },
                 ]
             }
         ]

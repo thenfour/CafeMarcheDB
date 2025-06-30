@@ -1,6 +1,6 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
-import { FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
+import { CMSinglePageSurfaceCard, FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
 import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
@@ -17,7 +17,8 @@ import { UserChip } from "@/src/core/components/userChip";
 import { gIconMap } from "@/src/core/db3/components/IconMap";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs } from "@mui/material";
+import { Breadcrumbs, Typography, Box, Divider, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import db from "db";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
@@ -27,8 +28,10 @@ import { DashboardContext, useDashboardContext, useFeatureRecorder, useRecordFea
 import { FileTableClientColumns } from "src/core/components/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
+import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 
 ////////////////////////////////////////////////////////////////
 export interface FileBreadcrumbProps {
@@ -65,7 +68,6 @@ interface FileDetailProps {
 };
 
 
-// Basic file detail component - very minimal for now
 const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
     const dashboardContext = React.useContext(DashboardContext);
     const visInfo = dashboardContext.getVisibilityInfo(file);
@@ -76,6 +78,8 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
     const isAudio = mimeInfo?.type === 'audio';
 
     const refetch = tableClient.refetch;
+
+    const imageInfo = SharedAPI.files.getImageFileDimensions(file);
 
     return (
         <div className={`fileDetail ${visInfo.className}`} style={{ maxWidth: '800px', margin: '20px 0' }}>
@@ -126,12 +130,15 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
 
             <KeyValueTable
                 data={{
-                    'Created At': file.fileCreatedAt ? <DateValue value={file.fileCreatedAt} /> : "",
+                    'Created At': file.fileCreatedAt ? <DateValue value={file.fileCreatedAt} /> : undefined,
                     'Uploaded At': <><DateValue value={file.uploadedAt} /> {file.uploadedByUser && <>by <UserChip value={file.uploadedByUser} /></>}</>,
                     'Stored Leaf Name': <Pre>{file.storedLeafName}</Pre>,
                     'External URI': file.externalURI ? <a href={file.externalURI} target="_blank" rel="noopener noreferrer">{file.externalURI}</a> : '',
                     "Audio controls": isAudio ? (
                         <AudioPlayerFileControls file={file} />
+                    ) : '',
+                    "Image dimensions": imageInfo ? (
+                        <span>{imageInfo.width} x {imageInfo.height} px</span>
                     ) : '',
                     "Mime Type": file.mimeType || 'Unknown',
                     'Size': file.sizeBytes ? formatFileSize(file.sizeBytes) : 'Unknown',
@@ -145,7 +152,7 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                             {file.taggedUsers.map((taggedUser, index) => (
                                 <UserChip key={index} value={taggedUser.user} />
                             ))}
-                        </CMChipContainer>) : "",
+                        </CMChipContainer>) : undefined,
                     "Tagged Songs": (file.taggedSongs && file.taggedSongs.length > 0) ?
                         (<CMChipContainer>
                             {file.taggedSongs.map((taggedSong, index) => (
