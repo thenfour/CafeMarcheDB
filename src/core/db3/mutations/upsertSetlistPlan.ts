@@ -24,6 +24,11 @@ export default resolver.pipe(
         let newObj: Prisma.SetlistPlanGetPayload<{}>;
 
         if (existing) {
+            // if group changes, set sortorder to 0.
+            const sortOrderUpdate = {};
+            if (existing.groupId !== args.groupId) {
+                sortOrderUpdate['sortOrder'] = 0;
+            }
             newObj = await db.setlistPlan.update({
                 where: {
                     id: args.id,
@@ -35,6 +40,7 @@ export default resolver.pipe(
                     payloadJson: JSON.stringify(args.payload),
                     isDeleted: false,
                     visiblePermissionId: args.visiblePermissionId,
+                    ...sortOrderUpdate,
                 },
             });
         } else {
