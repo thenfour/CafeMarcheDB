@@ -1,10 +1,10 @@
 import { SearchableListConfig } from 'src/core/hooks/useSearchableList';
 import * as db3 from 'src/core/db3/db3';
-import { SongsFilterSpec, EnrichedVerboseSong } from 'src/core/components/SongComponentsBase';
-import { EventsFilterSpec } from 'src/core/components/EventComponentsBase';
-import { UsersFilterSpec } from 'src/core/components/UserComponents';
-import { FilesFilterSpec, EnrichedVerboseFile } from 'src/core/components/FileComponentsBase';
-import { WikiPagesFilterSpec, EnrichedVerboseWikiPage } from 'src/core/components/WikiPageComponentsBase';
+import { EnrichedVerboseSong, SongsFilterSpec } from '../components/song/SongComponentsBase';
+import { EventsFilterSpec } from '../components/event/EventComponentsBase';
+import { UsersFilterSpec } from '../components/user/UserComponents';
+import { EnrichedVerboseFile, FilesFilterSpec } from '../components/file/FileComponentsBase';
+import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from '../components/wiki/WikiPageComponentsBase';
 
 // Song search configuration
 export const songSearchConfig: SearchableListConfig<

@@ -10,7 +10,7 @@ import { QuickSearchItemMatch, QuickSearchItemType } from 'shared/quickFilter';
 import * as db3 from "src/core/db3/db3";
 import getFilteredSongs from '../db3/queries/getFilteredSongs';
 import { GetFilteredSongsItemSongPayload } from '../db3/shared/apiTypes';
-import { AssociationAutocomplete } from './setlistPlan/ItemAssociation';
+import { AssociationAutocomplete } from './ItemAssociation';
 
 
 export interface SongAutocompleteProps {

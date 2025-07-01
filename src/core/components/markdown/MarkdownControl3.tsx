@@ -3,7 +3,7 @@ import React from "react";
 import { Permission } from 'shared/permissions';
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
-import { CMDBUploadFile } from '../CMDBUploadFile';
+import { CMDBUploadFile } from '../file/CMDBUploadFile';
 import { useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { useSnackbar } from '../SnackbarContext';
 import { Markdown } from './Markdown';

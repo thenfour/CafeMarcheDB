@@ -24,18 +24,18 @@ import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecordin
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
 import { DotMenu } from './CMCoreComponents2';
-import { CMDBUploadFile } from './CMDBUploadFile';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
 import { DashboardContext, useDashboardContext, useFeatureRecorder } from './DashboardContext';
-import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown } from "./markdown/Markdown";
 import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from './mediaPlayer/MediaPlayerTypes';
-import { UserChip } from './userChip';
+import { UserChip } from './user/userChip';
 import { EventChip } from './event/EventChips';
+import { CMDBUploadFile } from './file/CMDBUploadFile';
+import { FileDropWrapper, UploadFileComponent } from './file/FileDrop';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

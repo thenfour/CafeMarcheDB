@@ -6,9 +6,9 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
-import { RelevantEvents } from "src/core/components/RelevantEvents";
+import { RelevantEvents } from "@/src/core/components/event/RelevantEvents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { WikiStandaloneControl } from "src/core/components/WikiStandaloneComponents";
+import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 

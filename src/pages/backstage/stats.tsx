@@ -10,7 +10,7 @@ import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis"
 import { CMChip } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/FilterControl";
+import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/search/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";

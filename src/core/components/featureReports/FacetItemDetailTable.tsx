@@ -5,7 +5,7 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
 import { AttendanceChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
 import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
-import { AgeRelativeToNow } from "../RelativeTimeComponents";
+import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
 //
 import { TGetFeatureReportDetailResult } from "./activityReportTypes";
 import { ActivityFeature } from "./activityTracking";

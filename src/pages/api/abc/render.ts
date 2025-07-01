@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { JSDOM } from 'jsdom';
 // @ts-ignore - abcjs may not have perfect types
 import * as abcjs from 'abcjs';
+import { Stopwatch } from "@/shared/rootroot";
 
 // Function to crop SVG to actual content bounds using coordinate parsing
 function cropSvgToContent(svgElement: Element): string {
@@ -200,6 +201,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } try {
         // Use our custom ABC to SVG renderer
         const renderSvg = renderAbcToSvg;
+        const sw = new Stopwatch();
 
         // Extract and validate query parameters
         const { notation, width, scale, crop } = req.query;
@@ -282,6 +284,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // console.log("Generated SVG preview:", svgContent.substring(0, 200) + "...");
 
         // Return the SVG content
+        //console.log(`ABC SVG response time: ${sw.ElapsedMillis} ms`);
         return res.status(200).send(svgContent);
 
     } catch (error: any) {

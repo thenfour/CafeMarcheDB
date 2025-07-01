@@ -4,7 +4,7 @@ import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 import { Permission } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SongClientColumns } from "src/core/components/SongComponents";
+import { SongClientColumns } from "src/core/components/song/SongComponents";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";

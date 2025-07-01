@@ -8,9 +8,8 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { DateTimeRangeControl } from "src/core/components/DateTimeRangeControl";
-import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
-import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
+import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
+import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -20,6 +19,7 @@ import * as db3 from "src/core/db3/db3";
 import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { TAnyModel, TGetImportEventDataRet, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { DateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 
 interface InsertResult {
     event: {

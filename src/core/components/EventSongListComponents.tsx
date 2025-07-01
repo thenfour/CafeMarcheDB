@@ -29,7 +29,7 @@ import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
-import { useMessageBox } from './context/MessageBoxContext';
+import { useMessageBox } from './MessageBoxContext';
 import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";

@@ -8,7 +8,7 @@ import { Pie, PieChart, Tooltip } from 'recharts';
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
 import { AttendanceChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
-import { AgeRelativeToNow } from "../RelativeTimeComponents";
+import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
 //
 import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
 import { ActivityFeature, BrowserIconMap, Browsers, DeviceClasses, DeviceClassIconMap, OperatingSystem, OSIconMap, PointerTypeIconMap, PointerTypes } from "./activityTracking";

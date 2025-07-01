@@ -13,10 +13,10 @@ import { CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { AdminInspectObject, useURLState } from './CMCoreComponents2';
 import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
-import { EventListItem } from './EventComponents';
-import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
+import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './event/EventComponentsBase';
 import { useSearchableList } from 'src/core/hooks/useSearchableList';
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
+import { EventListItem } from "./event/EventComponents";
 
 
 // attach useful data to the event for passing around the calendar.

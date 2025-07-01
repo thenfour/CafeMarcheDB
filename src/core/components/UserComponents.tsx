@@ -1,15 +1,9 @@
-import { Permission } from "@/shared/permissions";
+import { Prisma } from "db";
 import { useQuery } from "@blitzjs/rpc";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Button } from "@mui/material";
-import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
-import { StandardVariationSpec } from "shared/color";
-import { SortDirection } from "shared/rootroot";
-import { IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
-import * as DB3Client from "src/core/db3/DB3Client";
-import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { getURIForUser } from "../db3/clientAPILL";
 import { gIconMap } from "../db3/components/IconMap";
@@ -21,15 +15,21 @@ import { CMChip, CMChipContainer, CMStandardDBChip } from "./CMChip";
 import { AttendanceChip, InstrumentChip, SongChip } from "./CMCoreComponents";
 import { AdminInspectObject, CMTable, GoogleIconSmall, KeyValueTable } from "./CMCoreComponents2";
 import { CMLink } from "./CMLink";
-import { ChooseItemDialog } from "./ChooseItemDialog";
+import { ChooseItemDialog } from "./select/ChooseItemDialog";
 import { useDashboardContext } from "./DashboardContext";
 import { DateValue } from "./DateTime/DateTimeComponents";
-import { SongsProvider, useSongsContext } from "./SongsContext";
 import { CMTab, CMTabPanel } from "./TabPanel";
 import { EventChip } from "./event/EventChips";
 import { Markdown } from "./markdown/Markdown";
 import { UserAdminPanel } from "./user/UserAdminPanel";
-import { UserChip } from "./userChip";
+import { UserChip } from "./user/userChip";
+import { SortDirection } from "../../../shared/rootroot";
+import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
+import { IsNullOrWhitespace, StringToEnumValue } from "@/shared/utils";
+import { StandardVariationSpec } from "@/shared/color";
+import { SongsProvider, useSongsContext } from "./song/SongsContext";
+import { Permission } from "@/shared/permissions";
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -58,8 +58,6 @@ export interface UsersFilterSpec {
     instrumentFilter: DiscreteCriterion;
     roleFilter: DiscreteCriterion;
 };
-
-
 
 
 
@@ -182,7 +180,6 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 
     return <div className="UserAttendanceTabContent">
         <AdminInspectObject src={qr} label="results" />
-
 
         {agg.totalSegmentCount > 0 &&
             <KeyValueTable data={{

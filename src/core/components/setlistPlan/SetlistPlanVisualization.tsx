@@ -4,7 +4,7 @@ import React from 'react';
 import { Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, Tooltip, XAxis, YAxis } from 'recharts';
 import { getHashedColor } from 'shared/utils';
 import { SetlistPlan } from 'src/core/db3/shared/setlistPlanTypes';
-import { useSongsContext } from '../SongsContext';
+import { useSongsContext } from '../song/SongsContext';
 import { SetlistPlanStats } from './SetlistPlanUtilities';
 
 interface SetlistPlannerVisualizationsProps {

@@ -1,7 +1,7 @@
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { TIconOptions, gIconOptions } from "shared/utils";
-import { ChoiceEditCell } from "../../components/ChooseItemDialog";
+import { ChoiceEditCell } from "../../components/select/ChooseItemDialog";
 import { RenderMuiIcon } from "./IconMap";
 import { gNullValue } from '../shared/apiTypes';
 

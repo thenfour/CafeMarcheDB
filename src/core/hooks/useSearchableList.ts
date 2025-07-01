@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { DashboardContext } from 'src/core/components/DashboardContext';
 import { SnackbarContext } from 'src/core/components/SnackbarContext';
-import { fetchSearchResultsApi } from 'src/core/components/SearchBase';
 import { GetSearchResultsInput, SearchResultsRet, MakeEmptySearchResultsRet } from 'src/core/db3/shared/apiTypes';
+import { fetchSearchResultsApi } from '../components/search/SearchBase';
 
 const DEFAULT_PAGE_SIZE = 20;
 

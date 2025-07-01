@@ -14,12 +14,12 @@ import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shar
 import { IsNullOrWhitespace } from "shared/utils";
 import { PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { AdminInspectObject, CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { CMMultiSelect, CMSingleSelect } from "src/core/components/CMSelect";
-import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import { CMMultiSelect, CMSingleSelect } from "src/core/components/select/CMSelect";
+import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { CMDateRangePicker } from "src/core/components/DateTimeRangeControl";
-import { AgeRelativeToNow } from "src/core/components/RelativeTimeComponents";
+import { AgeRelativeToNow } from "@/src/core/components/DateTime/RelativeTimeComponents";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { CMDateRangePicker } from "@/src/core/components/DateTime/DateTimeRangeControl";
 
 const GeneralFeatureStatsReport = () => {
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);

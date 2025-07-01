@@ -6,7 +6,7 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { CMLink } from "src/core/components/CMLink";
 import { useDashboardContext } from "src/core/components/DashboardContext";
-import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongsFilterSpec } from "src/core/components/SongComponentsBase";
+import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongsFilterSpec } from "src/core/components/song/SongComponentsBase";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 

@@ -4,7 +4,7 @@ import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilte
 import { IsNullOrWhitespace } from "shared/utils";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
-import { AssociationAutocomplete, AssociationValue } from "../setlistPlan/ItemAssociation";
+import { AssociationAutocomplete, AssociationValue } from "../ItemAssociation";
 import { MarkdownMentionRegexWithSurroundingWhitespace } from "./CMDBLinkMarkdownPlugin";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
 import { GetMatchUnderSelection, MarkdownEditorToolbarItem, MuiButtonWithEnterHandler, ParsedMarkdownReference, parseMarkdownReference } from "./MarkdownEditorCommandUtils";

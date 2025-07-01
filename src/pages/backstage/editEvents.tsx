@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import React from 'react';
 import { Permission } from "shared/permissions";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
+import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";

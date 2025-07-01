@@ -28,7 +28,7 @@ import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
 import { DialogActionsCM, InspectObject, KeyValueTable } from 'src/core/components/CMCoreComponents2';
-import { AgeRelativeToNow } from 'src/core/components/RelativeTimeComponents';
+import { AgeRelativeToNow } from '@/src/core/components/DateTime/RelativeTimeComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { API } from '../clientAPI';

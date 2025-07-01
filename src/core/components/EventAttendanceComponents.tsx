@@ -122,7 +122,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { AttendanceChip } from './CMCoreComponents';
 import { AdminInspectObject, CMSmallButton, DialogActionsCM, NameValuePair } from "./CMCoreComponents2";
-import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
+import { CalcEventAttendance, EventWithMetadata } from "./event/EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
 import { Prisma } from "db";

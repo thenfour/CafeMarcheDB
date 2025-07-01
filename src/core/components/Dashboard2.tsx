@@ -23,15 +23,15 @@ import { AdminInspectObject } from "./CMCoreComponents2";
 import { ConfirmProvider } from "./ConfirmationDialog";
 import { DashboardContext, DashboardContextProvider, useFeatureRecorder } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
-import { MainSiteSearch } from "./MainSiteSearch";
+import { MainSiteSearch } from "./search/MainSiteSearch";
 import {
     NavRealm,
     SideMenu
 } from "./MenuStructure";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
-import { MessageBoxProvider } from "./context/MessageBoxContext";
 import { ActivityFeature } from "./featureReports/activityTracking";
+import { MessageBoxProvider } from "./MessageBoxContext";
 
 const drawerWidth = 260;
 

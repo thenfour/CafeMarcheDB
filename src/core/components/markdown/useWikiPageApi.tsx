@@ -13,7 +13,7 @@ import getWikiPage from "src/core/wiki/queries/getWikiPage";
 import { GetWikiPageUpdatabilityResult, gWikiEditPingIntervalMilliseconds, gWikiLockAutoRenewThrottleInterval, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiUpdatePayload, WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { v4 as uuidv4 } from "uuid";
 import { useDashboardContext, useFeatureRecorder } from "../DashboardContext";
-import { useMessageBox } from "../context/MessageBoxContext";
+import { useMessageBox } from "../MessageBoxContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 
 // upon begin edit:

@@ -13,7 +13,7 @@ import { SearchInput } from "src/core/components/CMTextField";
 import { gIconMap } from "./IconMap";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SplitQuickFilter } from "shared/quickFilter";
 

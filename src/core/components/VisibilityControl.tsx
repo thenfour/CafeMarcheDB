@@ -4,7 +4,7 @@ import React from 'react';
 import { StandardVariationSpec } from 'shared/color';
 import * as db3 from "src/core/db3/db3";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
-import { ChoiceEditCell } from "./ChooseItemDialog";
+import { ChoiceEditCell } from "./select/ChooseItemDialog";
 import { DashboardContext } from "./DashboardContext";
 import { SettingMarkdown } from "./SettingMarkdown";
 

@@ -15,9 +15,9 @@ import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "s
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
-import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
+import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { DashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
-import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/FileDrop";
+import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/file/FileDrop";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 //import { Markdown2Control } from "src/core/components/MarkdownControl2";

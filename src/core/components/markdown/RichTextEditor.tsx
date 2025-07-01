@@ -7,8 +7,8 @@ import React from "react";
 import TurndownService from 'turndown';
 
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from 'shared/quickFilter';
-import { CollapsableUploadFileComponent, FileDropWrapper } from "../FileDrop";
-import { fetchObjectQuery } from '../setlistPlan/ItemAssociation';
+import { CollapsableUploadFileComponent, FileDropWrapper } from "../file/FileDrop";
+import { fetchObjectQuery } from '../ItemAssociation';
 import { fetchInlineClasses } from './MarkdownReactPlugins';
 
 var turndownService = new TurndownService();

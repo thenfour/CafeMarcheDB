@@ -20,7 +20,7 @@ import { useDashboardContext } from "../DashboardContext";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
 import { Markdown } from "../markdown/Markdown";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
-import { AssociationSelect, AssociationValueLink } from "./ItemAssociation";
+import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";
 //import getUserEventAttendance from "src/core/db3/queries/getUserEventAttendance";
 

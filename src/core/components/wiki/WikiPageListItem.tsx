@@ -3,12 +3,12 @@ import { StandardVariationSpec } from "shared/color";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "src/core/components/WikiPageComponentsBase";
 import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
-import { UserChip } from "../userChip";
+import { UserChip } from "../user/userChip";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { CMLink } from "../CMLink";
+import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "./WikiPageComponentsBase";
 
 export interface WikiPageListItemProps {
     index: number;

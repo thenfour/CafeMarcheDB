@@ -7,7 +7,7 @@ import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { WikiPageControl } from "src/core/components/WikiComponents";
+import { WikiPageControl } from "src/core/components/wiki/WikiComponents";
 import { getAuthenticatedCtx } from "src/core/db3/server/db3mutationCore";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
