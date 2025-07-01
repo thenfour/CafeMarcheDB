@@ -68,6 +68,15 @@
 
 .SetlistPlannerDocumentOverviewItem .name {
     font-weight: bold;
+    display: flex;
+    font-size: 18px;
+}
+
+.SetlistPlannerDocumentOverviewItem .name svg {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    opacity: 50%;
 }
 
 .SetlistPlannerDocumentEditorTabPanel {

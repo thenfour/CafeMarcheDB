@@ -345,7 +345,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group }: Setl
             onSelect(dbPlan);
         }}
     >
-        <div className="name">{dbPlan.name}</div>
+        <div className="name">{gIconMap.LibraryMusic()} {dbPlan.name}</div>
         <Markdown
             markdown={dbPlan.description}
         //compact
