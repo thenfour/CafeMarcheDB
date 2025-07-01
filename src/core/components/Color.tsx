@@ -77,9 +77,9 @@ export const GetStyleVariablesForColor = (args: GetStyleVariablesForColorArgs): 
 }
 
 export interface ColorSwatchProps {
-    color: ColorPaletteEntry | null;
+    color: ColorPaletteEntry | null | string;
     isSpacer?: boolean;
-    variation: ColorVariationSpec;
+    variation?: ColorVariationSpec;
     hoverVariation?: ColorVariationSpec;
     onDrop?: (e: ColorPaletteEntry) => void;
     size?: "normal" | "small";
@@ -90,6 +90,13 @@ export interface ColorSwatchProps {
 // props.color can never be null.
 export const ColorSwatch = ({ size = "normal", className, ...props }: ColorSwatchProps) => {
     const [hovering, setHovering] = React.useState<boolean>(false);
+
+    if (typeof props.color === 'string') {
+        props.color = gGeneralPaletteList.findEntry(props.color);
+    }
+    if (!props.variation) {
+        props.variation = StandardVariationSpec.Strong;
+    }
 
     const entry = !!props.color ? props.color : CreateNullPaletteEntry();
     const style = GetStyleVariablesForColor({
@@ -133,7 +140,7 @@ export const ColorSwatch = ({ size = "normal", className, ...props }: ColorSwatc
         onDragStart={onDragStart} // Event when drag starts
         onDragOver={props.onDrop && onDragOver} // Event when something is dragged over
         onDrop={props.onDrop && onDrop} // Event when something is dropped
-        className={`${props.variation.selected ? "selected" : ""} ${className} colorSwatchRoot interactable applyColor ${style.cssClass} ${props.isSpacer ? "spacer" : ""} size_${size}`}
+        className={`${props.variation.selected ? "selected" : ""} ${className} colorSwatchRoot ${props.onClick ? "interactable" : ""} applyColor ${style.cssClass} ${props.isSpacer ? "spacer" : ""} size_${size}`}
         style={style.style}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}

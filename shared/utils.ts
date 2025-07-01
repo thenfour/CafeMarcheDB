@@ -675,19 +675,20 @@ export async function passthroughWithoutTransaction<T>(fn: (transactionalDb: typ
 }
 
 
-export function groupBy<T, K extends string | number>(
+export function groupByMap<T, K>(
     array: T[],
     getKey: (item: T) => K
-): Record<K, T[]> {
+): Map<K, T[]> {
     return array.reduce((result, item) => {
         const key = getKey(item);
-        if (!result[key]) {
-            result[key] = [];
+        if (!result.has(key)) {
+            result.set(key, []);
         }
-        result[key].push(item);
+        result.get(key)!.push(item);
         return result;
-    }, {} as Record<K, T[]>);
+    }, new Map<K, T[]>());
 }
+
 
 
 /**

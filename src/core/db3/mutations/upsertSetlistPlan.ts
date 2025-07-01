@@ -30,7 +30,7 @@ export default resolver.pipe(
                 },
                 data: {
                     name: args.name,
-                    groupName: args.groupName || "",
+                    groupId: args.groupId || null,
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),
                     isDeleted: false,
@@ -41,7 +41,7 @@ export default resolver.pipe(
             newObj = await db.setlistPlan.create({
                 data: {
                     name: args.name,
-                    groupName: args.groupName || "",
+                    groupId: args.groupId || null,
                     createdByUserId: currentUser.id,
                     description: args.description,
                     payloadJson: JSON.stringify(args.payload),

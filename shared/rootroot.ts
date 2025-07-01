@@ -2,6 +2,8 @@
 
 export type SortDirection = "asc" | "desc";
 
+export type Nullish = null | undefined;
+
 export function OpposingSortDirection(x: SortDirection) {
     return x === "asc" ? "desc" : "asc";
 }

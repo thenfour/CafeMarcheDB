@@ -266,6 +266,7 @@ type DB3EditObjectDialogProps = {
     description?: React.ReactNode;
 };
 
+// TODO: is this the same thing as DB3EditRowButton? if so, merge them.
 export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
     const tableClient = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
@@ -302,6 +303,8 @@ export interface DB3EditRowButtonProps {
 };
 
 // like on the user profile, a "Edit" button which pops up a dialog to edit fields
+
+// TODO: is this the same thing as DB3EditObjectDialog? if so, merge them.
 export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
     const publicData = useAuthenticatedSession();

@@ -15,5 +15,6 @@ export * from "./shared/schema/wiki"
 export * from "./shared/schema/wikiPageTag"
 export * from "./shared/schema/menuLink"
 export * from "./shared/schema/workflow"
+export * from "./shared/schema/setlistPlan"
 
 

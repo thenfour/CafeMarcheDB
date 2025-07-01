@@ -1,3 +1,4 @@
+import { Nullish } from "@/shared/rootroot";
 import { Prisma } from "db";
 import { QuickSearchItemType } from "shared/quickFilter";
 import { z } from "zod";
@@ -94,7 +95,7 @@ export type SetlistPlanPayload = z.infer<typeof ZSetlistPlanPayload>;
 export const ZSetlistPlan = z.object({
     id: z.number(), // negative = new
     name: z.string(),
-    groupName: z.string().nullable().optional(),
+    groupId: z.number().nullable().optional(),
     description: z.string(),
     createdByUserId: z.number(),
     payload: ZSetlistPlanPayload,
@@ -104,13 +105,13 @@ export const ZSetlistPlan = z.object({
 export type SetlistPlan = z.infer<typeof ZSetlistPlan>;
 
 // doesn't serialize to db.
-export const CreateNewSetlistPlan = (id: number, name: string, groupName: string, createdByUserId: number): SetlistPlan => {
+export const CreateNewSetlistPlan = (id: number, name: string, groupId: number | Nullish, createdByUserId: number): SetlistPlan => {
     //if (!dashboardContext.currentUser) throw new Error("must be logged in to create a new setlist plan");
     return {
         id,
         createdByUserId,
         name,
-        groupName,
+        groupId,
         description: "",
         visiblePermissionId: null,
         payload: {
@@ -140,7 +141,7 @@ export const DeserializeSetlistPlan = (obj: Prisma.SetlistPlanGetPayload<{}>): S
         id: obj.id,
         name: obj.name,
         visiblePermissionId: obj.visiblePermissionId,
-        groupName: obj.groupName || "",
+        groupId: obj.groupId || null,
         payload,
     };
 }

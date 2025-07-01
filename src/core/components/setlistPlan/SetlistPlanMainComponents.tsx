@@ -15,15 +15,18 @@ import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
-import { useSongsContext } from "../song/SongsContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
+import * as db3 from "../../db3/db3";
+import * as DB3Client from "../../db3/DB3Client";
 import { ColorPick } from "../ColorPick";
-import { VisibilityControl } from "../VisibilityControl";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
+import { useSongsContext } from "../song/SongsContext";
+import { VisibilityControl } from "../VisibilityControl";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
+import { SetlistPlanGroupSelect } from "./SetlistPlanGroupComponents";
 import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlanLedComponents";
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
@@ -824,6 +827,7 @@ type SetlistPlannerDocumentEditorProps = {
     costCalcConfig: SetlistPlanCostPenalties;
     mutator: SetlistPlanMutator;
     colorScheme: SetlistPlannerColorScheme;
+    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>
     onSave: (doc: SetlistPlan) => void;
     onCancel: () => void;
     onDelete: () => void;
@@ -875,11 +879,14 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
         props.mutator.setName(newName);
     }, [props.mutator, docOrTempDoc.name]);
 
-    const handleGroupChange = React.useCallback((e: any, newGroup: string) => {
-        props.mutator.setGroupName(newGroup);
-    }, [props.mutator, docOrTempDoc.groupName]); const handleDescriptionChange = React.useCallback((newMarkdown: string) => {
+    // const handleGroupChange = (e: any, newGroupId: number | null) => {
+    //     props.mutator.setGroupId(newGroupId);
+    // };
+
+    const handleDescriptionChange = React.useCallback((newMarkdown: string) => {
         props.mutator.setDescription(newMarkdown);
     }, [props.mutator, docOrTempDoc.description]);    // Memoize segment change handlers
+
     const handleSegmentNameChange = React.useCallback((columnId: string) => (e: any, newName: string) => {
         props.mutator.setColumnName(columnId, newName);
     }, [props.mutator]);
@@ -954,20 +961,21 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
             <CMTab thisTabId="plan" summaryTitle={"plan"}>
                 <NameValuePair name="Name" value={
                     <CMTextInputBase
-                        //key={`plan-name-${docOrTempDoc.id}`}
                         className="name"
                         initialValue={docOrTempDoc.name}
                         onChange={handleNameChange}
                     />
                 } />
                 <NameValuePair name="Group" value={
-                    <CMTextInputBase
-                        //key={`plan-group-${docOrTempDoc.id}`}
-                        className="group"
-                        initialValue={docOrTempDoc.groupName}
-                        onChange={handleGroupChange}
+                    <SetlistPlanGroupSelect
+                        onChange={(group) => {
+                            props.mutator.setGroupId(group?.id || null);
+                        }}
+                        selectedGroupId={docOrTempDoc.groupId || null}
+                        tableClient={props.groupTableClient}
                     />
-                } />                <Markdown3Editor
+                } />
+                <Markdown3Editor
                     onChange={handleDescriptionChange}
                     initialValue={docOrTempDoc.description}
                     nominalHeight={75}
