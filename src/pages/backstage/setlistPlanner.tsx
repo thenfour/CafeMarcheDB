@@ -36,6 +36,7 @@ import * as DB3Client from "@/src/core/db3/DB3Client";
 import * as db3 from "@/src/core/db3/db3";
 import { GetStyleVariablesForColor } from "@/src/core/components/Color";
 import { StandardVariationSpec } from "@/shared/color";
+import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
@@ -332,10 +333,11 @@ balancing available rehearsal time against the time needed for each song.
 type SetlistPlannerDocumentOverviewProps = {
     groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>
     onSelect: (doc: SetlistPlan) => void;
+    expandedGroups: number[];
+    setExpandedGroups: (groups: number[]) => void;
 };
 
-const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewProps) => {
-    const [expandedGroups, setExpandedGroups] = React.useState<number[]>([]);
+const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, ...props }: SetlistPlannerDocumentOverviewProps) => {
 
     const dashboardContext = useDashboardContext();
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
@@ -380,8 +382,6 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
             if (plansInGroup.length === 0) return null; // Skip empty groups
             const expandedGroupsWithoutThisGroup = expandedGroups.filter(id => id !== group.id);
             return <Accordion
-                className={`applyColor ${coloring.cssClass}`}
-                style={coloring.style}
                 key={group.id}
                 expanded={isExpanded(group.id)}
                 onChange={() => setExpandedGroups(isExpanded(group.id) ? expandedGroupsWithoutThisGroup : [...expandedGroupsWithoutThisGroup, group.id])}
@@ -390,9 +390,18 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                     expandIcon={gIconMap.ExpandMore()}
                     className="SetlistPlannerDocumentOverviewGroupHeader"
                 >
-                    <span className="title">{group.name}</span>
-                    <span className="subtitle">{plansInGroup.length} plan(s)</span>
-                    <Markdown markdown={group.description} />
+                    <div
+                        className={`applyColor ${coloring.cssClass}`}
+                        style={{ height: 30, width: 30, borderRadius: "50%", ...coloring.style }}
+                    >
+                    </div>
+                    <div>
+                        <div>
+                            <span className="title">{group.name}</span>
+                            <span className="subtitle">{plansInGroup.length} plan(s)</span>
+                        </div>
+                        <Markdown markdown={group.description} />
+                    </div>
                 </AccordionSummary>
                 <div className="SetlistPlannerDocumentOverviewGroupItemList">
                     {plansInGroup.map((dbPlan) => {
@@ -422,7 +431,6 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                 </div>
             </Accordion>;
         })}
-        <SetlistPlanGroupList tableClient={props.groupTableClient} />
     </div>;
 };
 
@@ -432,7 +440,9 @@ const SetlistPlannerPageContent = () => {
     const snackbar = useSnackbar();
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
     const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
-    const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
+    const [selectedTab, setSelectedTab] = React.useState<string>("overview");
+    const [expandedGroups, setExpandedGroups] = React.useState<number[]>([]);
+    //const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
     //const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
     const recordFeature = useFeatureRecorder();
 
@@ -1176,80 +1186,93 @@ const SetlistPlannerPageContent = () => {
     }, [doc]);
 
     return <div className="SetlistPlannerPageContent">
-        {doc ? <SetlistPlannerDocumentEditor
-            initialValue={doc}
-            groupTableClient={groupTableClient}
-            canUndo={undoStack.length > 0}
-            canRedo={redoStack.length > 0}
-            tempValue={tempDoc}
-            costCalcConfig={costCalcConfig}
-            mutator={mutator}
-            colorScheme={colorScheme}
-            isModified={modified}
-            onSave={async (doc) => {
-                void recordFeature({
-                    feature: doc.id <= 0 ? ActivityFeature.setlist_plan_create : ActivityFeature.setlist_plan_save,
-                    setlistPlanId: doc.id <= 0 ? undefined : doc.id,
-                });
-                void snackbar.invokeAsync(async () => {
-                    const newDoc = await upsertSetlistPlanToken(doc);
-                    // because PKs change
-                    setDoc(newDoc);
-                    setModified(false);
-                },
-                    "Setlist plan saved",
-                    "Error saving setlist plan",
-                );
-            }}
-            onCancel={() => {
-                setModified(false);
-                setDoc(null);
-            }}
-            onDelete={async () => {
-                if (await confirm({ title: "Are you sure you want to delete this setlist plan?" })) {
-                    void recordFeature({
-                        feature: ActivityFeature.setlist_plan_delete,
-                        setlistPlanId: doc.id <= 0 ? undefined : doc.id,
-                    });
-                    void snackbar.invokeAsync(async () => {
-                        await deleteSetlistPlanToken({ id: doc.id });
+        <CMTabPanel selectedTabId={selectedTab} handleTabChange={(e, tabId) => setSelectedTab(tabId as string)} tablListStyle={{ width: "700px" }}>
+            <CMTab thisTabId={"overview"} summaryTitle="Overview">
+                <div>
+                    <Button onClick={() => {
+                        setModified(true);
+                        setDoc(CreateNewSetlistPlan(getUniqueNegativeID(), `Setlist plan ${nanoid(3)}`, null, dashboardContext.currentUser!.id));
+                        setSelectedTab("setlistPlannerTab");
+                    }}
+                        startIcon={gIconMap.Add()}
+                    >
+                        New setlist plan
+                    </Button>
+                    <SetlistPlannerDocumentOverview
+                        groupTableClient={groupTableClient}
+                        expandedGroups={expandedGroups}
+                        setExpandedGroups={setExpandedGroups}
+                        onSelect={(doc) => {
+                            setModified(false);
+                            setDoc(doc);
+                            setSelectedTab("setlistPlannerTab");
+                        }}
+                    />
+                </div>
+            </CMTab>
+
+
+            <CMTab thisTabId={"setlistPlannerTab"} summaryTitle="Setlist Planner" enabled={!!doc || selectedTab === "setlistPlannerTab"}>
+                {doc && <SetlistPlannerDocumentEditor
+                    initialValue={doc}
+                    groupTableClient={groupTableClient}
+                    canUndo={undoStack.length > 0}
+                    canRedo={redoStack.length > 0}
+                    tempValue={tempDoc}
+                    costCalcConfig={costCalcConfig}
+                    mutator={mutator}
+                    colorScheme={colorScheme}
+                    isModified={modified}
+                    onSave={async (doc) => {
+                        void recordFeature({
+                            feature: doc.id <= 0 ? ActivityFeature.setlist_plan_create : ActivityFeature.setlist_plan_save,
+                            setlistPlanId: doc.id <= 0 ? undefined : doc.id,
+                        });
+                        void snackbar.invokeAsync(async () => {
+                            const newDoc = await upsertSetlistPlanToken(doc);
+                            // because PKs change
+                            setDoc(newDoc);
+                            setModified(false);
+                        },
+                            "Setlist plan saved",
+                            "Error saving setlist plan",
+                        );
+                    }}
+                    onCancel={() => {
                         setModified(false);
                         setDoc(null);
-                    },
-                        "Setlist plan deleted",
-                        "Error deleting setlist plan",
-                    );
-                }
-            }}
-        /> : <div>
+                        setSelectedTab("overview");
+                    }}
+                    onDelete={async () => {
+                        if (await confirm({ title: "Are you sure you want to delete this setlist plan?" })) {
+                            void recordFeature({
+                                feature: ActivityFeature.setlist_plan_delete,
+                                setlistPlanId: doc.id <= 0 ? undefined : doc.id,
+                            });
+                            void snackbar.invokeAsync(async () => {
+                                await deleteSetlistPlanToken({ id: doc.id });
+                                setModified(false);
+                                setDoc(null);
+                                setSelectedTab("overview");
+                            },
+                                "Setlist plan deleted",
+                                "Error deleting setlist plan",
+                            );
+                        }
+                    }}
+                />}
+                {isTempDoc && <h1>SHOWING TEMP VALUES</h1>}
+            </CMTab>
+            <CMTab thisTabId={"groupsEditor"} summaryTitle="Groups">
+                <SetlistPlanGroupList tableClient={groupTableClient} />
+            </CMTab>
+            <CMTab thisTabId={"colorSchemeEditor"} summaryTitle="Color scheme editor">
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                    <SetlistPlannerColorSchemeEditor value={colorScheme} onChange={(newScheme) => setColorScheme(newScheme)} />
+                </div>
+            </CMTab>
 
-            <Button onClick={() => {
-                setModified(true);
-                setDoc(CreateNewSetlistPlan(getUniqueNegativeID(), `Setlist plan ${nanoid(3)}`, null, dashboardContext.currentUser!.id));
-            }}
-                startIcon={gIconMap.Add()}
-            >
-                New Plan
-            </Button>
-            <SetlistPlannerDocumentOverview
-                groupTableClient={groupTableClient}
-                onSelect={(doc) => {
-                    setModified(false);
-                    setDoc(doc);
-                }}
-            />
-        </div>
-        }
-
-        <div style={{ display: "flex", flexDirection: "column" }}>
-            <FormControlLabel control={<Switch checked={showColorSchemeEditor} onChange={(e) => setShowColorSchemeEditor(e.target.checked)} />} label="Edit Color Scheme" />
-            {showColorSchemeEditor &&
-                <SetlistPlannerColorSchemeEditor value={colorScheme} onChange={(newScheme) => setColorScheme(newScheme)} />
-            }
-
-            {isTempDoc && <h1>SHOWING TEMP VALUES</h1>}
-
-        </div>
+        </CMTabPanel>
 
         <Backdrop
             open={!!autocompleteProgressState}
@@ -1275,7 +1298,6 @@ const SetlistPlannerPage: BlitzPage = (props) => {
         <DashboardLayout title="Setlist Planner" basePermission={Permission.sysadmin}>
             <AppContextMarker name="Setlist plan page">
                 <SongsProvider>
-                    {/* <NumberThingTester /> */}
                     <SetlistPlannerPageContent />
                 </SongsProvider>
             </AppContextMarker>

@@ -43,6 +43,7 @@ interface CMTabPanelProps {
     style?: React.CSSProperties | undefined;
     children: CMTabPanelChild | CMTabPanelChild[];
     //setNewDefault?: (tabId: TTabID) => void;
+    tablListStyle?: React.CSSProperties | undefined;
 };
 
 export const CMTabPanel = (props: CMTabPanelProps) => {
@@ -69,7 +70,7 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
     }
     return <div className={`CMTabPanel ${props.className}`} style={props.style}>
         <div className="CMTabHeader">
-            <ul className="CMTabList">
+            <ul className="CMTabList" style={props.tablListStyle}>
                 {
                     enabledChildren.map(tab => <CMTabHeader key={tab.props.thisTabId} {...tab.props} onClick={e => handleTabHeaderClick(tab, e)} selected={selectedChild?.props.thisTabId === tab.props.thisTabId} />)
                 }
