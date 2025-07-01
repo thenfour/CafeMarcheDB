@@ -328,6 +328,30 @@ balancing available rehearsal time against the time needed for each song.
 // songs = rows
 // segments = columns
 
+interface SetlistPlannerDocumentOverviewItemProps {
+    dbPlan: SetlistPlan;
+    onSelect: (doc: SetlistPlan) => void;
+    className?: string;
+    group: db3.SetlistPlanGroupPayload | null;
+};
+
+const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group }: SetlistPlannerDocumentOverviewItemProps) => {
+    const coloring = GetStyleVariablesForColor({ color: group?.color, ...StandardVariationSpec.Strong });
+    return <div
+        key={dbPlan.id}
+        className={`SetlistPlannerDocumentOverviewItem ${className} ${coloring.cssClass}`}
+        style={{ borderLeft: "8px solid var(--color-background)", backgroundColor: "#f0f0f0", ...coloring.style }}
+        onClick={() => {
+            onSelect(dbPlan);
+        }}
+    >
+        <div className="name">{dbPlan.name}</div>
+        <Markdown
+            markdown={dbPlan.description}
+        //compact
+        />
+    </div>;
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerDocumentOverviewProps = {
@@ -352,21 +376,13 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, ...
     return <div className="SetlistPlannerDocumentOverviewList">
 
         {/* Display ungrouped plans at top level without accordion */}
-        {ungroupedPlans.map((dbPlan) => {
-            return <div
-                key={dbPlan.id}
-                className="SetlistPlannerDocumentOverviewItem standalone"
-                onClick={() => {
-                    props.onSelect(dbPlan);
-                }}
-            >
-                <div className="name">{dbPlan.name}</div>
-                <Markdown
-                    markdown={dbPlan.description}
-                //compact
-                />
-            </div>;
-        })}
+        {ungroupedPlans.map((dbPlan) => <SetlistPlannerOverviewItem
+            key={dbPlan.id}
+            dbPlan={dbPlan}
+            onSelect={props.onSelect}
+            group={null}
+            className="standalone" />
+        )}
 
         {/* Display grouped plans in accordions */}
         {props.groupTableClient.items.map((group) => {
@@ -404,21 +420,14 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, ...
                     </div>
                 </AccordionSummary>
                 <div className="SetlistPlannerDocumentOverviewGroupItemList">
-                    {plansInGroup.map((dbPlan) => {
-                        return <div
-                            key={dbPlan.id}
-                            className="SetlistPlannerDocumentOverviewItem"
-                            onClick={() => {
-                                props.onSelect(dbPlan);
-                            }}
-                        >
-                            <div className="name">{dbPlan.name}</div>
-                            <Markdown
-                                markdown={dbPlan.description}
-                                compact
-                            />
-                        </div>;
-                    })}
+                    {plansInGroup.map((dbPlan) => <SetlistPlannerOverviewItem
+                        key={dbPlan.id}
+                        dbPlan={dbPlan}
+                        group={group}
+                        onSelect={props.onSelect}
+                        className="grouped"
+                    />
+                    )}
                 </div>
                 <div className="actionButtons">
                     <Button
