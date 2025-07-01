@@ -57,6 +57,10 @@
     cursor: pointer;
 }
 
+.SetlistPlannerDocumentOverviewItem.standalone {
+    margin: 10px 0;
+}
+
 .SetlistPlannerDocumentOverviewItem:hover {
     border: 1px solid #000;
     background-color: #eee;

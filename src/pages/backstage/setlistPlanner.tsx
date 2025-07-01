@@ -331,7 +331,6 @@ type SetlistPlannerDocumentOverviewProps = {
 const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewProps) => {
     const [expandedGroup, setExpandedGroup] = React.useState<string | false>(false);
 
-
     const dashboardContext = useDashboardContext();
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
 
@@ -345,7 +344,7 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
         {ungroupedPlans.map((dbPlan) => {
             return <div
                 key={dbPlan.id}
-                className="SetlistPlannerDocumentOverviewItem"
+                className="SetlistPlannerDocumentOverviewItem standalone"
                 onClick={() => {
                     props.onSelect(dbPlan);
                 }}
@@ -353,7 +352,7 @@ const SetlistPlannerDocumentOverview = (props: SetlistPlannerDocumentOverviewPro
                 <div className="name">{dbPlan.name}</div>
                 <Markdown
                     markdown={dbPlan.description}
-                    compact
+                //compact
                 />
             </div>;
         })}
@@ -417,7 +416,7 @@ const SetlistPlannerPageContent = () => {
     // const [aStarConfig, setAStarConfig] = React.useState<AStarSearchConfig>(gDefaultAStarConfig);
 
     const confirm = useConfirm();
-    const allSongs = useSongsContext().songs;
+    //const allSongs = useSongsContext().songs;
 
     if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
     const [doc, setDoc] = React.useState<SetlistPlan | null>(null);
@@ -451,7 +450,7 @@ const SetlistPlannerPageContent = () => {
         setModified(setModifiedValue);
     };
 
-    const docOrTempDoc = tempDoc || doc;
+    //const docOrTempDoc = tempDoc || doc;
     const isTempDoc = !!tempDoc;
 
     const doAutoFill = async (autoFillProc: (progressHandler: (progressState: SetlistPlanSearchProgressState) => void) => Promise<SetlistPlanSearchProgressState>) => {
@@ -485,9 +484,6 @@ const SetlistPlannerPageContent = () => {
             };
 
             const result = await autoFillProc(progressHandler);
-
-            // const result = await SetlistPlanAutoFillSA(saConfig, cleanedDoc, costCalcConfig, allSongs, cancellationTrigger, (progressState) => {
-            // });
 
             const newDoc = result.bestState?.plan || result.currentState.plan;
             newDoc.payload.autoCompleteDurationSeconds = result.elapsedMillis / 1000;

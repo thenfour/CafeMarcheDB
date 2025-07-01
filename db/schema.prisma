@@ -217,8 +217,9 @@ model User {
   workflowNodeInstanceLastAssignees WorkflowInstanceNodeLastAssignee[]
   workflowLogItems                  WorkflowInstanceLogItem[]
 
-  setlistPlans    SetlistPlan[]
-  lockedWikiPages WikiPage[]
+  setlistPlans      SetlistPlan[]
+  setlistPlanGroups SetlistPlanGroup[]
+  lockedWikiPages   WikiPage[]
 
   actions Action[]
 
@@ -1382,11 +1383,29 @@ model WorkflowInstanceNodeAssignee {
   @@index([instanceNodeId])
 }
 
+model SetlistPlanGroup {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(768)
+  description String  @db.MediumText
+  color       String? @db.VarChar(768)
+  sortOrder   Int     @default(0)
+
+  createdByUserId Int
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+
+  setlistPlans SetlistPlan[]
+
+  @@index([name])
+}
+
 model SetlistPlan {
   id          Int    @id @default(autoincrement())
   name        String @db.VarChar(768)
   description String @db.MediumText
-  groupName   String @default("") @db.VarChar(768) // arbitrary text we can group setlists by.
+
+  groupId Int?
+  group   SetlistPlanGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   createdByUserId Int
   createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
