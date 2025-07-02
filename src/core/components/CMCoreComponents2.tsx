@@ -1,7 +1,7 @@
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, Menu, SvgIcon, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, Menu, SvgIcon, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
 import { useRouter } from "next/router";
@@ -162,15 +162,31 @@ export interface CMSmallButtonProps {
     variant?: "framed" | "default" | "technical";
     className?: string;
     style?: React.CSSProperties;
+    startIcon?: React.ReactNode;
+    tooltip?: React.ReactNode;
 };
 
 export const CMSmallButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMSmallButtonProps>) => {
+
+    let innerContent = <>
+        {props.startIcon}
+        {props.children}
+    </>;
+
+    if (props.tooltip) {
+        innerContent = <Tooltip title={props.tooltip} arrow>
+            <div>
+                {innerContent}
+            </div>
+        </Tooltip>;
+    }
+
     return <div
         style={props.style}
         className={`variant_${props.variant || "default"} interactable freeButton CMSmallButton ${props.className} ${enabled ? "enabled" : "disabled"}`}
         onClick={enabled ? (e) => { props.onClick && props.onClick(e) } : undefined}
     >
-        {props.children}
+        {innerContent}
     </div>;
 };
 

@@ -5,15 +5,20 @@
 // - break out setlist planner client utils into a lib
 
 import { StandardVariationSpec } from "@/shared/color";
+import { CMSmallButton } from "@/src/core/components/CMCoreComponents2";
 import { GetStyleVariablesForColor } from "@/src/core/components/Color";
+import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { CMSelectNullBehavior, CMSingleSelectDialog } from "@/src/core/components/select/CMSingleSelectDialog";
 import { SetlistPlanGroupClientColumns, SetlistPlanGroupList } from "@/src/core/components/setlistPlan/SetlistPlanGroupComponents";
 import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
+import { UserChip } from "@/src/core/components/user/userChip";
 import { API } from "@/src/core/db3/clientAPI";
 import * as db3 from "@/src/core/db3/db3";
 import * as DB3Client from "@/src/core/db3/DB3Client";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
+import { ListAlt } from "@mui/icons-material";
 import { Accordion, AccordionSummary, Backdrop, Button } from "@mui/material";
 import { assert } from "blitz";
 import { nanoid } from "nanoid";
@@ -40,6 +45,7 @@ import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { useLocalStorageState } from "src/core/components/useLocalStorageState";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
@@ -332,19 +338,29 @@ balancing available rehearsal time against the time needed for each song.
 // segments = columns
 
 interface SetlistPlannerDocumentOverviewItemProps {
+    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>;
     dbPlan: SetlistPlan;
     onSelect: (doc: SetlistPlan) => void;
     className?: string;
     group: db3.SetlistPlanGroupPayload | null;
+    refetch: () => void;
 };
 
-const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group }: SetlistPlannerDocumentOverviewItemProps) => {
+const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupTableClient, refetch }: SetlistPlannerDocumentOverviewItemProps) => {
+    const [showingGroupSelectDialog, setShowingGroupSelectDialog] = React.useState(false);
     const coloring = GetStyleVariablesForColor({ color: group?.color, ...StandardVariationSpec.Strong });
+    const snackbar = useSnackbar();
+    const confirm = useConfirm();
+
+    const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
+    const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
+
     return <div>
         <div
             key={dbPlan.id}
             className={`SetlistPlannerDocumentOverviewItem ${className} ${coloring.cssClass}`}
-            style={{ borderLeft: "8px solid var(--color-background)", backgroundColor: "#f0f0f0", ...coloring.style }}
+            //style={{ borderLeft: "8px solid var(--color-background)", backgroundColor: "#f0f0f0", ...coloring.style }}
+            style={{ backgroundColor: "#f0f0f0", ...coloring.style }}
         >
             <div>
                 <div className="dragHandle draggable" style={{
@@ -355,33 +371,88 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group }: Setl
                 </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <div
-                    className="name interactable"
+                <div className="name">
+                    {/* {gIconMap.LibraryMusic()} */}
+                    {dbPlan.name}
+                </div>
+                <div className="createdBy">
+                    {dbPlan.createdAt && (
+                        <div className="fieldItem">Created on <DateValue value={dbPlan.createdAt} /></div>
+                    )}
+                    {dbPlan.createdByUserId && (
+                        <div className="fieldItem">by <UserChip size="small" userId={dbPlan.createdByUserId} /></div>
+                    )}
+                </div>
+                <Markdown markdown={dbPlan.description} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <CMSmallButton
                     onClick={() => {
                         onSelect(dbPlan);
                     }}
                 >
-                    {gIconMap.LibraryMusic()} {dbPlan.name}
-                </div>
-                <Markdown
-                    markdown={dbPlan.description}
-                //compact
-                />
+                    {gIconMap.Edit()}
+                </CMSmallButton>
+                <CMSmallButton
+                    onClick={async () => {
+                        if (!await confirm({})) {
+                            return;
+                        }
+                        await snackbar.invokeAsync(async () => {
+                            await deleteSetlistPlanToken({ id: dbPlan.id });
+                            refetch();
+                        });
+                    }}
+                >
+                    {gIconMap.Delete()}
+                </CMSmallButton>
+                <CMSmallButton
+                    onClick={() => {
+                        setShowingGroupSelectDialog(true);
+                    }}
+                >
+                    <ListAlt />
+                </CMSmallButton>
+                {showingGroupSelectDialog && <CMSingleSelectDialog
+                    description="Select a group to move this plan into"
+                    title="Select Group"
+                    value={groupTableClient.items.find(g => g.id === dbPlan.groupId) || null}
+                    getOptions={() => groupTableClient.items}
+                    getOptionInfo={(group) => ({
+                        id: group!.id,
+                        color: group!.color,
+                    })}
+                    onCancel={() => setShowingGroupSelectDialog(false)}
+                    nullBehavior={CMSelectNullBehavior.AllowNull}
+                    renderOption={(group) => group?.name || "Ungrouped"}
+                    onOK={async (group) => {
+                        // move to new group.
+                        dbPlan.groupId = group?.id || null;
+                        await snackbar.invokeAsync(async () => {
+                            await upsertSetlistPlanToken(dbPlan);
+                            refetch();
+                            setShowingGroupSelectDialog(false);
+                        });
+
+                    }}
+                />}
             </div>
         </div>
-    </div>;
+    </div >;
 };
 
 
 interface SetlistPlanOverviewGroupProps {
+    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>;
     plansInGroup: SetlistPlan[];
     group: db3.SetlistPlanGroupPayload | null;
     onSelect: (doc: SetlistPlan) => void;
     className?: string;
     refetch: () => void;
 };
-const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, refetch }: SetlistPlanOverviewGroupProps) => {
+const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, refetch, groupTableClient }: SetlistPlanOverviewGroupProps) => {
     const snackbar = useSnackbar();
+    const dashboardContext = useDashboardContext();
     plansInGroup = toSorted(plansInGroup, (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
@@ -408,25 +479,40 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
         });
     };
 
-    return <div className="SetlistPlannerDocumentOverviewGroupItemList">
-        <ReactSmoothDndContainer
-            dragHandleSelector=".dragHandle"
-            lockAxis="y"
-            onDrop={onDrop}
-        >
-            {plansInGroup.map((dbPlan) => (
-                <ReactSmoothDndDraggable key={dbPlan.id}>
-                    <SetlistPlannerOverviewItem
-                        key={dbPlan.id}
-                        dbPlan={dbPlan}
-                        group={group}
-                        onSelect={onSelect}
-                        className={className}
-                    />
-                </ReactSmoothDndDraggable>
-            ))}
-        </ReactSmoothDndContainer>
-    </div>
+
+    return <>
+        <div className="actionButtons">
+            <CMSmallButton
+                onClick={() => {
+                    const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", group?.id || null,
+                        dashboardContext.currentUser!.id);
+                    onSelect(newDoc);
+                }}
+                startIcon={gIconMap.Add()}
+            >{group ? `New ${group.name}` : `New setlist plan`}</CMSmallButton>
+        </div>
+        <div className="SetlistPlannerDocumentOverviewGroupItemList">
+            <ReactSmoothDndContainer
+                dragHandleSelector=".dragHandle"
+                lockAxis="y"
+                onDrop={onDrop}
+            >
+                {plansInGroup.map((dbPlan) => (
+                    <ReactSmoothDndDraggable key={dbPlan.id}>
+                        <SetlistPlannerOverviewItem
+                            key={dbPlan.id}
+                            dbPlan={dbPlan}
+                            group={group}
+                            onSelect={onSelect}
+                            className={className}
+                            groupTableClient={groupTableClient}
+                            refetch={refetch}
+                        />
+                    </ReactSmoothDndDraggable>
+                ))}
+            </ReactSmoothDndContainer>
+        </div>
+    </>
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -460,36 +546,28 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, pla
             onSelect={props.onSelect}
             className="standalone"
             refetch={props.refetch}
+            groupTableClient={props.groupTableClient}
         />
 
         {/* Display grouped plans in accordions */}
         {
             props.groupTableClient.items.map((group) => {
-                //const groupId = grouping[0];
-                // const group = groupTableClient.items.find(x => x.id === groupId);
-                // if (!group) {
-                //     throw new Error(`Group with ID ${groupId} not found.`);
-                // }
-
                 const coloring = GetStyleVariablesForColor({ color: group.color, ...StandardVariationSpec.Strong });
 
                 const plansInGroup = groupedPlans.get(group.id) || [];
-                if (plansInGroup.length === 0) return null; // Skip empty groups
+                //if (plansInGroup.length === 0) return null; // Skip empty groups
                 const expandedGroupsWithoutThisGroup = expandedGroups.filter(id => id !== group.id);
                 return <Accordion
                     key={group.id}
                     expanded={isExpanded(group.id)}
                     onChange={() => setExpandedGroups(isExpanded(group.id) ? expandedGroupsWithoutThisGroup : [...expandedGroupsWithoutThisGroup, group.id])}
+                    className={`SetlistPlannerDocumentOverviewGroupAccordion ${coloring.cssClass}`}
+                    style={{ borderLeft: "8px solid var(--color-background)", ...coloring.style }}
                 >
                     <AccordionSummary
                         expandIcon={gIconMap.ExpandMore()}
-                        className="SetlistPlannerDocumentOverviewGroupHeader"
+                        className={`SetlistPlannerDocumentOverviewGroupHeader`}
                     >
-                        <div
-                            className={`applyColor ${coloring.cssClass}`}
-                            style={{ height: 30, width: 30, borderRadius: "50%", ...coloring.style }}
-                        >
-                        </div>
                         <div>
                             <div>
                                 <span className="title">{group.name}</span>
@@ -500,20 +578,12 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, pla
                     </AccordionSummary>
                     <SetlistPlanOverviewGroup
                         plansInGroup={plansInGroup}
+                        groupTableClient={props.groupTableClient}
                         group={group}
                         onSelect={props.onSelect}
                         className="grouped"
                         refetch={props.refetch}
                     />
-                    <div className="actionButtons">
-                        <Button
-                            onClick={() => {
-                                const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", group.id, dashboardContext.currentUser!.id);
-                                props.onSelect(newDoc);
-                            }}
-                            startIcon={gIconMap.Add()}
-                        >New "{group.name}"</Button>
-                    </div>
                 </Accordion>;
             })
         }
@@ -527,7 +597,10 @@ const SetlistPlannerPageContent = () => {
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
     const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
     const [selectedTab, setSelectedTab] = React.useState<string>("overview");
-    const [expandedGroups, setExpandedGroups] = React.useState<number[]>([]);
+    const [expandedGroups, setExpandedGroups] = useLocalStorageState({
+        key: 'setlist-planner-expanded-groups',
+        initialValue: [] as number[]
+    });
     //const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
     //const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
     const recordFeature = useFeatureRecorder();
@@ -1277,8 +1350,8 @@ const SetlistPlannerPageContent = () => {
     return <div className="SetlistPlannerPageContent">
         <CMTabPanel selectedTabId={selectedTab} handleTabChange={(e, tabId) => setSelectedTab(tabId as string)} tablListStyle={{ width: "700px" }}>
             <CMTab thisTabId={"overview"} summaryTitle="Overview">
-                <div>
-                    <Button onClick={() => {
+                {/* <div> */}
+                {/* <CMSmallButton onClick={() => {
                         setModified(true);
                         setDoc(CreateNewSetlistPlan(getUniqueNegativeID(), `Setlist plan ${nanoid(3)}`, null, dashboardContext.currentUser!.id));
                         setSelectedTab("setlistPlannerTab");
@@ -1286,23 +1359,23 @@ const SetlistPlannerPageContent = () => {
                         startIcon={gIconMap.Add()}
                     >
                         New setlist plan
-                    </Button>
-                    <SetlistPlannerDocumentOverview
-                        groupTableClient={groupTableClient}
-                        plans={plans}
-                        expandedGroups={expandedGroups}
-                        setExpandedGroups={setExpandedGroups}
-                        onSelect={(doc) => {
-                            setModified(false);
-                            setDoc(doc);
-                            setSelectedTab("setlistPlannerTab");
-                        }}
-                        refetch={() => {
-                            void groupTableClient.refetch();
-                            void refetch();
-                        }}
-                    />
-                </div>
+                    </CMSmallButton> */}
+                <SetlistPlannerDocumentOverview
+                    groupTableClient={groupTableClient}
+                    plans={plans}
+                    expandedGroups={expandedGroups}
+                    setExpandedGroups={setExpandedGroups}
+                    onSelect={(doc) => {
+                        setModified(false);
+                        setDoc(doc);
+                        setSelectedTab("setlistPlannerTab");
+                    }}
+                    refetch={() => {
+                        void groupTableClient.refetch();
+                        void refetch();
+                    }}
+                />
+                {/* </div> */}
             </CMTab>
 
 

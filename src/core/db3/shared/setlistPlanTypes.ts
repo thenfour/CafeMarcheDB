@@ -98,6 +98,7 @@ export const ZSetlistPlan = z.object({
     groupId: z.number().nullable().optional(),
     sortOrder: z.number().optional(),
     description: z.string(),
+    createdAt: z.date(),
     createdByUserId: z.number(),
     payload: ZSetlistPlanPayload,
     visiblePermissionId: z.number().nullable(),
@@ -111,6 +112,7 @@ export const CreateNewSetlistPlan = (id: number, name: string, groupId: number |
     return {
         id,
         createdByUserId,
+        createdAt: new Date(),
         name,
         groupId,
         description: "",
@@ -138,6 +140,7 @@ export const DeserializeSetlistPlan = (obj: Prisma.SetlistPlanGetPayload<{}>): S
     }
     return {
         createdByUserId: obj.createdByUserId,
+        createdAt: obj.createdAt,
         description: obj.description,
         id: obj.id,
         name: obj.name,

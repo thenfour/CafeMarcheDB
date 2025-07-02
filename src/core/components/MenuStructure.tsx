@@ -18,6 +18,7 @@ import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
+import { useLocalStorageSet } from "./useLocalStorageState";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { AppContextMarker } from "./AppContext";
 import { DashboardContext, DashboardContextData, useClientTelemetryEvent } from "./DashboardContext";
@@ -644,35 +645,17 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
         return null;
     }, [router.pathname, dashboardContext]);
 
-    const [expandedSections, setExpandedSections] = React.useState<Set<string>>(() => {
-        const initial = getInitialExpandedSections();
-        const currentSection = getCurrentPageSection();
-        if (currentSection) {
-            initial.add(currentSection);
-        }
-        
-        // Load from localStorage
-        try {
-            const saved = localStorage.getItem('menu-expanded-sections');
-            if (saved) {
-                const savedSections = JSON.parse(saved) as string[];
-                savedSections.forEach(section => initial.add(section));
-            }
-        } catch (e) {
-            console.warn('Failed to load menu state from localStorage', e);
-        }
-        
-        return initial;
-    });
-
-    // Save to localStorage whenever expanded sections change
-    React.useEffect(() => {
-        try {
-            localStorage.setItem('menu-expanded-sections', JSON.stringify([...expandedSections]));
-        } catch (e) {
-            console.warn('Failed to save menu state to localStorage', e);
-        }
-    }, [expandedSections]);
+    const [expandedSections, setExpandedSections] = useLocalStorageSet(
+        'menu-expanded-sections', getInitialExpandedSections
+        // () => {
+        //     const initial = getInitialExpandedSections();
+        //     const currentSection = getCurrentPageSection();
+        //     if (currentSection) {
+        //         initial.add(currentSection);
+        //     }
+        //     return initial;
+        // }
+    );
 
     // Update expanded sections when the route changes
     React.useEffect(() => {

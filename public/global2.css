@@ -373,7 +373,8 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     font-style: italic;
     /* text-decoration: underline; */
     /* border: 2px outset #fff; */
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     padding: 0px 6px;
 }
 
@@ -2948,4 +2949,12 @@ nav a:hover {
 
 .eventChip.Cancelled {
     text-decoration: line-through;
+}
+
+/* setlist plan list item ... perhaps more in the future ?*/
+.createdBy,
+.createdBy * {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
