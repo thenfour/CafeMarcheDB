@@ -4,7 +4,7 @@ import { Prisma } from "db";
 import React from 'react';
 import { ColorVariationSpec, gAppColors } from "shared/color";
 import { gPublicPermissions, Permission } from 'shared/permissions';
-import { partition, TableAccessor } from 'shared/rootroot';
+import { TableAccessor } from 'shared/rootroot';
 import { useThrottle } from 'shared/useGeneral';
 import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
@@ -17,6 +17,7 @@ import { useAppContext } from './AppContext';
 import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from './featureReports/activityTracking';
 import { z } from 'zod';
 import { getAntiCSRFToken } from "@blitzjs/auth";
+import { partition } from '@/shared/arrayUtils';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;

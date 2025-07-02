@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { calculateMatchStrengthAllKeywordsRequired, calculateMatchStrengthAnyKeyword, partition } from "./rootroot";
+import { calculateMatchStrengthAllKeywordsRequired, calculateMatchStrengthAnyKeyword } from "./rootroot";
 import { IsEntirelyIntegral, IsNullOrWhitespace } from "./utils";
+import { partition } from "./arrayUtils";
 
 // TODO: remove this in favor of better quick search stuff below.
 export function SplitQuickFilter(quickFilter: string): string[] {

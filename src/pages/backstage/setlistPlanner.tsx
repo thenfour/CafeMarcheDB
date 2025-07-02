@@ -1400,7 +1400,7 @@ const SetlistPlannerPageContent = () => {
                             // because PKs change
                             setDoc(newDoc);
                             setModified(false);
-                            refetch();
+                            void refetch();
                         },
                             "Setlist plan saved",
                             "Error saving setlist plan",
