@@ -562,14 +562,14 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, pla
                     expanded={isExpanded(group.id)}
                     onChange={() => setExpandedGroups(isExpanded(group.id) ? expandedGroupsWithoutThisGroup : [...expandedGroupsWithoutThisGroup, group.id])}
                     className={`SetlistPlannerDocumentOverviewGroupAccordion ${coloring.cssClass}`}
-                    style={{ borderLeft: "8px solid var(--color-background)", ...coloring.style }}
+                    style={{ border: "2px solid var(--color-background)", ...coloring.style }}
                 >
                     <AccordionSummary
                         expandIcon={gIconMap.ExpandMore()}
-                        className={`SetlistPlannerDocumentOverviewGroupHeader`}
+                        className={`SetlistPlannerDocumentOverviewGroupHeader applyColor`}
                     >
                         <div>
-                            <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span className="title">{group.name}</span>
                                 <span className="subtitle">{plansInGroup.length} plan(s)</span>
                             </div>

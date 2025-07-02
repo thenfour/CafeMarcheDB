@@ -31,23 +31,16 @@
     padding: 10px;
 }
 
-.SetlistPlannerDocumentOverviewGroupHeader .MuiAccordionSummary-content {
-    /* display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px; */
-}
-
 .SetlistPlannerDocumentOverviewGroupHeader .title {
     font-size: 16px;
     font-weight: bold;
     text-transform: uppercase;
-    color: var(--primary-color);
+    /* color: var(--primary-color); */
 }
 
 .SetlistPlannerDocumentOverviewGroupHeader .subtitle {
     font-size: 14px;
-    color: #888;
+    /* color: #888; */
 }
 
 .SetlistPlannerDocumentOverviewItem {
