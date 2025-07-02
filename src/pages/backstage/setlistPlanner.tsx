@@ -4,16 +4,26 @@
 // - break out all util components
 // - break out setlist planner client utils into a lib
 
+import { StandardVariationSpec } from "@/shared/color";
+import { GetStyleVariablesForColor } from "@/src/core/components/Color";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { SetlistPlanGroupClientColumns, SetlistPlanGroupList } from "@/src/core/components/setlistPlan/SetlistPlanGroupComponents";
+import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
+import { API } from "@/src/core/db3/clientAPI";
+import * as db3 from "@/src/core/db3/db3";
+import * as DB3Client from "@/src/core/db3/DB3Client";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Accordion, AccordionSummary, Backdrop, Button, FormControlLabel, Switch } from "@mui/material";
+import { Accordion, AccordionSummary, Backdrop, Button } from "@mui/material";
+import { assert } from "blitz";
 import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { moveItemInArray } from "shared/arrayUtils";
+import { groupByMap, moveItemInArray, partition, toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { getUniqueNegativeID, groupByMap, IsNullOrWhitespace } from "shared/utils";
+import { getUniqueNegativeID } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
+import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
 import { PortableSongList } from "src/core/components/EventSongListComponents";
@@ -23,20 +33,13 @@ import { SetlistPlannerDocumentEditor } from "src/core/components/setlistPlan/Se
 import { SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanSearchProgressState } from "src/core/components/setlistPlan/SetlistPlanUtilities";
 import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { SongsProvider, useSongsContext } from "src/core/components/song/SongsContext";
+import { SongsProvider } from "src/core/components/song/SongsContext";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { SetlistPlanGroupClientColumns, SetlistPlanGroupList } from "@/src/core/components/setlistPlan/SetlistPlanGroupComponents";
-import * as DB3Client from "@/src/core/db3/DB3Client";
-import * as db3 from "@/src/core/db3/db3";
-import { GetStyleVariablesForColor } from "@/src/core/components/Color";
-import { StandardVariationSpec } from "@/shared/color";
-import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
@@ -337,110 +340,184 @@ interface SetlistPlannerDocumentOverviewItemProps {
 
 const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group }: SetlistPlannerDocumentOverviewItemProps) => {
     const coloring = GetStyleVariablesForColor({ color: group?.color, ...StandardVariationSpec.Strong });
-    return <div
-        key={dbPlan.id}
-        className={`SetlistPlannerDocumentOverviewItem ${className} ${coloring.cssClass}`}
-        style={{ borderLeft: "8px solid var(--color-background)", backgroundColor: "#f0f0f0", ...coloring.style }}
-        onClick={() => {
-            onSelect(dbPlan);
-        }}
-    >
-        <div className="name">{gIconMap.LibraryMusic()} {dbPlan.name}</div>
-        <Markdown
-            markdown={dbPlan.description}
-        //compact
-        />
+    return <div>
+        <div
+            key={dbPlan.id}
+            className={`SetlistPlannerDocumentOverviewItem ${className} ${coloring.cssClass}`}
+            style={{ borderLeft: "8px solid var(--color-background)", backgroundColor: "#f0f0f0", ...coloring.style }}
+        >
+            <div>
+                <div className="dragHandle draggable" style={{
+                    fontSize: "20px",
+                    padding: "10px",
+                }}>
+                    ☰
+                </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
+                <div
+                    className="name interactable"
+                    onClick={() => {
+                        onSelect(dbPlan);
+                    }}
+                >
+                    {gIconMap.LibraryMusic()} {dbPlan.name}
+                </div>
+                <Markdown
+                    markdown={dbPlan.description}
+                //compact
+                />
+            </div>
+        </div>
     </div>;
+};
+
+
+interface SetlistPlanOverviewGroupProps {
+    plansInGroup: SetlistPlan[];
+    group: db3.SetlistPlanGroupPayload | null;
+    onSelect: (doc: SetlistPlan) => void;
+    className?: string;
+    refetch: () => void;
+};
+const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, refetch }: SetlistPlanOverviewGroupProps) => {
+    const snackbar = useSnackbar();
+    plansInGroup = toSorted(plansInGroup, (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+    const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+
+    const onDrop = async (args: ReactSmoothDnd.DropResult) => {
+        // removedIndex is the previous index; the original item to be moved
+        // addedIndex is the new index where it should be moved to.
+        if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+        if (args.addedIndex === args.removedIndex) return; // nothing to do
+        const movingItem = plansInGroup[args.removedIndex];
+        const newPositionItem = plansInGroup[args.addedIndex];
+        assert(!!movingItem && !!newPositionItem, "moving item not found?");
+
+        await snackbar.invokeAsync(async () => {
+            await updateSortOrderMutation.invoke({
+                tableID: db3.xSetlistPlan.tableID,
+                tableName: db3.xSetlistPlan.tableName,
+                movingItemId: movingItem.id,
+                newPositionItemId: newPositionItem.id,
+                groupByColumn: "groupId",
+                groupValue: group?.id,
+            });
+            refetch();
+        });
+    };
+
+    return <div className="SetlistPlannerDocumentOverviewGroupItemList">
+        <ReactSmoothDndContainer
+            dragHandleSelector=".dragHandle"
+            lockAxis="y"
+            onDrop={onDrop}
+        >
+            {plansInGroup.map((dbPlan) => (
+                <ReactSmoothDndDraggable key={dbPlan.id}>
+                    <SetlistPlannerOverviewItem
+                        key={dbPlan.id}
+                        dbPlan={dbPlan}
+                        group={group}
+                        onSelect={onSelect}
+                        className={className}
+                    />
+                </ReactSmoothDndDraggable>
+            ))}
+        </ReactSmoothDndContainer>
+    </div>
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerDocumentOverviewProps = {
-    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>
+    groupTableClient: DB3Client.xTableRenderClient<db3.SetlistPlanGroupPayload>;
+    plans: SetlistPlan[];
     onSelect: (doc: SetlistPlan) => void;
     expandedGroups: number[];
     setExpandedGroups: (groups: number[]) => void;
+    refetch: () => void;
 };
 
-const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, ...props }: SetlistPlannerDocumentOverviewProps) => {
-
+const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, plans, ...props }: SetlistPlannerDocumentOverviewProps) => {
     const dashboardContext = useDashboardContext();
-    if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
 
-    const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.id });    // separate ungrouped from grouped plans
-    const ungroupedPlans = plans.filter(plan => !plan.groupId);
-    const plansWithoutgroup = plans.filter(plan => !!plan.groupId);
-    const groupedPlans = groupByMap(plansWithoutgroup, (x) => x.groupId!);
+    let [plansWithgroup, ungroupedPlans] = partition(plans, (plan) => !!plan.groupId);
+
+    // ungroupedPlans = toSorted(ungroupedPlans, (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+    //const ungroupedPlans = toSorted(plans.filter(plan => !plan.groupId), (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    //const plansWithgroup = plans.filter(plan => !!plan.groupId);
+    const groupedPlans = groupByMap(plansWithgroup, (x) => x.groupId!);
 
     const isExpanded = (groupId: number) => expandedGroups.includes(groupId);
 
     return <div className="SetlistPlannerDocumentOverviewList">
-
         {/* Display ungrouped plans at top level without accordion */}
-        {ungroupedPlans.map((dbPlan) => <SetlistPlannerOverviewItem
-            key={dbPlan.id}
-            dbPlan={dbPlan}
-            onSelect={props.onSelect}
+        <SetlistPlanOverviewGroup
+            plansInGroup={ungroupedPlans}
             group={null}
-            className="standalone" />
-        )}
+            onSelect={props.onSelect}
+            className="standalone"
+            refetch={props.refetch}
+        />
 
         {/* Display grouped plans in accordions */}
-        {props.groupTableClient.items.map((group) => {
-            //const groupId = grouping[0];
-            // const group = groupTableClient.items.find(x => x.id === groupId);
-            // if (!group) {
-            //     throw new Error(`Group with ID ${groupId} not found.`);
-            // }
+        {
+            props.groupTableClient.items.map((group) => {
+                //const groupId = grouping[0];
+                // const group = groupTableClient.items.find(x => x.id === groupId);
+                // if (!group) {
+                //     throw new Error(`Group with ID ${groupId} not found.`);
+                // }
 
-            const coloring = GetStyleVariablesForColor({ color: group.color, ...StandardVariationSpec.Strong });
+                const coloring = GetStyleVariablesForColor({ color: group.color, ...StandardVariationSpec.Strong });
 
-            const plansInGroup = groupedPlans.get(group.id) || [];
-            if (plansInGroup.length === 0) return null; // Skip empty groups
-            const expandedGroupsWithoutThisGroup = expandedGroups.filter(id => id !== group.id);
-            return <Accordion
-                key={group.id}
-                expanded={isExpanded(group.id)}
-                onChange={() => setExpandedGroups(isExpanded(group.id) ? expandedGroupsWithoutThisGroup : [...expandedGroupsWithoutThisGroup, group.id])}
-            >
-                <AccordionSummary
-                    expandIcon={gIconMap.ExpandMore()}
-                    className="SetlistPlannerDocumentOverviewGroupHeader"
+                const plansInGroup = groupedPlans.get(group.id) || [];
+                if (plansInGroup.length === 0) return null; // Skip empty groups
+                const expandedGroupsWithoutThisGroup = expandedGroups.filter(id => id !== group.id);
+                return <Accordion
+                    key={group.id}
+                    expanded={isExpanded(group.id)}
+                    onChange={() => setExpandedGroups(isExpanded(group.id) ? expandedGroupsWithoutThisGroup : [...expandedGroupsWithoutThisGroup, group.id])}
                 >
-                    <div
-                        className={`applyColor ${coloring.cssClass}`}
-                        style={{ height: 30, width: 30, borderRadius: "50%", ...coloring.style }}
+                    <AccordionSummary
+                        expandIcon={gIconMap.ExpandMore()}
+                        className="SetlistPlannerDocumentOverviewGroupHeader"
                     >
-                    </div>
-                    <div>
-                        <div>
-                            <span className="title">{group.name}</span>
-                            <span className="subtitle">{plansInGroup.length} plan(s)</span>
+                        <div
+                            className={`applyColor ${coloring.cssClass}`}
+                            style={{ height: 30, width: 30, borderRadius: "50%", ...coloring.style }}
+                        >
                         </div>
-                        <Markdown markdown={group.description} />
-                    </div>
-                </AccordionSummary>
-                <div className="SetlistPlannerDocumentOverviewGroupItemList">
-                    {plansInGroup.map((dbPlan) => <SetlistPlannerOverviewItem
-                        key={dbPlan.id}
-                        dbPlan={dbPlan}
+                        <div>
+                            <div>
+                                <span className="title">{group.name}</span>
+                                <span className="subtitle">{plansInGroup.length} plan(s)</span>
+                            </div>
+                            <Markdown markdown={group.description} />
+                        </div>
+                    </AccordionSummary>
+                    <SetlistPlanOverviewGroup
+                        plansInGroup={plansInGroup}
                         group={group}
                         onSelect={props.onSelect}
                         className="grouped"
+                        refetch={props.refetch}
                     />
-                    )}
-                </div>
-                <div className="actionButtons">
-                    <Button
-                        onClick={() => {
-                            const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", group.id, dashboardContext.currentUser!.id);
-                            props.onSelect(newDoc);
-                        }}
-                        startIcon={gIconMap.Add()}
-                    >New "{group.name}"</Button>
-                </div>
-            </Accordion>;
-        })}
-    </div>;
+                    <div className="actionButtons">
+                        <Button
+                            onClick={() => {
+                                const newDoc = CreateNewSetlistPlan(getUniqueNegativeID(), "New Setlist Plan", group.id, dashboardContext.currentUser!.id);
+                                props.onSelect(newDoc);
+                            }}
+                            startIcon={gIconMap.Add()}
+                        >New "{group.name}"</Button>
+                    </div>
+                </Accordion>;
+            })
+        }
+    </div >;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -454,6 +531,10 @@ const SetlistPlannerPageContent = () => {
     //const [showColorSchemeEditor, setShowColorSchemeEditor] = React.useState(false);
     //const [showAutocompleteConfig, setShowAutocompleteConfig] = React.useState(false);
     const recordFeature = useFeatureRecorder();
+
+    if (!dashboardContext.currentUser) return <div>you must be logged in to use this feature</div>;
+
+    const [plans, { refetch }] = useQuery(getSetlistPlans, { userId: dashboardContext.currentUser.id });
 
     const [autocompleteProgressState, setAutocompleteProgressState] = React.useState<SetlistPlanSearchProgressState>();
     const cancellationTrigger = React.useRef<boolean>(false);
@@ -476,7 +557,6 @@ const SetlistPlannerPageContent = () => {
     const [colorScheme, setColorScheme] = React.useState<SetlistPlannerColorScheme>(gSetlistPlannerDefaultColorScheme);
 
     const [neighbors, setNeighbors] = React.useState<SetlistPlan[]>([]);
-
 
     const groupTableClient = DB3Client.useTableRenderContext<db3.SetlistPlanGroupPayload>({
         clientIntention: dashboardContext.userClientIntention,
@@ -1209,12 +1289,17 @@ const SetlistPlannerPageContent = () => {
                     </Button>
                     <SetlistPlannerDocumentOverview
                         groupTableClient={groupTableClient}
+                        plans={plans}
                         expandedGroups={expandedGroups}
                         setExpandedGroups={setExpandedGroups}
                         onSelect={(doc) => {
                             setModified(false);
                             setDoc(doc);
                             setSelectedTab("setlistPlannerTab");
+                        }}
+                        refetch={() => {
+                            void groupTableClient.refetch();
+                            void refetch();
                         }}
                     />
                 </div>
@@ -1242,6 +1327,7 @@ const SetlistPlannerPageContent = () => {
                             // because PKs change
                             setDoc(newDoc);
                             setModified(false);
+                            refetch();
                         },
                             "Setlist plan saved",
                             "Error saving setlist plan",

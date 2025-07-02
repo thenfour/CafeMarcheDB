@@ -96,6 +96,7 @@ export const ZSetlistPlan = z.object({
     id: z.number(), // negative = new
     name: z.string(),
     groupId: z.number().nullable().optional(),
+    sortOrder: z.number().optional(),
     description: z.string(),
     createdByUserId: z.number(),
     payload: ZSetlistPlanPayload,
@@ -140,6 +141,7 @@ export const DeserializeSetlistPlan = (obj: Prisma.SetlistPlanGetPayload<{}>): S
         description: obj.description,
         id: obj.id,
         name: obj.name,
+        sortOrder: obj.sortOrder,
         visiblePermissionId: obj.visiblePermissionId,
         groupId: obj.groupId || null,
         payload,

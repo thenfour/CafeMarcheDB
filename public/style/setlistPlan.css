@@ -53,13 +53,14 @@
 .SetlistPlannerDocumentOverviewItem {
     border: 1px solid #ddd;
     /* margin: 10px 0; */
-    padding: 4px 10px;
-    cursor: pointer;
+    padding: 3px 10px;
+    margin: 3px 0;
+    /* cursor: pointer; */
+    display: flex;
+    align-items: center;
 }
 
-.SetlistPlannerDocumentOverviewItem.standalone {
-    margin: 10px 0;
-}
+.SetlistPlannerDocumentOverviewItem.standalone {}
 
 .SetlistPlannerDocumentOverviewItem:hover {
     border: 1px solid #000;

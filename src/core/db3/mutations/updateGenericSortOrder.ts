@@ -4,35 +4,46 @@ import { AuthenticatedCtx, assert } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
-import { TupdateGenericSortOrderArgs } from "../shared/apiTypes";
+import { TupdateGenericSortOrderArgs, ZupdateGenericSortOrderArgs } from "../shared/apiTypes";
 import { moveItemInArray } from "shared/arrayUtils";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
+// todo: find a better algorithm. for potentially large tables,
+// this is not efficient. instead consider keeping gaps between items giving room
+// to move single items without updating neighbors.
+
 // ASSUMES that the table's sort order column is called "sortOrder"
-// ASSUMES that the table is not that big; we will update ALL sort orders here.
+// ASSUMES that the table is not that big; we will update many sort orders here.
 export default resolver.pipe(
     resolver.authorize(Permission.login),
+    resolver.zod(ZupdateGenericSortOrderArgs),
     async (args: TupdateGenericSortOrderArgs, ctx: AuthenticatedCtx) => {
-
-        // TODO
-        //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)
-        //const currentUser = await mutationCore.getCurrentUserCore(ctx);
 
         if (args.movingItemId === args.newPositionItemId) {
             //moving an item to the same place 
             return args;
         }
 
-        // const clientIntention: db3.xTableClientUsageContext = {
-        //     intention: "user",
-        //     mode: "primary",
-        //     currentUser,
-        // };
-
         const table = db3.GetTableById(args.tableID);
         const dbTableClient = db[table.tableName] as typeof db.frontpageGalleryItem; // the prisma interface. for convenience of intellisense cast to something known.
 
+        // check permissions of sort order column.
+        const sortOrderColumn = table.SqlSpecialColumns.sortOrder;
+        if (!sortOrderColumn) {
+            throw new Error(`table ${table.tableName} does not have a sort order column`);
+        }
+
+        // column.authorize ...
+        //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)
+        //const currentUser = await mutationCore.getCurrentUserCore(ctx);
+
+        let whereClause: any = {};
+        if (args.groupByColumn && args.groupValue !== undefined) {
+            whereClause[args.groupByColumn] = args.groupValue;
+        }
+
         const items = await dbTableClient.findMany({
+            where: whereClause,
             select: {
                 id: true,
                 sortOrder: true,
@@ -63,9 +74,9 @@ export default resolver.pipe(
             if (item.sortOrder === i) continue;
             oldValues.push({ id: item.id, sortOrder: item.sortOrder });
             newValues.push({ id: item.id, sortOrder: i });
-            item.sortOrder = i;
+
             await dbTableClient.update({
-                data: { sortOrder: item.sortOrder },
+                data: { sortOrder: i },
                 where: { id: item.id },
             });
         }

@@ -1403,6 +1403,7 @@ model SetlistPlan {
   id          Int    @id @default(autoincrement())
   name        String @db.VarChar(768)
   description String @db.MediumText
+  sortOrder   Int    @default(0)
 
   groupId Int?
   group   SetlistPlanGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)

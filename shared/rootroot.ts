@@ -2,11 +2,11 @@
 
 export type SortDirection = "asc" | "desc";
 
-export type Nullish = null | undefined;
-
 export function OpposingSortDirection(x: SortDirection) {
     return x === "asc" ? "desc" : "asc";
 }
+
+export type Nullish = null | undefined;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // https://gist.github.com/codeguy/6684588
@@ -158,26 +158,6 @@ export declare const exactType: <T, U>(
 ) => IfEquals<T, U>
 
 export const AssertEqualTypes = <T, U>() => (true as IfEquals<T, U>);
-
-// like filter() but
-// returns both matching & nonmatching items.
-export function partition<TRow>(
-    array: TRow[],
-    predicate: (row: TRow) => boolean
-): [TRow[], TRow[]] {
-    const matching: TRow[] = [];
-    const notMatching: TRow[] = [];
-
-    for (const item of array) {
-        if (predicate(item)) {
-            matching.push(item);
-        } else {
-            notMatching.push(item);
-        }
-    }
-
-    return [matching, notMatching];
-}
 
 export function calculateMatchStrength(text: string, keyword: string): number {
     // Return 0 for empty or whitespace-only keywords.

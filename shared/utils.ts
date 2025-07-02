@@ -675,22 +675,6 @@ export async function passthroughWithoutTransaction<T>(fn: (transactionalDb: typ
 }
 
 
-export function groupByMap<T, K>(
-    array: T[],
-    getKey: (item: T) => K
-): Map<K, T[]> {
-    return array.reduce((result, item) => {
-        const key = getKey(item);
-        if (!result.has(key)) {
-            result.set(key, []);
-        }
-        result.get(key)!.push(item);
-        return result;
-    }, new Map<K, T[]>());
-}
-
-
-
 /**
  * isInternalUrl
  * -------------

@@ -158,3 +158,40 @@ export function assertIsStringArray(value: any): asserts value is string[] {
         throw new Error('Value is not a string array');
     }
 }
+
+
+export function groupByMap<T, K>(
+    array: T[],
+    getKey: (item: T) => K
+): Map<K, T[]> {
+    return array.reduce((result, item) => {
+        const key = getKey(item);
+        if (!result.has(key)) {
+            result.set(key, []);
+        }
+        result.get(key)!.push(item);
+        return result;
+    }, new Map<K, T[]>());
+}
+
+
+
+// like filter() but
+// returns both matching & nonmatching items.
+export function partition<TRow>(
+    array: TRow[],
+    predicate: (row: TRow) => boolean
+): [TRow[], TRow[]] {
+    const matching: TRow[] = [];
+    const notMatching: TRow[] = [];
+
+    for (const item of array) {
+        if (predicate(item)) {
+            matching.push(item);
+        } else {
+            notMatching.push(item);
+        }
+    }
+
+    return [matching, notMatching];
+}

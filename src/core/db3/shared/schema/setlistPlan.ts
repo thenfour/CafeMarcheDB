@@ -2,10 +2,10 @@
 import { gGeneralPaletteList } from "@/shared/color";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { MakeColorField, MakeCreatedAtField, MakePKfield, MakeSortOrderField } from "../db3basicFields";
+import { GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSortOrderField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../genericStringField";
-import { MakeCreatedByField } from "./user";
+import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.setlist_planner_access,
@@ -37,8 +37,6 @@ export const SetlistPlanGroupNaturalOrderBy: Prisma.SetlistPlanGroupOrderByWithR
     { createdAt: 'desc' },
     { id: 'asc' },
 ];
-
-
 
 // model SetlistPlanGroup {
 //   id          Int     @id @default(autoincrement())
@@ -79,6 +77,51 @@ export const xSetlistPlanGroup = new db3.xTable({
         MakeSortOrderField({ authMap: xAuthMap, }),
         MakeCreatedAtField({}),
         MakeCreatedByField(),
+    ]
+});
+
+
+
+const SetlistPlanArgs = Prisma.validator<Prisma.SetlistPlanDefaultArgs>()({
+    include: {
+    }
+});
+
+export type SetlistPlanPayload = Prisma.SetlistPlanGetPayload<typeof SetlistPlanArgs>;
+
+export const SetlistPlanNaturalOrderBy: Prisma.SetlistPlanOrderByWithRelationInput[] = [
+    { sortOrder: 'asc' },
+    { name: 'asc' },
+    { createdAt: 'desc' },
+    { id: 'asc' },
+];
+
+////////////////////////////////////////////////////////////////
+export const xSetlistPlan = new db3.xTable({
+    getInclude: (clientIntention): Prisma.SetlistPlanInclude => {
+        return {};
+    },
+    tableName: "SetlistPlan",
+    naturalOrderBy: SetlistPlanNaturalOrderBy,
+    getRowInfo: (row: SetlistPlanPayload) => ({
+        pk: row.id,
+        name: row.name,
+        description: row.description,
+        ownerUserId: row.createdByUserId,
+    }),
+    tableAuthMap: xTableAuthMap,
+    columns: [
+        MakePKfield(),
+        MakeTitleField("name", { authMap: xAuthMap, }),
+        MakeDescriptionField({ authMap: xAuthMap, }),
+        MakeSortOrderField({ authMap: xAuthMap, }),
+        MakeIsDeletedField({ authMap: xAuthMap, }),
+        MakeCreatedAtField({}),
+        MakeCreatedByField(),
+        MakeVisiblePermissionField({ authMap: xAuthMap }),
+
+        new GhostField({ memberName: "groupId", authMap: xAuthMap }),
+        new GhostField({ memberName: "payloadJson", authMap: xAuthMap }),
     ]
 });
 

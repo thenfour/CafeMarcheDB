@@ -358,13 +358,16 @@ export const getFileCustomData = (f: Prisma.FileGetPayload<{}>): FileCustomData 
     });
 };
 
-export interface TupdateGenericSortOrderArgs {
-    tableID: string;
-    tableName: string;
-    movingItemId: number; // pk of the item being moved
-    newPositionItemId: number; // pk of the item this should replace.
-};
+export const ZupdateGenericSortOrderArgs = z.object({
+    tableID: z.string(),
+    tableName: z.string(),
+    movingItemId: z.number(), // pk of the item being moved
+    newPositionItemId: z.number(), // pk of the item this should replace.
+    groupByColumn: z.string().optional(),  // e.g., "setlistId", "categoryId", etc.
+    groupValue: z.any().optional(),
+});
 
+export type TupdateGenericSortOrderArgs = z.infer<typeof ZupdateGenericSortOrderArgs>;
 
 export interface UploadResponsePayload {
     files: Prisma.FileGetPayload<{}>[];
