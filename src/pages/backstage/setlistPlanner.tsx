@@ -491,7 +491,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
                 startIcon={gIconMap.Add()}
             >{group ? `New ${group.name}` : `New setlist plan`}</CMSmallButton>
         </div>
-        <div className="SetlistPlannerDocumentOverviewGroupItemList">
+        {plansInGroup.length > 0 && <div className="SetlistPlannerDocumentOverviewGroupItemList">
             <ReactSmoothDndContainer
                 dragHandleSelector=".dragHandle"
                 lockAxis="y"
@@ -511,7 +511,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
                     </ReactSmoothDndDraggable>
                 ))}
             </ReactSmoothDndContainer>
-        </div>
+        </div>}
     </>
 };
 
