@@ -1754,7 +1754,18 @@ export class CreatedAtField extends FieldBase<Date> {
     }
 
     SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
-    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
+        return {
+            join: [],
+            select: [
+                {
+                    alias: api.getColumnAlias(),
+                    expression: `${api.primaryTableAlias}.${this.member}`,
+                    direction: api.sortModel.direction,
+                }
+            ],
+        };
+    };
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
     SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
 };

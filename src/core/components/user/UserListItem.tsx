@@ -6,6 +6,7 @@ import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AdminInspectObject, GoogleIconSmall } from "../CMCoreComponents2";
 import { CMLink } from "../CMLink";
 import { UsersFilterSpec } from "./UserComponents";
+import { DateValue } from "../DateTime/DateTimeComponents";
 
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 
@@ -71,6 +72,10 @@ export const UserListItem = (props: UserListItemProps) => {
                     getTooltip={(_) => tag.instrument.description}
                 />)}
             </CMChipContainer>
+
+            <div className="lengthBpmLine row">
+                <DateValue value={props.user.createdAt} format={(dateStr) => `Created at ${dateStr}`} style={{ opacity: .5 }} />
+            </div>
 
         </div>
     </div>;

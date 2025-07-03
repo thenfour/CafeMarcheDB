@@ -43,6 +43,7 @@ export enum UserDetailTabSlug {
 export enum UserOrderByColumnOptions {
     id = "id",
     name = "name",
+    createdAt = "createdAt",
 };
 
 export type UserOrderByColumnOption = keyof typeof UserOrderByColumnOptions;
