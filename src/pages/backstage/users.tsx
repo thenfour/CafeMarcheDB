@@ -57,6 +57,21 @@ const gStaticFilters: UsersFilterSpecStatic[] = [
         roleFilterOptions: [],
         roleFilterEnabled: false,
     },
+    {
+        label: "New",
+        helpText: "Searching new users",
+        orderByColumn: UserOrderByColumnOptions.createdAt,
+        orderByDirection: "desc",
+        tagFilterBehavior: DiscreteCriterionFilterType.hasNone,
+        tagFilterOptions: [],
+        tagFilterEnabled: true,
+        instrumentFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+        instrumentFilterOptions: [],
+        instrumentFilterEnabled: false,
+        roleFilterBehavior: DiscreteCriterionFilterType.hasAny,
+        roleFilterOptions: [],
+        roleFilterEnabled: false,
+    },
 ];
 
 const gDefaultStaticFilterName = "All" as const;
