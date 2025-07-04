@@ -9,6 +9,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import { Knob } from "./Knob";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { ActivityFeature } from "./featureReports/activityTracking";
+import { useLocalStorageState } from "./useLocalStorageState";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;
@@ -427,7 +428,10 @@ type TempoPreset = [bpm: number, caption: string];
 
 export const MetronomeDialog = (props: MetronomeDialogProps) => {
     //const [bpm, setBPM] = useURLState<number>("bpm", 120);
-    const [bpm, setBPM] = React.useState<number>(120);
+    const [bpm, setBPM] = useLocalStorageState<number>({
+        key: "metronomeBPM",
+        initialValue: 120,
+    });
     const [textBpm, setTextBpm] = React.useState<string>(bpm.toString());
     const [tapTrigger, setTapTrigger] = React.useState<number>(0);
     const [killTapTrigger, setKillTapTrigger] = React.useState<number>(0);// trigger to exit tap mode
