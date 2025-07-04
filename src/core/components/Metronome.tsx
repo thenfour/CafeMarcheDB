@@ -129,7 +129,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
             nextTickBPM.current = bpm;
             nextTickScheduledTime.current = currentTime;
             // timer set for middle of beat.
-            timerIDRef.current = window.setTimeout(tickProc,);
+            timerIDRef.current = window.setTimeout(tickProc, halfBeatMS);
             return;
         }
 
