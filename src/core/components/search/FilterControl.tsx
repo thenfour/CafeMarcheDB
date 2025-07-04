@@ -9,6 +9,7 @@ import { gCharMap } from '../../db3/components/IconMap';
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOption } from '../../db3/shared/apiTypes';
 import { CMChip, CMChipBorderOption, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from '../CMChip';
 import { toggleValueInArray } from 'shared/arrayUtils';
+import { FilterAlt } from '@mui/icons-material';
 
 type FilterControlsProps = {
     hasExtraFilters?: boolean; // default falsy
@@ -43,9 +44,9 @@ export const FilterControls = (props: FilterControlsProps) => {
                             //autoFocus={true} // see #408
                             />
                         }
-                        {(props.hasAnyFilters) && <Button onClick={props.onResetFilter}>Reset filter</Button>}
+                        {(props.hasAnyFilters) && <Button onClick={props.onResetFilter} style={{ whiteSpace: "nowrap", padding: "0 18px" }}>Reset filter</Button>}
                         {expandable && <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
-                            Filter {props.hasExtraFilters && "*"}
+                            <FilterAlt /> {props.hasExtraFilters && "*"}
                             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                         </div>}
                     </div>

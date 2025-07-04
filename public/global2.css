@@ -2362,6 +2362,7 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     display: flex;
     justify-content: flex-end;
     flex-grow: 1;
+    white-space: nowrap;
 }
 
 .topDivider {
