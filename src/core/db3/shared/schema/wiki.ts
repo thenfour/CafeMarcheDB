@@ -1,5 +1,6 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
+import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel } from "../apiTypes";
@@ -123,6 +124,27 @@ export const xWikiPage = new db3.xTable({
             authMap: xAuthMap,
             memberName: "lockId",
         }),
+
+        // Virtual field for searching wiki page content; hackhack
+        (() => {
+            const contentSearchField = new GhostField({
+                authMap: xAuthMap,
+                memberName: "contentSearch",
+            });
+
+            // Override the SqlGetQuickFilterElementsForToken method to search currentRevision.content
+            contentSearchField.SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
+                // Return SQL that searches the current revision's content
+                return `EXISTS (
+                    SELECT 1 
+                    FROM WikiPageRevision wpr 
+                    WHERE wpr.id = P.currentRevisionId 
+                    AND wpr.content LIKE '%${MysqlEscape(token)}%'
+                )`;
+            };
+
+            return contentSearchField;
+        })(),
     ]
 });
 
