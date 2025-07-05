@@ -83,7 +83,6 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
         }
 
         const position = Math.max(0, Math.min(100, (playheadSeconds / trackDuration) * 100));
-        console.log(`Playhead position: ${playheadSeconds} / ${trackDuration} = ${position.toFixed(1)}%`);
         return position;
     };
 
@@ -99,12 +98,17 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
                 const fullTtitle = `${index + 1}. ${title.title}${title.subtitle ? ` (${title.subtitle})` : ''}`;
                 const playheadPosition = isCurrentTrack ? getPlayheadPosition() : 0;
 
+                // Calculate the total width units for percentage calculation
+                const totalWidthUnits = playlist.reduce((sum, t) => sum + getSegmentProportionalWidth(t), 0);
+                const widthPercentage = (proportionalWidth / totalWidthUnits) * 100;
+
                 return (
                     <div
                         key={index}
                         className={`setlistVisualizationSegment ${isCurrentTrack ? 'setlistVisualizationSegment--current' : ''}`}
                         style={{
-                            flex: `${proportionalWidth} 1 0%`,
+                            width: `${widthPercentage}%`,
+                            flexShrink: 0,
                         }}
                     >
                         <Tooltip title={fullTtitle} arrow>
