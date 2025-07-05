@@ -326,7 +326,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
         killTimer();
         killSchedule();
         if (running) {
-            //console.log(`running`);
             tickProc(true);
         }
         else {
@@ -396,7 +395,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
     React.useEffect(() => {
         killTimer();
         if (running && runningInitialized) {
-            //console.log(`RUNNING change ${bpm}`);
             tickProc(false);
         }
         if (!runningInitialized) {
@@ -561,6 +559,7 @@ export const TapTempo = React.forwardRef<
         // }
 
         const currentTime = Date.now();
+
         if (lastTapTime !== null && currentTime - lastTapTime < 200) { // Debounce rapid taps
             return;
         }
@@ -571,7 +570,8 @@ export const TapTempo = React.forwardRef<
         }
 
         if (lastTapTime !== null) {
-            tapTimes.current.push(currentTime - lastTapTime);
+            const interval = currentTime - lastTapTime;
+            tapTimes.current.push(interval);
         }
 
         setLastTapTime(currentTime);
@@ -586,6 +586,23 @@ export const TapTempo = React.forwardRef<
     React.useImperativeHandle(ref, () => ({
         handleTap
     }), []);
+
+    // Handle keyboard shortcuts specific to tap tempo
+    React.useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.key === 't' || event.key === 'T') &&
+                !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)) {
+                event.preventDefault();
+                handleTap();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [handleTap]); // Add handleTap to dependencies so it updates when the function changes
 
     React.useEffect(() => {
         stopTapping();
@@ -623,13 +640,6 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
 
     const handleSync = () => {
         setKillTapTrigger(killTapTrigger + 1);
-    };
-
-    const handleTap = () => {
-        // Trigger tap tempo functionality
-        if (tapTempoRef.current?.handleTap) {
-            tapTempoRef.current.handleTap();
-        }
     };
 
     const changeBPM = (delta: number) => {
@@ -674,12 +684,6 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                 case 'ArrowDown': // Decrease BPM
                     event.preventDefault();
                     changeBPM(event.shiftKey ? -5 : -1);
-                    break;
-
-                case 't':
-                case 'T': // Tap tempo
-                    event.preventDefault();
-                    handleTap();
                     break;
 
                 case 's':
