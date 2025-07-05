@@ -75,14 +75,16 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
     ];
 
     return <AppContextMarker eventId={event.id}>
-        <CMLink trackingFeature={ActivityFeature.link_follow_internal} className={classes.join(" ")} style={typeStyle.style} href={API.events.getURIForEvent(event)}>
-            <div className="SubtleEventCardTitle">
-                <div>{event.name}</div>
-            </div>
-            <div className="SubtleEventCardDate">
-                <EventStatusMinimal statusId={event.statusId} />
-                <EventShortDate event={event} />
-            </div>
+        <div className={classes.join(" ")} style={typeStyle.style} >
+            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={API.events.getURIForEvent(event)} className="SubtleEventCardLink">
+                <div className="SubtleEventCardTitle">
+                    <div>{event.name}</div>
+                </div>
+                <div className="SubtleEventCardDate">
+                    <EventStatusMinimal statusId={event.statusId} />
+                    <EventShortDate event={event} />
+                </div>
+            </CMLink>
             <div className='SearchItemBigCardLinkContainer'>
 
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
@@ -103,7 +105,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
                 }
 
             </div>
-        </CMLink>
+        </div>
     </AppContextMarker>;
 };
 

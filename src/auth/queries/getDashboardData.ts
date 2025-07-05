@@ -141,7 +141,6 @@ async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, ev
 
     // debugger;
     const events = (await db.$queryRaw(Prisma.raw(query))) as { id: number, relevance_class: bigint }[];
-    console.log(events);
 
     // only show class 4 events if there are no class 1, 2, or 3 events.
     const hasClass123 = events.some(e => e.relevance_class < 4);
