@@ -745,13 +745,33 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             const dialogElement = target.closest('.GlobalMetronomeDialog');
             if (!dialogElement) return;
 
-            event.preventDefault();
+            event.preventDefault();            // Determine scroll direction
+            const isScrollingUp = event.deltaY < 0;
 
-            // Determine scroll direction and adjust BPM
-            const delta = event.deltaY > 0 ? -1 : 1; // Scroll down = decrease, scroll up = increase
-            const increment = event.shiftKey ? 5 : 1; // Shift + scroll for bigger increments
+            if (event.shiftKey) {
+                // Fine control: ±1 BPM increment
+                const delta = isScrollingUp ? 1 : -1;
+                changeBPM(delta);
+            } else {
+                // Normal behavior: Jump to previous/next tick value
+                const tickValues = tickMarks.map(tick => tick.value).sort((a, b) => a - b);
 
-            changeBPM(delta * increment);
+                if (isScrollingUp) {
+                    // Find next higher tick value
+                    const nextTick = tickValues.find(tickValue => tickValue > bpm);
+                    if (nextTick) {
+                        setBPM(nextTick);
+                        setTextBpm(nextTick.toString());
+                    }
+                } else {
+                    // Find previous lower tick value
+                    const prevTick = tickValues.reverse().find(tickValue => tickValue < bpm);
+                    if (prevTick) {
+                        setBPM(prevTick);
+                        setTextBpm(prevTick.toString());
+                    }
+                }
+            }
         };
 
         // Add event listeners
@@ -907,7 +927,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             }}>
                 {/* <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div> */}
                 <div>
-                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: BPM ±1 • <strong>Shift+Wheel</strong>: BPM ±5 • <strong>Shift+Drag</strong>: Fine control • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
+                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: Jump to tick • <strong>Shift+Wheel</strong>: BPM ±1 • <strong>Shift+Drag</strong>: Fine control • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
                 </div>
             </div>
             {/* <div className="buttonRow">
