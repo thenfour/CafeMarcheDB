@@ -925,6 +925,76 @@ interface EventSongListValueEditorRowProps {
     onChange: (newValue: SetlistAPI.EventSongListItem) => void;
     onDelete?: () => void;
 };
+
+// Editor component for song-like dividers (when isSong is true)
+export const EventSongListValueEditorDividerSongRow = (props: EventSongListValueEditorRowProps) => {
+    if (props.value.type !== 'divider') throw new Error(`wrongtype`);
+
+    const showDragHandle = CoalesceBool(props.showDragHandle, true);
+
+    const colorInfo = GetStyleVariablesForColor({
+        color: props.value.color || gSwatchColors.lighter_gray,
+        enabled: true,
+        fillOption: 'filled',
+        selected: false,
+        variation: 'strong',
+    });
+
+    const handleSubtitleChange = (newText: string) => {
+        const item = { ...props.value, subtitle: newText };
+        props.onChange(item);
+    };
+
+    const handleSubtitleIfSongChange = (newText: string) => {
+        const item = { ...props.value, subtitleIfSong: newText };
+        props.onChange(item);
+    };
+
+    const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.textStyle);
+    const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
+
+    const style = {
+        "--song-hash-color": getHashedColor(""),
+        ...colorInfo.style,
+    };
+
+    return <div
+        className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
+        style={style as any}
+    >
+        <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
+        <div className="td songIndex">{props.value.index != null && (props.value.index + 1)}</div>
+        <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
+        <div className="td songName">
+            <CMTextInputBase
+                className="cmdbSimpleInput"
+                placeholder="Divider name"
+                value={props.value.subtitle || ""}
+                onChange={(e) => handleSubtitleChange(e.target.value)}
+            />
+        </div>
+        <div className="td length">{props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds)}</div>
+        <div className="td runningLength">{props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
+        <div className="td tempo"></div>
+        <div className="td comment">
+            <CMTextInputBase
+                className="cmdbSimpleInput"
+                placeholder="Comment"
+                value={props.value.subtitleIfSong || ""}
+                onChange={(e) => handleSubtitleIfSongChange(e.target.value)}
+            />
+            <DividerEditInDialogButton
+                value={props.value}
+                sortOrder={props.value.sortOrder}
+                songList={props.songList}
+                onClick={(newVals) => {
+                    props.onChange(newVals);
+                }}
+            />
+        </div>
+    </div>;
+};
+
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
@@ -1008,90 +1078,92 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.type === 'divider' ? props.value.textStyle : null);
     const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
 
-    return <>
-        <div
-            className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
-            style={style as any}
-        >
-            <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
-            <div className="td songIndex">{props.value.type === 'song' && (props.value.index + 1)}
-            </div>
-            <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
-            </div>
+    // Handle different divider types
+    if (props.value.type === 'divider') {
+        if (props.value.isSong) {
+            return <EventSongListValueEditorDividerSongRow {...props} />;
+        } else {
+            // Regular break-style divider
+            return <div
+                className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
+                style={style as any}
+            >
+                <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
+                <div className="td songIndex"></div>
+                <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
+                <div className="td comment dividerCommentCell">
+                    <div className='comment dividerCommentContainer'>
+                        <div className='dividerBreakDiv before'></div>
+                        <CMTextarea
+                            //autoFocus={true} // see #408
+                            className="cmdbSimpleInput dividerCommentText"
+                            placeholder="Comment"
+                            value={props.value.subtitle || ""}
+                            onChange={(e) => handleCommentChange(e.target.value)}
+                        />
+                        <div className='dividerBreakDiv after'></div>
+                    </div>
+                    <div className='dividerButtonGroup'>
+                        <DividerEditInDialogButton
+                            value={props.value}
+                            sortOrder={props.value.sortOrder}
+                            songList={props.songList}
+                            onClick={(newVals) => {
+                                props.onChange(newVals);
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>;
+        }
+    }
 
-            {props.value.type === 'divider' ? (
-                <>
-                    <div className="td comment dividerCommentCell">
-                        <div className='comment dividerCommentContainer'>
-                            <div className='dividerBreakDiv before'></div>
-                            <CMTextarea
-                                //autoFocus={true} // see #408
-                                className="cmdbSimpleInput dividerCommentText"
-                                placeholder="Comment"
-                                // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                                // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
-                                onMouseDownCapture={(e) => e.stopPropagation()}
-                                value={props.value.subtitle || ""}
-                                onChange={(e) => handleCommentChange(e.target.value)}
-                            />
-                            <div className='dividerBreakDiv after'></div>
-                        </div>
-                        <div className='dividerButtonGroup'>
-                            <DividerEditInDialogButton
-                                value={props.value}
-                                sortOrder={props.value.sortOrder}
-                                songList={props.songList}
-                                onClick={(newVals) => {
-                                    props.onChange(newVals);
-                                }}
-                            />
-                        </div>
-                    </div>
-                </>
-            ) : (
-                <>
-                    {/* while it's tempting to make song names draggable themselves for very fast sorting, it interferes with
-                pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad. 
-                ${props.value.type === 'song' && "dragHandle draggable"}*/}
-                    <div className={`td songName `}>
-                        {props.value.type === 'song' && <>
-                            <div>{props.value.song.name}</div>
-                            <SongTagIndicatorContainerAligned
-                                tagIds={props.value.song.tags.map(tag => tag.tagId)}
-                                allPossibleTags={allTagIds}
-                            />
-                        </>}
-
-                        {/* value used to be props.value.song || null */}
-                        {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
-                    </div>
-                    <div className="td length">
-                        {props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}
-                    </div>
-                    <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
-                    <div className="td tempo">
-                        {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
-                        {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
-                    </div>
-                    <div className="td comment">
-                        <div className="comment">
-                            {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>!{occurrences}</div></Tooltip>}
-                            {props.value.type !== 'new' &&
-                                <InputBase
-                                    className="cmdbSimpleInput"
-                                    placeholder="Comment"
-                                    // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                                    // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
-                                    onMouseDownCapture={(e) => e.stopPropagation()}
-                                    value={props.value.subtitle || ""}
-                                    onChange={(e) => handleCommentChange(e.target.value)}
-                                />}
-                        </div>
-                    </div>
-                </>
-            )}
+    // Regular song or new item row
+    return <div
+        className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
+        style={style as any}
+    >
+        <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
+        <div className="td songIndex">{props.value.type === 'song' && (props.value.index + 1)}
         </div>
-    </>;
+        <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
+        </div>
+        {/* while it's tempting to make song names draggable themselves for very fast sorting, it interferes with
+        pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad. 
+        ${props.value.type === 'song' && "dragHandle draggable"}*/}
+        <div className={`td songName `}>
+            {props.value.type === 'song' && <>
+                <div>{props.value.song.name}</div>
+                <SongTagIndicatorContainerAligned
+                    tagIds={props.value.song.tags.map(tag => tag.tagId)}
+                    allPossibleTags={allTagIds}
+                />
+            </>}
+
+            {/* value used to be props.value.song || null */}
+            {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
+        </div>
+        <div className="td length">
+            {props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}
+        </div>
+        <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
+        <div className="td tempo">
+            {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
+            {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
+        </div>
+        <div className="td comment">
+            <div className="comment">
+                {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>!{occurrences}</div></Tooltip>}
+                {props.value.type !== 'new' &&
+                    <InputBase
+                        className="cmdbSimpleInput"
+                        placeholder="Comment"
+                        value={props.value.subtitle || ""}
+                        onChange={(e) => handleCommentChange(e.target.value)}
+                    />}
+            </div>
+        </div>
+    </div>;
 };
 
 
