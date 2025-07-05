@@ -406,7 +406,10 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <div className="td songIndex">
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
             </div>
-            <div className="td play">{enrichedSong?.pinnedRecordingId && props.value.type === 'song' && <SongPlayButton songIndex={props.value.index} songList={props.songList} />}</div>
+            <div className="td play">{enrichedSong?.pinnedRecordingId && props.value.type === 'song' && <SongPlayButton
+                songList={props.songList}
+                songIndex={props.value.songArrayIndex}
+            />}</div>
             <div className="td songName">
                 {props.value.type === 'song' && <>
                     <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
@@ -1032,6 +1035,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             songId: song.id,
             song: song,
             index: 0, // will be set later
+            songArrayIndex: 0, // will be set later by GetRowItems
             runningTimeSeconds: null, // populated later
             songsWithUnknownLength: 0, // populated later
         }
@@ -1314,6 +1318,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         songId: p.song.id,
                         song: p.song,
                         index: 0, // it doesn't matter; it will get populated later
+                        songArrayIndex: 0, // will be set later by GetRowItems
                         runningTimeSeconds: null, // populated later
                         songsWithUnknownLength: 0, // populated later
                     }

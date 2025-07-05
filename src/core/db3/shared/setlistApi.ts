@@ -46,6 +46,7 @@ export type EventSongListSongItemWithSong = Prisma.EventSongListSongGetPayload<{
 export type EventSongListSongItem = EventSongListSongItemWithSong & {
     type: "song";
     index: number;
+    songArrayIndex: number; // index into the songs array (for play button)
     runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
     songsWithUnknownLength: number;
 };
@@ -121,10 +122,11 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
 export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[] {
     // row items are a combination of songs + dividers, with a new blank row at the end
     // NB: toSorted() is not supported on uberspace server code.
-    const rowItems: EventSongListItem[] = songList.songs.map((s) => ({
+    const rowItems: EventSongListItem[] = songList.songs.map((s, songArrayIndex) => ({
         ...s,
         type: "song",
         index: -1, // populated later
+        songArrayIndex: songArrayIndex, // index into the songs array
         runningTimeSeconds: null, // populated later
         songsWithUnknownLength: 0, // populated later
     }));
