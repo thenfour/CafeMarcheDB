@@ -30,7 +30,6 @@ interface KnobProps {
     value: number;
     step?: number;
     size?: number;
-    lineWidth?: number;
     centerRadius?: number;
     onChange: (value: number) => void;
     disabled?: boolean;
@@ -44,21 +43,30 @@ interface KnobProps {
      * 'vertical' - value changes based on vertical cursor movement.
      */
     dragBehavior?: 'radial' | 'vertical';
-    segments?: KnobSegment[];     // Optional segments for outer arc
-    segmentArcWidth?: number;     // Width of outer segment arc (default: 12)
-    segmentGap?: number;          // Gap between inner and outer arcs (default: 8)
-    segmentTextOffset?: number;   // Distance of text from segment arc (default: 8)
-    needleStartRadius?: number;   // Inner radius of needle (default: centerRadius + 5)
-    needleEndRadius?: number;     // Outer radius of needle (default: innermost arc radius - 5)
-    needleColor?: string;         // Color of needle (default: '#333')
-    needleWidth?: number;         // Width of needle line (default: 2)
-    tickMarks?: KnobTickMark[];   // Optional tick marks with labels
-    tickMarkOffset?: number;      // Distance from outermost arc to start of tick marks (default: 5)
-    tickLabelOffset?: number;     // Distance from end of tick mark to label (default: 5)
-    tickStartRadius?: number;     // Default inner radius for all tick marks (overridden by per-tick startRadius)
-    tickEndRadius?: number;       // Default outer radius for all tick marks (overridden by per-tick endRadius)
-    tickColor?: string;           // Default color for all tick marks (overridden by per-tick tickColor, default: '#333')
-    tickFontSize?: number;        // Default font size for all tick mark labels (overridden by per-tick fontSize, default: 10)
+
+    // Main value arc configuration (radius-based)
+    valueArcInnerRadius?: number;  // Inner radius of main value arc (default: centerRadius + 5)
+    valueArcOuterRadius?: number;  // Outer radius of main value arc (default: size/2 - 40)
+
+    // Segment arc configuration (radius-based)
+    segments?: KnobSegment[];      // Optional segments for outer arc
+    segmentArcInnerRadius?: number; // Inner radius of segment arc (default: valueArcOuterRadius + 8)
+    segmentArcOuterRadius?: number; // Outer radius of segment arc (default: segmentArcInnerRadius + 25)
+    segmentTextRadius?: number;     // Distance from center for segment text (default: segmentArcOuterRadius + 13)
+
+    // Needle configuration (radius-based)
+    needleStartRadius?: number;    // Inner radius of needle (default: centerRadius + 5)
+    needleEndRadius?: number;      // Outer radius of needle (default: valueArcInnerRadius - 5)
+    needleColor?: string;          // Color of needle (default: '#333')
+    needleWidth?: number;          // Width of needle line (default: 2)
+
+    // Tick mark configuration (radius-based)
+    tickMarks?: KnobTickMark[];    // Optional tick marks with labels
+    tickStartRadius?: number;      // Default inner radius for all tick marks (overridden by per-tick startRadius)
+    tickEndRadius?: number;        // Default outer radius for all tick marks (overridden by per-tick endRadius)
+    tickLabelRadius?: number;      // Distance from center for tick labels (default: tickEndRadius + 8)
+    tickColor?: string;            // Default color for all tick marks (overridden by per-tick tickColor, default: '#333')
+    tickFontSize?: number;         // Default font size for all tick mark labels (overridden by per-tick fontSize, default: 10)
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -67,7 +75,6 @@ export const Knob: React.FC<KnobProps> = ({
     value,
     step = 1,
     size = 100,
-    lineWidth = 10,
     centerRadius = 20,
     onChange,
     disabled = false,
@@ -76,19 +83,28 @@ export const Knob: React.FC<KnobProps> = ({
     startAngle01,
     endAngle01,
     dragBehavior = 'radial',
+
+    // Main value arc configuration
+    valueArcInnerRadius,
+    valueArcOuterRadius,
+
+    // Segment arc configuration
     segments,
-    segmentArcWidth = 12,
-    segmentGap = 8,
-    segmentTextOffset = 8,
+    segmentArcInnerRadius,
+    segmentArcOuterRadius,
+    segmentTextRadius,
+
+    // Needle configuration
     needleStartRadius,
     needleEndRadius,
     needleColor = '#333',
     needleWidth = 2,
+
+    // Tick mark configuration
     tickMarks,
-    tickMarkOffset = 5,
-    tickLabelOffset = 5,
     tickStartRadius,
     tickEndRadius,
+    tickLabelRadius,
     tickColor = '#333',
     tickFontSize = 10,
 }) => {
@@ -118,7 +134,7 @@ export const Knob: React.FC<KnobProps> = ({
     };
 
     // Draw outer segments
-    const drawSegments = (ctx: CanvasRenderingContext2D, radius: number, width: number) => {
+    const drawSegments = (ctx: CanvasRenderingContext2D, innerRadius: number, outerRadius: number, textRadius: number) => {
         if (!segments) return;
 
         segments.forEach(segment => {
@@ -127,18 +143,18 @@ export const Knob: React.FC<KnobProps> = ({
 
             // Draw segment arc
             ctx.beginPath();
-            ctx.arc(size / 2, size / 2, radius, segmentStartAngle, segmentEndAngle, false);
-            ctx.lineWidth = width;
+            ctx.arc(size / 2, size / 2, (innerRadius + outerRadius) / 2, segmentStartAngle, segmentEndAngle, false);
+            ctx.lineWidth = outerRadius - innerRadius;
             ctx.strokeStyle = segment.color;
             ctx.stroke();
 
             // Draw curved label if provided
             if (segment.label) {
-                drawCurvedText(ctx, segment.label, segmentStartAngle, segmentEndAngle, radius + width / 2 + segmentTextOffset, segment);
+                drawCurvedText(ctx, segment.label, segmentStartAngle, segmentEndAngle, textRadius, segment);
             }
         });
     };    // Draw tick marks and labels
-    const drawTickMarks = (ctx: CanvasRenderingContext2D, outerRadius: number) => {
+    const drawTickMarks = (ctx: CanvasRenderingContext2D, defaultTickStart: number, defaultTickEnd: number, defaultTickLabelRadius: number) => {
         if (!tickMarks) return;
 
         const centerX = size / 2;
@@ -148,26 +164,27 @@ export const Knob: React.FC<KnobProps> = ({
             const angle = valueToAngle(tick.value);
 
             // Tick mark properties with defaults - use knob-level defaults if per-tick values not provided
-            const defaultStartRadius = tickStartRadius ?? (outerRadius + tickMarkOffset);
-            const defaultEndRadius = tickEndRadius ?? (defaultStartRadius + 8);
-            const tickStartRadiusValue = tick.startRadius ?? defaultStartRadius;
-            const tickEndRadiusValue = tick.endRadius ?? defaultEndRadius;
+            const tickStartRadiusValue = tick.startRadius ?? tickStartRadius ?? defaultTickStart;
+            const tickEndRadiusValue = tick.endRadius ?? tickEndRadius ?? defaultTickEnd;
             const tickColorValue = tick.tickColor ?? tickColor;
             const tickWidth = tick.tickWidth || 1;
 
-            // Calculate tick mark start and end positions
-            const tickStartX = centerX + Math.cos(angle) * tickStartRadiusValue;
-            const tickStartY = centerY + Math.sin(angle) * tickStartRadiusValue;
-            const tickEndX = centerX + Math.cos(angle) * tickEndRadiusValue;
-            const tickEndY = centerY + Math.sin(angle) * tickEndRadiusValue;
+            // Only draw tick marks if we have valid radius values
+            if (tickStartRadiusValue !== undefined && tickEndRadiusValue !== undefined) {
+                // Calculate tick mark start and end positions
+                const tickStartX = centerX + Math.cos(angle) * tickStartRadiusValue;
+                const tickStartY = centerY + Math.sin(angle) * tickStartRadiusValue;
+                const tickEndX = centerX + Math.cos(angle) * tickEndRadiusValue;
+                const tickEndY = centerY + Math.sin(angle) * tickEndRadiusValue;
 
-            // Draw tick mark
-            ctx.beginPath();
-            ctx.moveTo(tickStartX, tickStartY);
-            ctx.lineTo(tickEndX, tickEndY);
-            ctx.lineWidth = tickWidth;
-            ctx.strokeStyle = tickColorValue;
-            ctx.stroke();
+                // Draw tick mark
+                ctx.beginPath();
+                ctx.moveTo(tickStartX, tickStartY);
+                ctx.lineTo(tickEndX, tickEndY);
+                ctx.lineWidth = tickWidth;
+                ctx.strokeStyle = tickColorValue;
+                ctx.stroke();
+            }
 
             // Draw label if provided
             if (tick.label) {
@@ -176,7 +193,7 @@ export const Knob: React.FC<KnobProps> = ({
                 const fontWeight = tick.fontWeight || 'normal';
                 const fontFamily = tick.fontFamily || 'Arial';
 
-                const labelRadius = tickEndRadiusValue + tickLabelOffset;
+                const labelRadius = tickLabelRadius ?? defaultTickLabelRadius;
                 const labelX = centerX + Math.cos(angle) * labelRadius;
                 const labelY = centerY + Math.sin(angle) * labelRadius;
 
@@ -233,14 +250,28 @@ export const Knob: React.FC<KnobProps> = ({
         // Clear canvas
         ctx.clearRect(0, 0, size, size);
 
-        // Calculate radii from outside to inside:
-        // [Canvas Edge] -> [segmentArcWidth/2] -> [Segment Arc Center] -> [segmentGap] -> [Value Arc Center] -> [lineWidth/2] -> [Inner Edge]
-        const segmentArcRadius = size / 2 - segmentArcWidth / 2;
-        const valueArcRadius = segmentArcRadius - segmentArcWidth / 2 - segmentGap - lineWidth / 2;
+        // Calculate default radii based on size if not specified
+        const defaultValueArcInner = centerRadius + 5;
+        const defaultValueArcOuter = size / 2 - 40;
+        const defaultSegmentArcInner = (segmentArcInnerRadius ?? valueArcOuterRadius ?? defaultValueArcOuter) + 8;
+        const defaultSegmentArcOuter = defaultSegmentArcInner + 25;
+        const defaultSegmentTextRadius = defaultSegmentArcOuter + 13;
+        const defaultTickStartRadius = defaultSegmentArcOuter + 5;
+        const defaultTickEndRadius = defaultTickStartRadius + 8;
+        const defaultTickLabelRadius = defaultTickEndRadius + 8;
+
+        const valueArcInner = valueArcInnerRadius ?? defaultValueArcInner;
+        const valueArcOuter = valueArcOuterRadius ?? defaultValueArcOuter;
+        const segmentArcInner = segmentArcInnerRadius ?? defaultSegmentArcInner;
+        const segmentArcOuter = segmentArcOuterRadius ?? defaultSegmentArcOuter;
+        const segmentTextRadiusValue = segmentTextRadius ?? defaultSegmentTextRadius;
+        const tickStartRadiusValue = tickStartRadius ?? defaultTickStartRadius;
+        const tickEndRadiusValue = tickEndRadius ?? defaultTickEndRadius;
+        const tickLabelRadiusValue = tickLabelRadius ?? defaultTickLabelRadius;
 
         // Draw outer segments first (if segments are provided)
         if (segments && segments.length > 0) {
-            drawSegments(ctx, segmentArcRadius, segmentArcWidth);
+            drawSegments(ctx, segmentArcInner, segmentArcOuter, segmentTextRadiusValue);
         }
 
         // Calculate angle for current value
@@ -249,27 +280,27 @@ export const Knob: React.FC<KnobProps> = ({
 
         // Draw inner track
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, valueArcRadius, startAngle, endAngle, false);
-        ctx.lineWidth = lineWidth;
+        ctx.arc(size / 2, size / 2, (valueArcInner + valueArcOuter) / 2, startAngle, endAngle, false);
+        ctx.lineWidth = valueArcOuter - valueArcInner;
         ctx.strokeStyle = '#e0e0e0';
         ctx.stroke();
 
         // Draw inner value arc
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, valueArcRadius, startAngle, angle, false);
-        ctx.lineWidth = lineWidth;
+        ctx.arc(size / 2, size / 2, (valueArcInner + valueArcOuter) / 2, startAngle, angle, false);
+        ctx.lineWidth = valueArcOuter - valueArcInner;
         ctx.strokeStyle = disabled ? '#a0a0a0' : '#ff9500';
         ctx.stroke();
 
         // Draw tick marks (if provided)
         if (tickMarks && tickMarks.length > 0) {
-            drawTickMarks(ctx, segmentArcRadius + segmentArcWidth / 2);
+            drawTickMarks(ctx, tickStartRadiusValue, tickEndRadiusValue, tickLabelRadiusValue);
         }
 
         // Draw needle (if enabled)
         if (needleStartRadius !== undefined || needleEndRadius !== undefined) {
             const defaultNeedleStart = centerRadius + 5;
-            const defaultNeedleEnd = valueArcRadius - 5;
+            const defaultNeedleEnd = valueArcInner - 5;
             const needleStart = needleStartRadius ?? defaultNeedleStart;
             const needleEnd = needleEndRadius ?? defaultNeedleEnd;
 

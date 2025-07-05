@@ -100,8 +100,8 @@ const TEMPO_REGIONS: TempoRegion[] = [
         name: 'Vivace',
         startBPM: 168,
         endBPM: 200,
-        color: '#FFF8E1',
-        textColor: '#FFC107',
+        color: '#cFF8E1',
+        textColor: '#cFC107',
         //keyTempos: [180],
         presetTempos: [
             { bpm: 172, label: 'Vivace' },
@@ -137,10 +137,10 @@ const getTickMarks = () => {
     //const allKeyTempos = TEMPO_REGIONS.flatMap(region => region.keyTempos);
     const allKeyTempos = TEMPO_REGIONS.flatMap(region => region.presetTempos.map(preset => preset.bpm));
     // Add region boundaries that aren't already in keyTempos
-    const boundaries = TEMPO_REGIONS.slice(1).map(region => region.startBPM)
-        .filter(bpm => !allKeyTempos.includes(bpm));
+    // const boundaries = TEMPO_REGIONS.slice(1).map(region => region.startBPM)
+    //     .filter(bpm => !allKeyTempos.includes(bpm));
 
-    return [...allKeyTempos, ...boundaries]
+    return allKeyTempos
         .sort((a, b) => a - b)
         .map(bpm => ({
             value: bpm,
@@ -638,22 +638,26 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     max={gMaxBPM}
                     value={bpm}
                     size={500}
-                    lineWidth={55}
-                    segmentArcWidth={25}
-                    segmentTextOffset={-13}
-                    segmentGap={0}
                     centerRadius={110}
                     dragBehavior="vertical"
+                    // Main value arc configuration (radius-based)
+                    valueArcInnerRadius={130}  // centerRadius + 20 (gap from center)
+                    valueArcOuterRadius={185}  // valueArcInnerRadius + 55 (old lineWidth)
+                    // Segment arc configuration (radius-based)
+                    segmentArcInnerRadius={193}  // valueArcOuterRadius + 8
+                    segmentArcOuterRadius={218}  // segmentArcInnerRadius + 25 (old segmentArcWidth)
+                    segmentTextRadius={205}      // middle of segment arc (segmentArcInnerRadius + segmentArcOuterRadius) / 2 - 10
+                    // Needle configuration (radius-based)
                     needleStartRadius={70}
-                    needleEndRadius={253}
+                    needleEndRadius={190}        // point to middle of value arc
                     needleColor="#888"
                     needleWidth={3}
-                    tickStartRadius={244}
-                    tickEndRadius={255}
+                    // Tick mark configuration (radius-based)
+                    tickStartRadius={224}        // segmentArcOuterRadius + 6
+                    tickEndRadius={235}          // tickStartRadius + 11
+                    tickLabelRadius={243}        // tickEndRadius + 8 (old tickLabelOffset)
                     tickColor="#666"
                     tickFontSize={9}
-                    tickMarkOffset={-30}
-                    tickLabelOffset={8}
                     tickMarks={tickMarks}
                     segments={knobSegments}
                     onChange={e => {
