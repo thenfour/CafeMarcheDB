@@ -15,6 +15,150 @@ const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;
 const gMaxBPM = 220;
 
+// Master tempo configuration - single source of truth for all tempo-related systems
+interface TempoRegion {
+    name: string;
+    startBPM: number;
+    endBPM: number;
+    color: string;
+    textColor: string;
+    //keyTempos: number[];  // Important BPM values within this region
+    presetTempos: { bpm: number; label: string }[];  // Standard tempo buttons for this region
+}
+
+const TEMPO_REGIONS: TempoRegion[] = [
+    {
+        name: 'Largo',
+        startBPM: gMinBPM,
+        endBPM: 66,
+        color: '#E8F5E8',
+        textColor: '#4A7C59',
+        //keyTempos: [60],
+        presetTempos: [
+            { bpm: 60, label: 'Largo' },
+            { bpm: 63, label: 'Larghetto' }
+        ]
+    },
+    {
+        name: 'Andante',
+        startBPM: 66,
+        endBPM: 76,
+        color: '#E3F2FD',
+        textColor: '#2196F3',
+        //keyTempos: [],
+        presetTempos: [
+            { bpm: 69, label: 'Adagio' },
+            { bpm: 72, label: 'Andante' },
+            { bpm: 75, label: 'Andantino' }
+        ]
+    },
+    {
+        name: 'Moderato',
+        startBPM: 76,
+        endBPM: 108,
+        color: '#F3E5F5',
+        textColor: '#9C27B0',
+        //keyTempos: [80, 100],
+        presetTempos: [
+            { bpm: 80, label: 'Moderato' },
+            { bpm: 84, label: 'Moderato' },
+            { bpm: 88, label: 'Moderato' },
+            { bpm: 92, label: 'Moderato' },
+            { bpm: 96, label: 'Andante moderato' },
+            { bpm: 100, label: 'Andante moderato' },
+            { bpm: 104, label: 'Moderato' }
+        ]
+    },
+    {
+        name: 'Allegretto',
+        startBPM: 108,
+        endBPM: 120,
+        color: '#E8F5F5',
+        textColor: '#E91E63',
+        //keyTempos: [120],
+        presetTempos: [
+            { bpm: 112, label: 'Allegretto' },
+            { bpm: 116, label: 'Allegretto' }
+        ]
+    },
+    {
+        name: 'Allegro',
+        startBPM: 120,
+        endBPM: 168,
+        color: '#FFF3E0',
+        textColor: '#FF9800',
+        //keyTempos: [120, 140, 160],
+        presetTempos: [
+            { bpm: 120, label: 'Allegro moderato' },
+            { bpm: 132, label: 'Allegro' },
+            { bpm: 144, label: 'Allegro' },
+            { bpm: 152, label: 'Allegro con spirito' },
+            { bpm: 160, label: 'Allegro con brio' }
+        ]
+    },
+    {
+        name: 'Vivace',
+        startBPM: 168,
+        endBPM: 200,
+        color: '#FFF8E1',
+        textColor: '#FFC107',
+        //keyTempos: [180],
+        presetTempos: [
+            { bpm: 172, label: 'Vivace' },
+            { bpm: 184, label: 'Vivace' },
+            { bpm: 192, label: 'Vivacissimo' }
+        ]
+    },
+    {
+        name: 'Presto',
+        startBPM: 200,
+        endBPM: gMaxBPM,
+        color: '#FFEBEE',
+        textColor: '#F44336',
+        //keyTempos: [200],
+        presetTempos: [
+            { bpm: 200, label: 'Presto' }
+        ]
+    }
+];
+
+// Generate unified configurations from master data
+const getKnobSegments = () => TEMPO_REGIONS.map(region => ({
+    startValue: region.startBPM,
+    endValue: region.endBPM,
+    color: region.color,
+    label: region.name,
+    textColor: region.textColor,
+    fontSize: 13,
+    fontWeight: 'normal' as const
+}));
+
+const getTickMarks = () => {
+    //const allKeyTempos = TEMPO_REGIONS.flatMap(region => region.keyTempos);
+    const allKeyTempos = TEMPO_REGIONS.flatMap(region => region.presetTempos.map(preset => preset.bpm));
+    // Add region boundaries that aren't already in keyTempos
+    const boundaries = TEMPO_REGIONS.slice(1).map(region => region.startBPM)
+        .filter(bpm => !allKeyTempos.includes(bpm));
+
+    return [...allKeyTempos, ...boundaries]
+        .sort((a, b) => a - b)
+        .map(bpm => ({
+            value: bpm,
+            label: bpm.toString()
+        }));
+};
+
+const getPresetTempos = () => {
+    const allPresets = TEMPO_REGIONS.flatMap(region => region.presetTempos);
+    // Split into three rows for better layout with more presets
+    const rowSize = Math.ceil(allPresets.length / 3);
+    return {
+        row1: allPresets.slice(0, rowSize),
+        row2: allPresets.slice(rowSize, rowSize * 2),
+        row3: allPresets.slice(rowSize * 2)
+    };
+};
+
 
 export interface MetronomePlayerProps {
     bpm: number;
@@ -424,8 +568,6 @@ export interface MetronomeDialogProps {
     onClose: () => void;
 }
 
-type TempoPreset = [bpm: number, caption: string];
-
 export const MetronomeDialog = (props: MetronomeDialogProps) => {
     //const [bpm, setBPM] = useURLState<number>("bpm", 120);
     const [bpm, setBPM] = useLocalStorageState<number>({
@@ -441,24 +583,10 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
         setKillTapTrigger(killTapTrigger + 1);
     };
 
-    const standardTempos1: [bpm: number, caption: string][] = [
-        [76, 'Andante'],
-        [84, 'Moderato'],
-        [96, 'Moderato'],
-        [104, 'Allegretto'],
-        [116, 'Allegro Mod.'],
-        [124, 'Allegro'],
-        [132, 'Allegro'],
-    ];
-    const standardTempos2: [bpm: number, caption: string][] = [
-        [144, 'Vivace'],
-        [152, 'Vivace'],
-        [160, 'Presto'],
-        [168, 'Presto'],
-        [180, 'Presto'],
-        [192, 'Prestissimo'],
-        [200, 'Prestissimo'],
-    ];
+    // Get unified tempo configurations
+    const knobSegments = getKnobSegments();
+    const tickMarks = getTickMarks();
+    const presetTempos = getPresetTempos();
 
 
 
@@ -517,90 +645,17 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     centerRadius={110}
                     dragBehavior="vertical"
                     needleStartRadius={70}
-                    needleEndRadius={250}
+                    needleEndRadius={253}
                     needleColor="#888"
                     needleWidth={3}
-                    tickStartRadius={262}
-                    tickEndRadius={270}
+                    tickStartRadius={244}
+                    tickEndRadius={255}
                     tickColor="#666"
                     tickFontSize={9}
                     tickMarkOffset={-30}
                     tickLabelOffset={8}
-                    tickMarks={[
-                        { value: 60, label: '60' },
-                        { value: 80, label: '80' },
-                        { value: 100, label: '100' },
-                        { value: 120, label: '120' },
-                        { value: 140, label: '140' },
-                        { value: 160, label: '160' },
-                        { value: 180, label: '180' },
-                        { value: 200, label: '200' }
-                    ]}
-                    segments={[
-                        {
-                            startValue: gMinBPM,
-                            endValue: 66,
-                            color: '#E8F5E8',
-                            label: 'Largo',
-                            textColor: '#4A7C59',
-                            fontSize: 13,
-                            fontWeight: 'normal'
-                        },
-                        {
-                            startValue: 66,
-                            endValue: 76,
-                            color: '#E3F2FD',
-                            label: 'Andante',
-                            textColor: '#2196F3',
-                            fontSize: 13,
-                            fontWeight: 'normal'
-                        },
-                        {
-                            startValue: 76,
-                            endValue: 108,
-                            color: '#F3E5F5',
-                            label: 'Moderato',
-                            textColor: '#9C27B0',
-                            fontSize: 13,
-                            fontWeight: 'normal'
-                        },
-                        {
-                            startValue: 108,
-                            endValue: 120,
-                            color: '#E8F5F5',
-                            label: 'Allegretto',
-                            textColor: '#E91E63',
-                            fontSize: 13,
-                            fontWeight: 'normal'
-                        },
-                        {
-                            startValue: 120,
-                            endValue: 168,
-                            color: '#FFF3E0',
-                            label: 'Allegro',
-                            textColor: '#FF9800',
-                            fontSize: 13,
-                            fontWeight: 'normal'
-                        },
-                        {
-                            startValue: 168,
-                            endValue: 200,
-                            color: '#FFF8E1',
-                            label: 'Vivace',
-                            textColor: '#FFC107',
-                            fontSize: 13,
-                            fontWeight: 'normal'
-                        },
-                        {
-                            startValue: 200,
-                            endValue: gMaxBPM,
-                            color: '#FFEBEE',
-                            label: 'Presto',
-                            textColor: '#F44336',
-                            fontSize: 13,
-                            fontWeight: 'normal'
-                        }
-                    ]}
+                    tickMarks={tickMarks}
+                    segments={knobSegments}
                     onChange={e => {
                         //const valueAsNumber = value as number;
                         setBPM(e);
@@ -609,26 +664,35 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
 
             </div>
             <div className="buttonRow">
-                {standardTempos1.map((t, i) => {
-                    const [presetBpm, caption] = t;
-                    return <div key={i} className={`preset freeButton ${presetBpm === bpm ? "selected" : ""}`} onClick={() => {
-                        setBPM(presetBpm);
-                        setTextBpm(String(presetBpm));
+                {presetTempos.row1.map((preset, i) => {
+                    return <div key={i} className={`preset freeButton ${preset.bpm === bpm ? "selected" : ""}`} onClick={() => {
+                        setBPM(preset.bpm);
+                        setTextBpm(String(preset.bpm));
                     }}>
-                        <div className="title">{presetBpm}</div>
-                        <div className="subtitle">{caption}</div>
+                        <div className="title">{preset.bpm}</div>
+                        <div className="subtitle">{preset.label}</div>
                     </div>
                 })}
             </div>
             <div className="buttonRow">
-                {standardTempos2.map((t, i) => {
-                    const [presetBpm, caption] = t;
-                    return <div key={i} className={`preset freeButton ${presetBpm === bpm ? "selected" : ""}`} onClick={() => {
-                        setBPM(presetBpm);
-                        setTextBpm(String(presetBpm));
+                {presetTempos.row2.map((preset, i) => {
+                    return <div key={i} className={`preset freeButton ${preset.bpm === bpm ? "selected" : ""}`} onClick={() => {
+                        setBPM(preset.bpm);
+                        setTextBpm(String(preset.bpm));
                     }}>
-                        <div className="title">{presetBpm}</div>
-                        <div className="subtitle">{caption}</div>
+                        <div className="title">{preset.bpm}</div>
+                        <div className="subtitle">{preset.label}</div>
+                    </div>
+                })}
+            </div>
+            <div className="buttonRow">
+                {presetTempos.row3.map((preset, i) => {
+                    return <div key={i} className={`preset freeButton ${preset.bpm === bpm ? "selected" : ""}`} onClick={() => {
+                        setBPM(preset.bpm);
+                        setTextBpm(String(preset.bpm));
+                    }}>
+                        <div className="title">{preset.bpm}</div>
+                        <div className="subtitle">{preset.label}</div>
                     </div>
                 })}
             </div>
