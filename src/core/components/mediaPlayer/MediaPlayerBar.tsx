@@ -93,7 +93,7 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                                 if (isFinite(duration) && duration > 0) {
                                     mediaPlayer.setLengthSeconds(duration);
                                 } else {
-                                    console.log('Invalid duration on loadedMetadata:', duration);
+                                    //console.log('Invalid duration on loadedMetadata:', duration);
                                 }
                             }}
                             onTimeUpdate={e => {

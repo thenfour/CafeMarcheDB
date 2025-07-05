@@ -1,7 +1,9 @@
 import React from "react";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
+import { formatSongLength } from "../../../../shared/time";
 import { Tooltip } from "@mui/material";
+import { getHashedColor } from "@/shared/utils";
 
 // Simple hash function to generate consistent colors for songs
 const hashString = (str: string): number => {
@@ -14,21 +16,19 @@ const hashString = (str: string): number => {
     return Math.abs(hash);
 };
 
-const getSegmentColor = (track: MediaPlayerTrack): string => {
+const getSegmentColor = (track: MediaPlayerTrack, isCurrent: boolean): string => {
     // Use song name, file name, or URL for hashing
     const identifier = track.songContext?.name ||
         track.file?.fileLeafName ||
         track.url ||
         "untitled";
 
-    const hash = hashString(identifier);
-
-    // Generate a pleasing color from the hash
-    const hue = hash % 360;
-    const saturation = 60 + (hash % 30); // 60-90%
-    const lightness = 45 + (hash % 20); // 45-65%
-
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    //const hash = hashString(identifier);
+    return getHashedColor(identifier, {
+        alpha: "100%",
+        luminosity: "50%",
+        saturation: isCurrent ? "70%" : "10%"
+    });
 };
 
 const getSegmentProportionalWidth = (track: MediaPlayerTrack): number => {
@@ -52,6 +52,7 @@ export const SetlistVisualizationBar: React.FC<{
     const { playlist, currentIndex, playheadSeconds, lengthSeconds } = mediaPlayer;
     const [visible, setVisible] = React.useState(false);
     const [hoverPosition, setHoverPosition] = React.useState<number | null>(null);
+    const [hoverTime, setHoverTime] = React.useState<number | null>(null);
 
     const current = currentIndex != null ? playlist[currentIndex] : undefined;
 
@@ -93,7 +94,7 @@ export const SetlistVisualizationBar: React.FC<{
         >
             {playlist.map((track, index) => {
                 const isCurrentTrack = index === currentIndex;
-                const color = getSegmentColor(track);
+                const color = getSegmentColor(track, isCurrentTrack);
                 const title = mediaPlayer.getTrackTitle(track);
                 const proportionalWidth = getSegmentProportionalWidth(track);
                 const fullTtitle = `${index + 1}. ${title.title}${title.subtitle ? ` (${title.subtitle})` : ''}`;
@@ -147,10 +148,25 @@ export const SetlistVisualizationBar: React.FC<{
                     const hoverX = e.clientX - rect.left;
                     const percentage = Math.max(0, Math.min(1, hoverX / rect.width));
                     setHoverPosition(percentage * 100);
+
+                    // Calculate the time at the hover position
+                    let trackDuration = lengthSeconds;
+                    if (!isFinite(trackDuration) || trackDuration <= 0) {
+                        if (audioAPI && isFinite(audioAPI.duration) && audioAPI.duration > 0) {
+                            trackDuration = audioAPI.duration;
+                        } else {
+                            setHoverTime(null);
+                            return;
+                        }
+                    }
+
+                    const timeAtPosition = percentage * trackDuration;
+                    setHoverTime(timeAtPosition);
                 };
 
                 const handleCurrentTrackMouseLeave = () => {
                     setHoverPosition(null);
+                    setHoverTime(null);
                 };
 
                 return (
@@ -160,51 +176,63 @@ export const SetlistVisualizationBar: React.FC<{
                         style={{
                             width: `${widthPercentage}%`,
                             flexShrink: 0,
-                        }}
+                            "--segment-color": color,
+                        } as any}
                     >
-                        <Tooltip title={fullTtitle} arrow>
-                            <div
-                                className={`coloredSegment ${isCurrentTrack ? 'coloredSegment--seekable' : ''}`}
-                                style={{
-                                    backgroundColor: color,
-                                    position: 'relative',
-                                }}
-                                onClick={isCurrentTrack ? handleCurrentTrackClick : () => {
-                                    mediaPlayer.setPlaylist(playlist, index);
-                                }}
-                                onMouseMove={isCurrentTrack ? handleCurrentTrackMouseMove : undefined}
-                                onMouseLeave={isCurrentTrack ? handleCurrentTrackMouseLeave : undefined}
-                            >
-                                {/* Progress fill for current track */}
-                                {isCurrentTrack && (
-                                    <div
-                                        className="progressFill"
-                                        style={{
-                                            width: `${playheadPosition}%`,
-                                        }}
-                                    />
-                                )}
-                                {/* Playhead indicator for current track */}
-                                {isCurrentTrack && (
-                                    <div
-                                        className="playheadIndicator"
-                                        style={{
-                                            left: `${playheadPosition}%`,
-                                        }}
-                                    />
-                                )}
-                                {/* Hover position indicator for current track */}
-                                {isCurrentTrack && hoverPosition !== null && (
+                        <div
+                            className={`coloredSegment ${isCurrentTrack ? 'coloredSegment--seekable' : ''}`}
+                            style={{
+                                backgroundColor: "var(--segment-color)",
+                                position: 'relative',
+                            }}
+                            onClick={isCurrentTrack ? handleCurrentTrackClick : () => {
+                                mediaPlayer.setPlaylist(playlist, index);
+                            }}
+                            onMouseMove={isCurrentTrack ? handleCurrentTrackMouseMove : undefined}
+                            onMouseLeave={isCurrentTrack ? handleCurrentTrackMouseLeave : undefined}
+                        >
+                            {/* Progress fill for current track */}
+                            {isCurrentTrack && (
+                                <div
+                                    className="progressFill"
+                                    style={{
+                                        width: `${playheadPosition}%`,
+                                    }}
+                                />
+                            )}
+                            {/* Playhead indicator for current track */}
+                            {isCurrentTrack && (
+                                <div
+                                    className="playheadIndicator"
+                                    style={{
+                                        left: `${playheadPosition}%`,
+                                    }}
+                                />
+                            )}
+                            {/* Hover position indicator for current track */}
+                            {isCurrentTrack && hoverPosition !== null && (
+                                <>
                                     <div
                                         className="hoverPositionIndicator"
                                         style={{
                                             left: `${hoverPosition}%`,
                                         }}
                                     />
-                                )}
-                                <span className="segmentText">{fullTtitle}</span>
-                            </div>
-                        </Tooltip>
+                                    {/* Time display at hover position */}
+                                    {hoverTime !== null && (
+                                        <div
+                                            className="hoverTimeDisplay"
+                                            style={{
+                                                left: `${hoverPosition}%`,
+                                            }}
+                                        >
+                                            {formatSongLength(Math.floor(hoverTime))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            <span className="segmentText">{fullTtitle}</span>
+                        </div>
                     </div>
                 );
             })}
