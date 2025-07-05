@@ -318,9 +318,10 @@ type SongPlayButtonProps = {
     songList: db3.EventSongListPayload;
     songIndex: number;
     pinnedRecording?: any; // The pinned recording for this song, if any
+    allPinnedRecordings?: Record<number, any>; // All pinned recordings for the setlist
 };
 
-export function SongPlayButton({ songList, songIndex, pinnedRecording }: SongPlayButtonProps) {
+export function SongPlayButton({ songList, songIndex, pinnedRecording, allPinnedRecordings }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
     const song = songList.songs[songIndex]?.song;
 
@@ -333,18 +334,36 @@ export function SongPlayButton({ songList, songIndex, pinnedRecording }: SongPla
     const isCurrent = mediaPlayer.isPlayingFile(file.id);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
 
+    // Create a playlist from all songs in the setlist that have pinned recordings
+    const createPlaylist = () => {
+        const playlist = songList.songs
+            .map((songListItem, index) => {
+                const recording = allPinnedRecordings?.[songListItem.song.id];
+                if (!recording) return null;
+
+                return {
+                    file: recording,
+                    url: getURIForFile(recording),
+                    songContext: songListItem.song,
+                };
+            })
+            .filter(item => item !== null);
+
+        // Find the index of the clicked song in the filtered playlist
+        const playlistStartIndex = playlist.findIndex(item =>
+            item?.file.id === file.id
+        );
+
+        return { playlist, startIndex: Math.max(0, playlistStartIndex) };
+    };
+
     // Play this file via the global player
     const handlePlay = () => {
         if (isCurrent) {
             mediaPlayer.unpause();
         } else {
-            mediaPlayer.setPlaylist([
-                {
-                    file,
-                    url: getURIForFile(file),
-                    songContext: song,
-                }
-            ], 0);
+            const { playlist, startIndex } = createPlaylist();
+            mediaPlayer.setPlaylist(playlist, startIndex);
         }
     };
 
@@ -364,9 +383,9 @@ export function SongPlayButton({ songList, songIndex, pinnedRecording }: SongPla
             ) : (
                 <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>
                     {gIconMap.PlayCircleOutline()}
-                    <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} style={{
+                    {/* <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} style={{
                         visibility: "hidden"
-                    }} />
+                    }} /> */}
                 </div>
             )}
         </div>
@@ -409,6 +428,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                 songList={props.songList}
                 songIndex={props.value.songArrayIndex}
                 pinnedRecording={props.pinnedRecordings?.[props.value.song.id]}
+                allPinnedRecordings={props.pinnedRecordings}
             />}</div>
             <div className="td songName">
                 {props.value.type === 'song' && <>
