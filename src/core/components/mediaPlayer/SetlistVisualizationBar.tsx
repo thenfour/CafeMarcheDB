@@ -1,5 +1,6 @@
 import React from "react";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
+import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { Tooltip } from "@mui/material";
 
 // Simple hash function to generate consistent colors for songs
@@ -44,9 +45,13 @@ const getSegmentProportionalWidth = (track: MediaPlayerTrack): number => {
     return 1 + (hash % 9); // Results in values from 1 to 10
 };
 
-export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> = ({ mediaPlayer }) => {
+export const SetlistVisualizationBar: React.FC<{
+    mediaPlayer: MediaPlayerContextType;
+    audioAPI?: CustomAudioPlayerAPI | null;
+}> = ({ mediaPlayer, audioAPI }) => {
     const { playlist, currentIndex, playheadSeconds, lengthSeconds } = mediaPlayer;
     const [visible, setVisible] = React.useState(false);
+    const [hoverPosition, setHoverPosition] = React.useState<number | null>(null);
 
     const current = currentIndex != null ? playlist[currentIndex] : undefined;
 
@@ -69,16 +74,12 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
         // Try to get duration from the MediaPlayerContext
         let trackDuration = lengthSeconds;
 
-        // If lengthSeconds is invalid (Infinity, NaN, or 0), try to get it from DOM
+        // If lengthSeconds is invalid, try to get it from the audio API
         if (!isFinite(trackDuration) || trackDuration <= 0) {
-            // Try to find audio element in the DOM as a fallback
-            const audioElement = document.querySelector('audio');
-            if (audioElement && isFinite(audioElement.duration) && audioElement.duration > 0) {
-                trackDuration = audioElement.duration;
-                console.log(`Using fallback duration from DOM: ${trackDuration}`);
+            if (audioAPI && isFinite(audioAPI.duration) && audioAPI.duration > 0) {
+                trackDuration = audioAPI.duration;
             } else {
-                console.log(`Invalid lengthSeconds: ${lengthSeconds} and no valid DOM audio duration, cannot calculate playhead position`);
-                return 0;
+                return 0; // Can't calculate without valid duration
             }
         }
 
@@ -102,6 +103,56 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
                 const totalWidthUnits = playlist.reduce((sum, t) => sum + getSegmentProportionalWidth(t), 0);
                 const widthPercentage = (proportionalWidth / totalWidthUnits) * 100;
 
+                // Handler for seeking within the current track
+                const handleCurrentTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
+                    if (!isCurrentTrack) {
+                        console.warn('Click on non-current track segment ignored');
+                        return;
+                    }
+
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+
+                    // Get track duration
+                    let trackDuration = lengthSeconds;
+                    if (!isFinite(trackDuration) || trackDuration <= 0) {
+                        if (audioAPI && isFinite(audioAPI.duration) && audioAPI.duration > 0) {
+                            //console.log(`Using audioAPI duration for seeking to ${percentage * 100}%`);
+                            trackDuration = audioAPI.duration;
+                        } else {
+                            //console.warn('Cannot seek without valid track duration');
+                            return; // Can't seek without duration
+                        }
+                    } else {
+                        //console.log(`Using MediaPlayerContext duration for seeking to ${percentage * 100}%`);
+                    }
+
+                    const seekTime = percentage * trackDuration;
+
+                    // Perform the actual seek using the audio API
+                    // The MediaPlayerBar's onTimeUpdate will automatically update the context
+                    if (audioAPI) {
+                        audioAPI.seekTo(seekTime);
+                    } else {
+                        //console.warn('Cannot seek: audioAPI not available');
+                    }
+                };
+
+                // Handler for hover position tracking on current track
+                const handleCurrentTrackMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+                    if (!isCurrentTrack) return;
+
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const hoverX = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(1, hoverX / rect.width));
+                    setHoverPosition(percentage * 100);
+                };
+
+                const handleCurrentTrackMouseLeave = () => {
+                    setHoverPosition(null);
+                };
+
                 return (
                     <div
                         key={index}
@@ -113,14 +164,16 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
                     >
                         <Tooltip title={fullTtitle} arrow>
                             <div
-                                className={`coloredSegment`}
+                                className={`coloredSegment ${isCurrentTrack ? 'coloredSegment--seekable' : ''}`}
                                 style={{
                                     backgroundColor: color,
                                     position: 'relative',
                                 }}
-                                onClick={() => {
+                                onClick={isCurrentTrack ? handleCurrentTrackClick : () => {
                                     mediaPlayer.setPlaylist(playlist, index);
                                 }}
+                                onMouseMove={isCurrentTrack ? handleCurrentTrackMouseMove : undefined}
+                                onMouseLeave={isCurrentTrack ? handleCurrentTrackMouseLeave : undefined}
                             >
                                 {/* Progress fill for current track */}
                                 {isCurrentTrack && (
@@ -137,6 +190,15 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
                                         className="playheadIndicator"
                                         style={{
                                             left: `${playheadPosition}%`,
+                                        }}
+                                    />
+                                )}
+                                {/* Hover position indicator for current track */}
+                                {isCurrentTrack && hoverPosition !== null && (
+                                    <div
+                                        className="hoverPositionIndicator"
+                                        style={{
+                                            left: `${hoverPosition}%`,
                                         }}
                                     />
                                 )}

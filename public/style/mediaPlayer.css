@@ -275,6 +275,26 @@
     width: 4px;
     background: rgba(255, 255, 255, 0.9);
     transform: translateX(-50%);
+    z-index: 3;
+}
+
+.setlistVisualizationSegment .hoverPositionIndicator {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.6);
+    transform: translateX(-50%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.setlistVisualizationSegment .coloredSegment--seekable {
+    cursor: pointer;
+}
+
+.setlistVisualizationSegment .coloredSegment--seekable:hover {
+    filter: brightness(1.1);
 }
 
 
