@@ -230,10 +230,11 @@ ul.mechanicalSelector>li {
     width: 150px;
 }
 
+/* 
 .GlobalMetronomeDialog .closeButton {
     width: min-content;
     padding: 20px;
-}
+} */
 
 .GlobalMetronomeDialog .nudge {
     font-size: 40px;
@@ -263,8 +264,8 @@ ul.mechanicalSelector>li {
 
 .GlobalMetronomeDialog .nudge:hover,
 .GlobalMetronomeDialog .preset:hover,
-.GlobalMetronomeDialog .tapTempoButton,
-.GlobalMetronomeDialog .closeButton {
+.GlobalMetronomeDialog .tapTempoButton:hover,
+.GlobalMetronomeDialog .closeButton:hover {
     outline: 1px solid black;
 }
 
@@ -289,10 +290,16 @@ ul.mechanicalSelector>li {
     animation: MetronomeTapFlash2 .5s forwards;
 }
 
-.GlobalMetronomeDialog svg {
+.GlobalMetronomeDialog .freeButton svg {
+    width: 40px;
+    height: 40px;
+}
+
+.GlobalMetronomeDialog .metronomeButton svg {
     width: 100px;
     height: 100px;
 }
+
 
 .GlobalMetronomeDialog .metronomeIndicator {
     width: 100px;

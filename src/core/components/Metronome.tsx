@@ -10,6 +10,7 @@ import { Knob } from "./Knob";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { useLocalStorageState } from "./useLocalStorageState";
+import { Add, Remove } from "@mui/icons-material";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;
@@ -480,8 +481,14 @@ export const MetronomeButton = React.forwardRef<
     // - ONLY flash.
 
     return <div className={`metronomeButtonContainer ${variant}`}>
-        <div onClick={togglePlaying} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"}`}>
-            {playing ? (variant === "normal" && gIconMap.VolumeUp()) : bpm}
+        <div onClick={togglePlaying} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"} ${variant}`}>
+
+            {playing && (variant === "normal") && gIconMap.VolumeUp()}
+            {!playing && (variant === "normal") && gIconMap.VolumeOff()}
+
+            {!playing && (variant === "tiny") && <span className="bpmText">{bpm}</span>}
+
+            {/* Tap Tempo Button */}
             {playing && <MetronomePlayer bpm={bpm} syncTrigger={tapTrigger + beatSyncTrigger} mute={isTapping} running={!isTapping} />}
         </div>
         {playing && (variant === "normal") && <div className="metronomeSyncButton freeButton" onClick={(e) => {
@@ -765,11 +772,11 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                 <div className="nudge minus freeButton" onClick={() => {
                     setBPM(bpm - 1);
                     setTextBpm((bpm - 1).toString());
-                }}>-</div>
+                }}><Remove /></div>
                 <div className="nudge plus freeButton" onClick={() => {
                     setBPM(bpm + 1);
                     setTextBpm((bpm + 1).toString());
-                }}>+</div>
+                }}><Add /></div>
                 <CMTextInputBase
                     onChange={(e, v) => {
                         setTextBpm(v);
@@ -795,6 +802,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                             setTextBpm(newBpm.toString());
                         }
                     }} />
+                <Button className="closeButton freeButton" onClick={props.onClose}>{gIconMap.Close()}</Button>
             </div>
             <div className="sliderContainer">
                 {/* <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
@@ -877,19 +885,19 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             </div>
             <div className="keyboardShortcutsHelp" style={{
                 fontSize: '11px',
-                color: '#666',
+                color: '#999',
                 marginTop: '10px',
                 textAlign: 'center',
                 lineHeight: '1.3'
             }}>
-                <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div>
+                {/* <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div> */}
                 <div>
                     <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: BPM ±1 • <strong>Shift+Wheel</strong>: BPM ±5 • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
                 </div>
             </div>
-            <div className="buttonRow">
+            {/* <div className="buttonRow">
                 <Button className="closeButton" onClick={props.onClose}>Close</Button>
-            </div>
+            </div> */}
         </DialogContent>
 
     </ReactiveInputDialog>;
