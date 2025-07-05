@@ -1,11 +1,14 @@
+import { BigintToNumber } from "@/shared/utils";
+import { UserWithRolesPayload } from "@/types";
 import { generateToken, hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
+import { isCategoricalAxis } from "recharts/types/util/ChartUtils";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { Stopwatch } from "shared/rootroot";
 import { getServerStartState } from "shared/serverStateBase";
-import { EventStatusSignificance, xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
+import { EventStatusSignificance, xEvent, xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
@@ -87,7 +90,11 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
 
 
 
-async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
+async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
+    if (!currentUser) {
+        // no user, no events.
+        return [];
+    }
     const now = new Date();
     const sevenDaysFromNow = new Date(now);
     sevenDaysFromNow.setDate(now.getDate() + 7); // 7 days allows you to see next week's rehearsal just after the last one ends.
@@ -113,14 +120,18 @@ async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<
           WHEN startsAt <= '${nowFormatted}' AND (endDateTime IS NULL OR endDateTime >= '${nowFormatted}') THEN 1 -- Ongoing
           WHEN startsAt >= '${nowFormatted}' AND startsAt <= '${sevenDaysFromNowFormatted}' THEN 2 -- Upcoming
           WHEN endDateTime IS NOT NULL AND endDateTime >= '${twentyFourHoursAgoFormatted}' AND endDateTime <= '${nowFormatted}' THEN 3 -- Recent past
-          ELSE 4 -- Default/Unclassified (optional, for events that don't fit the criteria)
+          WHEN startsAt > '${sevenDaysFromNowFormatted}' THEN 4 -- Future, only shown if better events aren't available
+          ELSE 5 -- Default/Unclassified (optional, for events that don't fit the criteria)
         END AS relevance_class
       FROM Event
-      where statusId NOT IN (${cancelledStatusIds})
+      where
+        (statusId is null or statusId NOT IN (${cancelledStatusIds}))
+        and isDeleted = false
+        and (${xEvent.SqlGetVisFilterExpression(currentUser, "Event")})
     )
-    SELECT id
+    SELECT id, relevance_class
     FROM ClassifiedEvents
-    WHERE relevance_class IN (1, 2, 3) -- Filter to relevant events
+    WHERE relevance_class IN (1, 2, 3, 4) -- Filter to relevant events
     ORDER BY
       relevance_class ASC, -- Primary sorting by relevance
       startsAt ASC
@@ -128,7 +139,23 @@ async function getTopRelevantEvents(eventStatuses: Prisma.EventStatusGetPayload<
     
     `;
 
-    const events = (await db.$queryRaw(Prisma.raw(query))) as { id: number }[];
+    // debugger;
+    const events = (await db.$queryRaw(Prisma.raw(query))) as { id: number, relevance_class: bigint }[];
+    console.log(events);
+
+    // only show class 4 events if there are no class 1, 2, or 3 events.
+    const hasClass123 = events.some(e => e.relevance_class < 4);
+    if (hasClass123) {
+        // filter out class 4 events
+        return events.filter(e => e.relevance_class < 4).map(e => e.id);
+    } else {
+        // take only the 1st class 4 event if exists.
+        const class4Event = events.find(e => BigintToNumber(e.relevance_class) === 4);
+        if (class4Event) {
+            return [class4Event.id];
+        }
+    }
+
     const ret = events.map(e => e.id);
     return ret;
 }
@@ -156,7 +183,7 @@ export default resolver.pipe(
 
             const eventStatus = await db.eventStatus.findMany();
 
-            const relevantEventsCall = getTopRelevantEvents(eventStatus, db as any /* Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient' */);
+            const relevantEventsCall = getTopRelevantEvents(currentUser, eventStatus, db as any /* Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient' */);
 
             const results = await Promise.all([
                 db.userTag.findMany(),
