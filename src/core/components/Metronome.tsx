@@ -650,7 +650,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     segmentTextRadius={205}      // middle of segment arc (segmentArcInnerRadius + segmentArcOuterRadius) / 2 - 10
                     // Needle configuration (radius-based)
                     needleStartRadius={70}
-                    needleEndRadius={190}        // point to middle of value arc
+                    needleEndRadius={223}        // point to middle of value arc
                     needleColor="#888"
                     needleWidth={3}
                     // Tick mark configuration (radius-based)
