@@ -110,6 +110,12 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     }
     const songLengthFormatted = song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds);
 
+    // Duplicate detection
+    const songOccurrences = props.doc.payload.rows.reduce((acc, row) => {
+        return acc + (row.type === "song" && row.songId === song.id ? 1 : 0);
+    }, 0);
+    const isDupeWarning = songOccurrences > 1;
+
     return <div className="tr">
         <div className="td songName">
 
@@ -128,7 +134,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 </div>
             </Tooltip>
 
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", "--song-hash-color": getHashedColor(song.name) } as any}>
                 <SetlistPlannerLedArray
                     direction="row"
                     ledDefs={props.doc.payload.rowLeds || []}
@@ -140,10 +146,11 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                         name: song.name,
                     }]}
                 />
-                <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    {isDupeWarning && <Tooltip title={`This song occurs ${songOccurrences} times in this plan. Is that right?`}><div className='warnIndicator'>!{songOccurrences}</div></Tooltip>}
                     <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
                         <a href={getURIForSong(song)} target="_blank" rel="noreferrer" style={{
-                            "--song-hash-color": getHashedColor(song.name),
+                            //"--song-hash-color": getHashedColor(song.name),
                             color: `var(--song-hash-color)`,
                         } as any}>{song.name}</a>
                     </Tooltip>

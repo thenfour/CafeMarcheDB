@@ -2639,3 +2639,20 @@ nav a:hover {
     align-items: center;
     gap: 6px;
 }
+
+/* Duplicate song warning indicator for setlist planner */
+.SetlistPlannerMatrix .warnIndicator {
+    font-style: normal;
+    background-color: var(--song-hash-color);
+    color: #fff;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 2px;
+    margin: 0 3px;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 0.8em;
+    min-width: 20px;
+    justify-content: center;
+}
