@@ -61,12 +61,13 @@
     display: flex;
     align-items: center;
 
-    background-color: #8ff4;
+    background-color: #26a;
     padding: 6px 12px;
     /* text-shadow: #0004 0px 0px 7px; */
-    text-shadow: #4ff8 0px 0px 3px;
-    box-shadow: inset 0 0 10px #0008;
+    text-shadow: #00aaff 0px 0px 4px, #0088ff 0px 0px 8px;
+    box-shadow: inset 0 0 15px #003388, 0 0 5px #0066ff44;
     height: 40px;
+    border: 1px solid #0088ff;
 }
 
 .mediaPlayerTrackMetadataDisplay .mediaPlayerTrackMetadataCol1 {
@@ -77,13 +78,13 @@
 .mediaPlayerTrackMetadataDisplay .mediaPlayerTrackTitle {
     font-size: 18px;
     white-space: nowrap;
-    color: #dff;
+    color: #e6f3ff;
     min-width: 150px;
 }
 
 .mediaPlayerTrackMetadataDisplay .mediaPlayerTrackSubtitle {
     font-size: 13px;
-    color: #dff8;
+    color: #b3d9ff;
     font-style: italic;
 }
 
@@ -96,7 +97,7 @@
     /* space between bars               */
     width: 28px;
     /* overall footprint—scale as needed */
-    --equalizer-bar-height: 10px;
+    --equalizer-bar-height: 13px;
     --equalizer-bar-color: #dff8;
     height: var(--equalizer-bar-height);
     /* bars inherit the surrounding text/icon color */
