@@ -10,7 +10,7 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/compo
 import { CMSmallButton, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
+import { getClipboardSongList, PortableSongList, PortableSongListSong, PortableSongListDivider } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -866,6 +866,54 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
         }
     };
 
+    const handleCopyPortableSetlist = async () => {
+        try {
+
+            // first filter out invalid rows
+
+            const validRows = props.doc.payload.rows.filter((row) => {
+                if (row.type !== 'song') return true;
+                if (!row.songId) return false; // must have a songId
+                const song = allSongs.find(s => s.id === row.songId);
+                if (!song) return false; // must be a valid song
+                return true; // valid song row
+            });
+
+            const portableSetlist: PortableSongList = validRows
+                .map((row, index) => {
+                    if (row.type === 'song' && row.songId) {
+                        const song = allSongs.find(s => s.id === row.songId)!;
+                        return {
+                            type: 'song',
+                            sortOrder: index,
+                            song: song,
+                            comment: row.commentMarkdown || "",
+                        };
+                    } else {
+                        return {
+                            type: 'divider',
+                            sortOrder: index,
+                            comment: row.commentMarkdown || "",
+                            color: row.color || null,
+                            isInterruption: false,
+                            isSong: false,
+                            subtitleIfSong: null,
+                            lengthSeconds: null,
+                            textStyle: null,
+                        };
+                    }
+                });
+
+            const txt = JSON.stringify(portableSetlist, null, 2);
+            await navigator.clipboard.writeText(txt);
+            snackbar.showSuccess(`Copied ${portableSetlist.length} items as portable setlist (${txt.length} chars)`);
+            setAnchorEl(null);
+        } catch (error) {
+            console.error("Error copying portable setlist:", error);
+            snackbar.showError("Failed to copy portable setlist. Check console for details.");
+        }
+    };
+
     return <>
         <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
         <Menu
@@ -914,6 +962,16 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
                     <div>Copy plan to clipboard</div>
                     <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
                         Copy entire plan as JSON for backup/sharing
+                    </div>
+                </div>
+            </MenuItem>
+            <MenuItem
+                onClick={handleCopyPortableSetlist}
+            >
+                <div>
+                    <div>Copy song list as portable setlist</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Copy just the songs and dividers as JSON setlist format
                     </div>
                 </div>
             </MenuItem>
