@@ -24,7 +24,7 @@ interface TempoRegion {
     color: string;
     textColor: string;
     //keyTempos: number[];  // Important BPM values within this region
-    presetTempos: { bpm: number; label: string }[];  // Standard tempo buttons for this region
+    presetTempos: number[];  // Standard tempo values for this region
 }
 
 const TEMPO_REGIONS: TempoRegion[] = [
@@ -34,11 +34,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         endBPM: 66,
         color: '#E8F5E8',
         textColor: '#4A7C59',
-        //keyTempos: [60],
-        presetTempos: [
-            { bpm: 60, label: 'Largo' },
-            { bpm: 63, label: 'Larghetto' }
-        ]
+        presetTempos: [40, 44, 48, 51, 54, 57, 60, 63, 66]
     },
     {
         name: 'Andante',
@@ -46,12 +42,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         endBPM: 76,
         color: '#E3F2FD',
         textColor: '#2196F3',
-        //keyTempos: [],
-        presetTempos: [
-            { bpm: 69, label: 'Adagio' },
-            { bpm: 72, label: 'Andante' },
-            { bpm: 75, label: 'Andantino' }
-        ]
+        presetTempos: [69, 72]
     },
     {
         name: 'Moderato',
@@ -59,16 +50,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         endBPM: 108,
         color: '#F3E5F5',
         textColor: '#9C27B0',
-        //keyTempos: [80, 100],
-        presetTempos: [
-            { bpm: 80, label: 'Moderato' },
-            { bpm: 84, label: 'Moderato' },
-            { bpm: 88, label: 'Moderato' },
-            { bpm: 92, label: 'Moderato' },
-            { bpm: 96, label: 'Andante moderato' },
-            { bpm: 100, label: 'Andante moderato' },
-            { bpm: 104, label: 'Moderato' }
-        ]
+        presetTempos: [76, 80, 84, 88, 92, 96, 100, 104, 108]
     },
     {
         name: 'Allegretto',
@@ -76,11 +58,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         endBPM: 120,
         color: '#E8F5F5',
         textColor: '#E91E63',
-        //keyTempos: [120],
-        presetTempos: [
-            { bpm: 112, label: 'Allegretto' },
-            { bpm: 116, label: 'Allegretto' }
-        ]
+        presetTempos: [112, 116, 120]
     },
     {
         name: 'Allegro',
@@ -88,14 +66,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         endBPM: 168,
         color: '#FFF3E0',
         textColor: '#FF9800',
-        //keyTempos: [120, 140, 160],
-        presetTempos: [
-            { bpm: 120, label: 'Allegro moderato' },
-            { bpm: 132, label: 'Allegro' },
-            { bpm: 144, label: 'Allegro' },
-            { bpm: 152, label: 'Allegro con spirito' },
-            { bpm: 160, label: 'Allegro con brio' }
-        ]
+        presetTempos: [120, 124, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168]
     },
     {
         name: 'Vivace',
@@ -103,12 +74,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         endBPM: 200,
         color: '#cFF8E1',
         textColor: '#000',
-        //keyTempos: [180],
-        presetTempos: [
-            { bpm: 172, label: 'Vivace' },
-            { bpm: 184, label: 'Vivace' },
-            { bpm: 192, label: 'Vivacissimo' }
-        ]
+        presetTempos: [172, 176, 180, 184, 188, 192, 196, 200]
     },
     {
         name: 'Presto',
@@ -116,10 +82,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         endBPM: gMaxBPM,
         color: '#FFEBEE',
         textColor: '#F44336',
-        //keyTempos: [200],
-        presetTempos: [
-            { bpm: 200, label: 'Presto' }
-        ]
+        presetTempos: [200, 204, 208, 212, 216, 220]
     }
 ];
 
@@ -136,8 +99,7 @@ const getKnobSegments = () => TEMPO_REGIONS.map((region, index) => ({
 }));
 
 const getTickMarks = () => {
-    //const allKeyTempos = TEMPO_REGIONS.flatMap(region => region.keyTempos);
-    const allKeyTempos = TEMPO_REGIONS.flatMap(region => region.presetTempos.map(preset => preset.bpm));
+    const allKeyTempos = TEMPO_REGIONS.flatMap(region => region.presetTempos);
     // Add region boundaries that aren't already in keyTempos
     // const boundaries = TEMPO_REGIONS.slice(1).map(region => region.startBPM)
     //     .filter(bpm => !allKeyTempos.includes(bpm));
@@ -682,8 +644,8 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
         if (presetIndex >= 0 && presetIndex < allPresets.length) {
             const preset = allPresets[presetIndex];
             if (preset) {
-                setBPM(preset.bpm);
-                setTextBpm(preset.bpm.toString());
+                setBPM(preset);
+                setTextBpm(preset.toString());
             }
         }
     };
