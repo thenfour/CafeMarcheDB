@@ -1,4 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import { useLocalStorageState } from "../useLocalStorageState";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { MediaPlayerSlider } from "./MediaPlayerSlider";
@@ -63,10 +64,31 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         const [currentTime, setCurrentTime] = React.useState(0);
         const [duration, setDuration] = React.useState(0);
         const [isLoading, setIsLoading] = React.useState(false);
-        const [volume, setVolume] = React.useState(100); // 0 to 100 for slider
-        const [isMuted, setIsMuted] = React.useState(false);
-        const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(100);
+        const [volume, setVolume] = useLocalStorageState<number>({
+            key: 'mediaPlayerVolume',
+            initialValue: 75 // Default to 75% volume
+        });
+        const [isMuted, setIsMuted] = useLocalStorageState<boolean>({
+            key: 'mediaPlayerMuted',
+            initialValue: false
+        });
+        const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(75);
         const [isUserSeeking, setIsUserSeeking] = React.useState(false);
+
+        // Sync localStorage volume with audio element when it loads
+        React.useEffect(() => {
+            if (audioRef.current && audioRef.current.readyState > 0) {
+                audioRef.current.volume = volume / 100;
+                audioRef.current.muted = isMuted;
+            }
+        }, [volume, isMuted]);
+
+        // Initialize volumeBeforeMute with current volume on mount
+        React.useEffect(() => {
+            if (!isMuted && volume > 0) {
+                setVolumeBeforeMute(volume);
+            }
+        }, []); // Only run on mount
 
         // Expose our custom API via ref
         useImperativeHandle(ref, () => ({
@@ -221,25 +243,6 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             }
         };
 
-        // const formatTime = (seconds: number): string => {
-        //     // Handle NaN, infinity, and negative values
-        //     if (!isFinite(seconds) || seconds < 0) {
-        //         return "0:00";
-        //     }
-
-        //     const totalSeconds = Math.floor(seconds);
-        //     const hours = Math.floor(totalSeconds / 3600);
-        //     const mins = Math.floor((totalSeconds % 3600) / 60);
-        //     const secs = totalSeconds % 60;
-
-        //     // For tracks longer than an hour, show hours
-        //     if (hours > 0) {
-        //         return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        //     } else {
-        //         return `${mins}:${secs.toString().padStart(2, '0')}`;
-        //     }
-        // };
-
         const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
             const audio = e.currentTarget;
             const audioDuration = audio.duration;
@@ -247,9 +250,9 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             setDuration(isFinite(audioDuration) && audioDuration > 0 ? audioDuration : 0);
             setIsLoading(false);
 
-            // Initialize volume from audio element
-            setVolume(Math.round(audio.volume * 100));
-            setIsMuted(audio.muted);
+            // Apply persisted volume settings to the audio element
+            audio.volume = volume / 100;
+            audio.muted = isMuted;
 
             onLoadedMetadata?.(e);
         };
@@ -328,7 +331,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             if (audioRef.current) {
                 if (isMuted) {
                     // Unmute: restore previous volume
-                    const restoreVolume = volumeBeforeMute > 0 ? volumeBeforeMute : 50;
+                    const restoreVolume = volumeBeforeMute > 0 ? volumeBeforeMute : 75;
                     setVolume(restoreVolume);
                     setIsMuted(false);
                     audioRef.current.volume = restoreVolume / 100;
