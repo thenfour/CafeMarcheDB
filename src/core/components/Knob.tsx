@@ -75,6 +75,7 @@ interface KnobProps {
 
     // Snap-to-tick behavior
     snapToTick?: boolean; // Whether single-click values should snap to the nearest tick mark value
+    snapDragToTick?: boolean; // Whether drag movements should snap to the nearest tick mark value
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -122,13 +123,18 @@ export const Knob: React.FC<KnobProps> = ({
 
     // Snap-to-tick behavior
     snapToTick = false,
+    snapDragToTick = false,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [currentValue, setCurrentValue] = useState(value);
+    const [internalValue, setInternalValue] = useState(value); // Track internal position for smooth dragging with snap
+    const [isShiftPressed, setIsShiftPressed] = useState(false); // Track shift key state for overriding snap
+    const isShiftPressedRef = useRef<boolean>(false); // Ref to ensure drag handlers get current shift state
 
     const [startY, setStartY] = useState<number | null>(null);
     const [startValue, setStartValue] = useState<number>(value);
+    const [internalStartValue, setInternalStartValue] = useState<number>(value); // Track internal start value for dragging
     const valueChangedDuringDragRef = useRef<boolean>(false);
     const startPositionRef = useRef({ x: 0, y: 0 });
     const dragStartValueRef = useRef(value);
@@ -355,8 +361,35 @@ export const Knob: React.FC<KnobProps> = ({
     // Update the knob when value changes
     useEffect(() => {
         setCurrentValue(value);
+        setInternalValue(value); // Keep internal value in sync
         drawKnob(value);
     }, [value]);
+
+    // Track shift key state for overriding snap behavior
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Shift') {
+                setIsShiftPressed(true);
+                isShiftPressedRef.current = true;
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Shift') {
+                setIsShiftPressed(false);
+                isShiftPressedRef.current = false;
+            }
+        };
+
+        // Add event listeners
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, []);
 
     // Handle mouse and touch events
     const handleStart = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
@@ -382,6 +415,9 @@ export const Knob: React.FC<KnobProps> = ({
         if (dragBehavior === 'vertical') {
             setStartY(clientY);
             setStartValue(currentValue);
+            setInternalStartValue(internalValue);
+        } else {
+            setInternalStartValue(internalValue);
         }
 
         e.preventDefault(); // Prevent default touch behavior
@@ -422,26 +458,38 @@ export const Knob: React.FC<KnobProps> = ({
         // Sensitivity factor: adjust this value to control how fast the knob changes with movement
         const sensitivity = (max - min) / 1000; // Adjust denominator for sensitivity
 
-        let newValue = startValue + verticalDelta * sensitivity;
+        let newInternalValue = internalStartValue + verticalDelta * sensitivity;
+
+        // Clamp internal value
+        newInternalValue = Math.min(Math.max(newInternalValue, min), max);
+
+        // Calculate the advertised value (with step and optional snapping)
+        let newAdvertisedValue = newInternalValue;
 
         // Apply step
         if (step > 0) {
-            newValue = Math.round(newValue / step) * step;
+            newAdvertisedValue = Math.round(newAdvertisedValue / step) * step;
         }
 
-        // Clamp value
-        newValue = Math.min(Math.max(newValue, min), max);
+        // Clamp advertised value
+        newAdvertisedValue = Math.min(Math.max(newAdvertisedValue, min), max);
+
+        // Apply snap-to-tick for drag if enabled and shift is not pressed
+        if (snapDragToTick && !isShiftPressedRef.current) {
+            newAdvertisedValue = findNearestTickValue(newAdvertisedValue);
+        }
 
         // Only consider this a drag if we moved significantly or value changed significantly
-        const valueChangedSignificantly = Math.abs(newValue - dragStartValueRef.current) > (step || 1);
+        const valueChangedSignificantly = Math.abs(newAdvertisedValue - dragStartValueRef.current) > (step || 1);
 
         if (movementDistance > dragThreshold || valueChangedSignificantly) {
             valueChangedDuringDragRef.current = true;
         }
 
-        setCurrentValue(newValue);
-        drawKnob(newValue);
-        onChange(newValue);
+        setInternalValue(newInternalValue);
+        setCurrentValue(newAdvertisedValue);
+        drawKnob(newAdvertisedValue);
+        onChange(newAdvertisedValue);
 
         e.preventDefault(); // Prevent text selection and other defaults
     };
@@ -478,26 +526,38 @@ export const Knob: React.FC<KnobProps> = ({
 
         let angleRatio = (angle - startAngle + 2 * Math.PI) % (2 * Math.PI);
         angleRatio = angleRatio / angleRange;
-        let newValue = min + angleRatio * valueRange;
+        let newInternalValue = min + angleRatio * valueRange;
+
+        // Clamp internal value
+        newInternalValue = Math.min(Math.max(newInternalValue, min), max);
+
+        // Calculate the advertised value (with step and optional snapping)
+        let newAdvertisedValue = newInternalValue;
 
         // Apply step
         if (step > 0) {
-            newValue = Math.round(newValue / step) * step;
+            newAdvertisedValue = Math.round(newAdvertisedValue / step) * step;
         }
 
-        // Clamp value
-        newValue = Math.min(Math.max(newValue, min), max);
+        // Clamp advertised value
+        newAdvertisedValue = Math.min(Math.max(newAdvertisedValue, min), max);
+
+        // Apply snap-to-tick for drag if enabled and shift is not pressed
+        if (snapDragToTick && !isShiftPressedRef.current) {
+            newAdvertisedValue = findNearestTickValue(newAdvertisedValue);
+        }
 
         // Only consider this a drag if we moved significantly or value changed significantly
-        const valueChangedSignificantly = Math.abs(newValue - dragStartValueRef.current) > (step || 1);
+        const valueChangedSignificantly = Math.abs(newAdvertisedValue - dragStartValueRef.current) > (step || 1);
 
         if (movementDistance > dragThreshold || valueChangedSignificantly) {
             valueChangedDuringDragRef.current = true;
         }
 
-        setCurrentValue(newValue);
-        drawKnob(newValue);
-        onChange(newValue);
+        setInternalValue(newInternalValue);
+        setCurrentValue(newAdvertisedValue);
+        drawKnob(newAdvertisedValue);
+        onChange(newAdvertisedValue);
 
         e.preventDefault();
     };
@@ -616,8 +676,8 @@ export const Knob: React.FC<KnobProps> = ({
         // Clamp value
         newValue = Math.min(Math.max(newValue, min), max);
 
-        // Snap to nearest tick value if enabled
-        if (snapToTick) {
+        // Snap to nearest tick value if enabled and shift is not pressed
+        if (snapToTick && !isShiftPressedRef.current) {
             newValue = findNearestTickValue(newValue);
         }
 

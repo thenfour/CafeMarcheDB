@@ -150,16 +150,16 @@ const getTickMarks = () => {
         }));
 };
 
-const getPresetTempos = () => {
-    const allPresets = TEMPO_REGIONS.flatMap(region => region.presetTempos);
-    // Split into three rows for better layout with more presets
-    const rowSize = Math.ceil(allPresets.length / 3);
-    return {
-        row1: allPresets.slice(0, rowSize),
-        row2: allPresets.slice(rowSize, rowSize * 2),
-        row3: allPresets.slice(rowSize * 2)
-    };
-};
+// const getPresetTempos = () => {
+//     const allPresets = TEMPO_REGIONS.flatMap(region => region.presetTempos);
+//     // Split into three rows for better layout with more presets
+//     const rowSize = Math.ceil(allPresets.length / 3);
+//     return {
+//         row1: allPresets.slice(0, rowSize),
+//         row2: allPresets.slice(rowSize, rowSize * 2),
+//         row3: allPresets.slice(rowSize * 2)
+//     };
+// };
 
 
 export interface MetronomePlayerProps {
@@ -432,10 +432,10 @@ export const MetronomeButton = React.forwardRef<
     const mySilencer = React.useRef<() => void>(() => setPlaying(false));
 
     const togglePlaying = () => setPlaying(!playing);
-    const handleSync = () => {
+    const handleSync = React.useCallback(() => {
         setBeatSyncTrigger(beatSyncTrigger + 1);
         onSyncClick();
-    };
+    }, [beatSyncTrigger, onSyncClick]);
 
     // Expose control functions through ref
     React.useImperativeHandle(ref, () => ({
@@ -443,6 +443,27 @@ export const MetronomeButton = React.forwardRef<
         togglePlaying,
         handleSync
     }), [playing]);
+
+    // Handle sync keyboard shortcut when component is active
+    React.useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Don't handle shortcuts if focus is on an input element
+            if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            if ((event.key === 's' || event.key === 'S') && playing) {
+                event.preventDefault();
+                handleSync();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [playing, handleSync]);
 
     React.useEffect(() => {
         // add self
@@ -693,13 +714,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     changeBPM(event.shiftKey ? -5 : -1);
                     break;
 
-                case 's':
-                case 'S': // Sync/Reset beat
-                    event.preventDefault();
-                    if (metronomeButtonRef.current?.handleSync) {
-                        metronomeButtonRef.current.handleSync();
-                    }
-                    break;
+
 
                 // case 'Escape': // Close dialog
                 //     event.preventDefault();
@@ -753,7 +768,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
     // Get unified tempo configurations
     const knobSegments = getKnobSegments();
     const tickMarks = getTickMarks();
-    const presetTempos = getPresetTempos();
+    //const presetTempos = getPresetTempos();
 
 
 
@@ -845,6 +860,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     }}
                     // Snap-to-tick behavior for precise BPM selection
                     snapToTick={true}
+                    snapDragToTick={true}
                     onChange={e => {
                         //const valueAsNumber = value as number;
                         setBPM(e);
@@ -852,14 +868,13 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     }} />
 
             </div>
-            <div className="buttonRow">
+            {/* <div className="buttonRow">
                 {presetTempos.row1.map((preset, i) => {
                     return <div key={i} className={`preset freeButton ${preset.bpm === bpm ? "selected" : ""}`} onClick={() => {
                         setBPM(preset.bpm);
                         setTextBpm(String(preset.bpm));
                     }}>
                         <div className="title">{preset.bpm}</div>
-                        {/* <div className="subtitle">{preset.label}</div> */}
                     </div>
                 })}
             </div>
@@ -870,7 +885,6 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         setTextBpm(String(preset.bpm));
                     }}>
                         <div className="title">{preset.bpm}</div>
-                        {/* <div className="subtitle">{preset.label}</div> */}
                     </div>
                 })}
             </div>
@@ -881,10 +895,9 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         setTextBpm(String(preset.bpm));
                     }}>
                         <div className="title">{preset.bpm}</div>
-                        {/* <div className="subtitle">{preset.label}</div> */}
                     </div>
                 })}
-            </div>
+            </div> */}
             <div className="keyboardShortcutsHelp" style={{
                 fontSize: '11px',
                 color: '#999',
@@ -894,7 +907,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             }}>
                 {/* <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div> */}
                 <div>
-                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: BPM ±1 • <strong>Shift+Wheel</strong>: BPM ±5 • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
+                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: BPM ±1 • <strong>Shift+Wheel</strong>: BPM ±5 • <strong>Shift+Drag</strong>: Fine control • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
                 </div>
             </div>
             {/* <div className="buttonRow">
