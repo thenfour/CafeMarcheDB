@@ -123,7 +123,7 @@
 } */
 
 .SetlistPlannerMatrix {
-    --song-name-width: 300px;
+    --song-name-width: 400px;
     --segment-width: 80px;
     --song-length-width: 50px;
     background-color: #eee;
