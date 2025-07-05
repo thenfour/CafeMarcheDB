@@ -109,8 +109,10 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
     const [controlledValue, setControlledValue] = React.useState<SetlistAPI.EventSongListDividerItem>({ ...value });
 
     React.useEffect(() => {
+        // Only reset the controlled value if we're editing a different divider (different ID)
+        // This prevents the form from resetting when the user makes changes
         setControlledValue({ ...value });
-    }, [value]);
+    }, [value.id]);
 
     const makeFakeSongList = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListPayload => {
 
@@ -174,7 +176,7 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                                 />
                             } />
                         <FormControlLabel
-                            label={"This is considered a song, with ordinal number"}
+                            label={"This is considered a song, with ordinal number and duration"}
                             control={
                                 <Switch
                                     checked={controlledValue.isSong}
@@ -182,38 +184,28 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                                 />
                             } />
 
-                        {controlledValue.isSong && <>
+                        <FormControlLabel
+                            label={"Subtitle"}
+                            control={
+                                <CMTextInputBase
+                                    readOnly={!controlledValue.isSong}
+                                    style={{ backgroundColor: "white", margin: "8px" }}
+                                    onChange={(e) => setControlledValue({ ...controlledValue, subtitleIfSong: e.target.value })}
+                                    value={controlledValue.subtitleIfSong || ""}
+                                />
+                            } />
 
-                            <FormControlLabel
-                                label={"Subtitle"}
-                                control={
-                                    <CMTextInputBase
-                                        style={{ backgroundColor: "white", margin: "8px" }}
-                                        onChange={(e) => setControlledValue({ ...controlledValue, subtitleIfSong: e.target.value })}
-                                        value={controlledValue.subtitleIfSong || ""}
-                                    />
-                                } />
-
-
-                            <FormControlLabel
-                                label={"Length / duration"}
-                                control={
-                                    <SongLengthInput
-                                        inputStyle={{ backgroundColor: "white", margin: "8px" }}
-                                        initialValue={controlledValue.lengthSeconds || null}
-                                        onChange={(v) => setControlledValue({ ...controlledValue, lengthSeconds: v })}
-                                    />
-                                } />
-                        </>}
+                        <FormControlLabel
+                            label={"Length / duration"}
+                            control={
+                                <SongLengthInput
+                                    readonly={!controlledValue.isSong}
+                                    inputStyle={{ backgroundColor: "white", margin: "8px" }}
+                                    initialValue={controlledValue.lengthSeconds || null}
+                                    onChange={(v) => setControlledValue({ ...controlledValue, lengthSeconds: v })}
+                                />
+                            } />
                     </>}
-            />
-            <NameValuePair
-                name={"Duration?"}
-                value={<SongLengthInput
-                    initialValue={controlledValue.lengthSeconds}
-                    onChange={(val) => {
-                        setControlledValue({ ...controlledValue, lengthSeconds: val });
-                    }} />}
             />
             <NameValuePair
                 name={"Style"}
@@ -329,13 +321,14 @@ type SongPlayButtonProps = {
 export function SongPlayButton({ songList, songIndex }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
     const song = songList.songs[songIndex]?.song;
+    const [matchingFile] = useQuery(getSongPinnedRecording, {
+        songId: song?.id || -1, // avoid hook errors
+    });
+
     if (!song) {
         return null;
     }
 
-    const [matchingFile] = useQuery(getSongPinnedRecording, {
-        songId: song.id,
-    });
     if (!matchingFile?.pinnedRecording) return null;
     const file = matchingFile.pinnedRecording;
     const isCurrent = mediaPlayer.isPlayingFile(file.id);

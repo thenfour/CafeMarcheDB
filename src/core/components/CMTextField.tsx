@@ -189,7 +189,12 @@ export const SongLengthInput = (props: SongLengthInputProps) => {
     }, [lengthSeconds]);
 
     return <div className="songLengthInputContainer">
-        <CMTextInputBase value={controlledValue} onChange={(e, v) => { setControlledValue(v); }} style={props.inputStyle} />
+        <CMTextInputBase
+            value={controlledValue}
+            onChange={(e, v) => { setControlledValue(v); }}
+            style={props.inputStyle}
+            readOnly={props.readonly}
+        />
         <div className="preview">{previewLength}</div>
     </div>
         ;

@@ -167,17 +167,13 @@ export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[]
             }
         }
         if (item.type === 'song') {
-            songLengthSeconds = item.song.lengthSeconds;
-            incrementSongIndex = true;
-        }
-
-        if (songLengthSeconds) {
-            runningTimeSeconds = songLengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
-        } else {
-            // Only count actual songs with unknown length, not dividers
-            if (item.type === 'song') {
+            //songLengthSeconds = item.song.lengthSeconds;
+            if (item.song.lengthSeconds != null) {
+                runningTimeSeconds = item.song.lengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
+            } else {
                 songsWithUnknownLength++;
             }
+            incrementSongIndex = true;
         }
 
         item.index = songIndex;
