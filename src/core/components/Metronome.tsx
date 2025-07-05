@@ -101,7 +101,7 @@ const TEMPO_REGIONS: TempoRegion[] = [
         startBPM: 168,
         endBPM: 200,
         color: '#cFF8E1',
-        textColor: '#cFC107',
+        textColor: '#000',
         //keyTempos: [180],
         presetTempos: [
             { bpm: 172, label: 'Vivace' },
@@ -123,12 +123,13 @@ const TEMPO_REGIONS: TempoRegion[] = [
 ];
 
 // Generate unified configurations from master data
-const getKnobSegments = () => TEMPO_REGIONS.map(region => ({
+const getKnobSegments = () => TEMPO_REGIONS.map((region, index) => ({
     startValue: region.startBPM,
     endValue: region.endBPM,
     color: region.color,
     label: region.name,
     textColor: region.textColor,
+    textOpacity: 0.5,
     fontSize: 13,
     fontWeight: 'normal' as const
 }));

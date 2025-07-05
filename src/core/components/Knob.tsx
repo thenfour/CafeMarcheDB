@@ -6,6 +6,7 @@ interface KnobSegment {
     color: string;         // Segment color
     label?: string;        // Optional curved label
     textColor?: string;    // Optional text color (defaults to '#333')
+    textOpacity?: number;  // Optional text opacity (0.0 to 1.0, defaults to 1.0)
     fontSize?: number;     // Optional font size (defaults to 12)
     fontWeight?: string;   // Optional font weight (defaults to 'normal')
     fontFamily?: string;   // Optional font family (defaults to 'Arial')
@@ -221,9 +222,11 @@ export const Knob: React.FC<KnobProps> = ({
         const fontWeight = segment?.fontWeight || 'normal';
         const fontFamily = segment?.fontFamily || 'Arial';
         const textColor = segment?.textColor || '#333';
+        const textOpacity = segment?.textOpacity ?? 1.0;
 
         ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
         ctx.fillStyle = textColor;
+        ctx.globalAlpha = textOpacity;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
