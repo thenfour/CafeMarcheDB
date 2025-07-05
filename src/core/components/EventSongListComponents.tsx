@@ -297,7 +297,7 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
         <div className="td songIndex">
             {props.value.index != null && props.value.index + 1}
         </div>
-        <div className="td play"></div>
+        <div className="td play"><NullSongPlayButton /></div>
         <div className="td songName">{props.value.subtitle}</div>
         <div className="td length">{props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds)}</div>
         <div className="td runningLength">{props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
@@ -311,7 +311,9 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
 
 
 
-
+export const NullSongPlayButton = () => {
+    return <div className='audioPreviewGatewayContainer'></div>;
+}
 
 // File-specific audio controls that use the global media player
 type SongPlayButtonProps = {
@@ -325,11 +327,10 @@ export function SongPlayButton({ songList, songIndex, pinnedRecording, allPinned
     const mediaPlayer = useMediaPlayer();
     const song = songList.songs[songIndex]?.song;
 
-    if (!song) {
-        return null;
+    if (!song || (!pinnedRecording)) {
+        return <NullSongPlayButton />; // Placeholder if no song is found
     }
 
-    if (!pinnedRecording) return null;
     const file = pinnedRecording;
     const isCurrent = mediaPlayer.isPlayingFile(file.id);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
@@ -378,7 +379,7 @@ export function SongPlayButton({ songList, songIndex, pinnedRecording, allPinned
             {isPlaying ? (
                 <div className='audioPreviewGatewayButton freeButton' onClick={handlePause}>
                     {gIconMap.PauseCircleOutline()}
-                    <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} />
+                    {/* <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} /> */}
                 </div>
             ) : (
                 <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>
@@ -424,7 +425,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <div className="td songIndex">
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
             </div>
-            <div className="td play">{enrichedSong?.pinnedRecordingId && props.value.type === 'song' && <SongPlayButton
+            <div className="td play">{props.value.type === 'song' && <SongPlayButton
                 songList={props.songList}
                 songIndex={props.value.songArrayIndex}
                 pinnedRecording={props.pinnedRecordings?.[props.value.song.id]}

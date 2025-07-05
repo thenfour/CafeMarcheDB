@@ -584,3 +584,12 @@ li.songDropdownOption {
     border-top: 2px dashed var(--color-background);
     height: 0;
 } */
+
+
+.songListSongTable .audioPreviewGatewayContainer {
+    width: 28px;
+}
+
+.songListSongTable .audioPreviewGatewayButton svg {
+    fill: #aaa;
+}
