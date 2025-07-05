@@ -249,9 +249,10 @@ const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { so
 interface EventSongListValueViewerRowProps {
     value: SetlistAPI.EventSongListItem;
     songList: db3.EventSongListPayload;
+    pinnedRecordings?: Record<number, any>; // songId -> pinnedRecording
 };
 
-export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value">) => {
+export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings">) => {
     if (props.value.type !== 'divider') throw new Error(`wrongtype`);
 
     const colorInfo = GetStyleVariablesForColor({
@@ -281,7 +282,7 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
 
 };
 
-export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongListValueViewerRowProps, "value">) => {
+export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings">) => {
     if (props.value.type !== 'divider') throw new Error(`wrongtype`);
 
     const colorInfo = GetStyleVariablesForColor({
@@ -316,21 +317,19 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
 type SongPlayButtonProps = {
     songList: db3.EventSongListPayload;
     songIndex: number;
+    pinnedRecording?: any; // The pinned recording for this song, if any
 };
 
-export function SongPlayButton({ songList, songIndex }: SongPlayButtonProps) {
+export function SongPlayButton({ songList, songIndex, pinnedRecording }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
     const song = songList.songs[songIndex]?.song;
-    const [matchingFile] = useQuery(getSongPinnedRecording, {
-        songId: song?.id || -1, // avoid hook errors
-    });
 
     if (!song) {
         return null;
     }
 
-    if (!matchingFile?.pinnedRecording) return null;
-    const file = matchingFile.pinnedRecording;
+    if (!pinnedRecording) return null;
+    const file = pinnedRecording;
     const isCurrent = mediaPlayer.isPlayingFile(file.id);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
 
@@ -409,6 +408,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <div className="td play">{enrichedSong?.pinnedRecordingId && props.value.type === 'song' && <SongPlayButton
                 songList={props.songList}
                 songIndex={props.value.songArrayIndex}
+                pinnedRecording={props.pinnedRecordings?.[props.value.song.id]}
             />}</div>
             <div className="td songName">
                 {props.value.type === 'song' && <>
@@ -654,6 +654,14 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
+    // Fetch all pinned recordings for songs in this list at once
+    const songIds = props.value.songs.map(s => s.song.id);
+    const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
+        songIds: songIds,
+    }, {
+        enabled: songIds.length > 0
+    });
+
     const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
         clientIntention,
         publicData,
@@ -778,7 +786,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
 
         <div className="tbody">
             {
-                rowItems.map((s, index) => <EventSongListValueViewerRow key={index} value={s} songList={props.value} />)
+                rowItems.map((s, index) => <EventSongListValueViewerRow key={index} value={s} songList={props.value} pinnedRecordings={pinnedRecordings || {}} />)
             }
 
         </div>

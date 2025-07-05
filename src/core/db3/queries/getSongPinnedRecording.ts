@@ -5,7 +5,7 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 
 const ZArgs = z.object({
-    songId: z.number(),
+    songIds: z.array(z.number()),
 });
 
 export default resolver.pipe(
@@ -13,17 +13,25 @@ export default resolver.pipe(
     resolver.zod(ZArgs),
     async (args, ctx: AuthenticatedCtx) => {
         try {
-            const qr = await db.song.findUnique({
-                where: { id: args.songId },
+            const qr = await db.song.findMany({
+                where: {
+                    id: { in: args.songIds },
+                    pinnedRecordingId: { not: null }
+                },
                 include: {
                     pinnedRecording: true,
                 }
             });
-            if (!qr) return null;
-            if (!qr.pinnedRecording) return null;
-            return {
-                pinnedRecording: qr.pinnedRecording,
-            };
+
+            // Create a map of songId -> pinnedRecording for easy lookup
+            const result: Record<number, any> = {};
+            qr.forEach(song => {
+                if (song.pinnedRecording) {
+                    result[song.id] = song.pinnedRecording;
+                }
+            });
+
+            return result;
 
         } catch (e) {
             console.error(e);
