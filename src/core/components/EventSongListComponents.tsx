@@ -11,7 +11,7 @@ import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray, sortBy } from 'shared/arrayUtils';
-import { gSwatchColors } from 'shared/color';
+import { gSwatchColors, StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -43,16 +43,18 @@ import { useQuery } from '@blitzjs/rpc';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
 import { getURIForFile } from '../db3/clientAPILL';
 
-const SongTagIndicatorContainer = ({ value }: { value: SetlistAPI.EventSongListSongItem }) => {
+export const SongTagIndicatorContainer = ({ tagIds }: { tagIds: number[] }) => {
     const dashboardContext = React.useContext(DashboardContext);
-    const allSongTags = value.song.tags.map(t => dashboardContext.songTag.getById(t.tagId)).filter(t => !!t);
+    const allSongTags = tagIds.map(tagId => dashboardContext.songTag.getById(tagId)).filter(t => !!t);
     const tagsWithIndicators = allSongTags.filter(t => !IsNullOrWhitespace(t.indicator));
+    console.log("SongTagIndicatorContainer", { tagIds, allSongTags, tagsWithIndicators });
     if (!tagsWithIndicators.length) return null;
     const sortedTags = sortBy(tagsWithIndicators, t => t.sortOrder);
     return <div className='songTagIndicatorContainer'>
         {sortedTags.map((tag, i) => {
+            const style = GetStyleVariablesForColor({ color: tag.color, ...StandardVariationSpec.Strong });
             return <Tooltip title={tag.text} key={i} disableInteractive>
-                <div key={i} className={`songTagIndicator ${tag.indicatorCssClass}`}>{tag.indicator}</div>
+                <div key={i} className={`songTagIndicator ${tag.indicatorCssClass} ${style.cssClass}`} style={style.style}>{tag.indicator}</div>
             </Tooltip>;
         })}
     </div>;
@@ -355,7 +357,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <div className="td songName">
                 {props.value.type === 'song' && <>
                     <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
-                    <SongTagIndicatorContainer value={props.value} />
+                    <SongTagIndicatorContainer tagIds={props.value.song.tags.map(tag => tag.tagId)} />
                 </>}
             </div>
             <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
@@ -717,7 +719,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
 
         <div className="tbody">
             {
-                rowItems.map((s, index) => <EventSongListValueViewerRow key={s.id} value={s} songList={props.value} />)
+                rowItems.map((s, index) => <EventSongListValueViewerRow key={index} value={s} songList={props.value} />)
             }
 
         </div>
@@ -989,7 +991,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                     <div className={`td songName `}>
                         {props.value.type === 'song' && <>
                             <div>{props.value.song.name}</div>
-                            <SongTagIndicatorContainer value={props.value} />
+                            <SongTagIndicatorContainer tagIds={props.value.song.tags.map(tag => tag.tagId)} />
                         </>}
 
                         {/* value used to be props.value.song || null */}

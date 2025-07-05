@@ -176,7 +176,7 @@
     padding: 2px 0;
 }
 
-.songListSongTable .td.songName .songTagIndicatorContainer {
+.songTagIndicatorContainer {
     position: absolute;
     right: 0;
     /* top: 0;  <-- dont set to center vertically*/
@@ -184,9 +184,8 @@
     gap: 4px;
 }
 
-.songListSongTable .td.songName .songTagIndicator {
+.songTagIndicator {
     padding: 1px 3px;
-    background-color: #ddd;
     border-radius: 4px;
     user-select: none;
     opacity: 50%;
@@ -194,17 +193,23 @@
     align-items: center;
 
     font-family: var(--ff-mono);
-    color: #666;
     font-size: 14px;
     font-weight: normal;
+
+    --color-background: #ddd;
+    --color-foreground: #666;
+
+    background-color: var(--color-background) !important;
+    color: var(--color-foreground) !important;
+    /* border: 1px var(--color-border-style) var(--color-foreground); */
 }
 
-.songListSongTable .td.songName .songTagIndicator:hover {
+.songTagIndicator:hover {
     opacity: 100%;
 }
 
 
-.songListSongTable .td.songName .songTagIndicator.bare {
+.songTagIndicator.bare {
     padding: 0;
     background-color: transparent;
     border-radius: 0;

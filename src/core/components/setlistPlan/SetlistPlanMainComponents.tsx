@@ -10,7 +10,7 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/compo
 import { CMSmallButton, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { getClipboardSongList, PortableSongList, PortableSongListSong, PortableSongListDivider } from "src/core/components/EventSongListComponents";
+import { getClipboardSongList, PortableSongList, PortableSongListSong, PortableSongListDivider, SongTagIndicatorContainer } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -117,7 +117,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const isDupeWarning = songOccurrences > 1;
 
     return <div className="tr">
-        <div className="td songName">
+        <div className="td songName" style={{ "--song-hash-color": getHashedColor(song.name), position: "relative" } as any}>
 
             <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
                 #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")}
@@ -134,7 +134,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 </div>
             </Tooltip>
 
-            <div style={{ display: "flex", alignItems: "center", "--song-hash-color": getHashedColor(song.name) } as any}>
+            <div style={{ display: "flex", alignItems: "center" }}>
                 <SetlistPlannerLedArray
                     direction="row"
                     ledDefs={props.doc.payload.rowLeds || []}
@@ -155,6 +155,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                         } as any}>{song.name}</a>
                     </Tooltip>
                 </div>
+                <SongTagIndicatorContainer tagIds={song.tags.map(tag => tag.tagId)} />
             </div>
         </div>
         <div className="td songLength">
