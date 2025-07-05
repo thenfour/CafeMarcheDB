@@ -747,7 +747,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         {showHeader && <div className="thead">
             <div className="tr">
                 <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
-                <div className="th play">{gIconMap.PlayCircleOutline()}</div>
+                <div className="th play"></div>
                 <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
                 <div className="th length">Len</div>
                 <div className="th runningLength">∑T</div>

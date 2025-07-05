@@ -61,11 +61,11 @@
     display: flex;
     align-items: center;
 
-    background-color: #26a;
+    background-color: #479;
     padding: 6px 12px;
     /* text-shadow: #0004 0px 0px 7px; */
-    text-shadow: #00aaff 0px 0px 4px, #0088ff 0px 0px 8px;
-    box-shadow: inset 0 0 15px #003388, 0 0 5px #0066ff44;
+    text-shadow: #fff6 0px 0px 3px, #88ccffdb 0px 0px 10px;
+    box-shadow: inset 0 0 5px #bdf;
     height: 40px;
     border: 1px solid #0088ff;
 }
