@@ -10,7 +10,7 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/compo
 import { CMSmallButton, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { getClipboardSongList, PortableSongList, PortableSongListSong, PortableSongListDivider, SongTagIndicatorContainer } from "src/core/components/EventSongListComponents";
+import { getClipboardSongList, PortableSongList, PortableSongListSong, PortableSongListDivider, SongTagIndicatorContainer, SongTagIndicatorContainerAligned } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -83,6 +83,7 @@ type SetlistPlannerMatrixRowProps = {
     rowId: string;
     stats: SetlistPlanStats;
     colorScheme: SetlistPlannerColorScheme;
+    allTagIds: number[];
 };
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
@@ -155,7 +156,10 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                         } as any}>{song.name}</a>
                     </Tooltip>
                 </div>
-                <SongTagIndicatorContainer tagIds={song.tags.map(tag => tag.tagId)} />
+                <SongTagIndicatorContainerAligned
+                    tagIds={song.tags.map(tag => tag.tagId)}
+                    allPossibleTags={props.allTagIds}
+                />
             </div>
         </div>
         <div className="td songLength">
@@ -448,6 +452,20 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     const docOrTempDoc = props.tempDoc || props.doc;
     //const isTempDoc = !!props.tempDoc;
 
+    // Collect all unique tag IDs from all songs in the plan
+    const allTagIds = React.useMemo(() => {
+        const tagIds = new Set<number>();
+        docOrTempDoc.payload.rows.forEach(row => {
+            if (row.type === 'song' && row.songId) {
+                const song = allSongs.find(s => s.id === row.songId);
+                if (song) {
+                    song.tags.forEach(tag => tagIds.add(tag.tagId));
+                }
+            }
+        });
+        return Array.from(tagIds);
+    }, [docOrTempDoc.payload.rows, allSongs]);
+
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         if (args.addedIndex === args.removedIndex) return; // no change
         props.mutator.reorderRows(args);
@@ -523,6 +541,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                             doc={docOrTempDoc}
                             colorScheme={props.colorScheme}
                             rowId={song.rowId}
+                            allTagIds={allTagIds}
                         />
                     }
                 </ReactSmoothDndDraggable>

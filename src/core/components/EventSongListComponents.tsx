@@ -59,6 +59,45 @@ export const SongTagIndicatorContainer = ({ tagIds }: { tagIds: number[] }) => {
     </div>;
 };
 
+// Aligned version that shows all possible tags with consistent spacing
+export const SongTagIndicatorContainerAligned = ({ tagIds, allPossibleTags }: {
+    tagIds: number[],
+    allPossibleTags: number[]
+}) => {
+    const dashboardContext = React.useContext(DashboardContext);
+
+    // Get all possible tags that have indicators, sorted by sortOrder
+    const allTags = allPossibleTags
+        .map(tagId => dashboardContext.songTag.getById(tagId))
+        .filter(t => !!t && !IsNullOrWhitespace(t.indicator)) as db3.SongTagPayload[];
+
+    const sortedAllTags = sortBy(allTags, t => t.sortOrder);
+
+    // Create a set of current song's tag IDs for quick lookup
+    const currentTagIds = new Set(tagIds);
+
+    if (!sortedAllTags.length) return null;
+
+    return <div className='songTagIndicatorContainer aligned'>
+        {sortedAllTags.map((tag, i) => {
+            const style = GetStyleVariablesForColor({ color: tag.color, ...StandardVariationSpec.Strong });
+            const isVisible = currentTagIds.has(tag.id);
+            return <Tooltip title={tag.text} key={i} disableInteractive>
+                <div
+                    key={i}
+                    className={`songTagIndicator ${tag.indicatorCssClass} ${style.cssClass}`}
+                    style={{
+                        ...style.style,
+                        visibility: isVisible ? 'visible' : 'hidden'
+                    }}
+                >
+                    {tag.indicator}
+                </div>
+            </Tooltip>;
+        })}
+    </div>;
+};
+
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
     sortOrder: number,
     value: SetlistAPI.EventSongListDividerItem,
@@ -345,6 +384,16 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     }
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
+
+    // Collect all unique tag IDs from all songs in the song list
+    const allTagIds = React.useMemo(() => {
+        const tagIds = new Set<number>();
+        props.songList.songs.forEach(songListItem => {
+            songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
+        });
+        return Array.from(tagIds);
+    }, [props.songList.songs]);
+
     // const formattedBPM = props.value.type === 'song' ? API.songs.getFormattedBPM(props.value.song) : "";
 
     return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type}`}>
@@ -356,7 +405,10 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <div className="td songName">
                 {props.value.type === 'song' && <>
                     <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
-                    <SongTagIndicatorContainer tagIds={props.value.song.tags.map(tag => tag.tagId)} />
+                    <SongTagIndicatorContainerAligned
+                        tagIds={props.value.song.tags.map(tag => tag.tagId)}
+                        allPossibleTags={allTagIds}
+                    />
                 </>}
             </div>
             <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
@@ -873,6 +925,15 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
     const showDragHandle = CoalesceBool(props.showDragHandle, true);
 
+    // Collect all unique tag IDs from all songs in the song list
+    const allTagIds = React.useMemo(() => {
+        const tagIds = new Set<number>();
+        props.songList.songs.forEach(songListItem => {
+            songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
+        });
+        return Array.from(tagIds);
+    }, [props.songList.songs]);
+
     const colorInfo = props.value.type === 'divider' ? GetStyleVariablesForColor({
         color: props.value.color || gSwatchColors.lighter_gray,// gAppColors.attendance_yes,
         enabled: true,
@@ -990,7 +1051,10 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                     <div className={`td songName `}>
                         {props.value.type === 'song' && <>
                             <div>{props.value.song.name}</div>
-                            <SongTagIndicatorContainer tagIds={props.value.song.tags.map(tag => tag.tagId)} />
+                            <SongTagIndicatorContainerAligned
+                                tagIds={props.value.song.tags.map(tag => tag.tagId)}
+                                allPossibleTags={allTagIds}
+                            />
                         </>}
 
                         {/* value used to be props.value.song || null */}
@@ -1309,7 +1373,6 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}
     </div>;
 };
-
 
 
 
