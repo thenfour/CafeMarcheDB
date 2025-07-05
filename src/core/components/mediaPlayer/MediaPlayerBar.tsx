@@ -86,8 +86,25 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                             src={current.url}
                             controls
                             ref={audioRef}
-                            onLoadedMetadata={e => mediaPlayer.setLengthSeconds(e.currentTarget.duration)}
-                            onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
+                            onLoadedMetadata={e => {
+                                const duration = e.currentTarget.duration;
+                                if (isFinite(duration) && duration > 0) {
+                                    mediaPlayer.setLengthSeconds(duration);
+                                } else {
+                                    console.log('Invalid duration on loadedMetadata:', duration);
+                                }
+                            }}
+                            onTimeUpdate={e => {
+                                const currentTime = e.currentTarget.currentTime;
+                                const duration = e.currentTarget.duration;
+
+                                mediaPlayer.setPlayheadSeconds(currentTime);
+
+                                // Update duration if it wasn't available before or if it's now valid
+                                if (isFinite(duration) && duration > 0 && duration !== mediaPlayer.lengthSeconds) {
+                                    mediaPlayer.setLengthSeconds(duration);
+                                }
+                            }}
                             onPlaying={() => {
                                 mediaPlayer.setIsPlaying(true);
                             }}

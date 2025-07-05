@@ -45,7 +45,7 @@ const getSegmentProportionalWidth = (track: MediaPlayerTrack): number => {
 };
 
 export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> = ({ mediaPlayer }) => {
-    const { playlist, currentIndex } = mediaPlayer;
+    const { playlist, currentIndex, playheadSeconds, lengthSeconds } = mediaPlayer;
     const [visible, setVisible] = React.useState(false);
 
     const current = currentIndex != null ? playlist[currentIndex] : undefined;
@@ -65,6 +65,32 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
         .map(track => `${getSegmentProportionalWidth(track)}fr`)
         .join(' ');
 
+    // Calculate playhead position as a percentage within the current track
+    const getPlayheadPosition = (): number => {
+        if (currentIndex == null || !playheadSeconds) {
+            return 0;
+        }
+
+        // Try to get duration from the MediaPlayerContext
+        let trackDuration = lengthSeconds;
+
+        // If lengthSeconds is invalid (Infinity, NaN, or 0), try to get it from DOM
+        if (!isFinite(trackDuration) || trackDuration <= 0) {
+            // Try to find audio element in the DOM as a fallback
+            const audioElement = document.querySelector('audio');
+            if (audioElement && isFinite(audioElement.duration) && audioElement.duration > 0) {
+                trackDuration = audioElement.duration;
+                console.log(`Using fallback duration from DOM: ${trackDuration}`);
+            } else {
+                console.log(`Invalid lengthSeconds: ${lengthSeconds} and no valid DOM audio duration, cannot calculate playhead position`);
+                return 0;
+            }
+        }
+
+        const position = Math.max(0, Math.min(100, (playheadSeconds / trackDuration) * 100));
+        console.log(`Playhead position: ${playheadSeconds} / ${trackDuration} = ${position.toFixed(1)}%`);
+        return position;
+    };
 
     return (
         <div
@@ -77,6 +103,7 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
                 const title = mediaPlayer.getTrackTitle(track);
                 const proportionalWidth = getSegmentProportionalWidth(track);
                 const fullTtitle = `${index + 1}. ${title.title}${title.subtitle ? ` (${title.subtitle})` : ''}`;
+                const playheadPosition = isCurrentTrack ? getPlayheadPosition() : 0;
 
                 return (
                     <div
@@ -91,12 +118,31 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
                                 className={`coloredSegment`}
                                 style={{
                                     backgroundColor: color,
+                                    position: 'relative',
                                 }}
                                 onClick={() => {
                                     mediaPlayer.setPlaylist(playlist, index);
                                 }}
                             >
-                                {fullTtitle}
+                                {/* Progress fill for current track */}
+                                {isCurrentTrack && (
+                                    <div
+                                        className="progressFill"
+                                        style={{
+                                            width: `${playheadPosition}%`,
+                                        }}
+                                    />
+                                )}
+                                {/* Playhead indicator for current track */}
+                                {isCurrentTrack && (
+                                    <div
+                                        className="playheadIndicator"
+                                        style={{
+                                            left: `${playheadPosition}%`,
+                                        }}
+                                    />
+                                )}
+                                <span className="segmentText">{fullTtitle}</span>
                             </div>
                         </Tooltip>
                     </div>
