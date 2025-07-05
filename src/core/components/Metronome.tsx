@@ -690,10 +690,10 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     }
                     break;
 
-                case 'Escape': // Close dialog
-                    event.preventDefault();
-                    props.onClose();
-                    break;
+                // case 'Escape': // Close dialog
+                //     event.preventDefault();
+                //     props.onClose();
+                //     break;
 
                 case '1':
                 case '2':
@@ -880,7 +880,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             }}>
                 <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div>
                 <div>
-                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: BPM ±1 • <strong>Shift+Wheel</strong>: BPM ±5 • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets • <strong>Esc</strong>: Close
+                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: BPM ±1 • <strong>Shift+Wheel</strong>: BPM ±5 • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
                 </div>
             </div>
             <div className="buttonRow">
