@@ -411,12 +411,39 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
 };
 
 
-export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSyncClick, variant }: { bpm: number, mountPlaying?: boolean, tapTrigger: number, isTapping: boolean, onSyncClick: () => void, variant: "normal" | "tiny" }) => {
+export const MetronomeButton = React.forwardRef<
+    {
+        isPlaying: boolean;
+        togglePlaying: () => void;
+        handleSync: () => void;
+    },
+    {
+        bpm: number;
+        mountPlaying?: boolean;
+        tapTrigger: number;
+        isTapping: boolean;
+        onSyncClick: () => void;
+        variant: "normal" | "tiny";
+    }
+>(({ bpm, mountPlaying, tapTrigger, isTapping, onSyncClick, variant }, ref) => {
     const [playing, setPlaying] = React.useState<boolean>(mountPlaying || false);
     const dashboardContext = React.useContext(DashboardContext);
     const recordFeature = useFeatureRecorder();
     const [beatSyncTrigger, setBeatSyncTrigger] = React.useState<number>(0);
     const mySilencer = React.useRef<() => void>(() => setPlaying(false));
+
+    const togglePlaying = () => setPlaying(!playing);
+    const handleSync = () => {
+        setBeatSyncTrigger(beatSyncTrigger + 1);
+        onSyncClick();
+    };
+
+    // Expose control functions through ref
+    React.useImperativeHandle(ref, () => ({
+        isPlaying: playing,
+        togglePlaying,
+        handleSync
+    }), [playing]);
 
     React.useEffect(() => {
         // add self
@@ -455,13 +482,12 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
     // - ONLY flash.
 
     return <div className={`metronomeButtonContainer ${variant}`}>
-        <div onClick={() => setPlaying(!playing)} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"}`}>
+        <div onClick={togglePlaying} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"}`}>
             {playing ? (variant === "normal" && gIconMap.VolumeUp()) : bpm}
             {playing && <MetronomePlayer bpm={bpm} syncTrigger={tapTrigger + beatSyncTrigger} mute={isTapping} running={!isTapping} />}
         </div>
         {playing && (variant === "normal") && <div className="metronomeSyncButton freeButton" onClick={(e) => {
-            setBeatSyncTrigger(beatSyncTrigger + 1);
-            onSyncClick();
+            handleSync();
             e.stopPropagation();
             e.preventDefault();
         }}>
@@ -470,7 +496,7 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
 
 
     </div>;
-};
+});
 
 
 // uses IQR filter + linear weighted average
@@ -507,8 +533,10 @@ export interface TapTempoProps {
     killTapTrigger: number;
 }
 
-
-export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping, killTapTrigger }) => {
+export const TapTempo = React.forwardRef<
+    { handleTap: () => void },
+    TapTempoProps
+>(({ onTap, onStopTapping, killTapTrigger }, ref) => {
     const [lastTapTime, setLastTapTime] = React.useState<number | null>(null);
     const tapTimes = React.useRef<number[]>([]);
     const [classToggle, setClassToggle] = React.useState<boolean>(false);
@@ -554,6 +582,11 @@ export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping, killTa
         timerIDRef.current = window.setTimeout(stopTapping, 1400);
     };
 
+    // Expose control functions through ref
+    React.useImperativeHandle(ref, () => ({
+        handleTap
+    }), []);
+
     React.useEffect(() => {
         stopTapping();
     }, [killTapTrigger]);
@@ -563,7 +596,7 @@ export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping, killTa
             {lastTapTime !== null ? tapTimes.current.length : "Tap"}
         </div>
     );
-};
+});
 
 export interface MetronomeDialogProps {
     onClose: () => void;
@@ -580,9 +613,114 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
     const [killTapTrigger, setKillTapTrigger] = React.useState<number>(0);// trigger to exit tap mode
     const [isTapping, setIsTapping] = React.useState<boolean>(false);
 
+    // Refs for accessing component functions
+    const metronomeButtonRef = React.useRef<{
+        isPlaying: boolean;
+        togglePlaying: () => void;
+        handleSync: () => void;
+    }>(null);
+    const tapTempoRef = React.useRef<{ handleTap: () => void }>(null);
+
     const handleSync = () => {
         setKillTapTrigger(killTapTrigger + 1);
     };
+
+    const handleTap = () => {
+        // Trigger tap tempo functionality
+        if (tapTempoRef.current?.handleTap) {
+            tapTempoRef.current.handleTap();
+        }
+    };
+
+    const changeBPM = (delta: number) => {
+        const newBPM = Clamp(bpm + delta, gMinBPM, gMaxBPM);
+        setBPM(newBPM);
+        setTextBpm(newBPM.toString());
+    };
+
+    const setPresetBPM = (presetIndex: number) => {
+        // todo: specify which tempos per key
+        const allPresets = TEMPO_REGIONS.flatMap(region => region.presetTempos);
+        if (presetIndex >= 0 && presetIndex < allPresets.length) {
+            const preset = allPresets[presetIndex];
+            if (preset) {
+                setBPM(preset.bpm);
+                setTextBpm(preset.bpm.toString());
+            }
+        }
+    };
+
+    // Keyboard shortcuts
+    React.useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // Don't handle shortcuts if focus is on an input element
+            if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            switch (event.key) {
+                case ' ': // Space - Play/Stop
+                    event.preventDefault();
+                    if (metronomeButtonRef.current?.togglePlaying) {
+                        metronomeButtonRef.current.togglePlaying();
+                    }
+                    break;
+
+                case 'ArrowUp': // Increase BPM
+                    event.preventDefault();
+                    changeBPM(event.shiftKey ? 5 : 1);
+                    break;
+
+                case 'ArrowDown': // Decrease BPM
+                    event.preventDefault();
+                    changeBPM(event.shiftKey ? -5 : -1);
+                    break;
+
+                case 't':
+                case 'T': // Tap tempo
+                    event.preventDefault();
+                    handleTap();
+                    break;
+
+                case 's':
+                case 'S': // Sync/Reset beat
+                    event.preventDefault();
+                    if (metronomeButtonRef.current?.handleSync) {
+                        metronomeButtonRef.current.handleSync();
+                    }
+                    break;
+
+                case 'Escape': // Close dialog
+                    event.preventDefault();
+                    props.onClose();
+                    break;
+
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9': // Preset tempos
+                    event.preventDefault();
+                    setPresetBPM(parseInt(event.key) - 1);
+                    break;
+
+                default:
+                    break;
+            }
+        };
+
+        // Add event listener
+        document.addEventListener('keydown', handleKeyDown);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [bpm, props.onClose]);
 
     // Get unified tempo configurations
     const knobSegments = getKnobSegments();
@@ -593,7 +731,15 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
 
     return <ReactiveInputDialog onCancel={props.onClose} className="GlobalMetronomeDialog">
         <DialogContent dividers>
-            <MetronomeButton bpm={bpm} mountPlaying={true} isTapping={isTapping} tapTrigger={tapTrigger} onSyncClick={handleSync} variant="normal" />
+            <MetronomeButton
+                ref={metronomeButtonRef}
+                bpm={bpm}
+                mountPlaying={true}
+                isTapping={isTapping}
+                tapTrigger={tapTrigger}
+                onSyncClick={handleSync}
+                variant="normal"
+            />
             <div className="bpmAndTapRow">
                 <div className="nudge minus freeButton" onClick={() => {
                     setBPM(bpm - 1);
@@ -615,6 +761,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     value={textBpm}
                 />
                 <TapTempo
+                    ref={tapTempoRef}
                     killTapTrigger={killTapTrigger}
                     onStopTapping={() => {
                         setIsTapping(false);
@@ -681,7 +828,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         setTextBpm(String(preset.bpm));
                     }}>
                         <div className="title">{preset.bpm}</div>
-                        <div className="subtitle">{preset.label}</div>
+                        {/* <div className="subtitle">{preset.label}</div> */}
                     </div>
                 })}
             </div>
@@ -692,7 +839,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         setTextBpm(String(preset.bpm));
                     }}>
                         <div className="title">{preset.bpm}</div>
-                        <div className="subtitle">{preset.label}</div>
+                        {/* <div className="subtitle">{preset.label}</div> */}
                     </div>
                 })}
             </div>
@@ -703,9 +850,21 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         setTextBpm(String(preset.bpm));
                     }}>
                         <div className="title">{preset.bpm}</div>
-                        <div className="subtitle">{preset.label}</div>
+                        {/* <div className="subtitle">{preset.label}</div> */}
                     </div>
                 })}
+            </div>
+            <div className="keyboardShortcutsHelp" style={{
+                fontSize: '11px',
+                color: '#666',
+                marginTop: '10px',
+                textAlign: 'center',
+                lineHeight: '1.3'
+            }}>
+                <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div>
+                <div>
+                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets • <strong>Esc</strong>: Close
+                </div>
             </div>
             <div className="buttonRow">
                 <Button className="closeButton" onClick={props.onClose}>Close</Button>
