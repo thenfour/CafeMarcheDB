@@ -5,6 +5,10 @@ interface KnobSegment {
     endValue: number;      // Exclusive end
     color: string;         // Segment color
     label?: string;        // Optional curved label
+    textColor?: string;    // Optional text color (defaults to '#333')
+    fontSize?: number;     // Optional font size (defaults to 12)
+    fontWeight?: string;   // Optional font weight (defaults to 'normal')
+    fontFamily?: string;   // Optional font family (defaults to 'Arial')
 }
 
 interface KnobProps {
@@ -31,6 +35,10 @@ interface KnobProps {
     segmentArcWidth?: number;     // Width of outer segment arc (default: 12)
     segmentGap?: number;          // Gap between inner and outer arcs (default: 8)
     segmentTextOffset?: number;   // Distance of text from segment arc (default: 8)
+    needleStartRadius?: number;   // Inner radius of needle (default: centerRadius + 5)
+    needleEndRadius?: number;     // Outer radius of needle (default: innermost arc radius - 5)
+    needleColor?: string;         // Color of needle (default: '#333')
+    needleWidth?: number;         // Width of needle line (default: 2)
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -52,6 +60,10 @@ export const Knob: React.FC<KnobProps> = ({
     segmentArcWidth = 12,
     segmentGap = 8,
     segmentTextOffset = 8,
+    needleStartRadius,
+    needleEndRadius,
+    needleColor = '#333',
+    needleWidth = 2,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -95,20 +107,27 @@ export const Knob: React.FC<KnobProps> = ({
 
             // Draw curved label if provided
             if (segment.label) {
-                drawCurvedText(ctx, segment.label, segmentStartAngle, segmentEndAngle, radius + width / 2 + segmentTextOffset);
+                drawCurvedText(ctx, segment.label, segmentStartAngle, segmentEndAngle, radius + width / 2 + segmentTextOffset, segment);
             }
         });
     };
 
     // Draw text along curved path
-    const drawCurvedText = (ctx: CanvasRenderingContext2D, text: string, startAngle: number, endAngle: number, radius: number) => {
+    const drawCurvedText = (ctx: CanvasRenderingContext2D, text: string, startAngle: number, endAngle: number, radius: number, segment?: KnobSegment) => {
         const centerX = size / 2;
         const centerY = size / 2;
         const midAngle = (startAngle + endAngle) / 2;
 
         ctx.save();
-        ctx.font = '12px Arial';
-        ctx.fillStyle = '#333';
+
+        // Apply text formatting from segment or use defaults
+        const fontSize = segment?.fontSize || 12;
+        const fontWeight = segment?.fontWeight || 'normal';
+        const fontFamily = segment?.fontFamily || 'Arial';
+        const textColor = segment?.textColor || '#333';
+
+        ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+        ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
@@ -136,9 +155,9 @@ export const Knob: React.FC<KnobProps> = ({
         ctx.clearRect(0, 0, size, size);
 
         // Calculate radii from outside to inside:
-        // [Canvas Edge] -> [lineWidth/2] -> [Inner Arc Center] -> [segmentGap] -> [Segment Arc Center] -> [segmentArcWidth/2] -> [Text Position]
-        const innerArcRadius = size / 2 - lineWidth / 2;
-        const segmentArcRadius = innerArcRadius - lineWidth / 2 - segmentGap - segmentArcWidth / 2;
+        // [Canvas Edge] -> [segmentArcWidth/2] -> [Segment Arc Center] -> [segmentGap] -> [Value Arc Center] -> [lineWidth/2] -> [Inner Edge]
+        const segmentArcRadius = size / 2 - segmentArcWidth / 2;
+        const valueArcRadius = segmentArcRadius - segmentArcWidth / 2 - segmentGap - lineWidth / 2;
 
         // Draw outer segments first (if segments are provided)
         if (segments && segments.length > 0) {
@@ -151,17 +170,39 @@ export const Knob: React.FC<KnobProps> = ({
 
         // Draw inner track
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, innerArcRadius, startAngle, endAngle, false);
+        ctx.arc(size / 2, size / 2, valueArcRadius, startAngle, endAngle, false);
         ctx.lineWidth = lineWidth;
         ctx.strokeStyle = '#e0e0e0';
         ctx.stroke();
 
         // Draw inner value arc
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, innerArcRadius, startAngle, angle, false);
+        ctx.arc(size / 2, size / 2, valueArcRadius, startAngle, angle, false);
         ctx.lineWidth = lineWidth;
         ctx.strokeStyle = disabled ? '#a0a0a0' : '#ff9500';
         ctx.stroke();
+
+        // Draw needle (if enabled)
+        if (needleStartRadius !== undefined || needleEndRadius !== undefined) {
+            const defaultNeedleStart = centerRadius + 5;
+            const defaultNeedleEnd = valueArcRadius - 5;
+            const needleStart = needleStartRadius ?? defaultNeedleStart;
+            const needleEnd = needleEndRadius ?? defaultNeedleEnd;
+
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const startX = centerX + Math.cos(angle) * needleStart;
+            const startY = centerY + Math.sin(angle) * needleStart;
+            const endX = centerX + Math.cos(angle) * needleEnd;
+            const endY = centerY + Math.sin(angle) * needleEnd;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.lineWidth = needleWidth;
+            ctx.strokeStyle = needleColor;
+            ctx.stroke();
+        }
 
         // Draw knob center
         ctx.beginPath();

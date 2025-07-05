@@ -513,14 +513,79 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     value={bpm}
                     size={500}
                     lineWidth={55}
-                    segmentArcWidth={30}
-                    segmentTextOffset={-20}
+                    segmentArcWidth={25}
+                    segmentTextOffset={-13}
+                    segmentGap={0}
                     centerRadius={110}
                     dragBehavior="vertical"
+                    needleStartRadius={70}
+                    needleEndRadius={250}
+                    needleColor="#888"
+                    needleWidth={3}
                     segments={[
-                        { startValue: gMinBPM, endValue: 90, color: '#4CAF50', label: 'Slow' },
-                        { startValue: 90, endValue: 140, color: '#FFC107', label: 'Moderate' },
-                        { startValue: 140, endValue: gMaxBPM, color: '#F44336', label: 'Fast' }
+                        {
+                            startValue: gMinBPM,
+                            endValue: 66,
+                            color: '#E8F5E8',
+                            label: 'Largo',
+                            textColor: '#4A7C59',
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        },
+                        {
+                            startValue: 66,
+                            endValue: 76,
+                            color: '#E3F2FD',
+                            label: 'Andante',
+                            textColor: '#2196F3',
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        },
+                        {
+                            startValue: 76,
+                            endValue: 108,
+                            color: '#F3E5F5',
+                            label: 'Moderato',
+                            textColor: '#9C27B0',
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        },
+                        {
+                            startValue: 108,
+                            endValue: 120,
+                            color: '#E8F5F5',
+                            label: 'Allegretto',
+                            textColor: '#E91E63',
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        },
+                        {
+                            startValue: 120,
+                            endValue: 168,
+                            color: '#FFF3E0',
+                            label: 'Allegro',
+                            textColor: '#FF9800',
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        },
+                        {
+                            startValue: 168,
+                            endValue: 200,
+                            color: '#FFF8E1',
+                            label: 'Vivace',
+                            textColor: '#FFC107',
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        },
+                        {
+                            startValue: 200,
+                            endValue: gMaxBPM,
+                            color: '#FFEBEE',
+                            label: 'Presto',
+                            textColor: '#F44336',
+                            fontSize: 13,
+                            fontWeight: 'normal'
+                        }
                     ]}
                     onChange={e => {
                         //const valueAsNumber = value as number;
