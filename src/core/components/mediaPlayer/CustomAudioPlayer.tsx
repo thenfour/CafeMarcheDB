@@ -221,24 +221,24 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             }
         };
 
-        const formatTime = (seconds: number): string => {
-            // Handle NaN, infinity, and negative values
-            if (!isFinite(seconds) || seconds < 0) {
-                return "0:00";
-            }
+        // const formatTime = (seconds: number): string => {
+        //     // Handle NaN, infinity, and negative values
+        //     if (!isFinite(seconds) || seconds < 0) {
+        //         return "0:00";
+        //     }
 
-            const totalSeconds = Math.floor(seconds);
-            const hours = Math.floor(totalSeconds / 3600);
-            const mins = Math.floor((totalSeconds % 3600) / 60);
-            const secs = totalSeconds % 60;
+        //     const totalSeconds = Math.floor(seconds);
+        //     const hours = Math.floor(totalSeconds / 3600);
+        //     const mins = Math.floor((totalSeconds % 3600) / 60);
+        //     const secs = totalSeconds % 60;
 
-            // For tracks longer than an hour, show hours
-            if (hours > 0) {
-                return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            } else {
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
-            }
-        };
+        //     // For tracks longer than an hour, show hours
+        //     if (hours > 0) {
+        //         return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        //     } else {
+        //         return `${mins}:${secs.toString().padStart(2, '0')}`;
+        //     }
+        // };
 
         const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
             const audio = e.currentTarget;
@@ -389,10 +389,10 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                                 gIconMap.PlayCircleOutline()
                             )}
                         </CMSmallButton>
-
+                        {/* 
                         <div className="audioTimeDisplay">
                             {formatTime(currentTime)}
-                        </div>
+                        </div> */}
 
                         <div className="audioProgressContainer">
                             <MediaPlayerSlider
@@ -406,10 +406,10 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                                 aria-label="Audio progress"
                             />
                         </div>
-
+                        {/* 
                         <div className="audioTimeDisplay">
                             {formatTime(duration)}
-                        </div>
+                        </div> */}
 
                         {/* Volume control */}
                         <div className="volumeControl">

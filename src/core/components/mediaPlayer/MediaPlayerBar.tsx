@@ -1,5 +1,6 @@
 import { SkipNext, SkipPrevious } from "@mui/icons-material";
 import React from "react";
+import { formatSongLength } from "../../../../shared/time";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
@@ -131,6 +132,16 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                             <span className="mediaPlayerTrackTitle">{trackNumberString}{title?.title || "No media"}</span>
                             <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
                         </span>
+
+                        <div className="mediaPlayerTimeDisplay">
+                            <span className="mediaPlayerCurrentTime">
+                                {formatSongLength(Math.floor(mediaPlayer.playheadSeconds)) || "0:00"}
+                            </span>
+                            <span className="mediaPlayerTimeSeparator">/</span>
+                            <span className="mediaPlayerTotalTime">
+                                {formatSongLength(Math.floor(mediaPlayer.lengthSeconds)) || "0:00"}
+                            </span>
+                        </div>
 
                         <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
                     </div>
