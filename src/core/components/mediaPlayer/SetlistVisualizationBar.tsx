@@ -60,11 +60,6 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
         return null;
     }
 
-    // Calculate grid template columns using fr units for proportional sizing
-    const gridTemplateColumns = playlist
-        .map(track => `${getSegmentProportionalWidth(track)}fr`)
-        .join(' ');
-
     // Calculate playhead position as a percentage within the current track
     const getPlayheadPosition = (): number => {
         if (currentIndex == null || !playheadSeconds) {
@@ -95,7 +90,6 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
     return (
         <div
             className={`setlistVisualizationBar${visible ? ' setlistVisualizationBar--visible' : ''}`}
-            style={{ gridTemplateColumns }}
         >
             {playlist.map((track, index) => {
                 const isCurrentTrack = index === currentIndex;
@@ -110,7 +104,7 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
                         key={index}
                         className={`setlistVisualizationSegment ${isCurrentTrack ? 'setlistVisualizationSegment--current' : ''}`}
                         style={{
-                            flex: proportionalWidth,
+                            flex: `${proportionalWidth} 1 0%`,
                         }}
                     >
                         <Tooltip title={fullTtitle} arrow>

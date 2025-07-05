@@ -82,7 +82,8 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                         {/* <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
                         <ListIcon />
                     </CMSmallButton> */}
-                    </>)}                {current && (
+                    </>)}
+                    {current && (
                         <CustomAudioPlayer
                             src={current.url}
                             controls
