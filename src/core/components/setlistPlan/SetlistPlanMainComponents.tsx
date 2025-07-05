@@ -58,11 +58,10 @@ const AddSongComponent = (props: AddSongComponentProps) => {
             >
                 Add Divider
             </Button>
-            <Button
+            {/* <Button
                 startIcon={gIconMap.ContentPaste()}
                 onClick={async () => {
                     const songList = await getClipboardSongList();
-                    console.log(songList);
                     if (!songList) {
                         snackbar.showError("Not a valid setlist in the clipboard");
                         return;
@@ -71,7 +70,7 @@ const AddSongComponent = (props: AddSongComponentProps) => {
                 }}
             >
                 Paste json setlist
-            </Button>
+            </Button> */}
         </ButtonGroup>
     </div>;
 }
@@ -104,7 +103,11 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     }
 
     const songRow = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
-    const song = allSongs.find((x) => x.id === songRow.songId!)!;
+    const song = allSongs.find((x) => x.id === songRow.songId!);
+    if (!song) {
+        // maybe you have lost access to the song, or it was deleted.
+        return <div style={{ fontStyle: "italic", color: "#888" }}>song not found</div>
+    }
     const songLengthFormatted = song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds);
 
     return <div className="tr">
@@ -350,27 +353,52 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
             </MenuItem>}
 
             <MenuItem onClick={handleCopySongNames}>
-                Copy allocated song names
+                <div>
+                    <div>Copy allocated song names</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Copy names of songs with rehearsal points in this column
+                    </div>
+                </div>
             </MenuItem>
 
             <MenuItem onClick={handleCopyAsSetlist}>
-                Copy allocated songs as setlist
+                <div>
+                    <div>Copy allocated songs as setlist</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Copy as JSON setlist format for external use
+                    </div>
+                </div>
             </MenuItem>
 
             <Divider />
 
             <MenuItem onClick={handleCopyAllSongNames}>
-                Copy all song names
+                <div>
+                    <div>Copy all song names</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Copy names of all songs in the entire plan
+                    </div>
+                </div>
             </MenuItem>
 
             <MenuItem onClick={handleCopyAllAsSetlist}>
-                Copy all songs as setlist
+                <div>
+                    <div>Copy all songs as setlist</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Copy entire plan as JSON setlist format
+                    </div>
+                </div>
             </MenuItem>
 
             <Divider />
 
             <MenuItem onClick={handleClearAllocation}>
-                Clear allocation for {column.name}
+                <div>
+                    <div>Clear allocation for {column.name}</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Remove all rehearsal points from this column
+                    </div>
+                </div>
             </MenuItem>
 
             {
@@ -379,7 +407,12 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
                     {
                         props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c, index) => (
                             <MenuItem key={index} onClick={() => handleSwapAllocationWith(c.columnId)}>
-                                Swap allocation with {c.name}
+                                <div>
+                                    <div>Swap allocation with {c.name}</div>
+                                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                                        Exchange rehearsal points between columns
+                                    </div>
+                                </div>
                             </MenuItem>
                         ))
                     }
@@ -728,54 +761,109 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
         snackbar.showSuccess(`Added ${missingSongs.length} songs from clipboard setlist`);
     };
 
-    const handleSyncWithClipboardSetlist = async () => {
-        // first gather lists of songs to be added & removed,
-        // use confirm() to ask the user if they want to proceed,
-        // then perform the operations and report the results to the console & snackbar.
+    const handleAppendSetlistFromClipboard = async () => {
+        // deserialize the clipboard setlist.
         const setlist = await getClipboardSongList();
         if (!setlist) {
             snackbar.showError("Clipboard does not contain a valid setlist");
             return;
         }
-        const existing = new Set<number>(
-            props.doc.payload.rows
-                .filter((r) => r.type === "song")
-                .map((r) => r.songId!)
-        );
-        const incoming = new Set<number>(
-            setlist
-                .filter((item) => item.type === "song")
-                .map((item) => item.song.id)
-        );
-        const toAdd = [...incoming].filter((id) => !existing.has(id));
-        const toRemove = [...existing].filter((id) => !incoming.has(id));
 
-        if (!toAdd.length && !toRemove.length) {
-            snackbar.showSuccess("Already synced with the setlist. No changes.");
-            setAnchorEl(null);
+        // append the entire setlist structure to the current plan
+        props.mutator.addPortableSongList(setlist, { mode: 'append' });
+        setAnchorEl(null);
+        console.log(`Appending ${setlist.length} items from setlist...`);
+        snackbar.showSuccess(`Appended ${setlist.length} items from clipboard setlist`);
+    };
+
+    const handleReplaceWithSetlistFromClipboard = async () => {
+        // deserialize the clipboard setlist.
+        const setlist = await getClipboardSongList();
+        if (!setlist) {
+            snackbar.showError("Clipboard does not contain a valid setlist");
             return;
         }
 
-        console.log(toAdd);
-        console.log(toRemove);
-
-        const toAddComponents = toAdd.map((id) => <CMChip key={id}>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
-        const toRemoveComponents = toRemove.map((id) => <CMChip key={id}>{allSongs.find((s) => s.id === id)!.name}</CMChip>);
-
         if (await confirm({
-            title: "Sync with clipboard setlist", description: <div>
-                <div>{toAdd.length ? `Add: ${toAdd.length}` : null}</div>
-                <div>{toAddComponents}</div>
-                <div>{toRemove.length ? `Remove: ${toRemove.length}` : null}</div>
-                <div>{toRemoveComponents}</div>
-            </div>
+            title: "Replace with clipboard setlist",
+            description: "This will replace the entire current plan with the clipboard setlist. Are you sure?"
         })) {
-            props.mutator.addAndRemoveSongs(toAdd, toRemove);
-            //if (toRemove.length) props.mutator.removeSongs(toRemove);
-            snackbar.showSuccess(`Synced: ${toAdd.length} added, ${toRemove.length} removed`);
-            setAnchorEl(null);
-        }
+            // use the new replace mode to replace the entire setlist structure
+            props.mutator.addPortableSongList(setlist, { mode: 'replace' });
 
+            setAnchorEl(null);
+            console.log(`Replaced plan with ${setlist.length} items from setlist...`);
+            snackbar.showSuccess(`Replaced plan with ${setlist.length} items from clipboard setlist`);
+        }
+    };
+
+    const handleClearAllSongs = async () => {
+        if (await confirm({
+            title: "Clear all songs",
+            description: "This will remove all songs and dividers from the plan. Are you sure?"
+        })) {
+            // use replace mode with an empty setlist to clear everything
+            props.mutator.addPortableSongList([], { mode: 'replace' });
+
+            setAnchorEl(null);
+            console.log(`Cleared all songs from plan`);
+            snackbar.showSuccess(`Cleared all songs from plan`);
+        }
+    };
+
+    const handleSyncWithClipboardSetlist = async () => {
+        // first gather lists of songs to be added & removed,
+        // use confirm() to ask the user if they want to proceed,
+        // then perform the operations and report the results to the console & snackbar.
+        console.log(`handleSyncWithClipboardSetlist`);
+        try {
+            const setlist = await getClipboardSongList();
+            if (!setlist) {
+                snackbar.showError("Clipboard does not contain a valid setlist");
+                return;
+            }
+            const existing = new Set<number>(
+                props.doc.payload.rows
+                    .filter((r) => r.type === "song")
+                    .map((r) => r.songId!)
+            );
+            const incoming = new Set<number>(
+                setlist
+                    .filter((item) => item.type === "song")
+                    .map((item) => item.song.id)
+            );
+            const toAdd = [...incoming].filter((id) => !existing.has(id));
+            const toRemove = [...existing].filter((id) => !incoming.has(id));
+
+            if (!toAdd.length && !toRemove.length) {
+                snackbar.showSuccess("Already synced with the setlist. No changes.");
+                setAnchorEl(null);
+                return;
+            }
+
+            const toAddSongs = toAdd.map((id) => allSongs.find((s) => s.id === id)).filter(s => !!s);
+            const toRemoveSongs = toRemove.map((id) => allSongs.find((s) => s.id === id)).filter(s => !!s);
+
+            const toAddComponents = toAddSongs.map((song) => <CMChip key={song.id}>{song.name}</CMChip>);
+            const toRemoveComponents = toRemoveSongs.map((song) => <CMChip key={song.id}>{song.name}</CMChip>);
+
+            if (await confirm({
+                title: "Sync with clipboard setlist", description: <div>
+                    <div>{toAdd.length ? `Add: ${toAdd.length}` : null}</div>
+                    <div>{toAddComponents}</div>
+                    <div>{toRemove.length ? `Remove: ${toRemove.length}` : null}</div>
+                    <div>{toRemoveComponents}</div>
+                </div>
+            })) {
+                props.mutator.addAndRemoveSongs(toAdd, toRemove);
+                //if (toRemove.length) props.mutator.removeSongs(toRemove);
+                snackbar.showSuccess(`Synced: ${toAdd.length} added, ${toRemove.length} removed`);
+                setAnchorEl(null);
+            }
+        } catch (error) {
+            console.error("Error syncing with clipboard setlist:", error);
+            snackbar.showError("Failed to sync with clipboard setlist. Check console for details.");
+        }
     };
 
     return <>
@@ -790,27 +878,89 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
             <MenuItem onClick={() => {
                 setAnchorEl(null);
                 props.mutator.clearAllocation();
-            }}>clear</MenuItem>
+            }}>
+                <div>
+                    <div>clear</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Remove all rehearsal point allocations
+                    </div>
+                </div>
+            </MenuItem>
+            <MenuItem onClick={handleClearAllSongs}>
+                <div>
+                    <div>clear all songs</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Remove all songs and dividers from the plan
+                    </div>
+                </div>
+            </MenuItem>
             <MenuItem onClick={() => {
                 setAnchorEl(null);
                 props.onDelete();
-            }}>delete this plan</MenuItem>
+            }}>
+                <div>
+                    <div>delete this plan</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Permanently remove this setlist plan
+                    </div>
+                </div>
+            </MenuItem>
+
             <Divider />
             <MenuItem
                 onClick={handleCopyToClipboard}
             >
-                Copy plan to clipboard
+                <div>
+                    <div>Copy plan to clipboard</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Copy entire plan as JSON for backup/sharing
+                    </div>
+                </div>
             </MenuItem>
             <MenuItem
                 onClick={handlePasteFromClipboard}
             >
-                Paste plan from clipboard
+                <div>
+                    <div>Paste plan from clipboard</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Replace current plan with JSON from clipboard
+                    </div>
+                </div>
             </MenuItem>
+
+
+            <Divider />
             <MenuItem onClick={handleAddSongsFromClipboardSetlist}>
-                Add songs from copied setlist
+                <div>
+                    <div>Add missing songs from copied setlist</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Appends only songs from the clipboard setlist that are not already in the plan
+                    </div>
+                </div>
+            </MenuItem>
+            <MenuItem onClick={handleAppendSetlistFromClipboard}>
+                <div>
+                    <div>Append setlist from clipboard</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Appends entire setlist to end of plan
+                    </div>
+                </div>
+            </MenuItem>
+            <MenuItem onClick={handleReplaceWithSetlistFromClipboard}>
+                <div>
+                    <div>Replace plan with clipboard setlist</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Replace entire plan with clipboard setlist structure
+                    </div>
+                </div>
             </MenuItem>
             <MenuItem onClick={handleSyncWithClipboardSetlist}>
-                Sync (add & remove) songs with clipboard setlist
+                <div>
+                    <div>Sync (add & remove) songs with clipboard setlist</div>
+                    <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
+                        Match plan exactly with copied setlist (confirms before making changes)
+                    </div>
+                </div>
             </MenuItem>
         </Menu >
     </>;

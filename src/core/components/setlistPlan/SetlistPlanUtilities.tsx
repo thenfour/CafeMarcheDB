@@ -91,7 +91,7 @@ export interface SetlistPlanMutator {
 
     addSong: (songId: number) => void;
     addAndRemoveSongs: (add: number[], remove: number[]) => void;
-    addPortableSongList: (songList: PortableSongList) => void;
+    addPortableSongList: (songList: PortableSongList, options?: { mode?: 'append' | 'replace' }) => void;
     addDivider: () => void;
     deleteRow: (rowId: string) => void;
     setRowPointsRequired: (rowId: string, points: number | undefined) => void;

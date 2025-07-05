@@ -862,8 +862,9 @@ const SetlistPlannerPageContent = () => {
                     });
                 }
             },
-            addPortableSongList: (songList: PortableSongList) => {
+            addPortableSongList: (songList: PortableSongList, options?: { mode?: 'append' | 'replace' }) => {
                 if (doc) {
+                    const mode = options?.mode || 'append';
 
                     const newRows: SetlistPlanRow[] = songList.map(item => {
                         if (item.type === "song") {
@@ -886,7 +887,7 @@ const SetlistPlannerPageContent = () => {
                         ...doc,
                         payload: {
                             ...doc.payload,
-                            rows: [...doc.payload.rows, ...newRows],
+                            rows: mode === 'replace' ? newRows : [...doc.payload.rows, ...newRows],
                         },
                     });
                 }
