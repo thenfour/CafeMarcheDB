@@ -713,12 +713,29 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             }
         };
 
-        // Add event listener
+        const handleWheel = (event: WheelEvent) => {
+            // Only handle wheel events when the dialog is focused or mouse is over it
+            const target = event.target as Element;
+            const dialogElement = target.closest('.GlobalMetronomeDialog');
+            if (!dialogElement) return;
+
+            event.preventDefault();
+
+            // Determine scroll direction and adjust BPM
+            const delta = event.deltaY > 0 ? -1 : 1; // Scroll down = decrease, scroll up = increase
+            const increment = event.shiftKey ? 5 : 1; // Shift + scroll for bigger increments
+
+            changeBPM(delta * increment);
+        };
+
+        // Add event listeners
         document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('wheel', handleWheel, { passive: false });
 
         // Cleanup
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('wheel', handleWheel);
         };
     }, [bpm, props.onClose]);
 
@@ -863,7 +880,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             }}>
                 <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div>
                 <div>
-                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets • <strong>Esc</strong>: Close
+                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: BPM ±1 • <strong>Shift+Wheel</strong>: BPM ±5 • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets • <strong>Esc</strong>: Close
                 </div>
             </div>
             <div className="buttonRow">
