@@ -2,6 +2,7 @@ import { SkipNext, SkipPrevious } from "@mui/icons-material";
 import React from "react";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
+import { CustomAudioPlayer } from "./CustomAudioPlayer";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 import { SetlistVisualizationBar } from "./SetlistVisualizationBar";
 
@@ -80,9 +81,8 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                         {/* <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
                         <ListIcon />
                     </CMSmallButton> */}
-                    </>)}
-                    {current && (
-                        <audio
+                    </>)}                {current && (
+                        <CustomAudioPlayer
                             src={current.url}
                             controls
                             ref={audioRef}
