@@ -158,10 +158,12 @@ export interface ColorPaletteGridProps {
     hoverVariation: ColorVariationSpec;
     onDrop?: (droppedEntry: ColorPaletteEntry, targetEntry: ColorPaletteEntry) => void;
     showHiddenSwatches?: boolean;
+    selectedColor?: ColorPaletteEntry | string | null;
 };
 
 export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
     const hiddenIds = Object.keys(gHiddenColorIds);
+    const selectedColorId = (typeof props.selectedColor === 'string') ? props.selectedColor : (props.selectedColor ? props.selectedColor.id : null);
     return <div className="colorPaletteGridRoot">
         {
             props.palette.getAllRowsAndEntries().map((row, rowIndex) => {
@@ -169,22 +171,29 @@ export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
                     {
                         // spacers
                         props.showNull && (
-                            (rowIndex === 0) ? (<div onClick={() => { props.onClick(null) }}>
-                                <ColorSwatch color={null} isSpacer={false} variation={props.variation} hoverVariation={props.hoverVariation} />
-                            </div>)
+                            (rowIndex === 0) ? (<ColorSwatch
+                                color={null}
+                                isSpacer={false}
+                                variation={props.variation}
+                                hoverVariation={props.hoverVariation}
+                                onClick={() => { props.onClick(null) }}
+                                className={!props.selectedColor ? "selectedOutline" : ""}
+                            />
+                            )
                                 : (<ColorSwatch color={null} isSpacer={true} variation={props.variation} hoverVariation={props.hoverVariation} />)
                         )
                     }
                     {row.map((e, i) => {
-                        return <div onClick={() => { props.onClick(e) }} key={i} >
-                            <ColorSwatch
-                                color={e}
-                                variation={props.variation}
-                                hoverVariation={props.hoverVariation}
-                                isSpacer={!props.showHiddenSwatches && hiddenIds.some(k => k === e.id)}
-                                onDrop={props.onDrop && ((dropped) => props.onDrop!(dropped, e))}
-                            />
-                        </div>;
+                        return <ColorSwatch
+                            key={i}
+                            color={e}
+                            variation={props.variation}
+                            hoverVariation={props.hoverVariation}
+                            isSpacer={!props.showHiddenSwatches && hiddenIds.some(k => k === e.id)}
+                            onDrop={props.onDrop && ((dropped) => props.onDrop!(dropped, e))}
+                            onClick={() => { props.onClick(e) }}
+                            className={props.selectedColor && selectedColorId === e.id ? "selectedOutline" : ""}
+                        />;
 
                     })}
                 </div>;
@@ -194,16 +203,17 @@ export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
 };
 
 export interface ColorPaletteListComponentProps {
-    palettes: ColorPaletteList;
+    palettes?: ColorPaletteList;
     onClick: (value: ColorPaletteEntry | null) => void;
     allowNull: boolean;
     onDrop?: (droppedEntry: ColorPaletteEntry, targetEntry: ColorPaletteEntry) => void;
     showHiddenSwatches?: boolean;
+    selectedColor?: ColorPaletteEntry | string | null;
 };
 
 type TPreviewStyle = [string, string];
 
-export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps) => {
+export const ColorPaletteListComponent = ({ palettes = gGeneralPaletteList, ...props }: ColorPaletteListComponentProps) => {
     const [previewStyle, setPreviewStyle] = React.useState<TPreviewStyle>(["white", "black"]);
     const [variationSpec, setVariationSpec] = React.useState<ColorVariationSpec>(StandardVariationSpec.Strong);
     const [hoverVariationSpec, setHoverVariationSpec] = React.useState<ColorVariationSpec>(StandardVariationSpec.StrongSelected);
@@ -264,13 +274,14 @@ export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps)
 
         </div>
         {
-            props.palettes.palettes.map((palette, index) => {
+            palettes.palettes.map((palette, index) => {
                 return <ColorPaletteGrid
                     onClick={props.onClick}
                     key={index}
                     palette={palette}
                     showNull={index === 0 && props.allowNull}
                     variation={variationSpec}
+                    selectedColor={props.selectedColor}
                     hoverVariation={hoverVariationSpec}
                     onDrop={props.onDrop}
                     showHiddenSwatches={props.showHiddenSwatches}

@@ -1929,7 +1929,7 @@ const MyComponent = () => {
                 <ColorPaletteListComponent
                     allowNull={false}
                     showHiddenSwatches={true}
-                    palettes={gGeneralPaletteList}
+                    selectedColor={selectedEntryId}
 
                     onClick={handleSwatchClick} onDrop={(dropped, target) => {
                         // copy all variations for this color.

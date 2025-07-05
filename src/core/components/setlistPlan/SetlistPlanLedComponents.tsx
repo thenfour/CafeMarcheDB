@@ -7,7 +7,6 @@
 import { Button, DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { QuickSearchItemTypeSets } from "shared/quickFilter";
 import { AttendanceChip, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { CMTextInputBase } from "src/core/components/CMTextField";
@@ -15,12 +14,13 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import { GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
 import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
-import { ColorPaletteListComponent, GetStyleVariablesForColor } from "../Color";
+import { GetStyleVariablesForColor } from "../Color";
+import { ColorPick } from "../ColorPick";
 import { useDashboardContext } from "../DashboardContext";
-import { Markdown3Editor } from "../markdown/MarkdownControl3";
-import { Markdown } from "../markdown/Markdown";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
+import { Markdown } from "../markdown/Markdown";
+import { Markdown3Editor } from "../markdown/MarkdownControl3";
+import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";
 //import getUserEventAttendance from "src/core/db3/queries/getUserEventAttendance";
 
@@ -110,13 +110,17 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
                             text: e.target.value
                         })}
                     />
-                    <ColorPaletteListComponent allowNull={true} palettes={gGeneralPaletteList} onClick={(e: ColorPaletteEntry | null) => {
-                        props.onChange({
-                            ledId: props.def.ledId,
-                            ...props.value,
-                            color: e?.id || null
-                        });
-                    }} />
+                    <ColorPick
+                        value={props.value?.color || null}
+                        allowNull={true}
+                        onChange={(newColor) => {
+                            props.onChange({
+                                ledId: props.def.ledId,
+                                ...props.value,
+                                color: newColor?.id || null
+                            });
+                        }}
+                    />
                     <DialogActionsCM>
                         <Button onClick={() => setOpen(false)}>Close</Button>
                     </DialogActionsCM>

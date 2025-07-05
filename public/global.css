@@ -789,6 +789,11 @@ span.songListVerified {
   outline: 2px solid #000;
 }
 
+.selectedOutline {
+  outline: 2px solid #000;
+}
+
+
 /* #409 on mobile, OK and Cancel buttons become very small; force them to a comfortable size,
 and make sure the action buttons area is tall enough so safari's bottom menu doesn't obscure it.
 https://stackoverflow.com/questions/23657943/buttons-aligned-to-bottom-of-page-conflict-with-mobile-safaris-menu-bar

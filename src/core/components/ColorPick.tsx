@@ -24,11 +24,15 @@ export const ColorPick = ({ allowNull = true, palettes = gGeneralPaletteList, cl
         {open && (
             <ReactiveInputDialog onCancel={() => setOpen(false)}>
                 <DialogContent>
-                    <ColorPaletteListComponent allowNull={allowNull} palettes={palettes} onClick={(e: ColorPaletteEntry | null) => {
-                        if (props.readonly) return;
-                        props.onChange(e);
-                        setOpen(false)
-                    }}
+                    <ColorPaletteListComponent
+                        allowNull={allowNull}
+                        selectedColor={entry}
+                        palettes={palettes}
+                        onClick={(e: ColorPaletteEntry | null) => {
+                            if (props.readonly) return;
+                            props.onChange(e);
+                            setOpen(false)
+                        }}
                     />
                 </DialogContent>
             </ReactiveInputDialog >
