@@ -441,8 +441,6 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
         setKillTapTrigger(killTapTrigger + 1);
     };
 
-    //const standardTempos = [80, 90, 100, 120, 140, 160];
-    //const standardTempos = [76, 92, 112, 126, 144, 168, 184, 200];
     const standardTempos1: [bpm: number, caption: string][] = [
         [76, 'Andante'],
         [84, 'Moderato'],
@@ -522,6 +520,22 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     needleEndRadius={250}
                     needleColor="#888"
                     needleWidth={3}
+                    tickStartRadius={262}
+                    tickEndRadius={270}
+                    tickColor="#666"
+                    tickFontSize={9}
+                    tickMarkOffset={-30}
+                    tickLabelOffset={8}
+                    tickMarks={[
+                        { value: 60, label: '60' },
+                        { value: 80, label: '80' },
+                        { value: 100, label: '100' },
+                        { value: 120, label: '120' },
+                        { value: 140, label: '140' },
+                        { value: 160, label: '160' },
+                        { value: 180, label: '180' },
+                        { value: 200, label: '200' }
+                    ]}
                     segments={[
                         {
                             startValue: gMinBPM,

@@ -11,6 +11,19 @@ interface KnobSegment {
     fontFamily?: string;   // Optional font family (defaults to 'Arial')
 }
 
+interface KnobTickMark {
+    value: number;         // Value at which to place the tick mark
+    label?: string;        // Optional label for the tick mark
+    startRadius?: number;  // Inner radius of tick mark (overrides knob-level tickStartRadius)
+    endRadius?: number;    // Outer radius of tick mark (overrides knob-level tickEndRadius)
+    tickColor?: string;    // Color of the tick mark (overrides knob-level tickColor)
+    tickWidth?: number;    // Width of the tick mark (defaults to 1)
+    textColor?: string;    // Color of the label text (defaults to '#333')
+    fontSize?: number;     // Font size of the label (overrides knob-level tickFontSize)
+    fontWeight?: string;   // Font weight of the label (defaults to 'normal')
+    fontFamily?: string;   // Font family of the label (defaults to 'Arial')
+}
+
 interface KnobProps {
     min: number;
     max: number;
@@ -39,6 +52,13 @@ interface KnobProps {
     needleEndRadius?: number;     // Outer radius of needle (default: innermost arc radius - 5)
     needleColor?: string;         // Color of needle (default: '#333')
     needleWidth?: number;         // Width of needle line (default: 2)
+    tickMarks?: KnobTickMark[];   // Optional tick marks with labels
+    tickMarkOffset?: number;      // Distance from outermost arc to start of tick marks (default: 5)
+    tickLabelOffset?: number;     // Distance from end of tick mark to label (default: 5)
+    tickStartRadius?: number;     // Default inner radius for all tick marks (overridden by per-tick startRadius)
+    tickEndRadius?: number;       // Default outer radius for all tick marks (overridden by per-tick endRadius)
+    tickColor?: string;           // Default color for all tick marks (overridden by per-tick tickColor, default: '#333')
+    tickFontSize?: number;        // Default font size for all tick mark labels (overridden by per-tick fontSize, default: 10)
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -64,6 +84,13 @@ export const Knob: React.FC<KnobProps> = ({
     needleEndRadius,
     needleColor = '#333',
     needleWidth = 2,
+    tickMarks,
+    tickMarkOffset = 5,
+    tickLabelOffset = 5,
+    tickStartRadius,
+    tickEndRadius,
+    tickColor = '#333',
+    tickFontSize = 10,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -108,6 +135,58 @@ export const Knob: React.FC<KnobProps> = ({
             // Draw curved label if provided
             if (segment.label) {
                 drawCurvedText(ctx, segment.label, segmentStartAngle, segmentEndAngle, radius + width / 2 + segmentTextOffset, segment);
+            }
+        });
+    };    // Draw tick marks and labels
+    const drawTickMarks = (ctx: CanvasRenderingContext2D, outerRadius: number) => {
+        if (!tickMarks) return;
+
+        const centerX = size / 2;
+        const centerY = size / 2;
+
+        tickMarks.forEach(tick => {
+            const angle = valueToAngle(tick.value);
+
+            // Tick mark properties with defaults - use knob-level defaults if per-tick values not provided
+            const defaultStartRadius = tickStartRadius ?? (outerRadius + tickMarkOffset);
+            const defaultEndRadius = tickEndRadius ?? (defaultStartRadius + 8);
+            const tickStartRadiusValue = tick.startRadius ?? defaultStartRadius;
+            const tickEndRadiusValue = tick.endRadius ?? defaultEndRadius;
+            const tickColorValue = tick.tickColor ?? tickColor;
+            const tickWidth = tick.tickWidth || 1;
+
+            // Calculate tick mark start and end positions
+            const tickStartX = centerX + Math.cos(angle) * tickStartRadiusValue;
+            const tickStartY = centerY + Math.sin(angle) * tickStartRadiusValue;
+            const tickEndX = centerX + Math.cos(angle) * tickEndRadiusValue;
+            const tickEndY = centerY + Math.sin(angle) * tickEndRadiusValue;
+
+            // Draw tick mark
+            ctx.beginPath();
+            ctx.moveTo(tickStartX, tickStartY);
+            ctx.lineTo(tickEndX, tickEndY);
+            ctx.lineWidth = tickWidth;
+            ctx.strokeStyle = tickColorValue;
+            ctx.stroke();
+
+            // Draw label if provided
+            if (tick.label) {
+                const textColor = tick.textColor || '#333';
+                const fontSize = tick.fontSize ?? tickFontSize;
+                const fontWeight = tick.fontWeight || 'normal';
+                const fontFamily = tick.fontFamily || 'Arial';
+
+                const labelRadius = tickEndRadiusValue + tickLabelOffset;
+                const labelX = centerX + Math.cos(angle) * labelRadius;
+                const labelY = centerY + Math.sin(angle) * labelRadius;
+
+                ctx.save();
+                ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(tick.label, labelX, labelY);
+                ctx.restore();
             }
         });
     };
@@ -181,6 +260,11 @@ export const Knob: React.FC<KnobProps> = ({
         ctx.lineWidth = lineWidth;
         ctx.strokeStyle = disabled ? '#a0a0a0' : '#ff9500';
         ctx.stroke();
+
+        // Draw tick marks (if provided)
+        if (tickMarks && tickMarks.length > 0) {
+            drawTickMarks(ctx, segmentArcRadius + segmentArcWidth / 2);
+        }
 
         // Draw needle (if enabled)
         if (needleStartRadius !== undefined || needleEndRadius !== undefined) {
