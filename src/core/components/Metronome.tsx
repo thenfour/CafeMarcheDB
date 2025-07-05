@@ -661,6 +661,12 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     tickFontSize={9}
                     tickMarks={tickMarks}
                     segments={knobSegments}
+                    // Interactive tick labels
+                    useInteractiveTickLabels={true}
+                    onTickLabelClick={(value) => {
+                        setBPM(value);
+                        setTextBpm(value.toString());
+                    }}
                     onChange={e => {
                         //const valueAsNumber = value as number;
                         setBPM(e);

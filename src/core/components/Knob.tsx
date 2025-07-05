@@ -68,6 +68,10 @@ interface KnobProps {
     tickLabelRadius?: number;      // Distance from center for tick labels (default: tickEndRadius + 8)
     tickColor?: string;            // Default color for all tick marks (overridden by per-tick tickColor, default: '#333')
     tickFontSize?: number;         // Default font size for all tick mark labels (overridden by per-tick fontSize, default: 10)
+
+    // Interactive tick labels (DOM-based for hover/click events)
+    useInteractiveTickLabels?: boolean; // Whether to render tick labels as DOM elements instead of canvas text
+    onTickLabelClick?: (value: number) => void; // Called when a tick label is clicked
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -108,6 +112,10 @@ export const Knob: React.FC<KnobProps> = ({
     tickLabelRadius,
     tickColor = '#333',
     tickFontSize = 10,
+
+    // Interactive tick labels
+    useInteractiveTickLabels = false,
+    onTickLabelClick,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -187,8 +195,8 @@ export const Knob: React.FC<KnobProps> = ({
                 ctx.stroke();
             }
 
-            // Draw label if provided
-            if (tick.label) {
+            // Draw label if provided and not using interactive tick labels
+            if (tick.label && !useInteractiveTickLabels) {
                 const textColor = tick.textColor || '#333';
                 const fontSize = tick.fontSize ?? tickFontSize;
                 const fontWeight = tick.fontWeight || 'normal';
@@ -580,15 +588,103 @@ export const Knob: React.FC<KnobProps> = ({
         };
     }, [isDragging]);
 
+    // Generate interactive tick label positions
+    const getInteractiveTickLabels = () => {
+        if (!useInteractiveTickLabels || !tickMarks) return [];
+
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const defaultTickLabelRadius = tickLabelRadius ?? (tickEndRadius ?? (size / 2 - 20)) + 8;
+
+        return tickMarks
+            .filter(tick => tick.label)
+            .map((tick, index) => {
+                const angle = valueToAngle(tick.value);
+                const labelRadius = defaultTickLabelRadius;
+                const x = centerX + Math.cos(angle) * labelRadius;
+                const y = centerY + Math.sin(angle) * labelRadius;
+
+                return {
+                    key: `tick-${index}`,
+                    value: tick.value,
+                    label: tick.label!,
+                    x: x - 15, // Offset for centering (approximate)
+                    y: y - 8,  // Offset for centering (approximate)
+                    textColor: tick.textColor || '#333',
+                    fontSize: tick.fontSize ?? tickFontSize,
+                    fontWeight: tick.fontWeight || 'normal',
+                    fontFamily: tick.fontFamily || 'Arial',
+                };
+            });
+    };
+
+    const interactiveTickLabels = getInteractiveTickLabels();
+
     return (
-        <canvas
-            ref={canvasRef}
-            width={size}
-            height={size}
-            className={className}
-            style={{ cursor: disabled ? 'not-allowed' : 'pointer', touchAction: "none", ...style }}
-            onMouseDown={handleStart}
-            onTouchStart={handleStart}
-        ></canvas>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+            <canvas
+                ref={canvasRef}
+                width={size}
+                height={size}
+                className={className}
+                style={{ cursor: disabled ? 'not-allowed' : 'pointer', touchAction: "none", ...style }}
+                onMouseDown={handleStart}
+                onTouchStart={handleStart}
+            />
+            {useInteractiveTickLabels && (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: size,
+                    height: size,
+                    pointerEvents: 'none'
+                }}>
+                    {interactiveTickLabels.map((tickLabel) => (
+                        <div
+                            key={tickLabel.key}
+                            style={{
+                                position: 'absolute',
+                                left: tickLabel.x,
+                                top: tickLabel.y,
+                                color: tickLabel.textColor,
+                                fontSize: `${tickLabel.fontSize}px`,
+                                fontWeight: tickLabel.fontWeight,
+                                fontFamily: tickLabel.fontFamily,
+                                cursor: disabled ? 'not-allowed' : 'pointer',
+                                userSelect: 'none',
+                                pointerEvents: 'auto',
+                                padding: '6px 6px',
+                                borderRadius: '4px',
+                                transition: 'background-color 0.2s',
+                                textAlign: 'center',
+                                minWidth: '20px',
+                                lineHeight: '1',
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!disabled) {
+                                    e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.1)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                            onClick={(e) => {
+                                if (disabled) return;
+                                e.stopPropagation();
+                                e.preventDefault();
+                                if (onTickLabelClick) {
+                                    onTickLabelClick(tickLabel.value);
+                                } else {
+                                    onChange(tickLabel.value);
+                                }
+                            }}
+                        >
+                            {tickLabel.label}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 };
