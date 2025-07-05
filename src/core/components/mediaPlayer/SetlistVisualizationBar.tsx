@@ -80,12 +80,13 @@ export const SetlistVisualizationBar: React.FC<{ mediaPlayer: MediaPlayerContext
 
                 return (
                     <div
+                        key={index}
                         className={`setlistVisualizationSegment ${isCurrentTrack ? 'setlistVisualizationSegment--current' : ''}`}
                         style={{
                             flex: proportionalWidth,
                         }}
                     >
-                        <Tooltip title={fullTtitle} key={index} arrow>
+                        <Tooltip title={fullTtitle} arrow>
                             <div
                                 className={`coloredSegment`}
                                 style={{

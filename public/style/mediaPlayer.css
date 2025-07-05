@@ -254,37 +254,40 @@
 .audioTimeDisplay {
     font-size: 12px;
     color: #ccc;
-    min-width: 40px;
+    min-width: 50px;
     text-align: center;
     flex-shrink: 0;
+    font-family: 'Courier New', monospace;
+    /* Use monospace for consistent width */
 }
 
 .audioProgressContainer {
     flex: 1;
     padding: 8px 0;
-    cursor: pointer;
     min-width: 100px;
+    display: flex;
+    align-items: center;
 }
 
-.audioProgressTrack {
+.progressSlider {
+    width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-    position: relative;
-    overflow: hidden;
 }
 
-.audioProgressFill {
-    height: 100%;
-    background: #0088ff;
-    border-radius: 2px;
-    transition: width 0.1s ease;
+/* Volume Control */
+.volumeControl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    min-width: 120px;
 }
 
-.audioProgressContainer:hover .audioProgressTrack {
-    background: rgba(255, 255, 255, 0.3);
+.muteButton {
+    flex-shrink: 0;
 }
 
-.audioProgressContainer:hover .audioProgressFill {
-    background: #00aaff;
+.volumeSlider {
+    width: 80px;
+    height: 4px;
 }

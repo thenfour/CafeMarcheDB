@@ -2,7 +2,7 @@ import { SkipNext, SkipPrevious } from "@mui/icons-material";
 import React from "react";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
-import { CustomAudioPlayer } from "./CustomAudioPlayer";
+import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 import { SetlistVisualizationBar } from "./SetlistVisualizationBar";
 
@@ -23,7 +23,7 @@ export const AnimatedFauxEqualizer: React.FC<{
 }
 
 export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> = ({ mediaPlayer }) => {
-    const audioRef = React.useRef<HTMLAudioElement>(null);
+    const audioRef = React.useRef<CustomAudioPlayerAPI>(null);
     const [visible, setVisible] = React.useState(false);
     const [showingPlaylistDialog, setShowingPlaylistDialog] = React.useState(false);
 

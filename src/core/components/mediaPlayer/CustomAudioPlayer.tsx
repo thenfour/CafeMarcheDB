@@ -1,6 +1,47 @@
 import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
+import { MediaPlayerSlider } from "./MediaPlayerSlider";
+
+export interface CustomAudioPlayerAPI {
+    // Playback control
+    play: () => Promise<void>;
+    pause: () => void;
+
+    // Properties
+    get currentTime(): number;
+    set currentTime(value: number);
+    get duration(): number;
+    get paused(): boolean;
+    get ended(): boolean;
+    get volume(): number;
+    set volume(value: number);
+    get muted(): boolean;
+    set muted(value: boolean);
+    get autoplay(): boolean;
+    set autoplay(value: boolean);
+    get src(): string;
+    set src(value: string);
+
+    // Additional useful properties
+    get readyState(): number;
+    get networkState(): number;
+    get buffered(): TimeRanges;
+
+    // Custom methods
+    getAudioState: () => {
+        duration: number;
+        currentTime: number;
+        volume: number;
+        muted: boolean;
+        paused: boolean;
+        ended: boolean;
+        buffered: TimeRanges;
+        readyState: number;
+        networkState: number;
+    } | null;
+    seekTo: (time: number) => void;
+}
 
 interface CustomAudioPlayerProps {
     src?: string;
@@ -14,17 +55,124 @@ interface CustomAudioPlayerProps {
     // Add other audio props as needed
 }
 
-// Forward ref to expose the audio element's methods
-export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerProps>(
+// Forward ref to expose our custom API
+export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPlayerProps>(
     ({ src, controls, onLoadedMetadata, onTimeUpdate, onPlaying, onPause, onEnded, autoplay, ...props }, ref) => {
         const audioRef = useRef<HTMLAudioElement>(null);
         const [isPlaying, setIsPlaying] = React.useState(false);
         const [currentTime, setCurrentTime] = React.useState(0);
         const [duration, setDuration] = React.useState(0);
         const [isLoading, setIsLoading] = React.useState(false);
+        const [volume, setVolume] = React.useState(100); // 0 to 100 for slider
+        const [isMuted, setIsMuted] = React.useState(false);
+        const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(100);
+        const [isUserSeeking, setIsUserSeeking] = React.useState(false);
 
-        // Expose audio element methods via ref
-        useImperativeHandle(ref, () => audioRef.current!, []);
+        // Expose our custom API via ref
+        useImperativeHandle(ref, () => ({
+            // Playback control
+            play: async () => {
+                if (audioRef.current) {
+                    return audioRef.current.play();
+                }
+                return Promise.reject('Audio element not ready');
+            },
+            pause: () => {
+                if (audioRef.current) {
+                    audioRef.current.pause();
+                }
+            },
+
+            // Properties with getters and setters
+            get currentTime() {
+                return audioRef.current?.currentTime ?? 0;
+            },
+            set currentTime(value: number) {
+                if (audioRef.current && isFinite(value) && value >= 0) {
+                    audioRef.current.currentTime = value;
+                    setCurrentTime(value);
+                }
+            },
+            get duration() {
+                return audioRef.current?.duration ?? 0;
+            },
+            get paused() {
+                return audioRef.current?.paused ?? true;
+            },
+            get ended() {
+                return audioRef.current?.ended ?? false;
+            },
+            get volume() {
+                return audioRef.current?.volume ?? 1;
+            },
+            set volume(value: number) {
+                if (audioRef.current && isFinite(value) && value >= 0 && value <= 1) {
+                    audioRef.current.volume = value;
+                    setVolume(Math.round(value * 100));
+                    setIsMuted(value === 0);
+                }
+            },
+            get muted() {
+                return audioRef.current?.muted ?? false;
+            },
+            set muted(value: boolean) {
+                if (audioRef.current) {
+                    audioRef.current.muted = value;
+                    setIsMuted(value);
+                }
+            },
+            get autoplay() {
+                return audioRef.current?.autoplay ?? false;
+            },
+            set autoplay(value: boolean) {
+                if (audioRef.current) {
+                    audioRef.current.autoplay = value;
+                }
+            },
+            get src() {
+                return audioRef.current?.src ?? '';
+            },
+            set src(value: string) {
+                if (audioRef.current) {
+                    audioRef.current.src = value;
+                }
+            },
+
+            // Additional properties
+            get readyState() {
+                return audioRef.current?.readyState ?? 0;
+            },
+            get networkState() {
+                return audioRef.current?.networkState ?? 0;
+            },
+            get buffered() {
+                return audioRef.current?.buffered ?? ({} as TimeRanges);
+            },
+
+            // Custom methods
+            getAudioState: () => {
+                const audio = audioRef.current;
+                if (!audio) return null;
+
+                return {
+                    duration: isFinite(audio.duration) ? audio.duration : 0,
+                    currentTime: isFinite(audio.currentTime) ? audio.currentTime : 0,
+                    volume: audio.volume,
+                    muted: audio.muted,
+                    paused: audio.paused,
+                    ended: audio.ended,
+                    buffered: audio.buffered,
+                    readyState: audio.readyState,
+                    networkState: audio.networkState,
+                };
+            },
+            seekTo: (time: number) => {
+                if (audioRef.current && isFinite(time) && time >= 0) {
+                    audioRef.current.currentTime = time;
+                    setCurrentTime(time);
+                }
+            },
+        }), []);
 
         const handlePlay = async () => {
             if (audioRef.current) {
@@ -48,11 +196,27 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
                 const clickX = e.clientX - rect.left;
                 const percentage = Math.max(0, Math.min(1, clickX / rect.width)); // Clamp between 0 and 1
                 const newTime = percentage * duration;
-                
+
                 // Ensure the new time is valid before setting it
                 if (isFinite(newTime) && newTime >= 0 && newTime <= duration) {
                     audioRef.current.currentTime = newTime;
                     setCurrentTime(newTime);
+                }
+            }
+        }; const handleProgressChange = (value: number) => {
+            if (audioRef.current && duration > 0 && isFinite(duration)) {
+                const newTime = value;
+
+                // Ensure the new time is valid before setting it
+                if (isFinite(newTime) && newTime >= 0 && newTime <= duration) {
+                    setIsUserSeeking(true);
+                    audioRef.current.currentTime = newTime;
+                    setCurrentTime(newTime);
+
+                    // Reset seeking state after a short delay to allow the audio to catch up
+                    setTimeout(() => {
+                        setIsUserSeeking(false);
+                    }, 100);
                 }
             }
         };
@@ -62,9 +226,18 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
             if (!isFinite(seconds) || seconds < 0) {
                 return "0:00";
             }
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            const totalSeconds = Math.floor(seconds);
+            const hours = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+
+            // For tracks longer than an hour, show hours
+            if (hours > 0) {
+                return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
         };
 
         const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
@@ -73,15 +246,53 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
             // Ensure duration is a valid finite number
             setDuration(isFinite(audioDuration) && audioDuration > 0 ? audioDuration : 0);
             setIsLoading(false);
+
+            // Initialize volume from audio element
+            setVolume(Math.round(audio.volume * 100));
+            setIsMuted(audio.muted);
+
             onLoadedMetadata?.(e);
         };
 
         const handleTimeUpdate = (e: React.SyntheticEvent<HTMLAudioElement>) => {
             const audio = e.currentTarget;
             const audioCurrentTime = audio.currentTime;
-            // Ensure currentTime is a valid finite number
-            setCurrentTime(isFinite(audioCurrentTime) && audioCurrentTime >= 0 ? audioCurrentTime : 0);
+            const audioDuration = audio.duration;
+
+            // Only update currentTime if user is not actively seeking
+            if (!isUserSeeking) {
+                // Ensure currentTime is a valid finite number
+                setCurrentTime(isFinite(audioCurrentTime) && audioCurrentTime >= 0 ? audioCurrentTime : 0);
+            }
+
+            // Update duration if it wasn't available before or has changed
+            if (isFinite(audioDuration) && audioDuration > 0 && audioDuration !== duration) {
+                setDuration(audioDuration);
+            }
+
             onTimeUpdate?.(e);
+        };
+
+        // Add handler for when audio can play to get more accurate duration info
+        const handleCanPlay = () => {
+            if (audioRef.current) {
+                const audio = audioRef.current;
+                const audioDuration = audio.duration;
+                if (isFinite(audioDuration) && audioDuration > 0) {
+                    setDuration(audioDuration);
+                }
+            }
+        };
+
+        // Add handler for duration change (some formats report duration progressively)
+        const handleDurationChange = () => {
+            if (audioRef.current) {
+                const audio = audioRef.current;
+                const audioDuration = audio.duration;
+                if (isFinite(audioDuration) && audioDuration > 0) {
+                    setDuration(audioDuration);
+                }
+            }
         };
 
         const handlePlaying = () => {
@@ -101,11 +312,47 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
 
         const handleLoadStart = () => {
             setIsLoading(true);
+        }; const handleVolumeChange = (value: number) => {
+            if (audioRef.current) {
+                const newVolume = value;
+                const volumeDecimal = newVolume / 100; // Convert to 0-1 for audio element
+
+                setVolume(newVolume);
+                setIsMuted(newVolume === 0);
+                audioRef.current.volume = volumeDecimal;
+                audioRef.current.muted = newVolume === 0;
+            }
         };
 
-        const progressPercentage = duration > 0 && isFinite(duration) && isFinite(currentTime) 
-            ? Math.max(0, Math.min(100, (currentTime / duration) * 100))
-            : 0;
+        const handleMuteToggle = () => {
+            if (audioRef.current) {
+                if (isMuted) {
+                    // Unmute: restore previous volume
+                    const restoreVolume = volumeBeforeMute > 0 ? volumeBeforeMute : 50;
+                    setVolume(restoreVolume);
+                    setIsMuted(false);
+                    audioRef.current.volume = restoreVolume / 100;
+                    audioRef.current.muted = false;
+                } else {
+                    // Mute: save current volume and set to 0
+                    setVolumeBeforeMute(volume);
+                    setVolume(0);
+                    setIsMuted(true);
+                    audioRef.current.volume = 0;
+                    audioRef.current.muted = true;
+                }
+            }
+        };
+
+        const getVolumeIcon = () => {
+            if (isMuted || volume === 0) {
+                return gIconMap.VolumeOff();
+            } else if (volume < 50) {
+                return gIconMap.VolumeDown();
+            } else {
+                return gIconMap.VolumeUp();
+            }
+        };
 
         return (
             <div className="customAudioPlayer">
@@ -119,7 +366,10 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
                     onPause={handleAudioPause}
                     onEnded={handleEnded}
                     onLoadStart={handleLoadStart}
+                    onCanPlay={handleCanPlay}
+                    onDurationChange={handleDurationChange}
                     autoPlay={autoplay}
+                    preload="metadata"
                     {...props}
                 />
 
@@ -144,17 +394,42 @@ export const CustomAudioPlayer = forwardRef<HTMLAudioElement, CustomAudioPlayerP
                             {formatTime(currentTime)}
                         </div>
 
-                        <div className="audioProgressContainer" onClick={handleSeek}>
-                            <div className="audioProgressTrack">
-                                <div
-                                    className="audioProgressFill"
-                                    style={{ width: `${progressPercentage}%` }}
-                                />
-                            </div>
+                        <div className="audioProgressContainer">
+                            <MediaPlayerSlider
+                                value={currentTime}
+                                min={0}
+                                max={duration > 0 && isFinite(duration) ? duration : 100}
+                                step={0.1}
+                                onChange={handleProgressChange}
+                                disabled={!src || isLoading || duration <= 0}
+                                className="progressSlider"
+                                aria-label="Audio progress"
+                            />
                         </div>
 
                         <div className="audioTimeDisplay">
                             {formatTime(duration)}
+                        </div>
+
+                        {/* Volume control */}
+                        <div className="volumeControl">
+                            <CMSmallButton
+                                onClick={handleMuteToggle}
+                                enabled={!isLoading && !!src}
+                                className="muteButton"
+                            >
+                                {getVolumeIcon()}
+                            </CMSmallButton>
+                            <MediaPlayerSlider
+                                value={volume}
+                                min={0}
+                                max={100}
+                                step={1}
+                                onChange={handleVolumeChange}
+                                disabled={!src || isLoading}
+                                className="volumeSlider"
+                                aria-label="Volume"
+                            />
                         </div>
                     </div>
                 )}
