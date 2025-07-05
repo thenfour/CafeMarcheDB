@@ -843,6 +843,8 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         setBPM(value);
                         setTextBpm(value.toString());
                     }}
+                    // Snap-to-tick behavior for precise BPM selection
+                    snapToTick={true}
                     onChange={e => {
                         //const valueAsNumber = value as number;
                         setBPM(e);

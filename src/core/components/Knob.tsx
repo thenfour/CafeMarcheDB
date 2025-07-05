@@ -72,6 +72,9 @@ interface KnobProps {
     // Interactive tick labels (DOM-based for hover/click events)
     useInteractiveTickLabels?: boolean; // Whether to render tick labels as DOM elements instead of canvas text
     onTickLabelClick?: (value: number) => void; // Called when a tick label is clicked
+
+    // Snap-to-tick behavior
+    snapToTick?: boolean; // Whether single-click values should snap to the nearest tick mark value
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -116,6 +119,9 @@ export const Knob: React.FC<KnobProps> = ({
     // Interactive tick labels
     useInteractiveTickLabels = false,
     onTickLabelClick,
+
+    // Snap-to-tick behavior
+    snapToTick = false,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -506,6 +512,26 @@ export const Knob: React.FC<KnobProps> = ({
         }
     };
 
+    // Find the nearest tick mark value for snap-to-tick behavior
+    const findNearestTickValue = (targetValue: number): number => {
+        if (!tickMarks || tickMarks.length === 0) {
+            return targetValue;
+        }
+
+        let nearestValue = targetValue;
+        let minDistance = Infinity;
+
+        tickMarks.forEach(tick => {
+            const distance = Math.abs(tick.value - targetValue);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestValue = tick.value;
+            }
+        });
+
+        return nearestValue;
+    };
+
     const handleClickToValue = (e: MouseEvent | TouchEvent) => {
         // Calculate click-to-value using angle-based approach for both drag behaviors
         // This matches how the knob is visually rendered (always as an arc)
@@ -589,6 +615,11 @@ export const Knob: React.FC<KnobProps> = ({
 
         // Clamp value
         newValue = Math.min(Math.max(newValue, min), max);
+
+        // Snap to nearest tick value if enabled
+        if (snapToTick) {
+            newValue = findNearestTickValue(newValue);
+        }
 
         if (newValue !== currentValue) {
             setCurrentValue(newValue);
