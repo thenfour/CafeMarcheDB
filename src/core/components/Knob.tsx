@@ -124,6 +124,8 @@ export const Knob: React.FC<KnobProps> = ({
     const [startY, setStartY] = useState<number | null>(null);
     const [startValue, setStartValue] = useState<number>(value);
     const valueChangedDuringDragRef = useRef<boolean>(false);
+    const startPositionRef = useRef({ x: 0, y: 0 });
+    const dragStartValueRef = useRef(value);
 
     // Calculate value range
     const valueRange = max - min;
@@ -355,13 +357,24 @@ export const Knob: React.FC<KnobProps> = ({
         if (disabled) return;
         setIsDragging(true);
         valueChangedDuringDragRef.current = false;
+        dragStartValueRef.current = currentValue;
+
+        let clientX: number = 0;
+        let clientY: number = 0;
+
+        if ('touches' in e && e.touches.length > 0) {
+            clientX = e.touches[0]!.clientX;
+            clientY = e.touches[0]!.clientY;
+        } else if ('clientX' in e && 'clientY' in e) {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        // Store start position for click vs drag detection
+        startPositionRef.current = { x: clientX, y: clientY };
 
         if (dragBehavior === 'vertical') {
-            if ('touches' in e && e.touches.length > 0) {
-                setStartY(e.touches[0]!.clientY);
-            } else if ('clientY' in e) {
-                setStartY(e.clientY);
-            }
+            setStartY(clientY);
             setStartValue(currentValue);
         }
 
@@ -381,20 +394,29 @@ export const Knob: React.FC<KnobProps> = ({
     const handleVerticalDrag = (e: MouseEvent | TouchEvent) => {
         if (startY === null) return;
 
+        let clientX: number = 0;
         let clientY: number = 0;
 
         if ('touches' in e && e.touches.length > 0) {
+            clientX = e.touches[0]!.clientX;
             clientY = e.touches[0]!.clientY;
-        } else if ('clientY' in e) {
+        } else if ('clientX' in e && 'clientY' in e) {
+            clientX = e.clientX;
             clientY = e.clientY;
         }
 
-        const deltaY = startY - clientY; // Positive when moving up
+        // Check for significant movement (either distance or value change)
+        const deltaX = clientX - startPositionRef.current.x;
+        const deltaY = clientY - startPositionRef.current.y;
+        const movementDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const dragThreshold = 3; // pixels
+
+        const verticalDelta = startY - clientY; // Positive when moving up
 
         // Sensitivity factor: adjust this value to control how fast the knob changes with movement
         const sensitivity = (max - min) / 1000; // Adjust denominator for sensitivity
 
-        let newValue = startValue + deltaY * sensitivity;
+        let newValue = startValue + verticalDelta * sensitivity;
 
         // Apply step
         if (step > 0) {
@@ -404,9 +426,12 @@ export const Knob: React.FC<KnobProps> = ({
         // Clamp value
         newValue = Math.min(Math.max(newValue, min), max);
 
-        //if (newValue !== currentValue) {
-        valueChangedDuringDragRef.current = true;
-        //}
+        // Only consider this a drag if we moved significantly or value changed significantly
+        const valueChangedSignificantly = Math.abs(newValue - dragStartValueRef.current) > (step || 1);
+
+        if (movementDistance > dragThreshold || valueChangedSignificantly) {
+            valueChangedDuringDragRef.current = true;
+        }
 
         setCurrentValue(newValue);
         drawKnob(newValue);
@@ -430,6 +455,12 @@ export const Knob: React.FC<KnobProps> = ({
             clientY = e.clientY;
         }
 
+        // Check for significant movement (either distance or value change)
+        const deltaX = clientX - startPositionRef.current.x;
+        const deltaY = clientY - startPositionRef.current.y;
+        const movementDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const dragThreshold = 3; // pixels
+
         const x = clientX - rect.left - size / 2;
         const y = clientY - rect.top - size / 2;
         let angle = Math.atan2(y, x);
@@ -451,7 +482,12 @@ export const Knob: React.FC<KnobProps> = ({
         // Clamp value
         newValue = Math.min(Math.max(newValue, min), max);
 
-        valueChangedDuringDragRef.current = true;
+        // Only consider this a drag if we moved significantly or value changed significantly
+        const valueChangedSignificantly = Math.abs(newValue - dragStartValueRef.current) > (step || 1);
+
+        if (movementDistance > dragThreshold || valueChangedSignificantly) {
+            valueChangedDuringDragRef.current = true;
+        }
 
         setCurrentValue(newValue);
         drawKnob(newValue);

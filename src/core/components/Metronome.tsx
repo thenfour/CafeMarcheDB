@@ -656,9 +656,9 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     // Tick mark configuration (radius-based)
                     tickStartRadius={224}        // segmentArcOuterRadius + 6
                     tickEndRadius={235}          // tickStartRadius + 11
-                    tickLabelRadius={243}        // tickEndRadius + 8 (old tickLabelOffset)
-                    tickColor="#666"
-                    tickFontSize={9}
+                    tickLabelRadius={246}        // tickEndRadius + 8 (old tickLabelOffset)
+                    tickColor="#999"
+                    tickFontSize={12}
                     tickMarks={tickMarks}
                     segments={knobSegments}
                     // Interactive tick labels
