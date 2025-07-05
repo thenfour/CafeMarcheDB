@@ -593,3 +593,48 @@ li.songDropdownOption {
 .songListSongTable .audioPreviewGatewayButton svg {
     fill: #aaa;
 }
+
+/* Animated playing indicator */
+.songListSongTable .audioPreviewGatewayButton.isPlaying {
+    position: relative;
+}
+
+.songListSongTable .playingIndicatorOuter {
+    position: relative;
+    display: inline-block;
+}
+
+.songListSongTable .playingIndicatorGlow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 136, 255, 0.3) 0%, rgba(0, 136, 255, 0.1) 50%, transparent 70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.songListSongTable .playingIndicatorSpinner {
+    position: relative;
+    animation: playingRotate 3s linear infinite;
+    z-index: 1;
+    transform-origin: center center;
+}
+
+.songListSongTable .playingIndicatorSpinner svg {
+    fill: #0088ff;
+    filter: drop-shadow(0 0 3px rgba(0, 136, 255, 0.5));
+    display: block;
+}
+
+@keyframes playingRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

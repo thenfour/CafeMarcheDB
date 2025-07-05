@@ -377,16 +377,17 @@ export function SongPlayButton({ songList, songIndex, pinnedRecording, allPinned
     return (
         <div className="audioPreviewGatewayContainer">
             {isPlaying ? (
-                <div className='audioPreviewGatewayButton freeButton' onClick={handlePause}>
-                    {gIconMap.PauseCircleOutline()}
-                    {/* <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} /> */}
+                <div className='audioPreviewGatewayButton freeButton isPlaying' onClick={handlePause}>
+                    <div className="playingIndicatorOuter">
+                        <div className="playingIndicatorGlow"></div>
+                        <div className="playingIndicatorSpinner">
+                            {gIconMap.PauseCircleOutline()}
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>
                     {gIconMap.PlayCircleOutline()}
-                    {/* <AnimatedFauxEqualizer enabled={isCurrent && isPlaying} style={{
-                        visibility: "hidden"
-                    }} /> */}
                 </div>
             )}
         </div>
