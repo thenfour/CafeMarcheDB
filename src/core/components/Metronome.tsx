@@ -512,9 +512,16 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     max={gMaxBPM}
                     value={bpm}
                     size={500}
-                    lineWidth={85}
+                    lineWidth={55}
+                    segmentArcWidth={30}
+                    segmentTextOffset={-20}
                     centerRadius={110}
                     dragBehavior="vertical"
+                    segments={[
+                        { startValue: gMinBPM, endValue: 90, color: '#4CAF50', label: 'Slow' },
+                        { startValue: 90, endValue: 140, color: '#FFC107', label: 'Moderate' },
+                        { startValue: 140, endValue: gMaxBPM, color: '#F44336', label: 'Fast' }
+                    ]}
                     onChange={e => {
                         //const valueAsNumber = value as number;
                         setBPM(e);

@@ -1,5 +1,12 @@
 import React, { MouseEvent, TouchEvent, useEffect, useRef, useState } from 'react';
 
+interface KnobSegment {
+    startValue: number;    // Inclusive start
+    endValue: number;      // Exclusive end
+    color: string;         // Segment color
+    label?: string;        // Optional curved label
+}
+
 interface KnobProps {
     min: number;
     max: number;
@@ -20,6 +27,10 @@ interface KnobProps {
      * 'vertical' - value changes based on vertical cursor movement.
      */
     dragBehavior?: 'radial' | 'vertical';
+    segments?: KnobSegment[];     // Optional segments for outer arc
+    segmentArcWidth?: number;     // Width of outer segment arc (default: 12)
+    segmentGap?: number;          // Gap between inner and outer arcs (default: 8)
+    segmentTextOffset?: number;   // Distance of text from segment arc (default: 8)
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -37,6 +48,10 @@ export const Knob: React.FC<KnobProps> = ({
     startAngle01,
     endAngle01,
     dragBehavior = 'radial',
+    segments,
+    segmentArcWidth = 12,
+    segmentGap = 8,
+    segmentTextOffset = 8,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -57,6 +72,58 @@ export const Knob: React.FC<KnobProps> = ({
     const endAngle = (endAngle01 * Math.PI * 2) + (Math.PI / 2);
     const angleRange = endAngle - startAngle;
 
+    // Helper function to convert value to angle
+    const valueToAngle = (value: number): number => {
+        const valueRatio = (value - min) / valueRange;
+        return startAngle + valueRatio * angleRange;
+    };
+
+    // Draw outer segments
+    const drawSegments = (ctx: CanvasRenderingContext2D, radius: number, width: number) => {
+        if (!segments) return;
+
+        segments.forEach(segment => {
+            const segmentStartAngle = valueToAngle(segment.startValue);
+            const segmentEndAngle = valueToAngle(segment.endValue);
+
+            // Draw segment arc
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, radius, segmentStartAngle, segmentEndAngle, false);
+            ctx.lineWidth = width;
+            ctx.strokeStyle = segment.color;
+            ctx.stroke();
+
+            // Draw curved label if provided
+            if (segment.label) {
+                drawCurvedText(ctx, segment.label, segmentStartAngle, segmentEndAngle, radius + width / 2 + segmentTextOffset);
+            }
+        });
+    };
+
+    // Draw text along curved path
+    const drawCurvedText = (ctx: CanvasRenderingContext2D, text: string, startAngle: number, endAngle: number, radius: number) => {
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const midAngle = (startAngle + endAngle) / 2;
+
+        ctx.save();
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Position text at middle of segment
+        const textX = centerX + Math.cos(midAngle) * radius;
+        const textY = centerY + Math.sin(midAngle) * radius;
+
+        // Rotate text to follow arc
+        ctx.translate(textX, textY);
+        ctx.rotate(midAngle + Math.PI / 2); // Add 90 degrees to make text perpendicular to radius
+
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+    };
+
     // Draw the knob
     const drawKnob = (val: number) => {
         const canvas = canvasRef.current;
@@ -68,20 +135,30 @@ export const Knob: React.FC<KnobProps> = ({
         // Clear canvas
         ctx.clearRect(0, 0, size, size);
 
+        // Calculate radii from outside to inside:
+        // [Canvas Edge] -> [lineWidth/2] -> [Inner Arc Center] -> [segmentGap] -> [Segment Arc Center] -> [segmentArcWidth/2] -> [Text Position]
+        const innerArcRadius = size / 2 - lineWidth / 2;
+        const segmentArcRadius = innerArcRadius - lineWidth / 2 - segmentGap - segmentArcWidth / 2;
+
+        // Draw outer segments first (if segments are provided)
+        if (segments && segments.length > 0) {
+            drawSegments(ctx, segmentArcRadius, segmentArcWidth);
+        }
+
         // Calculate angle for current value
         const valueRatio = (val - min) / valueRange;
         const angle = startAngle + valueRatio * angleRange;
 
-        // Draw track
+        // Draw inner track
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - lineWidth, startAngle, endAngle, false);
+        ctx.arc(size / 2, size / 2, innerArcRadius, startAngle, endAngle, false);
         ctx.lineWidth = lineWidth;
         ctx.strokeStyle = '#e0e0e0';
         ctx.stroke();
 
-        // Draw value arc
+        // Draw inner value arc
         ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - lineWidth, startAngle, angle, false);
+        ctx.arc(size / 2, size / 2, innerArcRadius, startAngle, angle, false);
         ctx.lineWidth = lineWidth;
         ctx.strokeStyle = disabled ? '#a0a0a0' : '#ff9500';
         ctx.stroke();
