@@ -159,8 +159,10 @@ export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[]
                 runningTimeSeconds = null;
             }
 
+            // All dividers can have a length, not just song-type dividers
+            songLengthSeconds = item.lengthSeconds;
+
             if (item.isSong) {
-                songLengthSeconds = item.lengthSeconds;
                 incrementSongIndex = true;
             }
         }
@@ -172,7 +174,10 @@ export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[]
         if (songLengthSeconds) {
             runningTimeSeconds = songLengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
         } else {
-            songsWithUnknownLength++;
+            // Only count actual songs with unknown length, not dividers
+            if (item.type === 'song') {
+                songsWithUnknownLength++;
+            }
         }
 
         item.index = songIndex;

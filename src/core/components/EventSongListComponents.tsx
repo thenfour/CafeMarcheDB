@@ -208,6 +208,14 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                     </>}
             />
             <NameValuePair
+                name={"Duration?"}
+                value={<SongLengthInput
+                    initialValue={controlledValue.lengthSeconds}
+                    onChange={(val) => {
+                        setControlledValue({ ...controlledValue, lengthSeconds: val });
+                    }} />}
+            />
+            <NameValuePair
                 name={"Style"}
                 value={
                     <div style={{ backgroundColor: "white" }}>
@@ -296,7 +304,7 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
         <div className="td songIndex">
             {props.value.index != null && props.value.index + 1}
         </div>
-        <div className="td play">{props.value.subtitle}</div>
+        <div className="td play"></div>
         <div className="td songName">{props.value.subtitle}</div>
         <div className="td length">{props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds)}</div>
         <div className="td runningLength">{props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
@@ -320,7 +328,11 @@ type SongPlayButtonProps = {
 
 export function SongPlayButton({ songList, songIndex }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
-    const song = songList.songs[songIndex]!.song;
+    const song = songList.songs[songIndex]?.song;
+    if (!song) {
+        return null;
+    }
+
     const [matchingFile] = useQuery(getSongPinnedRecording, {
         songId: song.id,
     });
@@ -1060,7 +1072,9 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                         {/* value used to be props.value.song || null */}
                         {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
                     </div>
-                    <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
+                    <div className="td length">
+                        {props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}
+                    </div>
                     <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
                     <div className="td tempo">
                         {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
