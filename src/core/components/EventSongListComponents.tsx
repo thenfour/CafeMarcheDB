@@ -47,7 +47,6 @@ export const SongTagIndicatorContainer = ({ tagIds }: { tagIds: number[] }) => {
     const dashboardContext = React.useContext(DashboardContext);
     const allSongTags = tagIds.map(tagId => dashboardContext.songTag.getById(tagId)).filter(t => !!t);
     const tagsWithIndicators = allSongTags.filter(t => !IsNullOrWhitespace(t.indicator));
-    console.log("SongTagIndicatorContainer", { tagIds, allSongTags, tagsWithIndicators });
     if (!tagsWithIndicators.length) return null;
     const sortedTags = sortBy(tagsWithIndicators, t => t.sortOrder);
     return <div className='songTagIndicatorContainer'>
