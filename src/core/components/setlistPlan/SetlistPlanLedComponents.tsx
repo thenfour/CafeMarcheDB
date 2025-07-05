@@ -62,7 +62,7 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
             setActualColor(props.value?.color || null);
         }
     },
-        [props.def.autoColor, JSON.stringify(props.def.associatedItem), JSON.stringify(props.additionalAssociatedItems)]);
+        [props.def.autoColor, JSON.stringify(props.def.associatedItem), JSON.stringify(props.additionalAssociatedItems), props.value?.color]);
 
     const style = GetStyleVariablesForColor({
         color: actualColor,
