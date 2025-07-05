@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { MediaPlayerBar } from "./MediaPlayerBar";
+import { SetlistVisualizationBar } from "./SetlistVisualizationBar";
 import { MediaPlayerContextType, MediaPlayerTrack, MediaPlayerTrackTitle } from "./MediaPlayerTypes";
 
 const MediaPlayerContext = createContext<MediaPlayerContextType | undefined>(undefined);

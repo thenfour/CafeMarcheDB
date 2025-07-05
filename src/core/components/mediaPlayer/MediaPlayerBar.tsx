@@ -3,6 +3,7 @@ import React from "react";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
+import { SetlistVisualizationBar } from "./SetlistVisualizationBar";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;
@@ -70,58 +71,61 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
     // Always render the bar for animation, but toggle visibility class
     return (
         <div className={`mediaPlayerBar${visible ? ' mediaPlayerBar--visible' : ''}`}>
-            <div className="mediaPlayerBarTransport">
-                {mediaPlayer.playlist.length > 1 && (<>
-                    <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
-                    <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
-                    {/* <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
+            <SetlistVisualizationBar mediaPlayer={mediaPlayer} />
+            <div className="responsiveRow">
+                <div className="mediaPlayerBarTransport">
+                    {mediaPlayer.playlist.length > 1 && (<>
+                        <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
+                        <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
+                        {/* <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
                         <ListIcon />
                     </CMSmallButton> */}
-                </>)}
-                {current && (
-                    <audio
-                        src={current.url}
-                        controls
-                        ref={audioRef}
-                        onLoadedMetadata={e => mediaPlayer.setLengthSeconds(e.currentTarget.duration)}
-                        onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
-                        onPlaying={() => {
-                            mediaPlayer.setIsPlaying(true);
-                        }}
-                        onPause={() => {
-                            mediaPlayer.setIsPlaying(false);
-                        }}
-                        onEnded={() => {
-                            // don't auto-next if the playlist is ending.
-                            if (mediaPlayer.currentIndex == null || mediaPlayer.currentIndex + 1 >= mediaPlayer.playlist.length) {
-                                const audio = audioRef.current;
-                                if (!audio) return;
-                                // If we reach the end of the playlist, reset the player
-                                audio.currentTime = 0; // Reset time
-                                return;
-                            }
-                            mediaPlayer.next();
-                        }}
-                    />
-                )}
-            </div>
-            <div className="mediaPlayerBarSegment">
-                <div className="mediaPlayerTrackMetadataDisplay">
-                    <span className="mediaPlayerTrackMetadataCol1">
-                        <span className="mediaPlayerTrackTitle">{trackNumberString}{title?.title || "No media"}</span>
-                        <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
-                    </span>
-
-                    <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
+                    </>)}
+                    {current && (
+                        <audio
+                            src={current.url}
+                            controls
+                            ref={audioRef}
+                            onLoadedMetadata={e => mediaPlayer.setLengthSeconds(e.currentTarget.duration)}
+                            onTimeUpdate={e => mediaPlayer.setPlayheadSeconds(e.currentTarget.currentTime)}
+                            onPlaying={() => {
+                                mediaPlayer.setIsPlaying(true);
+                            }}
+                            onPause={() => {
+                                mediaPlayer.setIsPlaying(false);
+                            }}
+                            onEnded={() => {
+                                // don't auto-next if the playlist is ending.
+                                if (mediaPlayer.currentIndex == null || mediaPlayer.currentIndex + 1 >= mediaPlayer.playlist.length) {
+                                    const audio = audioRef.current;
+                                    if (!audio) return;
+                                    // If we reach the end of the playlist, reset the player
+                                    audio.currentTime = 0; // Reset time
+                                    return;
+                                }
+                                mediaPlayer.next();
+                            }}
+                        />
+                    )}
                 </div>
-                <div style={{ flexGrow: 1 }}></div>
-                <div>
-                    <CMSmallButton
-                        onClick={() => mediaPlayer.setPlaylist([], undefined)}
-                    >
-                        {gIconMap.Close()}
-                    </CMSmallButton>
+                <div className="mediaPlayerBarSegment">
+                    <div className="mediaPlayerTrackMetadataDisplay">
+                        <span className="mediaPlayerTrackMetadataCol1">
+                            <span className="mediaPlayerTrackTitle">{trackNumberString}{title?.title || "No media"}</span>
+                            <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
+                        </span>
 
+                        <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
+                    </div>
+                    <div style={{ flexGrow: 1 }}></div>
+                    <div>
+                        <CMSmallButton
+                            onClick={() => mediaPlayer.setPlaylist([], undefined)}
+                        >
+                            {gIconMap.Close()}
+                        </CMSmallButton>
+
+                    </div>
                 </div>
             </div>
         </div>);

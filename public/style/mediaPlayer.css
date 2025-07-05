@@ -17,6 +17,14 @@
     transition: transform 0.25s cubic-bezier(.4, 0, .2, 1), opacity 0.25s cubic-bezier(.4, 0, .2, 1);
 
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.mediaPlayerBar .responsiveRow {
+    display: flex;
+    flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
 }
@@ -170,4 +178,26 @@
     80% {
         transform: scaleY(0.6);
     }
+}
+
+/* === Setlist Visualization Bar ===================================== */
+.setlistVisualizationBar {
+    height: 30px;
+    display: flex;
+    background-color: #888;
+    gap: 4px;
+}
+
+.setlistVisualizationSegment {
+    cursor: pointer;
+    opacity: 0.3;
+
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 9px;
+}
+
+.setlistVisualizationSegment:hover {
+    opacity: 1;
 }
