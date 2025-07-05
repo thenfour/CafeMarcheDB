@@ -69,7 +69,7 @@
     display: flex;
     align-items: center;
 
-    background-color: #479;
+    background-color: #169;
     padding: 6px 12px;
     /* text-shadow: #0004 0px 0px 7px; */
     text-shadow: #fff6 0px 0px 3px, #88ccffdb 0px 0px 10px;
@@ -184,18 +184,32 @@
 .setlistVisualizationBar {
     height: 30px;
     display: flex;
-    background-color: #888;
-    gap: 4px;
+    background-color: #333;
+    margin-bottom: 8px;
 }
 
 .setlistVisualizationSegment {
-    cursor: pointer;
     opacity: 0.3;
 
-    color: white;
     display: flex;
     align-items: center;
+}
+
+.setlistVisualizationSegment .coloredSegment {
+    cursor: pointer;
+    color: white;
+    display: flex;
     padding: 0 9px;
+    margin: 0 4px;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    border-radius: 3px;
+}
+
+
+.setlistVisualizationSegment--current {
+    opacity: 1;
 }
 
 .setlistVisualizationSegment:hover {
