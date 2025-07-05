@@ -44,6 +44,7 @@ export const Knob: React.FC<KnobProps> = ({
 
     const [startY, setStartY] = useState<number | null>(null);
     const [startValue, setStartValue] = useState<number>(value);
+    const valueChangedDuringDragRef = useRef<boolean>(false);
 
     // Calculate value range
     const valueRange = max - min;
@@ -155,12 +156,11 @@ export const Knob: React.FC<KnobProps> = ({
     //     onChange(newValue);
     // };
 
-
-
     // Handle mouse and touch events
     const handleStart = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
         if (disabled) return;
         setIsDragging(true);
+        valueChangedDuringDragRef.current = false;
 
         if (dragBehavior === 'vertical') {
             if ('touches' in e && e.touches.length > 0) {
@@ -210,6 +210,10 @@ export const Knob: React.FC<KnobProps> = ({
         // Clamp value
         newValue = Math.min(Math.max(newValue, min), max);
 
+        //if (newValue !== currentValue) {
+        valueChangedDuringDragRef.current = true;
+        //}
+
         setCurrentValue(newValue);
         drawKnob(newValue);
         onChange(newValue);
@@ -241,9 +245,51 @@ export const Knob: React.FC<KnobProps> = ({
             angle += 2 * Math.PI;
         }
 
+        // // Calculate how far along the arc this angle represents
+        // // Handle arc wrapping correctly
+        // let normalizedStartAngle = startAngle % (2 * Math.PI);
+        // let normalizedEndAngle = endAngle % (2 * Math.PI);
+
+        // let angleRatio = 0;
+
+        // // If start angle is greater than end angle, the arc wraps around 0
+        // if (normalizedStartAngle > normalizedEndAngle) {
+        //     // Arc wraps around 0 degrees
+        //     if (angle >= normalizedStartAngle || angle <= normalizedEndAngle) {
+        //         // Click is within the arc
+        //         let angleFromStart;
+        //         if (angle >= normalizedStartAngle) {
+        //             angleFromStart = angle - normalizedStartAngle;
+        //         } else {
+        //             angleFromStart = (2 * Math.PI - normalizedStartAngle) + angle;
+        //         }
+        //         angleRatio = angleFromStart / angleRange;
+        //     } else {
+        //         // Click is outside the arc - find closest endpoint
+        //         let distToStart = Math.min(
+        //             Math.abs(angle - normalizedStartAngle),
+        //             2 * Math.PI - Math.abs(angle - normalizedStartAngle)
+        //         );
+        //         let distToEnd = Math.min(
+        //             Math.abs(angle - normalizedEndAngle),
+        //             2 * Math.PI - Math.abs(angle - normalizedEndAngle)
+        //         );
+        //         angleRatio = distToStart < distToEnd ? 0 : 1;
+        //     }
+        // } else {
+        //     // Normal arc that doesn't wrap around
+        //     if (angle >= normalizedStartAngle && angle <= normalizedEndAngle) {
+        //         angleRatio = (angle - normalizedStartAngle) / angleRange;
+        //     } else {
+        //         // Click is outside the arc - find closest endpoint
+        //         let distToStart = Math.abs(angle - normalizedStartAngle);
+        //         let distToEnd = Math.abs(angle - normalizedEndAngle);
+        //         angleRatio = distToStart < distToEnd ? 0 : 1;
+        //     }
+        // }
+
         let angleRatio = (angle - startAngle + 2 * Math.PI) % (2 * Math.PI);
         angleRatio = angleRatio / angleRange;
-
         let newValue = min + angleRatio * valueRange;
 
         // Apply step
@@ -254,6 +300,10 @@ export const Knob: React.FC<KnobProps> = ({
         // Clamp value
         newValue = Math.min(Math.max(newValue, min), max);
 
+        valueChangedDuringDragRef.current = true;
+        // if (newValue !== currentValue) {
+        // }
+
         setCurrentValue(newValue);
         drawKnob(newValue);
         onChange(newValue);
@@ -261,13 +311,110 @@ export const Knob: React.FC<KnobProps> = ({
         e.preventDefault();
     };
 
-    const handleEnd = () => {
+    const handleEnd = (e: MouseEvent | TouchEvent) => {
+        const wasClick = !valueChangedDuringDragRef.current;
         setIsDragging(false);
+
+        // Apply click-to-value behavior only if this was a click (value didn't change during drag)
+        if (wasClick) {
+            handleClickToValue(e);
+        }
+    };
+
+    const handleClickToValue = (e: MouseEvent | TouchEvent) => {
+        // Calculate click-to-value using angle-based approach for both drag behaviors
+        // This matches how the knob is visually rendered (always as an arc)
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        let clientX: number = 0;
+        let clientY: number = 0;
+
+        if ('touches' in e && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0]!.clientX;
+            clientY = e.changedTouches[0]!.clientY;
+        } else if ('clientX' in e && 'clientY' in e) {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        // Calculate angle from center to click point
+        const x = clientX - rect.left - size / 2;
+        const y = clientY - rect.top - size / 2;
+        let angle = Math.atan2(y, x);
+
+        // Normalize angle to a value between 0 and 2*PI
+        if (angle < 0) {
+            angle += 2 * Math.PI;
+        }
+
+        // Calculate how far along the arc this angle represents
+        // Handle arc wrapping correctly
+        let normalizedStartAngle = startAngle % (2 * Math.PI);
+        let normalizedEndAngle = endAngle % (2 * Math.PI);
+
+        let angleRatio = 0;
+
+        // If start angle is greater than end angle, the arc wraps around 0
+        if (normalizedStartAngle > normalizedEndAngle) {
+            // Arc wraps around 0 degrees
+            if (angle >= normalizedStartAngle || angle <= normalizedEndAngle) {
+                // Click is within the arc
+                let angleFromStart;
+                if (angle >= normalizedStartAngle) {
+                    angleFromStart = angle - normalizedStartAngle;
+                } else {
+                    angleFromStart = (2 * Math.PI - normalizedStartAngle) + angle;
+                }
+                angleRatio = angleFromStart / angleRange;
+            } else {
+                // Click is outside the arc - find closest endpoint
+                let distToStart = Math.min(
+                    Math.abs(angle - normalizedStartAngle),
+                    2 * Math.PI - Math.abs(angle - normalizedStartAngle)
+                );
+                let distToEnd = Math.min(
+                    Math.abs(angle - normalizedEndAngle),
+                    2 * Math.PI - Math.abs(angle - normalizedEndAngle)
+                );
+                angleRatio = distToStart < distToEnd ? 0 : 1;
+            }
+        } else {
+            // Normal arc that doesn't wrap around
+            if (angle >= normalizedStartAngle && angle <= normalizedEndAngle) {
+                angleRatio = (angle - normalizedStartAngle) / angleRange;
+            } else {
+                // Click is outside the arc - find closest endpoint
+                let distToStart = Math.abs(angle - normalizedStartAngle);
+                let distToEnd = Math.abs(angle - normalizedEndAngle);
+                angleRatio = distToStart < distToEnd ? 0 : 1;
+            }
+        }
+
+        // Clamp to valid range (0-1)
+        angleRatio = Math.min(Math.max(angleRatio, 0), 1);
+
+        // Convert arc position to value
+        let newValue = min + angleRatio * valueRange;
+
+        // Apply step
+        if (step > 0) {
+            newValue = Math.round(newValue / step) * step;
+        }
+
+        // Clamp value
+        newValue = Math.min(Math.max(newValue, min), max);
+
+        if (newValue !== currentValue) {
+            setCurrentValue(newValue);
+            drawKnob(newValue);
+            onChange(newValue);
+        }
     };
 
     useEffect(() => {
         const handleWindowMove = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => handleMove(e);
-        const handleWindowEnd = () => handleEnd();
+        const handleWindowEnd = (e: MouseEvent | TouchEvent) => handleEnd(e);
 
         if (isDragging) {
             window.addEventListener('mousemove', handleWindowMove as any, { passive: false });
