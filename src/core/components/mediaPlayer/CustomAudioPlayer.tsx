@@ -1,7 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useRef } from "react";
-import { useLocalStorageState } from "../useLocalStorageState";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
+import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerSlider } from "./MediaPlayerSlider";
 
 export interface CustomAudioPlayerAPI {
@@ -22,7 +22,7 @@ export interface CustomAudioPlayerAPI {
     get autoplay(): boolean;
     set autoplay(value: boolean);
     get src(): string;
-    set src(value: string);
+    // set src(value: string);
 
     // Additional useful properties
     get readyState(): number;
@@ -74,6 +74,8 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         });
         const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(75);
         const [isUserSeeking, setIsUserSeeking] = React.useState(false);
+
+        //console.log(`customaudioplayer src=${src}`);
 
         // Sync localStorage volume with audio element when it loads
         React.useEffect(() => {
@@ -154,11 +156,14 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             get src() {
                 return audioRef.current?.src ?? '';
             },
-            set src(value: string) {
-                if (audioRef.current) {
-                    audioRef.current.src = value;
-                }
-            },
+            // set src(value: string) {
+            //     if (audioRef.current) {
+            //         console.log("Setting audio src to:", value);
+            //         audioRef.current.src = value;
+            //     } else {
+            //         console.warn("Audio element not ready to set src");
+            //     }
+            // },
 
             // Additional properties
             get readyState() {
@@ -356,6 +361,8 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 return gIconMap.VolumeUp();
             }
         };
+
+        //console.log(`audio player; duration:${duration}, readystaty:${audioRef.current?.readyState}, islaoding:${isLoading}, src:${src}, isPlaying:${isPlaying}, currentTime:${currentTime}, volume:${volume}, muted:${isMuted}`);
 
         return (
             <div className="customAudioPlayer">

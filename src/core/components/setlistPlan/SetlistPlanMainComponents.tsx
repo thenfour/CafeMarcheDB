@@ -10,7 +10,7 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/compo
 import { CMSmallButton, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { getClipboardSongList, PortableSongList, PortableSongListSong, PortableSongListDivider, SongTagIndicatorContainer, SongTagIndicatorContainerAligned } from "src/core/components/EventSongListComponents";
+import { getClipboardSongList, PortableSongList, SongTagIndicatorContainerAligned } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";

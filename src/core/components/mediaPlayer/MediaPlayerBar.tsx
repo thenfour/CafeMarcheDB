@@ -4,7 +4,7 @@ import { formatSongLength } from "../../../../shared/time";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
-import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
+import { MediaPlayerContextType } from "./MediaPlayerTypes";
 import { SetlistVisualizationBar } from "./SetlistVisualizationBar";
 
 export const AnimatedFauxEqualizer: React.FC<{
@@ -26,10 +26,11 @@ export const AnimatedFauxEqualizer: React.FC<{
 export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> = ({ mediaPlayer }) => {
     const audioRef = React.useRef<CustomAudioPlayerAPI>(null);
     const [visible, setVisible] = React.useState(false);
-    const [showingPlaylistDialog, setShowingPlaylistDialog] = React.useState(false);
+    //const [showingPlaylistDialog, setShowingPlaylistDialog] = React.useState(false);
 
-    const current: MediaPlayerTrack | undefined =
-        mediaPlayer.currentIndex == null ? undefined : mediaPlayer.playlist[mediaPlayer.currentIndex];
+    const current = mediaPlayer.currentTrack;
+    const currentUri = current ? mediaPlayer.getTrackUri(current) : undefined;
+    //console.log(`mediaPlayerBar; currentTrack uri`, current);
 
     // Show/hide animation effect
     React.useEffect(() => {
@@ -40,17 +41,19 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
     React.useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
+        if (!current) return;
         if (mediaPlayer.isPlaying) {
             // the audio player won't start playing until the media is ready sometimes,
             // so set autoplay any time we expect playing.
             audio.autoplay = true;
+            //console.log("mediaPlayer.isPlaying = true; setting AUTOPLAY");
             audio.play().catch(() => {
                 console.error("Failed to play audio:", audio.src);
             });
         } else {
             audio.autoplay = false; // see above
             if (!audio.paused) {
-                console.log("mediaPlayer.paused = false; setting PAUSED");
+                //console.log("mediaPlayer.paused = false; setting PAUSED");
                 audio.pause();
             }
         }
@@ -67,8 +70,8 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
     const title = current && mediaPlayer.getTrackTitle(current);
 
     const hasPlaylist = mediaPlayer.playlist.length > 1;
-    const trackNumberString = hasPlaylist && mediaPlayer.currentIndex != null
-        ? `${mediaPlayer.currentIndex + 1}.` : "";
+    //const trackNumberString = title.// hasPlaylist && mediaPlayer.currentIndex != null
+    //  ? `${mediaPlayer.currentIndex + 1}.` : "";
 
     // Always render the bar for animation, but toggle visibility class
     return (
@@ -79,13 +82,10 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                     {mediaPlayer.playlist.length > 1 && (<>
                         <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
                         <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
-                        {/* <CMSmallButton enabled={true} onClick={() => setShowingPlaylistDialog(true)}>
-                        <ListIcon />
-                    </CMSmallButton> */}
                     </>)}
                     {current && (
                         <CustomAudioPlayer
-                            src={current.url}
+                            src={currentUri}
                             controls
                             ref={audioRef}
                             onLoadedMetadata={e => {
@@ -130,7 +130,7 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                 <div className="mediaPlayerBarSegment">
                     <div className="mediaPlayerTrackMetadataDisplay">
                         <span className="mediaPlayerTrackMetadataCol1">
-                            <span className="mediaPlayerTrackTitle">{trackNumberString}{title?.title || "No media"}</span>
+                            <span className="mediaPlayerTrackTitle">{title?.displayIndex}{title?.title || "No media"}</span>
                             <span className="mediaPlayerTrackSubtitle">{title?.subtitle}</span>
                         </span>
 

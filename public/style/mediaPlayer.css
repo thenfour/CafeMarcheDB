@@ -73,8 +73,10 @@
     padding: 6px 12px;
     /* text-shadow: #0004 0px 0px 7px; */
     text-shadow: #fff6 0px 0px 3px, #88ccffdb 0px 0px 10px;
-    box-shadow: inset 0 0 5px #bdf;
-    height: 40px;
+    box-shadow: inset 0 0 3px #bdf,
+        inset 0 0 20px #bdf4,
+        0 0 10px #bdf6;
+    height: 48px;
     border: 1px solid #0088ff;
 }
 
@@ -210,7 +212,7 @@
 
 /* === Setlist Visualization Bar ===================================== */
 .setlistVisualizationBar {
-    height: 20px;
+    height: 23px;
     display: flex;
     background-color: #333;
     margin-bottom: 8px;
@@ -232,13 +234,13 @@
     cursor: pointer;
     color: white;
     display: flex;
-    padding: 0 9px;
+    padding: 0 6px;
     margin: 0 2px;
     width: 100%;
     height: 100%;
     align-items: center;
-    border-radius: 3px;
-    font-size: 12px;
+    border-radius: 2px;
+    font-size: 13px;
     position: relative;
     overflow: hidden;
     min-width: 0;
@@ -305,6 +307,9 @@
 
 .setlistVisualizationSegment .coloredSegment--seekable {
     cursor: pointer;
+
+    /* box-shadow: 0 0 4px var(--segment-color); */
+    /* outline: 2px solid blue; */
 }
 
 .setlistVisualizationSegment .coloredSegment--seekable:hover {
@@ -318,6 +323,40 @@
 
 .setlistVisualizationSegment:hover {
     opacity: 1;
+}
+
+/* === Setlist-specific visualization styles ================= */
+
+.setlistVisualizationSegment--divider {
+    opacity: 0;
+}
+
+.setlistVisualizationSegment--dummy {
+    /* opacity: 0.8; */
+}
+
+.setlistVisualizationSegment--song {
+    opacity: 1;
+}
+
+.coloredSegment--noninteractive {
+    cursor: default !important;
+}
+
+.coloredSegment--noninteractive:hover {
+    transform: none !important;
+    filter: none !important;
+}
+
+/* Divider-specific styling */
+.setlistVisualizationSegment--divider .coloredSegment {
+    border-left: 2px solid rgba(255, 255, 255, 0.3);
+    border-right: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.setlistVisualizationSegment--divider .segmentText {
+    font-style: italic;
+    opacity: 0.8;
 }
 
 /* === Custom Audio Player ===================================== */

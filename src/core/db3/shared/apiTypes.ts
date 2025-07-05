@@ -1143,3 +1143,5 @@ export const PermissionSignificance = {
     Visibility_Members: "Visibility_Members",
     Visibility_Editors: "Visibility_Editors",
 } as const satisfies Record<string, string>;
+
+export type TSongPinnedRecording = Prisma.FileGetPayload<{}>;

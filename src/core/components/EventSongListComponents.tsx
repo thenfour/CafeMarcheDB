@@ -5,6 +5,7 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
+import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
@@ -20,7 +21,8 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
-import { TAnyModel } from '../db3/shared/apiTypes';
+import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
+import { TAnyModel, TSongPinnedRecording } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
@@ -29,19 +31,16 @@ import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './Color';
 import { ColorPick } from './ColorPick';
-import { useMessageBox } from './MessageBoxContext';
 import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
+import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
+import { MediaPlayerTrack } from './mediaPlayer/MediaPlayerTypes';
+import { useMessageBox } from './MessageBoxContext';
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
-import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
-import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
-import { useQuery } from '@blitzjs/rpc';
-import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
-import { getURIForFile } from '../db3/clientAPILL';
 
 export const SongTagIndicatorContainer = ({ tagIds }: { tagIds: number[] }) => {
     const dashboardContext = React.useContext(DashboardContext);
@@ -248,8 +247,10 @@ const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { so
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerRowProps {
     value: SetlistAPI.EventSongListItem;
+    rowIndex: number; // The index of this row in the setlistRowItems array
+    setlistRowItems: SetlistAPI.EventSongListItem[];
     songList: db3.EventSongListPayload;
-    pinnedRecordings?: Record<number, any>; // songId -> pinnedRecording
+    pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
 };
 
 export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings">) => {
@@ -317,45 +318,53 @@ export const NullSongPlayButton = () => {
 
 // File-specific audio controls that use the global media player
 type SongPlayButtonProps = {
-    songList: db3.EventSongListPayload;
-    songIndex: number;
-    pinnedRecording?: any; // The pinned recording for this song, if any
-    allPinnedRecordings?: Record<number, any>; // All pinned recordings for the setlist
+    //songList: db3.EventSongListPayload;
+    setlistRowItems: SetlistAPI.EventSongListItem[];
+    rowIndex: number;
+    //songIndex: number;
+    //pinnedRecording?: any; // The pinned recording for this song, if any
+    allPinnedRecordings: Record<number, TSongPinnedRecording>; // All pinned recordings for the setlist
 };
 
-export function SongPlayButton({ songList, songIndex, pinnedRecording, allPinnedRecordings }: SongPlayButtonProps) {
+export function SongPlayButton({ setlistRowItems, rowIndex, allPinnedRecordings }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
-    const song = songList.songs[songIndex]?.song;
-
-    if (!song || (!pinnedRecording)) {
+    //const song = songList.songs[songIndex]?.song;
+    const rowItem = setlistRowItems[rowIndex];
+    if (!rowItem || rowItem.type !== 'song') {
+        return <NullSongPlayButton />; // Placeholder if no song is found
+    }
+    const pinnedRecording = allPinnedRecordings?.[rowItem.song.id];
+    if (!pinnedRecording) {
         return <NullSongPlayButton />; // Placeholder if no song is found
     }
 
     const file = pinnedRecording;
-    const isCurrent = mediaPlayer.isPlayingFile(file.id);
+    const isCurrent = mediaPlayer.currentIndex === rowIndex && mediaPlayer.isPlayingFile(file.id);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
 
     // Create a playlist from all songs in the setlist that have pinned recordings
-    const createPlaylist = () => {
-        const playlist = songList.songs
-            .map((songListItem, index) => {
-                const recording = allPinnedRecordings?.[songListItem.song.id];
-                if (!recording) return null;
+    const createPlaylist = (): MediaPlayerTrack[] => {
 
+        const playlist: MediaPlayerTrack[] = setlistRowItems
+            .map((row, rowIndex) => {
+
+                if (row.type === 'song') {
+                    const recording = allPinnedRecordings?.[row.song.id]; // may be undefined if no pinned recording.
+
+                    return {
+                        playlistIndex: -1, // filled in later
+                        file: recording,
+                        songContext: row.song,
+                        setListItemContext: row,
+                    } satisfies MediaPlayerTrack;
+                }
                 return {
-                    file: recording,
-                    url: getURIForFile(recording),
-                    songContext: songListItem.song,
-                };
-            })
-            .filter(item => item !== null);
+                    playlistIndex: -1, // filled in later
+                    setListItemContext: row,
+                } satisfies MediaPlayerTrack;
+            });
 
-        // Find the index of the clicked song in the filtered playlist
-        const playlistStartIndex = playlist.findIndex(item =>
-            item?.file.id === file.id
-        );
-
-        return { playlist, startIndex: Math.max(0, playlistStartIndex) };
+        return playlist;
     };
 
     // Play this file via the global player
@@ -363,8 +372,9 @@ export function SongPlayButton({ songList, songIndex, pinnedRecording, allPinned
         if (isCurrent) {
             mediaPlayer.unpause();
         } else {
-            const { playlist, startIndex } = createPlaylist();
-            mediaPlayer.setPlaylist(playlist, startIndex);
+            const playlist = createPlaylist();
+            // rowIndex happens to be the same as the playlist index because we always generate them in sync.
+            mediaPlayer.setPlaylist(playlist, rowIndex);
         }
     };
 
@@ -427,10 +437,12 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
             </div>
             <div className="td play">{props.value.type === 'song' && <SongPlayButton
-                songList={props.songList}
-                songIndex={props.value.songArrayIndex}
-                pinnedRecording={props.pinnedRecordings?.[props.value.song.id]}
+                //songList={props.songList}
+                //songIndex={props.value.songArrayIndex}
+                rowIndex={props.rowIndex}
+                //pinnedRecording={props.pinnedRecordings?.[props.value.song.id]}
                 allPinnedRecordings={props.pinnedRecordings}
+                setlistRowItems={props.setlistRowItems}
             />}</div>
             <div className="td songName">
                 {props.value.type === 'song' && <>
@@ -808,7 +820,14 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
 
         <div className="tbody">
             {
-                rowItems.map((s, index) => <EventSongListValueViewerRow key={index} value={s} songList={props.value} pinnedRecordings={pinnedRecordings || {}} />)
+                rowItems.map((s, index) => <EventSongListValueViewerRow
+                    key={index}
+                    rowIndex={index}
+                    value={s}
+                    songList={props.value}
+                    pinnedRecordings={pinnedRecordings || {}}
+                    setlistRowItems={rowItems}
+                />)
             }
 
         </div>
@@ -1065,7 +1084,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             songId: song.id,
             song: song,
             index: 0, // will be set later
-            songArrayIndex: 0, // will be set later by GetRowItems
+            //songArrayIndex: 0, // will be set later by GetRowItems
             runningTimeSeconds: null, // populated later
             songsWithUnknownLength: 0, // populated later
         }
@@ -1348,7 +1367,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         songId: p.song.id,
                         song: p.song,
                         index: 0, // it doesn't matter; it will get populated later
-                        songArrayIndex: 0, // will be set later by GetRowItems
+                        //songArrayIndex: 0, // will be set later by GetRowItems
                         runningTimeSeconds: null, // populated later
                         songsWithUnknownLength: 0, // populated later
                     }

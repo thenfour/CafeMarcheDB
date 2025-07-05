@@ -1,9 +1,9 @@
-import React from "react";
-import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
-import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
-import { formatSongLength } from "../../../../shared/time";
-import { Tooltip } from "@mui/material";
 import { getHashedColor } from "@/shared/utils";
+import React from "react";
+import { formatSongLength } from "../../../../shared/time";
+import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
+//import { useMediaPlayer } from "./MediaPlayerContext";
+import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 
 // Simple hash function to generate consistent colors for songs
 const hashString = (str: string): number => {
@@ -16,60 +16,121 @@ const hashString = (str: string): number => {
     return Math.abs(hash);
 };
 
-const getSegmentColor = (track: MediaPlayerTrack, isCurrent: boolean): string => {
-    // Use song name, file name, or URL for hashing
-    const identifier = track.songContext?.name ||
-        track.file?.fileLeafName ||
-        track.url ||
-        "untitled";
+type TrackType = "song" | "divider" | "dummy";
 
-    //const hash = hashString(identifier);
-    return getHashedColor(identifier, {
-        alpha: "100%",
-        luminosity: "50%",
-        saturation: isCurrent ? "70%" : "10%"
-    });
+const getItemType = (item: MediaPlayerTrack): TrackType => {
+    if (item.setListItemContext?.type === "divider") {
+        if (item.setListItemContext.isSong) {
+            return "dummy";
+        }
+        return "divider";
+    }
+
+    if (item.url || item.file) {
+        return "song";
+    }
+    return "dummy";
 };
 
-const getSegmentProportionalWidth = (track: MediaPlayerTrack): number => {
-    // Use song name, file name, or URL for hashing
-    const identifier = track.songContext?.name ||
-        track.file?.fileLeafName ||
-        track.url ||
-        "untitled";
-
-    const hash = hashString(identifier);
-
-    // Generate a proportional width between 1 and 10 based on hash
-    // This gives us varied but consistent widths for demonstration
-    return 1 + (hash % 9); // Results in values from 1 to 10
+// New functions for setlist-aware rendering
+const getSetlistItemProportionalWidth = (item: MediaPlayerTrack): number => {
+    const trackType = getItemType(item);
+    return {
+        song: 2,
+        divider: 0.5,
+        dummy: 1
+    }[trackType] || 1;
 };
 
-export const SetlistVisualizationBar: React.FC<{
+
+interface StyleData {
+    containerClassName: string;
+    containerStyle: React.CSSProperties;
+    coloredBarClassName: string;
+    coloredBarStyle: React.CSSProperties;
+}
+
+const getItemStyleData = (item: MediaPlayerTrack, isCurrentTrack: boolean, mediaPlayer: MediaPlayerContextType): StyleData => {
+    const title = mediaPlayer.getTrackTitle(item);
+
+    switch (getItemType(item)) {
+        case "divider": {
+            if (item.setListItemContext?.type !== "divider") throw new Error("Expected item to be a divider");
+
+            return {
+                containerClassName: "setlistVisualizationSegment--divider",
+                containerStyle: {
+                    "--segment-color": item.setListItemContext.color || "#666666",
+                } as any,
+                coloredBarClassName: "",
+                coloredBarStyle: {
+                    backgroundColor: "var(--segment-color)",
+                }
+            }
+        }
+        default:
+        case "dummy":
+            return {
+                containerClassName: "setlistVisualizationSegment--dummy",
+                containerStyle: {
+                    "--segment-color": "#444", // Default color for dummy songs
+                } as any,
+                coloredBarClassName: "hatch",
+                coloredBarStyle: {
+                    "--fc": "#666",
+                    "--bc": "#333",
+                } as any,
+            }
+        case "song": {
+
+            return {
+                containerClassName: "setlistVisualizationSegment--song",
+                containerStyle: {
+                    "--segment-color": getHashedColor(title.title, {
+                        alpha: "100%",
+                        luminosity: "50%",
+                        saturation: isCurrentTrack ? "70%" : "15%",
+                    }),
+                } as any,
+                coloredBarClassName: "",
+                coloredBarStyle: {
+                    backgroundColor: "var(--segment-color)",
+                }
+            };
+        }
+    }
+
+};
+
+interface VisBarSegmentProps {
+    item: MediaPlayerTrack;
+    isCurrentTrack: boolean;
+    audioAPI: CustomAudioPlayerAPI | null;
     mediaPlayer: MediaPlayerContextType;
-    audioAPI?: CustomAudioPlayerAPI | null;
-}> = ({ mediaPlayer, audioAPI }) => {
-    const { playlist, currentIndex, playheadSeconds, lengthSeconds } = mediaPlayer;
-    const [visible, setVisible] = React.useState(false);
+};
+
+const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSegmentProps) => {
     const [hoverPosition, setHoverPosition] = React.useState<number | null>(null);
     const [hoverTime, setHoverTime] = React.useState<number | null>(null);
 
-    const current = currentIndex != null ? playlist[currentIndex] : undefined;
+    const proportionalWidth = getSetlistItemProportionalWidth(item);
 
-    // Show/hide animation effect - sync with media player visibility
-    React.useEffect(() => {
-        setVisible(!!current && playlist.length > 1);
-    }, [current, playlist.length]);
+    const styleData = getItemStyleData(item, false, mediaPlayer);
+    const title = mediaPlayer.getTrackTitle(item);
 
-    // Only show if playlist has more than one song
-    if (playlist.length <= 1) {
-        return null;
+    const isInteractable = item.file || item.url;
+
+    // todo is this redundant with mediaPlayer.lengthSeconds?
+    let audioDurationSeconds: number | undefined;
+    if (isCurrentTrack) {
+        audioDurationSeconds = audioAPI?.duration;
     }
 
     // Calculate playhead position as a percentage within the current track
-    const getPlayheadPosition = (): number => {
-        if (currentIndex == null || !playheadSeconds) {
-            return 0;
+    const { playheadSeconds, lengthSeconds } = mediaPlayer;
+    const getPlayheadPosition = (): number | undefined => {
+        if (!isCurrentTrack || !playheadSeconds) {
+            return undefined;
         }
 
         // Try to get duration from the MediaPlayerContext
@@ -88,154 +149,157 @@ export const SetlistVisualizationBar: React.FC<{
         return position;
     };
 
+    let playheadPosition: number | undefined = undefined;
+    if (isCurrentTrack) {
+        playheadPosition = getPlayheadPosition();
+    }
+
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isInteractable) return;
+
+        if (isCurrentTrack) {
+            // Handle seeking within current track
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+            seekToPosition(percentage);
+        } else {
+            // Switch to this track
+            mediaPlayer.playTrackOfPlaylist(item.playlistIndex);
+        }
+    };
+
+    // Handler for hover on current track
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isCurrentTrack) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const hoverX = e.clientX - rect.left;
+        const percentage = Math.max(0, Math.min(1, hoverX / rect.width));
+        setHoverPosition(percentage * 100);
+
+        if (!audioDurationSeconds) {
+            return;
+        }
+
+        const timeAtPosition = percentage * audioDurationSeconds;
+        setHoverTime(timeAtPosition);
+    };
+
+    const handleMouseLeave = () => {
+        setHoverPosition(null);
+        setHoverTime(null);
+    };
+
+    function seekToPosition(percentage: number) {
+        if (!audioDurationSeconds) {
+            return;
+        }
+
+        const seekTime = percentage * audioDurationSeconds;
+
+        // Perform the actual seek using the audio API
+        if (audioAPI) {
+            audioAPI.seekTo(seekTime);
+        }
+    }
+
+    return <div
+        className={`setlistVisualizationSegment ${styleData.containerClassName} ${isCurrentTrack ? 'setlistVisualizationSegment--current' : ''}`}
+        style={{
+            //width: `${widthPercentage}%`,
+            flexShrink: 0,
+            flex: proportionalWidth,
+            cursor: isInteractable ? 'pointer' : 'default',
+            ...styleData.containerStyle,
+        } as any}
+    >
+        <div
+            className={`coloredSegment ${styleData.coloredBarClassName} ${isCurrentTrack ? 'coloredSegment--seekable' : ''} ${!isInteractable ? 'coloredSegment--noninteractive' : ''}`}
+            style={{
+                position: 'relative',
+                ...styleData.coloredBarStyle,
+            } as React.CSSProperties}
+            onClick={handleClick}
+            onMouseMove={isCurrentTrack ? handleMouseMove : undefined}
+            onMouseLeave={isCurrentTrack ? handleMouseLeave : undefined}
+        >
+            {/* Progress fill for current track */}
+            {isCurrentTrack && (
+                <div
+                    className="progressFill"
+                    style={{
+                        width: `${playheadPosition}%`,
+                    }}
+                />
+            )}
+            {/* Playhead indicator for current track */}
+            {isCurrentTrack && (
+                <div
+                    className="playheadIndicator"
+                    style={{
+                        left: `${playheadPosition}%`,
+                    }}
+                />
+            )}
+            {/* Hover position indicator for current track */}
+            {isCurrentTrack && hoverPosition !== null && (
+                <>
+                    <div
+                        className="hoverPositionIndicator"
+                        style={{
+                            left: `${hoverPosition}%`,
+                        }}
+                    />
+                    {/* Time display at hover position */}
+                    {hoverTime !== null && (
+                        <div
+                            className="hoverTimeDisplay"
+                            style={{
+                                left: `${hoverPosition}%`,
+                            }}
+                        >
+                            {formatSongLength(Math.floor(hoverTime))}
+                        </div>
+                    )}
+                </>
+            )}
+            <span className="segmentText">{title.displayIndex}{title.title}</span>
+        </div>
+    </div>;
+};
+
+
+
+
+
+export const SetlistVisualizationBar: React.FC<{
+    mediaPlayer: MediaPlayerContextType;
+    audioAPI: CustomAudioPlayerAPI | null;
+}> = ({ mediaPlayer, audioAPI }) => {
+    const { playlist, currentIndex, playheadSeconds, lengthSeconds } = mediaPlayer;
+    const [visible, setVisible] = React.useState(false);
+
+    const current = currentIndex != null ? playlist[currentIndex] : undefined;
+
+    // Show/hide animation effect - sync with media player visibility
+    React.useEffect(() => {
+        setVisible(playlist.length > 1);
+    }, [current, playlist.length]);
+
     return (
         <div
             className={`setlistVisualizationBar${visible ? ' setlistVisualizationBar--visible' : ''}`}
         >
-            {playlist.map((track, index) => {
-                const isCurrentTrack = index === currentIndex;
-                const color = getSegmentColor(track, isCurrentTrack);
-                const title = mediaPlayer.getTrackTitle(track);
-                const proportionalWidth = getSegmentProportionalWidth(track);
-                const fullTtitle = `${index + 1}. ${title.title}${title.subtitle ? ` (${title.subtitle})` : ''}`;
-                const playheadPosition = isCurrentTrack ? getPlayheadPosition() : 0;
-
-                // Calculate the total width units for percentage calculation
-                const totalWidthUnits = playlist.reduce((sum, t) => sum + getSegmentProportionalWidth(t), 0);
-                const widthPercentage = (proportionalWidth / totalWidthUnits) * 100;
-
-                // Handler for seeking within the current track
-                const handleCurrentTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-                    if (!isCurrentTrack) {
-                        console.warn('Click on non-current track segment ignored');
-                        return;
-                    }
-
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-
-                    // Get track duration
-                    let trackDuration = lengthSeconds;
-                    if (!isFinite(trackDuration) || trackDuration <= 0) {
-                        if (audioAPI && isFinite(audioAPI.duration) && audioAPI.duration > 0) {
-                            //console.log(`Using audioAPI duration for seeking to ${percentage * 100}%`);
-                            trackDuration = audioAPI.duration;
-                        } else {
-                            //console.warn('Cannot seek without valid track duration');
-                            return; // Can't seek without duration
-                        }
-                    } else {
-                        //console.log(`Using MediaPlayerContext duration for seeking to ${percentage * 100}%`);
-                    }
-
-                    const seekTime = percentage * trackDuration;
-
-                    // Perform the actual seek using the audio API
-                    // The MediaPlayerBar's onTimeUpdate will automatically update the context
-                    if (audioAPI) {
-                        audioAPI.seekTo(seekTime);
-                    } else {
-                        //console.warn('Cannot seek: audioAPI not available');
-                    }
-                };
-
-                // Handler for hover position tracking on current track
-                const handleCurrentTrackMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-                    if (!isCurrentTrack) return;
-
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const hoverX = e.clientX - rect.left;
-                    const percentage = Math.max(0, Math.min(1, hoverX / rect.width));
-                    setHoverPosition(percentage * 100);
-
-                    // Calculate the time at the hover position
-                    let trackDuration = lengthSeconds;
-                    if (!isFinite(trackDuration) || trackDuration <= 0) {
-                        if (audioAPI && isFinite(audioAPI.duration) && audioAPI.duration > 0) {
-                            trackDuration = audioAPI.duration;
-                        } else {
-                            setHoverTime(null);
-                            return;
-                        }
-                    }
-
-                    const timeAtPosition = percentage * trackDuration;
-                    setHoverTime(timeAtPosition);
-                };
-
-                const handleCurrentTrackMouseLeave = () => {
-                    setHoverPosition(null);
-                    setHoverTime(null);
-                };
-
-                return (
-                    <div
-                        key={index}
-                        className={`setlistVisualizationSegment ${isCurrentTrack ? 'setlistVisualizationSegment--current' : ''}`}
-                        style={{
-                            width: `${widthPercentage}%`,
-                            flexShrink: 0,
-                            "--segment-color": color,
-                        } as any}
-                    >
-                        <div
-                            className={`coloredSegment ${isCurrentTrack ? 'coloredSegment--seekable' : ''}`}
-                            style={{
-                                backgroundColor: "var(--segment-color)",
-                                position: 'relative',
-                            }}
-                            onClick={isCurrentTrack ? handleCurrentTrackClick : () => {
-                                mediaPlayer.setPlaylist(playlist, index);
-                            }}
-                            onMouseMove={isCurrentTrack ? handleCurrentTrackMouseMove : undefined}
-                            onMouseLeave={isCurrentTrack ? handleCurrentTrackMouseLeave : undefined}
-                        >
-                            {/* Progress fill for current track */}
-                            {isCurrentTrack && (
-                                <div
-                                    className="progressFill"
-                                    style={{
-                                        width: `${playheadPosition}%`,
-                                    }}
-                                />
-                            )}
-                            {/* Playhead indicator for current track */}
-                            {isCurrentTrack && (
-                                <div
-                                    className="playheadIndicator"
-                                    style={{
-                                        left: `${playheadPosition}%`,
-                                    }}
-                                />
-                            )}
-                            {/* Hover position indicator for current track */}
-                            {isCurrentTrack && hoverPosition !== null && (
-                                <>
-                                    <div
-                                        className="hoverPositionIndicator"
-                                        style={{
-                                            left: `${hoverPosition}%`,
-                                        }}
-                                    />
-                                    {/* Time display at hover position */}
-                                    {hoverTime !== null && (
-                                        <div
-                                            className="hoverTimeDisplay"
-                                            style={{
-                                                left: `${hoverPosition}%`,
-                                            }}
-                                        >
-                                            {formatSongLength(Math.floor(hoverTime))}
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                            <span className="segmentText">{fullTtitle}</span>
-                        </div>
-                    </div>
-                );
-            })}
+            {
+                playlist.map((track, index) => <VisBarSegment
+                    key={index}
+                    item={track}
+                    isCurrentTrack={currentIndex === index}
+                    audioAPI={audioAPI}
+                    mediaPlayer={mediaPlayer}
+                />)
+            }
         </div>
     );
 };

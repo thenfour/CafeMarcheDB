@@ -3,6 +3,7 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
+import { TSongPinnedRecording } from "../shared/apiTypes";
 
 const ZArgs = z.object({
     songIds: z.array(z.number()),
@@ -11,7 +12,7 @@ const ZArgs = z.object({
 export default resolver.pipe(
     resolver.authorize(Permission.view_songs),
     resolver.zod(ZArgs),
-    async (args, ctx: AuthenticatedCtx) => {
+    async (args, ctx: AuthenticatedCtx): Promise<Record<number, TSongPinnedRecording>> => {
         try {
             const qr = await db.song.findMany({
                 where: {
@@ -24,7 +25,7 @@ export default resolver.pipe(
             });
 
             // Create a map of songId -> pinnedRecording for easy lookup
-            const result: Record<number, any> = {};
+            const result: Record<number, TSongPinnedRecording> = {};
             qr.forEach(song => {
                 if (song.pinnedRecording) {
                     result[song.id] = song.pinnedRecording;

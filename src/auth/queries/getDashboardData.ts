@@ -4,7 +4,6 @@ import { generateToken, hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
-import { isCategoricalAxis } from "recharts/types/util/ChartUtils";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { Stopwatch } from "shared/rootroot";
 import { getServerStartState } from "shared/serverStateBase";
