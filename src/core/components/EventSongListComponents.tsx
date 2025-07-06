@@ -386,16 +386,29 @@ export function SongPlayButton({ setlistRowItems, rowIndex, allPinnedRecordings 
 
     return (
         <div className="audioPreviewGatewayContainer">
-            {isPlaying ? (
+            {isCurrent && isPlaying && (
                 <div className='audioPreviewGatewayButton freeButton isPlaying' onClick={handlePause}>
                     <div className="playingIndicatorOuter">
                         <div className="playingIndicatorGlow"></div>
-                        <div className="playingIndicatorSpinner">
+                        <div className="playingIndicatorSpinner playingIndicatorSpinnerAnim">
                             {gIconMap.PauseCircleOutline()}
                         </div>
                     </div>
                 </div>
-            ) : (
+            )}
+
+            {isCurrent && !isPlaying && (
+                <div className='audioPreviewGatewayButton freeButton isPlaying' onClick={handlePlay}>
+                    <div className="playingIndicatorOuter">
+                        <div className="playingIndicatorGlow"></div>
+                        <div className="playingIndicatorSpinner">
+                            {gIconMap.PlayCircleOutline()}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!isCurrent && (
                 <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>
                     {gIconMap.PlayCircleOutline()}
                 </div>

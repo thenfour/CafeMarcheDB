@@ -276,29 +276,95 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
 export const SetlistVisualizationBar: React.FC<{
     mediaPlayer: MediaPlayerContextType;
     audioAPI: CustomAudioPlayerAPI | null;
-}> = ({ mediaPlayer, audioAPI }) => {
-    const { playlist, currentIndex, playheadSeconds, lengthSeconds } = mediaPlayer;
-    const [visible, setVisible] = React.useState(false);
+    startIndex: number;
+    length: number;
+    //currentIndex: number | undefined;
+}> = ({ mediaPlayer, audioAPI, startIndex, length }) => {
+    const { playlist, currentIndex, } = mediaPlayer;
+    //const [visible, setVisible] = React.useState(false);
 
-    const current = currentIndex != null ? playlist[currentIndex] : undefined;
+    //const current = currentIndex != null ? playlist[currentIndex] : undefined;
 
-    // Show/hide animation effect - sync with media player visibility
-    React.useEffect(() => {
-        setVisible(playlist.length > 1);
-    }, [current, playlist.length]);
+    // // Show/hide animation effect - sync with media player visibility
+    // React.useEffect(() => {
+    //     setVisible(playlist.length > 1);
+    // }, [currentTrack, playlist.length]);
+
+    // take the playlist segment based on bounds
+    const items = playlist.slice(startIndex, startIndex + length);
 
     return (
         <div
-            className={`setlistVisualizationBar${visible ? ' setlistVisualizationBar--visible' : ''}`}
+            className={`setlistVisualizationBar`}
         >
             {
-                playlist.map((track, index) => <VisBarSegment
+                items.map((track, index) => <VisBarSegment
                     key={index}
                     item={track}
-                    isCurrentTrack={currentIndex === index}
+                    isCurrentTrack={currentIndex === index + startIndex}
                     audioAPI={audioAPI}
                     mediaPlayer={mediaPlayer}
                 />)
+            }
+        </div>
+    );
+};
+
+
+
+export const SetlistVisualizationBars: React.FC<{
+    mediaPlayer: MediaPlayerContextType;
+    audioAPI: CustomAudioPlayerAPI | null;
+}> = ({ mediaPlayer, audioAPI }) => {
+    const { playlist } = mediaPlayer;
+    //const [visible, setVisible] = React.useState(false);
+
+    // const current = currentIndex != null ? playlist[currentIndex] : undefined;
+
+    // // Show/hide animation effect - sync with media player visibility
+    // React.useEffect(() => {
+    //     setVisible(playlist.length > 1);
+    // }, [current, playlist.length]);
+
+    // calculate rows. a new row begins when a divider is encountered that's marked as a break,
+    // as long as it is not just after another break (avoid empty rows).
+    const rowBounds: { startIndex: number, length: number }[] = [];
+    let currentRow: { startIndex: number, length: number } = { startIndex: 0, length: 0 };
+    for (let i = 0; i < playlist.length; i++) {
+        const track = playlist[i]!;
+        if (track.setListItemContext?.type === "divider" && track.setListItemContext.isInterruption && currentRow.length > 0) {
+            // If we hit a divider that is an interruption, finalize the current row
+            currentRow.length = i - currentRow.startIndex; // Set length of the row
+            rowBounds.push(currentRow);
+            currentRow = { startIndex: i + 1, length: 0 }; // Start a new row after the divider
+        } else {
+            currentRow.length++; // Increment the length of the current row
+        }
+    }
+    // If there's a remaining row after the loop, add it
+    if (currentRow.length > 0 || currentRow.startIndex < playlist.length) {
+        currentRow.length = playlist.length - currentRow.startIndex; // Set length of the last row
+        rowBounds.push(currentRow);
+    }
+
+    console.log(`rowBounds`, rowBounds);
+
+    return (
+        <div
+            className={`setlistVisualizationBarContainer`}
+        >
+            {
+                rowBounds.map((rowBound, rowIndex) => (
+                    <SetlistVisualizationBar
+                        key={rowIndex}
+                        mediaPlayer={mediaPlayer}
+                        audioAPI={audioAPI}
+                        startIndex={rowBound.startIndex}
+                        length={rowBound.length}
+                    //playlist={row}
+                    //currentIndex={currentIndex}
+                    />
+                ))
             }
         </div>
     );

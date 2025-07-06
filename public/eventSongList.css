@@ -618,9 +618,12 @@ li.songDropdownOption {
 
 .songListSongTable .playingIndicatorSpinner {
     position: relative;
-    animation: playingRotate 3s linear infinite;
     z-index: 1;
     transform-origin: center center;
+}
+
+.songListSongTable .playingIndicatorSpinnerAnim {
+    animation: playingRotate 3s linear infinite;
 }
 
 .songListSongTable .playingIndicatorSpinner svg {

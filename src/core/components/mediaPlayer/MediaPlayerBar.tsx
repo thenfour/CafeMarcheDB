@@ -5,7 +5,7 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { MediaPlayerContextType } from "./MediaPlayerTypes";
-import { SetlistVisualizationBar } from "./SetlistVisualizationBar";
+import { SetlistVisualizationBar, SetlistVisualizationBars } from "./SetlistVisualizationBar";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;
@@ -76,7 +76,7 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
     // Always render the bar for animation, but toggle visibility class
     return (
         <div className={`mediaPlayerBar${visible ? ' mediaPlayerBar--visible' : ''}`}>
-            <SetlistVisualizationBar mediaPlayer={mediaPlayer} audioAPI={audioRef.current} />
+            <SetlistVisualizationBars mediaPlayer={mediaPlayer} audioAPI={audioRef.current} />
             <div className="responsiveRow">
                 <div className="mediaPlayerBarTransport">
                     {mediaPlayer.playlist.length > 1 && (<>
