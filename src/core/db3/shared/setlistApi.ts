@@ -161,21 +161,21 @@ export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[]
                 runningTimeSeconds = null;
             }
 
-            // All dividers can have a length, not just song-type dividers
-            songLengthSeconds = item.lengthSeconds;
-
             if (item.isSong) {
+                songLengthSeconds = item.lengthSeconds;
                 incrementSongIndex = true;
             }
         }
         if (item.type === 'song') {
-            //songLengthSeconds = item.song.lengthSeconds;
-            if (item.song.lengthSeconds != null) {
-                runningTimeSeconds = item.song.lengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
-            } else {
+            songLengthSeconds = item.song.lengthSeconds;
+            if (item.song.lengthSeconds === null) {
                 songsWithUnknownLength++;
             }
             incrementSongIndex = true;
+        }
+
+        if (songLengthSeconds != null) {
+            runningTimeSeconds = songLengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
         }
 
         item.index = songIndex;

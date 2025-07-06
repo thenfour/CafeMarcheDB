@@ -251,9 +251,11 @@ interface EventSongListValueViewerRowProps {
     setlistRowItems: SetlistAPI.EventSongListItem[];
     songList: db3.EventSongListPayload;
     pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
+    lengthColumnMode: LengthColumnMode;
+    toggleLengthColumnMode: () => void;
 };
 
-export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings">) => {
+export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings" | "lengthColumnMode" | "toggleLengthColumnMode">) => {
     if (props.value.type !== 'divider') throw new Error(`wrongtype`);
 
     const colorInfo = GetStyleVariablesForColor({
@@ -283,7 +285,7 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
 
 };
 
-export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings">) => {
+export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings" | "lengthColumnMode" | "toggleLengthColumnMode">) => {
     if (props.value.type !== 'divider') throw new Error(`wrongtype`);
 
     const colorInfo = GetStyleVariablesForColor({
@@ -300,8 +302,12 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
         </div>
         <div className="td play"><NullSongPlayButton /></div>
         <div className="td songName">{props.value.subtitle}</div>
-        <div className="td length">{props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds)}</div>
-        <div className="td runningLength">{props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
+        <div className={`td ${props.lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
+            {props.lengthColumnMode === "length"
+                ? (props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds))
+                : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
+            }
+        </div>
         <div className="td tempo">
         </div>
         <div className="td comment">{props.value.subtitleIfSong}</div>
@@ -442,8 +448,6 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         return Array.from(tagIds);
     }, [props.songList.songs]);
 
-    // const formattedBPM = props.value.type === 'song' ? API.songs.getFormattedBPM(props.value.song) : "";
-
     return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type}`}>
         <AppContextMarker songId={enrichedSong?.id || undefined}>
             <div className="td songIndex">
@@ -466,8 +470,13 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                     />
                 </>}
             </div>
-            <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
-            <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
+            <div className={`td ${props.lengthColumnMode === 'length' ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
+                {props.value.type === 'song' && (
+                    props.lengthColumnMode === "length"
+                        ? (props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds))
+                        : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
+                )}
+            </div>
             <div className="td tempo">
                 {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
             </div>
@@ -692,9 +701,11 @@ interface EventSongListValueViewerProps {
 };
 
 type SongListSortSpec = "sortOrderAsc" | "sortOrderDesc" | "nameAsc" | "nameDesc" | "bpmAsc" | "bpmDesc";
+type LengthColumnMode = "length" | "runningTime";
 
 export const EventSongListValueViewerTable = ({ showHeader = true, disableInteraction = false, ...props }: EventSongListValueViewerProps & { showHeader?: boolean | undefined, disableInteraction?: boolean | undefined }) => {
     const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
+    const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
     const snackbarContext = React.useContext(SnackbarContext);
 
     const user = useCurrentUser()[0]!;
@@ -743,6 +754,10 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         } else {
             setSortSpec('bpmAsc');
         }
+    };
+
+    const toggleLengthColumnMode = () => {
+        setLengthColumnMode(prev => prev === "length" ? "runningTime" : "length");
     };
 
     // create a id -> index map.
@@ -804,8 +819,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                 <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
                 <div className="th play"><NullSongPlayButton /></div>
                 <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
-                <div className="th length">Len</div>
-                <div className="th runningLength">∑T</div>
+                <div className={`th ${lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>{lengthColumnMode === "length" ? "Len" : "∑T"}</div>
                 <div className="th tempo interactable" onClick={handleClickBpmTH}>Bpm {sortSpec === 'bpmAsc' && gCharMap.DownArrow()} {sortSpec === 'bpmDesc' && gCharMap.UpArrow()}</div>
                 <div className="th comment">
                     Comment
@@ -840,6 +854,8 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                     songList={props.value}
                     pinnedRecordings={pinnedRecordings || {}}
                     setlistRowItems={rowItems}
+                    lengthColumnMode={lengthColumnMode}
+                    toggleLengthColumnMode={toggleLengthColumnMode}
                 />)
             }
 
@@ -989,6 +1005,8 @@ interface EventSongListValueEditorRowProps {
     showDragHandle?: boolean;
     onChange: (newValue: SetlistAPI.EventSongListItem) => void;
     onDelete?: () => void;
+    lengthColumnMode: LengthColumnMode;
+    toggleLengthColumnMode: () => void;
 };
 
 // Editor component for song-like dividers (when isSong is true)
@@ -1038,8 +1056,12 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
                 onChange={(e) => handleSubtitleChange(e.target.value)}
             />
         </div>
-        <div className="td length">{props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds)}</div>
-        <div className="td runningLength">{props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
+        <div className={`td ${props.lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
+            {props.lengthColumnMode === "length"
+                ? (props.value.lengthSeconds && formatSongLength(props.value.lengthSeconds))
+                : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
+            }
+        </div>
         <div className="td tempo"></div>
         <div className="td comment">
             <CMTextInputBase
@@ -1057,7 +1079,7 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
                 }}
             />
         </div>
-    </div>;
+    </div >;
 };
 
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
@@ -1209,10 +1231,13 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             {/* value used to be props.value.song || null */}
             {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
         </div>
-        <div className="td length">
-            {props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}
+        <div className={`td ${props.lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
+            {props.value.type === 'song' && (
+                props.lengthColumnMode === "length"
+                    ? (props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds))
+                    : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
+            )}
         </div>
-        <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
         <div className="td tempo">
             {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
             {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
@@ -1274,6 +1299,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
+    const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
 
     const rowItems = SetlistAPI.GetRowItems(value);
 
@@ -1303,6 +1329,10 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode, clientIntention);
 
     const stats = API.events.getSongListStats(value);
+
+    const toggleLengthColumnMode = () => {
+        setLengthColumnMode(prev => prev === "length" ? "runningTime" : "length");
+    };
 
     const itemToEventSongListSong = (x: SetlistAPI.EventSongListSongItem) => {
         const { type, songId, song, ...rest } = x;
@@ -1462,8 +1492,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     <div className="th songIndex">#</div>
                     <div className="th dragHandle"></div>
                     <div className="th songName">Song</div>
-                    <div className="th length">Len</div>
-                    <div className="th runningLength">∑T</div>
+                    <div className={`th ${lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>{lengthColumnMode === "length" ? "Len" : "∑T"}</div>
                     <div className="th tempo">bpm</div>
                     <div className="th comment">
                         Comment
@@ -1492,7 +1521,15 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
             >
                 {
                     rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
-                        <EventSongListValueEditorRow key={s.id} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} />
+                        <EventSongListValueEditorRow
+                            key={s.id}
+                            value={s}
+                            onChange={handleRowChange}
+                            songList={value}
+                            onDelete={() => handleRowDelete(s)}
+                            lengthColumnMode={lengthColumnMode}
+                            toggleLengthColumnMode={toggleLengthColumnMode}
+                        />
                     </ReactSmoothDndDraggable>
                     )
                 }
@@ -1507,7 +1544,10 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         sortOrder: rowItems.length,
                     }}
                     onChange={handleRowChange}
-                    songList={value} />
+                    songList={value}
+                    lengthColumnMode={lengthColumnMode}
+                    toggleLengthColumnMode={toggleLengthColumnMode}
+                />
             </ReactSmoothDndContainer>
         </div>
 

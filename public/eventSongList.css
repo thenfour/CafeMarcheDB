@@ -36,7 +36,7 @@
     --col-songIndex-width: 44px;
     --col-dragHandle-width: 30px;
     --col-playButton-width: 28px;
-    --col-songName-width: 340px;
+    --col-songName-width: 360px;
     --col-length-width: 60px;
     --col-tempo-width: 50px;
 }
@@ -53,8 +53,8 @@
 }
 
 .songListSongTable .tbody .tr {
-    /* makes icons and things center vertically within cells; looks cleaner */
-    align-items: center;
+    /* makes icons and things center vertically within cells, and makes cells fill the height making them easier to click on */
+    align-items: stretch;
     /* songs get a unique color to search dupes */
     --song-hash-color: black;
 }
@@ -270,7 +270,7 @@
 
 .songListSongTable .td.runningLength {
     font-family: var(--ff-mono);
-    color: var(--deemphasized-color);
+    color: #494;
     font-size: 14px;
     justify-content: flex-end;
 }
