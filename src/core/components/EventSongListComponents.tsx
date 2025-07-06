@@ -42,58 +42,77 @@ import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 
-export const SongTagIndicatorContainer = ({ tagIds }: { tagIds: number[] }) => {
-    const dashboardContext = React.useContext(DashboardContext);
-    const allSongTags = tagIds.map(tagId => dashboardContext.songTag.getById(tagId)).filter(t => !!t);
-    const tagsWithIndicators = allSongTags.filter(t => !IsNullOrWhitespace(t.indicator));
-    if (!tagsWithIndicators.length) return null;
-    const sortedTags = sortBy(tagsWithIndicators, t => t.sortOrder);
-    return <div className='songTagIndicatorContainer'>
-        {sortedTags.map((tag, i) => {
-            const style = GetStyleVariablesForColor({ color: tag.color, ...StandardVariationSpec.Strong });
-            return <Tooltip title={tag.text} key={i} disableInteractive>
-                <div key={i} className={`songTagIndicator ${tag.indicatorCssClass} ${style.cssClass}`} style={style.style}>{tag.indicator}</div>
-            </Tooltip>;
-        })}
-    </div>;
-};
-
 // Aligned version that shows all possible tags with consistent spacing
+// Tags with the same sort order can share the same lane
 export const SongTagIndicatorContainerAligned = ({ tagIds, allPossibleTags }: {
     tagIds: number[],
     allPossibleTags: number[]
 }) => {
     const dashboardContext = React.useContext(DashboardContext);
 
-    // Get all possible tags that have indicators, sorted by sortOrder
+    // Get all possible tags that have indicators
     const allTags = allPossibleTags
         .map(tagId => dashboardContext.songTag.getById(tagId))
         .filter(t => !!t && !IsNullOrWhitespace(t.indicator)) as db3.SongTagPayload[];
 
-    const sortedAllTags = sortBy(allTags, t => t.sortOrder);
-
     // Create a set of current song's tag IDs for quick lookup
     const currentTagIds = new Set(tagIds);
 
-    if (!sortedAllTags.length) return null;
+    // Group tags by sort order
+    const tagsBySortOrder = new Map<number, db3.SongTagPayload[]>();
+    allTags.forEach(tag => {
+        if (!tagsBySortOrder.has(tag.sortOrder)) {
+            tagsBySortOrder.set(tag.sortOrder, []);
+        }
+        tagsBySortOrder.get(tag.sortOrder)!.push(tag);
+    });
 
-    return <div className='songTagIndicatorContainer aligned'>
-        {sortedAllTags.map((tag, i) => {
-            const style = GetStyleVariablesForColor({ color: tag.color, ...StandardVariationSpec.Strong });
-            const isVisible = currentTagIds.has(tag.id);
-            return <Tooltip title={tag.text} key={i} disableInteractive>
+    // Get unique sort orders and sort them
+    const sortedSortOrders = Array.from(tagsBySortOrder.keys()).sort((a, b) => a - b);
+
+    if (!sortedSortOrders.length) return null;
+
+    // Render tags grouped by sort order
+    const renderElements: React.ReactNode[] = [];
+    let keyCounter = 0;
+
+    sortedSortOrders.forEach(sortOrder => {
+        const tagsForThisSortOrder = tagsBySortOrder.get(sortOrder)!;
+        const visibleTagsForThisSortOrder = tagsForThisSortOrder.filter(tag => currentTagIds.has(tag.id));
+
+        if (visibleTagsForThisSortOrder.length > 0) {
+            // Show all visible tags for this sort order
+            visibleTagsForThisSortOrder.forEach(tag => {
+                const style = GetStyleVariablesForColor({ color: tag.color, ...StandardVariationSpec.Strong });
+                renderElements.push(
+                    <Tooltip title={tag.text} key={keyCounter++} disableInteractive>
+                        <div
+                            className={`songTagIndicator ${tag.indicatorCssClass} ${style.cssClass}`}
+                            style={style.style}
+                        >
+                            {tag.indicator}
+                        </div>
+                    </Tooltip>
+                );
+            });
+        } else {
+            // Show one hidden tag to maintain spacing
+            const firstTag = tagsForThisSortOrder[0]!; // We know this exists since we put it in the map
+            renderElements.push(
                 <div
-                    key={i}
-                    className={`songTagIndicator ${tag.indicatorCssClass} ${style.cssClass}`}
+                    className={`songTagIndicator ${firstTag.indicatorCssClass}`}
                     style={{
-                        ...style.style,
-                        visibility: isVisible ? 'visible' : 'hidden'
+                        visibility: 'hidden'
                     }}
                 >
-                    {tag.indicator}
+                    {firstTag.indicator}
                 </div>
-            </Tooltip>;
-        })}
+            );
+        }
+    });
+
+    return <div className='songTagIndicatorContainer aligned'>
+        {renderElements}
     </div>;
 };
 
