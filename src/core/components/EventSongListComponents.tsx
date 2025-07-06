@@ -11,7 +11,7 @@ import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBas
 import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { moveItemInArray, sortBy } from 'shared/arrayUtils';
+import { moveItemInArray } from 'shared/arrayUtils';
 import { gSwatchColors, StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
@@ -1020,7 +1020,10 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueEditorRowProps {
     value: SetlistAPI.EventSongListItem;
+    rowIndex: number; // The index of this row in the setlistRowItems array
+    setlistRowItems: SetlistAPI.EventSongListItem[];
     songList: db3.EventSongListPayload;
+    pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
     showDragHandle?: boolean;
     onChange: (newValue: SetlistAPI.EventSongListItem) => void;
     onDelete?: () => void;
@@ -1067,6 +1070,7 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
         <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
         <div className="td songIndex">{props.value.index != null && (props.value.index + 1)}</div>
         <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
+        <div className="td play"><NullSongPlayButton /></div>
         <div className="td songName">
             <CMTextInputBase
                 className="cmdbSimpleInput"
@@ -1198,6 +1202,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
                 <div className="td songIndex"></div>
                 <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
+                <div className="td play"><NullSongPlayButton /></div>
                 <div className="td comment dividerCommentCell">
                     <div className='comment dividerCommentContainer'>
                         <div className='dividerBreakDiv before'></div>
@@ -1235,6 +1240,11 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         </div>
         <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
         </div>
+        <div className="td play">{props.value.type === 'song' && <SongPlayButton
+            rowIndex={props.rowIndex}
+            allPinnedRecordings={props.pinnedRecordings}
+            setlistRowItems={props.setlistRowItems}
+        />}</div>
         {/* while it's tempting to make song names draggable themselves for very fast sorting, it interferes with
         pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad. 
         ${props.value.type === 'song' && "dragHandle draggable"}*/}
@@ -1319,6 +1329,14 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
     const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
+
+    // Fetch all pinned recordings for songs in this list at once
+    const songIds = value.songs.map(s => s.song.id);
+    const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
+        songIds: songIds,
+    }, {
+        enabled: songIds.length > 0
+    });
 
     const rowItems = SetlistAPI.GetRowItems(value);
 
@@ -1510,6 +1528,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     <div className="th delete"></div>
                     <div className="th songIndex">#</div>
                     <div className="th dragHandle"></div>
+                    <div className="th play"><NullSongPlayButton /></div>
                     <div className="th songName">Song</div>
                     <div className={`th ${lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>{lengthColumnMode === "length" ? "Len" : "∑T"}</div>
                     <div className="th tempo">bpm</div>
@@ -1542,7 +1561,10 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
                         <EventSongListValueEditorRow
                             key={s.id}
+                            rowIndex={index}
                             value={s}
+                            setlistRowItems={rowItems}
+                            pinnedRecordings={pinnedRecordings || {}}
                             onChange={handleRowChange}
                             songList={value}
                             onDelete={() => handleRowDelete(s)}
@@ -1554,7 +1576,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                 }
                 <EventSongListValueEditorRow
                     key={"newRow"}
-                    //index={rowItems.length}
+                    rowIndex={rowItems.length}
                     showDragHandle={false}
                     value={{
                         type: 'new',
@@ -1562,6 +1584,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         eventSongListId: value.id,
                         sortOrder: rowItems.length,
                     }}
+                    setlistRowItems={rowItems}
+                    pinnedRecordings={pinnedRecordings || {}}
                     onChange={handleRowChange}
                     songList={value}
                     lengthColumnMode={lengthColumnMode}
