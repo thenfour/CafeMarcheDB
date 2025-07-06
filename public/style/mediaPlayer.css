@@ -133,7 +133,7 @@
     align-items: flex-end;
     gap: 2px;
     /* space between bars               */
-    width: 28px;
+    /* width: 28px; */
     /* overall footprint—scale as needed */
     --equalizer-bar-height: 13px;
     --equalizer-bar-color: #dff8;
@@ -158,9 +158,11 @@
     /* overall footprint—scale as needed */
     height: var(--equalizer-bar-height);
     background: var(--equalizer-bar-color);
-    border-radius: 2px;
+    /* border-radius: 2px; */
     transform-origin: bottom;
-    animation: equalize 1.8s ease-in-out infinite;
+    animation: equalize 3.6s ease-in-out infinite;
+
+    width: 6px;
 }
 
 .equalizer.disabled span {
@@ -185,6 +187,15 @@
     animation-delay: 0.50s;
 }
 
+.equalizer span:nth-child(6) {
+    animation-delay: 0.35s;
+}
+
+.equalizer span:nth-child(7) {
+    animation-delay: 0.20s;
+}
+
+
 /* keyframes */
 @keyframes equalize {
 
@@ -193,20 +204,40 @@
         transform: scaleY(0.3);
     }
 
+    10% {
+        transform: scaleY(0.7);
+    }
+
     20% {
         transform: scaleY(1.0);
+    }
+
+    30% {
+        transform: scaleY(0.4);
     }
 
     40% {
         transform: scaleY(0.5);
     }
 
+    50% {
+        transform: scaleY(0.9);
+    }
+
     60% {
         transform: scaleY(0.8);
     }
 
+    70% {
+        transform: scaleY(0.2);
+    }
+
     80% {
         transform: scaleY(0.6);
+    }
+
+    90% {
+        transform: scaleY(0.4);
     }
 }
 
@@ -214,7 +245,7 @@
 .setlistVisualizationBar {
     height: 23px;
     display: flex;
-    background-color: #333;
+    /* background-color: #333; */
     margin-bottom: 8px;
     user-select: none;
     /* max-width: 100vw; */
@@ -224,10 +255,8 @@
     opacity: 0.5;
     display: flex;
     align-items: center;
-    min-width: 0;
     /* Allow shrinking below content width */
-    box-sizing: border-box;
-    /* Include padding and borders in width calculation */
+    min-width: 0;
 }
 
 .setlistVisualizationSegment .coloredSegment {

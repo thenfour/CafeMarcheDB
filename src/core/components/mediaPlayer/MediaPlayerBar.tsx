@@ -19,6 +19,8 @@ export const AnimatedFauxEqualizer: React.FC<{
             <span></span>
             <span></span>
             <span></span>
+            <span></span>
+            <span></span>
         </div>
     );
 }

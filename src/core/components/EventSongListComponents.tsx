@@ -802,7 +802,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         {showHeader && <div className="thead">
             <div className="tr">
                 <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
-                <div className="th play"></div>
+                <div className="th play"><NullSongPlayButton /></div>
                 <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
                 <div className="th length">Len</div>
                 <div className="th runningLength">∑T</div>
@@ -1027,7 +1027,7 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
         className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
         style={style as any}
     >
-        <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
+        <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
         <div className="td songIndex">{props.value.index != null && (props.value.index + 1)}</div>
         <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
         <div className="td songName">
@@ -1154,7 +1154,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
                 style={style as any}
             >
-                <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
+                <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
                 <div className="td songIndex"></div>
                 <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
                 <div className="td comment dividerCommentCell">
@@ -1189,7 +1189,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
         style={style as any}
     >
-        <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
+        <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
         <div className="td songIndex">{props.value.type === 'song' && (props.value.index + 1)}
         </div>
         <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
@@ -1458,9 +1458,9 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         <div className="songListSongTable">
             <div className="thead">
                 <div className="tr">
-                    <div className="th dragHandle"></div>
+                    <div className="th delete"></div>
                     <div className="th songIndex">#</div>
-                    <div className="th icon"></div>
+                    <div className="th dragHandle"></div>
                     <div className="th songName">Song</div>
                     <div className="th length">Len</div>
                     <div className="th runningLength">∑T</div>

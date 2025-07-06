@@ -347,8 +347,6 @@ export const SetlistVisualizationBars: React.FC<{
         rowBounds.push(currentRow);
     }
 
-    console.log(`rowBounds`, rowBounds);
-
     return (
         <div
             className={`setlistVisualizationBarContainer`}

@@ -31,6 +31,14 @@
 
 .songListSongTable {
     border-bottom: 1px solid #ccc;
+
+    --col-delete-width: 30px;
+    --col-songIndex-width: 44px;
+    --col-dragHandle-width: 30px;
+    --col-playButton-width: 28px;
+    --col-songName-width: 340px;
+    --col-length-width: 60px;
+    --col-tempo-width: 50px;
 }
 
 
@@ -77,12 +85,12 @@
 .songListSongTable .td.dragHandle,
 .songListSongTable .th.dragHandle {
     user-select: none;
-    width: 30px;
+    width: var(--col-dragHandle-width);
 }
 
 .songListSongTable .td.songIndex,
 .songListSongTable .th.songIndex {
-    width: 44px;
+    width: var(--col-songIndex-width);
 }
 
 .songListSongTable .td.songIndex {
@@ -98,14 +106,14 @@
     font-family: var(--ff-mono);
 }
 
-.songListSongTable .td.icon,
-.songListSongTable .th.icon {
-    width: 30px;
+.songListSongTable .td.delete,
+.songListSongTable .th.delete {
+    width: var(--col-delete-width);
 }
 
 .songListSongTable .tr.invalidItem .td.songIndex,
 .songListSongTable .tr.invalidItem .td.dragHandle,
-.songListSongTable .tr.invalidItem .td.icon {
+.songListSongTable .tr.invalidItem .td.delete {
     color: #0002;
 }
 
@@ -157,17 +165,17 @@
     text-shadow: 0 0 var(--dist) var(--color-background), 0 0 var(--dist) var(--color-background), 0 0 var(--dist) var(--color-background);
 }
 
-.songListSongTable .td.icon {
+.songListSongTable .td.delete {
     color: #0005;
 }
 
-.songListSongTable .td.icon svg {
+.songListSongTable .td.delete svg {
     height: 20px;
 }
 
 .songListSongTable .td.songName,
 .songListSongTable .th.songName {
-    width: 340px;
+    width: var(--col-songName-width);
     position: relative;
     display: flex;
     justify-content: flex-start;
@@ -247,8 +255,10 @@
 }
 
 .songListSongTable .td.length,
-.songListSongTable .th.length {
-    width: 60px;
+.songListSongTable .th.length,
+.songListSongTable .td.runningLength,
+.songListSongTable .th.runningLength {
+    width: var(--col-length-width);
 }
 
 .songListSongTable .td.length {
@@ -257,14 +267,6 @@
     color: var(--deemphasized-color);
     padding-right: 8px;
 }
-
-
-
-.songListSongTable .td.runningLength,
-.songListSongTable .th.runningLength {
-    width: 60px;
-}
-
 
 .songListSongTable .td.runningLength {
     font-family: var(--ff-mono);
@@ -278,7 +280,7 @@
 
 .songListSongTable .td.tempo,
 .songListSongTable .th.tempo {
-    width: 50px;
+    width: var(--col-tempo-width);
     /* background-color: #0004; */
 }
 
@@ -425,6 +427,10 @@
 /* in song list editor dialog, don't display the left border.*/
 .MuiDialogContent-root .EventSongListValue {
     border-left: unset;
+}
+
+.EventSongListValueEditor .MuiDialogContent-root {
+    padding: 0 4px;
 }
 
 .EventSongListValue>.header {
@@ -587,7 +593,7 @@ li.songDropdownOption {
 
 
 .songListSongTable .audioPreviewGatewayContainer {
-    width: 28px;
+    width: var(--col-playButton-width);
 }
 
 .songListSongTable .audioPreviewGatewayButton svg {
