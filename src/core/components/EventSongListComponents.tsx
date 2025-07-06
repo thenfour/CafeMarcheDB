@@ -364,7 +364,9 @@ export function SongPlayButton({ setlistRowItems, rowIndex, allPinnedRecordings 
     }
 
     const file = pinnedRecording;
-    const isCurrent = mediaPlayer.currentIndex === rowIndex && mediaPlayer.isPlayingFile(file.id);
+    const isCurrent = mediaPlayer.currentIndex === rowIndex &&
+        mediaPlayer.isPlayingFile(file.id) &&
+        mediaPlayer.currentTrack?.setlistId === rowItem.eventSongListId;
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
 
     // Create a playlist from all songs in the setlist that have pinned recordings
@@ -378,6 +380,7 @@ export function SongPlayButton({ setlistRowItems, rowIndex, allPinnedRecordings 
 
                     return {
                         playlistIndex: -1, // filled in later
+                        setlistId: row.eventSongListId,
                         file: recording,
                         songContext: row.song,
                         setListItemContext: row,
@@ -385,6 +388,7 @@ export function SongPlayButton({ setlistRowItems, rowIndex, allPinnedRecordings 
                 }
                 return {
                     playlistIndex: -1, // filled in later
+                    setlistId: row.eventSongListId,
                     setListItemContext: row,
                 } satisfies MediaPlayerTrack;
             });

@@ -991,6 +991,7 @@ export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileCo
                         uploadedAt: file.uploadedAt,
                     },
                     playlistIndex: -1,
+                    setlistId: undefined, // individual file playback, not from a setlist
                     url: file.externalURI || getURIForFile(file),
                     songContext: song,
                     eventContext: event,

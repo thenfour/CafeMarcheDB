@@ -43,6 +43,7 @@ export type MediaPlayerSetlistItemContextPayload = EventSongListItem;// & {
 // A minimal audio file type for playlist items
 export interface MediaPlayerTrack {
     playlistIndex: number; // index in the playlist, used for playback
+    setlistId?: number; // ID of the setlist this track belongs to, for disambiguation
 
     songContext?: MediaPlayerSongContextPayload;
     eventContext?: MediaPlayerEventContextPayload;

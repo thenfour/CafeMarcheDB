@@ -84,6 +84,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const playUri = (uri: string) => {
         const track: MediaPlayerTrack = {
             playlistIndex: -1, // filled in later
+            setlistId: undefined, // ad-hoc tracks don't belong to a setlist
             url: uri,
         };
         const newPlaylist = [...playlist, track]; // append to playlist
