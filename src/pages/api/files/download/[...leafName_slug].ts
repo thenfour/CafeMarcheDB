@@ -7,6 +7,7 @@ import * as mime from 'mime';
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
+import path from 'node:path';
 
 // on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
 export default api(async (req, res, ctx: Ctx) => {
@@ -63,7 +64,17 @@ export default api(async (req, res, ctx: Ctx) => {
 
             const fileStream = fs.createReadStream(fullpath);
             // content disposition "attachment" would prompt users to save the file instead of displaying in browser.
-            res.setHeader("Content-Disposition", `inline; filename=${item.fileLeafName}`) // Specify the filename for download
+            //res.setHeader("Content-Disposition", `inline; filename=${item.fileLeafName}`) // Specify the filename for download
+
+
+            const rawName = path.basename(item.fileLeafName);       // strip any path parts
+            const safeName = encodeURIComponent(rawName)             // turn every odd byte into %XX
+                .replace(/['()]/g, escape)            // RFC-5987 says these need extra love
+                .replace(/\*/g, '%2A');               // *
+            res.setHeader(
+                'Content-Disposition',
+                `inline; filename="${safeName}"; filename*=UTF-8''${safeName}`
+            );
 
             fileStream.pipe(res);
             fileStream.on("close", () => {
