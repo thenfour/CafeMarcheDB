@@ -1,4 +1,4 @@
-import { SkipNext, SkipPrevious } from "@mui/icons-material";
+import { SkipNext, SkipPrevious, Sync } from "@mui/icons-material";
 import React from "react";
 import { formatSongLength } from "../../../../shared/time";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -85,6 +85,9 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                 <div className="mediaPlayerBarTransport">
                     {mediaPlayer.playlist.length > 1 && (<>
                         <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
+                        {mediaPlayer.canPullPlaylist && (
+                            <CMSmallButton onClick={() => mediaPlayer.pullPlaylist()}><Sync /></CMSmallButton>
+                        )}
                         <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
                     </>)}
                     {current && (

@@ -17,7 +17,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [audioTime, setAudioTime] = useState<number>(0);
     const [audioDuration, setAudioDuration] = useState<number>(0);
-    //const [setlistData, setSetlistData] = useState<MediaPlayerSetlistData | undefined>(undefined);
+    const [pullPlaylistFn, setPullPlaylistFn] = useState<(() => MediaPlayerTrack[]) | undefined>(undefined);
 
     const pause = useCallback(() => setIsPlaying(false), []);
     const next = useCallback(() => {
@@ -72,7 +72,6 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
             return;
         }
 
-        //        console.log("MediaPlayerProvider: setPlaylist called with startIndex", startIndex);
         setCurrentIndex(startIndex || 0);
         if (startIndex != null) {
             setIsPlaying(true);
@@ -179,6 +178,16 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return currentTrack.playlistIndex === track.playlistIndex && currentTrack.setlistId === track.setlistId && currentTrack.setlistPlanId === track.setlistPlanId;
     }, [currentIndex, playlist]);
 
+    const pullPlaylist = useCallback(() => {
+        if (!pullPlaylistFn) return false;
+        const newPlaylist = pullPlaylistFn();
+
+        // TODO: see if it's possible to retain playback continuity between pullls
+
+        setPlaylist(newPlaylist, undefined); // Reset to the first track
+        return true;
+    }, [pullPlaylistFn]);
+
     const contextValue: MediaPlayerContextType = {
         playlist,
         currentIndex,
@@ -203,6 +212,11 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         getTrackUri,
         isPlayingSetlistItem,
         isPlayingTrack,
+        setPullPlaylistFn: (fn) => {
+            setPullPlaylistFn(val => fn); // overload of setter requires this syntax
+        },
+        pullPlaylist,
+        canPullPlaylist: pullPlaylistFn !== undefined,
     };
 
     return (

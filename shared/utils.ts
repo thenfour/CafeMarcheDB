@@ -118,10 +118,15 @@ export const ValidateNullableInt = (arg) => {
 
 // only works for true integers, not strings.
 // ValidateInt("1") = false
-export const ValidateInt = (arg) => {
+export const ValidateInt = (arg): arg is number => {
     return Number.isInteger(arg);
 };
 
+// is a number operatable on? as in, not infinity, not NaN, not null, not undefined.
+export const IsUsableNumber = (arg: number | null | undefined): arg is number => {
+    if (arg == null) return false;
+    return !isNaN(arg) && isFinite(arg);
+};
 
 // see:
 // const ImageFileFormatOptions = {

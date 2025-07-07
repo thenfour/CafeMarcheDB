@@ -1,4 +1,4 @@
-import { getHashedColor } from "@/shared/utils";
+import { getHashedColor, IsUsableNumber } from "@/shared/utils";
 import React from "react";
 import { formatSongLength } from "../../../../shared/time";
 import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
@@ -7,6 +7,9 @@ import { PlayCircleOutlined } from "@mui/icons-material";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { gCharMap } from "../../db3/components/IconMap";
+import { isNumberObject } from "util/types";
+import { isNumber } from "util";
+import { useLocalStorageState } from "../useLocalStorageState";
 
 type TrackType = "song" | "divider" | "dummy";
 
@@ -174,11 +177,12 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
         if (!isCurrentTrack) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
+        if (rect.width <= 0) return;
         const hoverX = e.clientX - rect.left;
         const percentage = Math.max(0, Math.min(1, hoverX / rect.width));
         setHoverPosition(percentage * 100);
 
-        if (!audioDurationSeconds) {
+        if (!IsUsableNumber(audioDurationSeconds)) {
             return;
         }
 
@@ -230,13 +234,20 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
             >
             </div>}
             {/* Progress fill for current track */}
-            {isCurrentTrack && (
+            {isCurrentTrack && IsUsableNumber(playheadPosition) && (<>
                 <div
-                    className="progressFill"
+                    className="progressFillLeft"
                     style={{
                         width: `${playheadPosition}%`,
                     }}
                 />
+                <div
+                    className="progressFillRight"
+                    style={{
+                        width: `${100 - playheadPosition!}%`,
+                    }}
+                />
+            </>
             )}
             {/* Playhead indicator for current track */}
             {isCurrentTrack && (
@@ -317,7 +328,11 @@ export const SetlistVisualizationBars: React.FC<{
     audioAPI: CustomAudioPlayerAPI | null;
 }> = ({ mediaPlayer, audioAPI }) => {
     const { playlist } = mediaPlayer;
-    const [expanded, setExpanded] = React.useState(false);
+    //const [expanded, setExpanded] = React.useState(false);
+    const [expanded, setExpanded] = useLocalStorageState({
+        key: "setlistVisualizationBarExpanded",
+        initialValue: false,
+    });
 
     // calculate rows. a new row begins when a divider is encountered that's marked as a break,
     // as long as it is not just after another break (avoid empty rows).

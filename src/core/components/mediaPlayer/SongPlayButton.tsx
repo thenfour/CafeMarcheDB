@@ -93,6 +93,9 @@ export function SongPlayButton({ rowIndex, allPinnedRecordings, track, getPlayli
         } else {
             const playlist = getPlaylist();
             // rowIndex happens to be the same as the playlist index because we always generate them in sync.
+            const pullPlaylistFn = () => getPlaylist();
+            mediaPlayer.setPullPlaylistFn(pullPlaylistFn);
+
             mediaPlayer.setPlaylist(playlist, rowIndex);
         }
     };

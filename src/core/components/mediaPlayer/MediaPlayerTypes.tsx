@@ -93,4 +93,8 @@ export interface MediaPlayerContextType {
     setIsPlaying: (playing: boolean) => void;
     setPlayheadSeconds: (t: number) => void;
     setLengthSeconds: (d: number) => void;
+
+    setPullPlaylistFn: (fn: () => MediaPlayerTrack[]) => void;
+    pullPlaylist: () => boolean;
+    canPullPlaylist: boolean;
 }

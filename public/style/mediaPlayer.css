@@ -344,7 +344,6 @@
     display: flex;
     margin-bottom: 4px;
     user-select: none;
-    /* background-color: #383838; */
 }
 
 /* marginless child */
@@ -355,20 +354,24 @@
     border-radius: 2px;
 }
 
+.setlistVisualizationBar .songPartition--current {
+    background-color: #8ff3;
+}
+
 .setlistVisualizationBar .songPartition .songBoundsContainer {
     display: flex;
     align-items: center;
     /* for dividers to be able to center as they're the only non-absolute positioned children*/
     justify-content: center;
     width: 100%;
-    margin: 0 6px;
+    margin: 0 10px;
     position: relative;
 }
 
 .setlistVisualizationBar .songPartition .songBoundsContainer .playheadIndicator {
     position: absolute;
     left: 0;
-    --thumb-size: 14px;
+    --thumb-size: 12px;
     height: var(--thumb-size);
     width: var(--thumb-size);
     border-radius: 50%;
@@ -379,28 +382,49 @@
     z-index: var(--z-index-playhead);
 }
 
-.setlistVisualizationBar .songPartition .songBoundsContainer .progressFill {
-    position: absolute;
-    left: 0;
-    background-color: #0008;
-    z-index: var(--z-index-progressFill);
-}
-
-
 .setlistVisualizationBar .songPartition--divider .songBoundsContainer .dividerIndicator {
     width: 1px;
     height: 80%;
     background-color: #555;
 }
 
-.setlistVisualizationBar .songPartition .songBoundsContainer .songTrackBar {
+.setlistVisualizationBar .songPartition .songBoundsContainer .songTrackBar,
+.setlistVisualizationBar .songPartition .songBoundsContainer .progressFillLeft,
+.setlistVisualizationBar .songPartition .songBoundsContainer .progressFillRight {
     position: absolute;
-    left: 0px;
-    right: 0px;
-    height: 3px;
-    border-radius: 2px;
+    --trackbar-height: 3px;
+    --trackbar-border-radius: 2px;
+    height: var(--trackbar-height);
+}
+
+.setlistVisualizationBar .songPartition .songBoundsContainer .songTrackBar {
     background-color: var(--segment-color);
     z-index: var(--z-index-trackBar);
+    left: 0px;
+    right: 0px;
+    border-radius: var(--trackbar-border-radius);
+}
+
+.setlistVisualizationBar .songPartition .songBoundsContainer .progressFillLeft,
+.setlistVisualizationBar .songPartition .songBoundsContainer .progressFillRight {
+    z-index: var(--z-index-progressFill);
+}
+
+
+.setlistVisualizationBar .songPartition .songBoundsContainer .progressFillRight {
+    right: 0px;
+    background-color: #0006;
+    border-top-right-radius: var(--trackbar-border-radius);
+    border-bottom-right-radius: var(--trackbar-border-radius);
+}
+
+
+.setlistVisualizationBar .songPartition .songBoundsContainer .progressFillLeft {
+    visibility: hidden;
+    /* left: 0px;
+    background-color: blue;
+    border-top-left-radius: var(--trackbar-border-radius);
+    border-bottom-left-radius: var(--trackbar-border-radius); */
 }
 
 .setlistVisualizationBar .songPartition .songBoundsContainer .textOverlayContainer {
@@ -447,7 +471,11 @@
 }
 
 .setlistVisualizationBar .songPartition:hover .songBoundsContainer .songTrackBar,
-.setlistVisualizationBar .songPartition--current .songBoundsContainer .songTrackBar {
+.setlistVisualizationBar .songPartition--current .songBoundsContainer .songTrackBar,
+.setlistVisualizationBar .songPartition:hover .songBoundsContainer .progressFillLeft,
+.setlistVisualizationBar .songPartition--current .songBoundsContainer .progressFillLeft,
+.setlistVisualizationBar .songPartition:hover .songBoundsContainer .progressFillRight,
+.setlistVisualizationBar .songPartition--current .songBoundsContainer .progressFillRight {
     height: 5px;
 }
 
@@ -466,6 +494,7 @@
     padding: 2px 4px;
     border-radius: 4px;
     font-size: 12px;
+    font-family: var(--ff-mono);
     z-index: var(--z-index-hoverTimeDisplay);
     pointer-events: none;
     /* prevent interaction */
