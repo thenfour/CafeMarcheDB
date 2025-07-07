@@ -41,81 +41,7 @@ import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongPlayButton } from './mediaPlayer/SongPlayButton';
-
-// Aligned version that shows all possible tags with consistent spacing
-// Tags with the same sort order can share the same lane
-export const SongTagIndicatorContainerAligned = ({ tagIds, allPossibleTags }: {
-    tagIds: number[],
-    allPossibleTags: number[]
-}) => {
-    const dashboardContext = React.useContext(DashboardContext);
-
-    // Get all possible tags that have indicators
-    const allTags = allPossibleTags
-        .map(tagId => dashboardContext.songTag.getById(tagId))
-        .filter(t => !!t && !IsNullOrWhitespace(t.indicator)) as db3.SongTagPayload[];
-
-    // Create a set of current song's tag IDs for quick lookup
-    const currentTagIds = new Set(tagIds);
-
-    // Group tags by sort order
-    const tagsBySortOrder = new Map<number, db3.SongTagPayload[]>();
-    allTags.forEach(tag => {
-        if (!tagsBySortOrder.has(tag.sortOrder)) {
-            tagsBySortOrder.set(tag.sortOrder, []);
-        }
-        tagsBySortOrder.get(tag.sortOrder)!.push(tag);
-    });
-
-    // Get unique sort orders and sort them
-    const sortedSortOrders = Array.from(tagsBySortOrder.keys()).sort((a, b) => a - b);
-
-    if (!sortedSortOrders.length) return null;
-
-    // Render tags grouped by sort order
-    const renderElements: React.ReactNode[] = [];
-    let keyCounter = 0;
-
-    sortedSortOrders.forEach(sortOrder => {
-        const tagsForThisSortOrder = tagsBySortOrder.get(sortOrder)!;
-        const visibleTagsForThisSortOrder = tagsForThisSortOrder.filter(tag => currentTagIds.has(tag.id));
-
-        if (visibleTagsForThisSortOrder.length > 0) {
-            // Show all visible tags for this sort order
-            visibleTagsForThisSortOrder.forEach(tag => {
-                const style = GetStyleVariablesForColor({ color: tag.color, ...StandardVariationSpec.Strong });
-                renderElements.push(
-                    <Tooltip title={tag.text} key={keyCounter++} disableInteractive>
-                        <div
-                            className={`songTagIndicator ${tag.indicatorCssClass} ${style.cssClass}`}
-                            style={style.style}
-                        >
-                            {tag.indicator}
-                        </div>
-                    </Tooltip>
-                );
-            });
-        } else {
-            // Show one hidden tag to maintain spacing
-            const firstTag = tagsForThisSortOrder[0]!; // We know this exists since we put it in the map
-            renderElements.push(
-                <div
-                    className={`songTagIndicator ${firstTag.indicatorCssClass}`}
-                    key={keyCounter++}
-                    style={{
-                        visibility: 'hidden'
-                    }}
-                >
-                    {firstTag.indicator}
-                </div>
-            );
-        }
-    });
-
-    return <div className='songTagIndicatorContainer aligned'>
-        {renderElements}
-    </div>;
-};
+import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
     sortOrder: number,
@@ -381,7 +307,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <div className="td songName">
                 {props.value.type === 'song' && <>
                     <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
-                    <SongTagIndicatorContainerAligned
+                    <SongTagIndicatorContainer
                         tagIds={props.value.song.tags.map(tag => tag.tagId)}
                         allPossibleTags={allTagIds}
                     />
@@ -1157,7 +1083,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         <div className={`td songName `}>
             {props.value.type === 'song' && <>
                 <div>{props.value.song.name}</div>
-                <SongTagIndicatorContainerAligned
+                <SongTagIndicatorContainer
                     tagIds={props.value.song.tags.map(tag => tag.tagId)}
                     allPossibleTags={allTagIds}
                 />

@@ -96,6 +96,12 @@ export const xSongTag = new db3.xTable({
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericStringField({
+            columnName: "group",
+            allowNull: true,
+            format: "plain",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+        }),
+        new GenericStringField({
             columnName: "indicatorCssClass",
             allowNull: true,
             format: "plain",

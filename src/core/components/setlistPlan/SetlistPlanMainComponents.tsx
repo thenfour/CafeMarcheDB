@@ -10,7 +10,7 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/compo
 import { CMSmallButton, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { getClipboardSongList, PortableSongList, SongTagIndicatorContainerAligned } from "src/core/components/EventSongListComponents";
+import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -31,6 +31,7 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;
@@ -156,7 +157,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                         } as any}>{song.name}</a>
                     </Tooltip>
                 </div>
-                <SongTagIndicatorContainerAligned
+                <SongTagIndicatorContainer
                     tagIds={song.tags.map(tag => tag.tagId)}
                     allPossibleTags={props.allTagIds}
                 />
