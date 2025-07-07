@@ -6,6 +6,7 @@ import { CMSmallButton } from "../CMCoreComponents2";
 import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { MediaPlayerContextType } from "./MediaPlayerTypes";
 import { SetlistVisualizationBars } from "./SetlistVisualizationBar";
+import { Tooltip } from "@mui/material";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;
@@ -28,6 +29,7 @@ export const AnimatedFauxEqualizer: React.FC<{
 export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> = ({ mediaPlayer }) => {
     const audioRef = React.useRef<CustomAudioPlayerAPI>(null);
     const [visible, setVisible] = React.useState(false);
+    const [debugTooltipOpen, setDebugTooltipOpen] = React.useState(true); // Add this for debugging
     //const [showingPlaylistDialog, setShowingPlaylistDialog] = React.useState(false);
 
     const current = mediaPlayer.currentTrack;
@@ -79,7 +81,11 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
             <div className="responsiveRow">
                 <div className="mediaPlayerBarTransport">
                     {mediaPlayer.canPullPlaylist && (
-                        <CMSmallButton onClick={() => mediaPlayer.pullPlaylist()}><Sync /></CMSmallButton>
+                        <Tooltip title="Refresh Playlist" arrow>
+                            <div>
+                                <CMSmallButton onClick={() => mediaPlayer.pullPlaylist()}><Sync /></CMSmallButton>
+                            </div>
+                        </Tooltip>
                     )}
                     {mediaPlayer.playlist.length > 1 && (<>
                         <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>

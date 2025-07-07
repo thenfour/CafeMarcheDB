@@ -90,6 +90,10 @@ h1:first-child {
   padding: 1px 8px;
 }
 
+.MuiTooltip-popper {
+  z-index: 9999;
+}
+
 /* 
 this looks nice but gives the impression of a button that's not clickable.
 .MuiButton-startIcon {

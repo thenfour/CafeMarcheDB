@@ -8,6 +8,7 @@ import { gCharMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
+import { Tooltip } from "@mui/material";
 
 const TEN_MINUTES = 10 * 60;          // 600 s
 const MIN_ROW_PX = 120;              // visual floor (unchanged)
@@ -211,89 +212,93 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, styleOverr
         }
     }
 
-    return <div
-        // this container div is needed in order to be marginless
-        className={`songPartition ${styleData.containerClassName} ${isCurrentTrack ? 'songPartition--current' : ''} ${isCurrentTrack ? 'songPartition--seekable' : ''} ${isInteractable ? 'songPartition--interactable' : 'songPartition--noninteractable'}`}
-        style={{
-            ...styleOverride,
-            ...styleData.containerStyle,
-        } as any}
-        onClick={handleClickContainer}
-    >
-        <div
-            // bar which adds margin; its width must represent the width of the song, but can be tall enough to click on.
-            className={`songBoundsContainer`}
-            style={{
-                ...styleData.coloredBarStyle,
-            } as React.CSSProperties}
-            onMouseMove={isCurrentTrack ? handleMouseMove : undefined}
-            onMouseLeave={isCurrentTrack ? handleMouseLeave : undefined}
-            onClick={handleClickColoredBar}
-        >
-            {isInteractable && <div
-                // represents the "body" of the song; the line representing the track bar.
-                className={`songTrackBar ${styleData.coloredBarClassName}`}
-                style={styleData.coloredBarStyle}
+    return (
+        <Tooltip title={<>{title.displayIndex}{title.title}</>} arrow>
+            <div
+                // this container div is needed in order to be marginless
+                className={`songPartition ${styleData.containerClassName} ${isCurrentTrack ? 'songPartition--current' : ''} ${isCurrentTrack ? 'songPartition--seekable' : ''} ${isInteractable ? 'songPartition--interactable' : 'songPartition--noninteractable'}`}
+                style={{
+                    ...styleOverride,
+                    ...styleData.containerStyle,
+                } as any}
+                onClick={handleClickContainer}
             >
-            </div>}
-            {/* Progress fill for current track */}
-            {isCurrentTrack && IsUsableNumber(playheadPosition) && (<>
                 <div
-                    className="progressFillLeft"
+                    // bar which adds margin; its width must represent the width of the song, but can be tall enough to click on.
+                    className={`songBoundsContainer`}
                     style={{
-                        width: `${playheadPosition}%`,
-                    }}
-                />
-                <div
-                    className="progressFillRight"
-                    style={{
-                        width: `${100 - playheadPosition!}%`,
-                    }}
-                />
-            </>
-            )}
-            {/* Playhead indicator for current track */}
-            {isCurrentTrack && (
-                <div
-                    className="playheadIndicator"
-                    style={{
-                        left: `${playheadPosition}%`,
-                    }}
-                />
-            )}
-            {trackType === "divider" && (
-                <div className="dividerIndicator" />
-            )}
-            {/* Hover position indicator for current track */}
-            {isCurrentTrack && hoverPosition !== null && (
-                <>
-                    <div
-                        className="hoverPositionIndicator"
-                        style={{
-                            left: `${hoverPosition}%`,
-                        }}
-                    />
-                    {/* Time display at hover position */}
-                    {hoverTime !== null && (
+                        ...styleData.coloredBarStyle,
+                    } as React.CSSProperties}
+                    onMouseMove={isCurrentTrack ? handleMouseMove : undefined}
+                    onMouseLeave={isCurrentTrack ? handleMouseLeave : undefined}
+                    onClick={handleClickColoredBar}
+                >
+                    {isInteractable && <div
+                        // represents the "body" of the song; the line representing the track bar.
+                        className={`songTrackBar ${styleData.coloredBarClassName}`}
+                        style={styleData.coloredBarStyle}
+                    >
+                    </div>}
+                    {/* Progress fill for current track */}
+                    {isCurrentTrack && IsUsableNumber(playheadPosition) && (<>
                         <div
-                            className="hoverTimeDisplay"
+                            className="progressFillLeft"
                             style={{
-                                left: `${hoverPosition}%`,
+                                width: `${playheadPosition}%`,
                             }}
-                        >
-                            {formatSongLength(Math.floor(hoverTime))}
-                        </div>
+                        />
+                        <div
+                            className="progressFillRight"
+                            style={{
+                                width: `${100 - playheadPosition!}%`,
+                            }}
+                        />
+                    </>
                     )}
-                </>
-            )}
-            {trackType !== "divider" && <div className="textOverlayContainer">
-                <span className="songTitle">
-                    {title.displayIndex}{title.title}
-                </span>
-                {!isCurrentTrack && isInteractable && <span className="playIcon"><PlayCircleOutlined /></span>}
-            </div>}
-        </div>
-    </div>;
+                    {/* Playhead indicator for current track */}
+                    {isCurrentTrack && (
+                        <div
+                            className="playheadIndicator"
+                            style={{
+                                left: `${playheadPosition}%`,
+                            }}
+                        />
+                    )}
+                    {trackType === "divider" && (
+                        <div className="dividerIndicator" />
+                    )}
+                    {/* Hover position indicator for current track */}
+                    {isCurrentTrack && hoverPosition !== null && (
+                        <>
+                            <div
+                                className="hoverPositionIndicator"
+                                style={{
+                                    left: `${hoverPosition}%`,
+                                }}
+                            />
+                            {/* Time display at hover position */}
+                            {hoverTime !== null && (
+                                <div
+                                    className="hoverTimeDisplay"
+                                    style={{
+                                        left: `${hoverPosition}%`,
+                                    }}
+                                >
+                                    {formatSongLength(Math.floor(hoverTime))}
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {trackType !== "divider" && <div className="textOverlayContainer">
+                        <span className="songTitle">
+                            {title.displayIndex}{title.title}
+                        </span>
+                        {!isCurrentTrack && isInteractable && <span className="playIcon"><PlayCircleOutlined /></span>}
+                    </div>}
+                </div>
+            </div>
+        </Tooltip>
+    );
 };
 
 export const SetlistVisualizationBar: React.FC<{
