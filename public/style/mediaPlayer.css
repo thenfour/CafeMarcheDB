@@ -5,7 +5,7 @@
     right: 0;
     bottom: 0;
     z-index: 2000;
-    background: #222;
+    background: #000;
     color: #fff;
     padding: 0.5rem 1rem;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
@@ -324,6 +324,11 @@
     max-height: 125px;
     overflow-y: auto;
     margin-bottom: 8px;
+    --z-index-trackBar: 100;
+    --z-index-progressFill: 150;
+    --z-index-playhead: 200;
+    --z-index-textOverlay: 250;
+    --z-index-hoverTimeDisplay: 300;
 }
 
 .setlistVisualizationBarContainer .CMSmallButton.enabled.setlistVisualizationBarToggle {
@@ -344,8 +349,10 @@
 
 /* marginless child */
 .setlistVisualizationBar .songPartition {
-    padding-left: 2px;
+    margin: 0 1px;
     display: flex;
+    background-color: #444;
+    border-radius: 2px;
 }
 
 .setlistVisualizationBar .songPartition .songBoundsContainer {
@@ -353,17 +360,32 @@
     align-items: center;
     /* for dividers to be able to center as they're the only non-absolute positioned children*/
     justify-content: center;
-    background-color: #444;
     width: 100%;
+    margin: 0 6px;
     position: relative;
-
-    /* border: 1px solid transparent; */
-    border-radius: 2px;
 }
 
-.setlistVisualizationBar .songPartition:hover .songBoundsContainer {
-    /* border-color: #444; */
+.setlistVisualizationBar .songPartition .songBoundsContainer .playheadIndicator {
+    position: absolute;
+    left: 0;
+    --thumb-size: 14px;
+    height: var(--thumb-size);
+    width: var(--thumb-size);
+    border-radius: 50%;
+    background-color: var(--segment-color);
+    border: 2px solid white;
+    /* center */
+    transform: translateX(-50%);
+    z-index: var(--z-index-playhead);
 }
+
+.setlistVisualizationBar .songPartition .songBoundsContainer .progressFill {
+    position: absolute;
+    left: 0;
+    background-color: #0008;
+    z-index: var(--z-index-progressFill);
+}
+
 
 .setlistVisualizationBar .songPartition--divider .songBoundsContainer .dividerIndicator {
     width: 1px;
@@ -373,11 +395,12 @@
 
 .setlistVisualizationBar .songPartition .songBoundsContainer .songTrackBar {
     position: absolute;
-    left: 4px;
-    right: 4px;
+    left: 0px;
+    right: 0px;
     height: 3px;
     border-radius: 2px;
     background-color: var(--segment-color);
+    z-index: var(--z-index-trackBar);
 }
 
 .setlistVisualizationBar .songPartition .songBoundsContainer .textOverlayContainer {
@@ -397,6 +420,8 @@
 
     overflow: hidden;
     text-overflow: ellipsis;
+
+    z-index: var(--z-index-textOverlay);
 }
 
 .setlistVisualizationBar .songPartition--interactable {
@@ -405,7 +430,7 @@
 
 /* selective opacity & hover effects */
 .setlistVisualizationBar .songPartition {
-    opacity: 0.3;
+    opacity: 0.4;
 }
 
 .setlistVisualizationBar .songPartition:hover,
@@ -431,4 +456,17 @@
 .setlistVisualizationBar .dummyDivider {
     background-color: black;
     width: 34px;
+}
+
+/* hover time display */
+.setlistVisualizationBar .songPartition .hoverTimeDisplay {
+    position: absolute;
+    background-color: #0008;
+    color: #fff;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: var(--z-index-hoverTimeDisplay);
+    pointer-events: none;
+    /* prevent interaction */
 }

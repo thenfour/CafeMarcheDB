@@ -6,6 +6,7 @@ import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { PlayCircleOutlined } from "@mui/icons-material";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 import { CMSmallButton } from "../CMCoreComponents2";
+import { gCharMap } from "../../db3/components/IconMap";
 
 type TrackType = "song" | "divider" | "dummy";
 
@@ -227,16 +228,16 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
                 className={`songTrackBar ${styleData.coloredBarClassName}`}
                 style={styleData.coloredBarStyle}
             >
-                {/* Progress fill for current track */}
-                {isCurrentTrack && (
-                    <div
-                        className="progressFill"
-                        style={{
-                            width: `${playheadPosition}%`,
-                        }}
-                    />
-                )}
             </div>}
+            {/* Progress fill for current track */}
+            {isCurrentTrack && (
+                <div
+                    className="progressFill"
+                    style={{
+                        width: `${playheadPosition}%`,
+                    }}
+                />
+            )}
             {/* Playhead indicator for current track */}
             {isCurrentTrack && (
                 <div
@@ -377,7 +378,7 @@ export const SetlistVisualizationBars: React.FC<{
         >
             {!alwaysExpanded && (
                 <CMSmallButton onClick={() => setExpanded(!expanded)} className="setlistVisualizationBarToggle">
-                    {expanded ? "Collapse" : "Expand"}
+                    {expanded ? `Collapse ${gCharMap.DownArrow()}` : `Expand ${gCharMap.UpArrow()}`}
                 </CMSmallButton>)}
             {
                 rowBounds.map((rowBound, rowIndex) => (
