@@ -20,31 +20,30 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [pullPlaylistFn, setPullPlaylistFn] = useState<(() => MediaPlayerTrack[]) | undefined>(undefined);
 
     const pause = useCallback(() => setIsPlaying(false), []);
-    const next = useCallback(() => {
-        setCurrentIndex((i) => {
-            if (i == null) return 0; // If currentIndex is undefined, start from the beginning
-            return (i + 1 < playlist.length ? i + 1 : 0);
-        });
-        setIsPlaying(true);
-    }, [playlist.length]);
 
-    const prev = useCallback(() => {
-        setCurrentIndex((i) => {
-            if (i == null) return playlist.length - 1; // If currentIndex is undefined, go to the last track
-            return (i - 1 >= 0 ? i - 1 : playlist.length - 1);
-        });
-        setIsPlaying(true);
-    }, [playlist.length]);
-
-    const playTrackOfPlaylist: (trackOrPlaylistIndex: MediaPlayerTrack | number) => void = (trackOrPlaylistIndex: MediaPlayerTrack) => {
+    const playTrackOfPlaylist: (trackOrPlaylistIndex: MediaPlayerTrack | number) => void = (trackOrPlaylistIndex: MediaPlayerTrack | number) => {
         if (typeof trackOrPlaylistIndex === "number") {
             // If it's a number, treat it as an index in the playlist
             if (trackOrPlaylistIndex < 0 || trackOrPlaylistIndex >= playlist.length) {
                 console.warn("Invalid playlist index:", trackOrPlaylistIndex);
                 return;
             }
+
+            // Validate that target track is playable
+            const targetTrack = playlist[trackOrPlaylistIndex]!;
+            if (!isPlayable(targetTrack)) {
+                console.error("MediaPlayer: attempt to play unplayable track at index", trackOrPlaylistIndex);
+                return;
+            }
+
             setCurrentIndex(trackOrPlaylistIndex);
             setIsPlaying(true);
+            return;
+        }
+
+        // Validate that target track is playable
+        if (!isPlayable(trackOrPlaylistIndex)) {
+            console.error("MediaPlayer: attempt to play unplayable track:", trackOrPlaylistIndex);
             return;
         }
 
@@ -72,7 +71,39 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
             return;
         }
 
-        setCurrentIndex(startIndex || 0);
+        // Find first playable track for determining starting index
+        const firstPlayableIndex = tracks.findIndex(track => {
+            if (track.url) return true;
+            if (track.file && track.file.storedLeafName) return true;
+            if (track.songContext && track.songContext.pinnedRecordingId) return true;
+            return false;
+        });
+
+        let targetIndex: number;
+        if (startIndex !== undefined) {
+            // Validate provided startIndex
+            const targetTrack = tracks[startIndex];
+            if (targetTrack) {
+                const isTargetPlayable = targetTrack.url ||
+                    (targetTrack.file && targetTrack.file.storedLeafName) ||
+                    (targetTrack.songContext && targetTrack.songContext.pinnedRecordingId);
+
+                if (!isTargetPlayable) {
+                    console.error("MediaPlayer: startIndex points to unplayable track, using first playable track instead");
+                    targetIndex = firstPlayableIndex !== -1 ? firstPlayableIndex : 0;
+                } else {
+                    targetIndex = startIndex;
+                }
+            } else {
+                console.error("MediaPlayer: invalid startIndex provided");
+                targetIndex = firstPlayableIndex !== -1 ? firstPlayableIndex : 0;
+            }
+        } else {
+            // No startIndex provided, use first playable
+            targetIndex = firstPlayableIndex !== -1 ? firstPlayableIndex : 0;
+        }
+
+        setCurrentIndex(targetIndex);
         if (startIndex != null) {
             setIsPlaying(true);
         } else {
@@ -188,6 +219,70 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return true;
     }, [pullPlaylistFn]);
 
+    const isPlayable = useCallback((track: MediaPlayerTrack): boolean => {
+        if (track.url) return true; // If track has a URL, it's playable
+        if (track.file && track.file.storedLeafName) return true;
+        if (track.songContext && track.songContext.pinnedRecordingId) return true;
+        return false;
+    }, []);
+
+    // Helper functions for finding playable tracks
+    const findFirstPlayableIndex = useCallback((): number | undefined => {
+        for (let i = 0; i < playlist.length; i++) {
+            if (isPlayable(playlist[i]!)) {
+                return i;
+            }
+        }
+        return undefined;
+    }, [playlist, isPlayable]);
+
+    const findNextPlayableIndex = useCallback((fromIndex: number): number | undefined => {
+        for (let i = fromIndex + 1; i < playlist.length; i++) {
+            if (isPlayable(playlist[i]!)) {
+                return i;
+            }
+        }
+        return undefined;
+    }, [playlist, isPlayable]);
+
+    const findPrevPlayableIndex = useCallback((fromIndex: number): number | undefined => {
+        for (let i = fromIndex - 1; i >= 0; i--) {
+            if (isPlayable(playlist[i]!)) {
+                return i;
+            }
+        }
+        return undefined;
+    }, [playlist, isPlayable]);
+
+    // Navigation functions that use playable track logic
+    const next = useCallback(() => {
+        setCurrentIndex((i) => {
+            if (i == null) {
+                // If currentIndex is undefined, find first playable track
+                const firstPlayable = findFirstPlayableIndex();
+                return firstPlayable !== undefined ? firstPlayable : 0;
+            }
+            // Find next playable track from current position
+            const nextPlayable = findNextPlayableIndex(i);
+            return nextPlayable !== undefined ? nextPlayable : i; // Stay at current if no next playable
+        });
+        setIsPlaying(true);
+    }, [findFirstPlayableIndex, findNextPlayableIndex]);
+
+    const prev = useCallback(() => {
+        setCurrentIndex((i) => {
+            if (i == null) {
+                // If currentIndex is undefined, find last playable track
+                const lastPlayable = findPrevPlayableIndex(playlist.length);
+                return lastPlayable !== undefined ? lastPlayable : playlist.length - 1;
+            }
+            // Find previous playable track from current position
+            const prevPlayable = findPrevPlayableIndex(i);
+            return prevPlayable !== undefined ? prevPlayable : i; // Stay at current if no previous playable
+        });
+        setIsPlaying(true);
+    }, [findPrevPlayableIndex, playlist.length]);
+
     const contextValue: MediaPlayerContextType = {
         playlist,
         currentIndex,
@@ -205,8 +300,22 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setPlayheadSeconds: setAudioTime,
         setLengthSeconds: setAudioDuration,
         unpause,
-        previousEnabled: () => currentIndex !== undefined && currentIndex > 0,
-        nextEnabled: () => currentIndex !== undefined && currentIndex < playlist.length - 1,
+        previousEnabled: () => {
+            if (currentIndex === undefined || currentIndex <= 0) return false;
+            // Check if there's a playable track before current index
+            for (let i = currentIndex - 1; i >= 0; i--) {
+                if (isPlayable(playlist[i]!)) return true;
+            }
+            return false;
+        },
+        nextEnabled: () => {
+            if (currentIndex === undefined || currentIndex >= playlist.length - 1) return false;
+            // Check if there's a playable track after current index
+            for (let i = currentIndex + 1; i < playlist.length; i++) {
+                if (isPlayable(playlist[i]!)) return true;
+            }
+            return false;
+        },
         isPlayingFile,
         playTrackOfPlaylist,
         getTrackUri,
@@ -217,6 +326,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         },
         pullPlaylist,
         canPullPlaylist: pullPlaylistFn !== undefined,
+        isPlayable,
     };
 
     return (

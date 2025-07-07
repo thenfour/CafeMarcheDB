@@ -76,12 +76,8 @@ export interface MediaPlayerContextType {
     isPlayingFile: (fileId: number) => boolean;
     isPlayingSetlistItem: (args: { setlistId?: number | undefined, setlistPlanId?: number | undefined, setlistItemIndex: number, fileId: number }) => boolean;
     isPlayingTrack: (track: MediaPlayerTrack) => boolean;
+    isPlayable: (track: MediaPlayerTrack) => boolean; // unplayable tracks don't have any file/uri to play (dividers or missing song/file info etc.) unplayable tracks cannot be seeked to; they are skipped over.
 
-    // setlist integration (optional)
-    //setlistData?: MediaPlayerSetlistData;
-
-    // 
-    //play: (index?: number) => void;
     unpause: () => void;
     playUri: (uri: string) => void;
     pause: () => void;
