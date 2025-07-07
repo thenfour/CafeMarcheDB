@@ -12,9 +12,9 @@ import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from 'shared/arrayUtils';
-import { gSwatchColors, StandardVariationSpec } from 'shared/color';
+import { gSwatchColors } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { CoalesceBool, getHashedColor, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
+import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
@@ -35,13 +35,37 @@ import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
+import { MediaPlayerTrack } from './mediaPlayer/MediaPlayerTypes';
+import { SongPlayButton } from './mediaPlayer/SongPlayButton';
 import { useMessageBox } from './MessageBoxContext';
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
-import { SongPlayButton } from './mediaPlayer/SongPlayButton';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
+
+const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
+    if (args.rowItem.type === 'song') {
+        const pinnedRecording = args.allPinnedRecordings[args.rowItem.song.id];
+        return {
+            playlistIndex: args.rowIndex,
+            setlistId: args.songListId,
+            setListItemContext: args.rowItem,
+            songContext: args.rowItem.song,
+            file: pinnedRecording,
+        };
+    }
+    else if (args.rowItem.type === 'divider') {
+        return {
+            playlistIndex: args.rowIndex,
+            setlistId: args.songListId,
+            setListItemContext: args.rowItem,
+        };
+    }
+    else {
+        throw new Error(`Unknown row item type ${args.rowItem.type}`);
+    }
+}
 
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
     sortOrder: number,
@@ -199,6 +223,8 @@ interface EventSongListValueViewerRowProps {
     pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
     lengthColumnMode: LengthColumnMode;
     toggleLengthColumnMode: () => void;
+    mediaPlayerTrack: MediaPlayerTrack | undefined;
+    getPlaylist: () => MediaPlayerTrack[];
 };
 
 export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings" | "lengthColumnMode" | "toggleLengthColumnMode">) => {
@@ -296,13 +322,15 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <div className="td songIndex">
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
             </div>
-            <div className="td play">{props.value.type === 'song' && <SongPlayButton
+            <div className="td play">{props.value.type === 'song' && props.mediaPlayerTrack && <SongPlayButton
                 //songList={props.songList}
                 //songIndex={props.value.songArrayIndex}
                 rowIndex={props.rowIndex}
                 //pinnedRecording={props.pinnedRecordings?.[props.value.song.id]}
                 allPinnedRecordings={props.pinnedRecordings}
-                setlistRowItems={props.setlistRowItems}
+                //setlistRowItems={props.setlistRowItems}
+                track={props.mediaPlayerTrack}
+                getPlaylist={props.getPlaylist}
             />}</div>
             <div className="td songName">
                 {props.value.type === 'song' && <>
@@ -656,6 +684,13 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         return t;
     };
 
+    const getPlaylist = () => rowItems.map((item, index) => RowItemToMediaPlayerTrack({
+        allPinnedRecordings: pinnedRecordings || {},
+        rowItem: item,
+        rowIndex: index,
+        songListId: props.value.id,
+    }));
+
     return <div className="songListSongTable" style={{ pointerEvents: disableInteraction ? "none" : undefined }}>
         {showHeader && <div className="thead">
             <div className="tr">
@@ -699,6 +734,13 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                     setlistRowItems={rowItems}
                     lengthColumnMode={lengthColumnMode}
                     toggleLengthColumnMode={toggleLengthColumnMode}
+                    getPlaylist={getPlaylist}
+                    mediaPlayerTrack={RowItemToMediaPlayerTrack({
+                        allPinnedRecordings: pinnedRecordings || {},
+                        rowItem: s,
+                        rowIndex: index,
+                        songListId: props.value.id,
+                    })}
                 />)
             }
 
@@ -853,6 +895,9 @@ interface EventSongListValueEditorRowProps {
     onDelete?: () => void;
     lengthColumnMode: LengthColumnMode;
     toggleLengthColumnMode: () => void;
+
+    mediaPlayerTrack: MediaPlayerTrack | undefined;
+    getPlaylist: () => MediaPlayerTrack[];
 };
 
 // Editor component for song-like dividers (when isSong is true)
@@ -1072,10 +1117,12 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         </div>
         <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
         </div>
-        <div className="td play">{props.value.type === 'song' && <SongPlayButton
+        <div className="td play">{props.value.type === 'song' && props.mediaPlayerTrack && <SongPlayButton
             rowIndex={props.rowIndex}
             allPinnedRecordings={props.pinnedRecordings}
-            setlistRowItems={props.setlistRowItems}
+            //setlistRowItems={props.setlistRowItems}
+            getPlaylist={props.getPlaylist}
+            track={props.mediaPlayerTrack}
         />}</div>
         {/* while it's tempting to make song names draggable themselves for very fast sorting, it interferes with
         pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad. 
@@ -1310,6 +1357,13 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const nameColumn = tableSpec.getColumn("name");
     const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention, autoFocus: true });
 
+    const getPlaylist = () => rowItems.map((item, index) => RowItemToMediaPlayerTrack({
+        allPinnedRecordings: pinnedRecordings || {},
+        rowItem: item,
+        rowIndex: index,
+        songListId: value.id,
+    }));
+
     return <div className="EventSongListValue">
 
         {nameField}
@@ -1402,6 +1456,13 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                             onDelete={() => handleRowDelete(s)}
                             lengthColumnMode={lengthColumnMode}
                             toggleLengthColumnMode={toggleLengthColumnMode}
+                            getPlaylist={getPlaylist}
+                            mediaPlayerTrack={RowItemToMediaPlayerTrack({
+                                allPinnedRecordings: pinnedRecordings || {},
+                                rowItem: s,
+                                rowIndex: index,
+                                songListId: value.id,
+                            })}
                         />
                     </ReactSmoothDndDraggable>
                     )
@@ -1422,6 +1483,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     songList={value}
                     lengthColumnMode={lengthColumnMode}
                     toggleLengthColumnMode={toggleLengthColumnMode}
+                    getPlaylist={getPlaylist}
+                    mediaPlayerTrack={undefined}
                 />
             </ReactSmoothDndContainer>
         </div>

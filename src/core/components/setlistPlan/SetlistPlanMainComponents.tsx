@@ -1,4 +1,5 @@
 import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
+import { useQuery } from "@blitzjs/rpc";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
@@ -19,10 +20,12 @@ import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
+import getSongPinnedRecording from "src/core/db3/queries/getSongPinnedRecording";
 import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
 import { ColorPick } from "../ColorPick";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
+import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
 import { useSongsContext } from "../song/SongsContext";
 import { VisibilityControl } from "../VisibilityControl";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
@@ -32,6 +35,8 @@ import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPl
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
 import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
+import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
+import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;
@@ -85,6 +90,11 @@ type SetlistPlannerMatrixRowProps = {
     stats: SetlistPlanStats;
     colorScheme: SetlistPlannerColorScheme;
     allTagIds: number[];
+
+    rowIndex: number;
+    allPinnedRecordings: Record<number, TSongPinnedRecording>;
+    thisTrack: MediaPlayerTrack;
+    getPlaylist: () => MediaPlayerTrack[];
 };
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
@@ -148,6 +158,14 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                         name: song.name,
                     }]}
                 />
+
+                <SongPlayButton
+                    rowIndex={props.rowIndex}
+                    allPinnedRecordings={props.allPinnedRecordings}
+                    track={props.thisTrack}
+                    getPlaylist={props.getPlaylist}
+                />
+
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     {isDupeWarning && <Tooltip title={`This song occurs ${songOccurrences} times in this plan. Is that right?`}><div className='warnIndicator'>!{songOccurrences}</div></Tooltip>}
                     <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
@@ -264,8 +282,9 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
                 <Markdown compact markdown={row.commentMarkdown || ""} />
             </div>
         </div>
+        <div className="td play"></div>
     </div>;
-}
+};
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -453,6 +472,42 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     const docOrTempDoc = props.tempDoc || props.doc;
     //const isTempDoc = !!props.tempDoc;
 
+    // Collect all song IDs from the planner for pinned recording query
+    const songIds = React.useMemo(() => {
+        return docOrTempDoc.payload.rows
+            .filter(row => row.type === 'song' && row.songId)
+            .map(row => row.songId!);
+    }, [docOrTempDoc.payload.rows]);
+
+    // Fetch all pinned recordings for songs in this planner
+    const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
+        songIds: songIds,
+    }, {
+        enabled: songIds.length > 0
+    });
+
+    const rowToPlaylistTrack = (row: SetlistPlan['payload']['rows'][number], rowIndex: number): MediaPlayerTrack => {
+        if (row.type === "divider") {
+            return {
+                setlistPlanId: docOrTempDoc.id,
+                playlistIndex: rowIndex,
+            } satisfies MediaPlayerTrack;
+        }
+        const song = allSongs.find(s => s.id === row.songId);
+        const pinnedRecording = (row.songId && pinnedRecordings) ? pinnedRecordings[row.songId] : undefined;
+        return {
+            setlistPlanId: docOrTempDoc.id,
+            playlistIndex: rowIndex,
+            file: pinnedRecording,
+            songContext: song,
+        } satisfies MediaPlayerTrack;
+    };
+
+    const getPlaylist: (() => MediaPlayerTrack[]) = () => {
+        return docOrTempDoc.payload.rows
+            .map((row, rowIndex) => rowToPlaylistTrack(row, rowIndex));
+    };
+
     // Collect all unique tag IDs from all songs in the plan
     const allTagIds = React.useMemo(() => {
         const tagIds = new Set<number>();
@@ -484,6 +539,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     return <div className="SetlistPlannerMatrix">
         <div className="tr header">
             <div className="td songName"></div>
+            <div className="td play"></div>
             <div className="td songLength">
             </div>
             {docOrTempDoc.payload.columns.map((segment, index) => <div key={index} className="td segment">
@@ -543,6 +599,11 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                             colorScheme={props.colorScheme}
                             rowId={song.rowId}
                             allTagIds={allTagIds}
+
+                            rowIndex={index}
+                            allPinnedRecordings={pinnedRecordings || {}}
+                            thisTrack={rowToPlaylistTrack(song, index)}
+                            getPlaylist={getPlaylist}
                         />
                     }
                 </ReactSmoothDndDraggable>
@@ -556,6 +617,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songName numberCell">
                     {/* <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} /> */}
                 </div>
+                <div className="td play"></div>
                 <Tooltip
                     disableInteractive
                     title={`Total song length for all songs`}

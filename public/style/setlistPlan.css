@@ -233,6 +233,18 @@
     align-items: stretch;
 }
 
+.audioPreviewGatewayContainer,
+.audioPreviewGatewayContainer .playingIndicatorSpinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.SetlistPlannerMatrix .audioPreviewGatewayContainer {
+    width: 30px;
+    opacity: 0.5;
+}
 
 
 .SetlistPlannerColorSchemeEditor {

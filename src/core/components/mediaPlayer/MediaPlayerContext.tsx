@@ -163,11 +163,21 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     }, []);
 
-    const isPlayingSetlistItem = (args: { fileId: number, setlistId: number, setlistItemIndex: number }) => {
+    const isPlayingSetlistItem = (args: { fileId: number, setlistItemIndex: number, setlistId?: number | undefined, setlistPlanId?: number | undefined }) => {
         if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
         const track = playlist[currentIndex]!;
-        return track.setlistId === args.setlistId && currentIndex === args.setlistItemIndex && isPlayingFile(args.fileId);
+        if (currentIndex !== args.setlistItemIndex) return false; // Check if the current index matches the setlist item index
+        if (!isPlayingFile(args.fileId)) return false; // Check if the current track is playing the specified file
+        if (args.setlistId !== undefined && track.setlistId !== args.setlistId) return false; // If setlistId is provided, check if it matches the track's setlistId
+        if (args.setlistPlanId !== undefined && track.setlistPlanId !== args.setlistPlanId) return false; // If setlistPlanId is provided, check if it matches the track's setlistPlanId
+        return true; // All checks passed, the track is playing the specified setlist item
     };
+
+    const isPlayingTrack = useCallback((track: MediaPlayerTrack): boolean => {
+        if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
+        const currentTrack = playlist[currentIndex]!;
+        return currentTrack.playlistIndex === track.playlistIndex && currentTrack.setlistId === track.setlistId && currentTrack.setlistPlanId === track.setlistPlanId;
+    }, [currentIndex, playlist]);
 
     const contextValue: MediaPlayerContextType = {
         playlist,
@@ -192,6 +202,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         playTrackOfPlaylist,
         getTrackUri,
         isPlayingSetlistItem,
+        isPlayingTrack,
     };
 
     return (

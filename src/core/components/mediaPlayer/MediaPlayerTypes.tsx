@@ -44,6 +44,7 @@ export type MediaPlayerSetlistItemContextPayload = EventSongListItem;// & {
 export interface MediaPlayerTrack {
     playlistIndex: number; // index in the playlist, used for playback
     setlistId?: number; // ID of the setlist this track belongs to, for disambiguation
+    setlistPlanId?: number;
 
     songContext?: MediaPlayerSongContextPayload;
     eventContext?: MediaPlayerEventContextPayload;
@@ -72,7 +73,8 @@ export interface MediaPlayerContextType {
     previousEnabled: () => boolean;
     nextEnabled: () => boolean;
     isPlayingFile: (fileId: number) => boolean;
-    isPlayingSetlistItem: (args: { setlistId: number, setlistItemIndex: number, fileId: number }) => boolean;
+    isPlayingSetlistItem: (args: { setlistId?: number | undefined, setlistPlanId?: number | undefined, setlistItemIndex: number, fileId: number }) => boolean;
+    isPlayingTrack: (track: MediaPlayerTrack) => boolean;
 
     // setlist integration (optional)
     //setlistData?: MediaPlayerSetlistData;
