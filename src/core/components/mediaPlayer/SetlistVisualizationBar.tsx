@@ -5,6 +5,7 @@ import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 //import { useMediaPlayer } from "./MediaPlayerContext";
 import { PlayCircleOutlined } from "@mui/icons-material";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
+import { CMSmallButton } from "../CMCoreComponents2";
 
 type TrackType = "song" | "divider" | "dummy";
 
@@ -315,6 +316,7 @@ export const SetlistVisualizationBars: React.FC<{
     audioAPI: CustomAudioPlayerAPI | null;
 }> = ({ mediaPlayer, audioAPI }) => {
     const { playlist } = mediaPlayer;
+    const [expanded, setExpanded] = React.useState(false);
 
     // calculate rows. a new row begins when a divider is encountered that's marked as a break,
     // as long as it is not just after another break (avoid empty rows).
@@ -366,12 +368,17 @@ export const SetlistVisualizationBars: React.FC<{
         needsFirstRowDummyDivider = allOtherRowsStartWithDivider && !firstRowStartsWithDivider;
     }
 
-
+    // if there are 3 or fewer rows, always expand.
+    const alwaysExpanded = rowBounds.length <= 3;
 
     return (
         <div
-            className={`setlistVisualizationBarContainer`}
+            className={`setlistVisualizationBarContainer ${alwaysExpanded || expanded ? "expanded" : "collapsed"}`}
         >
+            {!alwaysExpanded && (
+                <CMSmallButton onClick={() => setExpanded(!expanded)} className="setlistVisualizationBarToggle">
+                    {expanded ? "Collapse" : "Expand"}
+                </CMSmallButton>)}
             {
                 rowBounds.map((rowBound, rowIndex) => (
                     <SetlistVisualizationBar

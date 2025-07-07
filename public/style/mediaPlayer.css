@@ -321,38 +321,48 @@
 
 /* === Setlist Visualization Bar ===================================== */
 .setlistVisualizationBarContainer {
-    max-height: 115px;
+    max-height: 125px;
     overflow-y: auto;
     margin-bottom: 8px;
 }
 
+.setlistVisualizationBarContainer .CMSmallButton.enabled.setlistVisualizationBarToggle {
+    opacity: 50%;
+}
+
+.setlistVisualizationBarContainer.expanded {
+    max-height: unset;
+}
+
 .setlistVisualizationBar {
-    height: 30px;
+    height: 27px;
     display: flex;
     margin-bottom: 4px;
     user-select: none;
-    background-color: #383838;
+    /* background-color: #383838; */
 }
 
 /* marginless child */
 .setlistVisualizationBar .songPartition {
-    padding: 0 6px;
+    padding-left: 2px;
     display: flex;
 }
 
 .setlistVisualizationBar .songPartition .songBoundsContainer {
-    border: 1px solid transparent;
     display: flex;
     align-items: center;
     /* for dividers to be able to center as they're the only non-absolute positioned children*/
     justify-content: center;
-    /* background-color: #333; */
+    background-color: #444;
     width: 100%;
     position: relative;
+
+    /* border: 1px solid transparent; */
+    border-radius: 2px;
 }
 
 .setlistVisualizationBar .songPartition:hover .songBoundsContainer {
-    border-color: #444;
+    /* border-color: #444; */
 }
 
 .setlistVisualizationBar .songPartition--divider .songBoundsContainer .dividerIndicator {
@@ -363,8 +373,8 @@
 
 .setlistVisualizationBar .songPartition .songBoundsContainer .songTrackBar {
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 4px;
+    right: 4px;
     height: 3px;
     border-radius: 2px;
     background-color: var(--segment-color);
@@ -378,7 +388,7 @@
 
     display: flex;
     align-items: center;
-    padding-left: 6px;
+    padding-left: 12px;
 
     color: #eee;
     /* black outline */

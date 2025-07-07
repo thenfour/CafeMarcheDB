@@ -138,10 +138,10 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
             return { displayIndex, title: track.file.fileLeafName };
         }
         if (track.url) {
-            const filename = track.url.split('/').pop() || "Untitled Track";
+            const filename = track.url.split('/').pop() || "";
             return { displayIndex, title: filename };
         }
-        return { displayIndex, title: "Untitled Track" };
+        return { displayIndex, title: "" };
     }, []);
 
     const unpause = useCallback(() => {
