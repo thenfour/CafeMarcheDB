@@ -323,12 +323,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
             </div>
             <div className="td play">{props.value.type === 'song' && props.mediaPlayerTrack && <SongPlayButton
-                //songList={props.songList}
-                //songIndex={props.value.songArrayIndex}
                 rowIndex={props.rowIndex}
-                //pinnedRecording={props.pinnedRecordings?.[props.value.song.id]}
-                allPinnedRecordings={props.pinnedRecordings}
-                //setlistRowItems={props.setlistRowItems}
                 track={props.mediaPlayerTrack}
                 getPlaylist={props.getPlaylist}
             />}</div>
@@ -1119,8 +1114,6 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         </div>
         <div className="td play">{props.value.type === 'song' && props.mediaPlayerTrack && <SongPlayButton
             rowIndex={props.rowIndex}
-            allPinnedRecordings={props.pinnedRecordings}
-            //setlistRowItems={props.setlistRowItems}
             getPlaylist={props.getPlaylist}
             track={props.mediaPlayerTrack}
         />}</div>

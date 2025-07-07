@@ -1,4 +1,4 @@
-import { getHashedColor, IsUsableNumber } from "@/shared/utils";
+import { getHashedColor, IsUsableNumber, lerp } from "@/shared/utils";
 import React from "react";
 import { formatSongLength } from "../../../../shared/time";
 import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
@@ -25,40 +25,39 @@ const getItemType = (item: MediaPlayerTrack): TrackType => {
     return "dummy";
 };
 
+export const getTheoreticalDurationSeconds = (
+    item: MediaPlayerTrack,
+): number | undefined => {
+    const fallback = 200;
 
-const getTheoreticalDurationSeconds = (item: MediaPlayerTrack): number => {
-    const fallbackDuration = 200;
     if (item.setListItemContext?.type === "divider") {
-        if (item.setListItemContext.isSong) {
-            // If it's a song divider, we can use the song's duration
-            return item.setListItemContext.lengthSeconds || fallbackDuration;
-        }
-        // For regular dividers, we don't have a duration
-        return fallbackDuration;
+        return item.setListItemContext.isSong
+            ? item.setListItemContext.lengthSeconds ?? fallback
+            : undefined;                         // pure divider → no duration
     }
-    return item.songContext?.lengthSeconds || fallbackDuration;
-}
-
-const MIN_WIDTH_PX = 80;   // never smaller than this
-const MAX_WIDTH_PX = 450;   // never larger than this
-const PIVOT_SECONDS = 3.5 * 60;   // a 3-min track sits halfway between min & max
-const CURVE_STEEPNESS = 0.012; // lower = flatter, higher = steeper
-
-const getItemWidthPixels = (item: MediaPlayerTrack): number | undefined => {
-    const trackType = getItemType(item);
-    if (trackType === "divider") {
-        return undefined; // handled by CSS
-    }
-
-    // songs have a minimum width, and grow in a non-linear way based on their theoretical duration.
-    // the idea is that songs have width based on their duration, but cannot easily grow to be huge. For normal song lengths, the widths are reasonable.
-    const seconds = getTheoreticalDurationSeconds(item);
-    const span = MAX_WIDTH_PX - MIN_WIDTH_PX;
-    const growth = 1 + Math.exp(-CURVE_STEEPNESS * (seconds - PIVOT_SECONDS));
-    const width = MIN_WIDTH_PX + span / growth;
-    return width;
+    return item.songContext?.lengthSeconds ?? fallback;
 };
 
+export const trackWeight = (secs: number | undefined): number | undefined => {
+    if (secs == null) return undefined;
+    const k = 0.014;
+    const pivot = 5 * 60; // minutes
+    return 1 / (1 + Math.exp(-k * (secs - pivot))); // 0 … 1
+};
+
+export function calcWidthsPx(
+    items: readonly MediaPlayerTrack[],
+    rowPx: number,
+    gapPx = 8,
+    minPx = 80,
+    maxPx = 450,
+): (number | undefined)[] {
+    const weights = items.map(i => trackWeight(getTheoreticalDurationSeconds(i)));
+
+    return weights.map((w, i) => {
+        return w === undefined ? undefined : lerp(minPx, maxPx, w);
+    });
+}
 
 interface StyleData {
     containerClassName: string;
@@ -120,25 +119,18 @@ interface VisBarSegmentProps {
     isCurrentTrack: boolean;
     audioAPI: CustomAudioPlayerAPI | null;
     mediaPlayer: MediaPlayerContextType;
+    widthPx?: number;
 };
 
-const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSegmentProps) => {
+const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, widthPx }: VisBarSegmentProps) => {
     const [hoverPosition, setHoverPosition] = React.useState<number | null>(null);
     const [hoverTime, setHoverTime] = React.useState<number | null>(null);
-
-    const width = getItemWidthPixels(item);
 
     const trackType = getItemType(item);
     const styleData = getItemStyleData(item, false, mediaPlayer);
     const title = mediaPlayer.getTrackTitle(item);
 
     const isInteractable = item.file || item.url;
-
-    // todo is this redundant with mediaPlayer.lengthSeconds?
-    // let audioDurationSeconds: number | undefined;
-    // if (isCurrentTrack) {
-    //     audioDurationSeconds = mediaPlayer.lengthSeconds;
-    // }
 
     // Calculate playhead position as a percentage within the current track
     const { playheadSeconds, lengthSeconds } = mediaPlayer;
@@ -168,18 +160,13 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
             const clickX = e.clientX - rect.left;
             const percentage = Math.max(0, Math.min(1, clickX / rect.width));
             seekToPosition(percentage);
-        } else {
-            // Switch to this track
-            //mediaPlayer.playTrackOfPlaylist(item.playlistIndex);
         }
     };
 
     const handleClickContainer = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isInteractable) return;
 
-        if (isCurrentTrack) {
-            return;
-        } else {
+        if (!isCurrentTrack) {
             // Switch to this track
             mediaPlayer.playTrackOfPlaylist(item.playlistIndex);
         }
@@ -226,7 +213,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
         className={`songPartition ${styleData.containerClassName} ${isCurrentTrack ? 'songPartition--current' : ''} ${isCurrentTrack ? 'songPartition--seekable' : ''} ${isInteractable ? 'songPartition--interactable' : 'songPartition--noninteractable'}`}
         style={{
             //flex: proportionalWidth,
-            width: width === undefined ? undefined : `${width}px`,
+            width: widthPx,
             ...styleData.containerStyle,
         } as any}
         onClick={handleClickContainer}
@@ -237,9 +224,9 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
             style={{
                 ...styleData.coloredBarStyle,
             } as React.CSSProperties}
-            onClick={handleClickColoredBar}
             onMouseMove={isCurrentTrack ? handleMouseMove : undefined}
             onMouseLeave={isCurrentTrack ? handleMouseLeave : undefined}
+            onClick={handleClickColoredBar}
         >
             {isInteractable && <div
                 // represents the "body" of the song; the line representing the track bar.
@@ -314,19 +301,39 @@ export const SetlistVisualizationBar: React.FC<{
     startIndex: number;
     length: number;
 }> = ({ mediaPlayer, audioAPI, startIndex, length, beginWithDummyDivider }) => {
+    const rowRef = React.useRef<HTMLDivElement>(null);
+    const [widths, setWidths] = React.useState<(number | undefined)[]>([]);
+
     const { playlist, currentIndex, } = mediaPlayer;
 
     // take the playlist segment based on bounds
     const items = playlist.slice(startIndex, startIndex + length);
 
+    React.useLayoutEffect(() => {
+        const update = () => {
+            const rowPx = rowRef.current?.clientWidth;
+            if (!rowPx || rowPx <= 0) {
+                return;
+            }
+            const widths = calcWidthsPx(items, rowPx);
+            setWidths(widths);
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        rowRef.current && ro.observe(rowRef.current);
+        return () => ro.disconnect();
+    }, [playlist, startIndex, length]);
+
     return (
         <div
+            ref={rowRef}
             className={`setlistVisualizationBar`}
         >
             {beginWithDummyDivider && <div className="songPartition dummyDivider"></div>}
             {
                 items.map((track, index) => <VisBarSegment
                     key={index}
+                    widthPx={widths[index]}
                     item={track}
                     isCurrentTrack={currentIndex === index + startIndex}
                     audioAPI={audioAPI}
@@ -337,23 +344,22 @@ export const SetlistVisualizationBar: React.FC<{
     );
 };
 
-type ExpandStyle = "expanded" | "normal" | "collapsed";
+export const EXPAND_STYLE_VALUES = ["expanded", "normal", "collapsed"] as const;
+export type ExpandStyle = typeof EXPAND_STYLE_VALUES[number];
+
+export const isExpandStyle = (v: unknown): v is ExpandStyle =>
+    typeof v === "string" && EXPAND_STYLE_VALUES.includes(v as any);
 
 export const SetlistVisualizationBars: React.FC<{
     mediaPlayer: MediaPlayerContextType;
     audioAPI: CustomAudioPlayerAPI | null;
 }> = ({ mediaPlayer, audioAPI }) => {
     const { playlist } = mediaPlayer;
-    //const [expanded, setExpanded] = React.useState(false);
     const [expanded, setExpanded] = useLocalStorageState<ExpandStyle>({
         key: "setlistVisualizationBarExpanded",
         initialValue: "normal",
-        deserialize: (value: any) => {
-            if (value === "expanded" || value === "normal" || value === "collapsed") {
-                return value;
-            }
-            return "normal"; // default to normal if invalid
-        }
+        deserialize: (v) => (isExpandStyle(v) ? v : "normal"),
+        serialize: (v) => (isExpandStyle(v) ? v : "normal"),
     });
 
     // calculate rows. a new row begins when a divider is encountered that's marked as a break,
@@ -406,9 +412,6 @@ export const SetlistVisualizationBars: React.FC<{
         needsFirstRowDummyDivider = allOtherRowsStartWithDivider && !firstRowStartsWithDivider;
     }
 
-    // if there are 3 or fewer rows, always expand.
-    //const alwaysExpanded = rowBounds.length <= 3;
-
     return (
         <div
             className={`setlistVisualizationBarContainer ${expanded}`}
@@ -421,7 +424,7 @@ export const SetlistVisualizationBars: React.FC<{
                     Normal
                 </CMSmallButton>
                 <CMSmallButton tooltip={"Hide the playlist visualization"} onClick={() => setExpanded("collapsed")} className={`collapse ${expanded === "collapsed" ? "selected" : ""}`}>
-                    Collapse {gCharMap.DownArrow()}
+                    Hide {gCharMap.DownArrow()}
                 </CMSmallButton>
             </div>
             <div className="setlistVisualizationBarContainer BarsContainer">

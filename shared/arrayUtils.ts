@@ -195,3 +195,12 @@ export function partition<TRow>(
 
     return [matching, notMatching];
 }
+
+
+export function removeNullishItems<T>(
+    arr: readonly T[],
+): NonNullable<T>[] {
+    return arr.filter(
+        (value): value is NonNullable<T> => value != null, // `!=` matches both null and undefined
+    );
+}

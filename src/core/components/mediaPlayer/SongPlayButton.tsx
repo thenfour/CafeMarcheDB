@@ -11,14 +11,13 @@ import { MediaPlayerTrack } from '../mediaPlayer/MediaPlayerTypes';
 
 // File-specific audio controls that use the global media player
 type SongPlayButtonProps = {
-    //setlistRowItems: PlayableRowItem[];
     rowIndex: number;
     track: MediaPlayerTrack;
-    allPinnedRecordings: Record<number, TSongPinnedRecording>; // All pinned recordings for the setlist
+    //allPinnedRecordings: Record<number, TSongPinnedRecording>; // All pinned recordings for the setlist
     getPlaylist: () => MediaPlayerTrack[];
 };
 
-export function SongPlayButton({ rowIndex, allPinnedRecordings, track, getPlaylist }: SongPlayButtonProps) {
+export function SongPlayButton({ rowIndex, track, getPlaylist }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
 
     if (!track.file) {
@@ -34,10 +33,8 @@ export function SongPlayButton({ rowIndex, allPinnedRecordings, track, getPlayli
             mediaPlayer.unpause();
         } else {
             const playlist = getPlaylist();
+            mediaPlayer.setPullPlaylistFn(getPlaylist);
             // rowIndex happens to be the same as the playlist index because we always generate them in sync.
-            const pullPlaylistFn = () => getPlaylist();
-            mediaPlayer.setPullPlaylistFn(pullPlaylistFn);
-
             mediaPlayer.setPlaylist(playlist, rowIndex);
         }
     };

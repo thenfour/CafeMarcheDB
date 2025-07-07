@@ -162,7 +162,6 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
 
                 <SongPlayButton
                     rowIndex={props.rowIndex}
-                    allPinnedRecordings={props.allPinnedRecordings}
                     track={props.thisTrack}
                     getPlaylist={props.getPlaylist}
                 />

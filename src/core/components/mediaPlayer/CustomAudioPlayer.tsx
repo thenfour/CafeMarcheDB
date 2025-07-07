@@ -193,6 +193,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             },
             seekTo: (time: number) => {
                 if (audioRef.current && isFinite(time) && time >= 0) {
+                    //console.log(`seeking to ${time} on src ${audioRef.current.src}`);
                     audioRef.current.currentTime = time;
                     setCurrentTime(time);
                 }
@@ -217,19 +218,26 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
 
         const duration = IsUsableNumber(audioRef.current?.duration) ? audioRef.current?.duration : undefined;
         const setReportedDurationIfNeeded = (newDuration: number | undefined, reason: string) => {
-            if (reportedDuration == null && newDuration != null) {
+            if (reportedDuration == null && newDuration != null && reportedDuration !== newDuration) {
+                //console.log(`Setting reported duration to ${newDuration} because: ${reason}`);
                 setReportedDuration(newDuration);
             }
         };
 
         React.useEffect(() => {
-            setReportedDuration(undefined); // Reset duration when src changes
+            setReportedDurationIfNeeded(undefined, "src changed"); // Reset duration when src changes
         }, [src]);
 
+        // establish a timer that checks for a valid duration
         React.useEffect(() => {
-            const duration = IsUsableNumber(audioRef.current?.duration) ? audioRef.current?.duration : undefined;
-            setReportedDurationIfNeeded(duration, "render effect");
-        }, [audioRef.current?.duration, reportedDuration]);
+            const checkDuration = () => {
+                if (audioRef.current && IsUsableNumber(audioRef.current.duration)) {
+                    setReportedDurationIfNeeded(audioRef.current.duration, "duration check timer");
+                }
+            };
+            const intervalId = setInterval(checkDuration, 200);
+            return () => clearInterval(intervalId);
+        }, []);
 
         React.useEffect(() => {
             onDurationChange?.(null, reportedDuration);
@@ -336,14 +344,13 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 }
             };
 
-        }, [src, volume, isMuted]);
+        }, [src, volume, isMuted, audioRef.current]);
 
 
 
         const handleTimeUpdate = (e: React.SyntheticEvent<HTMLAudioElement>) => {
             if (!audioRef.current) return;
-            const audio = audioRef.current;
-            const audioCurrentTime = audio.currentTime;
+            const audioCurrentTime = audioRef.current.currentTime;
             setReportedDurationIfNeeded(e.currentTarget.duration, "handleTimeUpdate");
 
             if (isUserSeeking || !IsUsableNumber(audioCurrentTime)) {
@@ -359,15 +366,13 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         // Add handler for when audio can play to get more accurate duration info
         const handleCanPlay = () => {
             if (audioRef.current) {
-                const audio = audioRef.current;
-                setReportedDurationIfNeeded(audio.duration, "handleCanPlay");
+                setReportedDurationIfNeeded(audioRef.current.duration, "handleCanPlay");
             }
         };
 
         const handleDurationChange = () => {
             if (audioRef.current) {
-                const audio = audioRef.current;
-                setReportedDurationIfNeeded(audio.duration, "handleDurationChange");
+                setReportedDurationIfNeeded(audioRef.current.duration, "handleDurationChange");
             }
         };
 
