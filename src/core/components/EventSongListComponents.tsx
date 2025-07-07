@@ -35,12 +35,12 @@ import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
-import { MediaPlayerTrack } from './mediaPlayer/MediaPlayerTypes';
 import { useMessageBox } from './MessageBoxContext';
 import { MetronomeButton } from './Metronome';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
+import { SongPlayButton } from './mediaPlayer/SongPlayButton';
 
 // Aligned version that shows all possible tags with consistent spacing
 // Tags with the same sort order can share the same lane
@@ -101,6 +101,7 @@ export const SongTagIndicatorContainerAligned = ({ tagIds, allPossibleTags }: {
             renderElements.push(
                 <div
                     className={`songTagIndicator ${firstTag.indicatorCssClass}`}
+                    key={keyCounter++}
                     style={{
                         visibility: 'hidden'
                     }}
@@ -319,7 +320,7 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
         <div className="td songIndex">
             {props.value.index != null && props.value.index + 1}
         </div>
-        <div className="td play"><NullSongPlayButton /></div>
+        <div className="td play"></div>
         <div className="td songName">{props.value.subtitle}</div>
         <div className={`td ${props.lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
             {props.lengthColumnMode === "length"
@@ -335,122 +336,8 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
 };
 
 
-
-
-export const NullSongPlayButton = () => {
-    return <div className='audioPreviewGatewayContainer'></div>;
-}
-
-// File-specific audio controls that use the global media player
-type SongPlayButtonProps = {
-    //songList: db3.EventSongListPayload;
-    setlistRowItems: SetlistAPI.EventSongListItem[];
-    rowIndex: number;
-    //songIndex: number;
-    //pinnedRecording?: any; // The pinned recording for this song, if any
-    allPinnedRecordings: Record<number, TSongPinnedRecording>; // All pinned recordings for the setlist
-};
-
-export function SongPlayButton({ setlistRowItems, rowIndex, allPinnedRecordings }: SongPlayButtonProps) {
-    const mediaPlayer = useMediaPlayer();
-    //const song = songList.songs[songIndex]?.song;
-    const rowItem = setlistRowItems[rowIndex];
-    if (!rowItem || rowItem.type !== 'song') {
-        return <NullSongPlayButton />; // Placeholder if no song is found
-    }
-    const pinnedRecording = allPinnedRecordings?.[rowItem.song.id];
-    if (!pinnedRecording) {
-        return <NullSongPlayButton />; // Placeholder if no song is found
-    }
-
-    const file = pinnedRecording;
-    const isCurrent = mediaPlayer.currentIndex === rowIndex &&
-        mediaPlayer.isPlayingFile(file.id) &&
-        mediaPlayer.currentTrack?.setlistId === rowItem.eventSongListId;
-    const isPlaying = isCurrent && mediaPlayer.isPlaying;
-
-    // Create a playlist from all songs in the setlist that have pinned recordings
-    const createPlaylist = (): MediaPlayerTrack[] => {
-
-        const playlist: MediaPlayerTrack[] = setlistRowItems
-            .map((row, rowIndex) => {
-
-                if (row.type === 'song') {
-                    const recording = allPinnedRecordings?.[row.song.id]; // may be undefined if no pinned recording.
-
-                    return {
-                        playlistIndex: -1, // filled in later
-                        setlistId: row.eventSongListId,
-                        file: recording,
-                        songContext: row.song,
-                        setListItemContext: row,
-                    } satisfies MediaPlayerTrack;
-                }
-                return {
-                    playlistIndex: -1, // filled in later
-                    setlistId: row.eventSongListId,
-                    setListItemContext: row,
-                } satisfies MediaPlayerTrack;
-            });
-
-        return playlist;
-    };
-
-    // Play this file via the global player
-    const handlePlay = () => {
-        if (isCurrent) {
-            mediaPlayer.unpause();
-        } else {
-            const playlist = createPlaylist();
-            // rowIndex happens to be the same as the playlist index because we always generate them in sync.
-            mediaPlayer.setPlaylist(playlist, rowIndex);
-        }
-    };
-
-    const handlePause = () => {
-        if (isCurrent) {
-            mediaPlayer.pause();
-        }
-    };
-
-    return (
-        <div className="audioPreviewGatewayContainer">
-            {isCurrent && isPlaying && (
-                <div className='audioPreviewGatewayButton freeButton isPlaying' onClick={handlePause}>
-                    <div className="playingIndicatorOuter">
-                        <div className="playingIndicatorGlow"></div>
-                        <div className="playingIndicatorSpinner playingIndicatorSpinnerAnim">
-                            {gIconMap.PauseCircleOutline()}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isCurrent && !isPlaying && (
-                <div className='audioPreviewGatewayButton freeButton isPlaying' onClick={handlePlay}>
-                    <div className="playingIndicatorOuter">
-                        <div className="playingIndicatorGlow"></div>
-                        <div className="playingIndicatorSpinner">
-                            {gIconMap.PlayCircleOutline()}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {!isCurrent && (
-                <div className='audioPreviewGatewayButton freeButton' onClick={handlePlay}>
-                    {gIconMap.PlayCircleOutline()}
-                </div>
-            )}
-        </div>
-    );
-}
-
-
-
-
-
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
+    const mediaPlayer = useMediaPlayer();
     if (props.value.type === 'divider') {
         if (props.value.isSong) {
             return <EventSongListValueViewerDividerSongRow {...props} />;
@@ -462,6 +349,13 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
 
+    const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
+    const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
+        fileId: pinnedRecording.id,
+        setlistId: props.songList.id,
+        setlistItemIndex: props.rowIndex,
+    });
+
     // Collect all unique tag IDs from all songs in the song list
     const allTagIds = React.useMemo(() => {
         const tagIds = new Set<number>();
@@ -471,7 +365,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         return Array.from(tagIds);
     }, [props.songList.songs]);
 
-    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type}`}>
+    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type} ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}>
         <AppContextMarker songId={enrichedSong?.id || undefined}>
             <div className="td songIndex">
                 {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
@@ -840,7 +734,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         {showHeader && <div className="thead">
             <div className="tr">
                 <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
-                <div className="th play"><NullSongPlayButton /></div>
+                <div className="th play"></div>
                 <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
                 <div className={`th ${lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>{lengthColumnMode === "length" ? "Len" : "∑T"}</div>
                 <div className="th tempo interactable" onClick={handleClickBpmTH}>Bpm {sortSpec === 'bpmAsc' && gCharMap.DownArrow()} {sortSpec === 'bpmDesc' && gCharMap.UpArrow()}</div>
@@ -1074,7 +968,7 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
         <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
         <div className="td songIndex">{props.value.index != null && (props.value.index + 1)}</div>
         <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
-        <div className="td play"><NullSongPlayButton /></div>
+        <div className="td play"></div>
         <div className="td songName">
             <CMTextInputBase
                 className="cmdbSimpleInput"
@@ -1111,6 +1005,7 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
 
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
     const dashboardContext = React.useContext(DashboardContext);
+    const mediaPlayer = useMediaPlayer();
     const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
     const showDragHandle = CoalesceBool(props.showDragHandle, true);
 
@@ -1133,6 +1028,13 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         cssClass: "",
         style: {},
     };
+
+    const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
+    const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
+        fileId: pinnedRecording.id,
+        setlistId: props.songList.id,
+        setlistItemIndex: props.rowIndex,
+    });
 
     const handleAutocompleteChange = (song: db3.SongPayload | null) => {
         if (!song) return;
@@ -1200,13 +1102,13 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         } else {
             // Regular break-style divider
             return <div
-                className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
+                className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_${props.value.type} ${styleClasses} ${colorInfo.cssClass} ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}
                 style={style as any}
             >
                 <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
                 <div className="td songIndex"></div>
                 <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
-                <div className="td play"><NullSongPlayButton /></div>
+                <div className="td play"></div>
                 <div className="td comment dividerCommentCell">
                     <div className='comment dividerCommentContainer'>
                         <div className='dividerBreakDiv before'></div>
@@ -1532,7 +1434,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     <div className="th delete"></div>
                     <div className="th songIndex">#</div>
                     <div className="th dragHandle"></div>
-                    <div className="th play"><NullSongPlayButton /></div>
+                    <div className="th play"></div>
                     <div className="th songName">Song</div>
                     <div className={`th ${lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>{lengthColumnMode === "length" ? "Len" : "∑T"}</div>
                     <div className="th tempo">bpm</div>

@@ -3,6 +3,7 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerSlider } from "./MediaPlayerSlider";
+import { PlayArrow } from "@mui/icons-material";
 
 export interface CustomAudioPlayerAPI {
     // Playback control
@@ -396,7 +397,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                             ) : isPlaying ? (
                                 gIconMap.Pause()
                             ) : (
-                                gIconMap.PlayCircleOutline()
+                                <PlayArrow />
                             )}
                         </CMSmallButton>
                         {/* 

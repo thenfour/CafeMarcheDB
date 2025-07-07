@@ -3,6 +3,7 @@ import React from "react";
 import { formatSongLength } from "../../../../shared/time";
 import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 //import { useMediaPlayer } from "./MediaPlayerContext";
+import { PlayCircleOutlined } from "@mui/icons-material";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 
 // Simple hash function to generate consistent colors for songs
@@ -264,7 +265,12 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
                     )}
                 </>
             )}
-            <span className="segmentText">{title.displayIndex}{title.title}</span>
+        </div>
+        <div className="segmentTextContainer">
+            <span className="segmentText">
+                {title.displayIndex}{title.title}
+            </span>
+            {!isCurrentTrack && isInteractable && <span className="segmentPlayIcon"><PlayCircleOutlined /></span>}
         </div>
     </div>;
 };
@@ -336,7 +342,7 @@ export const SetlistVisualizationBars: React.FC<{
             // If we hit a divider that is an interruption, finalize the current row
             currentRow.length = i - currentRow.startIndex; // Set length of the row
             rowBounds.push(currentRow);
-            currentRow = { startIndex: i + 1, length: 0 }; // Start a new row after the divider
+            currentRow = { startIndex: i, length: 0 }; // Start a new row after the divider
         } else {
             currentRow.length++; // Increment the length of the current row
         }

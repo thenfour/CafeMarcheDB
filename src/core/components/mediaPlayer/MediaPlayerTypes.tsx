@@ -72,6 +72,7 @@ export interface MediaPlayerContextType {
     previousEnabled: () => boolean;
     nextEnabled: () => boolean;
     isPlayingFile: (fileId: number) => boolean;
+    isPlayingSetlistItem: (args: { setlistId: number, setlistItemIndex: number, fileId: number }) => boolean;
 
     // setlist integration (optional)
     //setlistData?: MediaPlayerSetlistData;

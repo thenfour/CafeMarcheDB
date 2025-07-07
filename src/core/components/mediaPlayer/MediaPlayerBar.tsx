@@ -78,7 +78,9 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
     // Always render the bar for animation, but toggle visibility class
     return (
         <div className={`mediaPlayerBar${visible ? ' mediaPlayerBar--visible' : ''}`}>
-            <SetlistVisualizationBars mediaPlayer={mediaPlayer} audioAPI={audioRef.current} />
+            {hasPlaylist && (
+                <SetlistVisualizationBars mediaPlayer={mediaPlayer} audioAPI={audioRef.current} />
+            )}
             <div className="responsiveRow">
                 <div className="mediaPlayerBarTransport">
                     {mediaPlayer.playlist.length > 1 && (<>

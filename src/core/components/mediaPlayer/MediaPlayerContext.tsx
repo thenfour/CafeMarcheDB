@@ -163,6 +163,12 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
     }, []);
 
+    const isPlayingSetlistItem = (args: { fileId: number, setlistId: number, setlistItemIndex: number }) => {
+        if (currentIndex === undefined || currentIndex < 0 || currentIndex >= playlist.length) return false;
+        const track = playlist[currentIndex]!;
+        return track.setlistId === args.setlistId && currentIndex === args.setlistItemIndex && isPlayingFile(args.fileId);
+    };
+
     const contextValue: MediaPlayerContextType = {
         playlist,
         currentIndex,
@@ -185,6 +191,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isPlayingFile,
         playTrackOfPlaylist,
         getTrackUri,
+        isPlayingSetlistItem,
     };
 
     return (

@@ -241,154 +241,6 @@
     }
 }
 
-/* === Setlist Visualization Bar ===================================== */
-.setlistVisualizationBar {
-    height: 23px;
-    display: flex;
-    /* background-color: #333; */
-    margin-bottom: 8px;
-    user-select: none;
-    /* max-width: 100vw; */
-}
-
-.setlistVisualizationSegment {
-    opacity: 0.5;
-    display: flex;
-    align-items: center;
-    /* Allow shrinking below content width */
-    min-width: 0;
-}
-
-.setlistVisualizationSegment .coloredSegment {
-    cursor: pointer;
-    color: white;
-    display: flex;
-    padding: 0 6px;
-    margin: 0 2px;
-    width: 100%;
-    height: 100%;
-    align-items: center;
-    border-radius: 2px;
-    font-size: 13px;
-    position: relative;
-    overflow: hidden;
-    min-width: 0;
-    /* Allow shrinking below content width */
-}
-
-.setlistVisualizationSegment .progressFill {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    background: #0003;
-}
-
-.setlistVisualizationSegment .segmentText {
-    position: relative;
-    z-index: 2;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    /* Allow text to shrink below its natural width */
-    flex-shrink: 1;
-    /* Allow text to shrink */
-    width: 100%;
-    /* Take full width of container */
-}
-
-.setlistVisualizationSegment .playheadIndicator {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: rgba(255, 255, 255, 0.9);
-    transform: translateX(-50%);
-    z-index: 3;
-}
-
-.setlistVisualizationSegment .hoverPositionIndicator {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: rgba(255, 255, 255, 0.6);
-    transform: translateX(-50%);
-    z-index: 2;
-    pointer-events: none;
-}
-
-.setlistVisualizationSegment .hoverTimeDisplay {
-    position: absolute;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-family: 'Courier New', monospace;
-    white-space: nowrap;
-    z-index: 9994;
-    pointer-events: none;
-    text-shadow: none;
-}
-
-.setlistVisualizationSegment .coloredSegment--seekable {
-    cursor: pointer;
-
-    /* box-shadow: 0 0 4px var(--segment-color); */
-    /* outline: 2px solid blue; */
-}
-
-.setlistVisualizationSegment .coloredSegment--seekable:hover {
-    filter: brightness(1.1);
-}
-
-
-.setlistVisualizationSegment--current {
-    opacity: 1;
-    border-bottom: #9af solid 3px;
-}
-
-.setlistVisualizationSegment:hover {
-    opacity: 1;
-}
-
-/* === Setlist-specific visualization styles ================= */
-
-.setlistVisualizationSegment--divider {
-    opacity: 0;
-}
-
-.setlistVisualizationSegment--dummy {
-    /* opacity: 0.8; */
-}
-
-.setlistVisualizationSegment--song {
-    opacity: 1;
-}
-
-.coloredSegment--noninteractive {
-    cursor: default !important;
-}
-
-.coloredSegment--noninteractive:hover {
-    transform: none !important;
-    filter: none !important;
-}
-
-/* Divider-specific styling */
-.setlistVisualizationSegment--divider .coloredSegment {
-    border-left: 2px solid rgba(255, 255, 255, 0.3);
-    border-right: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.setlistVisualizationSegment--divider .segmentText {
-    font-style: italic;
-    opacity: 0.8;
-}
-
 /* === Custom Audio Player ===================================== */
 .customAudioPlayer {
     display: flex;
@@ -463,4 +315,189 @@
 .volumeSlider {
     width: 80px;
     height: 4px;
+}
+
+
+
+/* === Setlist Visualization Bar ===================================== */
+.setlistVisualizationBar {
+    height: 28px;
+    display: flex;
+    /* background-color: #333; */
+    margin-bottom: 8px;
+    user-select: none;
+    /* max-width: 100vw; */
+}
+
+.setlistVisualizationSegment {
+    opacity: 0.4;
+    display: flex;
+    position: relative;
+    align-items: center;
+    /* Allow shrinking below content width */
+    min-width: 0;
+    height: 30px;
+}
+
+.setlistVisualizationSegment .coloredSegment {
+    cursor: pointer;
+    color: white;
+    display: flex;
+    padding: 0 6px;
+    margin: 0 2px;
+    width: 100%;
+    height: 3px;
+    align-items: center;
+    border-radius: 2px;
+    font-size: 13px;
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    /* Allow shrinking below content width */
+    transition: height 60ms linear;
+}
+
+.setlistVisualizationSegment:hover .coloredSegment {
+    height: 7px;
+}
+
+.setlistVisualizationSegment:hover {
+    opacity: 1;
+}
+
+.setlistVisualizationSegment .segmentTextContainer {
+    display: flex;
+    align-items: center;
+    /* width: 100%; */
+    overflow: hidden;
+}
+
+.setlistVisualizationSegment .segmentTextContainer>* {
+    display: flex;
+    align-items: center;
+}
+
+.setlistVisualizationSegment .progressFill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: #0003;
+}
+
+.setlistVisualizationSegment .segmentText {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    /* Allow text to shrink below its natural width */
+    flex-shrink: 1;
+    /* Allow text to shrink */
+    /* width: 100%; */
+    /* Take full width of container */
+}
+
+.setlistVisualizationSegment>* {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.setlistVisualizationSegment .segmentPlayIcon {
+    opacity: 0.1;
+}
+
+.setlistVisualizationSegment:hover .segmentPlayIcon {
+    opacity: 1;
+}
+
+.setlistVisualizationSegment .playheadIndicator {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateX(-50%);
+    z-index: 3;
+}
+
+.setlistVisualizationSegment .hoverPositionIndicator {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.6);
+    transform: translateX(-50%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.setlistVisualizationSegment .hoverTimeDisplay {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+    z-index: 9994;
+    pointer-events: none;
+    text-shadow: none;
+}
+
+.setlistVisualizationSegment .coloredSegment--seekable {
+    cursor: pointer;
+
+    /* box-shadow: 0 0 4px var(--segment-color); */
+    /* outline: 2px solid blue; */
+}
+
+.setlistVisualizationSegment .coloredSegment--seekable:hover {
+    filter: brightness(1.1);
+}
+
+
+.setlistVisualizationSegment--current {
+    opacity: 1;
+    /* border-bottom: #9af solid 3px; */
+}
+
+/* === Setlist-specific visualization styles ================= */
+
+.setlistVisualizationSegment--divider {
+    opacity: 0;
+}
+
+.setlistVisualizationSegment--dummy {
+    /* opacity: 0.8; */
+}
+
+.setlistVisualizationSegment--song {
+    /* opacity: 1; */
+}
+
+.coloredSegment--noninteractive {
+    cursor: default !important;
+}
+
+.coloredSegment--noninteractive:hover {
+    transform: none !important;
+    filter: none !important;
+}
+
+/* Divider-specific styling */
+.setlistVisualizationSegment--divider .coloredSegment {
+    border-left: 2px solid rgba(255, 255, 255, 0.3);
+    border-right: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.setlistVisualizationSegment--divider .segmentText {
+    font-style: italic;
+    opacity: 0.8;
 }
