@@ -37,6 +37,7 @@ import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
 import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
 import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
 import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
+import { EventSongListDividerItem } from "../../db3/shared/setlistApi";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;
@@ -491,6 +492,21 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             return {
                 setlistPlanId: docOrTempDoc.id,
                 playlistIndex: rowIndex,
+                setListItemContext: {
+                    type: "divider",
+                    id: -1,
+                    eventSongListId: -1, // unused
+                    subtitle: "",
+                    isInterruption: true,
+                    isSong: false,
+                    subtitleIfSong: "",
+                    lengthSeconds: 0,
+                    textStyle: null,
+                    color: null,
+                    sortOrder: 0,
+                    runningTimeSeconds: 0,
+                    songsWithUnknownLength: 0,
+                } satisfies EventSongListDividerItem,
             } satisfies MediaPlayerTrack;
         }
         const song = allSongs.find(s => s.id === row.songId);

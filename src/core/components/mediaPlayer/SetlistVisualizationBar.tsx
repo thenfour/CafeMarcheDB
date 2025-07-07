@@ -6,17 +6,6 @@ import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { PlayCircleOutlined } from "@mui/icons-material";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 
-// Simple hash function to generate consistent colors for songs
-const hashString = (str: string): number => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash);
-};
-
 type TrackType = "song" | "divider" | "dummy";
 
 const getItemType = (item: MediaPlayerTrack): TrackType => {
@@ -34,13 +23,13 @@ const getItemType = (item: MediaPlayerTrack): TrackType => {
 };
 
 // New functions for setlist-aware rendering
-const getSetlistItemProportionalWidth = (item: MediaPlayerTrack): number => {
+const getSetlistItemProportionalWidth = (item: MediaPlayerTrack): number | undefined => {
     const trackType = getItemType(item);
     return {
         song: 2,
-        divider: 0.5,
+        divider: undefined,
         dummy: 1
-    }[trackType] || 1;
+    }[trackType];
 };
 
 
@@ -59,43 +48,39 @@ const getItemStyleData = (item: MediaPlayerTrack, isCurrentTrack: boolean, media
             if (item.setListItemContext?.type !== "divider") throw new Error("Expected item to be a divider");
 
             return {
-                containerClassName: "setlistVisualizationSegment--divider",
+                containerClassName: "songPartition--divider",
                 containerStyle: {
                     "--segment-color": item.setListItemContext.color || "#666666",
                 } as any,
                 coloredBarClassName: "",
                 coloredBarStyle: {
-                    backgroundColor: "var(--segment-color)",
                 }
             }
         }
         default:
         case "dummy":
             return {
-                containerClassName: "setlistVisualizationSegment--dummy",
+                containerClassName: "songPartition--dummy",
                 containerStyle: {
-                    "--segment-color": "#444", // Default color for dummy songs
+                    "--segment-color": "transparent",
                 } as any,
-                coloredBarClassName: "hatch",
+                coloredBarClassName: "",//"hatch",
                 coloredBarStyle: {
-                    "--fc": "#666",
-                    "--bc": "#333",
                 } as any,
             }
         case "song": {
 
             return {
-                containerClassName: "setlistVisualizationSegment--song",
+                containerClassName: "songPartition--song",
                 containerStyle: {
                     "--segment-color": getHashedColor(title.title, {
                         alpha: "100%",
                         luminosity: "50%",
-                        saturation: isCurrentTrack ? "70%" : "15%",
+                        saturation: "70%",// isCurrentTrack ? "90%" : "15%",
                     }),
                 } as any,
                 coloredBarClassName: "",
                 coloredBarStyle: {
-                    backgroundColor: "var(--segment-color)",
                 }
             };
         }
@@ -116,6 +101,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
 
     const proportionalWidth = getSetlistItemProportionalWidth(item);
 
+    const trackType = getItemType(item);
     const styleData = getItemStyleData(item, false, mediaPlayer);
     const title = mediaPlayer.getTrackTitle(item);
 
@@ -155,7 +141,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
         playheadPosition = getPlayheadPosition();
     }
 
-    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleClickColoredBar = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isInteractable) return;
 
         if (isCurrentTrack) {
@@ -164,6 +150,17 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
             const clickX = e.clientX - rect.left;
             const percentage = Math.max(0, Math.min(1, clickX / rect.width));
             seekToPosition(percentage);
+        } else {
+            // Switch to this track
+            //mediaPlayer.playTrackOfPlaylist(item.playlistIndex);
+        }
+    };
+
+    const handleClickContainer = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isInteractable) return;
+
+        if (isCurrentTrack) {
+            return;
         } else {
             // Switch to this track
             mediaPlayer.playTrackOfPlaylist(item.playlistIndex);
@@ -206,34 +203,39 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
     }
 
     return <div
-        className={`setlistVisualizationSegment ${styleData.containerClassName} ${isCurrentTrack ? 'setlistVisualizationSegment--current' : ''}`}
+        // this container div is needed in order to be marginless
+        className={`songPartition ${styleData.containerClassName} ${isCurrentTrack ? 'songPartition--current' : ''} ${isCurrentTrack ? 'songPartition--seekable' : ''} ${isInteractable ? 'songPartition--interactable' : 'songPartition--noninteractable'}`}
         style={{
-            //width: `${widthPercentage}%`,
-            flexShrink: 0,
             flex: proportionalWidth,
-            cursor: isInteractable ? 'pointer' : 'default',
             ...styleData.containerStyle,
         } as any}
+        onClick={handleClickContainer}
     >
         <div
-            className={`coloredSegment ${styleData.coloredBarClassName} ${isCurrentTrack ? 'coloredSegment--seekable' : ''} ${!isInteractable ? 'coloredSegment--noninteractive' : ''}`}
+            // bar which adds margin; its width must represent the width of the song, but can be tall enough to click on.
+            className={`songBoundsContainer`}
             style={{
-                position: 'relative',
                 ...styleData.coloredBarStyle,
             } as React.CSSProperties}
-            onClick={handleClick}
+            onClick={handleClickColoredBar}
             onMouseMove={isCurrentTrack ? handleMouseMove : undefined}
             onMouseLeave={isCurrentTrack ? handleMouseLeave : undefined}
         >
-            {/* Progress fill for current track */}
-            {isCurrentTrack && (
-                <div
-                    className="progressFill"
-                    style={{
-                        width: `${playheadPosition}%`,
-                    }}
-                />
-            )}
+            {isInteractable && <div
+                // represents the "body" of the song; the line representing the track bar.
+                className={`songTrackBar ${styleData.coloredBarClassName}`}
+                style={styleData.coloredBarStyle}
+            >
+                {/* Progress fill for current track */}
+                {isCurrentTrack && (
+                    <div
+                        className="progressFill"
+                        style={{
+                            width: `${playheadPosition}%`,
+                        }}
+                    />
+                )}
+            </div>}
             {/* Playhead indicator for current track */}
             {isCurrentTrack && (
                 <div
@@ -242,6 +244,9 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
                         left: `${playheadPosition}%`,
                     }}
                 />
+            )}
+            {trackType === "divider" && (
+                <div className="dividerIndicator" />
             )}
             {/* Hover position indicator for current track */}
             {isCurrentTrack && hoverPosition !== null && (
@@ -265,36 +270,24 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
                     )}
                 </>
             )}
-        </div>
-        <div className="segmentTextContainer">
-            <span className="segmentText">
-                {title.displayIndex}{title.title}
-            </span>
-            {!isCurrentTrack && isInteractable && <span className="segmentPlayIcon"><PlayCircleOutlined /></span>}
+            {trackType !== "divider" && <div className="textOverlayContainer">
+                <span className="songTitle">
+                    {title.displayIndex}{title.title}
+                </span>
+                {!isCurrentTrack && isInteractable && <span className="playIcon"><PlayCircleOutlined /></span>}
+            </div>}
         </div>
     </div>;
 };
 
-
-
-
-
 export const SetlistVisualizationBar: React.FC<{
+    beginWithDummyDivider: boolean;
     mediaPlayer: MediaPlayerContextType;
     audioAPI: CustomAudioPlayerAPI | null;
     startIndex: number;
     length: number;
-    //currentIndex: number | undefined;
-}> = ({ mediaPlayer, audioAPI, startIndex, length }) => {
+}> = ({ mediaPlayer, audioAPI, startIndex, length, beginWithDummyDivider }) => {
     const { playlist, currentIndex, } = mediaPlayer;
-    //const [visible, setVisible] = React.useState(false);
-
-    //const current = currentIndex != null ? playlist[currentIndex] : undefined;
-
-    // // Show/hide animation effect - sync with media player visibility
-    // React.useEffect(() => {
-    //     setVisible(playlist.length > 1);
-    // }, [currentTrack, playlist.length]);
 
     // take the playlist segment based on bounds
     const items = playlist.slice(startIndex, startIndex + length);
@@ -303,6 +296,7 @@ export const SetlistVisualizationBar: React.FC<{
         <div
             className={`setlistVisualizationBar`}
         >
+            {beginWithDummyDivider && <div className="songPartition dummyDivider"></div>}
             {
                 items.map((track, index) => <VisBarSegment
                     key={index}
@@ -316,21 +310,11 @@ export const SetlistVisualizationBar: React.FC<{
     );
 };
 
-
-
 export const SetlistVisualizationBars: React.FC<{
     mediaPlayer: MediaPlayerContextType;
     audioAPI: CustomAudioPlayerAPI | null;
 }> = ({ mediaPlayer, audioAPI }) => {
     const { playlist } = mediaPlayer;
-    //const [visible, setVisible] = React.useState(false);
-
-    // const current = currentIndex != null ? playlist[currentIndex] : undefined;
-
-    // // Show/hide animation effect - sync with media player visibility
-    // React.useEffect(() => {
-    //     setVisible(playlist.length > 1);
-    // }, [current, playlist.length]);
 
     // calculate rows. a new row begins when a divider is encountered that's marked as a break,
     // as long as it is not just after another break (avoid empty rows).
@@ -353,6 +337,37 @@ export const SetlistVisualizationBars: React.FC<{
         rowBounds.push(currentRow);
     }
 
+    if (rowBounds.length < 1) {
+        return null;
+    }
+
+    let needsFirstRowDummyDivider = false;
+
+    if (rowBounds.length > 1) {
+        // if the last row is only dividers, move it to the previous row
+        const lastRow = rowBounds[rowBounds.length - 1]!;
+        const lastRowItems = playlist.slice(lastRow.startIndex, lastRow.startIndex + lastRow.length);
+        const onlyDividers = lastRowItems.every(item => item.setListItemContext?.type === "divider");
+        if (onlyDividers) {
+            // Move the last row's length to the previous row
+            const previousRow = rowBounds[rowBounds.length - 2]!;
+            previousRow.length += lastRow.length;
+            rowBounds.pop(); // Remove the last row
+        }
+
+        // if all rows except the first begin with a divider, then add a dummy divider in the first row; it's more visually comfortable.
+        const firstRow = rowBounds[0]!;
+        const firstRowItems = playlist.slice(firstRow.startIndex, firstRow.startIndex + firstRow.length);
+        const firstRowStartsWithDivider = firstRowItems[0]?.setListItemContext?.type === "divider";
+        const allOtherRowsStartWithDivider = rowBounds.slice(1).every(row => {
+            const items = playlist.slice(row.startIndex, row.startIndex + row.length);
+            return items[0]?.setListItemContext?.type === "divider";
+        });
+        needsFirstRowDummyDivider = allOtherRowsStartWithDivider && !firstRowStartsWithDivider;
+    }
+
+
+
     return (
         <div
             className={`setlistVisualizationBarContainer`}
@@ -361,12 +376,11 @@ export const SetlistVisualizationBars: React.FC<{
                 rowBounds.map((rowBound, rowIndex) => (
                     <SetlistVisualizationBar
                         key={rowIndex}
+                        beginWithDummyDivider={needsFirstRowDummyDivider && rowIndex === 0}
                         mediaPlayer={mediaPlayer}
                         audioAPI={audioAPI}
                         startIndex={rowBound.startIndex}
                         length={rowBound.length}
-                    //playlist={row}
-                    //currentIndex={currentIndex}
                     />
                 ))
             }

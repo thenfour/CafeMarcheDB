@@ -320,184 +320,105 @@
 
 
 /* === Setlist Visualization Bar ===================================== */
-.setlistVisualizationBar {
-    height: 28px;
-    display: flex;
-    /* background-color: #333; */
+.setlistVisualizationBarContainer {
+    max-height: 115px;
+    overflow-y: auto;
     margin-bottom: 8px;
-    user-select: none;
-    /* max-width: 100vw; */
 }
 
-.setlistVisualizationSegment {
-    opacity: 0.4;
-    display: flex;
-    position: relative;
-    align-items: center;
-    /* Allow shrinking below content width */
-    min-width: 0;
+.setlistVisualizationBar {
     height: 30px;
+    display: flex;
+    margin-bottom: 4px;
+    user-select: none;
+    background-color: #383838;
 }
 
-.setlistVisualizationSegment .coloredSegment {
-    cursor: pointer;
-    color: white;
-    display: flex;
+/* marginless child */
+.setlistVisualizationBar .songPartition {
     padding: 0 6px;
-    margin: 0 2px;
+    display: flex;
+}
+
+.setlistVisualizationBar .songPartition .songBoundsContainer {
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    /* for dividers to be able to center as they're the only non-absolute positioned children*/
+    justify-content: center;
+    /* background-color: #333; */
     width: 100%;
-    height: 3px;
-    align-items: center;
-    border-radius: 2px;
-    font-size: 13px;
     position: relative;
-    overflow: hidden;
-    min-width: 0;
-    /* Allow shrinking below content width */
-    transition: height 60ms linear;
 }
 
-.setlistVisualizationSegment:hover .coloredSegment {
-    height: 7px;
+.setlistVisualizationBar .songPartition:hover .songBoundsContainer {
+    border-color: #444;
 }
 
-.setlistVisualizationSegment:hover {
-    opacity: 1;
+.setlistVisualizationBar .songPartition--divider .songBoundsContainer .dividerIndicator {
+    width: 1px;
+    height: 80%;
+    background-color: #555;
 }
 
-.setlistVisualizationSegment .segmentTextContainer {
-    display: flex;
-    align-items: center;
-    /* width: 100%; */
-    overflow: hidden;
-}
-
-.setlistVisualizationSegment .segmentTextContainer>* {
-    display: flex;
-    align-items: center;
-}
-
-.setlistVisualizationSegment .progressFill {
+.setlistVisualizationBar .songPartition .songBoundsContainer .songTrackBar {
     position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    background: #0003;
-}
-
-.setlistVisualizationSegment .segmentText {
-    position: relative;
-    z-index: 2;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    /* Allow text to shrink below its natural width */
-    flex-shrink: 1;
-    /* Allow text to shrink */
-    /* width: 100%; */
-    /* Take full width of container */
-}
-
-.setlistVisualizationSegment>* {
-    position: absolute;
-    top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
+    height: 3px;
+    border-radius: 2px;
+    background-color: var(--segment-color);
 }
 
-.setlistVisualizationSegment .segmentPlayIcon {
-    opacity: 0.1;
-}
-
-.setlistVisualizationSegment:hover .segmentPlayIcon {
-    opacity: 1;
-}
-
-.setlistVisualizationSegment .playheadIndicator {
+.setlistVisualizationBar .songPartition .songBoundsContainer .textOverlayContainer {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: rgba(255, 255, 255, 0.9);
-    transform: translateX(-50%);
-    z-index: 3;
-}
-
-.setlistVisualizationSegment .hoverPositionIndicator {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: rgba(255, 255, 255, 0.6);
-    transform: translateX(-50%);
-    z-index: 2;
-    pointer-events: none;
-}
-
-.setlistVisualizationSegment .hoverTimeDisplay {
-    position: absolute;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-family: 'Courier New', monospace;
+    left: 0;
+    right: 0;
     white-space: nowrap;
-    z-index: 9994;
-    pointer-events: none;
-    text-shadow: none;
+
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+
+    color: #eee;
+    /* black outline */
+    text-shadow: 0 0px 1px #000, 0 0px 2px #000, 0 0px 3px #000, 0 0px 1px #000;
+    font-size: 12px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.setlistVisualizationSegment .coloredSegment--seekable {
+.setlistVisualizationBar .songPartition--interactable {
     cursor: pointer;
-
-    /* box-shadow: 0 0 4px var(--segment-color); */
-    /* outline: 2px solid blue; */
 }
 
-.setlistVisualizationSegment .coloredSegment--seekable:hover {
-    filter: brightness(1.1);
+/* selective opacity & hover effects */
+.setlistVisualizationBar .songPartition {
+    opacity: 0.3;
 }
 
-
-.setlistVisualizationSegment--current {
+.setlistVisualizationBar .songPartition:hover,
+.setlistVisualizationBar .songPartition--current {
     opacity: 1;
-    /* border-bottom: #9af solid 3px; */
 }
 
-/* === Setlist-specific visualization styles ================= */
-
-.setlistVisualizationSegment--divider {
+.setlistVisualizationBar .songPartition .playIcon {
     opacity: 0;
 }
 
-.setlistVisualizationSegment--dummy {
-    /* opacity: 0.8; */
+.setlistVisualizationBar .songPartition:hover .playIcon {
+    opacity: 1;
 }
 
-.setlistVisualizationSegment--song {
-    /* opacity: 1; */
+.setlistVisualizationBar .songPartition:hover .songBoundsContainer .songTrackBar,
+.setlistVisualizationBar .songPartition--current .songBoundsContainer .songTrackBar {
+    height: 5px;
 }
 
-.coloredSegment--noninteractive {
-    cursor: default !important;
-}
-
-.coloredSegment--noninteractive:hover {
-    transform: none !important;
-    filter: none !important;
-}
-
-/* Divider-specific styling */
-.setlistVisualizationSegment--divider .coloredSegment {
-    border-left: 2px solid rgba(255, 255, 255, 0.3);
-    border-right: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.setlistVisualizationSegment--divider .segmentText {
-    font-style: italic;
-    opacity: 0.8;
+/* dividers get pretty different styling */
+.setlistVisualizationBar .songPartition--divider,
+.setlistVisualizationBar .dummyDivider {
+    background-color: black;
+    width: 34px;
 }

@@ -2,6 +2,8 @@
     display: flex;
     padding: 10px;
     background-color: white;
+    padding-bottom: 100px;
+    /* to avoid content being hidden behind the footer */
 }
 
 .SetlistPlannerPageContent .nameHeader {
