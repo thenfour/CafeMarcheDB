@@ -9,6 +9,9 @@ import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 
+const TEN_MINUTES = 10 * 60;          // 600 s
+const MIN_ROW_PX = 120;              // visual floor (unchanged)
+
 type TrackType = "song" | "divider" | "dummy";
 
 const getItemType = (item: MediaPlayerTrack): TrackType => {
@@ -42,6 +45,12 @@ export const getTheoreticalDurationSeconds = (
 
     return fallback;
 };
+
+// export const rowWeightFromDuration = (secs: number): number => {
+//     const kRow = 0.001;        // smaller ⇒ rows cluster closer together
+//     const pivotRow = 30 * 60;     // a 30-min playlist lands near 0.5
+//     return 1 / (1 + Math.exp(-kRow * (secs - pivotRow)));
+// };
 
 export const weightFromDuration = (secs?: number): number => {
     if (secs == null) return 0;
@@ -312,7 +321,7 @@ export const SetlistVisualizationBar: React.FC<{
                     flexStyle = {
                         flex: `${weightFromDuration(duration) || 1} 1 0`,
                         // don't set minwidth because i need to support very small screens
-                        maxWidth: 450,
+                        maxWidth: 550,
                     }
                 }
 
@@ -399,18 +408,15 @@ export const SetlistVisualizationBars: React.FC<{
         needsFirstRowDummyDivider = allOtherRowsStartWithDivider && !firstRowStartsWithDivider;
     }
 
-    const totalSeconds = (row: MediaPlayerTrack[]) =>
-        row.reduce((sum, t) => sum + (getTheoreticalDurationSeconds(t) ?? 0), 0);
+    const getRowTotalDurationSeconds = (row: MediaPlayerTrack[]) =>
+        row.reduce((s, t) => s + (getTheoreticalDurationSeconds(t) ?? 0), 0);
 
+    const rowMediaItems = rowBounds.map(({ startIndex, length }) =>
+        playlist.slice(startIndex, startIndex + length));
 
-    const rows = rowBounds.map(({ startIndex, length }) =>
-        playlist.slice(startIndex, startIndex + length),
-    );
+    const rowDurations = rowMediaItems.map(getRowTotalDurationSeconds);
 
-
-    const rowDurations = rows.map(totalSeconds);
-    const longest = Math.max(...rowDurations);
-
+    const referenceSecs = Math.max(Math.max(...rowDurations), TEN_MINUTES); // the duration that 100% width will represent.
 
     return (
         <div
@@ -428,12 +434,12 @@ export const SetlistVisualizationBars: React.FC<{
                 </CMSmallButton>
             </div>
             <div className="setlistVisualizationBarContainer BarsContainer">
-                {rows.map((rowItems, i) => (
+                {rowMediaItems.map((rowItems, i) => (
                     <div
                         key={i}
                         style={{
-                            width: `${(rowDurations[i]! / longest) * 100}%`,
-                            minWidth: 120, // optional visual floor
+                            width: `${lerp(.25, 1, (rowDurations[i]! / referenceSecs)) * 100}%`,
+                            minWidth: MIN_ROW_PX,
                         }}
                     >
                         <SetlistVisualizationBar
