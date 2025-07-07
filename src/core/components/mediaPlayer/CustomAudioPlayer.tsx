@@ -1,9 +1,10 @@
+import { IsUsableNumber } from "@/shared/utils";
+import { PlayArrow } from "@mui/icons-material";
 import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerSlider } from "./MediaPlayerSlider";
-import { PlayArrow } from "@mui/icons-material";
 
 export interface CustomAudioPlayerAPI {
     // Playback control
@@ -13,7 +14,7 @@ export interface CustomAudioPlayerAPI {
     // Properties
     get currentTime(): number;
     set currentTime(value: number);
-    get duration(): number;
+    get duration(): number | undefined;
     get paused(): boolean;
     get ended(): boolean;
     get volume(): number;
@@ -23,7 +24,6 @@ export interface CustomAudioPlayerAPI {
     get autoplay(): boolean;
     set autoplay(value: boolean);
     get src(): string;
-    // set src(value: string);
 
     // Additional useful properties
     get readyState(): number;
@@ -32,7 +32,7 @@ export interface CustomAudioPlayerAPI {
 
     // Custom methods
     getAudioState: () => {
-        duration: number;
+        duration: number | undefined;
         currentTime: number;
         volume: number;
         muted: boolean;
@@ -48,22 +48,23 @@ export interface CustomAudioPlayerAPI {
 interface CustomAudioPlayerProps {
     src?: string;
     controls?: boolean;
-    onLoadedMetadata?: (e: React.SyntheticEvent<HTMLAudioElement>) => void;
+    onLoadedMetadata?: () => void;
     onTimeUpdate?: (e: React.SyntheticEvent<HTMLAudioElement>) => void;
     onPlaying?: () => void;
     onPause?: () => void;
     onEnded?: () => void;
+    onDurationChange?: (e: any, duration: number | undefined) => void;
     autoplay?: boolean;
     // Add other audio props as needed
 }
 
 // Forward ref to expose our custom API
 export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPlayerProps>(
-    ({ src, controls, onLoadedMetadata, onTimeUpdate, onPlaying, onPause, onEnded, autoplay, ...props }, ref) => {
+    ({ src, controls, onLoadedMetadata, onTimeUpdate, onPlaying, onPause, onEnded, autoplay, onDurationChange, ...props }, ref) => {
         const audioRef = useRef<HTMLAudioElement>(null);
         const [isPlaying, setIsPlaying] = React.useState(false);
         const [currentTime, setCurrentTime] = React.useState(0);
-        const [duration, setDuration] = React.useState(0);
+        const [reportedDuration, setReportedDuration] = React.useState<number | undefined>(undefined);
         const [isLoading, setIsLoading] = React.useState(false);
         const [volume, setVolume] = useLocalStorageState<number>({
             key: 'mediaPlayerVolume',
@@ -75,8 +76,6 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         });
         const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(75);
         const [isUserSeeking, setIsUserSeeking] = React.useState(false);
-
-        //console.log(`customaudioplayer src=${src}`);
 
         // Sync localStorage volume with audio element when it loads
         React.useEffect(() => {
@@ -119,7 +118,8 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 }
             },
             get duration() {
-                return audioRef.current?.duration ?? 0;
+                //return audioRef.current?.duration ?? 0;
+                return reportedDuration;
             },
             get paused() {
                 return audioRef.current?.paused ?? true;
@@ -157,14 +157,6 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             get src() {
                 return audioRef.current?.src ?? '';
             },
-            // set src(value: string) {
-            //     if (audioRef.current) {
-            //         console.log("Setting audio src to:", value);
-            //         audioRef.current.src = value;
-            //     } else {
-            //         console.warn("Audio element not ready to set src");
-            //     }
-            // },
 
             // Additional properties
             get readyState() {
@@ -183,8 +175,8 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 if (!audio) return null;
 
                 return {
-                    duration: isFinite(audio.duration) ? audio.duration : 0,
-                    currentTime: isFinite(audio.currentTime) ? audio.currentTime : 0,
+                    duration: audio.duration,
+                    currentTime: audio.currentTime,
                     volume: audio.volume,
                     muted: audio.muted,
                     paused: audio.paused,
@@ -218,65 +210,100 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             }
         };
 
-        const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-            if (audioRef.current && duration > 0 && isFinite(duration)) {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const percentage = Math.max(0, Math.min(1, clickX / rect.width)); // Clamp between 0 and 1
-                const newTime = percentage * duration;
-
-                // Ensure the new time is valid before setting it
-                if (isFinite(newTime) && newTime >= 0 && newTime <= duration) {
-                    audioRef.current.currentTime = newTime;
-                    setCurrentTime(newTime);
-                }
-            }
-        }; const handleProgressChange = (value: number) => {
-            if (audioRef.current && duration > 0 && isFinite(duration)) {
-                const newTime = value;
-
-                // Ensure the new time is valid before setting it
-                if (isFinite(newTime) && newTime >= 0 && newTime <= duration) {
-                    setIsUserSeeking(true);
-                    audioRef.current.currentTime = newTime;
-                    setCurrentTime(newTime);
-
-                    // Reset seeking state after a short delay to allow the audio to catch up
-                    setTimeout(() => {
-                        setIsUserSeeking(false);
-                    }, 100);
-                }
+        const duration = IsUsableNumber(audioRef.current?.duration) ? audioRef.current?.duration : undefined;
+        const setReportedDurationIfNeeded = (newDuration: number | undefined, reason: string) => {
+            if (reportedDuration == null && newDuration != null) {
+                setReportedDuration(duration);
             }
         };
 
-        const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
-            const audio = e.currentTarget;
-            const audioDuration = audio.duration;
-            // Ensure duration is a valid finite number
-            setDuration(isFinite(audioDuration) && audioDuration > 0 ? audioDuration : 0);
-            setIsLoading(false);
+        React.useEffect(() => {
+            setReportedDuration(undefined); // Reset duration when src changes
+        }, [src]);
 
-            // Apply persisted volume settings to the audio element
-            audio.volume = volume / 100;
-            audio.muted = isMuted;
+        setReportedDurationIfNeeded(duration, "render");
 
-            onLoadedMetadata?.(e);
+        React.useEffect(() => {
+            onDurationChange?.(null, reportedDuration);
+        }, [reportedDuration]);
+
+        const handleProgressChange = (value: number) => {
+            if (duration === undefined) return;
+            if (!audioRef.current) return;
+            const newTime = value;
+
+            // Ensure the new time is valid before setting it
+            setIsUserSeeking(true);
+            audioRef.current.currentTime = newTime;
+            setCurrentTime(newTime);
+
+            // Reset seeking state after a short delay to allow the audio to catch up
+            setTimeout(() => {
+                setIsUserSeeking(false);
+            }, 100);
         };
+
+        React.useEffect(() => {
+            const audio = audioRef.current;
+            if (!audio) return;
+
+            const handleLoadedMetadata = () => {
+                setIsLoading(false);
+                setReportedDurationIfNeeded(audio.duration, "handleLoadedMetadata");
+
+                // Apply persisted volume settings to the audio element
+                if (!audioRef.current) return;
+                audioRef.current.volume = volume / 100;
+                audioRef.current.muted = isMuted;
+
+                if (audio.duration === Infinity) {
+                    // Chrome requires a hack; firefox reports the duration based on the actual audio file data,
+                    // but chrome reports Infinity for VBR songs or if metadata is not correct. This is a hack
+                    // to force seek to the end, grab the time, and use that as the duration.
+
+                    // Save original handler
+                    const originalOnTimeUpdate = audio.ontimeupdate;
+
+                    // Temporarily override
+                    audio.ontimeupdate = () => {
+                        audio.ontimeupdate = originalOnTimeUpdate;
+                        audio.currentTime = 0;
+                        setReportedDurationIfNeeded(audio.duration, "Chrome hack"); // set the real duration
+                    };
+
+                    // Force seek to trigger actual duration detection
+                    audio.currentTime = 1e101;
+                } else {
+                    setReportedDurationIfNeeded(audio.duration, "Chrome hack"); // set the real duration
+                }
+            };
+
+            audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+            onLoadedMetadata?.();
+
+            return () => {
+                audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            };
+
+        }, [src, audioRef.current]);
+
+
 
         const handleTimeUpdate = (e: React.SyntheticEvent<HTMLAudioElement>) => {
-            const audio = e.currentTarget;
+            if (!audioRef.current) return;
+            const audio = audioRef.current;
             const audioCurrentTime = audio.currentTime;
-            const audioDuration = audio.duration;
+            setReportedDurationIfNeeded(e.currentTarget.duration, "handleTimeUpdate");
+            if (isUserSeeking) return;
+            if (!IsUsableNumber(audioCurrentTime)) {
+                return; // Skip if currentTime is not usable
+            }
 
             // Only update currentTime if user is not actively seeking
             if (!isUserSeeking) {
                 // Ensure currentTime is a valid finite number
                 setCurrentTime(isFinite(audioCurrentTime) && audioCurrentTime >= 0 ? audioCurrentTime : 0);
-            }
-
-            // Update duration if it wasn't available before or has changed
-            if (isFinite(audioDuration) && audioDuration > 0 && audioDuration !== duration) {
-                setDuration(audioDuration);
             }
 
             onTimeUpdate?.(e);
@@ -286,21 +313,15 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         const handleCanPlay = () => {
             if (audioRef.current) {
                 const audio = audioRef.current;
-                const audioDuration = audio.duration;
-                if (isFinite(audioDuration) && audioDuration > 0) {
-                    setDuration(audioDuration);
-                }
+                setReportedDurationIfNeeded(audio.duration, "handleCanPlay");
             }
         };
 
-        // Add handler for duration change (some formats report duration progressively)
         const handleDurationChange = () => {
             if (audioRef.current) {
                 const audio = audioRef.current;
                 const audioDuration = audio.duration;
-                if (isFinite(audioDuration) && audioDuration > 0) {
-                    setDuration(audioDuration);
-                }
+                setReportedDurationIfNeeded(audio.duration, "handleDurationChange");
             }
         };
 
@@ -363,15 +384,13 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             }
         };
 
-        //console.log(`audio player; duration:${duration}, readystaty:${audioRef.current?.readyState}, islaoding:${isLoading}, src:${src}, isPlaying:${isPlaying}, currentTime:${currentTime}, volume:${volume}, muted:${isMuted}`);
-
         return (
             <div className="customAudioPlayer">
                 {/* Hidden audio element that does the actual work */}
                 <audio
                     ref={audioRef}
                     src={src}
-                    onLoadedMetadata={handleLoadedMetadata}
+                    //onLoadedMetadata={handleLoadedMetadata}
                     onTimeUpdate={handleTimeUpdate}
                     onPlaying={handlePlaying}
                     onPause={handleAudioPause}
@@ -381,7 +400,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                     onDurationChange={handleDurationChange}
                     autoPlay={autoplay}
                     preload="metadata"
-                    {...props}
+                // {...props}
                 />
 
                 {/* Custom controls */}
@@ -400,27 +419,19 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                                 <PlayArrow />
                             )}
                         </CMSmallButton>
-                        {/* 
-                        <div className="audioTimeDisplay">
-                            {formatTime(currentTime)}
-                        </div> */}
 
                         <div className="audioProgressContainer">
                             <MediaPlayerSlider
                                 value={currentTime}
                                 min={0}
-                                max={duration > 0 && isFinite(duration) ? duration : 100}
+                                max={duration || 100}
                                 step={0.1}
                                 onChange={handleProgressChange}
-                                disabled={!src || isLoading || duration <= 0}
+                                disabled={!src || isLoading || duration === undefined}
                                 className="progressSlider"
                                 aria-label="Audio progress"
                             />
                         </div>
-                        {/* 
-                        <div className="audioTimeDisplay">
-                            {formatTime(duration)}
-                        </div> */}
 
                         {/* Volume control */}
                         <div className="volumeControl">

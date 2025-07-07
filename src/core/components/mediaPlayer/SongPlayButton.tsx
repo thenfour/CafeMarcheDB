@@ -28,63 +28,13 @@ type SongPlayButtonProps = {
 
 export function SongPlayButton({ rowIndex, allPinnedRecordings, track, getPlaylist }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
-    // const rowItem = setlistRowItems[rowIndex];
-    // if (!rowItem || rowItem.type !== 'song') {
-    //     return null;
-    // }
 
     if (!track.file) {
         return <div className='audioPreviewGatewayContainer' style={{ visibility: "hidden" }}></div>;
     }
 
-    // const songId = rowItem.song?.id;
-    // if (!songId) {
-    //     return null;
-    // }
-
-    // const pinnedRecording = allPinnedRecordings?.[songId];
-    // if (!pinnedRecording) {
-    //     return null;
-    // }
-
-    // const file = pinnedRecording;
-    // const isCurrent = mediaPlayer.isPlayingSetlistItem({
-    //     fileId: file.id,
-    //     setlistId: rowItem.eventSongListId,
-    //     setlistPlanId: rowItem.setlistPlanId,
-    //     setlistItemIndex: rowIndex
-    // });
-
     const isCurrent = mediaPlayer.isPlayingTrack(track);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
-
-    // // Create a playlist from all songs in the setlist that have pinned recordings
-    // const createPlaylist = (): MediaPlayerTrack[] => {
-
-    //     const playlist: MediaPlayerTrack[] = setlistRowItems
-    //         .map((row, rowIndex) => {
-    //             if (row.type === 'song') {
-    //                 // Handle both setlist and planner row structures
-    //                 const songId = row.song?.id || (row).songId;
-    //                 const recording = songId ? allPinnedRecordings?.[songId] : undefined;
-
-    //                 return {
-    //                     playlistIndex: -1, // filled in later
-    //                     setlistId,
-    //                     file: recording,
-    //                     songContext: row.song || { id: songId, name: "Unknown" },
-    //                     setListItemContext: row,
-    //                 } satisfies MediaPlayerTrack;
-    //             }
-    //             return {
-    //                 playlistIndex: -1, // filled in later
-    //                 setlistId,
-    //                 setListItemContext: row,
-    //             } satisfies MediaPlayerTrack;
-    //         });
-
-    //     return playlist;
-    // };
 
     // Play this file via the global player
     const handlePlay = () => {

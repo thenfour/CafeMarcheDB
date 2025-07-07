@@ -113,10 +113,10 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
     const isInteractable = item.file || item.url;
 
     // todo is this redundant with mediaPlayer.lengthSeconds?
-    let audioDurationSeconds: number | undefined;
-    if (isCurrentTrack) {
-        audioDurationSeconds = audioAPI?.duration;
-    }
+    // let audioDurationSeconds: number | undefined;
+    // if (isCurrentTrack) {
+    //     audioDurationSeconds = mediaPlayer.lengthSeconds;
+    // }
 
     // Calculate playhead position as a percentage within the current track
     const { playheadSeconds, lengthSeconds } = mediaPlayer;
@@ -124,20 +124,11 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
         if (!isCurrentTrack || !playheadSeconds) {
             return undefined;
         }
-
-        // Try to get duration from the MediaPlayerContext
-        let trackDuration = lengthSeconds;
-
-        // If lengthSeconds is invalid, try to get it from the audio API
-        if (!isFinite(trackDuration) || trackDuration <= 0) {
-            if (audioAPI && isFinite(audioAPI.duration) && audioAPI.duration > 0) {
-                trackDuration = audioAPI.duration;
-            } else {
-                return 0; // Can't calculate without valid duration
-            }
+        if (!lengthSeconds) {
+            return undefined;
         }
 
-        const position = Math.max(0, Math.min(100, (playheadSeconds / trackDuration) * 100));
+        const position = Math.max(0, Math.min(100, (playheadSeconds / lengthSeconds) * 100));
         return position;
     };
 
@@ -182,11 +173,11 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
         const percentage = Math.max(0, Math.min(1, hoverX / rect.width));
         setHoverPosition(percentage * 100);
 
-        if (!IsUsableNumber(audioDurationSeconds)) {
+        if (!IsUsableNumber(lengthSeconds)) {
             return;
         }
 
-        const timeAtPosition = percentage * audioDurationSeconds;
+        const timeAtPosition = percentage * lengthSeconds;
         setHoverTime(timeAtPosition);
     };
 
@@ -196,11 +187,11 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
     };
 
     function seekToPosition(percentage: number) {
-        if (!audioDurationSeconds) {
+        if (!lengthSeconds) {
             return;
         }
 
-        const seekTime = percentage * audioDurationSeconds;
+        const seekTime = percentage * lengthSeconds;
 
         // Perform the actual seek using the audio API
         if (audioAPI) {

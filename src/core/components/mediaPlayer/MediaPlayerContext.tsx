@@ -16,7 +16,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [currentIndex, setCurrentIndex] = useState<number | undefined>(undefined);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [audioTime, setAudioTime] = useState<number>(0);
-    const [audioDuration, setAudioDuration] = useState<number>(0);
+    const [audioDuration, setAudioDuration] = useState<number | undefined>(undefined);
     const [pullPlaylistFn, setPullPlaylistFn] = useState<(() => MediaPlayerTrack[]) | undefined>(undefined);
 
     const pause = useCallback(() => setIsPlaying(false), []);

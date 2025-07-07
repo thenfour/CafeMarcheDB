@@ -107,7 +107,7 @@ export const DateToYYYYMMDDHHMMSS = (x: Date) => {
 export function formatSongLength(totalSeconds: number): string | null {
     if (isNaN(totalSeconds) || totalSeconds < 0) return null;
     const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
+    const seconds = Math.floor(totalSeconds % 60);
     const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds.toString();
     return `${minutes}:${formattedSeconds}`;
 }

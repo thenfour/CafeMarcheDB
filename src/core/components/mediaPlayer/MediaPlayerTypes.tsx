@@ -67,7 +67,7 @@ export interface MediaPlayerContextType {
     currentIndex?: number | undefined;
     isPlaying: boolean;
     playheadSeconds: number; // playhead
-    lengthSeconds: number;
+    lengthSeconds: number | undefined;
     getTrackTitle: (track: MediaPlayerTrack) => MediaPlayerTrackTitle;
     getTrackUri: (track: MediaPlayerTrack) => string | undefined;
     previousEnabled: () => boolean;
@@ -92,7 +92,7 @@ export interface MediaPlayerContextType {
     // Audio element stuff (the master audio element controls or uses these)
     setIsPlaying: (playing: boolean) => void;
     setPlayheadSeconds: (t: number) => void;
-    setLengthSeconds: (d: number) => void;
+    setLengthSeconds: (d: number | undefined) => void;
 
     setPullPlaylistFn: (fn: () => MediaPlayerTrack[]) => void;
     pullPlaylist: () => boolean;

@@ -32,7 +32,6 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
 
     const current = mediaPlayer.currentTrack;
     const currentUri = current ? mediaPlayer.getTrackUri(current) : undefined;
-    //console.log(`mediaPlayerBar; currentTrack uri`, current);
 
     // Show/hide animation effect
     React.useEffect(() => {
@@ -48,14 +47,12 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
             // the audio player won't start playing until the media is ready sometimes,
             // so set autoplay any time we expect playing.
             audio.autoplay = true;
-            //console.log("mediaPlayer.isPlaying = true; setting AUTOPLAY");
             audio.play().catch(() => {
                 console.error("Failed to play audio:", audio.src);
             });
         } else {
             audio.autoplay = false; // see above
             if (!audio.paused) {
-                //console.log("mediaPlayer.paused = false; setting PAUSED");
                 audio.pause();
             }
         }
@@ -72,8 +69,6 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
     const title = current && mediaPlayer.getTrackTitle(current);
 
     const hasPlaylist = mediaPlayer.playlist.length > 1;
-    //const trackNumberString = title.// hasPlaylist && mediaPlayer.currentIndex != null
-    //  ? `${mediaPlayer.currentIndex + 1}.` : "";
 
     // Always render the bar for animation, but toggle visibility class
     return (
@@ -95,24 +90,14 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                             src={currentUri}
                             controls
                             ref={audioRef}
-                            onLoadedMetadata={e => {
-                                const duration = e.currentTarget.duration;
-                                if (isFinite(duration) && duration > 0) {
-                                    mediaPlayer.setLengthSeconds(duration);
-                                } else {
-                                    //console.log('Invalid duration on loadedMetadata:', duration);
-                                }
+                            onDurationChange={(e, duration) => {
+                                const audio = audioRef.current;
+                                if (!audio) return;
+                                mediaPlayer.setLengthSeconds(duration);
                             }}
                             onTimeUpdate={e => {
                                 const currentTime = e.currentTarget.currentTime;
-                                const duration = e.currentTarget.duration;
-
                                 mediaPlayer.setPlayheadSeconds(currentTime);
-
-                                // Update duration if it wasn't available before or if it's now valid
-                                if (isFinite(duration) && duration > 0 && duration !== mediaPlayer.lengthSeconds) {
-                                    mediaPlayer.setLengthSeconds(duration);
-                                }
                             }}
                             onPlaying={() => {
                                 mediaPlayer.setIsPlaying(true);
@@ -147,7 +132,7 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                             </span>
                             <span className="mediaPlayerTimeSeparator">/</span>
                             <span className="mediaPlayerTotalTime">
-                                {formatSongLength(Math.floor(mediaPlayer.lengthSeconds)) || "0:00"}
+                                {mediaPlayer.lengthSeconds === undefined ? "-:--" : formatSongLength(Math.floor(mediaPlayer.lengthSeconds)) || "0:00"}
                             </span>
                         </div>
 
