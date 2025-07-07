@@ -6,11 +6,11 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
-import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
+import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
-import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 
 
 export const xSongAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
@@ -113,12 +113,6 @@ export const xSongTag = new db3.xTable({
             defaultValue: null,
             options: SongTagSignificance,
             authMap: xSongAuthMap_R_EOwn_EManagers,
-        }),
-        new BoolField({
-            columnName: "showOnSongLists",
-            defaultValue: false,
-            authMap: xSongAuthMap_R_EOwn_EManagers,
-            allowNull: false,
         }),
         new GhostField({ memberName: "songs", authMap: xSongAuthMap_R_EOwn_EManagers, }),
     ]

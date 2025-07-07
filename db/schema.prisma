@@ -377,7 +377,6 @@ model SongTag {
   description       String               @db.MediumText
   color             String?
   significance      String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  showOnSongLists   Boolean              @default(false)
   sortOrder         Int                  @default(0)
   group             String?              @db.VarChar(768) // used to group tags together in the UI, e.g. "genre", "style", "mood", etc. ungrouped tags will be grouped by sort order
   indicator         String? // a little overlay char or so, batons/pompoms...
@@ -386,7 +385,6 @@ model SongTag {
 
   @@index([text])
   @@index([significance])
-  @@index([showOnSongLists])
   @@index([sortOrder])
 }
 

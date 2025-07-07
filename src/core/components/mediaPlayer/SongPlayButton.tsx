@@ -6,7 +6,6 @@
 
 import { gIconMap } from '../../db3/components/IconMap';
 import { TSongPinnedRecording } from '../../db3/shared/apiTypes';
-import * as SetlistAPI from '../../db3/shared/setlistApi';
 import { useMediaPlayer } from '../mediaPlayer/MediaPlayerContext';
 import { MediaPlayerTrack } from '../mediaPlayer/MediaPlayerTypes';
 

@@ -5,7 +5,7 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { MediaPlayerContextType } from "./MediaPlayerTypes";
-import { SetlistVisualizationBar, SetlistVisualizationBars } from "./SetlistVisualizationBar";
+import { SetlistVisualizationBars } from "./SetlistVisualizationBar";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;
