@@ -391,7 +391,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                         onSelect(dbPlan);
                     }}
                 >
-                    {gIconMap.Edit()}
+                    {gIconMap.Edit()} Edit
                 </CMSmallButton>
                 <CMSmallButton
                     onClick={async () => {
@@ -404,14 +404,14 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                         });
                     }}
                 >
-                    {gIconMap.Delete()}
+                    {gIconMap.Delete()} delete
                 </CMSmallButton>
                 <CMSmallButton
                     onClick={() => {
                         setShowingGroupSelectDialog(true);
                     }}
                 >
-                    <ListAlt />
+                    <ListAlt /> change group
                 </CMSmallButton>
                 {showingGroupSelectDialog && <CMSingleSelectDialog
                     description="Select a group to move this plan into"
