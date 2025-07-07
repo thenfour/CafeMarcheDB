@@ -9,7 +9,7 @@ import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
-import React from "react";
+import React, { useCallback, useRef, useEffect } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from 'shared/arrayUtils';
 import { gSwatchColors } from 'shared/color';
@@ -679,12 +679,20 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         return t;
     };
 
-    const getPlaylist = () => rowItems.map((item, index) => RowItemToMediaPlayerTrack({
-        allPinnedRecordings: pinnedRecordings || {},
-        rowItem: item,
-        rowIndex: index,
-        songListId: props.value.id,
-    }));
+    // Store current dependencies in a ref so the playlist function always returns current data
+    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: props.value.id });
+    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: props.value.id };
+
+    // Use a stable function reference that always reads current data
+    const getPlaylist = useCallback(() => {
+        //console.log(`getting playlist for song list ${playlistDataRef.current.songListId}`, props.value.songs);
+        return playlistDataRef.current.rowItems.map((item, index) => RowItemToMediaPlayerTrack({
+            allPinnedRecordings: playlistDataRef.current.pinnedRecordings || {},
+            rowItem: item,
+            rowIndex: index,
+            songListId: playlistDataRef.current.songListId,
+        }));
+    }, []); // Empty dependency array - this function never changes
 
     return <div className="songListSongTable" style={{ pointerEvents: disableInteraction ? "none" : undefined }}>
         {showHeader && <div className="thead">
@@ -1353,12 +1361,20 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const nameColumn = tableSpec.getColumn("name");
     const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention, autoFocus: true });
 
-    const getPlaylist = () => rowItems.map((item, index) => RowItemToMediaPlayerTrack({
-        allPinnedRecordings: pinnedRecordings || {},
-        rowItem: item,
-        rowIndex: index,
-        songListId: value.id,
-    }));
+    // Store current dependencies in a ref so the playlist function always returns current data
+    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: value.id });
+    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: value.id };
+
+    // Use a stable function reference that always reads current data
+    const getPlaylist = useCallback(() => {
+        //console.log(`getting playlist for song list ${playlistDataRef.current.songListId}`, value);
+        return playlistDataRef.current.rowItems.map((item, index) => RowItemToMediaPlayerTrack({
+            allPinnedRecordings: playlistDataRef.current.pinnedRecordings || {},
+            rowItem: item,
+            rowIndex: index,
+            songListId: playlistDataRef.current.songListId,
+        }))
+    }, []); // Empty dependency array - this function never changes
 
     return <div className="EventSongListValue">
 

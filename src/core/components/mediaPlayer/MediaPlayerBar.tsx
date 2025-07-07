@@ -78,11 +78,11 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
             )}
             <div className="responsiveRow">
                 <div className="mediaPlayerBarTransport">
+                    {mediaPlayer.canPullPlaylist && (
+                        <CMSmallButton onClick={() => mediaPlayer.pullPlaylist()}><Sync /></CMSmallButton>
+                    )}
                     {mediaPlayer.playlist.length > 1 && (<>
                         <CMSmallButton enabled={mediaPlayer.previousEnabled()} onClick={() => mediaPlayer.prev()}><SkipPrevious /></CMSmallButton>
-                        {mediaPlayer.canPullPlaylist && (
-                            <CMSmallButton onClick={() => mediaPlayer.pullPlaylist()}><Sync /></CMSmallButton>
-                        )}
                         <CMSmallButton enabled={mediaPlayer.nextEnabled()} onClick={() => mediaPlayer.next()}><SkipNext /></CMSmallButton>
                     </>)}
                     {current && (

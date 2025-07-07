@@ -518,10 +518,21 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         } satisfies MediaPlayerTrack;
     };
 
-    const getPlaylist: (() => MediaPlayerTrack[]) = () => {
-        return docOrTempDoc.payload.rows
-            .map((row, rowIndex) => rowToPlaylistTrack(row, rowIndex));
+    // Store current dependencies in a ref so the playlist function always returns current data
+    const playlistDataRef = React.useRef({
+        docOrTempDoc,
+        rowToPlaylistTrack
+    });
+    playlistDataRef.current = {
+        docOrTempDoc,
+        rowToPlaylistTrack
     };
+
+    // Use a stable function reference that always reads current data
+    const getPlaylist: (() => MediaPlayerTrack[]) = React.useCallback(() => {
+        return playlistDataRef.current.docOrTempDoc.payload.rows
+            .map((row, rowIndex) => playlistDataRef.current.rowToPlaylistTrack(row, rowIndex));
+    }, []); // Empty dependency array - this function never changes
 
     // Collect all unique tag IDs from all songs in the plan
     const allTagIds = React.useMemo(() => {
