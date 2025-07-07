@@ -88,7 +88,6 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                     {current && (
                         <CustomAudioPlayer
                             src={currentUri}
-                            controls
                             ref={audioRef}
                             onDurationChange={(e, duration) => {
                                 const audio = audioRef.current;

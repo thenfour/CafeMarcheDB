@@ -53,7 +53,6 @@ export interface CustomAudioPlayerAPI {
 
 interface CustomAudioPlayerProps {
     src?: string;
-    controls?: boolean;
     onLoadedMetadata?: () => void;
     onTimeUpdate?: (e: React.SyntheticEvent<HTMLAudioElement>) => void;
     onPlaying?: () => void;
@@ -66,7 +65,7 @@ interface CustomAudioPlayerProps {
 
 // Forward ref to expose our custom API
 export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPlayerProps>(
-    ({ src, controls, onLoadedMetadata, onTimeUpdate, onPlaying, onPause, onEnded, autoplay, onDurationChange, ...props }, ref) => {
+    ({ src, onLoadedMetadata, onTimeUpdate, onPlaying, onPause, onEnded, autoplay, onDurationChange, ...props }, ref) => {
         const audioRef = useRef<HTMLAudioElement>(null);
         const [isPlaying, setIsPlaying] = React.useState(false);
         const [currentTime, setCurrentTime] = React.useState(0);
@@ -455,57 +454,55 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 />
 
                 {/* Custom controls */}
-                {controls && (
-                    <div className="customAudioControls">
-                        <CMSmallButton
-                            onClick={isPlaying ? handlePauseClick : handlePlay}
-                            enabled={!isLoading && !!src}
-                            className="playPauseButton"
-                        >
-                            {isLoading ? (
-                                <span className="audioLoadingSpinner">⏳</span>
-                            ) : isPlaying ? (
-                                gIconMap.Pause()
-                            ) : (
-                                <PlayArrow />
-                            )}
-                        </CMSmallButton>
+                <div className="customAudioControls">
+                    <CMSmallButton
+                        onClick={isPlaying ? handlePauseClick : handlePlay}
+                        enabled={!isLoading && !!src}
+                        className="playPauseButton"
+                    >
+                        {isLoading ? (
+                            <span className="audioLoadingSpinner">⏳</span>
+                        ) : isPlaying ? (
+                            gIconMap.Pause()
+                        ) : (
+                            <PlayArrow />
+                        )}
+                    </CMSmallButton>
 
-                        <div className="audioProgressContainer">
-                            <MediaPlayerSlider
-                                value={currentTime}
-                                min={0}
-                                max={duration || 100}
-                                step={0.1}
-                                onChange={handleProgressChange}
-                                disabled={!src || isLoading || duration === undefined}
-                                className="progressSlider"
-                                aria-label="Audio progress"
-                            />
-                        </div>
-
-                        {/* Volume control */}
-                        <div className="volumeControl">
-                            <CMSmallButton
-                                onClick={handleMuteToggle}
-                                enabled={!isLoading && !!src}
-                                className="muteButton"
-                            >
-                                {getVolumeIcon()}
-                            </CMSmallButton>
-                            <MediaPlayerSlider
-                                value={volume}
-                                min={0}
-                                max={100}
-                                step={1}
-                                onChange={handleVolumeChange}
-                                disabled={!src || isLoading}
-                                className="volumeSlider"
-                                aria-label="Volume"
-                            />
-                        </div>
+                    <div className="audioProgressContainer">
+                        <MediaPlayerSlider
+                            value={currentTime}
+                            min={0}
+                            max={duration || 100}
+                            step={0.1}
+                            onChange={handleProgressChange}
+                            disabled={!src || isLoading || duration === undefined}
+                            className="progressSlider"
+                            aria-label="Audio progress"
+                        />
                     </div>
-                )}
+
+                    {/* Volume control */}
+                    <div className="volumeControl">
+                        <CMSmallButton
+                            onClick={handleMuteToggle}
+                            enabled={!isLoading && !!src}
+                            className="muteButton"
+                        >
+                            {getVolumeIcon()}
+                        </CMSmallButton>
+                        <MediaPlayerSlider
+                            value={volume}
+                            min={0}
+                            max={100}
+                            step={1}
+                            onChange={handleVolumeChange}
+                            disabled={!src || isLoading}
+                            className="volumeSlider"
+                            aria-label="Volume"
+                        />
+                    </div>
+                </div>
             </div>
         );
     }
