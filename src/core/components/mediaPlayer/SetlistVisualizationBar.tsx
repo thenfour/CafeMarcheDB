@@ -25,14 +25,38 @@ const getItemType = (item: MediaPlayerTrack): TrackType => {
     return "dummy";
 };
 
-// New functions for setlist-aware rendering
-const getSetlistItemProportionalWidth = (item: MediaPlayerTrack): number | undefined => {
+
+const getTheoreticalDurationSeconds = (item: MediaPlayerTrack): number => {
+    const fallbackDuration = 200;
+    if (item.setListItemContext?.type === "divider") {
+        if (item.setListItemContext.isSong) {
+            // If it's a song divider, we can use the song's duration
+            return item.setListItemContext.lengthSeconds || fallbackDuration;
+        }
+        // For regular dividers, we don't have a duration
+        return fallbackDuration;
+    }
+    return item.songContext?.lengthSeconds || fallbackDuration;
+}
+
+const MIN_WIDTH_PX = 80;   // never smaller than this
+const MAX_WIDTH_PX = 450;   // never larger than this
+const PIVOT_SECONDS = 3.5 * 60;   // a 3-min track sits halfway between min & max
+const CURVE_STEEPNESS = 0.012; // lower = flatter, higher = steeper
+
+const getItemWidthPixels = (item: MediaPlayerTrack): number | undefined => {
     const trackType = getItemType(item);
-    return {
-        song: 2,
-        divider: undefined,
-        dummy: 1
-    }[trackType];
+    if (trackType === "divider") {
+        return undefined; // handled by CSS
+    }
+
+    // songs have a minimum width, and grow in a non-linear way based on their theoretical duration.
+    // the idea is that songs have width based on their duration, but cannot easily grow to be huge. For normal song lengths, the widths are reasonable.
+    const seconds = getTheoreticalDurationSeconds(item);
+    const span = MAX_WIDTH_PX - MIN_WIDTH_PX;
+    const growth = 1 + Math.exp(-CURVE_STEEPNESS * (seconds - PIVOT_SECONDS));
+    const width = MIN_WIDTH_PX + span / growth;
+    return width;
 };
 
 
@@ -102,7 +126,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
     const [hoverPosition, setHoverPosition] = React.useState<number | null>(null);
     const [hoverTime, setHoverTime] = React.useState<number | null>(null);
 
-    const proportionalWidth = getSetlistItemProportionalWidth(item);
+    const width = getItemWidthPixels(item);
 
     const trackType = getItemType(item);
     const styleData = getItemStyleData(item, false, mediaPlayer);
@@ -201,7 +225,8 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer }: VisBarSe
         // this container div is needed in order to be marginless
         className={`songPartition ${styleData.containerClassName} ${isCurrentTrack ? 'songPartition--current' : ''} ${isCurrentTrack ? 'songPartition--seekable' : ''} ${isInteractable ? 'songPartition--interactable' : 'songPartition--noninteractable'}`}
         style={{
-            flex: proportionalWidth,
+            //flex: proportionalWidth,
+            width: width === undefined ? undefined : `${width}px`,
             ...styleData.containerStyle,
         } as any}
         onClick={handleClickContainer}
@@ -312,15 +337,23 @@ export const SetlistVisualizationBar: React.FC<{
     );
 };
 
+type ExpandStyle = "expanded" | "normal" | "collapsed";
+
 export const SetlistVisualizationBars: React.FC<{
     mediaPlayer: MediaPlayerContextType;
     audioAPI: CustomAudioPlayerAPI | null;
 }> = ({ mediaPlayer, audioAPI }) => {
     const { playlist } = mediaPlayer;
     //const [expanded, setExpanded] = React.useState(false);
-    const [expanded, setExpanded] = useLocalStorageState({
+    const [expanded, setExpanded] = useLocalStorageState<ExpandStyle>({
         key: "setlistVisualizationBarExpanded",
-        initialValue: false,
+        initialValue: "normal",
+        deserialize: (value: any) => {
+            if (value === "expanded" || value === "normal" || value === "collapsed") {
+                return value;
+            }
+            return "normal"; // default to normal if invalid
+        }
     });
 
     // calculate rows. a new row begins when a divider is encountered that's marked as a break,
@@ -374,28 +407,37 @@ export const SetlistVisualizationBars: React.FC<{
     }
 
     // if there are 3 or fewer rows, always expand.
-    const alwaysExpanded = rowBounds.length <= 3;
+    //const alwaysExpanded = rowBounds.length <= 3;
 
     return (
         <div
-            className={`setlistVisualizationBarContainer ${alwaysExpanded || expanded ? "expanded" : "collapsed"}`}
+            className={`setlistVisualizationBarContainer ${expanded}`}
         >
-            {!alwaysExpanded && (
-                <CMSmallButton onClick={() => setExpanded(!expanded)} className="setlistVisualizationBarToggle">
-                    {expanded ? `Collapse ${gCharMap.DownArrow()}` : `Expand ${gCharMap.UpArrow()}`}
-                </CMSmallButton>)}
-            {
-                rowBounds.map((rowBound, rowIndex) => (
-                    <SetlistVisualizationBar
-                        key={rowIndex}
-                        beginWithDummyDivider={needsFirstRowDummyDivider && rowIndex === 0}
-                        mediaPlayer={mediaPlayer}
-                        audioAPI={audioAPI}
-                        startIndex={rowBound.startIndex}
-                        length={rowBound.length}
-                    />
-                ))
-            }
+            <div className="setlistVisualizationBarControls">
+                <CMSmallButton tooltip={"Expand the playlist visualization to show the full playlist"} onClick={() => setExpanded("expanded")} className={`expand ${expanded === "expanded" ? "selected" : ""}`}>
+                    Expand {gCharMap.UpArrow()}
+                </CMSmallButton>
+                <CMSmallButton tooltip={"Show just a portion of the playlist, to not take too much space."} onClick={() => setExpanded("normal")} className={`normal ${expanded === "normal" ? "selected" : ""}`}>
+                    Normal
+                </CMSmallButton>
+                <CMSmallButton tooltip={"Hide the playlist visualization"} onClick={() => setExpanded("collapsed")} className={`collapse ${expanded === "collapsed" ? "selected" : ""}`}>
+                    Collapse {gCharMap.DownArrow()}
+                </CMSmallButton>
+            </div>
+            <div className="setlistVisualizationBarContainer BarsContainer">
+                {
+                    rowBounds.map((rowBound, rowIndex) => (
+                        <SetlistVisualizationBar
+                            key={rowIndex}
+                            beginWithDummyDivider={needsFirstRowDummyDivider && rowIndex === 0}
+                            mediaPlayer={mediaPlayer}
+                            audioAPI={audioAPI}
+                            startIndex={rowBound.startIndex}
+                            length={rowBound.length}
+                        />
+                    ))
+                }
+            </div>
         </div>
     );
 };

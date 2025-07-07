@@ -321,7 +321,6 @@
 
 /* === Setlist Visualization Bar ===================================== */
 .setlistVisualizationBarContainer {
-    max-height: 125px;
     overflow-y: auto;
     margin-bottom: 8px;
     --z-index-trackBar: 100;
@@ -331,12 +330,32 @@
     --z-index-hoverTimeDisplay: 300;
 }
 
-.setlistVisualizationBarContainer .CMSmallButton.enabled.setlistVisualizationBarToggle {
-    opacity: 50%;
+.setlistVisualizationBarContainer .CMSmallButton.enabled {
+    /* opacity: 50%; */
+    color: #888;
 }
 
-.setlistVisualizationBarContainer.expanded {
+.setlistVisualizationBarContainer .CMSmallButton.enabled.selected {
+    background-color: #444;
+}
+
+.setlistVisualizationBarControls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.setlistVisualizationBarContainer .BarsContainer {
+    max-height: 125px;
+}
+
+.setlistVisualizationBarContainer.expanded .BarsContainer {
     max-height: unset;
+}
+
+.setlistVisualizationBarContainer.collapsed .BarsContainer {
+    max-height: 0;
 }
 
 .setlistVisualizationBar {
@@ -454,7 +473,7 @@
 
 /* selective opacity & hover effects */
 .setlistVisualizationBar .songPartition {
-    opacity: 0.4;
+    opacity: 0.5;
 }
 
 .setlistVisualizationBar .songPartition:hover,

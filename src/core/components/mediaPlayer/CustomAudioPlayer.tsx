@@ -6,6 +6,12 @@ import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerSlider } from "./MediaPlayerSlider";
 
+// Constants
+const DEFAULT_VOLUME = 75;
+const VOLUME_THRESHOLD_LOW = 50;
+const SEEK_TIMEOUT_MS = 500;
+const CHROME_DURATION_HACK_SEEK_VALUE = 1e101;
+
 export interface CustomAudioPlayerAPI {
     // Playback control
     play: () => Promise<void>;
@@ -53,7 +59,7 @@ interface CustomAudioPlayerProps {
     onPlaying?: () => void;
     onPause?: () => void;
     onEnded?: () => void;
-    onDurationChange?: (e: any, duration: number | undefined) => void;
+    onDurationChange?: (e: Event | null, duration: number | undefined) => void;
     autoplay?: boolean;
     // Add other audio props as needed
 }
@@ -68,13 +74,13 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         const [isLoading, setIsLoading] = React.useState(false);
         const [volume, setVolume] = useLocalStorageState<number>({
             key: 'mediaPlayerVolume',
-            initialValue: 75 // Default to 75% volume
+            initialValue: DEFAULT_VOLUME
         });
         const [isMuted, setIsMuted] = useLocalStorageState<boolean>({
             key: 'mediaPlayerMuted',
             initialValue: false
         });
-        const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(75);
+        const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(DEFAULT_VOLUME);
         const [isUserSeeking, setIsUserSeeking] = React.useState(false);
 
         // Sync localStorage volume with audio element when it loads
@@ -94,12 +100,12 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
 
         // Expose our custom API via ref
         useImperativeHandle(ref, () => ({
-            // Playback control
+            // Playbook control
             play: async () => {
                 if (audioRef.current) {
                     return audioRef.current.play();
                 }
-                return Promise.reject('Audio element not ready');
+                return Promise.reject(new Error('Audio element not ready'));
             },
             pause: () => {
                 if (audioRef.current) {
@@ -118,7 +124,6 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 }
             },
             get duration() {
-                //return audioRef.current?.duration ?? 0;
                 return reportedDuration;
             },
             get paused() {
@@ -175,7 +180,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 if (!audio) return null;
 
                 return {
-                    duration: audio.duration,
+                    duration: reportedDuration,
                     currentTime: audio.currentTime,
                     volume: audio.volume,
                     muted: audio.muted,
@@ -192,7 +197,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                     setCurrentTime(time);
                 }
             },
-        }), []);
+        }), [reportedDuration, volume, isMuted]);
 
         const handlePlay = async () => {
             if (audioRef.current) {
@@ -213,7 +218,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         const duration = IsUsableNumber(audioRef.current?.duration) ? audioRef.current?.duration : undefined;
         const setReportedDurationIfNeeded = (newDuration: number | undefined, reason: string) => {
             if (reportedDuration == null && newDuration != null) {
-                setReportedDuration(duration);
+                setReportedDuration(newDuration);
             }
         };
 
@@ -221,27 +226,57 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             setReportedDuration(undefined); // Reset duration when src changes
         }, [src]);
 
-        setReportedDurationIfNeeded(duration, "render");
+        React.useEffect(() => {
+            const duration = IsUsableNumber(audioRef.current?.duration) ? audioRef.current?.duration : undefined;
+            setReportedDurationIfNeeded(duration, "render effect");
+        }, [audioRef.current?.duration, reportedDuration]);
 
         React.useEffect(() => {
             onDurationChange?.(null, reportedDuration);
         }, [reportedDuration]);
+
+        const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
         const handleProgressChange = (value: number) => {
             if (duration === undefined) return;
             if (!audioRef.current) return;
             const newTime = value;
 
-            // Ensure the new time is valid before setting it
+            // Clear any existing timeout
+            if (seekTimeoutRef.current) {
+                clearTimeout(seekTimeoutRef.current);
+            }
+
+            // Set seeking state and update time
             setIsUserSeeking(true);
             audioRef.current.currentTime = newTime;
             setCurrentTime(newTime);
 
-            // Reset seeking state after a short delay to allow the audio to catch up
-            setTimeout(() => {
+            // Use seeked event to properly detect when seeking is complete
+            const handleSeeked = () => {
                 setIsUserSeeking(false);
-            }, 100);
+                audioRef.current?.removeEventListener('seeked', handleSeeked);
+            };
+
+            audioRef.current.addEventListener('seeked', handleSeeked, { once: true });
+
+            // Fallback timeout in case seeked event doesn't fire
+            seekTimeoutRef.current = setTimeout(() => {
+                setIsUserSeeking(false);
+                audioRef.current?.removeEventListener('seeked', handleSeeked);
+            }, SEEK_TIMEOUT_MS);
         };
+
+        // Cleanup seek timeout on unmount
+        React.useEffect(() => {
+            return () => {
+                if (seekTimeoutRef.current) {
+                    clearTimeout(seekTimeoutRef.current);
+                }
+            };
+        }, []);
+
+        const chromeHackCleanupRef = useRef<(() => void) | null>(null);
 
         React.useEffect(() => {
             const audio = audioRef.current;
@@ -252,9 +287,10 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                 setReportedDurationIfNeeded(audio.duration, "handleLoadedMetadata");
 
                 // Apply persisted volume settings to the audio element
-                if (!audioRef.current) return;
-                audioRef.current.volume = volume / 100;
-                audioRef.current.muted = isMuted;
+                if (audioRef.current) {
+                    audioRef.current.volume = volume / 100;
+                    audioRef.current.muted = isMuted;
+                }
 
                 if (audio.duration === Infinity) {
                     // Chrome requires a hack; firefox reports the duration based on the actual audio file data,
@@ -264,29 +300,43 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                     // Save original handler
                     const originalOnTimeUpdate = audio.ontimeupdate;
 
-                    // Temporarily override
-                    audio.ontimeupdate = () => {
-                        audio.ontimeupdate = originalOnTimeUpdate;
-                        audio.currentTime = 0;
-                        setReportedDurationIfNeeded(audio.duration, "Chrome hack"); // set the real duration
+                    // Create cleanup function
+                    const cleanup = () => {
+                        if (audio.ontimeupdate === tempHandler) {
+                            audio.ontimeupdate = originalOnTimeUpdate;
+                        }
                     };
 
+                    // Temporarily override
+                    const tempHandler = () => {
+                        cleanup();
+                        audio.currentTime = 0;
+                        setReportedDurationIfNeeded(audio.duration, "Chrome hack");
+                    };
+
+                    audio.ontimeupdate = tempHandler;
+                    chromeHackCleanupRef.current = cleanup;
+
                     // Force seek to trigger actual duration detection
-                    audio.currentTime = 1e101;
+                    audio.currentTime = CHROME_DURATION_HACK_SEEK_VALUE;
                 } else {
-                    setReportedDurationIfNeeded(audio.duration, "Chrome hack"); // set the real duration
+                    setReportedDurationIfNeeded(audio.duration, "normal duration");
                 }
             };
 
             audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-
             onLoadedMetadata?.();
 
             return () => {
                 audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+                // Cleanup Chrome hack if it's still active
+                if (chromeHackCleanupRef.current) {
+                    chromeHackCleanupRef.current();
+                    chromeHackCleanupRef.current = null;
+                }
             };
 
-        }, [src, audioRef.current]);
+        }, [src, volume, isMuted]);
 
 
 
@@ -295,16 +345,13 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             const audio = audioRef.current;
             const audioCurrentTime = audio.currentTime;
             setReportedDurationIfNeeded(e.currentTarget.duration, "handleTimeUpdate");
-            if (isUserSeeking) return;
-            if (!IsUsableNumber(audioCurrentTime)) {
-                return; // Skip if currentTime is not usable
+
+            if (isUserSeeking || !IsUsableNumber(audioCurrentTime)) {
+                return; // Skip if user is seeking or currentTime is not usable
             }
 
-            // Only update currentTime if user is not actively seeking
-            if (!isUserSeeking) {
-                // Ensure currentTime is a valid finite number
-                setCurrentTime(isFinite(audioCurrentTime) && audioCurrentTime >= 0 ? audioCurrentTime : 0);
-            }
+            // Ensure currentTime is a valid finite number
+            setCurrentTime(isFinite(audioCurrentTime) && audioCurrentTime >= 0 ? audioCurrentTime : 0);
 
             onTimeUpdate?.(e);
         };
@@ -320,7 +367,6 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         const handleDurationChange = () => {
             if (audioRef.current) {
                 const audio = audioRef.current;
-                const audioDuration = audio.duration;
                 setReportedDurationIfNeeded(audio.duration, "handleDurationChange");
             }
         };
@@ -358,7 +404,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
             if (audioRef.current) {
                 if (isMuted) {
                     // Unmute: restore previous volume
-                    const restoreVolume = volumeBeforeMute > 0 ? volumeBeforeMute : 75;
+                    const restoreVolume = volumeBeforeMute > 0 ? volumeBeforeMute : DEFAULT_VOLUME;
                     setVolume(restoreVolume);
                     setIsMuted(false);
                     audioRef.current.volume = restoreVolume / 100;
@@ -377,7 +423,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         const getVolumeIcon = () => {
             if (isMuted || volume === 0) {
                 return gIconMap.VolumeOff();
-            } else if (volume < 50) {
+            } else if (volume < VOLUME_THRESHOLD_LOW) {
                 return gIconMap.VolumeDown();
             } else {
                 return gIconMap.VolumeUp();

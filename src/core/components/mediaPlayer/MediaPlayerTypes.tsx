@@ -6,6 +6,7 @@ export type MediaPlayerSongContextPayload = Prisma.SongGetPayload<{
         id: true,
         name: true,
         pinnedRecordingId: true,
+        lengthSeconds: true,
     }
 }>;
 

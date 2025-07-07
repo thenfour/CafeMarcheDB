@@ -1044,14 +1044,14 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         ...colorInfo.style,
     };
 
-    const handleNewDivider = () => {
+    const handleNewDivider = (type: "break" | "divider") => {
         props.onChange({
             type: 'divider',
             color: null,
             eventSongListId: props.value.eventSongListId,
             id: getUniqueNegativeID(),
             textStyle: db3.EventSongListDividerTextStyle.Default,
-            isInterruption: false,
+            isInterruption: type === "break",
             runningTimeSeconds: null,
             songsWithUnknownLength: 0,
             index: -1,
@@ -1148,7 +1148,10 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         </div>
         <div className="td tempo">
             {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
-            {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
+            {(props.value.type === 'new') && <Tooltip title="Add a divider"><span>
+                <CMSmallButton onClick={() => handleNewDivider("divider")}>+Divider</CMSmallButton>
+                <CMSmallButton onClick={() => handleNewDivider("break")}>+Break</CMSmallButton>
+            </span></Tooltip>}
         </div>
         <div className="td comment">
             <div className="comment">
