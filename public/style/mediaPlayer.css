@@ -36,7 +36,7 @@
 
 .mediaPlayerBar--visible {
     transform: translateY(0);
-    opacity: 90%;
+    opacity: 94%;
     pointer-events: auto;
 }
 

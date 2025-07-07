@@ -418,7 +418,7 @@ export const SetlistVisualizationBars: React.FC<{
         >
             <div className="setlistVisualizationBarControls">
                 <CMSmallButton tooltip={"Expand the playlist visualization to show the full playlist"} onClick={() => setExpanded("expanded")} className={`expand ${expanded === "expanded" ? "selected" : ""}`}>
-                    Expand {gCharMap.UpArrow()}
+                    Full {gCharMap.UpArrow()}
                 </CMSmallButton>
                 <CMSmallButton tooltip={"Show just a portion of the playlist, to not take too much space."} onClick={() => setExpanded("normal")} className={`normal ${expanded === "normal" ? "selected" : ""}`}>
                     Normal
