@@ -32,32 +32,25 @@ export const getTheoreticalDurationSeconds = (
 
     if (item.setListItemContext?.type === "divider") {
         return item.setListItemContext.isSong
-            ? item.setListItemContext.lengthSeconds ?? fallback
+            ? item.setListItemContext.lengthSeconds || fallback
             : undefined;                         // pure divider → no duration
     }
-    return item.songContext?.lengthSeconds ?? fallback;
+
+    if (item.songContext?.lengthSeconds) {
+        return item.songContext?.lengthSeconds;
+    }
+
+    return fallback;
 };
 
-export const trackWeight = (secs: number | undefined): number | undefined => {
-    if (secs == null) return undefined;
-    const k = 0.014;
-    const pivot = 5 * 60; // minutes
-    return 1 / (1 + Math.exp(-k * (secs - pivot))); // 0 … 1
+export const weightFromDuration = (secs?: number): number => {
+    if (secs == null) return 0;
+    const k = 0.006;              // tweak feel. lower number = every track more or less the same width. higher = more variance.
+    const pivot = 5 * 60;         // 5-min track sits near 0.5
+    return 1 / (1 + Math.exp(-k * (secs - pivot)));
 };
 
-export function calcWidthsPx(
-    items: readonly MediaPlayerTrack[],
-    rowPx: number,
-    gapPx = 8,
-    minPx = 80,
-    maxPx = 450,
-): (number | undefined)[] {
-    const weights = items.map(i => trackWeight(getTheoreticalDurationSeconds(i)));
-
-    return weights.map((w, i) => {
-        return w === undefined ? undefined : lerp(minPx, maxPx, w);
-    });
-}
+export const DIVIDER_PX = 34;
 
 interface StyleData {
     containerClassName: string;
@@ -119,10 +112,11 @@ interface VisBarSegmentProps {
     isCurrentTrack: boolean;
     audioAPI: CustomAudioPlayerAPI | null;
     mediaPlayer: MediaPlayerContextType;
-    widthPx?: number;
+    //widthPx?: number;
+    styleOverride: React.CSSProperties;
 };
 
-const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, widthPx }: VisBarSegmentProps) => {
+const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, styleOverride }: VisBarSegmentProps) => {
     const [hoverPosition, setHoverPosition] = React.useState<number | null>(null);
     const [hoverTime, setHoverTime] = React.useState<number | null>(null);
 
@@ -212,8 +206,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, widthPx }:
         // this container div is needed in order to be marginless
         className={`songPartition ${styleData.containerClassName} ${isCurrentTrack ? 'songPartition--current' : ''} ${isCurrentTrack ? 'songPartition--seekable' : ''} ${isInteractable ? 'songPartition--interactable' : 'songPartition--noninteractable'}`}
         style={{
-            //flex: proportionalWidth,
-            width: widthPx,
+            ...styleOverride,
             ...styleData.containerStyle,
         } as any}
         onClick={handleClickContainer}
@@ -301,45 +294,39 @@ export const SetlistVisualizationBar: React.FC<{
     startIndex: number;
     length: number;
 }> = ({ mediaPlayer, audioAPI, startIndex, length, beginWithDummyDivider }) => {
-    const rowRef = React.useRef<HTMLDivElement>(null);
-    const [widths, setWidths] = React.useState<(number | undefined)[]>([]);
 
     const { playlist, currentIndex, } = mediaPlayer;
 
     // take the playlist segment based on bounds
     const items = playlist.slice(startIndex, startIndex + length);
 
-    React.useLayoutEffect(() => {
-        const update = () => {
-            const rowPx = rowRef.current?.clientWidth;
-            if (!rowPx || rowPx <= 0) {
-                return;
-            }
-            const widths = calcWidthsPx(items, rowPx);
-            setWidths(widths);
-        };
-        update();
-        const ro = new ResizeObserver(update);
-        rowRef.current && ro.observe(rowRef.current);
-        return () => ro.disconnect();
-    }, [playlist, startIndex, length]);
-
     return (
-        <div
-            ref={rowRef}
-            className={`setlistVisualizationBar`}
-        >
-            {beginWithDummyDivider && <div className="songPartition dummyDivider"></div>}
-            {
-                items.map((track, index) => <VisBarSegment
-                    key={index}
-                    widthPx={widths[index]}
-                    item={track}
-                    isCurrentTrack={currentIndex === index + startIndex}
-                    audioAPI={audioAPI}
-                    mediaPlayer={mediaPlayer}
-                />)
-            }
+        <div className="setlistVisualizationBar">
+            {beginWithDummyDivider && <div className="songPartition dummyDivider" />}
+            {items.map((track, idx) => {
+                const duration = getTheoreticalDurationSeconds(track);
+                let flexStyle: React.CSSProperties = {};
+                if (duration == null) {
+                    flexStyle = { flex: `0 0 ${DIVIDER_PX}px` };
+                } else {
+                    flexStyle = {
+                        flex: `${weightFromDuration(duration) || 1} 1 0`,
+                        // don't set minwidth because i need to support very small screens
+                        maxWidth: 450,
+                    }
+                }
+
+                return (
+                    <VisBarSegment
+                        key={idx}
+                        styleOverride={flexStyle}
+                        item={track}
+                        isCurrentTrack={currentIndex === idx + startIndex}
+                        audioAPI={audioAPI}
+                        mediaPlayer={mediaPlayer}
+                    />
+                );
+            })}
         </div>
     );
 };
@@ -412,6 +399,19 @@ export const SetlistVisualizationBars: React.FC<{
         needsFirstRowDummyDivider = allOtherRowsStartWithDivider && !firstRowStartsWithDivider;
     }
 
+    const totalSeconds = (row: MediaPlayerTrack[]) =>
+        row.reduce((sum, t) => sum + (getTheoreticalDurationSeconds(t) ?? 0), 0);
+
+
+    const rows = rowBounds.map(({ startIndex, length }) =>
+        playlist.slice(startIndex, startIndex + length),
+    );
+
+
+    const rowDurations = rows.map(totalSeconds);
+    const longest = Math.max(...rowDurations);
+
+
     return (
         <div
             className={`setlistVisualizationBarContainer ${expanded}`}
@@ -428,18 +428,23 @@ export const SetlistVisualizationBars: React.FC<{
                 </CMSmallButton>
             </div>
             <div className="setlistVisualizationBarContainer BarsContainer">
-                {
-                    rowBounds.map((rowBound, rowIndex) => (
+                {rows.map((rowItems, i) => (
+                    <div
+                        key={i}
+                        style={{
+                            width: `${(rowDurations[i]! / longest) * 100}%`,
+                            minWidth: 120, // optional visual floor
+                        }}
+                    >
                         <SetlistVisualizationBar
-                            key={rowIndex}
-                            beginWithDummyDivider={needsFirstRowDummyDivider && rowIndex === 0}
+                            beginWithDummyDivider={needsFirstRowDummyDivider && i === 0}
                             mediaPlayer={mediaPlayer}
                             audioAPI={audioAPI}
-                            startIndex={rowBound.startIndex}
-                            length={rowBound.length}
+                            startIndex={rowBounds[i]!.startIndex}
+                            length={rowBounds[i]!.length}
                         />
-                    ))
-                }
+                    </div>
+                ))}
             </div>
         </div>
     );
