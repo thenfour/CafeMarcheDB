@@ -1,4 +1,6 @@
 
+import { useMutation } from '@blitzjs/rpc';
+import { PushPin } from '@mui/icons-material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Button, Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
@@ -12,15 +14,12 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { getURIForFile, getURIForFileLandingPage } from '../db3/clientAPILL';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
+import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
-import { ActivityFeature } from './featureReports/activityTracking';
-import { useMutation } from '@blitzjs/rpc';
-import { PushPin } from '@mui/icons-material';
-import { getURIForFile, getURIForFileLandingPage } from '../db3/clientAPILL';
-import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
 import { DotMenu } from './CMCoreComponents2';
@@ -28,14 +27,15 @@ import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
 import { DashboardContext, useDashboardContext, useFeatureRecorder } from './DashboardContext';
 import { VisibilityValue } from './VisibilityControl';
+import { EventChip } from './event/EventChips';
+import { ActivityFeature } from './featureReports/activityTracking';
+import { CMDBUploadFile } from './file/CMDBUploadFile';
+import { FileDropWrapper, UploadFileComponent } from './file/FileDrop';
 import { Markdown } from "./markdown/Markdown";
 import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from './mediaPlayer/MediaPlayerTypes';
 import { UserChip } from './user/userChip';
-import { EventChip } from './event/EventChips';
-import { CMDBUploadFile } from './file/CMDBUploadFile';
-import { FileDropWrapper, UploadFileComponent } from './file/FileDrop';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

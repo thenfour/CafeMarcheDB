@@ -9,14 +9,6 @@ import { TSongPinnedRecording } from '../../db3/shared/apiTypes';
 import { useMediaPlayer } from '../mediaPlayer/MediaPlayerContext';
 import { MediaPlayerTrack } from '../mediaPlayer/MediaPlayerTypes';
 
-// // Common interface for both setlist and planner rows
-// export interface PlayableRowItem {
-//     type: 'song' | 'divider';
-//     song?: { id: number; name: string };
-//     eventSongListId?: number;
-//     setlistPlanId?: number;
-// }
-
 // File-specific audio controls that use the global media player
 type SongPlayButtonProps = {
     //setlistRowItems: PlayableRowItem[];

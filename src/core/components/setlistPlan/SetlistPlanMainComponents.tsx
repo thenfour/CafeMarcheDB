@@ -1,5 +1,5 @@
-import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
 import { useQuery } from "@blitzjs/rpc";
+import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
@@ -19,14 +19,18 @@ import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
-import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
 import getSongPinnedRecording from "src/core/db3/queries/getSongPinnedRecording";
+import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
 import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
+import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
+import { EventSongListDividerItem } from "../../db3/shared/setlistApi";
 import { ColorPick } from "../ColorPick";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
+import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
 import { useSongsContext } from "../song/SongsContext";
+import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
 import { VisibilityControl } from "../VisibilityControl";
 import { LerpColor, SetlistPlannerColorScheme } from "./SetlistPlanColorComponents";
 import { SetlistPlanGroupSelect } from "./SetlistPlanGroupComponents";
@@ -34,10 +38,6 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
-import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
-import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
-import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
-import { EventSongListDividerItem } from "../../db3/shared/setlistApi";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;
