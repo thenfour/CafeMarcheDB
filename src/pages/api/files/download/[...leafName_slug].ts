@@ -2,7 +2,7 @@
 // https://dev.to/victrexx2002/how-to-get-the-mime-type-of-a-file-in-nodejs-p6c
 // https://www.reddit.com/r/node/comments/ecjsg6/how_to_determine_file_mime_type_without_a/
 import { Ctx } from "@blitzjs/next";
-import fs from "fs";
+import send from 'send';
 import * as mime from 'mime';
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
@@ -62,11 +62,7 @@ export default api(async (req, res, ctx: Ctx) => {
                 res.setHeader("Content-Type", "application/octet-stream");
             }
 
-            const fileStream = fs.createReadStream(fullpath);
-            // content disposition "attachment" would prompt users to save the file instead of displaying in browser.
-            //res.setHeader("Content-Disposition", `inline; filename=${item.fileLeafName}`) // Specify the filename for download
-
-
+            // Set Content-Disposition header for proper filename handling
             const rawName = path.basename(item.fileLeafName);       // strip any path parts
             const safeName = encodeURIComponent(rawName)             // turn every odd byte into %XX
                 .replace(/['()]/g, escape)            // RFC-5987 says these need extra love
@@ -76,17 +72,25 @@ export default api(async (req, res, ctx: Ctx) => {
                 `inline; filename="${safeName}"; filename*=UTF-8''${safeName}`
             );
 
-            fileStream.pipe(res);
-            fileStream.on("close", () => {
-                res.end(() => {
+            // Use send package to handle file streaming with range request support
+            const uploadDirectory = path.dirname(fullpath);
+            const filename = path.basename(fullpath);
+
+            send(req, filename, {
+                root: uploadDirectory,
+                dotfiles: 'deny', // Security: don't serve hidden files
+            })
+                .on('error', (err) => {
+                    console.error('Send error:', err);
+                    if (!res.headersSent) {
+                        res.status(500).end();
+                    }
+                    reject(err);
+                })
+                .on('end', () => {
                     resolve();
-                });
-            });
-            fileStream.on("error", () => { // todo: one day test that this actually works?
-                res.status(500).end(() => {
-                    reject();
-                });
-            });
+                })
+                .pipe(res);
 
         } catch (e) {
             console.log(e);

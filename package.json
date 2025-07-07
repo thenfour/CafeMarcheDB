@@ -80,6 +80,7 @@
     "react-smooth-dnd": "0.11.1",
     "recharts": "2.15.0",
     "secure-password": "4.0.0",
+    "send": "1.2.0",
     "sharp": "0.32.6",
     "superjson": "2.2.1",
     "turndown": "7.2.0",
