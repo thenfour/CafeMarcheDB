@@ -5,7 +5,6 @@ import React, { Suspense } from 'react';
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/event/EventComponents";
@@ -28,11 +27,11 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     useRecordFeatureUse({ feature: ActivityFeature.event_view, eventId });
 
-    const currentUser = useCurrentUser()[0]!;
+    const currentUser = dashboardContext.currentUser;
     const clientIntention: db3.xTableClientUsageContext = {
         intention: 'user',
         mode: 'primary',
-        currentUser: currentUser,
+        currentUser,
     };
 
     const queryArgs: DB3Client.xTableClientArgs = {

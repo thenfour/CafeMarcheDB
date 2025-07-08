@@ -3,11 +3,10 @@ import { Typography } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
+import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -20,7 +19,8 @@ import { TAnyModel } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const OwnIdentityControl = () => {
-    const [currentUser, { refetch }] = useCurrentUser();
+    const dashboardContext = useDashboardContext();
+    const currentUser = dashboardContext.currentUser;
     const haveGoogleIdentity = !!currentUser?.googleId;
 
     // if you don't have a google identity there's just not much to show here; don't show anything.
@@ -41,8 +41,9 @@ type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInst
 };
 
 const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
+    const dashboardContext = useDashboardContext();
     const updatePrimaryMutationToken = API.users.updateUserPrimaryInstrument.useToken();
-    const [currentUser, { refetch }] = useCurrentUser();
+    const currentUser = dashboardContext.currentUser;
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
 
@@ -56,17 +57,20 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const primary: (db3.InstrumentPayload | null) = API.users.getPrimaryInstrument(props.row as db3.UserPayload);
 
     const handleClickMakePrimary = (instrumentId: number) => {
+        if (!currentUser) {
+            return null;
+        }
         void recordFeature({
             feature: ActivityFeature.profile_change_default_instrument,
         });
-        updatePrimaryMutationToken.invoke({ userId: currentUser!.id, instrumentId }).then(e => {
+        updatePrimaryMutationToken.invoke({ userId: currentUser.id, instrumentId }).then(e => {
             showSnackbar({ severity: "success", children: "Primary instrument updated" });
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "error updating primary instrument" });
         }).finally(async () => {
             props.refetch();
-            await refetch();
+            dashboardContext.refetchDashboardData();
         });
     };
 
@@ -118,7 +122,11 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
 // - others i forgot already.
 const OwnInstrumentsControl = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const [currentUser, { refetch }] = useCurrentUser();
+    const dashboardContext = useDashboardContext();
+    const currentUser = dashboardContext.currentUser;
+    if (!currentUser) {
+        return null;
+    }
     const recordFeature = useFeatureRecorder();
     const tableClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
@@ -133,7 +141,7 @@ const OwnInstrumentsControl = () => {
         filterModel: {
             items: [],
             tableParams: {
-                userId: currentUser!.id,
+                userId: currentUser.id,
             }
         },
     });
@@ -162,7 +170,7 @@ const OwnInstrumentsControl = () => {
                 showSnackbar({ severity: "error", children: "error updating instruments" });
             }).finally(async () => {
                 tableClient.refetch();
-                await refetch();
+                dashboardContext.refetchDashboardData();
             });
         }}
     />;
@@ -171,11 +179,8 @@ const OwnInstrumentsControl = () => {
 
 
 const MainContent = () => {
-
-    const [currentUser, { refetch }] = useCurrentUser();
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    const dashboardContext = useDashboardContext();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    //const publicData = useAuthenticatedSession();
     const recordFeature = useFeatureRecorder();
 
     useRecordFeatureUse({
@@ -197,9 +202,9 @@ const MainContent = () => {
         tableSpec: spec,
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         filterModel: {
-            items: [{ field: "id", value: currentUser!.id, operator: "equals" }]
+            items: [{ field: "id", value: dashboardContext.currentUser?.id || -1, operator: "equals" }]
         },
-        clientIntention,
+        clientIntention: dashboardContext.userClientIntention,
     });
 
     const value = client.items[0]! as db3.UserPayload;
@@ -215,7 +220,7 @@ const MainContent = () => {
             showSnackbar({ severity: "error", children: "error updating" });
         }).finally(async () => {
             client.refetch();
-            await refetch();
+            dashboardContext.refetchDashboardData();
             api.closeDialog();
         });
     };

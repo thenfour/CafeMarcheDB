@@ -1,12 +1,11 @@
+import { RelevantEvents } from "@/src/core/components/event/RelevantEvents";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
-import { RelevantEvents } from "@/src/core/components/event/RelevantEvents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
 import { gIconMap } from "src/core/db3/components/IconMap";
@@ -21,7 +20,8 @@ const HomepageBigEventCalendar = () => {
 };
 
 const DynamicContent = () => {
-  const [currentUser] = useCurrentUser();
+  const dashboardContext = useDashboardContext();
+  const currentUser = dashboardContext.currentUser;
   let noInstrumentsWarning = (currentUser?.instruments?.length || 0) < 1;
   let limitedAccountWarning = !!(currentUser?.role?.isRoleForNewUsers);
 

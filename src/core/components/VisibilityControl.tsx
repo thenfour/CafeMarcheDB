@@ -66,7 +66,6 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
     const variant = props.variant || "verbose";
-    //const [currentUser] = useCurrentUser();
     const visibilityChoices = [null, ...(dashboardContext.permission.items).filter(p => {
         return p.isVisibility && dashboardContext.isAuthorized(p.name);
     })];

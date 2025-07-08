@@ -3,9 +3,8 @@ import db from "db";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
+import { DashboardContext, useDashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/song/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -18,13 +17,13 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
 
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     if (!songId) throw new Error(`song not found`);
 
     useRecordFeatureUse({ feature: ActivityFeature.song_view, songId });
 
-    const currentUser = useCurrentUser()[0]!;
+    const currentUser = dashboardContext.currentUser;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: currentUser, };
 
     const queryArgs: DB3Client.xTableClientArgs = {

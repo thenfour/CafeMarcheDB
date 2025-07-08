@@ -23,9 +23,6 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
 
     if (!userId) throw new Error(`user not found`);
 
-    //const currentUser = useCurrentUser()[0]!;
-    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: currentUser, };
-
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
         clientIntention: dashboardContext.userClientIntention,
