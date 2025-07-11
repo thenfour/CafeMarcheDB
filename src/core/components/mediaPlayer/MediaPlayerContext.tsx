@@ -334,7 +334,6 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
             value={contextValue}
         >
             {children}
-            <MediaPlayerBar mediaPlayer={contextValue} />
         </MediaPlayerContext.Provider>
     );
 };

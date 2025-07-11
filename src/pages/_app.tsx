@@ -19,6 +19,7 @@ import '../../public/markdown.css';
 import '../../public/style/bigCalendar.css';
 import "../../public/style/color.css";
 import '../../public/style/customFieldEditor.css';
+import '../../public/style/dashboard.css';
 import '../../public/style/events2.css';
 import '../../public/style/filterControls.css';
 import '../../public/style/ImportEvents.css';
@@ -90,9 +91,7 @@ function MyApp({
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ErrorBoundary FallbackComponent={RootErrorFallback}>
-          <MediaPlayerProvider>
-            <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
-          </MediaPlayerProvider>
+          <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
         </ErrorBoundary>
       </ThemeProvider>
     </CacheProvider>

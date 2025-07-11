@@ -1,0 +1,10 @@
+.CMDashboard2 {
+    display: flex;
+}
+
+.CMDashboard2.smallScreen .mainContentBackdrop,
+/* no padding for full-screen dialogs because screen space is premium.*/
+.smallScreen .MuiDialogContent-root {
+    padding-left: 4px;
+    padding-right: 10px;
+}

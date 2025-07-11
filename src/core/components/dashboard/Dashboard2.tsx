@@ -32,6 +32,8 @@ import { MessageBoxProvider } from "../MessageBoxContext";
 import { MetronomeDialogButton } from "../Metronome";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SnackbarContext } from "../SnackbarContext";
+import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
+import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
 
 const drawerWidth = 260;
 
@@ -272,7 +274,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
 const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission; }>) => {
     const dashboardContext = React.useContext(DashboardContext);
-    const router = useRouter();
+    const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
 
     if (basePermission && !dashboardContext.isAuthorized(basePermission)) {
@@ -302,7 +304,8 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
     };
 
     return (<>
-        <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>        <SideMenu
+        <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
+        <SideMenu
             navRealm={navRealm}
             open={open}
             onClose={() => setOpen(false)}
@@ -310,20 +313,24 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
             drawerWidth={drawerWidth}
             theme={theme}
         />
-        <Box sx={{
-            flexGrow: 1,
-            backgroundColor: theme.palette.background.default,
-            padding: theme.spacing(3)
-        }}
+        <Box
+            sx={{
+                flexGrow: 1,
+                backgroundColor: theme.palette.background.default,
+                padding: theme.spacing(3)
+            }}
             className="mainContentBackdrop"
         >
             <Toolbar />
             <AdminInspectObject label="DashboardCtx" src={dashboardContext} />
 
             <React.Suspense>
-                {forceLogin ? <LoginSignup /> : children}
+                {forceLogin ? <LoginSignup /> : <>
+                    {children}
+                </>}
             </React.Suspense>
         </Box>
+        <MediaPlayerBar mediaPlayer={mediaPlayer}></MediaPlayerBar>
     </>
     );
 }
@@ -344,9 +351,11 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
                     <AppContextMarker name="bs">
                         <ConfirmProvider>
                             <MessageBoxProvider>
-                                <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
-                                    {children}
-                                </Dashboard3>
+                                <MediaPlayerProvider>
+                                    <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
+                                        {children}
+                                    </Dashboard3>
+                                </MediaPlayerProvider>
                             </MessageBoxProvider>
                         </ConfirmProvider>
                     </AppContextMarker>
