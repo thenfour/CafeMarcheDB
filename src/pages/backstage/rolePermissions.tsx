@@ -10,7 +10,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatrix";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MainContent = () => {

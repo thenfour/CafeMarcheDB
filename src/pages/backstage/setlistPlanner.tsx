@@ -44,7 +44,7 @@ import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useLocalStorageState } from "src/core/components/useLocalStorageState";
 
 function getId(prefix: string) {

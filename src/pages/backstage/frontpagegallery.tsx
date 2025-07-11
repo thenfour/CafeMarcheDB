@@ -33,7 +33,7 @@ import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 
 

@@ -18,7 +18,7 @@ import { getURIForEvent } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { TAnyModel, TGetImportEventDataRet, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { DateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 
 interface InsertResult {

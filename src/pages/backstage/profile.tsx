@@ -16,7 +16,7 @@ import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db
 import * as db3 from "src/core/db3/db3";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { TAnyModel } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const OwnIdentityControl = () => {
     const dashboardContext = useDashboardContext();

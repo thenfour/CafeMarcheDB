@@ -3,7 +3,7 @@ import { Suspense } from "react"
 import { SignupForm } from "src/auth/components/SignupForm"
 import { AppContextMarker } from "src/core/components/AppContext"
 import { useRouter } from "next/router"
-import DashboardLayout from "src/core/layouts/DashboardLayout"
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout"
 
 const MainContent: BlitzPage = () => {
   const router = useRouter()

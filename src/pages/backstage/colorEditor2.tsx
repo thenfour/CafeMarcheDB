@@ -166,7 +166,7 @@ import { ColorPick } from "src/core/components/ColorPick";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const gDarkSelectedBorderColor = "#444";
 const gLightSelectedBorderColor = "#ccc";

@@ -12,7 +12,7 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import getCalendarPreview from "src/core/db3/queries/getCalendarPreview";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const CopyText = ({ value, label }: { value: string, label?: string | undefined }) => {
 

@@ -3,7 +3,7 @@ import { BlitzPage, useParams } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Typography } from "@mui/material";
 import { Permission } from "shared/permissions";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MyComponent = () => {

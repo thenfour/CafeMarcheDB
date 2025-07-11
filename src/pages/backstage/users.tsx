@@ -11,7 +11,7 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { EnrichedVerboseUser } from "./wikiPageHistory";
 import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "@/src/core/components/user/UserClientBaseTypes";
 

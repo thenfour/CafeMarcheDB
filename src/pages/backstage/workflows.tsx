@@ -16,7 +16,7 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import deleteWorkflowDefMutation from "src/core/db3/mutations/deleteWorkflowDefMutation";
 import insertOrUpdateWorkflowDefMutation from "src/core/db3/mutations/insertOrUpdateWorkflowDefMutation";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 // interface WorkflowDefEditorProps {

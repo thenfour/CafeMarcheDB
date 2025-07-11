@@ -6,7 +6,7 @@ import { Permission } from "shared/permissions";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const UserListContent = () => {
 

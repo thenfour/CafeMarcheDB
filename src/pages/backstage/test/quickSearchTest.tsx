@@ -6,7 +6,7 @@ import { calculateMatchStrength } from "shared/rootroot";
 import { AdminInspectObject, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextField } from "src/core/components/CMTextField";
 import { AssociationValueLink, fetchObjectQuery } from "@/src/core/components/ItemAssociation";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const TestMatchStrength = () => {
     const [sourceText, setSourceText] = React.useState<string>("some text to search in");

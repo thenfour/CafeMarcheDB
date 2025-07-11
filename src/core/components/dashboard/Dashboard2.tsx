@@ -14,24 +14,24 @@ import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
-import { API } from "../db3/clientAPI";
-import { getAbsoluteUrl } from "../db3/clientAPILL";
-import { gIconMap } from "../db3/components/IconMap";
-import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
-import { AppContextMarker } from "./AppContext";
-import { AdminInspectObject } from "./CMCoreComponents2";
-import { ConfirmProvider } from "./ConfirmationDialog";
-import { DashboardContext, DashboardContextProvider, useFeatureRecorder } from "./DashboardContext";
-import { LoginSignup } from "./LoginSignupForm";
-import { MainSiteSearch } from "./search/MainSiteSearch";
+import { API } from "../../db3/clientAPI";
+import { getAbsoluteUrl } from "../../db3/clientAPILL";
+import { gIconMap } from "../../db3/components/IconMap";
+import { GetICalRelativeURIForUserUpcomingEvents } from "../../db3/shared/apiTypes";
+import { AppContextMarker } from "../AppContext";
+import { AdminInspectObject } from "../CMCoreComponents2";
+import { ConfirmProvider } from "../ConfirmationDialog";
+import { DashboardContext, DashboardContextProvider, useFeatureRecorder } from "../DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
+import { LoginSignup } from "../LoginSignupForm";
 import {
     NavRealm,
     SideMenu
-} from "./MenuStructure";
-import { MetronomeDialogButton } from "./Metronome";
-import { SnackbarContext } from "./SnackbarContext";
-import { ActivityFeature } from "./featureReports/activityTracking";
-import { MessageBoxProvider } from "./MessageBoxContext";
+} from "../MenuStructure";
+import { MessageBoxProvider } from "../MessageBoxContext";
+import { MetronomeDialogButton } from "../Metronome";
+import { MainSiteSearch } from "../search/MainSiteSearch";
+import { SnackbarContext } from "../SnackbarContext";
 
 const drawerWidth = 260;
 

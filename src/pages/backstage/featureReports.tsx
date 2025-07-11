@@ -18,7 +18,7 @@ import { CMMultiSelect, CMSingleSelect } from "src/core/components/select/CMSele
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { AgeRelativeToNow } from "@/src/core/components/DateTime/RelativeTimeComponents";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { CMDateRangePicker } from "@/src/core/components/DateTime/DateTimeRangeControl";
 
 const GeneralFeatureStatsReport = () => {

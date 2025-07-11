@@ -2,7 +2,7 @@ import { BlitzPage } from "@blitzjs/auth";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, gMillisecondsPerHour } from "shared/time";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 interface TestResult {
     pass: boolean,

@@ -10,7 +10,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/wiki/WikiComponents";
 import { getAuthenticatedCtx } from "src/core/db3/server/db3mutationCore";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
 import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
 

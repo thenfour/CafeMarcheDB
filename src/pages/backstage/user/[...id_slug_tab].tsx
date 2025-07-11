@@ -8,7 +8,7 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { UserBreadcrumbs, UserDetail } from "@/src/core/components/user/UserComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const MyComponent = ({ userId }: { userId: number | null }) => {
     const params = useParams();

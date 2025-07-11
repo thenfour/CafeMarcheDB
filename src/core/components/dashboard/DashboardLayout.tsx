@@ -1,4 +1,3 @@
-import { useSession } from "@blitzjs/auth";
 import { BlitzLayout } from "@blitzjs/next";
 import { Backdrop, CircularProgress } from "@mui/material";
 import Head from "next/head";
@@ -6,9 +5,9 @@ import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { CoerceToBoolean } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import Dashboard2 from "../components/Dashboard2";
-import { LoginSignup } from "../components/LoginSignupForm";
-import { NavRealm } from "../components/MenuStructure";
+import { LoginSignup } from "../LoginSignupForm";
+import { NavRealm } from "../MenuStructure";
+import Dashboard2 from "./Dashboard2";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
@@ -17,26 +16,9 @@ interface DashboaldLayout2Props {
 }
 
 const DashboardLayout2 = ({ disableLoginRedirect, navRealm, basePermission, children }: React.PropsWithChildren<DashboaldLayout2Props>) => {
-    const sess = useSession();
     const [currentUser] = useCurrentUser();
 
-    // React.useEffect(() => {
-    //     console.log(`ok installing gtag with userid=${currentUser?.id || "<none>"}`);
-    //     // Initialize Google Analytics
-    //     window.dataLayer = window.dataLayer || [];
-    //     window.gtag = window.gtag || function () {
-    //         window.dataLayer.push(arguments);
-    //     };
-
-    //     // Configure Google Analytics with your tracking ID and user_id
-    //     window.gtag("js", new Date());
-    //     window.gtag("config", "G-NFRZM0JQL3", {
-    //         user_id: currentUser?.id || undefined, // If session.userId exists, pass it
-    //     });
-    // }, [currentUser?.id]);
-
     return <Dashboard2 navRealm={navRealm} basePermission={basePermission}>
-        {/* <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_BACKSTAGE} /> */}
         {
             (!!currentUser || disableLoginRedirect) ? children : (<LoginSignup />)
         }

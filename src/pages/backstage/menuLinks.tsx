@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { MenuLinkList } from "src/core/components/MenuLinkComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MyContent = () => {

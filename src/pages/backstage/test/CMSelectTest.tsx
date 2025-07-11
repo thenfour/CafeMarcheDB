@@ -10,7 +10,7 @@ import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectD
 import { ColorPick } from "src/core/components/ColorPick";
 import { DB3MultiSelect, DB3SingleSelect } from "src/core/db3/components/db3Select";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 type Dataset = "numbers";
 

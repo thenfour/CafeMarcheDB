@@ -4,7 +4,7 @@ import { Permission } from "shared/permissions";
 import { CustomLinkList } from "src/core/components/CustomLinksComponents";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 

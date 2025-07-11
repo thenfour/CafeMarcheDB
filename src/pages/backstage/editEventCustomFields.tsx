@@ -17,7 +17,7 @@ import { gCharMap, gIconMap } from 'src/core/db3/components/IconMap';
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import { DB3EditObjectDialog } from 'src/core/db3/components/db3NewObjectDialog';
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 // export type EventCustomFieldOption = {
 //     label: string,

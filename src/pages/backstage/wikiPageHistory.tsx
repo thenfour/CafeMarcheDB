@@ -17,7 +17,7 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { UserChip } from "@/src/core/components/user/userChip";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import deleteWikiRevision from "src/core/wiki/mutations/deleteWikiRevision";
 import rebuildWikiPageRevisionStats from "src/core/wiki/mutations/rebuildWikiPageRevisionStats";
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision";

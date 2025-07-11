@@ -9,7 +9,7 @@ import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
 import { gIconMap } from "src/core/db3/components/IconMap";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const HomepageBigEventCalendar = () => {
