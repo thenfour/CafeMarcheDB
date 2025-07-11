@@ -9,7 +9,7 @@ import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
-import React, { useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from 'shared/arrayUtils';
 import { gSwatchColors } from 'shared/color';

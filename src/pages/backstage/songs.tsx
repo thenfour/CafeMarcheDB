@@ -1,3 +1,4 @@
+import { SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "@/src/core/components/song/SongClientBaseTypes";
 import { SongListItem } from "@/src/core/components/song/SongListItem";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
@@ -8,7 +9,6 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
-import { EnrichedVerboseSong, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/song/SongComponentsBase";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
@@ -94,7 +94,7 @@ const SongListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, db3.SongPayload_Verbose, EnrichedVerboseSong> = {
+    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, db3.SongPayload_Verbose, db3.EnrichedVerboseSong> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: SongOrderByColumnOptions,

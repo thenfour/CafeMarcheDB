@@ -2,7 +2,6 @@
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from 'react';
-import { SortDirection } from 'shared/rootroot';
 import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -10,7 +9,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../../db3/components/DB3ClientCore';
-import { DiscreteCriterion, SearchResultsRet } from '../../db3/shared/apiTypes';
+import { SearchResultsRet } from '../../db3/shared/apiTypes';
 import { DashboardContextData } from '../DashboardContext';
 
 
@@ -378,30 +377,6 @@ export const CalculateEventSearchResultsMetadata = ({ event, results }: EventLis
     };
 };
 
-
-// //////////////////////////////////////////////////////////////////////////////////////////////////
-export enum EventOrderByColumnOptions {
-    id = "id",
-    startsAt = "startsAt",
-    name = "name",
-};
-
-export type EventOrderByColumnOption = keyof typeof EventOrderByColumnOptions;// "startsAt" | "name";
-
-export interface EventsFilterSpec {
-    //pageSize: number;
-    //page: number;
-    quickFilter: string;
-    refreshSerial: number; // this is necessary because you can do things to change the results from this page. think of adding an event then refetching.
-
-    orderByColumn: EventOrderByColumnOption;
-    orderByDirection: SortDirection;
-
-    typeFilter: DiscreteCriterion;
-    tagFilter: DiscreteCriterion;
-    statusFilter: DiscreteCriterion;
-    dateFilter: DiscreteCriterion;
-};
 
 export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),

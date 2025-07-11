@@ -105,7 +105,7 @@ const getItemStyleData = (item: MediaPlayerTrack, isCurrentTrack: boolean, media
                     "--segment-color": getHashedColor(title.title, {
                         alpha: "100%",
                         luminosity: "50%",
-                        saturation: "70%",// isCurrentTrack ? "90%" : "15%",
+                        saturation: "100%",// isCurrentTrack ? "90%" : "15%",
                     }),
                 } as any,
                 coloredBarClassName: "",

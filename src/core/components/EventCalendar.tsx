@@ -13,10 +13,12 @@ import { CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { AdminInspectObject, useURLState } from './CMCoreComponents2';
 import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
-import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './event/EventComponentsBase';
+import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult } from './event/EventComponentsBase';
 import { useSearchableList } from 'src/core/hooks/useSearchableList';
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { EventListItem } from "./event/EventComponents";
+import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClientBaseTypes";
+import { DateToYYYYMMDD } from "@/shared/time";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -306,12 +308,10 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
 
     // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
-        //pageSize: 100,
         refreshSerial,
-        //page: 0,
 
         // in dto...
-        quickFilter: `${dayjs(minDate).format('YYYYMMDD')}-${dayjs(maxDate).format('YYYYMMDD')}`,
+        quickFilter: `${DateToYYYYMMDD(minDate)}-${DateToYYYYMMDD(maxDate)}`,
 
         orderByColumn: EventOrderByColumnOptions.id,
         orderByDirection: 'asc',

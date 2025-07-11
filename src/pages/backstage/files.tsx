@@ -1,3 +1,4 @@
+import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
 import { FileListItem } from "@/src/core/components/file/FileListItem";
 import { NavRealm } from "@/src/core/components/MenuStructure";
 import { BlitzPage } from "@blitzjs/next";
@@ -6,7 +7,6 @@ import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "src/core/components/file/FileComponentsBase";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForFile } from "src/core/db3/clientAPILL";

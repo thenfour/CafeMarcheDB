@@ -1583,6 +1583,8 @@ export type EnrichedSong<T extends EnrichSongInput> = Omit<T,
     }
 }>;
 
+export type EnrichedVerboseSong = EnrichedSong<SongPayload_Verbose>;
+
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichSong<T extends EnrichSongInput>(
@@ -1674,6 +1676,11 @@ export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
         },
     }
 }>;
+
+
+export type EnrichedVerboseFile = EnrichedFile<FilePayload>;
+
+
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichFile<T extends EnrichFileInput>(

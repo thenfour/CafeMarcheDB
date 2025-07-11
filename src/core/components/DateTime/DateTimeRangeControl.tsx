@@ -1,28 +1,25 @@
 import * as React from 'react';
-//import * as DB3Client from "src/core/db3/DB3Client";
-import { FormControlLabel, NoSsr, Popover, Switch, Tooltip } from "@mui/material";
-import { DateCalendar, DateView, LocalizationProvider, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+//import * as DB3Client from "src/core/db3/DB3Client"; <-- dependency cycle.
+import { StandardVariationSpec, gGeneralPaletteList } from '@/shared/color';
+import { FormControlLabel, LinearProgress, NoSsr, Popover, Switch, Tooltip } from "@mui/material";
+import { DateCalendar, DateView, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import { assert } from 'blitz';
 import dayjs, { Dayjs } from "dayjs";
-import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, getTimeOfDayInMinutes } from "shared/time";
 import { gIconMap } from '../../db3/components/IconMap';
 import { KeyValueTable } from '../CMCoreComponents2';
+import { GetStyleVariablesForColor } from '../Color';
+import { CalendarEventSpec } from './DateTimeTypes';
+import { useEventsForDateRange } from './useEventsForDateRange';
 
-interface CalendarEventSpec {
-    id: string;
-    dateRange: DateTimeRange;
-    title: string;
-    color: string;
-}
-
-interface DaySlotProps extends PickersDayProps<Dayjs> {
+interface CustomDayProps {
     otherDay: Dayjs | null;
     range: DateTimeRange;
     selectedDay: Dayjs;
     items: CalendarEventSpec[];
-    //tooltipRef: HTMLDivElement | null;
-};
+}
+
+type DaySlotProps = CustomDayProps & PickersDayProps<Dayjs>;
 
 function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlotProps) {
     const now = dayjs();
@@ -48,10 +45,7 @@ function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlot
         const ht = item.dateRange.hitTestDay(day);
         if (ht.inRange) {
             let className = "otherEvent otherEventInRange";
-            //classes.push("otherEventInRange");
             tooltips.push(item.title);
-            // if (ht.rangeEnd) classes.push("otherEventRangeEnd");
-            // if (ht.rangeStart) classes.push("otherEventRangeStart");
             if (ht.isLastDay) className += (" otherEventRangeEnd");
             if (ht.isFirstDay) className += (" otherEventRangeStart");
             matchingEvents.push({ eventSpec: item, hitTest: ht, className });
@@ -69,14 +63,25 @@ function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlot
 
     if (day.day() === 0 || day.day() === 6) {
         classes.push("weekend");
-        //        tooltips.push("This is a weekend");
     };
 
-    // https://stackoverflow.com/questions/42282698/how-do-i-set-multiple-lines-to-my-tooltip-text-for-material-ui-iconbutton
+    const dataProps = {} as Record<string, any>;
+    if (matchingEvents.length > 0) {
+        dataProps["data-event-id"] = matchingEvents[0]!.eventSpec.id;
+        dataProps["data-event-title"] = matchingEvents[0]!.eventSpec.title;
+    }
+
+    const firstMatchingEvent = matchingEvents[0];
+    const eventColor = gGeneralPaletteList.findEntry(firstMatchingEvent?.eventSpec.color || null);
+    const eventStyles = GetStyleVariablesForColor({
+        color: eventColor,
+        ...StandardVariationSpec.Strong,
+    });
 
     return <div
         key={day.toString()}
         className={`dayContainer ${classes.join(" ")}`}
+        {...dataProps}
     >
         <Tooltip
             title={tooltips.length ? <div style={{ whiteSpace: 'pre-line' }}>{tooltips.join(` \n`)}</div> : null}
@@ -89,10 +94,13 @@ function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlot
         </Tooltip>
         <div className="selectionIndicator"></div>
         <div className="selectionBackground"></div>
-        <div className="dayCustomArea">
+        <div className={`dayCustomArea ${eventStyles.cssClass}`} style={eventStyles.style}>
             {
-                matchingEvents.length > 0 && <div style={{ ["--event-color"]: matchingEvents[0]!.eventSpec.color } as any} key={matchingEvents[0]!.eventSpec.id} className={matchingEvents[0]!.className}></div>
+                matchingEvents.length > 0 && <div style={{
+                    //"--event-color": eventColor,//matchingEvents[0]!.eventSpec.color,
+                } as any} key={matchingEvents[0]!.eventSpec.id} className={matchingEvents[0]!.className}></div>
             }
+            {/* {loading && <div className="loadingIndicator"></div>} */}
         </div>
         <div className="dayGridLines"></div>
     </div>
@@ -103,34 +111,77 @@ interface EventCalendarMonthProps {
     onChange: (value: Date) => void;
     otherDay: Date | null;
     range: DateTimeRange;
-    items: CalendarEventSpec[];
 };
 
 const EventCalendarMonth = (props: EventCalendarMonthProps) => {
-    const djs = dayjs(props.value);
-    const otherDjs = props.otherDay === null ? null : dayjs(props.otherDay);
+    const djs = React.useMemo(() => dayjs(props.value), [props.value]);
+
+    const otherDjs = React.useMemo(() => props.otherDay ? dayjs(props.otherDay) : null, [props.otherDay]);
+
     const [view, setView] = React.useState<DateView>("day");
+    const { now, nowjs } = React.useMemo(() => {
+        const now = new Date();
+        return {
+            now,
+            nowjs: dayjs(now),
+        };
+    }, []);
+    const [displayedMonth, setDisplayedMonth] = React.useState<Dayjs>(djs);
+
+    // Calculate visible range based on the displayed month
+    const { firstVisibleDay, lastVisibleDay } = React.useMemo(() => {
+        const startOfMonth = displayedMonth.startOf('month');
+        const endOfMonth = displayedMonth.endOf('month');
+        const firstDay = startOfMonth.subtract(8, 'day');
+        const lastDay = endOfMonth.add(8, 'day');
+        return {
+            firstVisibleDay: firstDay,
+            lastVisibleDay: lastDay
+        };
+    }, [displayedMonth]);
+
+    const visibleRange = React.useMemo(() => {
+        return new DateTimeRange({
+            startsAtDateTime: firstVisibleDay.toDate(),
+            durationMillis: lastVisibleDay.valueOf() - firstVisibleDay.valueOf(),
+            isAllDay: false,
+        });
+    }, [firstVisibleDay, lastVisibleDay]);
+
+    const { events, loading } = useEventsForDateRange(visibleRange);
+
+    console.log("EventCalendarMonth: events:", events, "loading:", loading);
+
+    const dayProps: CustomDayProps = React.useMemo(() => ({
+        selectedDay: djs,
+        otherDay: otherDjs,
+        items: events,
+        range: props.range,
+    }), [djs, otherDjs, props.range, events, loading]);
+
     return <div className="EventCalendarMonthContainer">
+        {loading && <LinearProgress className='loadingIndicator' />}
         <DateCalendar
             showDaysOutsideCurrentMonth
-            className="EventCalendarMonth"
-            defaultValue={djs} views={["day", "year"]}
+            className={`EventCalendarMonth ${loading ? "loading" : ""}`}
+            views={["day", "year"]}
+
             value={djs}
+            onChange={(v, state) => {
+                props.onChange(v?.toDate() || now);
+            }}
+
             view={view}
             onViewChange={(view) => {
                 setView(view);
             }}
-            onChange={(v, state) => {
-                props.onChange(v?.toDate()!);
+            onMonthChange={(month) => {
+                setDisplayedMonth(month);
             }}
+
             slots={{ day: DaySlot }}
             slotProps={{
-                day: {
-                    selectedDay: djs,
-                    otherDay: otherDjs,
-                    items: props.items,
-                    range: props.range,
-                } as any,
+                day: dayProps as any,
             }}
         />
     </div>;
@@ -146,7 +197,8 @@ interface DayControlProps {
     onChange: (newValue: Date) => void;
     coalescedFallbackValue?: Date;
     readonly?: boolean;
-    items?: CalendarEventSpec[];
+    //items?: CalendarEventSpec[];
+    //useAsyncLoading?: boolean;
     range?: DateTimeRange; // for formatting the calendar display
     showDuration?: boolean;
     className?: string;
@@ -210,7 +262,8 @@ export const DayControl = ({ readonly = false, coalescedFallbackValue, ...props 
                     value={coalescedDay}
                     onChange={handleCalendarChangeDay}
                     otherDay={props.otherValue}
-                    items={props.items || []}
+                    //items={props.items}
+                    //useAsyncLoading={props.useAsyncLoading}
                     range={range}
                 />
             </Popover >
@@ -247,7 +300,6 @@ export const CMDBSelect = <T,>(props: CMDBSelectProps<T>) => {
 export interface DateTimeRangeControlProps {
     value: DateTimeRange;
     onChange: (newValue: DateTimeRange) => void;
-    items: CalendarEventSpec[];
 };
 
 // [_] Date TBD
@@ -349,7 +401,6 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                         value={value.getStartDateTime()}
                         coalescedFallbackValue={coalescedFallbackStartDay}
                         otherValue={value.getLastDateTime()} // use LAST time so it doesn't spill into next day.
-                        items={props.items}
                         range={value}
                         showDuration={false}
                         className="datePart field startDate"
@@ -375,7 +426,6 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                                 value={value.getLastDateTime()}
                                 coalescedFallbackValue={value.getLastDateTime(coalescedFallbackStartDay)}
                                 otherValue={value.getStartDateTime()}
-                                items={props.items}
                                 range={value}
                                 showDuration={true}
                                 className="datePart field endDate"
@@ -419,8 +469,6 @@ const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
             "Last": value.getLastDateTime()?.toISOString(),
             "End": value.getEndDateTime()?.toISOString(),
             "Duration": `${formatMillisecondsToDHMS(value.getDurationMillis())} (${value.getDurationMillis()} ms)`,
-            //"Spec Start": value.getSpec().startsAtDateTime?.toISOString(),
-            //"Spec Duration": formatMillisecondsToDHMS(value.getSpec().durationMillis),
             "Relative label": t.label,
             "Relative Bucket": t.bucket,
             "toString": value.toString(),
@@ -428,152 +476,6 @@ const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
     />;
 
 }
-
-export const DateTimeRangeControlExample = () => {
-
-    const MakeDay = (day: number, millisIntoDay: number) => {
-        const now = new Date();
-        const ret = new Date(now.getFullYear(), now.getMonth(), day);
-        return new Date(ret.valueOf() + millisIntoDay);
-    };
-
-    const MakeDayTime = (day: number, hour: number, minute: number) => {
-        const now = new Date();
-        const ret = new Date(now.getFullYear(), now.getMonth(), day, hour, minute);
-        return new Date(ret.valueOf());
-    };
-
-    const events: CalendarEventSpec[] = [
-        ({
-            id: "1",
-            color: "red",
-            title: "a single-day all day event",
-            dateRange: new DateTimeRange({
-                durationMillis: gMillisecondsPerDay,
-                isAllDay: true,
-                startsAtDateTime: MakeDay(2, 0),
-            }),
-        }),
-        ({
-            id: "2",
-            color: "blue",
-            title: "a single-day all day event but with incorrect duration",
-            dateRange: new DateTimeRange({
-                durationMillis: gMillisecondsPerHour,
-                isAllDay: true,
-                startsAtDateTime: MakeDay(4, 0),
-            }),
-        }),
-        ({
-            id: "3",
-            color: "green",
-            title: "a single-day event within a day",
-            dateRange: new DateTimeRange({
-                durationMillis: gMillisecondsPerMinute * 15,
-                isAllDay: false,
-                startsAtDateTime: MakeDay(6, gMillisecondsPerHour * 13),
-            }),
-        }),
-        ({
-            id: "4",
-            color: "yellow",
-            title: "two-day event",
-            dateRange: new DateTimeRange({
-                durationMillis: gMillisecondsPerDay * 2,
-                isAllDay: true,
-                startsAtDateTime: MakeDay(9, 0),
-            }),
-        }),
-        ({
-            id: "5",
-            color: "cyan",
-            title: "an event that starts at 11:30 for 2 hours, spanning 2 days",
-            dateRange: new DateTimeRange({
-                durationMillis: gMillisecondsPerHour * 2,
-                isAllDay: false,
-                startsAtDateTime: MakeDayTime(13, 11, 30),
-            }),
-        }),
-        ({
-            id: "6",
-            color: "orange",
-            title: "an event that spans 10 days",
-            dateRange: new DateTimeRange({
-                durationMillis: gMillisecondsPerDay * 10,
-                isAllDay: false,
-                startsAtDateTime: MakeDay(16, 0),
-            }),
-        }),
-        ({
-            id: "7",
-            color: "purple",
-            title: "a 2nd event that spans 10 days",
-            dateRange: new DateTimeRange({
-                durationMillis: gMillisecondsPerDay * 10,
-                isAllDay: false,
-                startsAtDateTime: MakeDay(17, 0),
-            }),
-        }),
-    ];
-
-    const [value1, setValue1] = React.useState<DateTimeRange>(new DateTimeRange({
-        isAllDay: true,
-        startsAtDateTime: new Date(),
-        durationMillis: 0,
-    }));
-
-    const [value2, setValue2] = React.useState<DateTimeRange>(new DateTimeRange({
-        isAllDay: true,
-        startsAtDateTime: new Date(),
-        durationMillis: 0,
-    }));
-
-    const handleChange1 = (newValue: DateTimeRange) => {
-        setValue1(newValue);
-    };
-
-    const handleChange2 = (newValue: DateTimeRange) => {
-        setValue2(newValue);
-    };
-
-    const x = new DateTimeRange({
-        isAllDay: true,
-        startsAtDateTime: new Date('2024-04-28T00:00:00.000Z'),
-        durationMillis: gMillisecondsPerDay,
-    });
-
-    const y = new DateTimeRange({
-        isAllDay: true,
-        startsAtDateTime: new Date('2024-04-28T00:00:00.000Z'),
-        durationMillis: gMillisecondsPerDay * 2,
-    });
-
-    //console.log(`unioninng`);
-    //const unioned = x.unionWith(y);
-    const unioned = value1.unionWith(value2);
-
-    return <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <NoSsr>
-            <div style={{ border: "1px solid black", width: "min-content", margin: "40px" }}>
-                <DateTimeRangeControl value={value1} onChange={handleChange1} items={events} />
-            </div>
-
-            <DateRangeViewer value={value1} />
-            <div style={{ border: "1px solid black", width: "min-content", margin: "40px" }}>
-                <DateTimeRangeControl value={value2} onChange={handleChange2} items={events} />
-            </div>
-            <DateRangeViewer value={value2} />
-
-            <div>UNIONED:</div>
-
-            <DateRangeViewer value={unioned} />
-
-        </NoSsr>
-    </LocalizationProvider>;
-}
-
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -599,7 +501,6 @@ export const CMDatePicker = ({ value, ...props }: CMDatePickerProps) => {
                     value={value}
                     coalescedFallbackValue={value}
                     otherValue={null} // use LAST time so it doesn't spill into next day.
-                    items={[]}
                     range={new DateTimeRange({
                         durationMillis: 0,
                         isAllDay: false,
@@ -612,7 +513,6 @@ export const CMDatePicker = ({ value, ...props }: CMDatePickerProps) => {
         </div>
     </NoSsr>;
 };
-
 
 
 
@@ -653,7 +553,6 @@ export const CMDateRangePicker = ({ value, ...props }: CMDateRangePickerProps) =
                     onChange={handleStartDateChange}
                     value={value.start}
                     otherValue={null} // use LAST time so it doesn't spill into next day.
-                    items={[]}
                     range={range}
                     showDuration={false}
                     className="datePart field startDate"

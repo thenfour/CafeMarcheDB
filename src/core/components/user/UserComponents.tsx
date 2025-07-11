@@ -6,7 +6,6 @@ import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
-import { SortDirection } from "shared/rootroot";
 import { IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
@@ -16,18 +15,17 @@ import { gIconMap } from "../../db3/components/IconMap";
 import getUserCredits from "../../db3/queries/getUserCredits";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
-import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AttendanceChip, InstrumentChip, SongChip } from "../CMCoreComponents";
 import { AdminInspectObject, CMTable, GoogleIconSmall, KeyValueTable } from "../CMCoreComponents2";
 import { CMLink } from "../CMLink";
-import { ChooseItemDialog } from "../select/ChooseItemDialog";
 import { useDashboardContext } from "../DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
-import { SongsProvider, useSongsContext } from "../song/SongsContext";
 import { CMTab, CMTabPanel } from "../TabPanel";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
+import { ChooseItemDialog } from "../select/ChooseItemDialog";
+import { SongsProvider, useSongsContext } from "../song/SongsContext";
 import { UserAdminPanel } from "./UserAdminPanel";
 import { UserChip } from "./userChip";
 
@@ -36,31 +34,6 @@ export enum UserDetailTabSlug {
     attendance = "attendance",
     wiki = "wiki",
 };
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-export enum UserOrderByColumnOptions {
-    id = "id",
-    name = "name",
-    createdAt = "createdAt",
-};
-
-export type UserOrderByColumnOption = keyof typeof UserOrderByColumnOptions;
-
-export interface UsersFilterSpec {
-    quickFilter: string;
-    refreshSerial: number; // this is necessary because you can do things to change the results from this page. think of adding an event then refetching.
-
-    orderByColumn: UserOrderByColumnOptions;
-    orderByDirection: SortDirection;
-
-    tagFilter: DiscreteCriterion;
-    instrumentFilter: DiscreteCriterion;
-    roleFilter: DiscreteCriterion;
-};
-
-
 
 
 

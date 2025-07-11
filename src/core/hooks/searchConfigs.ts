@@ -1,16 +1,17 @@
 import { SearchableListConfig } from 'src/core/hooks/useSearchableList';
 import * as db3 from 'src/core/db3/db3';
-import { EnrichedVerboseSong, SongsFilterSpec } from '../components/song/SongComponentsBase';
-import { EventsFilterSpec } from '../components/event/EventComponentsBase';
-import { UsersFilterSpec } from '../components/user/UserComponents';
-import { EnrichedVerboseFile, FilesFilterSpec } from '../components/file/FileComponentsBase';
-import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from '../components/wiki/WikiPageComponentsBase';
+import { SongsFilterSpec } from '../components/song/SongClientBaseTypes';
+
+import { EventsFilterSpec } from '../components/event/EventClientBaseTypes';
+import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from '../components/wiki/WikiClientBaseTypes';
+import { UsersFilterSpec } from '../components/user/UserClientBaseTypes';
+import { FilesFilterSpec } from '../components/file/FileClientBaseTypes';
 
 // Song search configuration
 export const songSearchConfig: SearchableListConfig<
     SongsFilterSpec,
     db3.SongPayload_Verbose,
-    EnrichedVerboseSong
+    db3.EnrichedVerboseSong
 > = {
     getQueryArgs: (filterSpec: SongsFilterSpec, offset: number, take: number) => ({
         offset,
@@ -102,7 +103,7 @@ export const userSearchConfig: SearchableListConfig<
 export const fileSearchConfig: SearchableListConfig<
     FilesFilterSpec,
     db3.FilePayload,
-    EnrichedVerboseFile
+    db3.EnrichedVerboseFile
 > = {
     getQueryArgs: (filterSpec: FilesFilterSpec, offset: number, take: number) => ({
         offset,

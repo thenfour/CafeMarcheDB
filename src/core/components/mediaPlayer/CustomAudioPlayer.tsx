@@ -1,5 +1,5 @@
 import { IsUsableNumber } from "@/shared/utils";
-import { PlayArrow } from "@mui/icons-material";
+import { PauseCircleFilled, PlayArrow } from "@mui/icons-material";
 import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
@@ -463,7 +463,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
                         {isLoading ? (
                             <span className="audioLoadingSpinner">⏳</span>
                         ) : isPlaying ? (
-                            gIconMap.Pause()
+                            <PauseCircleFilled className="pauseButton" />
                         ) : (
                             <PlayArrow />
                         )}

@@ -4,7 +4,7 @@ import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext, useDashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
+import { useDashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/song/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";

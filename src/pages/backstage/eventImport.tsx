@@ -178,7 +178,6 @@ const NewEventForm = (props: NewEventDialogProps) => {
                 <div>
                     <EventDateField dateRange={range} />
                     <DateTimeRangeControl
-                        items={[]}
                         onChange={(newValue) => {
                             const spec = newValue.getSpec();
                             setSegmentValue({

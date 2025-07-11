@@ -4,10 +4,10 @@ import { StandardVariationSpec } from "shared/color";
 import { CMChip } from "src/core/components/CMChip";
 import { AdminInspectObject } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { FilesFilterSpec } from "./FileComponentsBase";
 import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { FilesFilterSpec } from "./FileClientBaseTypes";
 
 
 type FileListItemProps = {

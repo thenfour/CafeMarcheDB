@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { DashboardContext } from 'src/core/components/DashboardContext';
 import { SnackbarContext } from 'src/core/components/SnackbarContext';
-import { GetSearchResultsInput, SearchResultsRet, MakeEmptySearchResultsRet } from 'src/core/db3/shared/apiTypes';
+import { GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet } from 'src/core/db3/shared/apiTypes';
 import { fetchSearchResultsApi } from '../components/search/SearchBase';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -25,6 +25,7 @@ export interface UseSearchableListResult<TEnrichedItem> {
     enrichedItems: TEnrichedItem[];
     results: SearchResultsRet;
     loadMoreData: () => void;
+    loading: boolean;
 }
 
 export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
@@ -39,17 +40,20 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
 
     const [enrichedItems, setEnrichedItems] = useState<TEnrichedItem[]>([]);
     const [results, setResults] = useState<SearchResultsRet>(MakeEmptySearchResultsRet());
+    const [loading, setLoading] = useState(false);
 
     const isFetchingRef = useRef(false);
 
     const fetchData = async (offset: number) => {
         if (isFetchingRef.current) return;
         isFetchingRef.current = true;
+        setLoading(true);
 
         try {
             const queryArgs = config.getQueryArgs(filterSpec, offset, pageSize);
             //console.log('Fetching search results with args:', queryArgs);
             const searchResult = await fetchSearchResultsApi(queryArgs);
+            setLoading(false);
             const enrichmentArgs = config.getEnrichmentArgs ? config.getEnrichmentArgs(dashboardContext) : [];
 
             const newItemsDb = searchResult.results.map(rawItem =>
@@ -98,5 +102,5 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
         void fetchData(enrichedItems.length);
     }, [enrichedItems]);
 
-    return { enrichedItems, results, loadMoreData };
+    return { enrichedItems, results, loadMoreData, loading };
 }

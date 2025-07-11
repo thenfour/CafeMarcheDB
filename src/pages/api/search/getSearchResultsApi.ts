@@ -23,6 +23,13 @@ export default api(async (req, res, ctx: Ctx) => {
             const validatedArgs = ZGetSearchResultsInput.parse(parsedargs);
 
             const result = await GetSearchResultsCore(validatedArgs, authenticatedCtx);
+
+            // delay 1 second
+            // await new Promise(resolve => setTimeout(async () => {
+            //     res.status(200).send(superjson.serialize(result));
+            //     resolve(result);
+            // }, 100));
+
             res.status(200).send(superjson.serialize(result));
         } catch (error) {
             console.error("Failed to fetch search results", error);

@@ -104,6 +104,14 @@ export const DateToYYYYMMDDHHMMSS = (x: Date) => {
     return x.toISOString().replace(/[^0-9]/gm, "").substr(0, 14);
 }
 
+// function to convert a Date object to a YYYYMMDD string format
+export function DateToYYYYMMDD(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+}
+
 export function formatSongLength(totalSeconds: number): string | null {
     if (isNaN(totalSeconds) || totalSeconds < 0) return null;
     const minutes = Math.floor(totalSeconds / 60);
@@ -397,6 +405,10 @@ export class DateTimeRange {
             isAllDay: false,
             startsAtDateTime: new Date(),
         };
+    }
+
+    toSerializableString(): string {
+        return JSON.stringify(this.spec);
     }
 
     getSpec(): DateTimeRangeSpec {
@@ -765,7 +777,7 @@ export class DateTimeRange {
             //ret.inRange = true;
             ret.isLastDay = true;
         }
-        if (isInRange(day.valueOf(), rangeBeginDate.valueOf(), rangeEndDate.valueOf())) {
+        if (ret.isFirstDay || ret.isLastDay || isInRange(day.valueOf(), rangeBeginDate.valueOf(), rangeEndDate.valueOf())) {
             ret.inRange = true;
         }
 

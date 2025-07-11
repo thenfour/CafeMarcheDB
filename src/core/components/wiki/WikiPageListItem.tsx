@@ -8,7 +8,7 @@ import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { UserChip } from "../user/userChip";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { CMLink } from "../CMLink";
-import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "./WikiPageComponentsBase";
+import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "./WikiClientBaseTypes";
 
 export interface WikiPageListItemProps {
     index: number;

@@ -7,9 +7,8 @@ import getSongActivityReport from '../../db3/queries/getSongActivityReport';
 import { GetSongActivityReportFilterSpec, GetSongActivityReportFilterSpecTimingFilter, GetSongActivityReportRet, GetSongActivityReportRetEvent } from '../../db3/shared/apiTypes';
 import { ActivityVis, ActivityVisBucket } from '../ActivityVis';
 import { SettingMarkdown } from '../SettingMarkdown';
-import { EnrichedVerboseSong } from './SongComponentsBase';
 
-import { EventAPI } from '../../db3/db3';
+import { EnrichedVerboseSong, EventAPI } from '../../db3/db3';
 import { DashboardContext } from '../DashboardContext';
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from '../search/FilterControl';
 import { arraysContainSameValues } from 'shared/arrayUtils';

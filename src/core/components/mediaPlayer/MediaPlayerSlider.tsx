@@ -20,7 +20,7 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
     padding: '8px 0',
     '& .MuiSlider-track': {
         border: 'none',
-        backgroundColor: '#0088ff',
+        backgroundColor: '#fc0',
         height: 4,
     },
     '& .MuiSlider-rail': {
@@ -31,18 +31,18 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
     '& .MuiSlider-thumb': {
         height: 12,
         width: 12,
-        backgroundColor: '#0088ff',
+        backgroundColor: '#fc0',
         border: '2px solid #fff',
         '&:hover': {
-            backgroundColor: '#00aaff',
+            backgroundColor: '#c80',
             boxShadow: '0 0 0 4px rgba(0, 136, 255, 0.16)',
         },
         '&:focus, &.Mui-focusVisible': {
-            backgroundColor: '#00aaff',
+            backgroundColor: '#c80',
             boxShadow: '0 0 0 4px rgba(0, 136, 255, 0.16)',
         },
         '&.Mui-active': {
-            backgroundColor: '#00aaff',
+            backgroundColor: '#c80',
             boxShadow: '0 0 0 6px rgba(0, 136, 255, 0.16)',
         },
     },
@@ -51,7 +51,7 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
             backgroundColor: 'rgba(255, 255, 255, 0.3)',
         },
         '& .MuiSlider-track': {
-            backgroundColor: '#00aaff',
+            backgroundColor: '#c80',
         },
     },
     '&.Mui-disabled': {

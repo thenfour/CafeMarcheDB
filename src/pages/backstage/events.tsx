@@ -5,7 +5,6 @@ import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/event/EventComponents";
-import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/event/EventComponentsBase';
 import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -15,6 +14,7 @@ import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {

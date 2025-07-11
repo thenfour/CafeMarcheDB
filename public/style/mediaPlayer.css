@@ -29,6 +29,29 @@
     flex-wrap: wrap;
 }
 
+.mediaPlayerBar .mediaPlayerBarTransport svg {
+    --icon-size: 32px;
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+.mediaPlayerBar .CMSmallButton.enabled:hover svg {
+    fill: #fc0;
+}
+
+.mediaPlayerBar .CMSmallButton.playPauseButton:hover svg.pauseButton:hover {
+    fill: #c80;
+}
+
+.mediaPlayerBar .CMSmallButton.playPauseButton svg.pauseButton {
+    fill: #fc0;
+}
+
+/* 
+.audioProgressContainer .MuiSlider-track {
+    background-color: #fc0;
+} */
+
 .mediaPlayerBar .CMSmallButton.enabled {
     /* by default cmsmallbuttons have 0.5 opacity (hm.) */
     opacity: 1;
@@ -371,10 +394,12 @@
     display: flex;
     background-color: #444;
     border-radius: 2px;
+    border: 1px solid transparent;
 }
 
 .setlistVisualizationBar .songPartition--current {
     background-color: #8ff3;
+    border: 1px solid #fa0;
 }
 
 .setlistVisualizationBar .songPartition .songBoundsContainer {

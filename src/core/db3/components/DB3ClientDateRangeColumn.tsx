@@ -63,7 +63,6 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             renderEditCell: (params: GridRenderEditCellParams) => {
                 // renders only the editor
                 return <DateTimeRangeControl
-                    items={[]}
                     onChange={(newValue) => {
                         const spec = newValue.getSpec();
                         void params.api.setEditCellValue({ id: params.id, field: this.args.startsAtColumnName, value: spec.startsAtDateTime })!.then(() => {
@@ -92,7 +91,6 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             isReadOnly: !this.editable,
             validationResult: params.validationResult,
             value: <DateTimeRangeControl
-                items={[]}
                 onChange={(newValue) => {
                     const spec = newValue.getSpec();
                     params.api.setFieldValues({

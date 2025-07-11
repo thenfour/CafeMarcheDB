@@ -742,6 +742,18 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     --range-border-radius-size: 50%;
 }
 
+.EventCalendarMonthContainer {
+    position: relative;
+}
+
+.EventCalendarMonthContainer .loadingIndicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* height: 6px; */
+    /* background-color: red; */
+}
 
 .EventCalendarMonth .MuiDayCalendar-weekContainer {
     /* can't have margin / padding for rows, to allow weekend highlighting to flow*/
@@ -766,6 +778,8 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 .EventCalendarMonth .dayContainer {
     position: relative;
+    --color-foreground: red;
+    --color-background: blue;
 }
 
 .EventCalendarMonth .dayContainer .dayCustomArea,
@@ -788,7 +802,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 .EventCalendarMonth .dayContainer .dayCustomArea {
     top: 20px;
-    opacity: 40%;
+    /* opacity: 40%; */
     z-index: 4;
 }
 
@@ -901,9 +915,9 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 }
 
 .EventCalendarMonth .dayContainer .otherEvent {
-    --event-color: #ccc;
+    /* --event-color: #ccc; */
     height: var(--other-event-lane-height);
-    background-color: var(--event-color);
+    background-color: var(--color-foreground);
     width: auto;
 }
 

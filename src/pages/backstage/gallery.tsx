@@ -30,9 +30,7 @@ import { ChipFilterGroup, FilterControls } from "../../core/components/search/Fi
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
-import { MediaPlayerBarTester } from "@/src/core/components/mediaPlayer/MediaPlayerBarTester";
 import AbcNotationRenderer from "@/src/core/components/AbcNotationRenderer";
-import { DateTimeRangeControlExample } from "@/src/core/components/DateTime/DateTimeRangeControl";
 
 interface FilterSpec {
     qfText: string;
@@ -352,8 +350,6 @@ const MainContent = () => {
 
     return <div>
 
-        <MediaPlayerBarTester />
-
         <AbcTester />
 
         <div>
@@ -407,14 +403,6 @@ const MainContent = () => {
                 name: (songValue?.name) || "<null>",
             }} />
 
-        </CMSinglePageSurfaceCard>
-
-        <CMSinglePageSurfaceCard>
-
-            <h3>DateTimeRange</h3>
-            <div>
-                <DateTimeRangeControlExample />
-            </div>
         </CMSinglePageSurfaceCard>
 
         <NameValuePair

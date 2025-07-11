@@ -5,8 +5,8 @@ import { SearchResultsRet } from "../../db3/shared/apiTypes";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AdminInspectObject, GoogleIconSmall } from "../CMCoreComponents2";
 import { CMLink } from "../CMLink";
-import { UsersFilterSpec } from "./UserComponents";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { UsersFilterSpec } from "./UserClientBaseTypes";
 
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 

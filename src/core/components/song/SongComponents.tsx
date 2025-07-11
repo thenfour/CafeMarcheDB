@@ -24,7 +24,7 @@ import { MetronomeButton } from '../Metronome';
 import { Markdown } from '../markdown/Markdown';
 import { SearchableNameColumnClient } from '../SearchableNameColumnClient';
 import { SettingMarkdown } from '../SettingMarkdown';
-import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongWithMetadata } from './SongComponentsBase';
+import { CalculateSongMetadata, GetSongFileInfo, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from '../SongFileComponents';
 import { SongHistory } from './SongHistory';
 import { VisibilityValue } from '../VisibilityControl';
@@ -449,7 +449,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     onCancel={() => { }}
-                    onOK={(obj: EnrichedVerboseSong, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: db3.EnrichedVerboseSong, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.song_edit,
                             context: "song detail dialog",
@@ -518,7 +518,7 @@ export enum SongDetailTabSlug {
 
 
 export interface SongDetailArgs {
-    song: EnrichedVerboseSong;
+    song: db3.EnrichedVerboseSong;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTab?: SongDetailTabSlug;

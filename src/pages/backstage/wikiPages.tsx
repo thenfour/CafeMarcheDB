@@ -1,4 +1,5 @@
 import { NavRealm } from "@/src/core/components/MenuStructure";
+import { EnrichedVerboseWikiPage, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "@/src/core/components/wiki/WikiClientBaseTypes";
 import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
 import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
 import { BlitzPage } from "@blitzjs/next";
@@ -8,7 +9,6 @@ import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
-import { EnrichedVerboseWikiPage, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "src/core/components/wiki/WikiPageComponentsBase";
 import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
