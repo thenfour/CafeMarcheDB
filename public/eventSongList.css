@@ -353,9 +353,9 @@
     /* font-weight: bold; */
     font-size: 20px;
     /* background-color: #ccc; */
-    border-radius: 4px;
+    border-radius: 2px;
     margin: 2px;
-    padding: 0 15px;
+    padding: 0 12px;
 }
 
 .freeButton.CMSmallButton.DotMenu:hover {
