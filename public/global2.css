@@ -1206,6 +1206,22 @@ in particular the date range picker is wide.*/
     max-height: none;
 }
 
+/* Dialog positioning for grid layout with media bar */
+.MuiModal-root .MuiBackdrop-root {
+    padding-bottom: var(--media-bar-height, 0);
+}
+
+.MuiDialog-container {
+    padding-bottom: var(--media-bar-height, 0);
+    align-items: flex-start;
+    padding-top: 64px;
+}
+
+.MuiDialog-paper {
+    margin: auto;
+    max-height: calc(100vh - var(--media-bar-height, 0) - 64px);
+}
+
 
 
 /* -  --------------------------------- */

@@ -229,46 +229,50 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     // }
 
     return (
-        <>
-            <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
-                <Toolbar style={{ position: "relative" }}>
-                    <div className={`headerIndicatorBar ${session.impersonatingFromUserId != null ? "impersonating" : "notImpersonating"}`}></div>
-                    <IconButton
-                        size="large"
-                        edge="start"
-                        color="inherit"
-                        aria-label="toggle drawer"
-                        sx={{ mr: 2, display: { xs: 'flex', md: 'none' } }}
-                        onClick={props.onClickToggleDrawer}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography
-                        variant="h6"
-                        noWrap
-                        component="div"
-                        sx={{ display: { xs: 'none', sm: 'block' } }}
-                    >
-                        <Link href={"/backstage"} className={`logo`}>Café Marché Backstage</Link>
-                    </Typography>
+        <AppBar
+            position="static"
+            sx={{
+                gridArea: 'appbar',
+                zIndex: theme.zIndex.drawer + 1
+            }}
+        >
+            <Toolbar style={{ position: "relative" }}>
+                <div className={`headerIndicatorBar ${session.impersonatingFromUserId != null ? "impersonating" : "notImpersonating"}`}></div>
+                <IconButton
+                    size="large"
+                    edge="start"
+                    color="inherit"
+                    aria-label="toggle drawer"
+                    sx={{ mr: 2, display: { xs: 'flex', md: 'none' } }}
+                    onClick={props.onClickToggleDrawer}
+                >
+                    <MenuIcon />
+                </IconButton>
+                <Typography
+                    variant="h6"
+                    noWrap
+                    component="div"
+                    sx={{ display: { xs: 'none', sm: 'block' } }}
+                >
+                    <Link href={"/backstage"} className={`logo`}>Café Marché Backstage</Link>
+                </Typography>
 
-                    <MetronomeDialogButton />
+                <MetronomeDialogButton />
 
-                    <MainSiteSearch />
+                <MainSiteSearch />
 
-                    <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
+                <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
-                    {(session.userId != null) && <>
-                        <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                            <AppBarUserIcon_Desktop />
-                        </Box>
-                        <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-                            <AppBarUserIcon_Mobile />
-                        </Box>
-                    </>}
-                </Toolbar>
-            </AppBar>
-        </>
+                {(session.userId != null) && <>
+                    <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+                        <AppBarUserIcon_Desktop />
+                    </Box>
+                    <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+                        <AppBarUserIcon_Mobile />
+                    </Box>
+                </>}
+            </Toolbar>
+        </AppBar>
     );
 }; // PrimarySearchAppBar
 
@@ -303,35 +307,82 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
         setOpen(!open);
     };
 
-    return (<>
-        <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
-        <SideMenu
-            navRealm={navRealm}
-            open={open}
-            onClose={() => setOpen(false)}
-            variant={isMdUp ? "permanent" : "temporary"}
-            drawerWidth={drawerWidth}
-            theme={theme}
-        />
-        <Box
-            sx={{
-                flexGrow: 1,
-                backgroundColor: theme.palette.background.default,
-                padding: theme.spacing(3)
-            }}
-            className="mainContentBackdrop"
-        >
-            <Toolbar />
-            <AdminInspectObject label="DashboardCtx" src={dashboardContext} />
+    // Grid layout configuration
+    const gridStyles = {
+        display: 'grid',
+        height: '100vh',
+        width: '100%',
+        gridTemplateRows: 'auto 1fr auto', // AppBar, Content, MediaBar (footer)
+        gridTemplateColumns: isMdUp ? `${drawerWidth}px 1fr` : '1fr', // Sidebar, Main (desktop only)
+        gridTemplateAreas: isMdUp
+            ? `"appbar appbar"
+               "sidebar content"
+               "mediabar mediabar"`
+            : `"appbar"
+               "content"
+               "mediabar"`,
+        gap: 0,
+    };
 
-            <React.Suspense>
-                {forceLogin ? <LoginSignup /> : <>
-                    {children}
-                </>}
-            </React.Suspense>
+    return (
+        <Box sx={gridStyles}>
+            {/* AppBar */}
+            <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer} />
+
+            {/* Sidebar */}
+            <SideMenu
+                navRealm={navRealm}
+                open={open}
+                onClose={() => setOpen(false)}
+                variant={isMdUp ? "permanent" : "temporary"}
+                drawerWidth={drawerWidth}
+                theme={theme}
+            />
+
+            {/* Main Content */}
+            <Box
+                sx={{
+                    gridArea: 'content',
+                    overflow: 'auto',
+                    backgroundColor: theme.palette.background.default,
+                    padding: theme.spacing(3)
+                }}
+                className="mainContentBackdrop"
+            >
+                <AdminInspectObject label="DashboardCtx" src={dashboardContext} />
+
+                <React.Suspense>
+                    {forceLogin ? <LoginSignup /> : <>
+                        {children}
+                    </>}
+                </React.Suspense>
+            </Box>
+
+            {/* Media Player Footer */}
+            <Box
+                ref={(el: HTMLDivElement | null) => {
+                    // Measure media bar height for dialog positioning
+                    if (el) {
+                        const height = el.getBoundingClientRect().height;
+                        document.documentElement.style.setProperty('--media-bar-height', `${height}px`);
+                    }
+                }}
+                className="mediaPlayerBarContainer"
+                sx={{
+                    gridArea: 'mediabar',
+                    zIndex: 9999, // Must be usable even when dialogs are open
+                    '& .mediaPlayerBar': {
+                        position: 'relative',
+                        left: 'auto',
+                        right: 'auto',
+                        bottom: 'auto',
+                        pointerEvents: 'auto',
+                    }
+                }}
+            >
+                <MediaPlayerBar mediaPlayer={mediaPlayer} />
+            </Box>
         </Box>
-        <MediaPlayerBar mediaPlayer={mediaPlayer}></MediaPlayerBar>
-    </>
     );
 }
 
@@ -346,7 +397,7 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
+            <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
                     <AppContextMarker name="bs">
                         <ConfirmProvider>

@@ -691,16 +691,38 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
         <Drawer
             sx={{
                 flexShrink: 0,
-                width: drawerWidth
+                width: drawerWidth,
+                ...(variant === "permanent" && {
+                    gridArea: 'sidebar',
+                    position: 'relative',
+                    height: '100%', // Constrain to grid area height
+                    overflow: 'hidden', // Prevent overflow
+                    '& .MuiDrawer-paper': {
+                        position: 'relative',
+                        width: drawerWidth,
+                        height: '100%',
+                        borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+                        boxSizing: 'border-box',
+                        overflow: 'hidden', // Prevent paper overflow
+                    },
+                }),
             }}
             variant={variant}
             anchor="left"
             open={open}
             onClose={onClose}
         >
-            <Box sx={{ ...theme.mixins.toolbar }} />
+            {variant === "temporary" && <Box sx={{ ...theme.mixins.toolbar }} />}
             <AppContextMarker name="dashboardMenu">
-                <List component="nav" className="CMMenu">
+                <List
+                    component="nav"
+                    className="CMMenu"
+                    sx={variant === "permanent" ? {
+                        height: '100%',
+                        overflow: 'auto', // Make menu content scrollable
+                        paddingBottom: '100px', // Add generous bottom padding for accessibility
+                    } : {}}
+                >
                     {menuItems.map((item, index) => (
                         <AppContextMarker name={getMenuItemName(item.item)} key={index}>
                             <MenuItemComponent
@@ -712,7 +734,9 @@ export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme 
                             />
                         </AppContextMarker>
                     ))}
-                    <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
+                    {variant === "temporary" && (
+                        <li style={{ height: 100 }}></li>
+                    )}
                 </List>
             </AppContextMarker>
         </Drawer>
