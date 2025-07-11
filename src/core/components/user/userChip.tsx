@@ -16,6 +16,7 @@ export interface UserChipBaseProps {
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
     useHashedColor?: boolean;
+    noLink?: boolean; // if true, will not render as a link
 };
 
 // the user chip when you know the user info.
@@ -42,7 +43,7 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
         variation={props.variation}
         size={props.size}
         onClick={clickHandler}
-        href={userURI}
+        href={props.noLink ? undefined : userURI}
         className={props.className}
         color={props.color}
     >
@@ -94,6 +95,7 @@ export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
             endAdornment={props.endAdornment}
             useHashedColor={props.useHashedColor}
             color={props.color}
+            noLink={props.noLink}
         />
         : <ValuedUserChip
             value={props.value}
@@ -105,6 +107,7 @@ export const UserChip = (props: ValuedUserChipProps | QueriedUserChipProps) => {
             endAdornment={props.endAdornment}
             useHashedColor={props.useHashedColor}
             color={props.color}
+            noLink={props.noLink}
         />
 }
 

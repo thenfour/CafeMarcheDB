@@ -17,6 +17,10 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
 import { useSongsContext } from "../song/SongsContext";
+import { AddUserButton } from "./UserComponents";
+import { CompareArrows } from "@mui/icons-material";
+import { SettingMarkdown } from "../SettingMarkdown";
+import { UserChip } from "./userChip";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {
@@ -310,6 +314,7 @@ type UserMassAnalysisTabContentProps = {
 
 export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProps) => {
     const [qr, refetch] = useQuery(getUserMassAnalysis, { userId: props.user.id });
+    const [compareWithUser, setCompareWithUser] = React.useState<db3.UserPayload | null>(null);
 
     const getRiskColor = (level: 'low' | 'medium' | 'high') => {
         switch (level) {
@@ -330,6 +335,15 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
 
     return <div className="UserMassAnalysisTabContent">
         <AdminInspectObject src={qr} label="mass analysis" />
+
+        <div style={{ display: 'flex', margin: 10 }}>
+            <AddUserButton
+                onSelect={setCompareWithUser}
+                buttonChildren={<><CompareArrows /> Compare with user...</>}
+                title={"Compare with user"}
+            />
+            <UserChip value={compareWithUser} />
+        </div>
 
         {/* Risk Assessment */}
         <div style={{
@@ -384,18 +398,35 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
         {totalContentItems > 0 && (
             <div style={{ marginTop: '20px' }}>
                 <h4>Content Created</h4>
-                <KeyValueTable data={{
-                    "Songs": qr.contentCounts.createdSongs,
-                    "Events": qr.contentCounts.createdEvents,
-                    "Wiki Pages": qr.contentCounts.createdWikiPages,
-                    "Gallery Items": qr.contentCounts.createdGalleryItems,
-                    "Uploaded Files": qr.contentCounts.uploadedFiles,
-                    "Menu Links": qr.contentCounts.createdMenuLinks,
-                    "Custom Links": qr.contentCounts.createdCustomLinks,
-                    "Song Credits": qr.contentCounts.songCredits,
-                    "Setlist Plans": qr.contentCounts.setlistPlans,
-                    "Wiki Revisions": qr.contentCounts.wikiPageRevisions,
-                }} />
+                <CMTable
+                    rows={Object.entries({
+                        "Songs": qr.contentCounts.createdSongs,
+                        "Events": qr.contentCounts.createdEvents,
+                        "Wiki Pages": qr.contentCounts.createdWikiPages,
+                        "Gallery Items": qr.contentCounts.createdGalleryItems,
+                        "Uploaded Files": qr.contentCounts.uploadedFiles,
+                        "Menu Links": qr.contentCounts.createdMenuLinks,
+                        "Custom Links": qr.contentCounts.createdCustomLinks,
+                        "Song Credits": qr.contentCounts.songCredits,
+                        "Setlist Plans": qr.contentCounts.setlistPlans,
+                        "Wiki Revisions": qr.contentCounts.wikiPageRevisions,
+                    })}
+                    columns={[
+                        {
+                            header: "Content Type",
+                            memberName: "0",
+                            render: (row) => <span>{row.row[0]}</span>,
+                        },
+                        {
+                            header: "Count",
+                            memberName: "1",
+                            render: (row) => <span>{row.row[1].toLocaleString()}</span>,
+                            valueBar: {
+                                getValue: (row) => row[1],
+                            },
+                        }
+                    ]}
+                />
             </div>
         )}
 
@@ -403,15 +434,32 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
         {totalParticipationItems > 0 && (
             <div style={{ marginTop: '20px' }}>
                 <h4>Participation & Engagement</h4>
-                <KeyValueTable data={{
-                    "Event Responses": qr.participationCounts.eventResponses,
-                    "Event Segment Responses": qr.participationCounts.eventSegmentResponses,
-                    "Workflow Assignments": qr.participationCounts.workflowAssignments,
-                    "Workflow Log Items": qr.participationCounts.workflowLogItems,
-                    "Tagged Files": qr.participationCounts.taggedFiles,
-                    "Instruments": qr.participationCounts.instruments,
-                    "User Tags": qr.participationCounts.userTags,
-                }} />
+                <CMTable
+                    rows={Object.entries({
+                        "Event Responses": qr.participationCounts.eventResponses,
+                        "Event Segment Responses": qr.participationCounts.eventSegmentResponses,
+                        "Workflow Assignments": qr.participationCounts.workflowAssignments,
+                        "Workflow Log Items": qr.participationCounts.workflowLogItems,
+                        "Tagged Files": qr.participationCounts.taggedFiles,
+                        "Instruments": qr.participationCounts.instruments,
+                        "User Tags": qr.participationCounts.userTags,
+                    })}
+                    columns={[
+                        {
+                            header: "Participation Type",
+                            memberName: "0",
+                            render: (row) => <span>{row.row[0]}</span>,
+                        },
+                        {
+                            header: "Count",
+                            memberName: "1",
+                            render: (row) => <span>{row.row[1].toLocaleString()}</span>,
+                            valueBar: {
+                                getValue: (row) => row[1],
+                            },
+                        }
+                    ]}
+                />
             </div>
         )}
 

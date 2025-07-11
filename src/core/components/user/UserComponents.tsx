@@ -80,8 +80,8 @@ export const AddUserButton = (props: AddUserButtonProps) => {
                 title={props.title || "Add user"}
                 onCancel={() => setAddUserOpen(false)}
                 onOK={(u: db3.UserPayload) => handleOK(u)}
-                renderValue={(u) => <UserChip value={u.value} />}
-                renderAsListItem={(p, u: db3.UserPayload) => <UserChip value={u} />}
+                renderValue={(u) => <UserChip value={u.value} noLink size="small" />}
+                renderAsListItem={(p, u: db3.UserPayload) => <UserChip value={u} noLink size="small" />}
                 description={props.description}
             />}
     </>;
