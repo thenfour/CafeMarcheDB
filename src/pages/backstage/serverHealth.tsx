@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { formatFileSize } from "shared/rootroot";
 import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS } from "shared/time";
-import { InspectObject, CMTable, CMTableSlot, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
+import { InspectObject, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { ActivityLogUserChip } from "src/core/db3/DB3Client";
@@ -13,6 +13,7 @@ import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChang
 import getServerHealth from "src/core/db3/queries/getServerHealth";
 import { GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { CMTable, CMTableSlot } from "@/src/core/components/CMTable";
 
 const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerHealthResult }) => {
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});

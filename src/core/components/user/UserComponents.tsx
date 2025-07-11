@@ -15,9 +15,10 @@ import { gIconMap } from "../../db3/components/IconMap";
 import getUserCredits from "../../db3/queries/getUserCredits";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
+import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AttendanceChip, InstrumentChip, SongChip } from "../CMCoreComponents";
-import { AdminInspectObject, CMTable, GoogleIconSmall, KeyValueTable } from "../CMCoreComponents2";
+import { AdminInspectObject, GoogleIconSmall, KeyValueTable } from "../CMCoreComponents2";
 import { CMLink } from "../CMLink";
 import { useDashboardContext } from "../DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
@@ -28,11 +29,13 @@ import { ChooseItemDialog } from "../select/ChooseItemDialog";
 import { SongsProvider, useSongsContext } from "../song/SongsContext";
 import { UserAdminPanel } from "./UserAdminPanel";
 import { UserChip } from "./userChip";
+import { CMTable } from "../CMTable";
 
 export enum UserDetailTabSlug {
     credits = "credits",
     attendance = "attendance",
     wiki = "wiki",
+    massAnalysis = "massAnalysis",
 };
 
 
@@ -406,6 +409,169 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
 };
 
 ////////////////////////////////////////////////////////////////
+type UserMassAnalysisTabContentProps = {
+    user: db3.EnrichedVerboseUser;
+};
+
+export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProps) => {
+    const [qr, refetch] = useQuery(getUserMassAnalysis, { userId: props.user.id });
+
+    const getRiskColor = (level: 'low' | 'medium' | 'high') => {
+        switch (level) {
+            case 'low': return '#28a745';
+            case 'medium': return '#ffc107';
+            case 'high': return '#dc3545';
+        }
+    };
+
+    const formatDate = (date: Date | null) => {
+        if (!date) return 'Never';
+        return new Date(date).toLocaleDateString();
+    };
+
+    const totalContentItems = Object.values(qr.contentCounts).reduce((sum, count) => sum + count, 0);
+    const totalParticipationItems = Object.values(qr.participationCounts).reduce((sum, count) => sum + count, 0);
+    const totalSystemItems = Object.values(qr.systemCounts).reduce((sum, count) => sum + count, 0);
+
+    return <div className="UserMassAnalysisTabContent">
+        <AdminInspectObject src={qr} label="mass analysis" />
+
+        {/* Risk Assessment */}
+        <div style={{
+            marginBottom: '20px',
+            padding: '15px',
+            border: `2px solid ${getRiskColor(qr.riskAssessment.riskLevel)}`,
+            borderRadius: '8px',
+            backgroundColor: `${getRiskColor(qr.riskAssessment.riskLevel)}20`
+        }}>
+            <h3 style={{ color: getRiskColor(qr.riskAssessment.riskLevel), margin: '0 0 10px 0' }}>
+                Risk Assessment: {qr.riskAssessment.riskLevel.toUpperCase()}
+            </h3>
+            <div style={{ marginBottom: '10px' }}>
+                <strong>Safe to Delete:</strong> {qr.riskAssessment.safeToDelete ? '✅ Yes' : '❌ No'}
+            </div>
+
+            {qr.riskAssessment.blockers.length > 0 && (
+                <div style={{ marginBottom: '10px' }}>
+                    <strong>Blockers:</strong>
+                    <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                        {qr.riskAssessment.blockers.map((blocker, index) => (
+                            <li key={index} style={{ color: '#dc3545' }}>{blocker}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {qr.riskAssessment.warnings.length > 0 && (
+                <div>
+                    <strong>Warnings:</strong>
+                    <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                        {qr.riskAssessment.warnings.map((warning, index) => (
+                            <li key={index} style={{ color: '#856404' }}>{warning}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+
+        {/* Summary Statistics */}
+        <KeyValueTable data={{
+            "Total Content Items": totalContentItems,
+            "Total Participation Items": totalParticipationItems,
+            "Total System Items": totalSystemItems,
+            "Account Age": `${qr.activityMetrics.accountAgeInDays} days`,
+            "Has Ever Logged In": qr.activityMetrics.hasEverLoggedIn ? 'Yes' : 'No',
+            "Last Activity": formatDate(qr.activityMetrics.lastActivityDate),
+            "Days Since Last Activity": qr.activityMetrics.daysSinceLastActivity || 'Unknown',
+        }} />
+
+        {/* Content Creation Details */}
+        {totalContentItems > 0 && (
+            <div style={{ marginTop: '20px' }}>
+                <h4>Content Created</h4>
+                <KeyValueTable data={{
+                    "Songs": qr.contentCounts.createdSongs,
+                    "Events": qr.contentCounts.createdEvents,
+                    "Wiki Pages": qr.contentCounts.createdWikiPages,
+                    "Gallery Items": qr.contentCounts.createdGalleryItems,
+                    "Uploaded Files": qr.contentCounts.uploadedFiles,
+                    "Menu Links": qr.contentCounts.createdMenuLinks,
+                    "Custom Links": qr.contentCounts.createdCustomLinks,
+                    "Song Credits": qr.contentCounts.songCredits,
+                    "Setlist Plans": qr.contentCounts.setlistPlans,
+                    "Wiki Revisions": qr.contentCounts.wikiPageRevisions,
+                }} />
+            </div>
+        )}
+
+        {/* Participation Details */}
+        {totalParticipationItems > 0 && (
+            <div style={{ marginTop: '20px' }}>
+                <h4>Participation & Engagement</h4>
+                <KeyValueTable data={{
+                    "Event Responses": qr.participationCounts.eventResponses,
+                    "Event Segment Responses": qr.participationCounts.eventSegmentResponses,
+                    "Workflow Assignments": qr.participationCounts.workflowAssignments,
+                    "Workflow Log Items": qr.participationCounts.workflowLogItems,
+                    "Tagged Files": qr.participationCounts.taggedFiles,
+                    "Instruments": qr.participationCounts.instruments,
+                    "User Tags": qr.participationCounts.userTags,
+                }} />
+            </div>
+        )}
+
+        {/* System Data */}
+        {totalSystemItems > 0 && (
+            <div style={{ marginTop: '20px' }}>
+                <h4>System Data</h4>
+                <CMTable
+                    rows={Object.entries({
+                        "Actions": qr.systemCounts.actions,
+                        "Sessions": qr.systemCounts.sessions,
+                        "Tokens": qr.systemCounts.tokens,
+                        "Changes": qr.systemCounts.changes,
+                    })}
+                    columns={[
+                        {
+                            header: "System Item",
+                            memberName: "0",
+                            render: (row) => <span>{row.row[0]}</span>,
+                        },
+                        {
+                            header: "Count",
+                            memberName: "1",
+                            render: (row) => <span>{row.row[1]}</span>,
+                        }
+                    ]}
+
+                />
+                <KeyValueTable data={{
+                    "Actions": qr.systemCounts.actions,
+                    "Sessions": qr.systemCounts.sessions,
+                    "Tokens": qr.systemCounts.tokens,
+                    "Changes": qr.systemCounts.changes,
+                }} />
+            </div>
+        )}
+
+        {/* User Info */}
+        <div style={{ marginTop: '20px' }}>
+            <h4>User Information</h4>
+            <KeyValueTable data={{
+                "ID": qr.userInfo.id,
+                "Name": qr.userInfo.name,
+                "Email": qr.userInfo.email,
+                "Role": qr.userInfo.roleName || 'No Role',
+                "System Admin": qr.userInfo.isSysAdmin ? 'Yes' : 'No',
+                "Is Deleted": qr.userInfo.isDeleted ? 'Yes' : 'No',
+                "Google ID": qr.userInfo.googleId ? 'Yes' : 'No',
+                "Created": formatDate(qr.userInfo.createdAt),
+            }} />
+        </div>
+    </div>;
+};
+
+////////////////////////////////////////////////////////////////
 export interface UserDetailArgs {
     user: db3.EnrichedVerboseUser;
     tableClient: DB3Client.xTableRenderClient;
@@ -523,6 +689,15 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     >
                         <Suspense fallback={<div className="lds-dual-ring"></div>}>
                             <UserWikiContributionsTabContent user={user} />
+                        </Suspense>
+                    </CMTab>
+                    <CMTab
+                        thisTabId={UserDetailTabSlug.massAnalysis}
+                        summaryTitle={"Mass Analysis"}
+                        summaryIcon={gIconMap.Info()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <UserMassAnalysisTabContent user={user} />
                         </Suspense>
                     </CMTab>
                 </CMTabPanel>
