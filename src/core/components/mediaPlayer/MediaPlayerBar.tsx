@@ -144,14 +144,14 @@ export const MediaPlayerBar: React.FC<{ mediaPlayer: MediaPlayerContextType }> =
                         <AnimatedFauxEqualizer enabled={mediaPlayer.isPlaying} />
                     </div>
                     <div style={{ flexGrow: 1 }}></div>
-                    <div>
+                    {/* <div>
                         <CMSmallButton
                             onClick={() => mediaPlayer.setPlaylist([], undefined)}
                         >
                             {gIconMap.Close()}
                         </CMSmallButton>
 
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>);

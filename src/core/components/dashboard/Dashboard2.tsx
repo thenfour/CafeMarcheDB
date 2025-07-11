@@ -308,11 +308,12 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
     };
 
     // Grid layout configuration
+    const isMediaBarVisible = !!(mediaPlayer.currentTrack || mediaPlayer.playlist.length > 0);
     const gridStyles = {
         display: 'grid',
         height: '100vh',
         width: '100%',
-        gridTemplateRows: 'auto 1fr auto', // AppBar, Content, MediaBar (footer)
+        gridTemplateRows: isMediaBarVisible ? 'auto 1fr auto' : 'auto 1fr 0fr', // AppBar, Content, MediaBar (footer)
         gridTemplateColumns: isMdUp ? `${drawerWidth}px 1fr` : '1fr', // Sidebar, Main (desktop only)
         gridTemplateAreas: isMdUp
             ? `"appbar appbar"
@@ -322,6 +323,7 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
                "content"
                "mediabar"`,
         gap: 0,
+        transition: 'grid-template-rows 0.25s cubic-bezier(.4, 0, .2, 1)',
     };
 
     return (
@@ -367,16 +369,19 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
                         document.documentElement.style.setProperty('--media-bar-height', `${height}px`);
                     }
                 }}
-                className="mediaPlayerBarContainer"
+                className={`mediaPlayerBarContainer${isMediaBarVisible
+                        ? ' mediaPlayerBarContainer--visible'
+                        : ''
+                    }`}
                 sx={{
                     gridArea: 'mediabar',
                     zIndex: 9999, // Must be usable even when dialogs are open
                     '& .mediaPlayerBar': {
-                        position: 'relative',
-                        left: 'auto',
-                        right: 'auto',
-                        bottom: 'auto',
-                        pointerEvents: 'auto',
+                        position: 'relative !important',
+                        left: 'auto !important',
+                        right: 'auto !important',
+                        bottom: 'auto !important',
+                        pointerEvents: 'auto !important',
                     }
                 }}
             >

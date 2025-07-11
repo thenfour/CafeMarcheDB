@@ -376,7 +376,7 @@
 }
 
 .setlistVisualizationBarContainer .BarsContainer {
-    max-height: 125px;
+    max-height: 108px;
 }
 
 .setlistVisualizationBarContainer.expanded .BarsContainer {
@@ -548,4 +548,30 @@
     z-index: var(--z-index-hoverTimeDisplay);
     pointer-events: none;
     /* prevent interaction */
+}
+
+/* Grid layout media player container animation */
+.mediaPlayerBarContainer {
+    overflow: hidden;
+    /* max-height: 0; */
+    background-color: transparent;
+    /* transition: max-height 1.5s linear; */
+    /* transform: translateY(100%);
+    transition: transform 1.5s linear; */
+}
+
+.mediaPlayerBarContainer--visible {
+    /* max-height: 200px; */
+    /* Generous max height to accommodate any content */
+    /* transform: translateY(0); */
+}
+
+/* Override the original fixed positioning animation for grid layout */
+.mediaPlayerBarContainer .mediaPlayerBar {
+    /* transform: translateY(100%);
+    transition: transform 1.5s linear; */
+}
+
+.mediaPlayerBarContainer--visible .mediaPlayerBar {
+    /* transform: translateY(0); */
 }

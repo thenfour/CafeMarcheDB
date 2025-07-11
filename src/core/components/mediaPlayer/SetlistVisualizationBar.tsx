@@ -4,7 +4,7 @@ import { formatSongLength } from "../../../../shared/time";
 import { CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 //import { useMediaPlayer } from "./MediaPlayerContext"; <-- circular dependency.
 import { PlayCircleOutlined } from "@mui/icons-material";
-import { gCharMap } from "../../db3/components/IconMap";
+import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
@@ -428,6 +428,13 @@ export const SetlistVisualizationBars: React.FC<{
             className={`setlistVisualizationBarContainer ${expanded}`}
         >
             <div className="setlistVisualizationBarControls">
+                <CMSmallButton
+                    tooltip="Close the media bar"
+                    onClick={() => mediaPlayer.setPlaylist([], undefined)}
+                >
+                    {gIconMap.Close()}
+                </CMSmallButton>
+
                 <CMSmallButton tooltip={"Expand the playlist visualization to show the full playlist"} onClick={() => setExpanded("expanded")} className={`expand ${expanded === "expanded" ? "selected" : ""}`}>
                     Full {gCharMap.UpArrow()}
                 </CMSmallButton>
@@ -435,7 +442,7 @@ export const SetlistVisualizationBars: React.FC<{
                     Normal
                 </CMSmallButton>
                 <CMSmallButton tooltip={"Hide the playlist visualization"} onClick={() => setExpanded("collapsed")} className={`collapse ${expanded === "collapsed" ? "selected" : ""}`}>
-                    Hide {gCharMap.DownArrow()}
+                    Minimal {gCharMap.DownArrow()}
                 </CMSmallButton>
             </div>
             <div className="setlistVisualizationBarContainer BarsContainer">
