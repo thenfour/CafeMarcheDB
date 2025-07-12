@@ -148,6 +148,7 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
                 next={loadMoreData}
                 hasMore={hasMore}
                 loader={<h4>Loading...</h4>}
+                scrollableTarget="scrollableDiv"
             >
                 {items.map((item, i) => (
                     <React.Fragment key={getItemKey(item)}>

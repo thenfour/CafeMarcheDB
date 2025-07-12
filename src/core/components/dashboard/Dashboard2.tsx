@@ -350,6 +350,7 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
                     padding: theme.spacing(3)
                 }}
                 className="mainContentBackdrop"
+                id="scrollableDiv"
             >
                 <AdminInspectObject label="DashboardCtx" src={dashboardContext} />
 
@@ -370,8 +371,8 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
                     }
                 }}
                 className={`mediaPlayerBarContainer${isMediaBarVisible
-                        ? ' mediaPlayerBarContainer--visible'
-                        : ''
+                    ? ' mediaPlayerBarContainer--visible'
+                    : ''
                     }`}
                 sx={{
                     gridArea: 'mediabar',
