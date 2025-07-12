@@ -27,6 +27,9 @@ export const getServerSideProps = async ({ params, req, query }) => {
         }
     });
 
+    // NORMALLY I would record the feature use here, but without a user ID or much client data
+    // it's not the right place to record it.
+
     // Build the destination URL with query string
     let destinationURL = link.destinationURL;
     let hash = null;
