@@ -9,7 +9,7 @@ const M3TipsTabValues = [
     "Lists",
     "Tables",
     "Links",
-    "Images",
+    "Images/QR Codes",
     "Attachments",
 ] as const;
 
@@ -19,7 +19,7 @@ type M3TipsTab = (typeof M3TipsTabValues)[number];
 
 export const MarkdownEditorFormattingTips = (props: { in: boolean }) => {
     const [tipsTab, setTipsTab] = React.useState<M3TipsTab | null>(null);
-    return <Collapse in={props.in}>
+    return <Collapse in={props.in} className='markdownEditorFormattingTips'>
         <div className='toolbar toolBarRow formattingTipsRow'>
             {/* <Lightbulb /> */}
             {/* {gIconMap.Info()} */}
@@ -285,7 +285,7 @@ But this is a new paragraph.`}
         </Collapse>
 
 
-        <Collapse in={tipsTab === "Images"}>
+        <Collapse in={tipsTab === "Images/QR Codes"}>
             <div className="toolbar toolBarRow formattingTipsContentRow">
                 <dl>
                     {/* Insert Images */}
@@ -308,6 +308,27 @@ But this is a new paragraph.`}
                         <Pre
                             text={`![alt text](/path/to/image.jpg?400)`}
                         />
+                    </dd>
+
+                    {/* QR Codes */}
+                    <dt>
+                        <span className="highlight">QR Codes</span>: Generate QR codes for text, URLs, WiFi, contacts, SMS, email, location, and more.
+                    </dt>
+                    <dd>
+                        <b>Basic usage:</b>
+                        <Pre text={`{{qr:Hello World}}`} />
+                        <b>URL:</b>
+                        <Pre text={`{{qr:https://example.com}}`} />
+                        <b>WiFi (<code>SSID,password,security(WPA/WEP/nopass),hidden(true/false)</code>):</b>
+                        <Pre text={`{{qr:wifi:MyNetwork,password123,WPA}}`} />
+                        <b>SMS:</b>
+                        <Pre text={`{{qr:sms:1234567890,This is a message}}`} />
+                        <b>Email:</b>
+                        <Pre text={`{{qr:email:user@example.com,Subject,Body text here}}`} />
+                        <b>Location (<code>location:latitude,longitude,[altitude]</code>):</b>
+                        <Pre text={`{{qr:location:37.7749,-122.4194}}`} />
+                        <b>Contact:</b>
+                        <Pre text={`{{qr:contact:John,Doe,1234567890,john@example.com,Acme Corp}}`} />
                     </dd>
                 </dl>
             </div>

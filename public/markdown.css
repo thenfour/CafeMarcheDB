@@ -425,6 +425,9 @@ test cases:
     color: var(--primary-color)
 }
 
+.MD3Container.editor .markdownEditorFormattingTips {
+    user-select: text;
+}
 
 .MD3Container.editor .formattingTipsRow {
     gap: 10px;
