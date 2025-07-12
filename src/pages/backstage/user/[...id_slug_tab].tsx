@@ -1,5 +1,5 @@
 import { NavRealm } from "@/src/core/components/MenuStructure";
-import { BlitzPage, useParams } from "@blitzjs/next";
+import { BlitzPage, Routes, useParams } from "@blitzjs/next";
 import db from "db";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
@@ -9,9 +9,11 @@ import { UserBreadcrumbs, UserDetail } from "@/src/core/components/user/UserComp
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { Router, useRouter } from "next/router";
 
 const MyComponent = ({ userId }: { userId: number | null }) => {
     const params = useParams();
+    const router = useRouter();
     const [id__, slug, tab] = params.id_slug_tab as string[];
 
     const dashboardContext = React.useContext(DashboardContext);
@@ -53,7 +55,11 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     if (tableClient.items.length > 1) throw new Error(`db returned too many items; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
-    if (tableClient.items.length < 1) throw new Error(`item not found`);
+    if (tableClient.items.length < 1) {
+        console.warn(`no user found with id ${userId}`);
+        router.push(Routes.UserSearchPage());
+        return null;
+    }
     const userRaw = tableClient.items[0]! as db3.UserPayload;
     const user = db3.enrichUser(userRaw, dashboardContext.role, dashboardContext.userTag, dashboardContext.instrument);
 

@@ -6,6 +6,11 @@ import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { useDashboardContext } from "../DashboardContext";
 import { Permission } from "@/shared/permissions";
+import { Button, Tooltip } from "@mui/material";
+import { gIconMap } from "../../db3/components/IconMap";
+import { Routes } from "@blitzjs/next";
+import { useRouter } from "next/router";
+import { useConfirm } from "../ConfirmationDialog";
 
 interface UserAdminPanelProps {
     user: db3.EnrichedVerboseUser;
@@ -16,6 +21,8 @@ interface UserAdminPanelProps {
 
 export const UserAdminPanel = (props: UserAdminPanelProps) => {
     const snackbar = useSnackbar();
+    const router = useRouter();
+    const confirm = useConfirm();
     const dashboardContext = useDashboardContext();
 
     if (!dashboardContext.isAuthorized(Permission.admin_users)) {
@@ -28,6 +35,20 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
                 user={props.user}
             />
             <ImpersonateUserButton userId={props.user.id} />
+            <Tooltip title="Delete this user (soft).">
+                <Button onClick={async () => {
+                    if (await confirm({
+                        description: `Are you sure you want to (soft) delete user ${props.user.name}, id ${props.user.id}?`,
+                        title: "Delete User",
+                    })) {
+                        await snackbar.invokeAsync(async () => {
+                            await props.tableClient.doDeleteMutation(props.user.id, "softWhenPossible");
+                            router.push(Routes.UserSearchPage());
+                        });
+                    }
+
+                }} startIcon={gIconMap.Delete()}>Delete</Button>
+            </Tooltip>
             <EditFieldsDialogButton
                 readonly={props.readonly}
                 dialogTitle="Edit User Fields"
