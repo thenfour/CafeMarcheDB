@@ -3,59 +3,7 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
-
-export type UserMassAnalysisResult = {
-    userInfo: {
-        id: number;
-        name: string;
-        email: string;
-        createdAt: Date;
-        isSysAdmin: boolean;
-        isDeleted: boolean;
-        roleId: number | null;
-        roleName: string | null;
-        googleId: string | null;
-    };
-    contentCounts: {
-        createdSongs: number;
-        createdEvents: number;
-        createdWikiPages: number;
-        createdGalleryItems: number;
-        uploadedFiles: number;
-        createdMenuLinks: number;
-        createdCustomLinks: number;
-        songCredits: number;
-        setlistPlans: number;
-        wikiPageRevisions: number;
-    };
-    participationCounts: {
-        eventResponses: number;
-        eventSegmentResponses: number;
-        workflowAssignments: number;
-        workflowLogItems: number;
-        taggedFiles: number;
-        instruments: number;
-        userTags: number;
-    };
-    systemCounts: {
-        actions: number;
-        sessions: number;
-        tokens: number;
-        changes: number;
-    };
-    activityMetrics: {
-        accountAgeInDays: number;
-        hasEverLoggedIn: boolean;
-        lastActivityDate: Date | null;
-        daysSinceLastActivity: number | null;
-    };
-    riskAssessment: {
-        safeToDelete: boolean;
-        riskLevel: 'low' | 'medium' | 'high';
-        warnings: string[];
-        blockers: string[];
-    };
-};
+import { UserMassAnalysisResult } from "../shared/getUserMassAnalysisTypes";
 
 export default resolver.pipe(
     resolver.authorize(Permission.manage_users),

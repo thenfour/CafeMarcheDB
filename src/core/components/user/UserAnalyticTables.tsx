@@ -21,6 +21,7 @@ import { AddUserButton } from "./UserComponents";
 import { CompareArrows } from "@mui/icons-material";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { UserChip } from "./userChip";
+import { getContentCountsRows, getParticipationCountsRows, getSummaryRows, getSystemCountsRows, getUserInfoRows, MassAnalysisDataRow } from "../../db3/shared/getUserMassAnalysisTypes";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {
@@ -315,6 +316,7 @@ type UserMassAnalysisTabContentProps = {
 export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProps) => {
     const [qr, refetch] = useQuery(getUserMassAnalysis, { userId: props.user.id });
     const [compareWithUser, setCompareWithUser] = React.useState<db3.UserPayload | null>(null);
+    const [compareQr, refetchCompare] = useQuery(getUserMassAnalysis, { userId: compareWithUser?.id || -1 }, { enabled: !!compareWithUser });
 
     const getRiskColor = (level: 'low' | 'medium' | 'high') => {
         switch (level) {
@@ -324,107 +326,231 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
         }
     };
 
-    const formatDate = (date: Date | null) => {
-        if (!date) return 'Never';
-        return new Date(date).toLocaleDateString();
+    const renderComparisonValue = (value: number, compareValue?: number, showPercent?: boolean) => {
+        if (!compareWithUser || compareValue === undefined) {
+            return <span>{showPercent ? `${value.toFixed(1)}%` : value.toLocaleString()}</span>;
+        }
+
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>{showPercent ? `${value.toFixed(1)}%` : value.toLocaleString()}</span>
+            </div>
+        );
     };
 
-    const totalContentItems = Object.values(qr.contentCounts).reduce((sum, count) => sum + count, 0);
-    const totalParticipationItems = Object.values(qr.participationCounts).reduce((sum, count) => sum + count, 0);
-    const totalSystemItems = Object.values(qr.systemCounts).reduce((sum, count) => sum + count, 0);
+    const renderDataRow = (row: MassAnalysisDataRow) => {
+        if (row.isBooleanValue) {
+            return <span>{row.displayValue || (row.value ? 'Yes' : 'No')}</span>;
+        }
+        if (row.isDateValue) {
+            return <span>{row.displayValue || (row.value ? new Date(row.value).toLocaleDateString() : 'Never')}</span>;
+        }
+        if (row.displayValue) {
+            return <span>{row.displayValue}</span>;
+        }
+        return <span>{row.value.toLocaleString()}</span>;
+    };
+
+    const renderCompareDataRow = (row: MassAnalysisDataRow) => {
+        if (row.isBooleanValue) {
+            return <span>{row.compareDisplayValue || (row.compareValue ? 'Yes' : 'No')}</span>;
+        }
+        if (row.isDateValue) {
+            return <span>{row.compareDisplayValue || (row.compareValue ? new Date(row.compareValue).toLocaleDateString() : 'Never')}</span>;
+        }
+        if (row.compareDisplayValue) {
+            return <span>{row.compareDisplayValue}</span>;
+        }
+        return <span>{(row.compareValue || 0).toLocaleString()}</span>;
+    };
+
+    // Get typed data rows
+    const summaryRows = getSummaryRows(qr, compareQr);
+    const contentRows = getContentCountsRows(qr.contentCounts, compareQr?.contentCounts);
+    const participationRows = getParticipationCountsRows(qr.participationCounts, compareQr?.participationCounts);
+    const systemRows = getSystemCountsRows(qr.systemCounts, compareQr?.systemCounts);
+    const userInfoRows = getUserInfoRows(qr.userInfo, compareQr?.userInfo);
+
+    // Calculate totals for conditional rendering using strongly-typed approach
+    const totalContentItems = qr.contentCounts.createdSongs + qr.contentCounts.createdEvents +
+        qr.contentCounts.createdWikiPages + qr.contentCounts.createdGalleryItems +
+        qr.contentCounts.uploadedFiles + qr.contentCounts.createdMenuLinks +
+        qr.contentCounts.createdCustomLinks + qr.contentCounts.songCredits +
+        qr.contentCounts.setlistPlans + qr.contentCounts.wikiPageRevisions;
+
+    const totalParticipationItems = qr.participationCounts.eventResponses + qr.participationCounts.eventSegmentResponses +
+        qr.participationCounts.workflowAssignments + qr.participationCounts.workflowLogItems +
+        qr.participationCounts.taggedFiles + qr.participationCounts.instruments +
+        qr.participationCounts.userTags;
+
+    const totalSystemItems = qr.systemCounts.actions + qr.systemCounts.sessions +
+        qr.systemCounts.tokens + qr.systemCounts.changes;
 
     return <div className="UserMassAnalysisTabContent">
         <AdminInspectObject src={qr} label="mass analysis" />
+        {compareQr && <AdminInspectObject src={compareQr} label="comparison" />}
 
-        <div style={{ display: 'flex', margin: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', margin: 10, gap: 10 }}>
             <AddUserButton
                 onSelect={setCompareWithUser}
                 buttonChildren={<><CompareArrows /> Compare with user...</>}
                 title={"Compare with user"}
             />
             <UserChip value={compareWithUser} />
+            {compareWithUser && (
+                <span style={{
+                    fontSize: '12px',
+                    color: '#28a745',
+                    fontWeight: 'bold',
+                    backgroundColor: '#e7f5e7',
+                    padding: '4px 8px',
+                    borderRadius: '4px'
+                }}>
+                    Comparison mode active
+                </span>
+            )}
         </div>
 
         {/* Risk Assessment */}
-        <div style={{
-            marginBottom: '20px',
-            padding: '15px',
-            border: `2px solid ${getRiskColor(qr.riskAssessment.riskLevel)}`,
-            borderRadius: '8px',
-            backgroundColor: `${getRiskColor(qr.riskAssessment.riskLevel)}20`
-        }}>
-            <h3 style={{ color: getRiskColor(qr.riskAssessment.riskLevel), margin: '0 0 10px 0' }}>
-                Risk Assessment: {qr.riskAssessment.riskLevel.toUpperCase()}
-            </h3>
-            <div style={{ marginBottom: '10px' }}>
-                <strong>Safe to Delete:</strong> {qr.riskAssessment.safeToDelete ? '✅ Yes' : '❌ No'}
+        <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <div style={{
+                flex: 1,
+                minWidth: '300px',
+                padding: '15px',
+                border: `2px solid ${getRiskColor(qr.riskAssessment.riskLevel)}`,
+                borderRadius: '8px',
+                backgroundColor: `${getRiskColor(qr.riskAssessment.riskLevel)}20`
+            }}>
+                <h3 style={{ color: getRiskColor(qr.riskAssessment.riskLevel), margin: '0 0 10px 0' }}>
+                    {props.user.name}: {qr.riskAssessment.riskLevel.toUpperCase()}
+                </h3>
+                <div style={{ marginBottom: '10px' }}>
+                    <strong>Safe to Delete:</strong> {qr.riskAssessment.safeToDelete ? '✅ Yes' : '❌ No'}
+                </div>
+
+                {qr.riskAssessment.blockers.length > 0 && (
+                    <div style={{ marginBottom: '10px' }}>
+                        <strong>Blockers:</strong>
+                        <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                            {qr.riskAssessment.blockers.map((blocker, index) => (
+                                <li key={index} style={{ color: '#dc3545' }}>{blocker}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {qr.riskAssessment.warnings.length > 0 && (
+                    <div>
+                        <strong>Warnings:</strong>
+                        <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                            {qr.riskAssessment.warnings.map((warning, index) => (
+                                <li key={index} style={{ color: '#856404' }}>{warning}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
 
-            {qr.riskAssessment.blockers.length > 0 && (
-                <div style={{ marginBottom: '10px' }}>
-                    <strong>Blockers:</strong>
-                    <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
-                        {qr.riskAssessment.blockers.map((blocker, index) => (
-                            <li key={index} style={{ color: '#dc3545' }}>{blocker}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+            {compareWithUser && compareQr && (
+                <div style={{
+                    flex: 1,
+                    minWidth: '300px',
+                    padding: '15px',
+                    border: `2px solid ${getRiskColor(compareQr.riskAssessment.riskLevel)}`,
+                    borderRadius: '8px',
+                    backgroundColor: `${getRiskColor(compareQr.riskAssessment.riskLevel)}20`
+                }}>
+                    <h3 style={{ color: getRiskColor(compareQr.riskAssessment.riskLevel), margin: '0 0 10px 0' }}>
+                        {compareWithUser.name}: {compareQr.riskAssessment.riskLevel.toUpperCase()}
+                    </h3>
+                    <div style={{ marginBottom: '10px' }}>
+                        <strong>Safe to Delete:</strong> {compareQr.riskAssessment.safeToDelete ? '✅ Yes' : '❌ No'}
+                    </div>
 
-            {qr.riskAssessment.warnings.length > 0 && (
-                <div>
-                    <strong>Warnings:</strong>
-                    <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
-                        {qr.riskAssessment.warnings.map((warning, index) => (
-                            <li key={index} style={{ color: '#856404' }}>{warning}</li>
-                        ))}
-                    </ul>
+                    {compareQr.riskAssessment.blockers.length > 0 && (
+                        <div style={{ marginBottom: '10px' }}>
+                            <strong>Blockers:</strong>
+                            <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                                {compareQr.riskAssessment.blockers.map((blocker, index) => (
+                                    <li key={index} style={{ color: '#dc3545' }}>{blocker}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {compareQr.riskAssessment.warnings.length > 0 && (
+                        <div>
+                            <strong>Warnings:</strong>
+                            <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+                                {compareQr.riskAssessment.warnings.map((warning, index) => (
+                                    <li key={index} style={{ color: '#856404' }}>{warning}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
 
         {/* Summary Statistics */}
-        <KeyValueTable data={{
-            "Total Content Items": totalContentItems,
-            "Total Participation Items": totalParticipationItems,
-            "Total System Items": totalSystemItems,
-            "Account Age": `${qr.activityMetrics.accountAgeInDays} days`,
-            "Has Ever Logged In": qr.activityMetrics.hasEverLoggedIn ? 'Yes' : 'No',
-            "Last Activity": formatDate(qr.activityMetrics.lastActivityDate),
-            "Days Since Last Activity": qr.activityMetrics.daysSinceLastActivity || 'Unknown',
-        }} />
+        <div style={{ marginTop: '20px' }}>
+            <h4>Summary Statistics</h4>
+            <CMTable
+                rows={summaryRows}
+                columns={[
+                    {
+                        header: "Metric",
+                        memberName: "label",
+                        render: (row) => <span>{row.row.label}</span>,
+                    },
+                    {
+                        header: compareWithUser ? `${props.user.name} Value` : "Value",
+                        memberName: "value",
+                        render: (row) => renderDataRow(row.row),
+                        valueBar: {
+                            getValue: (row) => row.isBooleanValue || row.isDateValue ? 0 : row.value,
+                        },
+                    },
+                    ...(compareWithUser && compareQr ? [{
+                        header: `${compareWithUser.name} Value`,
+                        memberName: "compareValue" as const,
+                        render: (row) => renderCompareDataRow(row.row),
+                        valueBar: {
+                            getValue: (row) => row.isBooleanValue || row.isDateValue ? 0 : (row.compareValue || 0),
+                        },
+                    }] : [])
+                ]}
+            />
+        </div>
 
         {/* Content Creation Details */}
         {totalContentItems > 0 && (
             <div style={{ marginTop: '20px' }}>
                 <h4>Content Created</h4>
                 <CMTable
-                    rows={Object.entries({
-                        "Songs": qr.contentCounts.createdSongs,
-                        "Events": qr.contentCounts.createdEvents,
-                        "Wiki Pages": qr.contentCounts.createdWikiPages,
-                        "Gallery Items": qr.contentCounts.createdGalleryItems,
-                        "Uploaded Files": qr.contentCounts.uploadedFiles,
-                        "Menu Links": qr.contentCounts.createdMenuLinks,
-                        "Custom Links": qr.contentCounts.createdCustomLinks,
-                        "Song Credits": qr.contentCounts.songCredits,
-                        "Setlist Plans": qr.contentCounts.setlistPlans,
-                        "Wiki Revisions": qr.contentCounts.wikiPageRevisions,
-                    })}
+                    rows={contentRows}
                     columns={[
                         {
                             header: "Content Type",
-                            memberName: "0",
-                            render: (row) => <span>{row.row[0]}</span>,
+                            memberName: "label",
+                            render: (row) => <span>{row.row.label}</span>,
                         },
                         {
-                            header: "Count",
-                            memberName: "1",
-                            render: (row) => <span>{row.row[1].toLocaleString()}</span>,
+                            header: compareWithUser ? `${props.user.name} Count` : "Count",
+                            memberName: "value",
+                            render: (row) => renderDataRow(row.row),
                             valueBar: {
-                                getValue: (row) => row[1],
+                                getValue: (row) => row.value,
                             },
-                        }
+                        },
+                        ...(compareWithUser && compareQr ? [{
+                            header: `${compareWithUser.name} Count`,
+                            memberName: "compareValue" as const,
+                            render: (row) => renderCompareDataRow(row.row),
+                            valueBar: {
+                                getValue: (row) => row.compareValue || 0,
+                            },
+                        }] : [])
                     ]}
                 />
             </div>
@@ -435,29 +561,29 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
             <div style={{ marginTop: '20px' }}>
                 <h4>Participation & Engagement</h4>
                 <CMTable
-                    rows={Object.entries({
-                        "Event Responses": qr.participationCounts.eventResponses,
-                        "Event Segment Responses": qr.participationCounts.eventSegmentResponses,
-                        "Workflow Assignments": qr.participationCounts.workflowAssignments,
-                        "Workflow Log Items": qr.participationCounts.workflowLogItems,
-                        "Tagged Files": qr.participationCounts.taggedFiles,
-                        "Instruments": qr.participationCounts.instruments,
-                        "User Tags": qr.participationCounts.userTags,
-                    })}
+                    rows={participationRows}
                     columns={[
                         {
                             header: "Participation Type",
-                            memberName: "0",
-                            render: (row) => <span>{row.row[0]}</span>,
+                            memberName: "label",
+                            render: (row) => <span>{row.row.label}</span>,
                         },
                         {
-                            header: "Count",
-                            memberName: "1",
-                            render: (row) => <span>{row.row[1].toLocaleString()}</span>,
+                            header: compareWithUser ? `${props.user.name} Count` : "Count",
+                            memberName: "value",
+                            render: (row) => renderDataRow(row.row),
                             valueBar: {
-                                getValue: (row) => row[1],
+                                getValue: (row) => row.value,
                             },
-                        }
+                        },
+                        ...(compareWithUser && compareQr ? [{
+                            header: `${compareWithUser.name} Count`,
+                            memberName: "compareValue" as const,
+                            render: (row) => renderCompareDataRow(row.row),
+                            valueBar: {
+                                getValue: (row) => row.compareValue || 0,
+                            },
+                        }] : [])
                     ]}
                 />
             </div>
@@ -468,26 +594,29 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
             <div style={{ marginTop: '20px' }}>
                 <h4>System Data</h4>
                 <CMTable
-                    rows={Object.entries({
-                        "Actions": qr.systemCounts.actions,
-                        "Sessions": qr.systemCounts.sessions,
-                        "Tokens": qr.systemCounts.tokens,
-                        "Changes": qr.systemCounts.changes,
-                    })}
+                    rows={systemRows}
                     columns={[
                         {
                             header: "System Item",
-                            memberName: "0",
-                            render: (row) => <span>{row.row[0]}</span>,
+                            memberName: "label",
+                            render: (row) => <span>{row.row.label}</span>,
                         },
                         {
-                            header: "Count",
-                            memberName: "1",
-                            render: (row) => <span>{row.row[1].toLocaleString()}</span>,
+                            header: compareWithUser ? `${props.user.name} Count` : "Count",
+                            memberName: "value",
+                            render: (row) => renderDataRow(row.row),
                             valueBar: {
-                                getValue: (row) => row[1],
+                                getValue: (row) => row.value,
                             },
-                        }
+                        },
+                        ...(compareWithUser && compareQr ? [{
+                            header: `${compareWithUser.name} Count`,
+                            memberName: "compareValue" as const,
+                            render: (row) => renderCompareDataRow(row.row),
+                            valueBar: {
+                                getValue: (row) => row.compareValue || 0,
+                            },
+                        }] : [])
                     ]}
                 />
             </div>
@@ -496,16 +625,26 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
         {/* User Info */}
         <div style={{ marginTop: '20px' }}>
             <h4>User Information</h4>
-            <KeyValueTable data={{
-                "ID": qr.userInfo.id,
-                "Name": qr.userInfo.name,
-                "Email": qr.userInfo.email,
-                "Role": qr.userInfo.roleName || 'No Role',
-                "System Admin": qr.userInfo.isSysAdmin ? 'Yes' : 'No',
-                "Is Deleted": qr.userInfo.isDeleted ? 'Yes' : 'No',
-                "Google ID": qr.userInfo.googleId ? 'Yes' : 'No',
-                "Created": formatDate(qr.userInfo.createdAt),
-            }} />
+            <CMTable
+                rows={userInfoRows}
+                columns={[
+                    {
+                        header: "Property",
+                        memberName: "label",
+                        render: (row) => <span>{row.row.label}</span>,
+                    },
+                    {
+                        header: compareWithUser ? `${props.user.name}` : "Value",
+                        memberName: "value",
+                        render: (row) => renderDataRow(row.row),
+                    },
+                    ...(compareWithUser && compareQr ? [{
+                        header: `${compareWithUser.name}`,
+                        memberName: "compareValue" as const,
+                        render: (row) => renderCompareDataRow(row.row),
+                    }] : [])
+                ]}
+            />
         </div>
     </div>;
 };
