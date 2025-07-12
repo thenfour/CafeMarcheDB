@@ -3,7 +3,7 @@ import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import MenuIcon from '@mui/icons-material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
-import { AppBar, Avatar, Box, Divider, IconButton, ListItemIcon, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Avatar, Box, Divider, IconButton, ListItemIcon, Menu, MenuItem, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -19,7 +19,7 @@ import { getAbsoluteUrl } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../../db3/shared/apiTypes";
 import { AppContextMarker } from "../AppContext";
-import { AdminInspectObject } from "../CMCoreComponents2";
+import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
 import { ConfirmProvider } from "../ConfirmationDialog";
 import { DashboardContext, DashboardContextProvider, useFeatureRecorder } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
@@ -34,6 +34,8 @@ import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SnackbarContext } from "../SnackbarContext";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
+import { QrCodeButton, QrHelpers } from "../QrCode";
+import { QrCode } from "@mui/icons-material";
 
 const drawerWidth = 260;
 
@@ -258,6 +260,24 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 </Typography>
 
                 <MetronomeDialogButton />
+
+
+                <Tooltip title="Show QR code for this page">
+                    <div>
+                        <QrCodeButton
+                            content={QrHelpers.url(getAbsoluteUrl(router.asPath))}
+                            renderButton={({ onClick }) => (
+                                <div
+                                    className="freeButton globalMetronomeButton"
+                                    onClick={() => onClick()}
+                                >
+                                    <QrCode />
+                                </div>
+                            )}
+                        />
+                    </div>
+                </Tooltip>
+
 
                 <MainSiteSearch />
 
