@@ -1,6 +1,7 @@
 import { NavRealm } from "@/src/core/components/MenuStructure";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { UserBreadcrumbs, UserDetail } from "@/src/core/components/user/UserComponents";
+import { UserBreadcrumbs } from "@/src/core/components/user/UserComponents";
+import { UserDetail } from "@/src/core/components/user/UserDetail";
 import { BlitzPage, Routes, useParams } from "@blitzjs/next";
 import db from "db";
 import { useRouter } from "next/router";
