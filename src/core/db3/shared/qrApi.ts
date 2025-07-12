@@ -137,7 +137,9 @@ export function generateQrApiUrl(options: QrCodeOptions): string {
         params.append('width', width.toString());
     }
 
-    return getAbsoluteUrl(`/api/qr?${params.toString()}`);
+    // Build URL manually to avoid double-encoding query parameters
+    const baseUrl = getAbsoluteUrl('/api/qr');
+    return `${baseUrl}?${params.toString()}`;
 }
 
 /**
