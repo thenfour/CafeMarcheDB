@@ -7,7 +7,7 @@ import db, { Prisma } from "db";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { Stopwatch } from "shared/rootroot";
 import { getServerStartState } from "shared/serverStateBase";
-import { EventStatusSignificance, xEvent, xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
+import { gEventRelevanceClass, EventStatusSignificance, gVisibleEventRelevanceClasses, xEvent, xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
@@ -116,21 +116,25 @@ async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, ev
         id,
         startsAt,
         CASE 
-          WHEN startsAt <= '${nowFormatted}' AND (endDateTime IS NULL OR endDateTime >= '${nowFormatted}') THEN 1 -- Ongoing
-          WHEN startsAt >= '${nowFormatted}' AND startsAt <= '${sevenDaysFromNowFormatted}' THEN 2 -- Upcoming
-          WHEN endDateTime IS NOT NULL AND endDateTime >= '${twentyFourHoursAgoFormatted}' AND endDateTime <= '${nowFormatted}' THEN 3 -- Recent past
-          WHEN startsAt > '${sevenDaysFromNowFormatted}' THEN 4 -- Future, only shown if better events aren't available
-          ELSE 5 -- Default/Unclassified (optional, for events that don't fit the criteria)
+          WHEN relevanceClassOverride IS NOT NULL THEN relevanceClassOverride -- Use explicit override if set
+          WHEN startsAt <= '${nowFormatted}' AND (endDateTime IS NULL OR endDateTime >= '${nowFormatted}') THEN ${gEventRelevanceClass.Ongoing}
+          WHEN startsAt >= '${nowFormatted}' AND startsAt <= '${sevenDaysFromNowFormatted}' THEN ${gEventRelevanceClass.Upcoming}
+          WHEN endDateTime IS NOT NULL AND endDateTime >= '${twentyFourHoursAgoFormatted}' AND endDateTime <= '${nowFormatted}' THEN ${gEventRelevanceClass.RecentPast}
+          WHEN startsAt > '${sevenDaysFromNowFormatted}' THEN ${gEventRelevanceClass.Future} -- Future, only shown if better events aren't available
+          ELSE ${gEventRelevanceClass.Hidden} -- Default/Unclassified (optional, for events that don't fit the criteria)
         END AS relevance_class
       FROM Event
       where
-        (statusId is null or statusId NOT IN (${cancelledStatusIds}))
+        (
+            (relevanceClassOverride is not null)
+            or (statusId is null or statusId NOT IN (${cancelledStatusIds}))
+        )
         and isDeleted = false
         and (${xEvent.SqlGetVisFilterExpression(currentUser, "Event")})
     )
     SELECT id, relevance_class
     FROM ClassifiedEvents
-    WHERE relevance_class IN (1, 2, 3, 4) -- Filter to relevant events
+    WHERE relevance_class IN (${gVisibleEventRelevanceClasses.join(",")}) -- Filter to relevant events
     ORDER BY
       relevance_class ASC, -- Primary sorting by relevance
       startsAt ASC

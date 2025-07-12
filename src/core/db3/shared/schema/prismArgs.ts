@@ -94,6 +94,37 @@ export interface FileTypes extends DBTypes {
 };
 
 
+// these are semantic classes, but also sort order.
+// export enum EventRelevanceClass {
+//     Ongoing = 1,
+//     Upcoming = 2,
+//     RecentPast = 3,
+//     Future = 4,
+//     Hidden = 999,
+// };
+
+export const gEventRelevanceClass = {
+    Ongoing: 1,
+    Upcoming: 2,
+    RecentPast: 3,
+    Future: 4,
+    Hidden: 999,
+} as const;
+
+export type EventRelevanceClassName =
+    keyof typeof gEventRelevanceClass;
+
+// export type EventRelevanceClassValue =
+//     typeof gEventRelevanceClass[EventRelevanceClassName];
+
+
+export const gVisibleEventRelevanceClasses = [
+    gEventRelevanceClass.Ongoing,
+    gEventRelevanceClass.Upcoming,
+    gEventRelevanceClass.RecentPast,
+    gEventRelevanceClass.Future,
+];
+
 
 ////////////////////////////////////////////////////////////////
 export const EventTypeSignificance = {

@@ -387,17 +387,17 @@ export interface EventSearchCustomData {
 };
 
 export const EventAPI = {
-    getLabel: (e: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>, options?: {
+    getLabel: ({ name = "", startsAt }: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>, options?: {
         truncate?: boolean, // default true
         truncateLength?: number, // default 20
         showDate?: boolean, // default true
     }) => {
-        const truncatedName = options?.truncate !== false ? smartTruncate(e.name, options?.truncateLength || 20) : e.name;
+        const truncatedName = options?.truncate !== false ? smartTruncate(name, options?.truncateLength || 20) : name;
         const showDate = CoalesceBool(options?.showDate, true);
         if (!showDate) {
             return truncatedName;
         }
-        return `${truncatedName} (${e.startsAt ? e.startsAt.toLocaleDateString() : "TBD"})`;
+        return `${truncatedName} (${startsAt ? startsAt.toLocaleDateString() : "TBD"})`;
     }
 };
 
@@ -528,10 +528,15 @@ export const xEventArgs_Base: db3.TableDesc = {
 
         new RevisionField({ columnName: "revision", authMap: xEventAuthMap_CreatedAt, applyToUpdates: false }),
 
+        new GenericIntegerField({
+            columnName: "relevanceClassOverride",
+            allowNull: true,
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
         new ConstEnumStringField({
             columnName: "segmentBehavior",
             allowNull: true,
-            defaultValue: "Sets",
+            defaultValue: EventSegmentBehavior.Sets,
             options: EventSegmentBehavior,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),

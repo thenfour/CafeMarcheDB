@@ -1,5 +1,5 @@
 import { useQuery } from "@blitzjs/rpc";
-import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
+import { InfoOutlined, LibraryMusic, Pin, PushPin } from "@mui/icons-material";
 import { Prisma } from "db";
 import React from "react";
 import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
@@ -19,6 +19,8 @@ import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { SearchItemBigCardLink } from "../SearchItemBigCardLink";
 import { EventStatusMinimal } from "./EventChips";
+import { Tooltip } from "@mui/material";
+import { RelevanceClassOverrideIndicator } from "./EventRelevanceOverrideComponents";
 
 function formatShortDate(date: Date, locale: string = navigator.language): string {
     const now = new Date();
@@ -81,6 +83,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
                     <div>{event.name}</div>
                 </div>
                 <div className="SubtleEventCardDate">
+                    <RelevanceClassOverrideIndicator event={event} colorStyle="subtle" />
                     <EventStatusMinimal statusId={event.statusId} />
                     <EventShortDate event={event} />
                 </div>

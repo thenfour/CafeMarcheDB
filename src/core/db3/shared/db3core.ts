@@ -569,7 +569,6 @@ export class xTable /* implements TableDesc*/ {
     // - pre-mutate normal
     // - pre-mutate owner/creator
 
-    // if model is empty, then 
     authorizeAndSanitize = (args: DB3AuthorizeAndSanitizeInput<TAnyModel>): DB3AuthorizeAndSanitizeResult<TAnyModel> => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = rowInfo?.ownerUserId || args.fallbackOwnerId;

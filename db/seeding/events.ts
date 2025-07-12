@@ -4,7 +4,6 @@ import { DateTimeRange, roundToNearest15Minutes } from '../../shared/time';
 import { SeedingState } from './base';
 //import { EventTypeSignificance } from 'src/core/db3/db3';
 
-
 // Define arrays of words for event names
 const adjectives = [
     'Grand', 'Epic', 'Legendary', 'Mystic', 'Electric', 'Harmonic', 'Vibrant', 'Groovy', 'Classic', 'Fusion', 'Ultimate',

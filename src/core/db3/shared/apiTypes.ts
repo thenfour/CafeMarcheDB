@@ -1076,8 +1076,6 @@ export interface ICalCalendarJSON {
 
 
 
-
-
 ///////////// WF INSTANCE /////////////////////////////////////////////////////////////////
 export interface TUpdateEventWorkflowInstanceArgsAssignee {
     id: number; // for insertion, this is not used / specified.

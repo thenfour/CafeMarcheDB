@@ -3,7 +3,7 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Checklist, EditNote, LibraryMusic } from '@mui/icons-material';
+import { Checklist, EditNote, LibraryMusic, PushPin } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Checkbox, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Select, Switch, Tooltip } from "@mui/material";
@@ -56,6 +56,7 @@ import { UserChip } from '../user/userChip';
 import { EventStatusChip } from '../event/EventChips';
 import { ChoiceEditCell } from '../select/ChooseItemDialog';
 import { EventsFilterSpec } from './EventClientBaseTypes';
+import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1143,16 +1144,11 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
     </div>;
 };
 
-const EventDotMenu = ({ event, showVisibility }: { event: Prisma.EventGetPayload<{ select: { visiblePermissionId: true, id: true, name: true } }>, showVisibility: boolean }) => {
+const EventDotMenu = ({ event, showVisibility, refetch }: { event: Prisma.EventGetPayload<{ select: { visiblePermissionId, id, name, relevanceClassOverride } }>, showVisibility: boolean, refetch: () => void }) => {
     const endMenuItemRef = React.useRef<() => void>(() => { });
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
 
-    // const uriForThisEvent = dashboardContext.currentUser && GetICalRelativeURIForUserAndEvent({
-    //     userAccessToken: dashboardContext.currentUser?.accessToken || null,
-    //     eventUid: event.uid,
-    //     userUid: dashboardContext.currentUser.uid,
-    // });
     const uriForGlobalCalendar = dashboardContext.currentUser && getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: dashboardContext.currentUser!.accessToken }));
 
     const closeMenu = () => {
@@ -1180,26 +1176,6 @@ const EventDotMenu = ({ event, showVisibility }: { event: Prisma.EventGetPayload
             <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
             Copy event link to clipboard
         </MenuItem>
-        {/* 
-        <Divider />
-
-        {uriForThisEvent &&
-            <MenuItem onClick={async () => {
-                await navigator.clipboard.writeText(uriForThisEvent);
-                closeMenu();
-                snackbar.showSuccess("Link address copied");
-            }}>
-                <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
-                This event: Copy Calendar link
-            </MenuItem>
-        }
-        {uriForThisEvent &&
-
-            <MenuItem component={Link} href={uriForThisEvent} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
-                This event: iCal import
-            </MenuItem>
-        } */}
 
         <Divider />
 
@@ -1225,6 +1201,11 @@ const EventDotMenu = ({ event, showVisibility }: { event: Prisma.EventGetPayload
                 <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
                 Event calendar: iCal import
             </MenuItem>
+        }
+
+        <Divider />
+        {dashboardContext.isAuthorized(Permission.manage_events) &&
+            <RelevanceClassOverrideMenuItemGroup event={event} closeMenu={closeMenu} refetch={refetch} />
         }
     </DotMenu>;
 };
@@ -1298,6 +1279,8 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
 
             <div className='flex-spacer'></div>
 
+            <RelevanceClassOverrideIndicator event={eventData.event} colorStyle='default' />
+
             <CMChipContainer>
                 {eventData.event.type && //<EventTypeValue type={event.type} />
                     <CMStandardDBChip
@@ -1310,7 +1293,6 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                 }
 
             </CMChipContainer>
-
 
             <AdminInspectObject src={eventData} />
 
@@ -1355,7 +1337,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                 />
             }
 
-            <EventDotMenu event={eventData.event} showVisibility={!!showVisibility} />
+            <EventDotMenu event={eventData.event} showVisibility={!!showVisibility} refetch={refetch} />
         </div>
 
         <div className='content'>
@@ -1643,6 +1625,8 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
                 <div className='flex-spacer'></div>
 
+                <RelevanceClassOverrideIndicator event={event} colorStyle='subtle' />
+
                 <CMChipContainer>
                     {event.type &&
                         <CMStandardDBChip
@@ -1659,7 +1643,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
                 <AdminInspectObject src={event} />
 
                 {!reducedInfo &&
-                    <EventDotMenu event={event} showVisibility={false} />}
+                    <EventDotMenu event={event} showVisibility={false} refetch={() => { }} />}
             </div>
 
             <div className='content'>

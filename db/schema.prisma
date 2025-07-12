@@ -510,6 +510,8 @@ model Event {
   statusId            Int?
   status              EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
+  relevanceClassOverride Int? // enum EventRelevanceClass
+
   descriptionWikiPageId Int?
   descriptionWikiPage   WikiPage? @relation(fields: [descriptionWikiPageId], references: [id], onDelete: SetNull, name: "eventDescriptionWikiPage")
 
