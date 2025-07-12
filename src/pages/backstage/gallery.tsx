@@ -31,6 +31,7 @@ import { arraysContainSameValues } from "shared/arrayUtils";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
 import AbcNotationRenderer from "@/src/core/components/AbcNotationRenderer";
+import { QrTester } from "@/src/core/components/QrCode";
 
 interface FilterSpec {
     qfText: string;
@@ -349,6 +350,8 @@ const MainContent = () => {
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <div>
+
+        <QrTester />
 
         <AbcTester />
 
