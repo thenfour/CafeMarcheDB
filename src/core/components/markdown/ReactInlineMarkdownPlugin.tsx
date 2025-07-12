@@ -1,6 +1,7 @@
 import { getHashedColor } from '@/shared/utils';
 import MarkdownIt from 'markdown-it';
 import { getAbsoluteUrl } from '../../db3/clientAPILL';
+import { generateQrApiUrl, QrHelpers, QrContentConfig } from '../../db3/shared/qrApi';
 
 export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
     const originalTextRule = md.renderer.rules.text ||
@@ -40,35 +41,108 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
                     return match; // Return original if empty
                 }
 
-                // Parse QR content - format: type:content or just content (defaults to text)
-                let qrType = 'text';
-                let qrData = qrContent;
+                try {
+                    // Parse QR content - format: type:content or just content (defaults to text)
+                    let contentConfig: QrContentConfig;
 
-                const colonIndex = qrContent.indexOf(':');
-                if (colonIndex > 0 && colonIndex < 20) { // reasonable type length limit
-                    const possibleType = qrContent.substring(0, colonIndex).toLowerCase();
-                    const validTypes = ['text', 'url', 'wifi', 'contact', 'sms', 'email', 'location'];
-                    if (validTypes.includes(possibleType)) {
-                        qrType = possibleType;
-                        qrData = qrContent.substring(colonIndex + 1);
+                    const colonIndex = qrContent.indexOf(':');
+                    if (colonIndex > 0 && colonIndex < 20) { // reasonable type length limit
+                        const possibleType = qrContent.substring(0, colonIndex).toLowerCase();
+                        const qrData = qrContent.substring(colonIndex + 1);
+
+                        switch (possibleType) {
+                            case 'url':
+                                contentConfig = QrHelpers.url(qrData);
+                                break;
+                            case 'wifi': {
+                                // For wifi, expect format: wifi:ssid,password,security,hidden
+                                const [ssid, password, security, hidden] = qrData.split(',');
+                                if (!ssid) throw new Error('WiFi SSID is required');
+                                contentConfig = QrHelpers.wifi({
+                                    ssid: ssid.trim(),
+                                    password: password?.trim() || undefined,
+                                    security: (security?.trim() as 'WPA' | 'WEP' | 'nopass') || 'WPA',
+                                    hidden: hidden?.trim() === 'true' || undefined
+                                });
+                                break;
+                            }
+                            case 'sms': {
+                                // For sms, expect format: sms:phoneNumber,message
+                                const [phoneNumber, message] = qrData.split(',');
+                                if (!phoneNumber) throw new Error('SMS phone number is required');
+                                contentConfig = QrHelpers.sms({
+                                    phoneNumber: phoneNumber.trim(),
+                                    message: message?.trim() || undefined
+                                });
+                                break;
+                            }
+                            case 'email': {
+                                // For email, expect format: email:to,subject,body
+                                const [to, subject, body] = qrData.split(',');
+                                if (!to) throw new Error('Email address is required');
+                                contentConfig = QrHelpers.email({
+                                    to: to.trim(),
+                                    subject: subject?.trim() || undefined,
+                                    body: body?.trim() || undefined
+                                });
+                                break;
+                            }
+                            case 'location': {
+                                // For location, expect format: location:latitude,longitude,altitude
+                                const [lat, lng, alt] = qrData.split(',');
+                                if (!lat || !lng) throw new Error('Location latitude and longitude are required');
+                                const latitude = parseFloat(lat.trim());
+                                const longitude = parseFloat(lng.trim());
+                                if (isNaN(latitude) || isNaN(longitude)) {
+                                    throw new Error('Invalid latitude or longitude values');
+                                }
+                                contentConfig = QrHelpers.location({
+                                    latitude,
+                                    longitude,
+                                    altitude: alt ? parseFloat(alt.trim()) : undefined
+                                });
+                                break;
+                            }
+                            case 'contact': {
+                                // For contact, expect format: contact:firstName,lastName,phone,email,organization
+                                const [firstName, lastName, phone, email, organization] = qrData.split(',');
+                                contentConfig = QrHelpers.contact({
+                                    firstName: firstName?.trim() || undefined,
+                                    lastName: lastName?.trim() || undefined,
+                                    phone: phone?.trim() || undefined,
+                                    email: email?.trim() || undefined,
+                                    organization: organization?.trim() || undefined
+                                });
+                                break;
+                            }
+                            default:
+                                // If not a recognized type, treat as text
+                                contentConfig = QrHelpers.text(qrContent);
+                        }
+                    } else {
+                        // No type specified, treat as text
+                        contentConfig = QrHelpers.text(qrContent);
                     }
+
+                    // Generate QR API URL using the type-safe function
+                    const qrApiUrl = generateQrApiUrl({
+                        content: contentConfig,
+                        //type: 'png', // Use PNG for inline display
+                        width: 128 // Default inline size
+                    });
+
+                    // Create img element for inline QR code
+                    const img = document.createElement('img');
+                    img.src = getAbsoluteUrl(qrApiUrl);
+                    img.className = 'qr-code-inline';
+                    img.alt = `QR code: ${qrContent}`;
+                    img.title = `QR code (${contentConfig.contentType}): ${qrContent}`;
+
+                    return img.outerHTML;
+                } catch (error) {
+                    console.warn('Failed to generate QR code:', error);
+                    return match; // Return original if QR generation fails
                 }
-
-                // Build QR API URL
-                const qrParams = new URLSearchParams({
-                    type: qrType,
-                    content: qrData,
-                    size: '128' // Default inline size
-                });
-
-                // Create img element for inline QR code
-                const img = document.createElement('img');
-                img.src = getAbsoluteUrl(`/api/qr?${qrParams.toString()}`);
-                img.className = 'qr-code-inline';
-                img.alt = `QR code: ${qrData}`;
-                img.title = `QR code (${qrType}): ${qrData}`;
-
-                return img.outerHTML;
             }
             if (componentName === "hashhighlight") {
                 // Hash the text and map to a color using getHashedColor

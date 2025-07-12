@@ -1,3 +1,4 @@
+import { getAbsoluteUrl } from "../clientAPILL";
 
 export type QrCodeErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
 
@@ -78,19 +79,24 @@ export function generateQrApiUrl(options: QrCodeOptions): string {
     const {
         type = 'svg',
         errorCorrectionLevel = 'M',
-        margin = 4,
-        color = '#000000',
-        backgroundColor = '#ffffff',
+        margin,// = 4,
+        color,// = '#000000',
+        backgroundColor,// = '#ffffff', actually i think these don't get encoded properly....
         width
     } = options;
 
-    const params = new URLSearchParams({
+    const t = {
         type,
         errorCorrectionLevel,
-        margin: margin.toString(),
+        margin: margin?.toString(),
         color,
         backgroundColor,
-    });
+    } satisfies Record<string, string | undefined>;
+
+    // remove undefined values
+    const objectWithValidValues = Object.fromEntries(Object.entries(t).filter(([_, v]) => v !== undefined)) as Record<string, string>;
+
+    const params = new URLSearchParams(objectWithValidValues);
 
     const content = options.content;
     params.append('contentType', content.contentType);
@@ -131,7 +137,7 @@ export function generateQrApiUrl(options: QrCodeOptions): string {
         params.append('width', width.toString());
     }
 
-    return `/api/qr?${params.toString()}`;
+    return getAbsoluteUrl(`/api/qr?${params.toString()}`);
 }
 
 /**

@@ -34,8 +34,9 @@ import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SnackbarContext } from "../SnackbarContext";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
-import { QrCodeButton, QrHelpers } from "../QrCode";
+import { QrCodeButton } from "../QrCode";
 import { QrCode } from "@mui/icons-material";
+import { QrHelpers } from "../../db3/shared/qrApi";
 
 const drawerWidth = 260;
 
@@ -261,7 +262,6 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                 <MetronomeDialogButton />
 
-
                 <Tooltip title="Show QR code for this page">
                     <div>
                         <QrCodeButton
@@ -277,7 +277,6 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         />
                     </div>
                 </Tooltip>
-
 
                 <MainSiteSearch />
 
