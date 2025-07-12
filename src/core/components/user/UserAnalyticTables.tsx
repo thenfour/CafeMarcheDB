@@ -1,4 +1,5 @@
 import { useQuery } from "@blitzjs/rpc";
+import { CompareArrows } from "@mui/icons-material";
 import React from "react";
 import { StandardVariationSpec } from "shared/color";
 import * as db3 from "src/core/db3/db3";
@@ -7,6 +8,7 @@ import getUserCredits from "../../db3/queries/getUserCredits";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
 import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
+import { getContentCountsRows, getParticipationCountsRows, getSummaryRows, getSystemCountsRows, getUserInfoRows, MassAnalysisDataRow } from "../../db3/shared/getUserMassAnalysisTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { AttendanceChip, InstrumentChip, SongChip } from "../CMCoreComponents";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
@@ -17,11 +19,8 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
 import { useSongsContext } from "../song/SongsContext";
-import { AddUserButton } from "./UserComponents";
-import { CompareArrows } from "@mui/icons-material";
-import { SettingMarkdown } from "../SettingMarkdown";
 import { UserChip } from "./userChip";
-import { getContentCountsRows, getParticipationCountsRows, getSummaryRows, getSystemCountsRows, getUserInfoRows, MassAnalysisDataRow } from "../../db3/shared/getUserMassAnalysisTypes";
+import { AddUserButton } from "./UserComponents";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {
@@ -324,18 +323,6 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
             case 'medium': return '#ffc107';
             case 'high': return '#dc3545';
         }
-    };
-
-    const renderComparisonValue = (value: number, compareValue?: number, showPercent?: boolean) => {
-        if (!compareWithUser || compareValue === undefined) {
-            return <span>{showPercent ? `${value.toFixed(1)}%` : value.toLocaleString()}</span>;
-        }
-
-        return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>{showPercent ? `${value.toFixed(1)}%` : value.toLocaleString()}</span>
-            </div>
-        );
     };
 
     const renderDataRow = (row: MassAnalysisDataRow) => {

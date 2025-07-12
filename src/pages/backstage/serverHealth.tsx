@@ -1,3 +1,5 @@
+import { CMTable, CMTableSlot } from "@/src/core/components/CMTable";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { getURIForFile } from "@/src/core/db3/clientAPILL";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
@@ -12,8 +14,6 @@ import { ActivityLogUserChip } from "src/core/db3/DB3Client";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import getServerHealth from "src/core/db3/queries/getServerHealth";
 import { GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { CMTable, CMTableSlot } from "@/src/core/components/CMTable";
 
 const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerHealthResult }) => {
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});

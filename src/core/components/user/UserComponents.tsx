@@ -18,8 +18,8 @@ import { CMTab, CMTabPanel } from "../TabPanel";
 import { ChooseItemDialog } from "../select/ChooseItemDialog";
 import { SongsProvider } from "../song/SongsContext";
 import { UserAdminPanel } from "./UserAdminPanel";
-import { UserChip } from "./userChip";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
+import { UserChip } from "./userChip";
 
 export enum UserDetailTabSlug {
     credits = "credits",
