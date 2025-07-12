@@ -1,15 +1,15 @@
 import { StandardVariationSpec } from "@/shared/color";
 import * as db3 from "src/core/db3/db3";
-import { getURIForUser } from "../../db3/clientAPILL";
+import { gIconMap } from "../../db3/components/IconMap";
 import { SearchResultsRet } from "../../db3/shared/apiTypes";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
-import { AdminInspectObject, GoogleIconSmall } from "../CMCoreComponents2";
-import { CMLink } from "../CMLink";
+import { GoogleIconSmall } from "../CMCoreComponents2";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { GenericSearchListItem } from "../search/SearchListItem";
 import { UsersFilterSpec } from "./UserClientBaseTypes";
+import { getURIForUser } from "../../db3/clientAPILL";
 
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
-
 
 type UserListItemProps = {
     index: number;
@@ -20,65 +20,54 @@ type UserListItemProps = {
 };
 
 export const UserListItem = (props: UserListItemProps) => {
+    return <GenericSearchListItem<EnrichedVerboseUser>
+        index={props.index}
+        item={props.user}
+        icon={gIconMap.Person()}
+        refetch={props.refetch}
+        href={getURIForUser(props.user)}
+        title={props.user.name}
+        credits={[
+            props.user.email,
+            props.user.phone,
+        ]}
+        bodyContent={
+            <>
+                <CMChipContainer className="songTags">
+                    {props.user.tags.map(tag => <CMStandardDBChip
+                        key={tag.id}
+                        size='small'
+                        model={tag.userTag}
+                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.userTagId) }}
+                        getTooltip={(_) => tag.userTag.description}
+                    />)}
+                    {props.user.role &&
+                        <CMChip
+                            color={props.user.role.color}
+                            shape={"rectangle"}
+                            size="small"
+                            variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.roleFilter.options.includes(props.user.role.id) }}
+                        >
+                            {props.user.role.name}
+                        </CMChip>}
+                    {props.user.googleId && <GoogleIconSmall />}
+                </CMChipContainer>
 
-    return <div className={`songListItem`}>
-        <div className="titleLine">
-            <div className="topTitleLine">
-                <CMLink className="nameLink" href={getURIForUser(props.user)}>{props.user.name}</CMLink>
-                <div style={{ flexGrow: 1 }}>
-                    <AdminInspectObject src={props.user} label="Obj" />
-                </div>
-                <span className="resultIndex">#{props.index}</span>
-            </div>
-        </div>
-
-        <div className="credits">
-            <div className="credit row">
-                <div className="fieldItem">{props.user.email}</div>
-            </div>
-            <div className="credit row">
-                <div className="fieldItem">{props.user.phone}</div>
-            </div>
-        </div>
-
-        <div className="searchBody">
-            <CMChipContainer className="songTags">
-                {props.user.tags.map(tag => <CMStandardDBChip
-                    key={tag.id}
-                    size='small'
-                    model={tag.userTag}
-                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.userTagId) }}
-                    getTooltip={(_) => tag.userTag.description}
-                />)}
-                {props.user.role &&
-                    <CMChip
-                        color={props.user.role.color}
-                        shape={"rectangle"}
-                        size="small"
-                        variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.roleFilter.options.includes(props.user.role.id) }}
-                    >
-                        {props.user.role.name}
-                    </CMChip>}
-                {props.user.googleId && <GoogleIconSmall />
-                }
-            </CMChipContainer>
-
-            <CMChipContainer className="instruments">
-                {props.user.instruments.map(tag => <CMStandardDBChip
-                    key={tag.id}
-                    size='small'
-                    model={tag.instrument}
-                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.instrumentFilter.options.includes(tag.instrumentId) }}
-                    getTooltip={(_) => tag.instrument.description}
-                />)}
-            </CMChipContainer>
-
-            <div className="lengthBpmLine row">
+                <CMChipContainer className="instruments">
+                    {props.user.instruments.map(tag => <CMStandardDBChip
+                        key={tag.id}
+                        size='small'
+                        model={tag.instrument}
+                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.instrumentFilter.options.includes(tag.instrumentId) }}
+                        getTooltip={(_) => tag.instrument.description}
+                    />)}
+                </CMChipContainer>
+            </>
+        }
+        footerContent={
+            <>
                 <DateValue value={props.user.createdAt} format={(dateStr) => `Created at ${dateStr}`} style={{ opacity: .5 }} />
-            </div>
-
-        </div>
-    </div>;
-};
-
-
+            </>
+        }
+    />;
+}

@@ -180,6 +180,10 @@ export const IsNullOrWhitespace = (s) => {
     return (s.trim() === "");
 };
 
+export function isNonEmptyString(s: unknown): s is string {
+    return typeof s === "string" && s.trim() !== "";
+}
+
 // https://stackoverflow.com/questions/58278652/generic-enum-type-guard
 // export const isSomeEnum = <T>(e: T) => (token: any): token is T[keyof T] =>
 //     Object.values(e).includes(token as T[keyof T]);

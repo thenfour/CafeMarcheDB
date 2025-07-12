@@ -36,6 +36,12 @@
     align-items: center;
 }
 
+.songListItem .topTitleLine svg {
+    margin-right: 8px;
+    opacity: 0.4;
+}
+
+
 .songListItem .introducedYear {
     font-style: italic;
     color: #999;
@@ -77,9 +83,9 @@
 .songListItem .lengthBpmLine {
     border-top: 1px solid #eee;
     padding-top: 6px;
+    gap: 8px;
+    display: flex;
+    font-size: 12px;
+    font-family: var(--ff-mono);
+    color: #999;
 }
-
-/* 
-.searchBody div:hover {
-    background-color: #0002;
-} */
