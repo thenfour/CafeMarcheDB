@@ -43,7 +43,7 @@ type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
 //const gMaximumFilterTagsPerType = 10 as const;
 
-type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt"; // keyof File
+type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt" | "fileLeafName"; // keyof File
 type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments" | "taggedWikiPages";
 
 //////////////////////////////////////////////////////////////////
@@ -133,19 +133,21 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
 }
 
 
-export const FileExternalLink = ({ file }: { file: EnrichedFile }) => {
+export const FileExternalLink = ({ file, highlight }: { file: EnrichedFile, highlight?: boolean }) => {
+    const filenameClass = highlight ? "filename highlight" : "filename";
+    
     return file.externalURI ? (
         <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={file.externalURI}>
             {gIconMap.Link()}
             <Tooltip title={file.fileLeafName}>
-                <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+                <div className={filenameClass}>{smartTruncate(file.fileLeafName)}</div>
             </Tooltip>
         </CMLink>
     ) : (
         <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={getURIForFile(file)}>
             <FileDownloadIcon />
             <Tooltip title={file.fileLeafName}>
-                <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+                <div className={filenameClass}>{smartTruncate(file.fileLeafName)}</div>
             </Tooltip>
         </CMLink>)
 
@@ -194,7 +196,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
             <div className="header">
 
-                <FileExternalLink file={file} />
+                <FileExternalLink file={file} highlight={props.statHighlight === 'fileLeafName'} />
 
                 <div className="flex-spacer"></div>
 
@@ -765,6 +767,11 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'fileCreatedAt', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
                                         variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'fileCreatedAt' }}
                                     >File Date {props.value.sortBy === 'fileCreatedAt' && sortArrow}</CMChip>
+                                    <CMChip
+                                        size='small'
+                                        onClick={() => props.onChange({ ...props.value, sortBy: 'fileLeafName', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
+                                        variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'fileLeafName' }}
+                                    >Filename {props.value.sortBy === 'fileLeafName' && sortArrow}</CMChip>
                                     <CMChip
                                         size='small'
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'sizeBytes', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
