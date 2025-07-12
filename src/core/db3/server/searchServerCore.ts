@@ -10,8 +10,9 @@ import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { CalculateFilterQueryResult, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
+import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 
-async function GetCustomSearchResultsHook(currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
+async function GetCustomSearchResultsHook(currentUser: UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
     const fullEvents = resultsSoFar.results as db3.EventSearch_Event[];
 
     // collect distinct usertags
@@ -51,7 +52,7 @@ async function GetCustomSearchResultsHook(currentUser: db3.UserWithRolesPayload,
 };
 
 
-type CustomSearchHookProc = (currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet) => Promise<any>;
+type CustomSearchHookProc = (currentUser: UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet) => Promise<any>;
 
 const gSearchCustomHookMap: { [key in SearchCustomDataHookId]: CustomSearchHookProc } = {
     "Events": GetCustomSearchResultsHook,
@@ -118,7 +119,7 @@ function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQ
 
 // construct a SQL select clause returning filtered items.
 // no pagination or sorting applied yet
-function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSearchResultsInput, excludeCriterionColumn: string | null, sortElements: SortQueryElements): CalculateFilterQueryResult {
+function calculateFilterQuery(currentUser: UserWithRolesPayload, args: GetSearchResultsInput, excludeCriterionColumn: string | null, sortElements: SortQueryElements): CalculateFilterQueryResult {
     const table = db3.GetTableById(args.tableID);
     if (!table) {
         throw new Error(`table ${args.tableID} not found`);

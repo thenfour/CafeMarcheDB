@@ -6,8 +6,8 @@ import { toSorted } from "shared/arrayUtils";
 import { CalculateMatchStrength, CalculateMatchStrengthForTags, MakeWhereCondition, MakeWhereConditionForTags, ParseQuickFilter, ParseQuickFilterResult, QuickSearchItemMatch, QuickSearchItemType, SearchableTableFieldSpec } from "shared/quickFilter";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
-import * as db3 from "src/core/db3/db3";
 import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression2 } from "src/core/db3/shared/db3Helpers";
+import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -17,13 +17,13 @@ interface QuickSearchPlugin {
     // return true if this plugin can handle the type of item.
     matchesTypeFilter: (type: string) => boolean;
     getMatches: (args: {
-        user: db3.UserWithRolesPayload,
+        user: UserWithRolesPayload,
         query: ParseQuickFilterResult,
         publicRole: Prisma.RoleGetPayload<{ include: { permissions: true } }>
     }) => Promise<QuickSearchItemMatch[]>;
 };
 
-const IsAuthorized = (user: db3.UserWithRolesPayload, permission: Permission): boolean => {
+const IsAuthorized = (user: UserWithRolesPayload, permission: Permission): boolean => {
     if (!user || !user.role) {
         return false; // no user, no permissions.
     }
@@ -366,7 +366,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
-export async function getQuickSearchResults(keyword__: string, user: db3.UserWithRolesPayload, allowedItemTypes: QuickSearchItemType[]): Promise<QuickSearchItemMatch[]> {
+export async function getQuickSearchResults(keyword__: string, user: UserWithRolesPayload, allowedItemTypes: QuickSearchItemType[]): Promise<QuickSearchItemMatch[]> {
 
     const publicRole = await GetPublicRole();
     const query = ParseQuickFilter(keyword__);

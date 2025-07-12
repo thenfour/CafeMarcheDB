@@ -135,8 +135,8 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
 };
 
 export const xEventType = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTypeInclude => {
-        return EventTypeArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTypeDefaultArgs => {
+        return EventTypeArgs;
     },
     tableName: "EventType",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
@@ -174,8 +174,8 @@ export const xEventType = new db3.xTable({
 
 
 export const xEventStatus = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventStatusInclude => {
-        return EventStatusArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventStatusDefaultArgs => {
+        return EventStatusArgs;
     },
     tableName: "EventStatus",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
@@ -213,8 +213,8 @@ export const xEventStatus = new db3.xTable({
 
 export const xEventTag = new db3.xTable({
     tableName: "EventTag",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagInclude => {
-        return EventTagArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagDefaultArgs => {
+        return EventTagArgs;
     },
     naturalOrderBy: EventTagNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
@@ -254,8 +254,8 @@ export const xEventTagAssignment = new db3.xTable({
     tableName: "EventTagAssignment",
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentInclude => {
-        return EventTagAssignmentArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentDefaultArgs => {
+        return EventTagAssignmentArgs;
     },
     getRowInfo: (row: EventTagAssignmentPayload) => {
         return {
@@ -288,8 +288,8 @@ export const xEventCustomField = new db3.xTable({
     tableName: "EventCustomField",
     naturalOrderBy: EventCustomFieldNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldInclude => {
-        return EventCustomFieldArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldDefaultArgs => {
+        return EventCustomFieldArgs;
     },
     getRowInfo: (row: EventCustomFieldPayload) => {
         return {
@@ -330,8 +330,8 @@ export const xEventCustomFieldValue = new db3.xTable({
     tableName: "EventCustomFieldValue",
     naturalOrderBy: EventCustomFieldValueNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldValueInclude => {
-        return EventCustomFieldValueArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldValueDefaultArgs => {
+        return EventCustomFieldValueArgs;
     },
     getRowInfo: (row: EventCustomFieldValuePayload) => {
         return xEventCustomField.getRowInfo(row.customField);
@@ -404,8 +404,8 @@ export const EventAPI = {
 
 export const xEventArgs_Base: db3.TableDesc = {
     tableName: "Event", // case matters :(
-    getInclude: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventInclude => {
-        return EventArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
+        return EventArgs;
     },
     SearchCustomDataHookId: SearchCustomDataHookId.Events,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
@@ -676,8 +676,8 @@ export const xEvent = new db3.xTable(xEventArgs_Base);
 const xEventArgs_Verbose: db3.TableDesc = {
     ...xEventArgs_Base,
     tableUniqueName: "xEventArgs_Verbose",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
-        return EventArgs_Verbose.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventDefaultArgs => {
+        return EventArgs_Verbose;
     },
 };
 
@@ -740,10 +740,10 @@ export type EventSearch_EventSegmentUserResponse = Prisma.EventSegmentUserRespon
 const xEventArgs_Search: db3.TableDesc = {
     ...xEventArgs_Base,
     tableUniqueName: "xEventArgs_Search",
-    getInclude: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventInclude => {
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
         const tableParams = filterModel.tableParams as EventTableParams;
         assert(tableParams.userIdForResponses, "when searching for events you must provide a userid to limit responses");
-        return EventSearchArgs(tableParams.userIdForResponses).include;
+        return EventSearchArgs(tableParams.userIdForResponses);
     },
 };
 
@@ -760,8 +760,8 @@ export const xEventSearch = new db3.xTable(xEventArgs_Search);
 
 export const xEventSegment = new db3.xTable({
     tableName: "EventSegment",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentInclude => {
-        return EventSegmentArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentDefaultArgs => {
+        return EventSegmentArgs;
     },
     naturalOrderBy: EventSegmentNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
@@ -833,8 +833,8 @@ export const xEventSegment = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xEventAttendance = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventAttendanceInclude => {
-        return EventAttendanceArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventAttendanceDefaultArgs => {
+        return EventAttendanceArgs;
     },
     tableName: "EventAttendance",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
@@ -872,8 +872,8 @@ export const xEventAttendance = new db3.xTable({
 
 
 export const xEventSegmentUserResponse = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentUserResponseInclude => {
-        return EventSegmentUserResponseArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentUserResponseDefaultArgs => {
+        return EventSegmentUserResponseArgs;
     },
     tableName: "EventSegmentUserResponse",
     tableAuthMap: xEventTableAuthMap_UserResponse,
@@ -929,8 +929,8 @@ export const xEventSegmentUserResponse = new db3.xTable({
 
 
 export const xEventUserResponse = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventUserResponseInclude => {
-        return EventUserResponseArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventUserResponseDefaultArgs => {
+        return EventUserResponseArgs;
     },
     tableName: "EventUserResponse",
     naturalOrderBy: EventUserResponseNaturalOrderBy,
@@ -992,8 +992,8 @@ export const xEventUserResponse = new db3.xTable({
 
 
 export const xEventSongList = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListInclude => {
-        return EventSongListArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListDefaultArgs => {
+        return EventSongListArgs;
     },
     tableName: "EventSongList",
     naturalOrderBy: EventSongListNaturalOrderBy,
@@ -1050,8 +1050,8 @@ export const xEventSongList = new db3.xTable({
 
 
 export const xEventSongListSong = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListSongInclude => {
-        return EventSongListSongArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListSongDefaultArgs => {
+        return EventSongListSongArgs;
     },
     tableName: "EventSongListSong",
     naturalOrderBy: EventSongListSongNaturalOrderBy,
@@ -1097,8 +1097,8 @@ export const xEventSongListSong = new db3.xTable({
 
 
 export const xEventSongListDivider = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListDividerInclude => {
-        return EventSongListDividerArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListDividerDefaultArgs => {
+        return EventSongListDividerArgs;
     },
     tableName: "EventSongListDivider",
     naturalOrderBy: EventSongListSongNaturalOrderBy, // yea i can borrow this.

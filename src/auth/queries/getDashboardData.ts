@@ -1,5 +1,5 @@
 import { BigintToNumber } from "@/shared/utils";
-import { UserWithRolesPayload } from "@/types";
+import { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { generateToken, hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";

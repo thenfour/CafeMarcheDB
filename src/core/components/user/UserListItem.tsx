@@ -1,13 +1,14 @@
 import { StandardVariationSpec } from "@/shared/color";
+import { Suspense } from "react";
 import * as db3 from "src/core/db3/db3";
+import { getURIForUser } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SearchResultsRet } from "../../db3/shared/apiTypes";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
-import { GoogleIconSmall } from "../CMCoreComponents2";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { UsersFilterSpec } from "./UserClientBaseTypes";
-import { getURIForUser } from "../../db3/clientAPILL";
+import { UserIdentityIndicator } from "./UserIdentityIndicator";
 
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 
@@ -50,7 +51,9 @@ export const UserListItem = (props: UserListItemProps) => {
                         >
                             {props.user.role.name}
                         </CMChip>}
-                    {props.user.googleId && <GoogleIconSmall />}
+                    <Suspense>
+                        <UserIdentityIndicator userId={props.user.id} showPassword={false} />
+                    </Suspense>
                 </CMChipContainer>
 
                 <CMChipContainer className="instruments">

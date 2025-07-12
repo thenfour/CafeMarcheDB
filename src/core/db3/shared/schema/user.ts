@@ -8,7 +8,7 @@ import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, PermissionSignificance, TAnyModel } from "../apiTypes";
 import { BoolField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 
 // for basic user fields.
@@ -68,12 +68,12 @@ export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 export const xUserMinimum = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
-        return UserArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
+        return UserArgs;
     },
     tableName: "User",
     naturalOrderBy: UserNaturalOrderBy,
-    getRowInfo: (row: UserMinimumPayload) => ({
+    getRowInfo: (row: UserPayloadMinimum) => ({
         pk: row.id,
         name: row.name,
         ownerUserId: row.id,
@@ -158,8 +158,8 @@ export const xUserMinimum = new db3.xTable({
 
 
 export const xPermissionBaseArgs: db3.TableDesc = {
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.PermissionInclude => {
-        return PermissionArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.PermissionDefaultArgs => {
+        return PermissionArgs;
     },
     tableName: "Permission",
     naturalOrderBy: PermissionNaturalOrderBy,
@@ -238,8 +238,8 @@ export const xPermissionForVisibility = new db3.xTable({
 // this schema is required for tags selection dlg.
 export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionInclude => {
-        return RolePermissionArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionDefaultArgs => {
+        return RolePermissionArgs;
     },
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RolePermissionNaturalOrderBy,
@@ -273,8 +273,8 @@ export const xRolePermissionAssociation = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xRole = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RoleInclude => {
-        return RoleArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RoleDefaultArgs => {
+        return RoleArgs;
     },
     tableName: "Role",
     tableAuthMap: xPermissionTableAuthMap,
@@ -348,8 +348,8 @@ export const xRole = new db3.xTable({
 export const xUserInstrument = new db3.xTable({
     tableName: "UserInstrument",
     tableAuthMap: xUserTableAuthMap_R_EManagers,
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInstrumentInclude => {
-        return UserInstrumentArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInstrumentDefaultArgs => {
+        return UserInstrumentArgs;
     },
     naturalOrderBy: UserInstrumentNaturalOrderBy,
     getRowInfo: (row: UserInstrumentPayload) => {
@@ -402,8 +402,8 @@ export interface UserTagTableParams {
 
 const userTagBaseArgs: db3.TableDesc =
 {
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagInclude => {
-        return UserTagArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagDefaultArgs => {
+        return UserTagArgs;
     },
     tableName: "UserTag",
     tableAuthMap: xUserTableAuthMap_R_EManagers,
@@ -485,8 +485,8 @@ export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
 export const xUserTagForEventSearch = new db3.xTable({
     ...userTagBaseArgs,
     tableUniqueName: "xUserTagForEventSearch",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagInclude => {
-        return UserTagForEventSearchArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagDefaultArgs => {
+        return UserTagForEventSearchArgs;
     },
 });
 
@@ -511,8 +511,8 @@ export const xUserTagAssignment = new db3.xTable({
     tableName: "UserTagAssignment",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
     tableAuthMap: xUserTableAuthMap_R_EManagers,
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagAssignmentInclude => {
-        return UserTagAssignmentArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagAssignmentDefaultArgs => {
+        return UserTagAssignmentArgs;
     },
     getRowInfo: (row: UserTagAssignmentPayload) => {
         return {
@@ -548,8 +548,8 @@ export interface UserTablParams {
 };
 
 const userBaseArgs: db3.TableDesc = {
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
-        return UserArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
+        return UserArgs;
     },
     tableName: "User",
     tableAuthMap: xUserTableAuthMap_R_EManagers,
@@ -674,8 +674,8 @@ export const xUser = new db3.xTable(userBaseArgs);
 export const xUserWithInstrument = new db3.xTable({
     ...userBaseArgs,
     tableUniqueName: "xUserWithInstrument",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
-        return UserWithInstrumentsArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
+        return UserWithInstrumentsArgs;
     },
 });
 

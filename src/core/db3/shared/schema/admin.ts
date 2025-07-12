@@ -31,9 +31,11 @@ export interface ChangeTableParams {
 
 export const xChange = new db3.xTable({
     tableName: "Change",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.ChangeInclude => {
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.ChangeDefaultArgs => {
         return {
-            user: true,
+            include: {
+                user: true,
+            }
         };
     },
     getParameterizedWhereClause: (params: ChangeTableParams, clientIntention): Prisma.ChangeWhereInput[] => {

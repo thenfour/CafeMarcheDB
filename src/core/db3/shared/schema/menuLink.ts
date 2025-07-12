@@ -41,8 +41,8 @@ export const MenuLinkNaturalOrderBy: Prisma.MenuLinkOrderByWithRelationInput[] =
 
 ////////////////////////////////////////////////////////////////
 export const xMenuLink = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.MenuLinkInclude => {
-        return MenuLinkArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.MenuLinkDefaultArgs => {
+        return MenuLinkArgs;
     },
     tableName: "MenuLink",
     naturalOrderBy: MenuLinkNaturalOrderBy,

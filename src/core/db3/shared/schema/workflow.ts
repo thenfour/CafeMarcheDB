@@ -53,7 +53,7 @@ export const WorkflowDefNaturalOrderBy: Prisma.WorkflowDefOrderByWithRelationInp
 ];
 
 
-export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
+export const xWorkflowDefArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
     tableName: "WorkflowDef", // case matters :(
     tableAuthMap: xTableAuthMap,
     naturalOrderBy: WorkflowDefNaturalOrderBy,
@@ -86,15 +86,15 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
 
 export const xWorkflowDef_Search = new db3.xTable({
     ...xWorkflowDefArgs,
-    getInclude: (clientIntention, filterModel): Prisma.EventInclude => {
-        return WorkflowDefArgs_Search.include;
+    getSelectionArgs: (clientIntention, filterModel): Prisma.EventDefaultArgs => {
+        return WorkflowDefArgs_Search;
     },
 });
 
 export const xWorkflowDef_Verbose = new db3.xTable({
     ...xWorkflowDefArgs,
-    getInclude: (clientIntention, filterModel): Prisma.WorkflowDefInclude => {
-        return WorkflowDefArgs_Verbose.include;
+    getSelectionArgs: (clientIntention, filterModel): Prisma.WorkflowDefDefaultArgs => {
+        return WorkflowDefArgs_Verbose;
     },
 });
 
@@ -116,7 +116,7 @@ const WorkflowInstanceArgs_Verbose = Prisma.validator<Prisma.WorkflowInstanceDef
 
 export type WorkflowInstance_Verbose = Prisma.WorkflowInstanceGetPayload<typeof WorkflowInstanceArgs_Verbose>;
 
-export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getInclude"> = {
+export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
     tableName: "WorkflowInstance", // case matters :(
     tableAuthMap: xTableAuthMap,
     //naturalOrderBy: WorkflowDefNaturalOrderBy,
@@ -142,8 +142,8 @@ export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getInclude"> = {
 
 export const xWorkflowInstance_Verbose = new db3.xTable({
     ...xWorkflowInstanceArgs,
-    getInclude: (clientIntention, filterModel): Prisma.WorkflowInstanceInclude => {
-        return WorkflowInstanceArgs_Verbose.include;
+    getSelectionArgs: (clientIntention, filterModel): Prisma.WorkflowInstanceDefaultArgs => {
+        return WorkflowInstanceArgs_Verbose;
     },
 });
 

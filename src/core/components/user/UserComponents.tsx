@@ -58,7 +58,7 @@ export const AddUserButton = (props: AddUserButtonProps) => {
         {addUserOpen &&
             <ChooseItemDialog
                 closeOnSelect={true}
-                isEqual={(a: db3.UserMinimumPayload, b: db3.UserMinimumPayload) => a.id === b.id}
+                isEqual={(a: db3.UserPayloadMinimum, b: db3.UserPayloadMinimum) => a.id === b.id}
                 items={filteredItems}
                 value={null as db3.UserPayload | null}
                 title={props.title || "Add user"}

@@ -36,8 +36,8 @@ export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 export const xInstrumentFunctionalGroup = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupInclude => {
-        return InstrumentFunctionalGroupArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupDefaultArgs => {
+        return InstrumentFunctionalGroupArgs;
     },
     tableName: "InstrumentFunctionalGroup",
     tableAuthMap: xInstrumentTableAuthMap,
@@ -81,8 +81,8 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
 
 
 export const xInstrumentTag = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagInclude => {
-        return InstrumentTagArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagDefaultArgs => {
+        return InstrumentTagArgs;
     },
     tableName: "InstrumentTag",
     tableAuthMap: xInstrumentTableAuthMap,
@@ -143,8 +143,8 @@ export const xInstrumentTag = new db3.xTable({
 // this is mostly only in order to define the tags field in xInstruments.
 export const xInstrumentTagAssociation = new db3.xTable({
     tableName: "InstrumentTagAssociation",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationInclude => {
-        return InstrumentTagAssociationArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationDefaultArgs => {
+        return InstrumentTagAssociationArgs;
     },
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
@@ -174,8 +174,8 @@ export const xInstrumentTagAssociation = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xInstrument = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentInclude => {
-        return InstrumentArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentDefaultArgs => {
+        return InstrumentArgs;
     },
     tableName: "Instrument",
     naturalOrderBy: InstrumentNaturalOrderBy,

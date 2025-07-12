@@ -53,8 +53,8 @@ export const CustomLinkRedirectType = {
 
 ////////////////////////////////////////////////////////////////
 export const xCustomLink = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.CustomLinkInclude => {
-        return CustomLinkArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.CustomLinkDefaultArgs => {
+        return CustomLinkArgs;
     },
     tableName: "CustomLink",
     naturalOrderBy: CustomLinkNaturalOrderBy,

@@ -6,10 +6,11 @@ import { CreatePublicData } from "types";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TAnyModel, TransactionalPrismaClient } from "../shared/apiTypes";
+import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 
 
 
-export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: db3.UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient) => {
+export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient) => {
     try {
         const startTimestamp = Date.now();
         const table = db3.GetTableById(input.tableID);
@@ -43,13 +44,13 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: db3.User
             filterModel: input.filter,
         });
 
-        const include = table.CalculateInclude(clientIntention, input.filter);
+        const selectionArgs = table.CalculateSelectionArgs(clientIntention, input.filter);
 
         const items = await dbTableClient.findMany({
             where,
             orderBy,
-            include,
             take: input.take,
+            ...selectionArgs,
         });
 
         const publicData = CreatePublicData({
@@ -75,7 +76,7 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: db3.User
         return {
             items: sanitizedItems,
             where,
-            include,
+            selectionArgs,
             clientIntention,
             executionTimeMillis: Date.now() - startTimestamp,
             resultId: randomUUID(),
@@ -118,7 +119,7 @@ export const DB3PaginatedQueryCore = async (input: db3.PaginatedQueryInput, ctx:
         filterModel: input.filter,
     });
 
-    const include = table.CalculateInclude(clientIntention, input.filter);
+    const selectionArgs = table.CalculateSelectionArgs(clientIntention, input.filter);
 
     const {
         items,
@@ -134,7 +135,7 @@ export const DB3PaginatedQueryCore = async (input: db3.PaginatedQueryInput, ctx:
                 ...paginateArgs,
                 where,
                 orderBy,
-                include,
+                ...selectionArgs,
             }),
     });
 
@@ -161,7 +162,7 @@ export const DB3PaginatedQueryCore = async (input: db3.PaginatedQueryInput, ctx:
         count,
 
         where,
-        include,
+        selectionArgs,
         clientIntention,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),

@@ -382,11 +382,11 @@ const DB3SingleSelectTestWithAddNew = () => {
 
 
 const MinimalUserSelect = () => {
-    const [selectedValue, setSelectedValue] = React.useState<db3.UserMinimumPayload | null>(null);
+    const [selectedValue, setSelectedValue] = React.useState<db3.UserPayloadMinimum | null>(null);
     return <div style={{ border: "2px solid blue", margin: "10px 0", maxWidth: "600px" }}>
         <h3>Minimal user selection</h3>
         <div style={{ padding: "20px", backgroundColor: "white" }}>
-            <DB3SingleSelect<db3.UserMinimumPayload>
+            <DB3SingleSelect<db3.UserPayloadMinimum>
                 value={selectedValue}
                 schema={db3.xUser}
                 nullBehavior={CMSelectNullBehavior.AllowNull}

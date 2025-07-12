@@ -38,7 +38,7 @@ export const createCalendar = (args: CreateCalendarArgs): ICalCalendar => {
 // if user is null, it's a public access.
 export const addEventToCalendar2 = (
     calendar: ICalCalendar,
-    user: null | Prisma.UserGetPayload<{}>,
+    user: null | db3.UserForCalBackendPayload,
     event: EventCalendarInput | null,
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[]
@@ -108,7 +108,7 @@ export const addEventToCalendar2 = (
 
 export const addEventToCalendar = async (
     calendar: ICalCalendar,
-    user: null | Prisma.UserGetPayload<{}>,
+    user: null | db3.UserForCalBackendPayload,
     event: EventForCal,
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[],
@@ -138,13 +138,13 @@ export interface CalExportCoreArgsUpcoming extends CalExportCoreArgs1 {
 type CalExportCoreArgs = CalExportCoreArgsUpcoming | CalExportCoreArgsSingleEvent;
 
 export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCoreArgs): Promise<ICalCalendar> => {
-    let currentUser: null | db3.UserWithRolesPayload = null;
+    let currentUser: null | db3.UserForCalBackendPayload = null;
     if (accessToken.length > 10) {
         currentUser = await db.user.findUnique({
             where: {
                 accessToken,
             },
-            include: db3.UserWithRolesArgs.include,
+            ...db3.UserForCalBackendArgs,
         });
     }
 

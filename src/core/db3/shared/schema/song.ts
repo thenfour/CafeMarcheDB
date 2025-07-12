@@ -58,8 +58,8 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 
 
 export const xSongTag = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagInclude => {
-        return SongTagArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagDefaultArgs => {
+        return SongTagArgs;
     },
     tableName: "SongTag",
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
@@ -123,8 +123,8 @@ export const xSongTag = new db3.xTable({
 
 export const xSongTagAssociation = new db3.xTable({
     tableName: "SongTagAssociation",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationInclude => {
-        return SongTagAssociationArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationDefaultArgs => {
+        return SongTagAssociationArgs;
     },
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
@@ -159,8 +159,8 @@ export interface SongTableParams {
 ////////////////////////////////////////////////////////////////
 const xSongArgs_Base: db3.TableDesc = {
     tableName: "Song",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
-        return SongArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongDefaultArgs => {
+        return SongArgs;
     },
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongNaturalOrderBy,
@@ -278,15 +278,15 @@ export const xSong = new db3.xTable(xSongArgs_Base);
 export const xSong_Verbose = new db3.xTable({
     ...xSongArgs_Base,
     tableUniqueName: "xSong_Verbose",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
-        return SongArgs_Verbose.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongDefaultArgs => {
+        return SongArgs_Verbose;
     },
 });
 
 ////////////////////////////////////////////////////////////////
 export const xSongCreditType = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditTypeInclude => {
-        return SongCreditTypeArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditTypeDefaultArgs => {
+        return SongCreditTypeArgs;
     },
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
     tableName: "SongCreditType",
@@ -339,8 +339,8 @@ export const xSongCreditType = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 export const xSongCredit = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditInclude => {
-        return SongCreditArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditDefaultArgs => {
+        return SongCreditArgs;
     },
     tableName: "SongCredit",
     tableAuthMap: xSongTableAuthMap_R_EManagers,

@@ -3,6 +3,8 @@ import { Ctx } from "@blitzjs/next";
 import { AuthenticatedCtx, assert } from "blitz";
 import { Prisma } from "db";
 import { Permission, gPublicPermissions } from "shared/permissions";
+import { UserWithRolesPayload } from "./src/core/db3/shared/schema/userPayloads";
+//import { UserWithRolesPayload } from "./src/core/db3/db3";
 //import { UserWithRolesPayload } from "src/core/db3/db3"; // circular dep
 
 // when you make a query that includes a n aux user like "CreatedBy", don't include everything.
@@ -14,24 +16,24 @@ export const AuxUserArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
   }
 });
 
-export type AuxUserPayload = Prisma.UserGetPayload<typeof AuxUserArgs>;
+// export type AuxUserPayload = Prisma.UserGetPayload<typeof AuxUserArgs>;
 
 
-export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
-  include: {
-    role: {
-      include: {
-        permissions: {
-          include: {
-            permission: true,
-          }
-        },
-      }
-    }
-  }
-});
+// export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
+//   include: {
+//     role: {
+//       include: {
+//         permissions: {
+//           include: {
+//             permission: true,
+//           }
+//         },
+//       }
+//     }
+//   }
+// });
 
-export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
+// export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
 
 
 

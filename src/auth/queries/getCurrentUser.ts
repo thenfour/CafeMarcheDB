@@ -10,7 +10,7 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
 
   const user = await db.user.findFirst({
     where: { id: session.userId },
-    include: db3.UserArgs.include
+    ...db3.UserArgs
   });
 
   return user;

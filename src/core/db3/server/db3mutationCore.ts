@@ -17,6 +17,7 @@ import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat,
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 
 var path = require('path');
 var fs = require('fs');
@@ -43,7 +44,7 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
         if (!ctx) throw new Error("unauthorized");
         if (!ctx.session.userId) return null;
         const currentUser = await db.user.findFirst({
-            ...db3.UserWithRolesArgs,
+            ...UserWithRolesArgs,
             where: {
                 id: ctx.session.userId,
             }
@@ -854,12 +855,13 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
         skipVisibilityCheck: args.skipVisibilityCheck,
     });
 
-    const include = args.schema.CalculateInclude(clientIntention, filterModel);
+    const selectionArgs = args.schema.CalculateSelectionArgs(clientIntention, filterModel);
 
     const items = await db[args.schema.tableName].findMany({
         where,
         orderBy: args.schema.naturalOrderBy,
-        include,
+        ...selectionArgs,
+        //include,
         //take: input.take,
     }) as TitemPayload[];
 
@@ -878,7 +880,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
     return {
         items: sanitizedItems,
         where,
-        include,
+        selectionArgs,
         clientIntention,
     };
 
@@ -903,12 +905,12 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
         skipVisibilityCheck,
     });
 
-    const include = args.schema.CalculateInclude(clientIntention, filterModel);
+    const selectionArgs = args.schema.CalculateSelectionArgs(clientIntention, filterModel);
 
     let item = await db[args.schema.tableName].findFirst({
         where,
         orderBy: args.schema.naturalOrderBy,
-        include,
+        ...selectionArgs,
         //take: input.take,
     }) as (TitemPayload | null);
 
@@ -932,7 +934,7 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
     return {
         item,
         where,
-        include,
+        selectionArgs,
         clientIntention,
     };
 

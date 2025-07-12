@@ -31,7 +31,7 @@ export default resolver.pipe(
     // This throws an error if credentials are invalid
     const user = await authenticateUser(email, password)
 
-    await ctx.session.$create(CreatePublicData({ user: { ...user, hashedPassword: "" } }));
+    await ctx.session.$create(CreatePublicData({ user }));
 
     return user
   }

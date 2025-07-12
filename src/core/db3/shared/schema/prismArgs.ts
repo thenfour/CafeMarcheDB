@@ -358,10 +358,21 @@ export type UserPayload_Name = Prisma.UserGetPayload<{
 }>;
 
 
-export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
+//export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
 
 export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
-    include: {
+    select: {
+        id: true,
+        name: true,
+        isSysAdmin: true,
+        isDeleted: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        roleId: true,
+        cssClass: true,
+        accessToken: true,
+        // Explicitly exclude: hashedPassword, googleId, uid
         role: {
             include: {
                 permissions: {
@@ -386,11 +397,64 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
 });
 
 export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
-export type UserPayloadMinimum = Prisma.UserGetPayload<{}>;
+
+export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
+    select: {
+        id: true,
+        name: true,
+        isSysAdmin: true,
+        isDeleted: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        roleId: true,
+        cssClass: true,
+        // Explicitly exclude: hashedPassword, googleId, accessToken, uid
+    }
+});
+export type UserPayloadMinimum = Prisma.UserGetPayload<typeof UserMinimumArgs>;
+
+
+export const UserForCalBackendArgs = Prisma.validator<Prisma.UserArgs>()({
+    select: {
+        id: true,
+        name: true,
+        isSysAdmin: true,
+        isDeleted: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        roleId: true,
+        cssClass: true,
+        accessToken: true,
+
+        uid: true,
+        role: {
+            include: {
+                permissions: {
+                    include: {
+                        permission: true,
+                    }
+                },
+            }
+        }
+    }
+});
+export type UserForCalBackendPayload = Prisma.UserGetPayload<typeof UserForCalBackendArgs>;
 
 
 export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
-    include: {
+    select: {
+        id: true,
+        name: true,
+        isSysAdmin: true,
+        isDeleted: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        roleId: true,
+        cssClass: true,
+
         instruments: true,
         tags: true,
     }

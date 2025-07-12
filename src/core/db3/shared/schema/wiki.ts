@@ -48,8 +48,8 @@ export const WikiPageNaturalOrderBy: Prisma.WikiPageOrderByWithRelationInput[] =
 
 ////////////////////////////////////////////////////////////////
 export const xWikiPage = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.WikiPageInclude => {
-        return WikiPageArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.WikiPageDefaultArgs => {
+        return WikiPageArgs;
     },
     tableName: "WikiPage",
     naturalOrderBy: WikiPageNaturalOrderBy,
@@ -176,8 +176,8 @@ export interface WikiPageRevisionTableParams {
 
 ////////////////////////////////////////////////////////////////
 export const xWikiPageRevision = new db3.xTable({
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.WikiPageRevisionInclude => {
-        return WikiPageRevisionArgs.include;
+    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.WikiPageRevisionDefaultArgs => {
+        return WikiPageRevisionArgs;
     },
     tableName: "WikiPageRevision",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,

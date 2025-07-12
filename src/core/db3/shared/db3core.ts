@@ -10,6 +10,7 @@ import { SortDirection } from "shared/rootroot";
 import { PublicDataType } from "types";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
+import { UserWithRolesPayload } from "./schema/userPayloads";
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
@@ -135,22 +136,6 @@ export const SuccessfulValidateAndComputeDiffResult: ValidateAndComputeDiffResul
 });
 
 export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDiffResult;
-
-export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
-    include: {
-        role: {
-            include: {
-                permissions: {
-                    include: {
-                        permission: true,
-                    }
-                },
-            }
-        }
-    }
-});
-
-export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
 
 
 ////////////////////////////////////////////////////////////////
@@ -463,12 +448,13 @@ export interface CalculateWhereClauseArgs {
     skipVisibilityCheck?: boolean;
 };
 
+
 export interface TableDesc {
     tableName: string;
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
     columns: FieldBase<unknown>[];
 
-    getInclude: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel,
+    getSelectionArgs: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText?: (row: TAnyModel, filterText: string) => boolean,
@@ -490,7 +476,7 @@ export class xTable /* implements TableDesc*/ {
     tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
-    getInclude: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel;
+    getSelectionArgs: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel;
 
     pkMember: string;
     rowNameMember?: string;
@@ -803,16 +789,23 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    CalculateInclude = (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel): TAnyModel | undefined => {
+    CalculateSelectionArgs = (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel): TAnyModel | undefined => {
         // create a deep copy so our modifications don't spill into other stuff.
-        const include = JSON.parse(JSON.stringify(this.getInclude(clientIntention, filterModel)));
-        this.ApplyIncludeFiltering(include, clientIntention);
+        const selectionArgs = JSON.parse(JSON.stringify(this.getSelectionArgs(clientIntention, filterModel)));
+
+        // selection args can be like,
+        // { include: { field1: true, field2: true } }
+        // or { select: { field1: true, field2: true } }
+
+        const include = selectionArgs.include || selectionArgs.select; // either one can be used, but we only support one of them.
 
         // tables with no relations do not support `include` at all. even if it's empty.
         // talk to Prisma about that but in that case we must return undefined so the query doesn't have the empty `include` clause.
         if (Object.entries(include).length === 0) return undefined;
 
-        return include;
+        this.ApplyIncludeFiltering(include, clientIntention);
+
+        return selectionArgs;
     };
 
     // takes an "include" Prisma clause, and adds a WHERE clause to it to exclude objects that should be hidden.

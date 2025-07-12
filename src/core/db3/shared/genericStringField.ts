@@ -2,7 +2,8 @@
 import { MysqlEscape } from "shared/mysqlUtils";
 import { CoalesceBool, CoerceToBoolean, isValidURL } from "shared/utils";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
-import { DB3AuthSpec, ErrorValidateAndParseResult, FieldBase, SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
+import { DB3AuthSpec, ErrorValidateAndParseResult, FieldBase, SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
+import { UserWithRolesPayload } from "./schema/userPayloads";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for validation and client UI behavior.

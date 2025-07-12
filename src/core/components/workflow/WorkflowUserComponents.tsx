@@ -80,13 +80,13 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
 
     const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
 
-    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>({ schema: db3.xUser });
+    const queryStatus = DB3Client.useDb3Query<db3.UserPayloadMinimum>({ schema: db3.xUser });
     const getUserById = (id: number) => {
         const ret = queryStatus.items.find(u => u.id === id);
         if (!ret) throw new Error(`user not found ${id}`);
         return ret;
     };
-    const getAssignee = (u: db3.UserMinimumPayload): WorkflowNodeAssignee => {
+    const getAssignee = (u: db3.UserPayloadMinimum): WorkflowNodeAssignee => {
         const ret = props.value.find(a => a.userId === u.id);
         if (!ret) {
             return {
@@ -97,7 +97,7 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
         return ret;
     };
 
-    return <DB3MultiSelect<db3.UserMinimumPayload>
+    return <DB3MultiSelect<db3.UserPayloadMinimum>
         schema={db3.xUser}
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         value={props.value.map(x => getUserById(x.userId))}
@@ -149,14 +149,14 @@ export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps)
 
     const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
 
-    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>({ schema: db3.xUser });
+    const queryStatus = DB3Client.useDb3Query<db3.UserPayloadMinimum>({ schema: db3.xUser });
     const getUserById = (id: number) => {
         const ret = queryStatus.items.find(u => u.id === id);
         if (!ret) throw new Error(`user not found ${id}`);
         return ret;
     };
 
-    return <DB3MultiSelect<db3.UserMinimumPayload>
+    return <DB3MultiSelect<db3.UserPayloadMinimum>
         schema={db3.xUser}
         displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
         value={props.value.map(x => getUserById(x.userId))}

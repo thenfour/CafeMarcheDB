@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol, parseBucketToDateRange } from "@/shared/mysqlUtils";
 import { xCustomLink, xEvent, xMenuLink, xSong, xWikiPage } from "@/src/core/db3/db3";
-import { UserWithRolesPayload } from "@/types";
 import { hash256 } from "@blitzjs/auth";
 import { FacetedBreakdownResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "../activityTracking";
+import { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 
 
 export type FeatureReportFilterSpec = z.infer<typeof ZFeatureReportFilterSpec>;

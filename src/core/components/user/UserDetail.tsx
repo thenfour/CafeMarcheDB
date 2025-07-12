@@ -1,5 +1,4 @@
 import { Permission } from "@/shared/permissions";
-import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { StringToEnumValue } from "shared/utils";
@@ -7,13 +6,13 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChipContainer, CMStandardDBChip } from "../CMChip";
-import { AdminInspectObject, GoogleIconSmall, KeyValueTable } from "../CMCoreComponents2";
+import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
 import { useDashboardContext } from "../DashboardContext";
 import { CMTab, CMTabPanel } from "../TabPanel";
 import { SongsProvider } from "../song/SongsContext";
 import { UserAdminPanel } from "./UserAdminPanel";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
-
+import { UserIdentityIndicator } from "./UserIdentityIndicator";
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -33,7 +32,7 @@ export interface UserDetailArgs {
 
 export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
     const dashboardContext = useDashboardContext();
-    const router = useRouter();
+    //const router = useRouter();
 
     const [selectedTab, setSelectedTab] = React.useState<UserDetailTabSlug>(props.initialTab || UserDetailTabSlug.attendance);
 
@@ -105,7 +104,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 <KeyValueTable data={{
                     phone: user.phone,
                     email: user.email,
-                    identity: user.googleId ? <GoogleIconSmall /> : "Password"
+                    identity: <Suspense><UserIdentityIndicator user={user} /></Suspense>// user.googleId ? <GoogleIconSmall /> : "Password"
                 }} />
             }
 

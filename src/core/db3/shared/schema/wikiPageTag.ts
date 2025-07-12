@@ -34,8 +34,8 @@ const xTableAuthMap: DB3AuthTablePermissionMap = {
 
 //////////////////////////////////////////////////////////////
 export const xWikiPageTag = new xTable({
-    getInclude: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagInclude => {
-        return WikiPageTagArgs.include;
+    getSelectionArgs: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagDefaultArgs => {
+        return WikiPageTagArgs;
     },
     tableName: "WikiPageTag",
     tableAuthMap: xTableAuthMap,
@@ -72,8 +72,8 @@ export const xWikiPageTagAssignment = new xTable({
     tableName: "WikiPageTagAssignment",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
     tableAuthMap: xTableAuthMap,
-    getInclude: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagAssignmentInclude => {
-        return WikiPageTagAssignmentArgs.include;
+    getSelectionArgs: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagAssignmentDefaultArgs => {
+        return WikiPageTagAssignmentArgs;
     },
     getRowInfo: (row: WikiPageTagAssignmentPayload) => {
         return {
