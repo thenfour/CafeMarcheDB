@@ -192,7 +192,7 @@ function processInlineComponent(match: string, componentName: string, propsStrin
             }
 
             // Generate QR API URL using the type-safe function
-            console.log(`generating QR code for content:`, contentConfig);
+            //console.log(`generating QR code for content:`, contentConfig);
             const qrApiUrl = generateQrApiUrl({
                 content: contentConfig,
                 //type: 'png', // Use PNG for inline display
