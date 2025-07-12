@@ -251,6 +251,14 @@ L: 1/4
 K: G
 G A B c | d e f g |
 \`\`\`
+
+QR Code Examples:
+
+Simple text QR: {{qr:Hello World!}}
+
+Website QR: {{qr:url:https://github.com/thenfour/CafeMarcheDB}}
+
+WiFi QR: {{qr:wifi:MyNetwork|WPA|password123}}
     `;
 
 

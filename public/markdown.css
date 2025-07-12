@@ -565,3 +565,41 @@ test cases:
     margin-top: -15px;
     /* border: 1px solid black; */
 }
+
+/* QR Code inline styling */
+.markdown .qr-code-inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 4px;
+    max-width: 128px;
+    max-height: 128px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    padding: 2px;
+}
+
+.markdown .qr-code-inline:hover {
+    border-color: #007acc;
+    box-shadow: 0 2px 4px rgba(0, 122, 204, 0.2);
+}
+
+/* QR Code block styling (for potential future block syntax) */
+.markdown .qr-code-block-container {
+    text-align: center;
+    margin: 16px 0;
+}
+
+.markdown .qr-code-block {
+    display: inline-block;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    padding: 8px;
+    max-width: 256px;
+}
+
+.markdown .markdown-class-qr {
+    /* Default styling for qr component type */
+    display: inline-block;
+}

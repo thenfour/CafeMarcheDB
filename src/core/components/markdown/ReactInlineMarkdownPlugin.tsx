@@ -33,6 +33,43 @@ export function ReactInlineMarkdownPlugin(md: MarkdownIt) {
 
                 return img.outerHTML;
             }
+            if (componentName === "qr") {
+                // Generate QR code image for inline display
+                const qrContent = propsString.trim();
+                if (!qrContent) {
+                    return match; // Return original if empty
+                }
+
+                // Parse QR content - format: type:content or just content (defaults to text)
+                let qrType = 'text';
+                let qrData = qrContent;
+
+                const colonIndex = qrContent.indexOf(':');
+                if (colonIndex > 0 && colonIndex < 20) { // reasonable type length limit
+                    const possibleType = qrContent.substring(0, colonIndex).toLowerCase();
+                    const validTypes = ['text', 'url', 'wifi', 'contact', 'sms', 'email', 'location'];
+                    if (validTypes.includes(possibleType)) {
+                        qrType = possibleType;
+                        qrData = qrContent.substring(colonIndex + 1);
+                    }
+                }
+
+                // Build QR API URL
+                const qrParams = new URLSearchParams({
+                    type: qrType,
+                    content: qrData,
+                    size: '128' // Default inline size
+                });
+
+                // Create img element for inline QR code
+                const img = document.createElement('img');
+                img.src = getAbsoluteUrl(`/api/qr?${qrParams.toString()}`);
+                img.className = 'qr-code-inline';
+                img.alt = `QR code: ${qrData}`;
+                img.title = `QR code (${qrType}): ${qrData}`;
+
+                return img.outerHTML;
+            }
             if (componentName === "hashhighlight") {
                 // Hash the text and map to a color using getHashedColor
                 const text = propsString;

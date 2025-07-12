@@ -342,6 +342,5 @@ But this is a new paragraph.`}
             </div>
         </Collapse>
 
-
     </Collapse>;
 };

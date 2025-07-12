@@ -1,4 +1,4 @@
-import { EmojiSymbols, FormatIndentDecrease, FormatIndentIncrease, FormatQuote, FormatStrikethrough, Redo, Undo } from "@mui/icons-material";
+import { EmojiSymbols, FormatIndentDecrease, FormatIndentIncrease, FormatQuote, FormatStrikethrough, QrCode, Redo, Undo } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
@@ -514,13 +514,26 @@ const RedoCommand: MarkdownEditorCommand = {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const QrCodeCommand: MarkdownEditorCommand = {
+    id: "qrcode",
+    toolbarTooltip: "Insert QR Code",
+    toolbarIcon:
+        <QrCode />,
+    invoke: async (args) => {
+        // Insert QR code syntax, using selected text as content or providing default
+        await args.api.controlledTextArea.toggleSurroundingSelectionWithText("{{qr:", "}}", "your content here");
+    },
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const gMarkdownEditorCommandGroups: MarkdownEditorCommand[][] = [
     // MarkdownInspectCommand
     [UndoCommand, RedoCommand],
     [BoldCommand, ItalicCommand, StrikethroughCommand, EncloseCommand, HighlightCommand, InlineAbcCommand],
     [UnorderedListCommand, OrderedListCommand, DecreaseIndentCommand, IndentCommand],
     [Heading1Command, QuoteCommand, CodeCommand, AbcNotationCommand, CharacterSizeCommand],
-    [SpecialCharactersCommand],
+    [SpecialCharactersCommand, QrCodeCommand],
     [FileAttachCommand,
         WikiReferenceCommand,
         MarkdownEditorMentionCommand,
