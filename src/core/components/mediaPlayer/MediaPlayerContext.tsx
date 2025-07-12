@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from "react";
 import { getURIForFile } from "../../db3/clientAPILL";
-import { MediaPlayerBar } from "./MediaPlayerBar";
 import { MediaPlayerContextType, MediaPlayerTrack, MediaPlayerTrackTitle } from "./MediaPlayerTypes";
 
 const MediaPlayerContext = createContext<MediaPlayerContextType | undefined>(undefined);

@@ -1,12 +1,11 @@
 import { SkipNext, SkipPrevious, Sync } from "@mui/icons-material";
+import { Tooltip } from "@mui/material";
 import React from "react";
 import { formatSongLength } from "../../../../shared/time";
-import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { MediaPlayerContextType } from "./MediaPlayerTypes";
 import { SetlistVisualizationBars } from "./SetlistVisualizationBar";
-import { Tooltip } from "@mui/material";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;

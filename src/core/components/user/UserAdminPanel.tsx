@@ -43,7 +43,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
                     })) {
                         await snackbar.invokeAsync(async () => {
                             await props.tableClient.doDeleteMutation(props.user.id, "softWhenPossible");
-                            router.push(Routes.UserSearchPage());
+                            void router.push(Routes.UserSearchPage());
                         });
                     }
 
