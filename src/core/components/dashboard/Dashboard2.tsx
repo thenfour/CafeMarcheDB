@@ -1,6 +1,7 @@
 import { useSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
+import { QrCode } from "@mui/icons-material";
 import MenuIcon from '@mui/icons-material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import { AppBar, Avatar, Box, Divider, IconButton, ListItemIcon, Menu, MenuItem, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
@@ -18,25 +19,24 @@ import { API } from "../../db3/clientAPI";
 import { getAbsoluteUrl } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../../db3/shared/apiTypes";
+import { QrHelpers } from "../../db3/shared/qrApi";
 import { AppContextMarker } from "../AppContext";
-import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
+import { AdminInspectObject } from "../CMCoreComponents2";
 import { ConfirmProvider } from "../ConfirmationDialog";
 import { DashboardContext, DashboardContextProvider, useFeatureRecorder } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { LoginSignup } from "../LoginSignupForm";
+import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
+import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import {
     NavRealm,
     SideMenu
 } from "../MenuStructure";
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { MetronomeDialogButton } from "../Metronome";
+import { QrCodeButton } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SnackbarContext } from "../SnackbarContext";
-import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
-import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
-import { QrCodeButton } from "../QrCode";
-import { QrCode } from "@mui/icons-material";
-import { QrHelpers } from "../../db3/shared/qrApi";
 
 const drawerWidth = 260;
 
