@@ -159,9 +159,16 @@ export const OSIconMap: Record<OperatingSystem, string> = {
     android: "/images/icons/android.svg",
 };
 
-export function detectOS(): OperatingSystem | undefined {
+export function detectOS(): OperatingSystem | string | undefined {
     const uaData = (navigator as any).userAgentData;
-    const platform = uaData?.platform || navigator.platform || navigator.userAgent;
+    // https://developer.mozilla.org/en-US/docs/Web/API/NavigatorUAData/platform
+    // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/platform
+    const shortPlatform = (uaData?.platform || navigator.platform) as string | undefined;
+    const platform = shortPlatform || (navigator.userAgent as string | undefined);
+
+    if (!platform) {
+        return undefined; // No platform information available
+    }
 
     if (/Win/i.test(platform)) return OperatingSystem.windows;
     if (/Mac/i.test(platform) && !/iPhone|iPad|iPod/i.test(platform)) return OperatingSystem.macos;
@@ -170,7 +177,8 @@ export function detectOS(): OperatingSystem | undefined {
     if (/CrOS/i.test(platform)) return OperatingSystem.chromeos;
     if (/iPhone|iPad|iPod/i.test(platform)) return OperatingSystem.ios;
 
-    return undefined;
+    // don't store the whole useragent.
+    return shortPlatform?.toLowerCase();
 }
 
 
@@ -184,7 +192,7 @@ export const ZDeviceInfo = z.object({
     deviceClass: z.nativeEnum(DeviceClasses).optional(), // phone, tablet, or desktop
 
     //browser: z.enum(['safari', 'firefox', 'chrome', 'edge', 'opera', 'brave', 'ie']).optional(),
-    browser: z.nativeEnum(Browsers).optional(), // safari, firefox, chrome, edge, opera, brave, ie
+    browser: z.union([z.nativeEnum(Browsers), z.string()]).optional(), // safari, firefox, chrome, edge, opera, brave, ie, or unknown browser string
 
     operatingSystem: z.string().optional(), // e.g. "windows", "macos", "linux", "android", "ios"
     language: z.string().optional(), // the 2-letter language code, e.g. 'en', 'de', 'fr', etc.
@@ -250,14 +258,14 @@ export async function collectDeviceInfo(): Promise<DeviceInfo> {
 
 /* -------------------------------------------------------------------------- */
 /* 2) normalise UA-CH / UA-string into that type                                 */
-function detectBrowser(uaData?: /* NavigatorUAData */ any): DeviceInfo['browser'] {
+function detectBrowser(uaData?: /* NavigatorUAData */ any): Browsers | string | undefined {
     /* ---- A. UA-CH branch ---------------------------------------------------- */
     /*  (Brave & Edge really do expose their own brand token in modern Chromium) */
     /*      see table lines 11-13 here …                                        */
     /*      Brave“Brave”;v=”124″, “Chromium”;v=”124″✅                          */
     /*      Edge “Microsoft Edge”;v=”124″, “Chromium”;v=”124″✅                 */
     /*      Opera“Opera”…                                                      */
-    const brandMap: Record<string, DeviceInfo['browser']> = {
+    const brandMap: Record<string, Browsers> = {
         'Microsoft Edge': Browsers.edge,
         'Opera': Browsers.opera,
         'Brave': Browsers.brave,
@@ -272,10 +280,18 @@ function detectBrowser(uaData?: /* NavigatorUAData */ any): DeviceInfo['browser'
             const canonical = brandMap[brand];
             if (canonical) return canonical;
         }
+
+        // If we have brands but none matched, return the first brand name
+        const firstBrand = uaData.brands[0]?.brand;
+        if (firstBrand) return firstBrand.toLowerCase();
     }
 
     /* ---- B. Fallback: sniff the legacy user-agent string -------------------- */
     const ua = navigator.userAgent;
+
+    if (!ua) {
+        return undefined; // No user agent information available
+    }
 
     /*  order matters – match the most specific first */
     if (/Edg/i.test(ua)) return Browsers.edge;
@@ -294,7 +310,20 @@ function detectBrowser(uaData?: /* NavigatorUAData */ any): DeviceInfo['browser'
     if (/Safari/i.test(ua) &&
         !/Chrome|Chromium|Brave|Edg|OPR/i.test(ua)) return Browsers.safari;
 
-    return Browsers.chrome;  // default
+    if (/Chrome|Chromium/i.test(ua)) return Browsers.chrome;
+
+    // For unknown browsers, try to extract a meaningful name from the user agent
+    // Look for common patterns like "BrowserName/version"
+    const browserMatch = ua.match(/(\w+)\/[\d.]+/);
+    if (browserMatch && browserMatch[1]) {
+        const browserName = browserMatch[1].toLowerCase();
+        // Avoid generic terms that aren't actual browser names
+        if (!['mozilla', 'webkit', 'applewebkit', 'version', 'mobile'].includes(browserName)) {
+            return browserName;
+        }
+    }
+
+    return undefined; // No known browser matched, return undefined
 }
 
 export const ZTRecordActionArgs = z.object({
