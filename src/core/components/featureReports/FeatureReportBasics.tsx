@@ -9,16 +9,32 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
 import { AttendanceChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
 import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
+import { CMSmallButton } from "../CMCoreComponents2";
+import { clearArray } from "@/shared/arrayUtils";
 //
-import { ActivityDetailTabId, GeneralActivityReportDetailPayload } from "./activityReportTypes";
+import { ActivityDetailTabId, GeneralActivityReportDetailPayload, FacetResultBase } from "./activityReportTypes";
 import { ActivityFeature, BrowserIconMap, Browsers, DeviceClasses, DeviceClassIconMap, OperatingSystem, OSIconMap, PointerTypeIconMap, PointerTypes } from "./activityTracking";
 import { AdminInspectObject } from "../CMCoreComponents2";
 import { EventChip } from "../event/EventChips";
+import { FeatureReportFilterSpec } from "./server/facetProcessor";
 
 export const CMAdhocChipContainer = ({ children }: { children: React.ReactNode }) => {
     return <div className="adHocChipContainer">
         {children}
     </div>;
+}
+
+// Forward declaration to avoid circular imports
+interface FacetHandler<Tpayload extends FacetResultBase, TKey> {
+    supportsDrilldown: boolean;
+    getFacetName: () => string;
+    addFilter: (filterSpec: FeatureReportFilterSpec, item: Tpayload) => FeatureReportFilterSpec;
+    includedItemsSelector: (filterSpec: FeatureReportFilterSpec) => TKey[];
+    excludedItemsSelector: (filterSpec: FeatureReportFilterSpec) => TKey[];
+    itemFromKey: (key: TKey) => Tpayload;
+    getItemKey: (item: Tpayload) => TKey;
+    getItemLabel: (item: Tpayload) => string;
+    getItemColor: (item: Tpayload, alpha?: string) => string;
 }
 
 export interface CMAdhocChipProps {
@@ -27,18 +43,162 @@ export interface CMAdhocChipProps {
     style?: React.CSSProperties;
     className?: string;
     onClick?: () => void;
+
+    // Enhanced tooltip configuration
+    tooltip?: {
+        content?: React.ReactNode;           // Custom tooltip content
+        showDefault?: boolean;               // Show default tooltip (children content)
+        layout?: 'stacked' | 'inline';      // How to arrange content + actions
+    };
+
+    // Enhanced filtering configuration  
+    filtering?: {
+        handler: FacetHandler<any, any>;
+        item: any;
+        filterSpec: FeatureReportFilterSpec;
+        setFilterSpec: (fs: FeatureReportFilterSpec) => void;
+        showActions?: boolean;               // Whether to show isolate/hide buttons
+    };
+};
+
+// Local implementation of FacetItemActions to avoid circular imports
+const FacetItemActions = ({ item, handler, filterSpec, setFilterSpec }: {
+    item: any;
+    handler: FacetHandler<any, any>;
+    filterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (fs: FeatureReportFilterSpec) => void;
+}) => {
+    if (!handler.supportsDrilldown) return null;
+
+    const isolateButton = <CMSmallButton
+        variant="technical"
+        onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling to parent click handlers
+            const newFilterSpec = { ...filterSpec };
+            const includedItems = handler.includedItemsSelector(newFilterSpec);
+            const excludedItems = handler.excludedItemsSelector(newFilterSpec);
+            clearArray(includedItems);
+            clearArray(excludedItems);
+            includedItems.push(handler.getItemKey(item));
+            setFilterSpec(newFilterSpec);
+        }}
+    >
+        [+] isolate
+    </CMSmallButton>;
+
+    const hideButton = <CMSmallButton
+        variant="technical"
+        onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling to parent click handlers
+            // add to exclude list
+            const newFilterSpec = { ...filterSpec };
+            const excludedItems = handler.excludedItemsSelector(newFilterSpec);
+
+            // ensure excludedItems contains the item's filter key.
+            const itemKey = handler.getItemKey(item);
+            if (!excludedItems.includes(itemKey)) {
+                excludedItems.push(itemKey);
+            }
+
+            setFilterSpec(newFilterSpec);
+        }}
+    >
+        [-] hide
+    </CMSmallButton>;
+
+    return <CMAdhocChipContainer>
+        {isolateButton}
+        {hideButton}
+    </CMAdhocChipContainer>;
+};
+
+// Standard tooltip configuration for consistent behavior
+const standardTooltipProps = {
+    arrow: true,
+    placement: 'bottom' as const,
+    enterDelay: 300,
+    leaveDelay: 200,
+    PopperProps: {
+        modifiers: [{
+            name: 'offset',
+            options: { offset: [0, -8] }
+        }]
+    },
+    componentsProps: {
+        tooltip: {
+            sx: {
+                bgcolor: 'white',
+                color: 'text.primary',
+                border: '1px solid #ccc',
+                boxShadow: 3,
+                padding: '8px 12px',
+                borderRadius: '6px',
+                maxWidth: '300px',
+                '& .MuiTooltip-arrow': {
+                    color: 'white',
+                    '&::before': {
+                        border: '1px solid #ccc'
+                    }
+                }
+            }
+        }
+    }
 };
 
 export const CMAdhocChip = React.forwardRef<HTMLDivElement, CMAdhocChipProps>((props, ref) => {
-    return <div
-        ref={ref}
-        className={`adHocChip ${props.className || ''} ${props.onClick ? 'interactable' : ''}`}
-        onClick={props.onClick}
-        style={props.style}
-    >
-        {props.startIcon && <div className="adHocChipStartIcon">{props.startIcon}</div>}
-        <div className="adHocChipContent">{props.children}</div>
-    </div>;
+    // Build consolidated tooltip content
+    const tooltipContent = React.useMemo(() => {
+        const parts: React.ReactNode[] = [];
+
+        // 1. Default information (children content)
+        if (props.tooltip?.showDefault !== false) {
+            parts.push(<div key="default">{props.children}</div>);
+        }
+
+        // 2. Custom tooltip content
+        if (props.tooltip?.content) {
+            parts.push(<div key="custom">{props.tooltip.content}</div>);
+        }
+
+        // 3. Filter actions (if filtering is enabled)
+        if (props.filtering && props.filtering.handler.supportsDrilldown) {
+            if (parts.length > 0) {
+                parts.push(<div key="divider" style={{ borderTop: '1px solid #ddd', margin: '8px 0' }} />);
+            }
+            parts.push(
+                <div key="actions">
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', color: '#666' }}>
+                        Filter Actions:
+                    </div>
+                    <FacetItemActions {...props.filtering} />
+                </div>
+            );
+        }
+
+        return parts.length > 0 ? <div>{parts}</div> : null;
+    }, [props.children, props.tooltip, props.filtering]);
+
+    // The base chip element
+    const chipElement = (
+        <div
+            ref={ref}
+            className={`adHocChip ${props.className || ''} ${props.onClick ? 'interactable' : ''}`}
+            onClick={props.onClick}
+            style={props.style}
+        >
+            {props.startIcon && <div className="adHocChipStartIcon">{props.startIcon}</div>}
+            <div className="adHocChipContent">{props.children}</div>
+        </div>
+    );
+
+    // Wrap with tooltip if content exists
+    if (!tooltipContent) return chipElement;
+
+    return (
+        <MuiTooltip title={tooltipContent} {...standardTooltipProps}>
+            {chipElement}
+        </MuiTooltip>
+    );
 });
 
 
@@ -287,56 +447,132 @@ export function getContextObjectTabData(
     return toSorted(contextObjects, (a, b) => b.itemCount - a.itemCount);
 }
 
-export const BrowserChip = ({ value }: { value: string | null | undefined }) => {
+export const BrowserChip = ({
+    value,
+    tooltip,
+    filtering,
+    ...props
+}: {
+    value: string | null | undefined;
+    tooltip?: CMAdhocChipProps['tooltip'];
+    filtering?: CMAdhocChipProps['filtering'];
+    style?: React.CSSProperties;
+    className?: string;
+    onClick?: () => void;
+}) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = BrowserIconMap[value as Browsers];
     if (!relUri) return <div className="adHocChip">{value}</div>;
-    return <MuiTooltip title={value}>
-        <div>
-            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-                {value}
-            </CMAdhocChip>
-        </div>
-    </MuiTooltip>;
+
+    return (
+        <CMAdhocChip
+            startIcon={<img src={relUri} width={24} height={24} />}
+            tooltip={{
+                showDefault: true,  // Show browser name by default
+                ...tooltip          // Allow overrides
+            }}
+            filtering={filtering}
+            {...props}
+        >
+            {value}
+        </CMAdhocChip>
+    );
 }
 
-export const OperatingSystemChip = ({ value }: { value: string | null | undefined }) => {
+export const OperatingSystemChip = ({
+    value,
+    tooltip,
+    filtering,
+    ...props
+}: {
+    value: string | null | undefined;
+    tooltip?: CMAdhocChipProps['tooltip'];
+    filtering?: CMAdhocChipProps['filtering'];
+    style?: React.CSSProperties;
+    className?: string;
+    onClick?: () => void;
+}) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = OSIconMap[value as OperatingSystem];
     if (!relUri) return <div className="adHocChip">{value}</div>;
-    return <MuiTooltip title={value}>
-        <div>
-            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-                {value}
-            </CMAdhocChip>
-        </div>
-    </MuiTooltip>;
+
+    return (
+        <CMAdhocChip
+            startIcon={<img src={relUri} width={24} height={24} />}
+            tooltip={{
+                showDefault: true,
+                ...tooltip
+            }}
+            filtering={filtering}
+            {...props}
+        >
+            {value}
+        </CMAdhocChip>
+    );
 }
 
-export const PointerTypeChip = ({ value }: { value: string | null | undefined }) => {
+export const PointerTypeChip = ({
+    value,
+    tooltip,
+    filtering,
+    ...props
+}: {
+    value: string | null | undefined;
+    tooltip?: CMAdhocChipProps['tooltip'];
+    filtering?: CMAdhocChipProps['filtering'];
+    style?: React.CSSProperties;
+    className?: string;
+    onClick?: () => void;
+}) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = PointerTypeIconMap[value as PointerTypes];
     if (!relUri) return <div className="adHocChip">{value}</div>;
-    return <MuiTooltip title={value}>
-        <div>
-            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-                {value}
-            </CMAdhocChip>
-        </div>
-    </MuiTooltip>;
+
+    return (
+        <CMAdhocChip
+            startIcon={<img src={relUri} width={24} height={24} />}
+            tooltip={{
+                showDefault: true,
+                ...tooltip
+            }}
+            filtering={filtering}
+            {...props}
+        >
+            {value}
+        </CMAdhocChip>
+    );
 }
 
-export const DeviceClassChip = ({ value }: { value: string | null | undefined }) => {
+export const DeviceClassChip = ({
+    value,
+    tooltip,
+    filtering,
+    ...props
+}: {
+    value: string | null | undefined;
+    tooltip?: CMAdhocChipProps['tooltip'];
+    filtering?: CMAdhocChipProps['filtering'];
+    style?: React.CSSProperties;
+    className?: string;
+    onClick?: () => void;
+}) => {
     if (IsNullOrWhitespace(value)) return null;
     const relUri = DeviceClassIconMap[value as DeviceClasses];
     if (!relUri) return <div className="adHocChip">{value}</div>;
-    return <MuiTooltip title={value}>
-        <div>
-            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-                {value}
-            </CMAdhocChip>
-        </div>
-    </MuiTooltip>;
+
+    return (
+        <CMAdhocChip
+            startIcon={<img src={relUri} width={24} height={24} />}
+            tooltip={{
+                showDefault: true,
+                ...tooltip
+            }}
+            filtering={filtering}
+            {...props}
+        >
+            {value}
+        </CMAdhocChip>
+    );
 }
 
 // interface GeneralFeatureReportDetailItemProps {

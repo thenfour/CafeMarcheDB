@@ -127,41 +127,45 @@ const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDetailTabl
         </td >
         <td>
             <div className="adHocChipContainer">
-                {value.pointerType && <FilterableChip
-                    item={{ pointerType: value.pointerType as any, count: 0 }}
-                    handler={gClientFacetHandlers.pointerTypes}
-                    filterSpec={props.filterSpec}
-                    setFilterSpec={props.setFilterSpec}
-                >
-                    <PointerTypeChip value={value.pointerType} />
-                </FilterableChip>}
-                {value.deviceClass && <FilterableChip
-                    item={{ deviceClass: value.deviceClass as any, count: 0 }}
-                    handler={gClientFacetHandlers.deviceClasses}
-                    filterSpec={props.filterSpec}
-                    setFilterSpec={props.setFilterSpec}
-                >
-                    <DeviceClassChip value={value.deviceClass} />
-                </FilterableChip>}
-                {value.operatingSystem && <FilterableChip
-                    item={{ operatingSystem: value.operatingSystem, count: 0 }}
-                    handler={gClientFacetHandlers.operatingSystems}
-                    filterSpec={props.filterSpec}
-                    setFilterSpec={props.setFilterSpec}
-                >
-                    <OperatingSystemChip value={value.operatingSystem} />
-                </FilterableChip>}
+                {value.pointerType && <PointerTypeChip
+                    value={value.pointerType}
+                    filtering={{
+                        item: { pointerType: value.pointerType as any, count: 0 },
+                        handler: gClientFacetHandlers.pointerTypes,
+                        filterSpec: props.filterSpec,
+                        setFilterSpec: props.setFilterSpec
+                    }}
+                />}
+                {value.deviceClass && <DeviceClassChip
+                    value={value.deviceClass}
+                    filtering={{
+                        item: { deviceClass: value.deviceClass as any, count: 0 },
+                        handler: gClientFacetHandlers.deviceClasses,
+                        filterSpec: props.filterSpec,
+                        setFilterSpec: props.setFilterSpec
+                    }}
+                />}
+                {value.operatingSystem && <OperatingSystemChip
+                    value={value.operatingSystem}
+                    filtering={{
+                        item: { operatingSystem: value.operatingSystem, count: 0 },
+                        handler: gClientFacetHandlers.operatingSystems,
+                        filterSpec: props.filterSpec,
+                        setFilterSpec: props.setFilterSpec
+                    }}
+                />}
             </div>
         </td>
         <td>
-            {value.browserName && <FilterableChip
-                item={{ browserName: value.browserName, count: 0 }}
-                handler={gClientFacetHandlers.browsers}
-                filterSpec={props.filterSpec}
-                setFilterSpec={props.setFilterSpec}
-            >
-                <BrowserChip value={value.browserName} />
-            </FilterableChip>}
+            {value.browserName && <BrowserChip
+                value={value.browserName}
+                filtering={{
+                    item: { browserName: value.browserName, count: 0 },
+                    handler: gClientFacetHandlers.browsers,
+                    filterSpec: props.filterSpec,
+                    setFilterSpec: props.setFilterSpec
+                }}
+            />}
         </td>
     </tr >;
 };
