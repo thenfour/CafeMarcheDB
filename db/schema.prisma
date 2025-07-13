@@ -94,22 +94,22 @@ model Action {
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id])
   userId    Int?
-  uri       String? // if applicable
+  uri       String?  @db.VarChar(192) // if applicable
   isClient  Boolean
-  feature   String // of enum ActivityFeature
-  queryText String? // if applicable
-  context   String? // free string trying to describe client context triggering the action.
+  feature   String   @db.VarChar(64) // of enum ActivityFeature
+  queryText String?  @db.VarChar(64) // if applicable
+  context   String?  @db.VarChar(256) // free string trying to describe client context triggering the action.
 
-  pointerType  String? @db.VarChar(30) // lowercase.
+  pointerType  String? @db.VarChar(16) // lowercase.
   screenWidth  Int?
   screenHeight Int?
-  deviceClass  String? @db.VarChar(30) // lowercase.
-  browserName  String? @db.VarChar(30) // lowercase.
+  deviceClass  String? @db.VarChar(16) // lowercase.
+  browserName  String? @db.VarChar(16) // lowercase.
 
-  operatingSystem String? @db.VarChar(30) // lowercase.
-  language        String? @db.VarChar(30) // lowercase. "en"
-  locale          String? @db.VarChar(30) // lowercase. "en-us"
-  timezone        String? @db.VarChar(90) // lowercase. e.g. "europe/brussels"
+  operatingSystem String? @db.VarChar(16) // lowercase.
+  language        String? @db.VarChar(8) // lowercase. "en"
+  locale          String? @db.VarChar(8) // lowercase. "en-us"
+  timezone        String? @db.VarChar(48) // lowercase. e.g. "europe/brussels"
 
   fileId         Int?
   file           File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)
