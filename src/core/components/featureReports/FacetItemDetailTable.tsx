@@ -104,7 +104,7 @@ export const FacetItemDetailTable = ({ filterSpec, refreshTrigger, ...props }: F
         return <div>Loading...</div>;
     }
 
-    return <><table>
+    return <><table className="FacetItemDetailTable">
         <thead>
             <tr>
                 <th>#</th>

@@ -141,9 +141,9 @@ const CollapsibleFacetItemDetail = <Tpayload extends FacetResultBase, TKey>({ ha
 
     const key = handler.getItemKey(contextObject);
     const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
-    return <div key={key as React.Key}>
+    return <div key={key as React.Key} className={`CollapsibleFacetItemDetail ${handler.getItemKey(contextObject)}`}>
         <div
-            className={`${supportsDrilldown ? "interactable" : ""}`}
+            className={`CollapsibleFacetItemDetailHeader ${supportsDrilldown ? "interactable" : ""}`}
             style={{ display: "flex", fontWeight: "bold", alignItems: "center", backgroundColor: handler.getItemColor(contextObject, "0.2"), borderTop: `3px solid ${handler.getItemColor(contextObject)}` }}
             onClick={() => setExpanded(!expanded)}
         >
@@ -195,7 +195,7 @@ const FacetedTabHeader = <Tpayload extends FacetResultBase, TKey>({ handler, ite
     const kPieSize = 240;
     const kInnerRadius = 30;
 
-    return <div className="header">
+    return <div className="FacetedTabHeader header">
         <PieChart width={kPieSize} height={kPieSize} data={chartData}>
             <Pie
                 dataKey="itemCount"
@@ -288,7 +288,7 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
 
     const renderedTabs: CMTabPanelChild[] = [
         <CMTab key={9999} thisTabId="total" summaryTitle={`Total (${result.total.count})`} >
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            <div className='summaryFacetTab' style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {
                     ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
                         const handler = gClientFacetHandlers[facetKey];
