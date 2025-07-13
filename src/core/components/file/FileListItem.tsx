@@ -11,6 +11,8 @@ import { FileClass, GetFileClass } from "../../db3/shared/fileAPI";
 import { Markdown } from "../markdown/Markdown";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { FilesFilterSpec } from "./FileClientBaseTypes";
+import { InspectObject } from "../CMCoreComponents2";
+import { useAppContext } from "../AppContext";
 
 
 type FileListItemProps = {
@@ -44,6 +46,7 @@ export const FileIcon = ({ file }: { file: db3.EnrichedFile<db3.FilePayload> }) 
 
 export const FileListItem = (props: FileListItemProps) => {
     const dashboardContext = React.useContext(DashboardContext);
+    const appContext = useAppContext();
     //const visInfo = dashboardContext.getVisibilityInfo(props.file);
     const uploadedAt = props.file.uploadedAt ? new Date(props.file.uploadedAt) : null;
     const uploadedByUser = props.file.uploadedByUser ? props.file.uploadedByUser.name : null;
@@ -74,6 +77,7 @@ export const FileListItem = (props: FileListItemProps) => {
         }
 
         footerContent={<>
+            <InspectObject src={appContext} />
             {uploadedAt && <span>Uploaded: {uploadedAt.toLocaleDateString()}</span>}
             {uploadedByUser && <span>By: {uploadedByUser}</span>}
             <span>{props.file.sizeBytes ? `Size: ${Math.round(props.file.sizeBytes / 1024)} KB` : 'Size: Unknown'}</span>

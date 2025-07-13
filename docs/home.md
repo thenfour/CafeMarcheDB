@@ -14,6 +14,7 @@ for feature usage, not an audit log of backend changes.
 
   * `<AppContextMarker>`
   * `useClientTelemetryEvent` react hook provides a callable to record a feature use.
+  * `useRecordFeatureUse` records an activity when the component is mounted at all. basically records feature visits rather than actions taken.
   * (obsolete) `useFeatureRecorder` react hook provides a callable to record a feature use using a normal mutation. Actually we can consider this obsolete because it is the same thing but less efficient than `useClientTelemetryEvent`
 
 ### on the server

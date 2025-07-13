@@ -164,7 +164,7 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
     const wrappedContent = contextMarkerName ? (
         <AppContextMarker
             name={contextMarkerName}
-            queryText={contextMarkerQuery || (filterSpec as any).quickFilter}
+            queryText={contextMarkerQuery || (filterSpec).quickFilter}
         >
             {content}
         </AppContextMarker>

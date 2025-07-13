@@ -5,6 +5,8 @@ import { generateQrApiUrl, QrCodeErrorCorrectionLevel, QrContentConfig, QrHelper
 import { CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { DialogActionsCM, DotMenu } from './CMCoreComponents2';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
+import { useClientTelemetryEvent } from './DashboardContext';
+import { ActivityFeature } from './featureReports/activityTracking';
 
 interface QrCodeProps {
     content: QrContentConfig;
@@ -80,8 +82,13 @@ interface QrCodeButtonProps {
 
 export const QrCodeButton = (props: QrCodeButtonProps) => {
     const [isOpen, setIsOpen] = useState<boolean>(false);
+    const recordFeatureUse = useClientTelemetryEvent();
 
     const handleOpen = () => {
+        void recordFeatureUse({
+            feature: ActivityFeature.qr_code_generate,
+            context: "QrCodeButton",
+        });
         setIsOpen(true);
     };
 

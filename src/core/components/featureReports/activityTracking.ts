@@ -4,6 +4,7 @@ export enum ActivityFeature {
     global_ical_digest = "global_ical_digest",
 
     metronome_persistent = "metronome_persistent", // metronome playing longer than 1 minute
+
     // note that link clicks are not 100% reliable;
     // for example right-clicking a link and opening in a new tab will not trigger this event.
     link_follow_internal = "link_follow_internal",
@@ -22,6 +23,8 @@ export enum ActivityFeature {
     custom_link_create = "custom_link_create",
     custom_link_update = "custom_link_update",
     custom_link_delete = "custom_link_delete",
+
+    qr_code_generate = "qr_code_generate",
 
     profile_view = "profile_view",
     profile_edit = "profile_edit",

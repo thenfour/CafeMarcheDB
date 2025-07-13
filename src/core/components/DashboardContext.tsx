@@ -243,50 +243,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     );
 };
 
-export const useRecordFeatureUse = ({ feature, context, ...associations }: UseFeatureUseClientActivityParams) => {
-    const [recordActionProc] = useMutation(recordActionMutation);
-    const appCtx = useAppContext();
-    // react likes to make redundant renders; throttle.
-    const throttledRecordAction = useThrottle(() => {
-        void collectDeviceInfo().then(deviceInfo => {
-            try {
-                void recordActionProc({
-                    //...appCtx,
-                    ...associations,
-                    uri: window.location.href,
-                    context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
-                    feature,
-                    deviceInfo,
-                });
-            } catch (e) {
-                console.error("Error recording feature use", e);
-            }
-        });
-    }, 250);
-
-    React.useEffect(throttledRecordAction, []);
-}
-
-export const useFeatureRecorder = () => {
-    const [recordActionProc] = useMutation(recordActionMutation);
-    const appCtx = useAppContext();
-    return async ({ feature, context, ...associations }: ClientActivityParams) => {
-        try {
-            const deviceInfo = await collectDeviceInfo();
-            await recordActionProc({
-                //...appCtx,
-                ...associations,
-                uri: window.location.href,
-                context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
-                feature,
-                deviceInfo,
-            });
-        } catch (e) {
-            console.error("Error recording feature use", e);
-        }
-    }
-}
-
 /**
  * Beacon-based drop-in replacement for recordFeature (client-side only), as a hook.
  * Usage: const recordFeatureBeacon = useClientTelemetryEvent();
@@ -298,14 +254,17 @@ export function useClientTelemetryEvent() {
     return async ({ feature, context, ...associations }: ClientActivityParams) => {
         const url = "/api/telemetry";
         const deviceInfo = await collectDeviceInfo();
+        const { stack: unusedStack, ...sanitizedAppCtx } = appCtx; // remove stack from app context to avoid sending it over the wire
         const event: z.infer<typeof ZTRecordActionArgs> = {
-            //...appCtx,
+            ...sanitizedAppCtx,
             ...associations,
             uri: window.location.href,
             context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
             feature,
             deviceInfo,
         };
+
+        console.log("Recording client telemetry event", { appCtx, feature, context, associations, event });
 
         // see blitz docs for manually invoking APIs / https://blitzjs.com/docs/session-management#manual-api-requests
         const antiCSRFToken = getAntiCSRFToken();
@@ -329,4 +288,26 @@ export function useClientTelemetryEvent() {
             keepalive: true,
         });
     };
+}
+
+
+export const useFeatureRecorder = () => {
+    return useClientTelemetryEvent();
+}
+
+
+export const useRecordFeatureUse = (params: UseFeatureUseClientActivityParams) => {
+    const recordEvent = useClientTelemetryEvent();
+    // react likes to make redundant renders; throttle.
+    const throttledRecordAction = useThrottle(() => {
+        void collectDeviceInfo().then(deviceInfo => {
+            try {
+                void recordEvent(params);
+            } catch (e) {
+                console.error("Error recording feature use", e);
+            }
+        });
+    }, 250);
+
+    React.useEffect(throttledRecordAction, []);
 }

@@ -264,17 +264,19 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                 <Tooltip title="Show QR code for this page">
                     <div>
-                        <QrCodeButton
-                            content={QrHelpers.url(getAbsoluteUrl(router.asPath))}
-                            renderButton={({ onClick }) => (
-                                <div
-                                    className="freeButton globalMetronomeButton"
-                                    onClick={() => onClick()}
-                                >
-                                    <QrCode />
-                                </div>
-                            )}
-                        />
+                        <AppContextMarker name="appBarQrCode">
+                            <QrCodeButton
+                                content={QrHelpers.url(getAbsoluteUrl(router.asPath))}
+                                renderButton={({ onClick }) => (
+                                    <div
+                                        className="freeButton globalMetronomeButton"
+                                        onClick={() => onClick()}
+                                    >
+                                        <QrCode />
+                                    </div>
+                                )}
+                            />
+                        </AppContextMarker>
                     </div>
                 </Tooltip>
 
