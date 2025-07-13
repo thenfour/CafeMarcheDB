@@ -288,27 +288,29 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
 
     const renderedTabs: CMTabPanelChild[] = [
         <CMTab key={9999} thisTabId="total" summaryTitle={`Total (${result.total.count})`} >
-            {
-                ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
-                    const handler = gClientFacetHandlers[facetKey];
-                    if (!handler) {
-                        console.error(`No handler for facet ${facetKey}`);
-                        return null;
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {
+                    ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
+                        const handler = gClientFacetHandlers[facetKey];
+                        if (!handler) {
+                            console.error(`No handler for facet ${facetKey}`);
+                            return null;
+                        }
+                        if (facetInfo.length === 0) return null;
+                        return <div className='summaryFacetHeader' key={facetKey}>
+                            <h2>{facetKey.toUpperCase()}</h2>
+                            <FacetedTabHeader
+                                key={facetKey}
+                                handler={handler}
+                                setFilterSpec={props.setFilterSpec}
+                                items={facetInfo as any}
+                                filterSpec={props.filterSpec}
+                                refreshTrigger={props.refetchTrigger}
+                            />
+                        </div>;
                     }
-                    if (facetInfo.length === 0) return null;
-                    return <div className='summaryFacetHeader' key={facetKey}>
-                        <h2>{facetKey}<InspectObject src={facetInfo} /></h2>
-                        <FacetedTabHeader
-                            key={facetKey}
-                            handler={handler}
-                            setFilterSpec={props.setFilterSpec}
-                            items={facetInfo as any}
-                            filterSpec={props.filterSpec}
-                            refreshTrigger={props.refetchTrigger}
-                        />
-                    </div>;
-                }
-                )}
+                    )}
+            </div>
         </CMTab>,
         ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
             const handler = gClientFacetHandlers[facetKey];
