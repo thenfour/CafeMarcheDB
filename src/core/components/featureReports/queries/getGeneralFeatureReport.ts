@@ -124,7 +124,7 @@ async function getActionCountsByDateRangeMySQL(params: TGeneralFeatureReportArgs
 
 export default resolver.pipe(
     resolver.zod(ZTGeneralFeatureReportArgs),
-    resolver.authorize(Permission.sysadmin),
+    resolver.authorize(Permission.view_feature_reports),
     async (args, ctx: AuthenticatedCtx): Promise<GeneralFeatureReportResult> => {
         return await getActionCountsByDateRangeMySQL(args, ctx);
     }

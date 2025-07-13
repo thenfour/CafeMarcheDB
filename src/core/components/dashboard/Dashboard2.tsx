@@ -37,6 +37,8 @@ import { MetronomeDialogButton } from "../Metronome";
 import { QrCodeButton } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SnackbarContext } from "../SnackbarContext";
+import { SettingMarkdown } from "../SettingMarkdown";
+import { Setting } from "@/shared/settings";
 
 const drawerWidth = 260;
 
@@ -268,6 +270,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             <QrCodeButton
                                 content={QrHelpers.url(getAbsoluteUrl(router.asPath))}
                                 title="QR code for this page"
+                                description={<SettingMarkdown setting={Setting.QrCodeForThisPageDescriptionMarkdown} />}
                                 renderButton={({ onClick }) => (
                                     <div
                                         className="freeButton globalMetronomeButton"

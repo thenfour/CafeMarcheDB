@@ -96,6 +96,8 @@ export enum Permission {
 
     // ********************
     setlist_planner_access = "setlist_planner_access",
+
+    view_feature_reports = "view_feature_reports",
 };
 
 export const gPermissionOrdered: (keyof typeof Permission)[] = [

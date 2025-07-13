@@ -1464,7 +1464,7 @@ const SetlistPlannerPageContent = () => {
 
 const SetlistPlannerPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Setlist Planner" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Setlist Planner" basePermission={Permission.setlist_planner_access}>
             <AppContextMarker name="Setlist plan page">
                 <SongsProvider>
                     <SetlistPlannerPageContent />

@@ -61,7 +61,7 @@ async function getFilteredDetails(args: TArgs, ctx: AuthenticatedCtx): Promise<T
 
 export default resolver.pipe(
     resolver.zod(ZTArgs),
-    resolver.authorize(Permission.sysadmin),
+    resolver.authorize(Permission.view_feature_reports),
     async (args, ctx: AuthenticatedCtx): Promise<TGetFeatureReportDetailResult | null> => {
         return await getFilteredDetails(args, ctx);
     }

@@ -309,7 +309,7 @@ const GeneralFeatureStatsReport = () => {
 
 const FeatureReportsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Feature reports" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Feature reports" basePermission={Permission.view_feature_reports}>
             <div className="contentSection fullWidth">
                 <GeneralFeatureStatsReport />
             </div>

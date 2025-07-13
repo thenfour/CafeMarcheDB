@@ -57,7 +57,7 @@ async function getFeatureReportFacetsAndCountsForSet(args: TArgs, ctx: Authentic
 
 export default resolver.pipe(
   resolver.zod(ZTArgs),
-  resolver.authorize(Permission.sysadmin),
+  resolver.authorize(Permission.view_feature_reports),
   async (args, ctx: AuthenticatedCtx): Promise<FacetedBreakdownResult | null> => {
     return await getFeatureReportFacetsAndCountsForSet(args, ctx);
   }

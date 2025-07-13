@@ -199,7 +199,7 @@ async function getCsvExport(args: TArgs, ctx: AuthenticatedCtx): Promise<CsvExpo
 
 export default resolver.pipe(
     resolver.zod(ZTArgs),
-    resolver.authorize(Permission.sysadmin),
+    resolver.authorize(Permission.view_feature_reports),
     async (args, ctx: AuthenticatedCtx): Promise<CsvExportResult | null> => {
         return await getCsvExport(args, ctx);
     }

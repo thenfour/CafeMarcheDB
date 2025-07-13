@@ -81,6 +81,7 @@ export enum Setting {
     EventEditCustomFieldValuesDialog_DescriptionMarkdown = "EventEditCustomFieldValuesDialog_DescriptionMarkdown",
     profile_description_markdown = "profile_description_markdown",
     EditFileDialogDescription = "EditFileDialogDescription",
+    QrCodeForThisPageDescriptionMarkdown = "QrCodeForThisPageDescriptionMarkdown",
 
     // not markdown....
 

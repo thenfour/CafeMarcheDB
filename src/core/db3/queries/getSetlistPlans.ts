@@ -12,7 +12,7 @@ const ZArgs = z.object({
 });
 
 export default resolver.pipe(
-    resolver.authorize(Permission.sysadmin),
+    resolver.authorize(Permission.setlist_planner_access),
     resolver.zod(ZArgs),
     async (args, ctx: AuthenticatedCtx) => {
         try {
