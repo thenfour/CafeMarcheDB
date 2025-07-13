@@ -42,6 +42,7 @@ export enum ActivityFeature {
     event_frontpage_edit = "event_frontpage_edit",
     event_create = "event_create",
     event_delete = "event_delete",
+    event_change_relevance_class = "event_change_relevance_class",
 
     event_segment_create = "event_segment_create",
     event_segment_edit = "event_segment_edit",
@@ -51,6 +52,7 @@ export enum ActivityFeature {
     wiki_page_view = "wiki_page_view",
     wiki_edit = "wiki_edit",
     wiki_change_visibility = "wiki_change_visibility",
+    wiki_page_tag_update = "wiki_page_tag_update",
 
     frontpagegallery_reorder = "frontpagegallery_reorder",
     frontpagegallery_item_create = "frontpagegallery_item_create",
@@ -74,6 +76,8 @@ export enum ActivityFeature {
     song_credit_edit = "song_credit_edit",
     song_credit_delete = "song_credit_delete",
     song_pin_recording = "song_pin_recording",
+    song_play = "song_play",
+    song_pause = "song_pause",
 
     setlist_plan_create = "setlist_plan_create",
     setlist_plan_save = "setlist_plan_save",
@@ -83,6 +87,15 @@ export enum ActivityFeature {
     setlist_edit = "setlist_edit",
     setlist_delete = "setlist_delete",
     setlist_reorder = "setlist_reorder",
+
+    media_player_bar_close = "media_player_bar_close",
+    media_player_bar_next = "media_player_bar_next",
+    media_player_bar_previous = "media_player_bar_previous",
+    media_player_bar_pull_playlist = "media_player_bar_pull_playlist",
+    media_player_bar_play = "media_player_bar_play",
+    media_player_bar_pause = "media_player_bar_pause",
+    media_player_bar_play_vis_segment = "media_player_bar_play_vis_segment",
+    media_player_bar_seek_vis_segment = "media_player_bar_seek_vis_segment",
 };
 
 export enum DeviceClasses {

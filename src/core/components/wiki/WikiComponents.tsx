@@ -18,7 +18,7 @@ import { AdminContainer, AdminInspectObject, DotMenu, KeyValueTable, NameValuePa
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { CMTextInputBase } from "../CMTextField";
-import { DashboardContext, useDashboardContext, useFeatureRecorder } from "../DashboardContext";
+import { DashboardContext, useClientTelemetryEvent, useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { Markdown } from "../markdown/Markdown";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
@@ -26,6 +26,7 @@ import { useWikiPageApi, WikiPageApi } from "../markdown/useWikiPageApi";
 import UnsavedChangesHandler from "../UnsavedChangesHandler";
 import { VisibilityValue } from "../VisibilityControl";
 import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
+import { AppContextMarker } from "../AppContext";
 
 
 //////////////////////////////////////////////////
@@ -73,6 +74,7 @@ interface WikiPageTagsControlProps {
 export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
+    const featureRecorder = useClientTelemetryEvent();
     const wikiPageId = props.wikiPageApi.currentPageData?.wikiPage?.id
     if (!wikiPageId) return null;
 
@@ -110,6 +112,10 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
         renderOption={tag => tag.text}
         onChange={async (newTags) => {
             await snackbar.invokeAsync(async () => {
+                void featureRecorder({
+                    feature: ActivityFeature.wiki_page_tag_update,
+                    context: "WikiPageTagsControl",
+                });
                 await tableClient.doUpdateMutation({
                     id: wikiPageId,
                     tags: newTags.map(t => ({
@@ -474,18 +480,20 @@ export const WikiPageControl = (props: WikiPageControlProps) => {
     };
 
     return <div className="wikiPage contentSection">
-        <AdminContainer>
-            <WikiDebugIndicator wikiPageApi={wikiPageApi} />
-        </AdminContainer>
+        <AppContextMarker wikiPageId={wikiPageApi.currentPageData?.wikiPage?.id}>
+            <AdminContainer>
+                <WikiDebugIndicator wikiPageApi={wikiPageApi} />
+            </AdminContainer>
 
-        {editing ? <WikiPageContentEditor
-            wikiPageApi={wikiPageApi}
-            onClose={handleExitEditMode}
-        /> :
-            <WikiPageViewMode
-                onEnterEditMode={handleEnterEditMode}
+            {editing ? <WikiPageContentEditor
                 wikiPageApi={wikiPageApi}
-                readonly={false}
-            />}
+                onClose={handleExitEditMode}
+            /> :
+                <WikiPageViewMode
+                    onEnterEditMode={handleEnterEditMode}
+                    wikiPageApi={wikiPageApi}
+                    readonly={false}
+                />}
+        </AppContextMarker>
     </div>;
 };

@@ -9,6 +9,9 @@ import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 import { Tooltip } from "@mui/material";
+import { AppContextMarker } from "../AppContext";
+import { useClientTelemetryEvent } from "../DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
 
 const TEN_MINUTES = 10 * 60;          // 600 s
 const MIN_ROW_PX = 120;              // visual floor (unchanged)
@@ -129,6 +132,7 @@ interface VisBarSegmentProps {
 const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, styleOverride }: VisBarSegmentProps) => {
     const [hoverPosition, setHoverPosition] = React.useState<number | null>(null);
     const [hoverTime, setHoverTime] = React.useState<number | null>(null);
+    const recordAction = useClientTelemetryEvent();
 
     const trackType = getItemType(item);
     const styleData = getItemStyleData(item, false, mediaPlayer);
@@ -163,6 +167,7 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, styleOverr
             const rect = e.currentTarget.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+            void recordAction({ feature: ActivityFeature.media_player_bar_seek_vis_segment, songId: item.songContext?.id, fileId: item.file?.id });
             seekToPosition(percentage);
         }
     };
@@ -172,6 +177,8 @@ const VisBarSegment = ({ item, isCurrentTrack, audioAPI, mediaPlayer, styleOverr
 
         if (!isCurrentTrack) {
             // Switch to this track
+            void recordAction({ feature: ActivityFeature.media_player_bar_play_vis_segment, songId: item.songContext?.id, fileId: item.file?.id });
+
             mediaPlayer.playTrackOfPlaylist(item.playlistIndex);
         }
     };
@@ -363,6 +370,7 @@ export const SetlistVisualizationBars: React.FC<{
     mediaPlayer: MediaPlayerContextType;
     audioAPI: CustomAudioPlayerAPI | null;
 }> = ({ mediaPlayer, audioAPI }) => {
+    const recordAction = useClientTelemetryEvent();
     const { playlist } = mediaPlayer;
     const [expanded, setExpanded] = useLocalStorageState<ExpandStyle>({
         key: "setlistVisualizationBarExpanded",
@@ -435,43 +443,48 @@ export const SetlistVisualizationBars: React.FC<{
         <div
             className={`setlistVisualizationBarContainer ${expanded}`}
         >
-            <div className="setlistVisualizationBarControls">
-                <CMSmallButton
-                    tooltip="Close the media bar"
-                    onClick={() => mediaPlayer.setPlaylist([], undefined)}
-                >
-                    {gIconMap.Close()}
-                </CMSmallButton>
-
-                <CMSmallButton tooltip={"Expand the playlist visualization to show the full playlist"} onClick={() => setExpanded("expanded")} className={`expand ${expanded === "expanded" ? "selected" : ""}`}>
-                    Full {gCharMap.UpArrow()}
-                </CMSmallButton>
-                <CMSmallButton tooltip={"Show just a portion of the playlist, to not take too much space."} onClick={() => setExpanded("normal")} className={`normal ${expanded === "normal" ? "selected" : ""}`}>
-                    Normal
-                </CMSmallButton>
-                <CMSmallButton tooltip={"Hide the playlist visualization"} onClick={() => setExpanded("collapsed")} className={`collapse ${expanded === "collapsed" ? "selected" : ""}`}>
-                    Minimal {gCharMap.DownArrow()}
-                </CMSmallButton>
-            </div>
-            <div className="setlistVisualizationBarContainer BarsContainer">
-                {rowMediaItems.map((rowItems, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            width: `${lerp(.25, 1, (rowDurations[i]! / referenceSecs)) * 100}%`,
-                            minWidth: MIN_ROW_PX,
+            <AppContextMarker name="PlaylistVisualizationBar">
+                <div className="setlistVisualizationBarControls">
+                    <CMSmallButton
+                        tooltip="Close the media bar"
+                        onClick={() => {
+                            void recordAction({ feature: ActivityFeature.media_player_bar_close });
+                            mediaPlayer.setPlaylist([], undefined);
                         }}
                     >
-                        <SetlistVisualizationBar
-                            beginWithDummyDivider={needsFirstRowDummyDivider && i === 0}
-                            mediaPlayer={mediaPlayer}
-                            audioAPI={audioAPI}
-                            startIndex={rowBounds[i]!.startIndex}
-                            length={rowBounds[i]!.length}
-                        />
-                    </div>
-                ))}
-            </div>
+                        {gIconMap.Close()}
+                    </CMSmallButton>
+
+                    <CMSmallButton tooltip={"Expand the playlist visualization to show the full playlist"} onClick={() => setExpanded("expanded")} className={`expand ${expanded === "expanded" ? "selected" : ""}`}>
+                        Full {gCharMap.UpArrow()}
+                    </CMSmallButton>
+                    <CMSmallButton tooltip={"Show just a portion of the playlist, to not take too much space."} onClick={() => setExpanded("normal")} className={`normal ${expanded === "normal" ? "selected" : ""}`}>
+                        Normal
+                    </CMSmallButton>
+                    <CMSmallButton tooltip={"Hide the playlist visualization"} onClick={() => setExpanded("collapsed")} className={`collapse ${expanded === "collapsed" ? "selected" : ""}`}>
+                        Minimal {gCharMap.DownArrow()}
+                    </CMSmallButton>
+                </div>
+                <div className="setlistVisualizationBarContainer BarsContainer">
+                    {rowMediaItems.map((rowItems, i) => (
+                        <div
+                            key={i}
+                            style={{
+                                width: `${lerp(.25, 1, (rowDurations[i]! / referenceSecs)) * 100}%`,
+                                minWidth: MIN_ROW_PX,
+                            }}
+                        >
+                            <SetlistVisualizationBar
+                                beginWithDummyDivider={needsFirstRowDummyDivider && i === 0}
+                                mediaPlayer={mediaPlayer}
+                                audioAPI={audioAPI}
+                                startIndex={rowBounds[i]!.startIndex}
+                                length={rowBounds[i]!.length}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </AppContextMarker>
         </div>
     );
 };

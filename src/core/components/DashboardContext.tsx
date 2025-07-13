@@ -1,4 +1,5 @@
-import { ClientSession, useSession } from '@blitzjs/auth';
+import { partition } from '@/shared/arrayUtils';
+import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import { Prisma } from "db";
 import React from 'react';
@@ -6,18 +7,14 @@ import { ColorVariationSpec, gAppColors } from "shared/color";
 import { gPublicPermissions, Permission } from 'shared/permissions';
 import { TableAccessor } from 'shared/rootroot';
 import { useThrottle } from 'shared/useGeneral';
-import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls';
 import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
+import { z } from 'zod';
 import { GetStyleVariablesForColor } from "../components/Color";
-import recordActionMutation from '../db3/mutations/recordActionMutation';
 import { useAppContext } from './AppContext';
 import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from './featureReports/activityTracking';
-import { z } from 'zod';
-import { getAntiCSRFToken } from "@blitzjs/auth";
-import { partition } from '@/shared/arrayUtils';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -247,24 +244,31 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
  * Beacon-based drop-in replacement for recordFeature (client-side only), as a hook.
  * Usage: const recordFeatureBeacon = useClientTelemetryEvent();
  *        recordFeatureBeacon({ feature, context, ...associations })
+ * thisComponentContext - normally we like to use <AppContextMarker>, but if you want to use this hook in the
+ * same component as <AppContextMarker>, you can pass the context manually because otherwise it won't be available yet in the tree.
  */
-export function useClientTelemetryEvent() {
+
+export function useClientTelemetryEvent(thisComponentContext?: string) {
     const [currentUser] = useCurrentUser();
     const appCtx = useAppContext();
     return async ({ feature, context, ...associations }: ClientActivityParams) => {
         const url = "/api/telemetry";
         const deviceInfo = await collectDeviceInfo();
-        const { stack: unusedStack, ...sanitizedAppCtx } = appCtx; // remove stack from app context to avoid sending it over the wire
+        const { stack, ...sanitizedAppCtx } = appCtx; // remove stack from app context to avoid sending it over the wire
+
+        // calculate the context from appctx stack, thisComponentContext, and the passed context.
+        const contextParts = [stack, thisComponentContext, context].filter(Boolean);
+
         const event: z.infer<typeof ZTRecordActionArgs> = {
             ...sanitizedAppCtx,
             ...associations,
             uri: window.location.href,
-            context: IsNullOrWhitespace(context) ? appCtx.stack : `${appCtx.stack}/${context}`,
+            context: contextParts.join("/"),
             feature,
             deviceInfo,
         };
 
-        console.log("Recording client telemetry event", { appCtx, feature, context, associations, event });
+        //console.log("Recording client telemetry event", { appCtx, feature, context, associations, event });
 
         // see blitz docs for manually invoking APIs / https://blitzjs.com/docs/session-management#manual-api-requests
         const antiCSRFToken = getAntiCSRFToken();

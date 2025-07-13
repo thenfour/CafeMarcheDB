@@ -5,6 +5,8 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { gIconMap } from '../../db3/components/IconMap';
+import { useClientTelemetryEvent } from '../DashboardContext';
+import { ActivityFeature } from '../featureReports/activityTracking';
 import { useMediaPlayer } from '../mediaPlayer/MediaPlayerContext';
 import { MediaPlayerTrack } from '../mediaPlayer/MediaPlayerTypes';
 
@@ -18,6 +20,7 @@ type SongPlayButtonProps = {
 
 export function SongPlayButton({ rowIndex, track, getPlaylist }: SongPlayButtonProps) {
     const mediaPlayer = useMediaPlayer();
+    const recordAction = useClientTelemetryEvent("SongPlayButton");
 
     if (!track.file) {
         return <div className='audioPreviewGatewayContainer' style={{ visibility: "hidden" }}></div>;
@@ -28,6 +31,7 @@ export function SongPlayButton({ rowIndex, track, getPlaylist }: SongPlayButtonP
 
     // Play this file via the global player
     const handlePlay = () => {
+        recordAction({ feature: ActivityFeature.song_play, songId: track.songContext?.id, fileId: track.file?.id });
         if (isCurrent) {
             mediaPlayer.unpause();
         } else {
@@ -40,6 +44,7 @@ export function SongPlayButton({ rowIndex, track, getPlaylist }: SongPlayButtonP
 
     const handlePause = () => {
         if (isCurrent) {
+            recordAction({ feature: ActivityFeature.song_pause });
             mediaPlayer.pause();
         }
     };

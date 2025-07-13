@@ -6,6 +6,8 @@ import { useSnackbar } from "../SnackbarContext";
 import { useMutation } from "@blitzjs/rpc";
 import setEventRelevanceClassOverride from "../../db3/mutations/setEventRelevanceClassOverride";
 import { gNullValue } from "../../db3/shared/apiTypes";
+import { useClientTelemetryEvent } from "../DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
 
 
 interface RelevanceClassOverrideIndicatorProps {
@@ -75,6 +77,7 @@ export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrid
     // renders an array of menu items for each relevance class override option
     const options: (EventRelevanceClassName | null)[] = [null, ...(Object.keys(gEventRelevanceClass) as EventRelevanceClassName[])];
     const [mut] = useMutation(setEventRelevanceClassOverride);
+    const featureRecorder = useClientTelemetryEvent();
     const snackbar = useSnackbar();
     return options.map((relevanceClassName) => (
         <RelevanceClassOverrideMenuItem
@@ -82,6 +85,10 @@ export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrid
             event={props.event}
             value={relevanceClassName}
             onClick={async () => {
+                void featureRecorder({
+                    feature: ActivityFeature.event_change_relevance_class,
+                    context: "MenuItem",
+                });
                 snackbar.invokeAsync(async () => {
                     await mut({
                         eventId: props.event.id,

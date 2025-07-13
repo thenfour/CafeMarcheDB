@@ -5,6 +5,8 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerSlider } from "./MediaPlayerSlider";
+import { useClientTelemetryEvent } from "../DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
 
 // Constants
 const DEFAULT_VOLUME = 75;
@@ -81,6 +83,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         });
         const [volumeBeforeMute, setVolumeBeforeMute] = React.useState(DEFAULT_VOLUME);
         const [isUserSeeking, setIsUserSeeking] = React.useState(false);
+        const recordAction = useClientTelemetryEvent();
 
         // Sync localStorage volume with audio element when it loads
         React.useEffect(() => {
@@ -202,6 +205,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
         const handlePlay = async () => {
             if (audioRef.current) {
                 try {
+                    void recordAction({ feature: ActivityFeature.media_player_bar_play });
                     await audioRef.current.play();
                 } catch (error) {
                     console.error("Failed to play audio:", error);
@@ -211,6 +215,7 @@ export const CustomAudioPlayer = forwardRef<CustomAudioPlayerAPI, CustomAudioPla
 
         const handlePauseClick = () => {
             if (audioRef.current) {
+                void recordAction({ feature: ActivityFeature.media_player_bar_pause });
                 audioRef.current.pause();
             }
         };
