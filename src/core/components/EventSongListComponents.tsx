@@ -426,8 +426,8 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
 }
 
 
-async function CopySongListCSV(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
-    const txt = SetlistAPI.SongListToCSV(setlist);
+async function CopySongListTSV(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
+    const txt = SetlistAPI.SongListToTSV(setlist);
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
@@ -445,12 +445,14 @@ interface EventSongListDotMenuProps {
     handleCopySongNames: () => Promise<void>;
     handleCopyIndexSongNames: () => Promise<void>;
     handleCopyMarkdown: () => Promise<void>;
-    handleCopyCSV: () => Promise<void>;
+    //handleCopyCSV: () => Promise<void>;
+    handleCopyTSV: () => Promise<void>;
     handleCopyJSON: () => Promise<void>;
 
     handleCopyCombinedSongNames: () => Promise<void>;
     handleCopyCombinedMarkdown: () => Promise<void>;
-    handleCopyCombinedCSV: () => Promise<void>;
+    //handleCopyCombinedCSV: () => Promise<void>;
+    handleCopyCombinedTSV: () => Promise<void>;
     handleCopyCombinedJSON: () => Promise<void>;
 
     handlePasteReplace: () => Promise<void>;
@@ -480,11 +482,11 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
             </ListItemIcon>
             Copy as Markdown
         </MenuItem>,
-        <MenuItem key={++k} onClick={async () => { await props.handleCopyCSV(); setAnchorEl(null); }}>
+        <MenuItem key={++k} onClick={async () => { await props.handleCopyTSV(); setAnchorEl(null); }}>
             <ListItemIcon>
                 {gIconMap.ContentCopy()}
             </ListItemIcon>
-            Copy as CSV
+            Copy as TSV
         </MenuItem>,
         <MenuItem key={++k} onClick={async () => { await props.handleCopyJSON(); setAnchorEl(null); }}>
             <ListItemIcon>
@@ -509,11 +511,11 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
                 </ListItemIcon>
                 Copy unique song names from all lists as Markdown
             </MenuItem>,
-            <MenuItem key={++k} onClick={async () => { await props.handleCopyCombinedCSV(); setAnchorEl(null); }}>
+            <MenuItem key={++k} onClick={async () => { await props.handleCopyCombinedTSV(); setAnchorEl(null); }}>
                 <ListItemIcon>
                     {gIconMap.ContentCopy()}
                 </ListItemIcon>
-                Copy unique songs from all lists as CSV
+                Copy unique songs from all lists as TSV
             </MenuItem>,
             <MenuItem key={++k} onClick={async () => { await props.handleCopyCombinedJSON(); setAnchorEl(null); }}>
                 <ListItemIcon>
@@ -710,13 +712,13 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                             multipleLists={props.event.songLists.length > 1}
                             handleCopySongNames={async () => await CopySongListNames(props.value, snackbarContext)}
                             handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value)}
-                            handleCopyCSV={async () => await CopySongListCSV(snackbarContext, props.value)}
+                            handleCopyTSV={async () => await CopySongListTSV(snackbarContext, props.value)}
                             handleCopyJSON={async () => await CopySongListJSON(snackbarContext, props.value)}
                             handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value)}
 
                             handleCopyCombinedSongNames={async () => await CopySongListNames(getCombinedList(), snackbarContext)}
                             handleCopyCombinedMarkdown={async () => await CopySongListMarkdown(snackbarContext, getCombinedList())}
-                            handleCopyCombinedCSV={async () => await CopySongListCSV(snackbarContext, getCombinedList())}
+                            handleCopyCombinedTSV={async () => { }}
                             handleCopyCombinedJSON={async () => await CopySongListJSON(snackbarContext, getCombinedList())}
 
                             handlePasteAppend={async () => { }}
@@ -1437,12 +1439,12 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                             multipleLists={false} // don't bother with this from the editor
                             handleCopySongNames={async () => await CopySongListNames(value, snackbarContext)}
                             handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
-                            handleCopyCSV={async () => await CopySongListCSV(snackbarContext, value)}
+                            handleCopyTSV={async () => await CopySongListTSV(snackbarContext, value)}
                             handleCopyJSON={async () => await CopySongListJSON(snackbarContext, value)}
                             handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, value)}
                             handleCopyCombinedSongNames={async () => { }}
                             handleCopyCombinedMarkdown={async () => { }}
-                            handleCopyCombinedCSV={async () => { }}
+                            handleCopyCombinedTSV={async () => { }}
                             handleCopyCombinedJSON={async () => { }}
                             handlePasteAppend={handlePasteAppend}
                             handlePasteReplace={handlePasteReplace}

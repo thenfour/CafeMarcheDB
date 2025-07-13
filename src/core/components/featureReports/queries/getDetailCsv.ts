@@ -6,7 +6,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { arrayToTSV } from "shared/utils";
+import { arrayToCSV } from "shared/utils";
 import { z } from "zod";
 import { GetFeatureReportDetailResultArgs, ZFeatureReportFilterSpec } from "../activityReportTypes";
 import { buildFeatureReportFiltersSQL, GetAnonymizedUserHash, gFeatureReportFacetProcessors } from "../server/facetProcessor";
@@ -183,7 +183,7 @@ async function getCsvExport(args: TArgs, ctx: AuthenticatedCtx): Promise<CsvExpo
         return flattenActivityRecord(rowWithHash);
     });
 
-    const csvContent = arrayToTSV(flattenedRows);
+    const csvContent = arrayToCSV(flattenedRows);
     const filename = generateFilename(args.filterSpec);
 
     return {

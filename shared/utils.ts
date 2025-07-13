@@ -549,6 +549,66 @@ export function arrayToTSV(data: Record<string, string>[]): string {
     return [headers.join('\t'), ...rows].join('\n');
 }
 
+// export function arrayToCSV(data: Record<string, string>[]): string {
+//     if (data.length === 0) {
+//         return "";
+//     }
+
+//     // Extract headers
+//     const headers = Object.keys(data[0]!);
+
+//     // Map each object to a CSV string following RFC 4180 standards
+//     const rows = data.map(obj => {
+//         return headers.map(fieldName => {
+//             let field = obj[fieldName] || ""; // default to empty string if undefined
+
+//             // Check if field contains comma, quote, or newline (RFC 4180 requirements)
+//             if (field.includes(',') || field.includes('"') || field.includes('\n') || field.includes('\r')) {
+//                 // Escape double quotes by doubling them and wrap field in double quotes
+//                 field = `"${field.replace(/"/g, '""')}"`;
+//             }
+//             return field;
+//         }).join(',');
+//     });
+
+//     // Combine headers and rows
+//     return [headers.join(','), ...rows].join('\n');
+// }
+
+export function toDelimited(
+    data: Record<string, string>[],
+    {
+        delimiter = ",",      // "," or ";" or "\t"
+        forceExcel = false,   // prepend "sep=<delimiter>\n"
+        bom = true            // prepend UTF-8 BOM
+    }: { delimiter?: string; forceExcel?: boolean; bom?: boolean } = {}
+): string {
+    if (!data.length) return "";
+
+    const headers = Object.keys(data[0]!);
+
+    const quote = (v: string) => {
+        const specials = [delimiter, '"', "\n", "\r"];
+        return specials.some(s => v.includes(s))
+            ? `"${v.replace(/"/g, '""')}"`
+            : v;
+    };
+
+    const rows = data.map(r => headers.map(h => quote(r[h] ?? "")).join(delimiter));
+    const body = [headers.join(delimiter), ...rows].join("\n");
+
+    const meta = forceExcel ? `sep=${delimiter}\n` : "";
+    const utf8 = bom ? "\uFEFF" : "";
+
+    return utf8 + meta + body;
+}
+
+export function arrayToCSV(data: Record<string, string>[]): string {
+    return toDelimited(data, {
+        forceExcel: true, // prepend "sep=,\n" for Excel compatibility
+    });
+}
+
 
 
 // Function to get unique enum values

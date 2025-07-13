@@ -496,7 +496,7 @@ interface FeatureReportTopLevelDateSelectorProps {
 
 export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) => {
     //const dashboardContext = useDashboardContext();
-    const [tabId, setTabId] = React.useState<ActivityDetailTabId | "total" | "ledger">("total");
+    const [tabId, setTabId] = React.useState<ActivityDetailTabId | "total" | "ledger">("ledger");
 
     const [result, { refetch }] = useQuery(getFacetedBreakdown, {
         refreshTrigger: props.refetchTrigger,
@@ -511,6 +511,13 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
     ] as const);
 
     const renderedTabs: CMTabPanelChild[] = [
+        <CMTab key="ledger" thisTabId="ledger" summaryTitle="Activity Ledger">
+            <ActivityLedger
+                filterSpec={props.filterSpec}
+                setFilterSpec={props.setFilterSpec}
+                refreshTrigger={props.refetchTrigger}
+            />
+        </CMTab>,
         <CMTab key={9999} thisTabId="total" summaryTitle={`Total (${result.total.count})`} >
             <div className='summaryFacetTab' style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {
@@ -535,13 +542,6 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
                     }
                     )}
             </div>
-        </CMTab>,
-        <CMTab key="ledger" thisTabId="ledger" summaryTitle="Activity Ledger">
-            <ActivityLedger
-                filterSpec={props.filterSpec}
-                setFilterSpec={props.setFilterSpec}
-                refreshTrigger={props.refetchTrigger}
-            />
         </CMTab>,
         ...sortedFacets.map(([facetKey, facetInfo]) => {
             const handler = gClientFacetHandlers[facetKey];

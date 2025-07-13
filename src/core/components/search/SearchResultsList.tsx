@@ -77,9 +77,9 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
     const [autoLoadCount, setAutoLoadCount] = React.useState(0);
-    const handleCopyCSV = async () => {
+    const handleCopyTSV = async () => {
         if (csvExporter) {
-            // Convert numbers to strings for TSV compatibility
+            // Convert numbers to strings for CSV compatibility
             const csvData = items.map((item, index) => {
                 const row = csvExporter.itemToCSVRow(item, index + 1);
                 const stringRow: Record<string, string> = {};
@@ -132,11 +132,11 @@ export const SearchResultsList = <TItem, TFilterSpec extends { quickFilter?: str
                             open={Boolean(anchorEl)}
                             onClose={() => setAnchorEl(null)}
                         >
-                            <MenuItem onClick={async () => { await handleCopyCSV(); setAnchorEl(null); }}>
+                            <MenuItem onClick={async () => { await handleCopyTSV(); setAnchorEl(null); }}>
                                 <ListItemIcon>
                                     {gIconMap.ContentCopy()}
                                 </ListItemIcon>
-                                Copy CSV
+                                Copy TSV
                             </MenuItem>
                         </Menu>
                     </>

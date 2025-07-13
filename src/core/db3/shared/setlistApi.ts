@@ -243,7 +243,7 @@ export function SongListIndexAndNamesToString(setlist: LocalSongListPayload): st
 }
 
 
-export function SongListToCSV(setlist: LocalSongListPayload): string {
+export function SongListToTSV(setlist: LocalSongListPayload): string {
     // Get the combined list of songs and dividers in order
     const rowItems = GetRowItems(setlist);
 
