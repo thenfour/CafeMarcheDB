@@ -9,9 +9,10 @@ import { CMTab, CMTabPanel, CMTabPanelChild } from "../TabPanel";
 //
 import { ActivityDetailTabId, FacetResultBase } from "./activityReportTypes";
 import { FacetHandler, gClientFacetHandlers, FacetItemActions } from './ClientFacetHandlers';
-import { FacetItemDetailTable } from './FacetItemDetailTable';
+import { FacetItemDetailTable, FacetItemDetailTableRow } from './FacetItemDetailTable';
 import { CMBar } from './FeatureReportBasics';
 import getFacetedBreakdown from "./queries/getFacetedBreakdown";
+import getDetail from "./queries/getDetail";
 import { FeatureReportFilterSpec } from './server/facetProcessor';
 
 
@@ -276,6 +277,75 @@ const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, it
 };
 
 
+interface ActivityLedgerProps {
+    filterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (spec: FeatureReportFilterSpec) => void;
+    refreshTrigger: number;
+}
+
+const ActivityLedger = ({ filterSpec, setFilterSpec, refreshTrigger }: ActivityLedgerProps) => {
+    const [result] = useQuery(getDetail, {
+        refreshTrigger,
+        filterSpec,
+    });
+
+    if (!result) {
+        return <div>Loading activity ledger...</div>;
+    }
+
+    if (!result.rows || result.rows.length === 0) {
+        return (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                <h3>No activities found</h3>
+                <p>Try adjusting your filters or selecting a different time bucket.</p>
+            </div>
+        );
+    }
+
+    // Sort chronologically (newest first)
+    const sortedItems = [...result.rows].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    return (
+        <div className="ActivityLedger">
+            <div style={{ marginBottom: '16px', fontFamily: 'var(--ff-mono)', fontSize: '14px', color: '#555' }}>
+                📋 Showing {sortedItems.length} activities (Query: {result.metrics.queryTimeMs}ms) - Chronological Order (Newest First)
+            </div>
+
+            <table className="FacetItemDetailTable" style={{ borderLeft: '3px solid #e3f2fd' }}>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>When</th>
+                        <th>User</th>
+                        <th>Context</th>
+                        <th>Feature</th>
+                        <th>Query</th>
+                        <th>Relations</th>
+                        <th>URI</th>
+                        <th>Locale</th>
+                        <th>Device</th>
+                        <th>Browser</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sortedItems.map((item, index) => (
+                        <FacetItemDetailTableRow
+                            key={item.id}
+                            value={item}
+                            index={index + 1} // Show chronological index starting from 1
+                            filterSpec={filterSpec}
+                            setFilterSpec={setFilterSpec}
+                        />
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+
 interface FeatureReportTopLevelDateSelectorProps {
     refetchTrigger: number;
     filterSpec: FeatureReportFilterSpec;
@@ -284,7 +354,7 @@ interface FeatureReportTopLevelDateSelectorProps {
 
 export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) => {
     //const dashboardContext = useDashboardContext();
-    const [tabId, setTabId] = React.useState<ActivityDetailTabId | "total">("total");
+    const [tabId, setTabId] = React.useState<ActivityDetailTabId | "total" | "ledger">("total");
 
     const [result, { refetch }] = useQuery(getFacetedBreakdown, {
         refreshTrigger: props.refetchTrigger,
@@ -324,6 +394,13 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
                     )}
             </div>
         </CMTab>,
+        <CMTab key="ledger" thisTabId="ledger" summaryTitle="Activity Ledger">
+            <ActivityLedger
+                filterSpec={props.filterSpec}
+                setFilterSpec={props.setFilterSpec}
+                refreshTrigger={props.refetchTrigger}
+            />
+        </CMTab>,
         ...sortedFacets.map(([facetKey, facetInfo]) => {
             const handler = gClientFacetHandlers[facetKey];
             if (!handler) {
@@ -352,7 +429,7 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
             }
             {!props.filterSpec.selectedBucket && <>No bucket selected</>}
         </div>
-        <CMTabPanel handleTabChange={(e, newTabId: ActivityDetailTabId) => setTabId(newTabId)} selectedTabId={tabId} >
+        <CMTabPanel handleTabChange={(e, newTabId: ActivityDetailTabId | "total" | "ledger") => setTabId(newTabId)} selectedTabId={tabId} >
             {renderedTabs}
         </CMTabPanel>
     </div>;

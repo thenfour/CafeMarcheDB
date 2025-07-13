@@ -30,7 +30,7 @@ async function getFilteredDetails(args: TArgs, ctx: AuthenticatedCtx): Promise<T
 
     const sw = new Stopwatch();
 
-    const ids = await db.$queryRaw(Prisma.raw(`SELECT id FROM Action WHERE ${filterSql}`)) as { id: number }[];
+    const ids = await db.$queryRaw(Prisma.raw(`SELECT id FROM Action WHERE ${filterSql} limit 200`)) as { id: number }[];
 
     const result = await db.action.findMany({
         where: {

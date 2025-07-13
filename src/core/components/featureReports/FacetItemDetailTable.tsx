@@ -23,7 +23,7 @@ interface FacetItemDetailTableRowProps {
     setFilterSpec: (spec: FeatureReportFilterSpec) => void;
 };
 
-const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDetailTableRowProps) => {
+export const FacetItemDetailTableRow = ({ value, index, ...props }: FacetItemDetailTableRowProps) => {
     const feature = value.feature as ActivityFeature;
 
     return <tr className="GeneralFeatureReportDetailItemRow">
