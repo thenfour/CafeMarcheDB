@@ -10,6 +10,7 @@ import { ActivityFeature, OperatingSystem } from "./activityTracking";
 import { AnonymizedUserChip, BrowserChip, CMAdhocChip, CMAdhocChipContainer, ContextLabel, DeviceClassChip, FeatureLabel, getColorForFeature, OperatingSystemChip, PointerTypeChip } from "./FeatureReportBasics";
 import { FeatureReportFilterSpec } from "./server/facetProcessor";
 import { EventChip } from "../event/EventChips";
+import React, { Key } from "react";
 
 
 interface ScreenSizeIndicatorProps {
@@ -148,7 +149,7 @@ const FacetItemRenderHelper = <Tpayload extends FacetResultBase, TKey>({ item, h
     </CMAdhocChipContainer>;
 }
 
-const FilterItemRenderHelper = <Tpayload extends FacetResultBase, TKey>({ handler, setFilterSpec, filterSpec, ...props }: FacetHandlerRenderFilterProps<Tpayload, TKey>) => {
+const FilterItemRenderHelper = <Tpayload extends FacetResultBase, TKey extends Key>({ handler, setFilterSpec, filterSpec, ...props }: FacetHandlerRenderFilterProps<Tpayload, TKey>) => {
     const includedItems = handler.includedItemsSelector(filterSpec);
     const excludedItems = handler.excludedItemsSelector(filterSpec);
     if (includedItems.length === 0 && excludedItems.length === 0) return null;
@@ -166,13 +167,13 @@ const FilterItemRenderHelper = <Tpayload extends FacetResultBase, TKey>({ handle
                 [x] Clear
             </CMAdhocChip>
             {includedItems.map((itemKey) => {
-                return handler.renderItem({
+                return <React.Fragment key={itemKey}>{handler.renderItem({
                     filterSpec,
                     setFilterSpec,
                     reason: "filterItem",
                     handler,
                     item: handler.itemFromKey(itemKey),
-                });
+                })}</React.Fragment>
             })}
         </CMAdhocChipContainer>}
         {excludedItems.length > 0 && <CMAdhocChipContainer>
