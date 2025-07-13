@@ -94,6 +94,9 @@ export const getColorForFeature = (feature: ActivityFeature): ColorPaletteEntry 
         [ActivityFeature.event_edit]: gSwatchColors.teal,
         [ActivityFeature.event_frontpage_edit]: gSwatchColors.teal,
         [ActivityFeature.event_delete]: gSwatchColors.teal,
+        [ActivityFeature.event_change_relevance_class]: gSwatchColors.teal,
+
+        [ActivityFeature.qr_code_generate]: gSwatchColors.green,
 
         [ActivityFeature.profile_view]: gSwatchColors.dark_gray,
         [ActivityFeature.profile_edit]: gSwatchColors.dark_gray,
@@ -110,6 +113,7 @@ export const getColorForFeature = (feature: ActivityFeature): ColorPaletteEntry 
         [ActivityFeature.wiki_page_view]: gSwatchColors.light_gray,
         [ActivityFeature.wiki_edit]: gSwatchColors.light_gray,
         [ActivityFeature.wiki_change_visibility]: gSwatchColors.light_gray,
+        [ActivityFeature.wiki_page_tag_update]: gSwatchColors.light_gray,
 
         [ActivityFeature.frontpagegallery_reorder]: gSwatchColors.citron,
         [ActivityFeature.frontpagegallery_item_create]: gSwatchColors.citron,
@@ -133,15 +137,26 @@ export const getColorForFeature = (feature: ActivityFeature): ColorPaletteEntry 
         [ActivityFeature.song_credit_edit]: gSwatchColors.purple,
         [ActivityFeature.song_credit_delete]: gSwatchColors.purple,
         [ActivityFeature.song_pin_recording]: gSwatchColors.purple,
+        [ActivityFeature.song_play]: gSwatchColors.purple,
+        [ActivityFeature.song_pause]: gSwatchColors.purple,
 
         [ActivityFeature.setlist_plan_create]: gSwatchColors.black,
         [ActivityFeature.setlist_plan_save]: gSwatchColors.black,
         [ActivityFeature.setlist_plan_delete]: gSwatchColors.black,
 
-        [ActivityFeature.setlist_create]: gSwatchColors.green,
-        [ActivityFeature.setlist_edit]: gSwatchColors.green,
-        [ActivityFeature.setlist_delete]: gSwatchColors.green,
-        [ActivityFeature.setlist_reorder]: gSwatchColors.green,
+        [ActivityFeature.setlist_create]: gSwatchColors.teal,
+        [ActivityFeature.setlist_edit]: gSwatchColors.teal,
+        [ActivityFeature.setlist_delete]: gSwatchColors.teal,
+        [ActivityFeature.setlist_reorder]: gSwatchColors.teal,
+
+        [ActivityFeature.media_player_bar_close]: gSwatchColors.olive,
+        [ActivityFeature.media_player_bar_next]: gSwatchColors.olive,
+        [ActivityFeature.media_player_bar_previous]: gSwatchColors.olive,
+        [ActivityFeature.media_player_bar_pull_playlist]: gSwatchColors.olive,
+        [ActivityFeature.media_player_bar_play]: gSwatchColors.olive,
+        [ActivityFeature.media_player_bar_pause]: gSwatchColors.olive,
+        [ActivityFeature.media_player_bar_play_vis_segment]: gSwatchColors.olive,
+        [ActivityFeature.media_player_bar_seek_vis_segment]: gSwatchColors.olive,
     };
 
     //return featureColorMap[feature] || gGeneralPaletteList.defaultEntry.strong.foregroundColor;
