@@ -8,6 +8,11 @@ const spanClasses = [
     "highlightred",
     "highlightblue",
     "highlightgreen",
+    "highlightorange",
+    "highlightpurple",
+    "highlightteal",
+    "highlightpink",
+    "hashhighlight",
     "enclosed",
     "qr",
 ] as const;
