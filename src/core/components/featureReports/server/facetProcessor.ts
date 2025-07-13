@@ -40,6 +40,8 @@ export interface FacetProcessor<T> {
     getGroupedQuery: (filterSql: string, currentUser: UserWithRolesPayload) => string;
     postProcessRow: (row: unknown, filterSql: string, currentUser: UserWithRolesPayload) => T | null; // if null, excluded.
     getFilterSqlConditions: (filterSpec: FeatureReportFilterSpec, conditions: string[]) => void;
+    // For CSV export: flatten complex objects to key-value pairs
+    toCsvColumns?: (item: T) => Record<string, string | number | Date | null>;
 }
 
 const NullFacetProcessor: FacetProcessor<null> = {
@@ -147,6 +149,9 @@ const browsersFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['b
             conditions.push(`NOT ${MySqlSymbol("browserName")} IN (${filterSpec.excludeBrowserNames.map((f) => MySqlStringLiteral(f)).join(",")})`);
         }
     },
+    toCsvColumns: (item) => ({
+        browserName: item.browserName || '',
+    }),
 };
 
 const operatingSystemsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['operatingSystems'][0]> = {
@@ -176,6 +181,9 @@ const operatingSystemsFacetProcessor: FacetProcessor<FacetedBreakdownResult['fac
             conditions.push(`NOT ${MySqlSymbol("operatingSystem")} IN (${filterSpec.excludeOperatingSystems.map((f) => MySqlStringLiteral(f)).join(",")})`);
         }
     },
+    toCsvColumns: (item) => ({
+        operatingSystem: item.operatingSystem || '',
+    }),
 };
 
 const pointerTypesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['pointerTypes'][0]> = {
@@ -205,6 +213,9 @@ const pointerTypesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets'
             conditions.push(`NOT ${MySqlSymbol("pointerType")} IN (${filterSpec.excludePointerTypes.map((f) => MySqlStringLiteral(f)).join(",")})`);
         }
     },
+    toCsvColumns: (item) => ({
+        pointerType: item.pointerType || '',
+    }),
 };
 
 const deviceClassesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['deviceClasses'][0]> = {
@@ -234,6 +245,9 @@ const deviceClassesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets
             conditions.push(`NOT ${MySqlSymbol("deviceClass")} IN (${filterSpec.excludeDeviceClasses.map((f) => MySqlStringLiteral(f)).join(",")})`);
         }
     },
+    toCsvColumns: (item) => ({
+        deviceClass: item.deviceClass || '',
+    }),
 };
 
 const languagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['languages'][0]> = {
@@ -416,6 +430,10 @@ const songsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['song
             conditions.push(`NOT ${MySqlSymbol("songId")} IN (${filterSpec.excludeSongIds.map((f) => MySqlStringLiteral(f.toString())).join(",")})`);
         }
     },
+    toCsvColumns: (item) => ({
+        songId: item.songId?.toString() || '',
+        songName: item.name || '',
+    }),
 };
 
 const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['events'][0]> = {
@@ -454,6 +472,13 @@ const eventsFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['eve
             conditions.push(`NOT ${MySqlSymbol("eventId")} IN (${filterSpec.excludeEventIds.map((f) => f.toString()).join(",")})`);
         }
     },
+    toCsvColumns: (item) => ({
+        eventId: item.eventId?.toString() || '',
+        eventName: item.name || '',
+        eventStartsAt: item.startsAt?.toISOString() || '',
+        eventStatusId: item.statusId?.toString() || '',
+        eventTypeId: item.typeId?.toString() || '',
+    }),
 };
 
 const wikiPagesFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['wikiPages'][0]> = {

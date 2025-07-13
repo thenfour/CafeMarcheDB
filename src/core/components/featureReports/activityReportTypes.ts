@@ -273,6 +273,7 @@ export type TGetFeatureReportDetailResult = {
     rows: (GetFeatureReportDetailItemPayload & { userHash: string | null; })[];
     metrics: {
         queryTimeMs: number;
+        totalRowCount: number;
     };
 }
 

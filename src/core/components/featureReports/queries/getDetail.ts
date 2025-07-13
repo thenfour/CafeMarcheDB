@@ -30,7 +30,13 @@ async function getFilteredDetails(args: TArgs, ctx: AuthenticatedCtx): Promise<T
 
     const sw = new Stopwatch();
 
-    const ids = await db.$queryRaw(Prisma.raw(`SELECT id FROM Action WHERE ${filterSql} limit 200`)) as { id: number }[];
+    // Get total count without limit
+    const totalCountResult = await db.$queryRaw(Prisma.raw(`SELECT COUNT(*) as count FROM Action WHERE ${filterSql}`)) as { count: bigint }[];
+    const totalRowCount = Number(totalCountResult[0]?.count || 0);
+
+    // Use higher limit for exports
+    const limit = 200;
+    const ids = await db.$queryRaw(Prisma.raw(`SELECT id FROM Action WHERE ${filterSql} ORDER BY createdAt DESC LIMIT ${limit}`)) as { id: number }[];
 
     const result = await db.action.findMany({
         where: {
@@ -48,6 +54,7 @@ async function getFilteredDetails(args: TArgs, ctx: AuthenticatedCtx): Promise<T
         }),
         metrics: {
             queryTimeMs: sw.ElapsedMillis,
+            totalRowCount,
         },
     };
 }

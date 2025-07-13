@@ -267,6 +267,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         <AppContextMarker name="appBarQrCode">
                             <QrCodeButton
                                 content={QrHelpers.url(getAbsoluteUrl(router.asPath))}
+                                title="QR code for this page"
                                 renderButton={({ onClick }) => (
                                     <div
                                         className="freeButton globalMetronomeButton"
