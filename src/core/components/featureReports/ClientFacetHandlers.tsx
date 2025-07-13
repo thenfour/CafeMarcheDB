@@ -4,6 +4,7 @@ import { getHashedColor } from "@/shared/utils";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SongChip, WikiPageChip } from "../CMCoreComponents";
 import { CMSmallButton } from "../CMCoreComponents2";
+import { Tooltip } from "@mui/material";
 //
 import { FacetedBreakdownResult, FacetResultBase } from "./activityReportTypes";
 import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
@@ -726,5 +727,84 @@ export const FacetItemActions = <Tpayload extends FacetResultBase, TKey>({
         {isolateButton}
         {hideButton}
     </CMAdhocChipContainer>;
+};
+
+// Wrapper component that adds hover-based filtering actions to any chip
+export interface FilterableChipProps<Tpayload extends FacetResultBase, TKey> {
+    item: Tpayload;
+    handler: FacetHandler<Tpayload, TKey>;
+    filterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (fs: FeatureReportFilterSpec) => void;
+    children: React.ReactNode;
+    onChipClick?: () => void; // Optional click handler for the chip itself
+}
+
+export const FilterableChip = <Tpayload extends FacetResultBase, TKey>({
+    item,
+    handler,
+    filterSpec,
+    setFilterSpec,
+    children,
+    onChipClick
+}: FilterableChipProps<Tpayload, TKey>) => {
+    if (!handler.supportsDrilldown) {
+        // If no drilldown support, just render the chip with optional click handler
+        return <div onClick={onChipClick}>{children}</div>;
+    }
+
+    return (
+        <Tooltip
+            title={
+                <FacetItemActions
+                    item={item}
+                    handler={handler}
+                    filterSpec={filterSpec}
+                    setFilterSpec={setFilterSpec}
+                />
+            }
+            arrow
+            placement="bottom"
+            //enterDelay={300} // Slightly faster trigger
+            leaveDelay={200} // Small delay before hiding to allow moving to tooltip
+            PopperProps={{
+                modifiers: [
+                    {
+                        name: 'offset',
+                        options: {
+                            offset: [0, -8], // Reduce distance between chip and tooltip
+                        },
+                    },
+                ],
+            }}
+            componentsProps={{
+                tooltip: {
+                    sx: {
+                        bgcolor: 'white',
+                        color: 'text.primary',
+                        border: '1px solid #ccc',
+                        boxShadow: 3,
+                        padding: '8px 12px', // More padding for easier targeting
+                        borderRadius: '6px',
+                        '& .MuiTooltip-arrow': {
+                            color: 'white',
+                            '&::before': {
+                                border: '1px solid #ccc'
+                            }
+                        }
+                    }
+                }
+            }}
+        >
+            <div
+                onClick={onChipClick}
+                style={{
+                    cursor: onChipClick ? 'pointer' : 'default',
+                    display: 'inline-block'
+                }}
+            >
+                {children}
+            </div>
+        </Tooltip>
+    );
 };
 
