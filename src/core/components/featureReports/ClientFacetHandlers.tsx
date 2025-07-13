@@ -6,7 +6,7 @@ import { SongChip, WikiPageChip } from "../CMCoreComponents";
 import { CMSmallButton } from "../CMCoreComponents2";
 //
 import { FacetedBreakdownResult, FacetResultBase } from "./activityReportTypes";
-import { ActivityFeature, OperatingSystem } from "./activityTracking";
+import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "./activityTracking";
 import { AnonymizedUserChip, BrowserChip, CMAdhocChip, CMAdhocChipContainer, ContextLabel, DeviceClassChip, FeatureLabel, getColorForFeature, OperatingSystemChip, PointerTypeChip } from "./FeatureReportBasics";
 import { FeatureReportFilterSpec } from "./server/facetProcessor";
 import { EventChip } from "../event/EventChips";
@@ -294,7 +294,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                operatingSystem: item.operatingSystem,
+                includeOperatingSystems: [item.operatingSystem as OperatingSystem],
+                excludeOperatingSystems: [],
             };
         },
         renderItem: (props) => {
@@ -315,7 +316,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                pointerType: item.pointerType,
+                includePointerTypes: [item.pointerType as PointerTypes],
+                excludePointerTypes: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludePointerTypes,
@@ -342,7 +344,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                browserName: item.browserName,
+                includeBrowserNames: [item.browserName as Browsers],
+                excludeBrowserNames: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeBrowserNames,
@@ -369,7 +372,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                deviceClass: item.deviceClass,
+                includeDeviceClasses: [item.deviceClass as DeviceClasses],
+                excludeDeviceClasses: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeDeviceClasses,
@@ -396,7 +400,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                customLinkId: item.customLinkId,
+                includeCustomLinkIds: [item.customLinkId],
+                excludeCustomLinkIds: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeCustomLinkIds,
@@ -428,7 +433,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                menuLinkId: item.menuLinkId,
+                includeMenuLinkIds: [item.menuLinkId],
+                excludeMenuLinkIds: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeMenuLinkIds,
@@ -460,7 +466,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                songId: item.songId,
+                includeSongIds: [item.songId],
+                excludeSongIds: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeSongIds,
@@ -490,7 +497,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                eventId: item.eventId,
+                includeEventIds: [item.eventId],
+                excludeEventIds: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeEventIds,
@@ -523,7 +531,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                wikiPageId: item.wikiPageId,
+                includeWikiPageIds: [item.wikiPageId],
+                excludeWikiPageIds: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeWikiPageIds,
@@ -579,7 +588,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                timezone: item.timezone,
+                includeTimezones: [item.timezone],
+                excludeTimezones: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeTimezones,
@@ -608,7 +618,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                language: item.language,
+                includeLanguages: [item.language],
+                excludeLanguages: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeLanguages,
@@ -637,7 +648,8 @@ export const gClientFacetHandlers = {
         addFilter: (filterSpec, item) => {
             return {
                 ...filterSpec,
-                locale: item.locale,
+                includeLocales: [item.locale],
+                excludeLocales: [],
             };
         },
         excludedItemsSelector: (filterSpec) => filterSpec.excludeLocales,
