@@ -1,21 +1,14 @@
-import { toSorted } from "@/shared/arrayUtils";
+import { clearArray, toSorted } from "@/shared/arrayUtils";
 import { ColorPaletteEntry, gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "@/shared/color";
-import { getHashedColor, IsNullOrWhitespace, smartTruncate } from "@/shared/utils";
+import { getHashedColor, IsNullOrWhitespace } from "@/shared/utils";
 import { Tooltip as MuiTooltip } from "@mui/material";
 import * as React from 'react';
 import Identicon from 'react-identicons';
-import { Pie, PieChart, Tooltip } from 'recharts';
-import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
-import { AttendanceChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
-import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
 import { CMSmallButton } from "../CMCoreComponents2";
-import { clearArray } from "@/shared/arrayUtils";
 //
-import { ActivityDetailTabId, GeneralActivityReportDetailPayload, FacetResultBase } from "./activityReportTypes";
+import { ActivityDetailTabId, FacetResultBase, GeneralActivityReportDetailPayload } from "./activityReportTypes";
 import { ActivityFeature, BrowserIconMap, Browsers, DeviceClasses, DeviceClassIconMap, OperatingSystem, OSIconMap, PointerTypeIconMap, PointerTypes } from "./activityTracking";
-import { AdminInspectObject } from "../CMCoreComponents2";
-import { EventChip } from "../event/EventChips";
 import { FeatureReportFilterSpec } from "./server/facetProcessor";
 
 export const CMAdhocChipContainer = ({ children }: { children: React.ReactNode }) => {

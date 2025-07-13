@@ -1,20 +1,19 @@
 import { parseBucketToDateRange } from '@/shared/mysqlUtils';
 import { formatMillisecondsToDHMS } from '@/shared/time';
-import { invoke } from "@blitzjs/rpc";
-import { useQuery } from "@blitzjs/rpc";
+import { invoke, useQuery } from "@blitzjs/rpc";
 import { Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import * as React from 'react';
 import { Pie, PieChart, Tooltip } from 'recharts';
-import { CMSmallButton, InspectObject } from '../CMCoreComponents2';
+import { CMSmallButton } from '../CMCoreComponents2';
 import { CMTab, CMTabPanel, CMTabPanelChild } from "../TabPanel";
 //
 import { ActivityDetailTabId, FacetResultBase } from "./activityReportTypes";
-import { FacetHandler, gClientFacetHandlers, FacetItemActions } from './ClientFacetHandlers';
+import { FacetHandler, FacetItemActions, gClientFacetHandlers } from './ClientFacetHandlers';
 import { FacetItemDetailTable, FacetItemDetailTableRow } from './FacetItemDetailTable';
 import { CMBar } from './FeatureReportBasics';
-import getFacetedBreakdown from "./queries/getFacetedBreakdown";
 import getDetail from "./queries/getDetail";
 import getDetailCsv from "./queries/getDetailCsv";
+import getFacetedBreakdown from "./queries/getFacetedBreakdown";
 import { FeatureReportFilterSpec } from './server/facetProcessor';
 
 
