@@ -178,12 +178,10 @@ interface FacetedTabContentProps<Tpayload extends FacetResultBase, TKey> {
 
 const FacetedTabHeader = <Tpayload extends FacetResultBase, TKey>({ handler, items, ...props }: FacetedTabContentProps<Tpayload, TKey>) => {
 
-    // Sort items by count descending for consistent pie chart and table order
-    const sortedItems = [...items].sort((a, b) => b.count - a.count);
+    // Items are already sorted by count descending from the parent component
+    const totalCount = items.reduce((acc, item) => acc + item.count, 0);
 
-    const totalCount = sortedItems.reduce((acc, item) => acc + item.count, 0);
-
-    const chartData = sortedItems.map((item) => {
+    const chartData = items.map((item) => {
         if (!item || !handler.getItemKey(item)) {
             console.log(item);
             console.error(`No fill for item ${item}`);
@@ -224,7 +222,7 @@ const FacetedTabHeader = <Tpayload extends FacetResultBase, TKey>({ handler, ite
         <div>
             <table>
                 <tbody>
-                    {sortedItems.map((contextObject) => {
+                    {items.map((contextObject) => {
                         const key = handler.getItemKey(contextObject);
                         const color = handler.getItemColor(contextObject);
                         const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
@@ -294,11 +292,17 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
     });
     if (!result) return null;
 
+    // Sort all facet items by count descending for consistent ordering across all components
+    const sortedFacets = Object.entries(result.facets).map(([facetKey, facetInfo]) => [
+        facetKey,
+        [...facetInfo].sort((a, b) => b.count - a.count)
+    ] as const);
+
     const renderedTabs: CMTabPanelChild[] = [
         <CMTab key={9999} thisTabId="total" summaryTitle={`Total (${result.total.count})`} >
             <div className='summaryFacetTab' style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {
-                    ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
+                    ...sortedFacets.map(([facetKey, facetInfo]) => {
                         const handler = gClientFacetHandlers[facetKey];
                         if (!handler) {
                             console.error(`No handler for facet ${facetKey}`);
@@ -320,7 +324,7 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
                     )}
             </div>
         </CMTab>,
-        ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
+        ...sortedFacets.map(([facetKey, facetInfo]) => {
             const handler = gClientFacetHandlers[facetKey];
             if (!handler) {
                 console.error(`No handler for facet ${facetKey}`);
