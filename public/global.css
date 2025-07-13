@@ -911,7 +911,13 @@ solution is to
   padding: 10px;
 }
 
+.summaryFacetHeader {
+  margin: 12px 4px;
+}
 
+.summaryFacetHeader:hover {
+  background-color: #f8f8f8;
+}
 
 .adHocChipContainer {
   display: flex;

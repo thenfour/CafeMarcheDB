@@ -4,7 +4,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Collapse } from '@mui/material';
 import * as React from 'react';
 import { Pie, PieChart, Tooltip } from 'recharts';
-import { CMSmallButton } from '../CMCoreComponents2';
+import { CMSmallButton, InspectObject } from '../CMCoreComponents2';
 import { CMTab, CMTabPanel, CMTabPanelChild } from "../TabPanel";
 //
 import { ActivityDetailTabId, FacetResultBase } from "./activityReportTypes";
@@ -158,6 +158,7 @@ const CollapsibleFacetItemDetail = <Tpayload extends FacetResultBase, TKey>({ ha
     </div>;
 };
 
+
 interface FacetedTabContentProps<Tpayload extends FacetResultBase, TKey> {
     handler: FacetHandler<Tpayload, TKey>;
     items: Tpayload[];
@@ -166,7 +167,8 @@ interface FacetedTabContentProps<Tpayload extends FacetResultBase, TKey> {
     refreshTrigger: number;
 };
 
-const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, items, ...props }: FacetedTabContentProps<Tpayload, TKey>) => {
+
+const FacetedTabHeader = <Tpayload extends FacetResultBase, TKey>({ handler, items, ...props }: FacetedTabContentProps<Tpayload, TKey>) => {
 
     // Sort items by count descending for consistent pie chart and table order
     const sortedItems = [...items].sort((a, b) => b.count - a.count);
@@ -193,58 +195,65 @@ const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, it
     const kPieSize = 240;
     const kInnerRadius = 30;
 
-    return <div className="DistinctContextObjectTabContent">
-        <div className="header">
-            <PieChart width={kPieSize} height={kPieSize} data={chartData}>
-                <Pie
-                    dataKey="itemCount"
-                    nameKey={"label"}
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={kInnerRadius}
-                    outerRadius={kPieSize / 2}
-                    isAnimationActive={false}
-                    label={(e) => {
-                        return renderCustomizedLabel(e, chartData);
-                    }}
-                    labelLine={false}
-                />
-                <Tooltip content={e => renderCustomTooltip(e)} />
-            </PieChart>
-            <div>
-                <table>
-                    <tbody>
-                        {sortedItems.map((contextObject) => {
-                            const key = handler.getItemKey(contextObject);
-                            const color = handler.getItemColor(contextObject);
-                            const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
-                            return <tr key={key as React.Key}>
-                                <td>
-                                    <CMBar value01={contextObject.count / totalCount} color={color} />
-                                </td>
-                                <td>
-                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /*color*/ }}>
-                                        {percentageOfTotal}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /*color*/ }}>
-                                        ({contextObject.count} of {totalCount})
-                                    </span>
-                                </td>
-                                <td>
-                                    {/* <CMAdhocChipContainer> */}
-                                    {handler.renderItem({ item: contextObject, filterSpec: props.filterSpec, setFilterSpec: props.setFilterSpec, handler, reason: "facetItemSummaryHeader" })}
-                                    {/* </CMAdhocChipContainer> */}
+    return <div className="header">
+        <PieChart width={kPieSize} height={kPieSize} data={chartData}>
+            <Pie
+                dataKey="itemCount"
+                nameKey={"label"}
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={kInnerRadius}
+                outerRadius={kPieSize / 2}
+                isAnimationActive={false}
+                label={(e) => {
+                    return renderCustomizedLabel(e, chartData);
+                }}
+                labelLine={false}
+            />
+            <Tooltip content={e => renderCustomTooltip(e)} />
+        </PieChart>
+        <div>
+            <table>
+                <tbody>
+                    {sortedItems.map((contextObject) => {
+                        const key = handler.getItemKey(contextObject);
+                        const color = handler.getItemColor(contextObject);
+                        const percentageOfTotal = `${Math.round((contextObject.count / totalCount) * 100)}%`
+                        return <tr key={key as React.Key}>
+                            <td>
+                                <CMBar value01={contextObject.count / totalCount} color={color} />
+                            </td>
+                            <td>
+                                <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /*color*/ }}>
+                                    {percentageOfTotal}
+                                </span>
+                            </td>
+                            <td>
+                                <span style={{ whiteSpace: "nowrap", fontFamily: "var(--ff-mono)", /*color*/ }}>
+                                    ({contextObject.count} of {totalCount})
+                                </span>
+                            </td>
+                            <td>
+                                {/* <CMAdhocChipContainer> */}
+                                {handler.renderItem({ item: contextObject, filterSpec: props.filterSpec, setFilterSpec: props.setFilterSpec, handler, reason: "facetItemSummaryHeader" })}
+                                {/* </CMAdhocChipContainer> */}
 
-                                </td>
-                            </tr>;
-                        })}
-                    </tbody>
-                </table>
-            </div>
+                            </td>
+                        </tr>;
+                    })}
+                </tbody>
+            </table>
         </div>
+    </div>;
+};
+
+const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, items, ...props }: FacetedTabContentProps<Tpayload, TKey>) => {
+
+    const totalCount = items.reduce((acc, item) => acc + item.count, 0);
+
+    return <div className="DistinctContextObjectTabContent">
+        <FacetedTabHeader handler={handler} items={items} {...props} />
 
         {items.map((contextObject) => <CollapsibleFacetItemDetail
             key={handler.getItemKey(contextObject) as React.Key}
@@ -279,6 +288,27 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
 
     const renderedTabs: CMTabPanelChild[] = [
         <CMTab key={9999} thisTabId="total" summaryTitle={`Total (${result.total.count})`} >
+            {
+                ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
+                    const handler = gClientFacetHandlers[facetKey];
+                    if (!handler) {
+                        console.error(`No handler for facet ${facetKey}`);
+                        return null;
+                    }
+                    if (facetInfo.length === 0) return null;
+                    return <div className='summaryFacetHeader' key={facetKey}>
+                        <h2>{facetKey}<InspectObject src={facetInfo} /></h2>
+                        <FacetedTabHeader
+                            key={facetKey}
+                            handler={handler}
+                            setFilterSpec={props.setFilterSpec}
+                            items={facetInfo as any}
+                            filterSpec={props.filterSpec}
+                            refreshTrigger={props.refetchTrigger}
+                        />
+                    </div>;
+                }
+                )}
         </CMTab>,
         ...Object.entries(result.facets).map(([facetKey, facetInfo]) => {
             const handler = gClientFacetHandlers[facetKey];

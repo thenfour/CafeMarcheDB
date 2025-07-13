@@ -29,12 +29,17 @@ export interface CMAdhocChipProps {
     onClick?: () => void;
 };
 
-export const CMAdhocChip = (props: CMAdhocChipProps) => {
-    return <div className={`adHocChip ${props.className} ${props.onClick && 'interactable'}`} onClick={props.onClick} style={props.style}>
+export const CMAdhocChip = React.forwardRef<HTMLDivElement, CMAdhocChipProps>((props, ref) => {
+    return <div
+        ref={ref}
+        className={`adHocChip ${props.className || ''} ${props.onClick ? 'interactable' : ''}`}
+        onClick={props.onClick}
+        style={props.style}
+    >
         {props.startIcon && <div className="adHocChipStartIcon">{props.startIcon}</div>}
         <div className="adHocChipContent">{props.children}</div>
     </div>;
-};
+});
 
 
 export type ContextObjectDistinctItem = {
@@ -287,9 +292,11 @@ export const BrowserChip = ({ value }: { value: string | null | undefined }) => 
     const relUri = BrowserIconMap[value as Browsers];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-            {value}
-        </CMAdhocChip>
+        <div>
+            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+                {value}
+            </CMAdhocChip>
+        </div>
     </MuiTooltip>;
 }
 
@@ -298,9 +305,11 @@ export const OperatingSystemChip = ({ value }: { value: string | null | undefine
     const relUri = OSIconMap[value as OperatingSystem];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-            {value}
-        </CMAdhocChip>
+        <div>
+            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+                {value}
+            </CMAdhocChip>
+        </div>
     </MuiTooltip>;
 }
 
@@ -309,9 +318,11 @@ export const PointerTypeChip = ({ value }: { value: string | null | undefined })
     const relUri = PointerTypeIconMap[value as PointerTypes];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-            {value}
-        </CMAdhocChip>
+        <div>
+            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+                {value}
+            </CMAdhocChip>
+        </div>
     </MuiTooltip>;
 }
 
@@ -320,9 +331,11 @@ export const DeviceClassChip = ({ value }: { value: string | null | undefined })
     const relUri = DeviceClassIconMap[value as DeviceClasses];
     if (!relUri) return <div className="adHocChip">{value}</div>;
     return <MuiTooltip title={value}>
-        <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
-            {value}
-        </CMAdhocChip>
+        <div>
+            <CMAdhocChip startIcon={<img src={relUri} width={24} height={24} />}>
+                {value}
+            </CMAdhocChip>
+        </div>
     </MuiTooltip>;
 }
 
