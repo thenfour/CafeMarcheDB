@@ -8,7 +8,7 @@ import { CMSmallButton, InspectObject } from '../CMCoreComponents2';
 import { CMTab, CMTabPanel, CMTabPanelChild } from "../TabPanel";
 //
 import { ActivityDetailTabId, FacetResultBase } from "./activityReportTypes";
-import { FacetHandler, gClientFacetHandlers } from './ClientFacetHandlers';
+import { FacetHandler, gClientFacetHandlers, FacetItemActions } from './ClientFacetHandlers';
 import { FacetItemDetailTable } from './FacetItemDetailTable';
 import { CMBar } from './FeatureReportBasics';
 import getFacetedBreakdown from "./queries/getFacetedBreakdown";
@@ -150,6 +150,14 @@ const CollapsibleFacetItemDetail = <Tpayload extends FacetResultBase, TKey>({ ha
             <DistinctContextObjectPieChart item={contextObject} items={items} handler={handler} />
             {handler.renderItem({ item: contextObject, filterSpec: baseFilterSpec, setFilterSpec: props.setFilterSpec, handler, reason: "facetItemDetailHeader" })} ({contextObject.count} items) ({percentageOfTotal} of total)
         </div>
+        {supportsDrilldown && <div style={{ padding: '4px 8px', backgroundColor: handler.getItemColor(contextObject, "0.1") }}>
+            <FacetItemActions
+                item={contextObject}
+                handler={handler}
+                filterSpec={baseFilterSpec}
+                setFilterSpec={props.setFilterSpec}
+            />
+        </div>}
         {supportsDrilldown && expanded && <Collapse in={expanded}>
             <React.Suspense>
                 <FacetItemDetailTable filterSpec={handler.addFilter(baseFilterSpec, contextObject)} refreshTrigger={refreshTrigger} setFilterSpec={props.setFilterSpec} />

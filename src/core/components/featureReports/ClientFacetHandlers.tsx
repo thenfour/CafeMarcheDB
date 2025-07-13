@@ -106,46 +106,10 @@ export interface FacetHandler<Tpayload extends FacetResultBase, TKey> {
 type FacetItemRenderHelperProps<Tpayload extends FacetResultBase, TKey> = React.PropsWithChildren<FacetHandlerRenderItemProps<Tpayload, TKey>>;
 
 const FacetItemRenderHelper = <Tpayload extends FacetResultBase, TKey>({ item, handler, ...props }: FacetItemRenderHelperProps<Tpayload, TKey>) => {
-    const isolateButton = <CMSmallButton
-        variant="technical"
-        onClick={(e) => {
-            const newFilterSpec = { ...props.filterSpec };
-            const includedItems = handler.includedItemsSelector(newFilterSpec);
-            const excludedItems = handler.excludedItemsSelector(newFilterSpec);
-            clearArray(includedItems);
-            clearArray(excludedItems);
-            includedItems.push(handler.getItemKey(item));
-            props.setFilterSpec(newFilterSpec);
-        }}
-    >
-        [+] isolate
-    </CMSmallButton>;
-
-    const hideButton = <CMSmallButton
-        variant="technical"
-        onClick={(e) => {
-            // add to exclude list
-            const newFilterSpec = { ...props.filterSpec };
-            const excludedItems = handler.excludedItemsSelector(newFilterSpec);
-
-            // ensure excludedItems contains the item's filter key.
-            const itemKey = handler.getItemKey(item);
-            if (!excludedItems.includes(itemKey)) {
-                excludedItems.push(itemKey);
-            }
-
-            //console.log(`newFilterSpec with excluded feature`, newFilterSpec);
-            props.setFilterSpec(newFilterSpec);
-        }}
-    >
-        [-] hide
-    </CMSmallButton>;
-
     return <CMAdhocChipContainer>
         {props.children}
         <div style={{ flexGrow: 1 }} />
-        {isOneOf(props.reason, "facetItemSummaryHeader") && handler.supportsDrilldown && isolateButton}
-        {isOneOf(props.reason, "facetItemSummaryHeader") && handler.supportsDrilldown && hideButton}
+        {isOneOf(props.reason, "facetItemSummaryHeader") && handler.supportsDrilldown && <FacetItemActions item={item} handler={handler} filterSpec={props.filterSpec} setFilterSpec={props.setFilterSpec} />}
     </CMAdhocChipContainer>;
 }
 
@@ -705,4 +669,62 @@ export const gClientFacetHandlers = {
         }
     }),
 } as const;
+
+export interface FacetItemActionsProps<Tpayload extends FacetResultBase, TKey> {
+    item: Tpayload;
+    handler: FacetHandler<Tpayload, TKey>;
+    filterSpec: FeatureReportFilterSpec;
+    setFilterSpec: (fs: FeatureReportFilterSpec) => void;
+}
+
+// Reusable component for isolate/hide actions
+export const FacetItemActions = <Tpayload extends FacetResultBase, TKey>({
+    item,
+    handler,
+    filterSpec,
+    setFilterSpec
+}: FacetItemActionsProps<Tpayload, TKey>) => {
+    if (!handler.supportsDrilldown) return null;
+
+    const isolateButton = <CMSmallButton
+        variant="technical"
+        onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling to parent click handlers
+            const newFilterSpec = { ...filterSpec };
+            const includedItems = handler.includedItemsSelector(newFilterSpec);
+            const excludedItems = handler.excludedItemsSelector(newFilterSpec);
+            clearArray(includedItems);
+            clearArray(excludedItems);
+            includedItems.push(handler.getItemKey(item));
+            setFilterSpec(newFilterSpec);
+        }}
+    >
+        [+] isolate
+    </CMSmallButton>;
+
+    const hideButton = <CMSmallButton
+        variant="technical"
+        onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling to parent click handlers
+            // add to exclude list
+            const newFilterSpec = { ...filterSpec };
+            const excludedItems = handler.excludedItemsSelector(newFilterSpec);
+
+            // ensure excludedItems contains the item's filter key.
+            const itemKey = handler.getItemKey(item);
+            if (!excludedItems.includes(itemKey)) {
+                excludedItems.push(itemKey);
+            }
+
+            setFilterSpec(newFilterSpec);
+        }}
+    >
+        [-] hide
+    </CMSmallButton>;
+
+    return <CMAdhocChipContainer>
+        {isolateButton}
+        {hideButton}
+    </CMAdhocChipContainer>;
+};
 
