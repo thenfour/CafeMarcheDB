@@ -126,13 +126,13 @@ export async function createActionRecord(args: RecordActionArgs & { userId?: num
         data: sanitizedData,
     });
 
-    console.log("[ActivityLog] Recorded action", {
-        uri: sanitizedData.uri,
-        feature: sanitizedData.feature,
-        context: sanitizedData.context,
-        userId: sanitizedData.userId,
-        isClient: sanitizedData.isClient
-    });
+    // console.log("[ActivityLog] Recorded action", {
+    //     uri: sanitizedData.uri,
+    //     feature: sanitizedData.feature,
+    //     context: sanitizedData.context,
+    //     userId: sanitizedData.userId,
+    //     isClient: sanitizedData.isClient
+    // });
 }
 
 // For legacy usage, keep the original recordAction for server-side/mutation

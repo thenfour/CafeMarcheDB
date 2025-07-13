@@ -800,7 +800,9 @@ export class xTable /* implements TableDesc*/ {
 
         // tables with no relations do not support `include` at all. even if it's empty.
         // talk to Prisma about that but in that case we must return undefined so the query doesn't have the empty `include` clause.
-        if (Object.entries(include).length === 0) return undefined;
+        if (!!include) {
+            if (Object.entries(include).length === 0) return undefined;
+        }
 
         this.ApplyIncludeFiltering(include, clientIntention);
 
