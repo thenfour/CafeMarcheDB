@@ -58,7 +58,7 @@ export type ContextObjectTabData = {
 };
 
 
-export const getColorForFeature = (feature: ActivityFeature): ColorPaletteEntry => {
+export const getColorForFeature = (feature: ActivityFeature | string): ColorPaletteEntry => {
     const featureColorMap: Record<ActivityFeature, string> = {
         [ActivityFeature.global_ical_digest]: gLightSwatchColors.light_blue,
 
@@ -172,7 +172,7 @@ export const AnonymizedUserChip = ({ value, size = 25 }: { value: string, size?:
 }
 
 interface FeatureLabelProps {
-    feature: ActivityFeature;
+    feature: ActivityFeature | string;
     onClickIsolate?: () => void;
     onClickExclude?: () => void;
 }

@@ -203,7 +203,7 @@ const MakeHandler = <Tpayload extends FacetResultBase, Tkey>(val: FacetHandler<T
 export const gClientFacetHandlers = {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    features: MakeHandler<FacetedBreakdownResult['facets']['features'][0], ActivityFeature>({
+    features: MakeHandler<FacetedBreakdownResult['facets']['features'][0], ActivityFeature | string>({
         getItemKey: (item) => item.feature,
         getFacetName: () => "Feature",
         getItemLabel: (item) => item.feature,
@@ -221,9 +221,17 @@ export const gClientFacetHandlers = {
             return entry.strong.foregroundColor;
         },
         addFilter: (filterSpec, item) => {
+
+            const feature = item.feature;
+            const isKnownFeature = isOneOf(feature, ...Object.values(ActivityFeature));
+            if (!isKnownFeature) {
+                console.warn(`Unknown feature ${item.feature} in filterSpec`, filterSpec);
+                return filterSpec;
+            }
+
             return {
                 ...filterSpec,
-                includeFeatures: [item.feature],
+                includeFeatures: [feature],
             };
         },
         renderItem: (props) => {
@@ -270,7 +278,7 @@ export const gClientFacetHandlers = {
     }),
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    operatingSystems: MakeHandler<FacetedBreakdownResult['facets']['operatingSystems'][0], OperatingSystem>({
+    operatingSystems: MakeHandler<FacetedBreakdownResult['facets']['operatingSystems'][0], OperatingSystem | string>({
         getItemKey: (item) => item.operatingSystem,
         getFacetName: () => "Operating System",
         getItemLabel: (item) => item.operatingSystem,

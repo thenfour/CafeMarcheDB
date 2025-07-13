@@ -59,7 +59,7 @@ export interface FacetedBreakdownResult {
     },
     facets: {
         features: {
-            feature: ActivityFeature;
+            feature: ActivityFeature | string;
             count: number;
         }[],
         contexts: {
@@ -68,7 +68,7 @@ export interface FacetedBreakdownResult {
         }[],
 
         operatingSystems: {
-            operatingSystem: OperatingSystem;
+            operatingSystem: OperatingSystem | string;
             count: number;
         }[],
         pointerTypes: {
@@ -76,7 +76,7 @@ export interface FacetedBreakdownResult {
             count: number;
         }[],
         browsers: {
-            browserName: Browsers;
+            browserName: Browsers | string;
             count: number;
         }[],
         deviceClasses: {

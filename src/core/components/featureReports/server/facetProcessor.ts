@@ -1,10 +1,10 @@
-import { z } from "zod";
 import { MySqlDateTimeLiteral, MySqlStringLiteral, MySqlStringLiteralAllowingPercent, MySqlSymbol, parseBucketToDateRange } from "@/shared/mysqlUtils";
 import { xCustomLink, xEvent, xMenuLink, xSong, xWikiPage } from "@/src/core/db3/db3";
-import { hash256 } from "@blitzjs/auth";
-import { FacetedBreakdownResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
-import { ActivityFeature, Browsers, DeviceClasses, OperatingSystem, PointerTypes } from "../activityTracking";
 import { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
+import { hash256 } from "@blitzjs/auth";
+import { z } from "zod";
+import { FacetedBreakdownResult, ZFeatureReportFilterSpec } from "../activityReportTypes";
+import { DeviceClasses, PointerTypes } from "../activityTracking";
 
 
 export type FeatureReportFilterSpec = z.infer<typeof ZFeatureReportFilterSpec>;
@@ -83,7 +83,7 @@ const featuresFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['f
           `;
     },
     postProcessRow: (row: { feature: string, count: bigint }) => ({
-        feature: row.feature as ActivityFeature,
+        feature: row.feature,// as ActivityFeature | string,
         count: Number(row.count),
     }),
     getFilterSqlConditions: (filterSpec, conditions) => {
@@ -135,7 +135,7 @@ const browsersFacetProcessor: FacetProcessor<FacetedBreakdownResult['facets']['b
     },
     postProcessRow: (row: { browserName: string, count: bigint }) => {
         return ({
-            browserName: row.browserName as Browsers,
+            browserName: row.browserName,// as Browsers,
             count: Number(row.count),
         });
     },
@@ -164,7 +164,7 @@ const operatingSystemsFacetProcessor: FacetProcessor<FacetedBreakdownResult['fac
     },
     postProcessRow: (row: { operatingSystem: string, count: bigint }) => {
         return ({
-            operatingSystem: row.operatingSystem as OperatingSystem,
+            operatingSystem: row.operatingSystem,// as OperatingSystem,
             count: Number(row.count),
         });
     },
