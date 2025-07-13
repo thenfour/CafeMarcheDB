@@ -89,7 +89,7 @@ export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrid
                     feature: ActivityFeature.event_change_relevance_class,
                     context: "MenuItem",
                 });
-                snackbar.invokeAsync(async () => {
+                await snackbar.invokeAsync(async () => {
                     await mut({
                         eventId: props.event.id,
                         relevanceClassOverrideName: relevanceClassName,

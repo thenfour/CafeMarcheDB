@@ -31,7 +31,7 @@ export function SongPlayButton({ rowIndex, track, getPlaylist }: SongPlayButtonP
 
     // Play this file via the global player
     const handlePlay = () => {
-        recordAction({ feature: ActivityFeature.song_play, songId: track.songContext?.id, fileId: track.file?.id });
+        void recordAction({ feature: ActivityFeature.song_play, songId: track.songContext?.id, fileId: track.file?.id });
         if (isCurrent) {
             mediaPlayer.unpause();
         } else {
@@ -44,7 +44,7 @@ export function SongPlayButton({ rowIndex, track, getPlaylist }: SongPlayButtonP
 
     const handlePause = () => {
         if (isCurrent) {
-            recordAction({ feature: ActivityFeature.song_pause });
+            void recordAction({ feature: ActivityFeature.song_pause });
             mediaPlayer.pause();
         }
     };

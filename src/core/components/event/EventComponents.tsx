@@ -3,7 +3,7 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Checklist, EditNote, LibraryMusic, PushPin } from '@mui/icons-material';
+import { Checklist, EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Checkbox, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Select, Switch, Tooltip } from "@mui/material";
@@ -19,8 +19,8 @@ import { Timing } from 'shared/time';
 import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
-import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { getAbsoluteUrl } from '../../db3/clientAPILL';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../../db3/components/IconMap';
@@ -35,28 +35,28 @@ import { CMTextInputBase } from '../CMTextField';
 import { GetStyleVariablesForColor } from '../Color';
 import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from '../DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
+import { EventStatusChip } from '../event/EventChips';
 import { EventAttendanceControl } from '../EventAttendanceComponents';
-import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
-import { EventFrontpageTabContent } from './EventFrontpageComponents';
-import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from '../EventSongListComponents';
+import { ActivityFeature } from '../featureReports/activityTracking';
+import { Markdown } from '../markdown/Markdown';
+import { Markdown3Editor } from '../markdown/MarkdownControl3';
 import { ReactiveInputDialog } from '../ReactiveInputDialog';
 import { SearchItemBigCardLink } from '../SearchItemBigCardLink';
+import { ChoiceEditCell } from '../select/ChooseItemDialog';
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from '../SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
 import { CMTab, CMTabPanel } from '../TabPanel';
+import { UserChip } from '../user/userChip';
 import { AddUserButton } from '../user/UserComponents';
 import { VisibilityValue } from '../VisibilityControl';
 import { WikiStandaloneControl } from '../wiki/WikiStandaloneComponents';
 import { EventWorkflowTabContent } from '../workflow/WorkflowEventComponents';
-import { ActivityFeature } from '../featureReports/activityTracking';
-import { Markdown } from '../markdown/Markdown';
-import { Markdown3Editor } from '../markdown/MarkdownControl3';
-import { UserChip } from '../user/userChip';
-import { EventStatusChip } from '../event/EventChips';
-import { ChoiceEditCell } from '../select/ChooseItemDialog';
 import { EventsFilterSpec } from './EventClientBaseTypes';
+import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
+import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
+import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
