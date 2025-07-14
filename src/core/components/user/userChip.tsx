@@ -3,9 +3,9 @@ import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { useQuery } from "@blitzjs/rpc";
 import getUser from "../../db3/queries/getUser";
 import * as db3 from "src/core/db3/db3";
-import { ColorVariationSpec } from "shared/color";
 import { getHashedColor } from "shared/utils";
 import { getURIForUser } from "../../db3/clientAPILL";
+import { ColorVariationSpec } from "../color/palette";
 
 
 export interface UserChipBaseProps {

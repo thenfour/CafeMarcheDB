@@ -1,7 +1,6 @@
 import { useQuery } from "@blitzjs/rpc";
 import { CompareArrows } from "@mui/icons-material";
 import React from "react";
-import { StandardVariationSpec } from "shared/color";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../../db3/clientAPI';
 import getUserCredits from "../../db3/queries/getUserCredits";
@@ -21,6 +20,7 @@ import { Markdown } from "../markdown/Markdown";
 import { useSongsContext } from "../song/SongsContext";
 import { UserChip } from "./userChip";
 import { AddUserButton } from "./UserComponents";
+import { StandardVariationSpec } from "../color/palette";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {

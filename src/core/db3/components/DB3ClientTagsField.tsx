@@ -16,7 +16,6 @@ import {
     List,
     ListItemButton
 } from "@mui/material";
-import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { SettingKey } from 'shared/settings';
 import { gQueryOptions } from "shared/utils";
@@ -37,6 +36,7 @@ import { TAnyModel } from '../shared/apiTypes';
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { RenderMuiIcon } from './IconMap';
+import { ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
 
 
 const gMaxVisibleTags = 6;

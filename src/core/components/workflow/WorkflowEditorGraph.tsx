@@ -1,15 +1,15 @@
 import { Button, FormControlLabel, Switch, Tooltip } from "@mui/material";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React from "react";
-import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, getUniqueNegativeID } from "shared/utils";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
-import { GetStyleVariablesForColor } from "../Color";
 
 import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
+import { gGeneralPaletteList } from "../color/palette";
+import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 
 
 const makeNormalNodeId = (nodeDefId: number) => {

@@ -4,14 +4,12 @@ import moment from 'moment';
 import "moment/locale/nl-be"; // forces the calendar to use nl-BE locale
 import * as React from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
-import { StandardVariationSpec } from 'shared/color';
 import * as db3 from "src/core/db3/db3";
 import { RenderMuiIcon, gCharMap } from "../db3/components/IconMap";
 import { DiscreteCriterionFilterType, SearchResultsRet } from '../db3/shared/apiTypes';
 import { AppContextMarker } from "./AppContext";
 import { CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { AdminInspectObject, useURLState } from './CMCoreComponents2';
-import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult } from './event/EventComponentsBase';
 import { useSearchableList } from 'src/core/hooks/useSearchableList';
@@ -19,6 +17,8 @@ import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { EventListItem } from "./event/EventComponents";
 import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClientBaseTypes";
 import { DateToYYYYMMDD } from "@/shared/time";
+import { StandardVariationSpec } from "./color/palette";
+import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 
 
 // attach useful data to the event for passing around the calendar.

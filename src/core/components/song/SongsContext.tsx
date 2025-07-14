@@ -22,39 +22,7 @@ interface SongsProviderProps {
 export const useSongsContext = () => React.useContext(SongsContext);
 
 export function SongsProvider({ children }: SongsProviderProps) {
-    //const [songs, setSongs] = React.useState<db3.SongPayload[]>([]);
-    //const [loading, setLoading] = useState<boolean>(true);
-    //const [error, setError] = useState<string | null>(null);
-    //useDashboardContext
-
     const client = DB3Client.useDb3Query({ schema: db3.xSong });
-
-    // React.useEffect(() => {
-    //     // const fetchSongs = async () => {
-    //     //     try {
-    //     //         setLoading(true);
-    //     //         const response = await fetch('/api/songs');
-    //     //         if (!response.ok) {
-    //     //             throw new Error(`Error: ${response.status}`);
-    //     //         }
-    //     //         const data = await response.json();
-    //     //         setSongs(data);
-    //     //     } catch (err: any) {
-    //     //         setError(err.message || 'Unknown error');
-    //     //     } finally {
-    //     //         setLoading(false);
-    //     //     }
-    //     // };
-
-    //     // fetchSongs();
-
-    // }, []);
-
-    // const value: SongsContextValue = {
-    //     songs,
-    //     loading,
-    //     error,
-    // };
 
     return (
         <SongsContext.Provider value={{ songs: client.items as db3.SongPayload[] }}>

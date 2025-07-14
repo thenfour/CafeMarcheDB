@@ -1,5 +1,4 @@
 import { clearArray, isOneOf } from "@/shared/arrayUtils";
-import { gGeneralPaletteList } from "@/shared/color";
 import { getHashedColor } from "@/shared/utils";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SongChip, WikiPageChip } from "../CMCoreComponents";
@@ -12,6 +11,7 @@ import { AnonymizedUserChip, BrowserChip, CMAdhocChip, CMAdhocChipContainer, Con
 import { FeatureReportFilterSpec } from "./server/facetProcessor";
 import { EventChip } from "../event/EventChips";
 import React, { Key } from "react";
+import { gGeneralPaletteList } from "../color/palette";
 
 
 interface ScreenSizeIndicatorProps {

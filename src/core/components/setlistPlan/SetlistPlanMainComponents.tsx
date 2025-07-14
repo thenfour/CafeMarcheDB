@@ -2,7 +2,6 @@ import { useQuery } from "@blitzjs/rpc";
 import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
-import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
 import { QuickSearchItemType, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
@@ -25,7 +24,6 @@ import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
 import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
 import { EventSongListDividerItem } from "../../db3/shared/setlistApi";
-import { ColorPick } from "../ColorPick";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
 import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
@@ -38,6 +36,8 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
+import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "../color/palette";
+import { ColorPick } from "../color/ColorPick";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;

@@ -1,6 +1,5 @@
 import { Tooltip } from "@mui/material";
 import React from "react";
-import { gLightSwatchColors, gSwatchColors } from "shared/color";
 import { Permission } from 'shared/permissions';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -16,6 +15,7 @@ import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { Markdown } from "./markdown/Markdown";
+import { gLightSwatchColors, gSwatchColors } from "./color/palette";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {

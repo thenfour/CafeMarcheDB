@@ -4,7 +4,6 @@ import { useQuery } from "@blitzjs/rpc";
 import { Prisma } from "db";
 import * as React from 'react';
 import { existsInArray, toggleValueInArray } from "shared/arrayUtils";
-import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsNullOrWhitespace, getHashedColor } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
@@ -18,6 +17,7 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
 
 type AdHocUser = Prisma.UserGetPayload<{
     select: {

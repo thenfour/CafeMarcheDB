@@ -4,11 +4,9 @@ import { nanoid } from 'nanoid';
 import React from 'react';
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from "shared/arrayUtils";
-import { gGeneralPaletteList } from 'shared/color';
 import { Permission } from "shared/permissions";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from 'src/core/components/CMCoreComponents';
 import { CMTextInputBase } from 'src/core/components/CMTextField';
-import { ColorPick } from "src/core/components/ColorPick";
 import { useDashboardContext } from 'src/core/components/DashboardContext';
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { useSnackbar } from 'src/core/components/SnackbarContext';
@@ -18,6 +16,8 @@ import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/component
 import { DB3EditObjectDialog } from 'src/core/db3/components/db3NewObjectDialog';
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { ColorPick } from "@/src/core/components/color/ColorPick";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 // export type EventCustomFieldOption = {
 //     label: string,

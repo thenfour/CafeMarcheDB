@@ -1,5 +1,4 @@
 import { FolderZip, OndemandVideo } from "@mui/icons-material";
-import { StandardVariationSpec } from "shared/color";
 import { CMChip } from "src/core/components/CMChip";
 import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
@@ -9,6 +8,7 @@ import { FileClass, GetFileClass } from "../../db3/shared/fileAPI";
 import { Markdown } from "../markdown/Markdown";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { FilesFilterSpec } from "./FileClientBaseTypes";
+import { StandardVariationSpec } from "../color/palette";
 
 
 type FileListItemProps = {

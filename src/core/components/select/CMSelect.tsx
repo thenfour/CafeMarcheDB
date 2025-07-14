@@ -22,11 +22,11 @@
 import React from "react";
 
 import { CircularProgress } from "@mui/material";
-import { StandardVariationSpec } from "shared/color";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { CMMultiSelectDialog, useMultiSelectLogic } from "./CMMultiSelectDialog";
 import { CMSelectNullBehavior, CMSingleSelectDialog, useSingleSelectLogic } from "./CMSingleSelectDialog";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "../CMChip";
+import { StandardVariationSpec } from "../color/palette";
 
 type Tnull = undefined | null;
 

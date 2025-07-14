@@ -1,6 +1,5 @@
 import { Article } from "@mui/icons-material";
 import React from "react";
-import { StandardVariationSpec } from "shared/color";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
@@ -9,6 +8,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { UserChip } from "../user/userChip";
 import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "./WikiClientBaseTypes";
+import { StandardVariationSpec } from "../color/palette";
 
 export interface WikiPageListItemProps {
     index: number;

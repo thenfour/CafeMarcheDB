@@ -2,7 +2,6 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Button, Switch } from "@mui/material";
 import React from "react";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { OpposingSortDirection, SortDirection } from 'shared/rootroot';
 import { SearchInput } from "src/core/components/CMTextField";
 import { gCharMap } from '../../db3/components/IconMap';
@@ -10,6 +9,7 @@ import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOptio
 import { CMChip, CMChipBorderOption, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from '../CMChip';
 import { toggleValueInArray } from 'shared/arrayUtils';
 import { FilterAlt } from '@mui/icons-material';
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from '../color/palette';
 
 type FilterControlsProps = {
     hasExtraFilters?: boolean; // default falsy

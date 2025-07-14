@@ -1,7 +1,6 @@
 
 import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
-import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TableAccessor } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
@@ -10,6 +9,7 @@ import { BoolField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedA
 import * as db3 from "../db3core";
 import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 // for basic user fields.
 // everyone can view

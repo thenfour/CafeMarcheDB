@@ -6,11 +6,11 @@
 
 import { Tooltip } from "@mui/material";
 import React from "react";
-import { StandardVariationSpec } from 'shared/color';
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from './DashboardContext';
+import { StandardVariationSpec } from "./color/palette";
+import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 
 // Aligned version that shows all possible tags with consistent spacing
 // Tags with the same sort order can share the same lane

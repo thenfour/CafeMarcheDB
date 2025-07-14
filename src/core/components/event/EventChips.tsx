@@ -5,17 +5,17 @@
 //import dynamic from 'next/dynamic';
 import { Prisma } from "db";
 import React from "react";
-import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { CoalesceBool, getHashedColor, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions, CMStandardDBChip } from "../CMChip";
 import { useDashboardContext } from "../DashboardContext";
 import { getURIForEvent } from "../../db3/clientAPILL";
 import { CMStatusIndicator } from "../CMCoreComponents";
-import { GetStyleVariablesForColor } from "../Color";
 import { Tooltip } from "@mui/material";
 import { Markdown } from "../markdown/Markdown";
 import { RenderMuiIcon } from "../../db3/components/IconMap";
+import { ColorVariationSpec, StandardVariationSpec } from "../color/palette";
+import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 
 export interface EventStatusChipProps {

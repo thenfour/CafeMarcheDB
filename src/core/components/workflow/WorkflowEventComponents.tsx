@@ -3,7 +3,6 @@
 import { Button, Checkbox, CircularProgress } from "@mui/material";
 import { ReactFlowProvider } from "@xyflow/react";
 import * as React from 'react';
-import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { callAsync, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -20,7 +19,6 @@ import insertOrUpdateEventWorkflowInstance from "../../db3/mutations/insertOrUpd
 import saveEventWorkflowModel from "../../db3/mutations/saveEventWorkflowModel";
 import getWorkflowDefAndInstanceForEvent from "../../db3/queries/getWorkflowDefAndInstanceForEvent";
 import { MockEvent, MockEventModel } from "../../db3/server/eventWorkflow";
-import { ColorPick } from "../ColorPick";
 import { useSnackbar } from "../SnackbarContext";
 import UnsavedChangesHandler from "../UnsavedChangesHandler";
 import { EventCustomFieldOptionsBindingOperand2Component, EventCustomFieldOptionsBindingValueComponent, MakeCustomFieldOptionsBinding } from "./WorkflowCustomFieldOptionsBinding";
@@ -29,6 +27,8 @@ import { EventTagsBindingOperand2Component, EventTagsBindingValueComponent, Make
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowRenderer } from "./WorkflowUserComponents";
 import { arraysContainSameValues } from "shared/arrayUtils";
+import { ColorPick } from "../color/ColorPick";
+import { gGeneralPaletteList } from "../color/palette";
 
 const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
     const ret: MockEventModel = {

@@ -6,7 +6,6 @@
 import { Prisma } from "db";
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { ColorVariationSpec } from 'shared/color';
 import { Coalesce, getHashedColor } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
@@ -24,6 +23,7 @@ import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { DateValue } from "./DateTime/DateTimeComponents";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { Markdown } from "./markdown/Markdown";
+import { ColorVariationSpec } from "./color/palette";
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
 export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {

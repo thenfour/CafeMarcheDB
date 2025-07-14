@@ -3,7 +3,6 @@ import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
 import { CalculateChanges, CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
-import { ColorPaletteEntry } from "shared/color";
 import { SqlCombineAndExpression } from "shared/mysqlUtils";
 import { Permission, gPublicPermissions } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
@@ -11,6 +10,7 @@ import { PublicDataType } from "types";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
 import { UserWithRolesPayload } from "./schema/userPayloads";
+import { ColorPaletteEntry } from "../../components/color/palette";
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 

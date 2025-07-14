@@ -20,12 +20,12 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
 import { Notes } from "@mui/icons-material";
-import { gGeneralPaletteList, gStrong } from "shared/color";
 import { MutationArgsToWorkflowDef, TWorkflowMutationResult, WorkflowDef } from "shared/workflowEngine";
-import { ColorSwatch } from "src/core/components/Color";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { GenericStringField } from "../shared/genericStringField";
 import { CMTable } from "../../components/CMTable";
+import { gGeneralPaletteList, gStrong } from "../../components/color/palette";
+import { ColorSwatch } from "../../components/color/ColorSwatch";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;

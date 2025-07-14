@@ -14,7 +14,6 @@ import * as db3 from "../../db3/db3";
 import { AdminInspectObject, AnimatedCircularProgress, CMSmallButton, DialogActionsCM, EventDateField, Pre } from "../CMCoreComponents2";
 import { CMSelectDisplayStyle } from "../select/CMSelect";
 import { CMTextField } from "../CMTextField";
-import { GetStyleVariablesForColor } from "../Color";
 import { SettingMarkdown } from "../SettingMarkdown";
 
 import { MoreHoriz } from '@mui/icons-material';
@@ -25,6 +24,7 @@ import { WorkflowNodeProgressState } from '../../db3/shared/apiTypes';
 import { ReactiveInputDialog } from '../ReactiveInputDialog';
 import { Markdown3Editor } from '../markdown/MarkdownControl3';
 import { Markdown } from '../markdown/Markdown';
+import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 
 type CMXYPosition = {
     x: number;

@@ -8,11 +8,11 @@
 
 import { Tooltip } from "@mui/material";
 import React from "react";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { IsNullOrWhitespace } from "shared/utils";
 import { gIconMap, RenderMuiIcon } from "../db3/components/IconMap";
-import { GetStyleVariablesForColor } from "./Color";
 import { CMLink } from "./CMLink";
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "./color/palette";
+import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 
 // but it means having a lot of color variations:
 // - main / contrast

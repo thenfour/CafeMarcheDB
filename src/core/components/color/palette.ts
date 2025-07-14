@@ -1,8 +1,10 @@
-import { getNextSequenceId } from "./utils";
+// 
 
 // something to consider:
 // https://ageofempires.fandom.com/wiki/Player#Age_of_Empires_II
 // https://starcraft.fandom.com/wiki/Colors
+
+import { getNextSequenceId } from "@/shared/utils";
 
 export interface ColorPaletteEntryVariation {
     backgroundColor: string;

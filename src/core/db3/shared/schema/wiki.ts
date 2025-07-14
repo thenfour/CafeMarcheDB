@@ -1,5 +1,4 @@
 import { Prisma } from "db";
-import { gGeneralPaletteList } from "shared/color";
 import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { AuxUserArgs } from "types";
@@ -9,6 +8,7 @@ import * as db3 from "../db3core";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
 import { GenericStringField, MakeTitleField } from "../genericStringField";
 import { WikiPageTagAssignmentPayload } from "./prismArgs";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.visibility_logged_in_users,

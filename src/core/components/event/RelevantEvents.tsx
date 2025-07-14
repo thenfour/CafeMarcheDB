@@ -3,7 +3,6 @@ import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
 import { Prisma } from "db";
 import React from "react";
 import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
-import { StandardVariationSpec } from 'shared/color';
 import { CalcRelativeTiming, CalcRelativeTimingFromNow, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, Timing } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { API } from "src/core/db3/clientAPI";
@@ -13,13 +12,14 @@ import getUserTagWithAssignments from "../../db3/queries/getUserTagWithAssignmen
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../../db3/shared/apiTypes";
 import { AppContextMarker } from "../AppContext";
 import { CMLink } from "../CMLink";
-import { GetStyleVariablesForColor } from "../Color";
 import { useDashboardContext } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { SearchItemBigCardLink } from "../SearchItemBigCardLink";
 import { EventStatusMinimal } from "./EventChips";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { RelevanceClassOverrideIndicator } from "./EventRelevanceOverrideComponents";
+import { StandardVariationSpec } from "../color/palette";
+import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 
 function formatShortDate(date: Date, locale: string = navigator.language): string {
     const now = new Date();

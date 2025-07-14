@@ -1,6 +1,6 @@
-import { gSwatchColors, StandardVariationSpec } from "@/shared/color";
 import { Timing } from "@/shared/time";
 import { CMChip, CMChipProps } from "../CMChip";
+import { gSwatchColors, StandardVariationSpec } from "../color/palette";
 
 
 export const TimingChip = ({ value, tooltip, children }: React.PropsWithChildren<{ value: Timing, tooltip: string }>) => {

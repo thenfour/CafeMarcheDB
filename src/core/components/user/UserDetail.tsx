@@ -1,6 +1,5 @@
 import { Permission } from "@/shared/permissions";
 import React, { Suspense } from "react";
-import { StandardVariationSpec } from "shared/color";
 import { StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
@@ -13,6 +12,7 @@ import { SongsProvider } from "../song/SongsContext";
 import { UserAdminPanel } from "./UserAdminPanel";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
+import { StandardVariationSpec } from "../color/palette";
 
 export enum UserDetailTabSlug {
     credits = "credits",

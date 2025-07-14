@@ -1,7 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Typography } from "@mui/material";
 import React, { Suspense } from "react";
-import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -18,24 +17,8 @@ import { ActivityFeature } from "@/src/core/components/featureReports/activityTr
 import { TAnyModel } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { ProfilePageIdentityControl } from "@/src/core/components/user/UserIdentityIndicator";
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
 
-// const OwnIdentityControl = () => {
-//     const dashboardContext = useDashboardContext();
-//     const currentUser = dashboardContext.currentUser;
-//     //const haveGoogleIdentity = !!currentUser?.googleId;
-
-//     // if you don't have a google identity there's just not much to show here; don't show anything.
-//     if (!haveGoogleIdentity) return null;
-
-//     return <NameValuePair
-//         isReadOnly={false}
-//         name={"Identity and login"}
-//         value={<div className="googleIdentityControl">
-//             <img src="/web_light_rd_na.svg" />
-//             <div>You have a Google identity and can sign in with your Google account. You still have the option of signing in with an email & password.</div>
-//         </div>}
-//     />;
-// }
 
 type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
     refetch: () => void;

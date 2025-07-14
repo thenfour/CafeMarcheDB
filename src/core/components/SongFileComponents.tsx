@@ -5,7 +5,6 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Button, Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
-import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { SortDirection, formatFileSize } from 'shared/rootroot';
@@ -36,6 +35,7 @@ import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from './mediaPlayer/MediaPlayerTypes';
 import { UserChip } from './user/userChip';
+import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
@@ -135,7 +135,7 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
 
 export const FileExternalLink = ({ file, highlight }: { file: EnrichedFile, highlight?: boolean }) => {
     const filenameClass = highlight ? "filename highlight" : "filename";
-    
+
     return file.externalURI ? (
         <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={file.externalURI}>
             {gIconMap.Link()}

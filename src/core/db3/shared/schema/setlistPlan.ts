@@ -1,11 +1,11 @@
 
-import { gGeneralPaletteList } from "@/shared/color";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSortOrderField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.setlist_planner_access,

@@ -4,9 +4,7 @@
 // - break out all util components
 // - break out setlist planner client utils into a lib
 
-import { StandardVariationSpec } from "@/shared/color";
 import { CMSmallButton } from "@/src/core/components/CMCoreComponents2";
-import { GetStyleVariablesForColor } from "@/src/core/components/Color";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { CMSelectNullBehavior, CMSingleSelectDialog } from "@/src/core/components/select/CMSingleSelectDialog";
@@ -46,6 +44,8 @@ import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useLocalStorageState } from "src/core/components/useLocalStorageState";
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
+import { GetStyleVariablesForColor } from "@/src/core/components/color/ColorClientUtils";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;

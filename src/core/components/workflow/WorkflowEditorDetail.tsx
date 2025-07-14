@@ -2,7 +2,6 @@
 
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { useContext } from "react";
-import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor } from "shared/utils";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { CMSmallButton, NameValuePair } from "../CMCoreComponents2";
@@ -11,11 +10,12 @@ import { ChipSelector, EnumChipSelector } from "../ChipSelector";
 
 import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { gIconMap } from "../../db3/components/IconMap";
-import { ColorPick } from "../ColorPick";
 import { useConfirm } from "../ConfirmationDialog";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
 import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 import { sortBy } from "shared/arrayUtils";
+import { ColorPick } from "../color/ColorPick";
+import { gGeneralPaletteList } from "../color/palette";
 
 
 interface DueDateDefControlProps {

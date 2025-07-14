@@ -1,4 +1,3 @@
-import { StandardVariationSpec } from "@/shared/color";
 import { Suspense } from "react";
 import * as db3 from "src/core/db3/db3";
 import { getURIForUser } from "../../db3/clientAPILL";
@@ -9,6 +8,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { UsersFilterSpec } from "./UserClientBaseTypes";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
+import { StandardVariationSpec } from "../color/palette";
 
 export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
 

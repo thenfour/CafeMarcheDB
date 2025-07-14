@@ -4,7 +4,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Button, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
-import { StandardVariationSpec } from 'shared/color';
 import { IsNullOrWhitespace, StringToEnumValue } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -33,6 +32,7 @@ import { AppContextMarker } from '../AppContext';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { CMLink } from '../CMLink';
 import { UserChip } from '../user/userChip';
+import { StandardVariationSpec } from '../color/palette';
 
 
 export const SongClientColumns = {

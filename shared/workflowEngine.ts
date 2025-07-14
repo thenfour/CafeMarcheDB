@@ -24,10 +24,10 @@ import { Prisma } from "db";
 import '@xyflow/react/dist/style.css';
 import { getNextSequenceId, getUniqueNegativeID } from "shared/utils";
 import { TinsertOrUpdateWorkflowDefArgs, TUpdateEventWorkflowInstanceArgs, WorkflowLogItemType, WorkflowNodeProgressState, WorkflowObjectType } from "src/core/db3/shared/apiTypes";
-import { gSwatchColors } from "./color";
 import { gMillisecondsPerDay } from "./time";
 import { ChangeAction } from "./activityLog";
 import { toSorted } from "./arrayUtils";
+import { gSwatchColors } from "@/src/core/components/color/palette";
 
 
 

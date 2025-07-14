@@ -1,5 +1,4 @@
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { StandardVariationSpec } from "shared/color";
 import { SelectEnglishNoun } from "shared/lang";
 import { IsNullOrWhitespace } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
@@ -11,6 +10,7 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { EnrichedVerboseSong } from "../../db3/db3";
 import { SongsFilterSpec } from "./SongClientBaseTypes";
+import { StandardVariationSpec } from "../color/palette";
 
 type SongListItemProps = {
     index: number;

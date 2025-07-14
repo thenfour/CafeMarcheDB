@@ -5,7 +5,6 @@
 import { assert } from "blitz";
 import { Prisma } from "db";
 import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
-import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
@@ -37,6 +36,7 @@ import {
 import { EventResponses_ExpectedUserTag, MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
 import { WorkflowDef_Minimum } from "./workflow";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../genericStringField";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {

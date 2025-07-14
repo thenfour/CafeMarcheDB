@@ -10,7 +10,6 @@
 import React from "react";
 
 import { CircularProgress } from "@mui/material";
-import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMSmallButton } from "src/core/components/CMCoreComponents2";
@@ -19,6 +18,7 @@ import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectD
 import * as db3 from "src/core/db3/db3";
 import { TAnyModel } from "../shared/apiTypes";
 import { DB3MultiSelectDialog, DB3SingleSelectDialog, useDB3MultiSelectLogic, useDB3SingleSelectLogic } from "./db3SelectDialog";
+import { StandardVariationSpec } from "../../components/color/palette";
 
 type Tnull = undefined | null;
 

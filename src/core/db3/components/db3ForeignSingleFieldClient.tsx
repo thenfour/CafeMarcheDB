@@ -16,7 +16,6 @@ import {
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import React, { Suspense } from "react";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { SettingKey } from "shared/settings";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
@@ -34,6 +33,7 @@ import db3queries from "../queries/db3queries";
 import { TAnyModel } from "../shared/apiTypes";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconMap";
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "../../components/color/palette";
 
 
 

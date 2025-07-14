@@ -12,7 +12,6 @@ import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
-import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { slugify } from 'shared/rootroot';
 import { Timing } from 'shared/time';
@@ -32,7 +31,6 @@ import { AttendanceChip, InstrumentChip, InstrumentFunctionalGroupChip } from '.
 import { AdminInspectObject, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
 import { CMTextInputBase } from '../CMTextField';
-import { GetStyleVariablesForColor } from '../Color';
 import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from '../DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { EventStatusChip } from '../event/EventChips';
@@ -57,17 +55,19 @@ import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, Ev
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
+import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
+import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 
-type EventWithTypePayload = Prisma.EventGetPayload<{
-    include: {
-        type: true,
-        visiblePermission: {
-            include: {
-                roles: true,
-            }
-        },
-    }
-}>;
+// type EventWithTypePayload = Prisma.EventGetPayload<{
+//     include: {
+//         type: true,
+//         visiblePermission: {
+//             include: {
+//                 roles: true,
+//             }
+//         },
+//     }
+// }>;
 
 
 

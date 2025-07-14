@@ -18,58 +18,6 @@ import deleteWorkflowDefMutation from "src/core/db3/mutations/deleteWorkflowDefM
 import insertOrUpdateWorkflowDefMutation from "src/core/db3/mutations/insertOrUpdateWorkflowDefMutation";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
-
-// interface WorkflowDefEditorProps {
-//     value: WorkflowDef;
-// };
-// const WorkflowDefEditor = (props: WorkflowDefEditorProps) => {
-//     return <div>workflow def deitor dhere</div>;
-// };
-
-// interface ManageWorkflowDefItemProps {
-//     item: db3.WorkflowDef_SearchPayload;
-//     onClick: () => void;
-// };
-
-// const ManageWorkflowDefItem = (props: ManageWorkflowDefItemProps) => {
-//     return <div className="interactable" onClick={props.onClick}>{props.item.name}</div>
-// };
-
-// interface WorkflowDefListProps {
-//     selectedValue: 
-// };
-
-// const WorkflowDefList = (props: WorkflowDefListProps) => {
-//     const dashboardContext = useDashboardContext();
-
-//     const client = DB3Client.useTableRenderContext({
-//         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-//         clientIntention: dashboardContext.userClientIntention,
-//         tableSpec: new DB3Client.xTableClientSpec({
-//             table: db3.xWorkflowDef_Search,
-//             columns: [
-//                 new DB3Client.PKColumnClient({ columnName: "id" }),
-//                 new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 250, fieldCaption: "Name" }),
-//                 new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 250 }),
-//                 new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 120 }),
-//                 new DB3Client.BoolColumnClient({ columnName: "isDefaultForEvents", fieldCaption: "Is default workflow for events?" }),
-//             ],
-//         }),
-//     });
-//     const items = client.items as db3.WorkflowDef_SearchPayload[];
-
-//     const canEdit = dashboardContext.isAuthorized(Permission.edit_workflow_defs);
-
-//     return <div>
-//         <div className='EventDashboard'>
-//             {items.map(i => <ManageWorkflowDefItem key={i.id} item={i} onClick={() => {
-//                 //
-//             }} />)}
-//         </div>
-//     </div>;
-// };
-
-
 type ModeOption = "empty" | "new" | "edit";
 
 const WorkflowDefEditorMain = () => {

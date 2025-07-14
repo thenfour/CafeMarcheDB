@@ -6,13 +6,13 @@
 // the "name" of an association model will be the tag. not the local object.
 
 import { Prisma } from "db";
-import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakePKfield, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 import { GenericStringField, MakeTitleField } from "../genericStringField";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 // editable by anyone
 export const xInstrumentAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {

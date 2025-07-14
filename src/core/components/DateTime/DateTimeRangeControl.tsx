@@ -1,6 +1,5 @@
 import * as React from 'react';
 //import * as DB3Client from "src/core/db3/DB3Client"; <-- dependency cycle.
-import { StandardVariationSpec, gGeneralPaletteList } from '@/shared/color';
 import { FormControlLabel, LinearProgress, NoSsr, Popover, Switch, Tooltip } from "@mui/material";
 import { DateCalendar, DateView, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import { assert } from 'blitz';
@@ -8,9 +7,10 @@ import dayjs, { Dayjs } from "dayjs";
 import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, getTimeOfDayInMinutes } from "shared/time";
 import { gIconMap } from '../../db3/components/IconMap';
 import { KeyValueTable } from '../CMCoreComponents2';
-import { GetStyleVariablesForColor } from '../Color';
 import { CalendarEventSpec } from './DateTimeTypes';
 import { useEventsForDateRange } from './useEventsForDateRange';
+import { gGeneralPaletteList, StandardVariationSpec } from '../color/palette';
+import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 
 interface CustomDayProps {
     otherDay: Dayjs | null;

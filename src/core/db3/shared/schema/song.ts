@@ -3,7 +3,6 @@
 // - song credits
 
 import { Prisma } from "db";
-import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
@@ -11,6 +10,7 @@ import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
 import { MakeCreatedByField, MakeVisiblePermissionField } from "./user";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 
 export const xSongAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {

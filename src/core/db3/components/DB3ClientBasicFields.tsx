@@ -13,11 +13,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { assert } from "blitz";
 import dayjs, { Dayjs } from "dayjs";
 import React, { Suspense } from "react";
-import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace } from "shared/utils";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
-import { ColorSwatch } from "src/core/components/Color";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import * as db3 from "../db3";
 import * as db3fields from "../shared/db3basicFields";
@@ -31,9 +29,11 @@ import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { ColorPick } from "src/core/components/ColorPick";
 import { SettingKey } from "shared/settings";
 import { GenericStringField } from "../shared/genericStringField";
+import { ColorSwatch } from "../../components/color/ColorSwatch";
+import { ColorPaletteEntry } from "../../components/color/palette";
+import { ColorPick } from "../../components/color/ColorPick";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {

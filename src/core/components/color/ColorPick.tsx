@@ -1,8 +1,9 @@
 import { DialogContent } from "@mui/material";
 import React from "react";
-import { ColorPaletteEntry, ColorPaletteList, StandardVariationSpec, gGeneralPaletteList } from "shared/color";
-import { ColorPaletteListComponent, ColorSwatch } from "./Color";
-import { ReactiveInputDialog } from "./ReactiveInputDialog";
+import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, StandardVariationSpec } from "./palette";
+import { ColorSwatch } from "./ColorSwatch";
+import { ReactiveInputDialog } from "../ReactiveInputDialog";
+import { ColorPaletteListComponent } from "./ColorPaletteListComponent";
 
 export interface ColorPickProps {
     value: ColorPaletteEntry | null | string;

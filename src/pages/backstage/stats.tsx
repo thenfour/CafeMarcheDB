@@ -3,7 +3,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import React, { Suspense } from 'react';
 import { arraysContainSameValues } from "shared/arrayUtils";
-import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { getEnumValues } from "shared/utils";
 import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
@@ -17,6 +16,7 @@ import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/co
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
 
 
 

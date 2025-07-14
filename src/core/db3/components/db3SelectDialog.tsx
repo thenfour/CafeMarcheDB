@@ -1,7 +1,6 @@
 import React from "react";
 
 import { Box, Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
-import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMDialogContentText, DialogActionsCM } from "src/core/components/CMCoreComponents2";
@@ -16,6 +15,7 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SplitQuickFilter } from "shared/quickFilter";
+import { StandardVariationSpec } from "../../components/color/palette";
 
 type Tnull = undefined | null;
 

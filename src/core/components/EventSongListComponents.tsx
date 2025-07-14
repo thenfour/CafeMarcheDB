@@ -12,7 +12,6 @@ import { assert } from 'blitz';
 import React, { useCallback, useRef } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from 'shared/arrayUtils';
-import { gSwatchColors } from 'shared/color';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -29,8 +28,6 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreCompon
 import { AdminInspectObject, CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
-import { GetStyleVariablesForColor } from './Color';
-import { ColorPick } from './ColorPick';
 import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
@@ -43,6 +40,9 @@ import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
+import { ColorPick } from './color/ColorPick';
+import { gSwatchColors } from './color/palette';
+import { GetStyleVariablesForColor } from './color/ColorClientUtils';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {

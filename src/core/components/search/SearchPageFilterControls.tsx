@@ -1,5 +1,4 @@
 import React from "react";
-import { StandardVariationSpec } from "shared/color";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
@@ -7,6 +6,7 @@ import { DashboardContext } from "../DashboardContext";
 import { FilterControls, SortByGroup, TagsFilterGroup } from "./FilterControl";
 import { CMSinglePageSurfaceCard } from "../CMCoreComponents";
 import { DiscreteFilterState, SearchPageState } from "../../hooks/useSearchFilters";
+import { StandardVariationSpec } from "../color/palette";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Filter Group Configuration Types
