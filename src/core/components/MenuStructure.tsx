@@ -204,7 +204,7 @@ export const gMenuSections: MenuSection[] = [
         ]
     },
     {
-        name: "Admin Special",
+        name: "Admin Tools",
         className: "admin general",
         groups: [
             {

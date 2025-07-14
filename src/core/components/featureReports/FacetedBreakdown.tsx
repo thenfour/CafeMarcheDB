@@ -1,7 +1,7 @@
 import { parseBucketToDateRange } from '@/shared/mysqlUtils';
 import { formatMillisecondsToDHMS } from '@/shared/time';
-import { invoke, useQuery } from "@blitzjs/rpc";
-import { Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { useQuery } from "@blitzjs/rpc";
+import { Collapse } from '@mui/material';
 import * as React from 'react';
 import { Pie, PieChart, Tooltip } from 'recharts';
 import { CMSmallButton } from '../CMCoreComponents2';
@@ -9,10 +9,10 @@ import { CMTab, CMTabPanel, CMTabPanelChild } from "../TabPanel";
 //
 import { ActivityDetailTabId, FacetResultBase } from "./activityReportTypes";
 import { FacetHandler, FacetItemActions, gClientFacetHandlers } from './ClientFacetHandlers';
+import { ExportButton } from './ExportButton';
 import { FacetItemDetailTable, FacetItemDetailTableRow } from './FacetItemDetailTable';
 import { CMBar } from './FeatureReportBasics';
 import getDetail from "./queries/getDetail";
-import getDetailCsv from "./queries/getDetailCsv";
 import getFacetedBreakdown from "./queries/getFacetedBreakdown";
 import { FeatureReportFilterSpec } from './server/facetProcessor';
 
@@ -62,19 +62,6 @@ const renderCustomTooltip = ({ active, label, payload, ...e }: any) => {
         );
     }
     return null;
-};
-
-const downloadFile = (content: string, filename: string, mimeType: string = 'text/csv;charset=utf-8;') => {
-    const blob = new Blob([content], { type: mimeType });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 };
 
 const DistinctContextObjectPieChart = <Tpayload extends FacetResultBase, TKey>({ item, items, innerRadius = 7, outerRadius = 25, handler }: { item: Tpayload, items: Tpayload[], innerRadius?: number, outerRadius?: number, handler: FacetHandler<Tpayload, TKey> }) => {
@@ -291,127 +278,6 @@ const FacetedTabContent = <Tpayload extends FacetResultBase, TKey>({ handler, it
 };
 
 
-interface ExportDialogProps {
-    open: boolean;
-    onClose: () => void;
-    filterSpec: FeatureReportFilterSpec;
-    totalRows: number;
-}
-
-const ExportDialog = ({ open, onClose, filterSpec, totalRows }: ExportDialogProps) => {
-    const [status, setStatus] = React.useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
-    const [errorMessage, setErrorMessage] = React.useState<string>('');
-
-    const handleExport = async () => {
-        setStatus('exporting');
-        setErrorMessage('');
-
-        try {
-            // Call the CSV export query
-            const result = await invoke(getDetailCsv, {
-                refreshTrigger: Date.now(),
-                filterSpec,
-            });
-
-            if (result) {
-                // Create and download the file
-                downloadFile(result.csvContent, result.filename);
-
-                setStatus('success');
-            } else {
-                setStatus('error');
-                setErrorMessage('Export failed: No data returned');
-            }
-        } catch (error) {
-            setStatus('error');
-            setErrorMessage(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    };
-
-    const handleClose = () => {
-        if (status !== 'exporting') {
-            onClose();
-            setStatus('idle');
-            setErrorMessage('');
-        }
-    };
-
-    return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Export Activity Data</DialogTitle>
-            <DialogContent>
-                {status === 'idle' && (
-                    <div>
-                        <p>This will export activity records to a file.</p>
-                        <p>Total rows: <strong>{totalRows.toLocaleString()}</strong></p>
-                        <p>The file will include all activity details with related entities (events, songs, files, etc.) in a format suitable for analysis in Excel or other tools.</p>
-                    </div>
-                )}
-                {status === 'exporting' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <CircularProgress size={24} />
-                        <span>Preparing export...</span>
-                    </div>
-                )}
-                {status === 'success' && (
-                    <div style={{ color: 'green' }}>
-                        ✅ Export completed! The file should start downloading automatically.
-                    </div>
-                )}
-                {status === 'error' && (
-                    <div style={{ color: 'red' }}>
-                        ❌ {errorMessage}
-                    </div>
-                )}
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={handleClose} disabled={status === 'exporting'}>
-                    {status === 'success' ? 'Close' : 'Cancel'}
-                </Button>
-                {status === 'idle' && (
-                    <Button onClick={handleExport} variant="contained" color="primary">
-                        Export CSV
-                    </Button>
-                )}
-                {status === 'error' && (
-                    <Button onClick={handleExport} variant="contained" color="primary">
-                        Retry
-                    </Button>
-                )}
-            </DialogActions>
-        </Dialog>
-    );
-};
-
-interface ExportButtonProps {
-    filterSpec: FeatureReportFilterSpec;
-    totalRows: number;
-}
-
-const ExportButton = ({ filterSpec, totalRows }: ExportButtonProps) => {
-    const [showDialog, setShowDialog] = React.useState(false);
-
-    return (
-        <>
-            <Button
-                // variant="outlined"
-                // size="small"
-                onClick={() => setShowDialog(true)}
-                style={{ margin: '8px' }}
-            >
-                📊 Export Data...
-            </Button>
-            <ExportDialog
-                open={showDialog}
-                onClose={() => setShowDialog(false)}
-                filterSpec={filterSpec}
-                totalRows={totalRows}
-            />
-        </>
-    );
-};
-
-
 interface ActivityLedgerProps {
     filterSpec: FeatureReportFilterSpec;
     setFilterSpec: (spec: FeatureReportFilterSpec) => void;
@@ -445,10 +311,9 @@ const ActivityLedger = ({ filterSpec, setFilterSpec, refreshTrigger }: ActivityL
     return (
         <div className="ActivityLedger">
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-                <ExportButton
+                {/* <ExportButton
                     filterSpec={filterSpec}
-                    totalRows={result.metrics.totalRowCount}
-                />
+                /> */}
                 <div style={{ fontFamily: 'var(--ff-mono)', fontSize: '14px', color: '#555' }}>
                     📋 Showing {sortedItems.length} of {result.metrics.totalRowCount.toLocaleString()} activities (Query: {result.metrics.queryTimeMs}ms) - Chronological Order (Newest First)
                 </div>
@@ -564,6 +429,10 @@ export const FacetedBreakdown = (props: FeatureReportTopLevelDateSelectorProps) 
     return <div>
         <CMSmallButton>{result.metrics.queryTimeMs}ms</CMSmallButton>
         <div className="bucketLabel">
+            <ExportButton
+                filterSpec={props.filterSpec}
+            />
+
             {props.filterSpec.selectedBucket && <>
                 {props.filterSpec.selectedBucket} [{bucketDateRange?.start.toLocaleString()} - {bucketDateRange?.end.toLocaleString()}] (range: {formatMillisecondsToDHMS(bucketDateRange!.end.getTime() - bucketDateRange!.start.getTime())})
             </>
