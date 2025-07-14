@@ -118,6 +118,7 @@ there are 3 things to think about:
   * `blitz prisma migrate deploy` makes sure the db is in sync with latest migrations (apply migrations from git to a database), never clobbers data.
     * also for applying new migrations to prod db
   * `blitz prisma migrate reset` forcibly/destructively resets your db from 0
+  * `blitz prisma db seed` if for some reason your db is empty (after some migrate ops) this performs seeding.
 
 So, `db push` will apply schema changes without creating migration files,which is convenient for dev process and prototyping. But the downside is that it guarantees that `migrate` will want to clobber the database as it's "drifted". Absolutely positively never do this in production.
 

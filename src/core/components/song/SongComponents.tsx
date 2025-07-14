@@ -32,6 +32,7 @@ import { CMTab, CMTabPanel } from '../TabPanel';
 import { AppContextMarker } from '../AppContext';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { CMLink } from '../CMLink';
+import { UserChip } from '../user/userChip';
 
 
 export const SongClientColumns = {
@@ -348,7 +349,9 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
                 cells: [
                     <th key={0} className={`creditType ${type.text}`}>{type.text}</th>,
                     <td key={1} className={`user`}><div className='flexRow'>
-                        <SongCreditEditButton readonly={props.readonly} refetch={refetch} creditsTableClient={creditsTableClient} value={credit} />{credit.user && credit.user.name}
+                        <SongCreditEditButton readonly={props.readonly} refetch={refetch} creditsTableClient={creditsTableClient} value={credit} />
+                        {/* {credit.user && credit.user.name} */}
+                        <UserChip value={credit.user} />
                     </div>
                     </td>,
                     <td key={2} className={`year`}>{credit.year}</td>,
