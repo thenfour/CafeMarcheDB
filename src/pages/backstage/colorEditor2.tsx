@@ -1,7 +1,9 @@
 
-import { ColorBlender, ColorBlenderParamsBundle, FindClosestColorMatch, PaletteEntryEditor, ParseColor, ParseTextPalette, SwatchTempPalette, UserPaletteGrid } from "@/src/core/components/color/ColorPageUtils";
+import { ColorBlenderParamsBundle } from "@/src/core/components/color/ColorBlender";
+import { ColorBlender, FindClosestColorMatch, PaletteEntryEditor, SwatchTempPalette, UserPaletteGrid } from "@/src/core/components/color/ColorPageUtils";
 import { ColorPaletteListComponent } from "@/src/core/components/color/ColorPaletteListComponent";
 import { ColorPaletteEntry, ColorPaletteEntryVariation, gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { ParseColor, ParseTextPalette } from "@/src/core/components/color/TextPalette";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { Button } from "@mui/material";

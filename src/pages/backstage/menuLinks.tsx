@@ -1,7 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
-import { MenuLinkList } from "src/core/components/MenuLinkComponents";
+import { MenuLinkList } from "@/src/core/components/dashboard/MenuLinkComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 

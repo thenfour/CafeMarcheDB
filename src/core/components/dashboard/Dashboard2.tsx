@@ -31,7 +31,7 @@ import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerC
 import {
     NavRealm,
     SideMenu
-} from "../MenuStructure";
+} from "./MenuStructure";
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { MetronomeDialogButton } from "../Metronome";
 import { QrCodeButton } from "../QrCode";

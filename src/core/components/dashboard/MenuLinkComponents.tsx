@@ -9,17 +9,17 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/compo
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { API } from "../db3/clientAPI";
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
-import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
-import { ActivityFeature } from "./featureReports/activityTracking";
-import { TAnyModel } from "../db3/shared/apiTypes";
-import { KeyValueDisplay } from './CMCoreComponents2';
-import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
-import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
-import { VisibilityValue } from "./VisibilityControl";
-import { AppContextMarker } from "./AppContext";
-import { CMLink } from "./CMLink";
+import { API } from "../../db3/clientAPI";
+import { RenderMuiIcon, gIconMap } from "../../db3/components/IconMap";
+import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
+import { ActivityFeature } from "../featureReports/activityTracking";
+import { TAnyModel } from "../../db3/shared/apiTypes";
+import { KeyValueDisplay } from '../CMCoreComponents2';
+import { CMTextInputBase, CMTextInputBaseProps } from "../CMTextField";
+import { DashboardContext, useDashboardContext, useFeatureRecorder } from "../DashboardContext";
+import { VisibilityValue } from "../VisibilityControl";
+import { AppContextMarker } from "../AppContext";
+import { CMLink } from "../CMLink";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

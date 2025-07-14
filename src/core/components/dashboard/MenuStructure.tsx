@@ -4,6 +4,7 @@ import {
     FeaturedPlayList,
     MusicNote as MusicNoteIcon,
     MusicNoteOutlined as MusicNoteOutlinedIcon,
+    Palette,
     PieChart,
     Settings as SettingsIcon
 } from '@mui/icons-material';
@@ -20,11 +21,11 @@ import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { useLocalStorageSet } from "./useLocalStorageState";
-import { gCharMap, gIconMap } from "../db3/components/IconMap";
-import { AppContextMarker } from "./AppContext";
-import { DashboardContext, DashboardContextData, useClientTelemetryEvent } from "./DashboardContext";
-import { ActivityFeature } from "./featureReports/activityTracking";
+import { useLocalStorageSet } from "../useLocalStorageState";
+import { gCharMap, gIconMap } from "../../db3/components/IconMap";
+import { AppContextMarker } from "../AppContext";
+import { DashboardContext, DashboardContextData, useClientTelemetryEvent } from "../DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
 
 // NavRealm enum - used for navigation context
 export enum NavRealm {
@@ -214,7 +215,7 @@ export const gMenuSections: MenuSection[] = [
                     { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
                     { type: "link", path: "/backstage/calendarPreview", linkCaption: "iCal Preview", renderIcon: () => gIconMap.CalendarMonth(), permission: Permission.sysadmin },
                     { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <Palette />, permission: Permission.sysadmin },
                 ]
             },
         ]

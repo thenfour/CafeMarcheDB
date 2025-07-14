@@ -6,7 +6,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToBoolean } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { LoginSignup } from "../LoginSignupForm";
-import { NavRealm } from "../MenuStructure";
+import { NavRealm } from "./MenuStructure";
 import Dashboard2 from "./Dashboard2";
 
 interface DashboaldLayout2Props {

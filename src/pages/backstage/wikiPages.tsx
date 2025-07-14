@@ -1,4 +1,4 @@
-import { NavRealm } from "@/src/core/components/MenuStructure";
+import { NavRealm } from "@/src/core/components/dashboard/MenuStructure";
 import { EnrichedVerboseWikiPage, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "@/src/core/components/wiki/WikiClientBaseTypes";
 import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
 import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";

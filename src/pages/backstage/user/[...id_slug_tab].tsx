@@ -1,4 +1,4 @@
-import { NavRealm } from "@/src/core/components/MenuStructure";
+import { NavRealm } from "@/src/core/components/dashboard/MenuStructure";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { UserBreadcrumbs } from "@/src/core/components/user/UserComponents";
 import { UserDetail } from "@/src/core/components/user/UserDetail";

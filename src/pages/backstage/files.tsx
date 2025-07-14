@@ -1,6 +1,6 @@
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
 import { FileListItem } from "@/src/core/components/file/FileListItem";
-import { NavRealm } from "@/src/core/components/MenuStructure";
+import { NavRealm } from "@/src/core/components/dashboard/MenuStructure";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";

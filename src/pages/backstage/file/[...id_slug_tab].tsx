@@ -5,7 +5,7 @@ import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/cor
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
-import { NavRealm } from "@/src/core/components/MenuStructure";
+import { NavRealm } from "@/src/core/components/dashboard/MenuStructure";
 import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
 import { useSnackbar } from "@/src/core/components/SnackbarContext";
 import { AudioPlayerFileControls, FileExternalLink } from "@/src/core/components/SongFileComponents";

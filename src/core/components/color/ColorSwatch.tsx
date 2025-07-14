@@ -13,7 +13,7 @@ export interface ColorSwatchProps {
     className?: string;
 };
 
-// props.color can never be null.
+// this is the cmdb color swatch, rounded corners using internal palette.
 export const ColorSwatch = ({ size = "normal", className, ...props }: ColorSwatchProps) => {
     const [hovering, setHovering] = React.useState<boolean>(false);
 
