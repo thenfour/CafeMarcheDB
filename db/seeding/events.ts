@@ -109,6 +109,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
         const wp = await gState.prisma.wikiPage.create({
             data: {
                 slug: `EventDescription/${event.id}`,
+                namespace: 'eventdescription',
                 visiblePermissionId: visibilityPermissionId,
                 revisions: {
                     create: {

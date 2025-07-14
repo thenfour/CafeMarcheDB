@@ -16,6 +16,10 @@
   - You are about to drop the column `showOnSongLists` on the `songtag` table. All the data in the column will be lost.
 
 */
+
+-- ensure namespaces are correct; for some reason on my dev system this was not the case.
+update wikipage set namespace = 'eventdescription' where slug like 'EventDescription/%';
+
 -- DropForeignKey
 ALTER TABLE `EventSongList` DROP FOREIGN KEY `EventSongList_userId_fkey`;
 
