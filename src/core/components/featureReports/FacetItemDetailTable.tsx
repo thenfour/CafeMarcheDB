@@ -3,7 +3,7 @@ import { useQuery } from "@blitzjs/rpc";
 import { Tooltip as MuiTooltip } from "@mui/material";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip } from "../CMChip";
-import { AttendanceChip, FileChip, InstrumentChip, SongChip, WikiPageChip } from "../CMCoreComponents";
+import { InstrumentChip } from "../CMCoreComponents";
 import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
 import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
 //
@@ -14,6 +14,10 @@ import { AnonymizedUserChip, BrowserChip, ContextLabel, DeviceClassChip, Feature
 import getDetail from "./queries/getDetail";
 import { FeatureReportFilterSpec } from "./server/facetProcessor";
 import { EventChip } from "../event/EventChips";
+import { SongChip } from "../song/SongChip";
+import { FileChip } from "../file/FileChip";
+import { WikiPageChip } from "../wiki/WikiPageChip";
+import { AttendanceChip } from "../event/AttendanceChips";
 
 
 interface FacetItemDetailTableRowProps {

@@ -1,6 +1,6 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
-import { FileTagChip, InstrumentChip, SongChip, WikiPageChip } from "@/src/core/components/CMCoreComponents";
+import { InstrumentChip } from "@/src/core/components/CMCoreComponents";
 import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
@@ -30,6 +30,9 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { FileTagChip } from "@/src/core/components/file/FileChip";
+import { SongChip } from "@/src/core/components/song/SongChip";
+import { WikiPageChip } from "@/src/core/components/wiki/WikiPageChip";
 
 ////////////////////////////////////////////////////////////////
 export interface FileBreadcrumbProps {

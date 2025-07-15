@@ -16,6 +16,7 @@ import { Markdown } from "../markdown/Markdown";
 import { RenderMuiIcon } from "../../db3/components/IconMap";
 import { ColorVariationSpec, StandardVariationSpec } from "../color/palette";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
+import { Permission } from "@/shared/permissions";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 
 export interface EventStatusChipProps {
@@ -68,12 +69,13 @@ export const EventChip = (props: EventChipProps) => {
 
     // cancelled events should be shown with a strikethrough
     const status = dashboardContext.eventStatus.getById(props.value.statusId);
+    const href = dashboardContext.isAuthorized(Permission.view_events) ? getURIForEvent(props.value) : undefined;
     //const isCancelled = status?.significance === db3.EventStatusSignificance.Cancelled;
 
     return <CMChip
         variation={props.variation}
         size={props.size}
-        href={getURIForEvent(props.value)}
+        href={href}
         className={`eventChip ${status?.significance} ${props.className}`}
         color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
         tooltip={<div>

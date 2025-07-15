@@ -120,7 +120,6 @@ import { Timing } from 'shared/time';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { AttendanceChip } from './CMCoreComponents';
 import { AdminInspectObject, CMSmallButton, DialogActionsCM, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./event/EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
@@ -135,6 +134,7 @@ import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { AppContextMarker } from "./AppContext";
+import { AttendanceChip } from "./event/AttendanceChips";
 
 
 

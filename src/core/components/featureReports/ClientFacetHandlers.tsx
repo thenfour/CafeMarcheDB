@@ -1,7 +1,6 @@
 import { clearArray, isOneOf } from "@/shared/arrayUtils";
 import { getHashedColor } from "@/shared/utils";
 import { gIconMap } from "../../db3/components/IconMap";
-import { SongChip, WikiPageChip } from "../CMCoreComponents";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { Tooltip } from "@mui/material";
 //
@@ -12,6 +11,8 @@ import { FeatureReportFilterSpec } from "./server/facetProcessor";
 import { EventChip } from "../event/EventChips";
 import React, { Key } from "react";
 import { gGeneralPaletteList } from "../color/palette";
+import { SongChip } from "../song/SongChip";
+import { WikiPageChip } from "../wiki/WikiPageChip";
 
 
 interface ScreenSizeIndicatorProps {

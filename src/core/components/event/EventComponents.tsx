@@ -27,7 +27,7 @@ import { GetICalRelativeURIForUserUpcomingEvents, gNullValue, SearchResultsRet }
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
-import { AttendanceChip, InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
+import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
 import { AdminInspectObject, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
 import { CMTextInputBase } from '../CMTextField';
@@ -57,6 +57,7 @@ import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } 
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
+import { AttendanceChip } from './AttendanceChips';
 
 // type EventWithTypePayload = Prisma.EventGetPayload<{
 //     include: {

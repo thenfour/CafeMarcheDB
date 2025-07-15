@@ -81,6 +81,11 @@ h1:first-child {
   display: flex;
 }
 
+.MuiIconButton-root {
+  /* default mui icon button has ugly 50% border radius.*/
+  border-radius: 3px;
+}
+
 .MuiDrawer-paper {
   width: var(--drawer-paper-width);
 }

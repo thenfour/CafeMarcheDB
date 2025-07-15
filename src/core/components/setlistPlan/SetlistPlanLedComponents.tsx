@@ -8,7 +8,7 @@ import { Button, DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { QuickSearchItemTypeSets } from "shared/quickFilter";
-import { AttendanceChip, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
+import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
@@ -22,6 +22,7 @@ import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";
 import { ColorPick } from "../color/ColorPick";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
+import { AttendanceChip } from "../event/AttendanceChips";
 //import getUserEventAttendance from "src/core/db3/queries/getUserEventAttendance";
 
 

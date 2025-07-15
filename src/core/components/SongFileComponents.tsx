@@ -20,7 +20,7 @@ import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecordin
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
-import { InstrumentChip, SongChip, WikiPageChip } from "./CMCoreComponents";
+import { InstrumentChip } from "./CMCoreComponents";
 import { DotMenu } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
@@ -36,6 +36,8 @@ import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from './mediaPlayer/MediaPlayerTypes';
 import { UserChip } from './user/userChip';
 import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
+import { SongChip } from './song/SongChip';
+import { WikiPageChip } from './wiki/WikiPageChip';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

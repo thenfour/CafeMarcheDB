@@ -9,7 +9,7 @@ import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
 import { getContentCountsRows, getParticipationCountsRows, getSummaryRows, getSystemCountsRows, getUserInfoRows, MassAnalysisDataRow } from "../../db3/shared/getUserMassAnalysisTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
-import { AttendanceChip, InstrumentChip, SongChip } from "../CMCoreComponents";
+import { InstrumentChip } from "../CMCoreComponents";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
 import { CMLink } from "../CMLink";
 import { CMTable } from "../CMTable";
@@ -21,6 +21,8 @@ import { useSongsContext } from "../song/SongsContext";
 import { UserChip } from "./userChip";
 import { AddUserButton } from "./UserComponents";
 import { StandardVariationSpec } from "../color/palette";
+import { AttendanceChip } from "../event/AttendanceChips";
+import { SongChip } from "../song/SongChip";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {

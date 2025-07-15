@@ -6,24 +6,20 @@
 import { Prisma } from "db";
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { Coalesce, getHashedColor } from "shared/utils";
+import { Coalesce } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
-import { Icon, Tooltip } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { getURIForEvent, getURIForFile, getURIForSong } from "../db3/clientAPILL";
+import { getURIForEvent } from "../db3/clientAPILL";
 import { RenderMuiIcon } from "../db3/components/IconMap";
-import { useDb3Query } from "../db3/DB3Client";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
-import { wikiParseCanonicalWikiPath } from "../wiki/shared/wikiUtils";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
 import { CMTextField } from "./CMTextField";
-import { DashboardContext, useDashboardContext } from "./DashboardContext";
-import { DateValue } from "./DateTime/DateTimeComponents";
-import { ActivityFeature } from "./featureReports/activityTracking";
-import { Markdown } from "./markdown/Markdown";
 import { ColorVariationSpec } from "./color/palette";
+import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { ActivityFeature } from "./featureReports/activityTracking";
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
 export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {
@@ -207,236 +203,6 @@ export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupCh
         border={props.border}
     >
         {props.value.name}
-    </CMChip>
-}
-
-
-
-export interface SongChipProps {
-    value: db3.SongPayloadMinimum;
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    onClick?: () => void;
-    className?: string;
-    startAdornment?: React.ReactNode;
-    endAdornment?: React.ReactNode;
-    useHashedColor?: boolean;
-};
-
-export const SongChip = (props: SongChipProps) => {
-    return <CMChip
-        variation={props.variation}
-        size={props.size}
-        href={getURIForSong(props.value)}
-        className={props.className}
-    >
-        {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
-            {props.value.name}
-        </span>
-        {props.endAdornment}
-    </CMChip>
-}
-
-
-
-export interface FileChipProps {
-    value: Prisma.FileGetPayload<{ select: { id: true, storedLeafName: true, fileLeafName: true, externalURI: true } }> | db3.FilePayloadMinimum;
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    onClick?: () => void;
-    className?: string;
-    startAdornment?: React.ReactNode;
-    endAdornment?: React.ReactNode;
-    useHashedColor?: boolean;
-};
-
-export const FileChip = (props: FileChipProps) => {
-    return <CMChip
-        variation={props.variation}
-        size={props.size}
-        href={getURIForFile(props.value)}
-        className={props.className}
-    >
-        {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
-            {props.value.fileLeafName}
-        </span>
-        {props.endAdornment}
-    </CMChip>
-}
-
-
-
-export interface FileTagChipProps {
-    value: number | { id: number };
-    size?: CMChipSizeOptions;
-    onClick?: () => void;
-    className?: string;
-};
-
-export const FileTagChip = (props: FileTagChipProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
-    let tagId = typeof (props.value) === "number" ? props.value : props.value.id;
-    let tag = dashboardContext.fileTag.getById(tagId);
-
-    return <CMChip
-        variation={undefined}
-        size={props.size}
-        onClick={props.onClick}
-        className={props.className}
-        color={tag?.color}
-        shape={"rectangle"}
-        border={"noBorder"}
-        tooltip={tag?.description && <Markdown markdown={tag.description} />}
-    >
-        {tag?.text || "<null>"}
-    </CMChip>
-}
-
-
-
-
-export interface WikiPageChipProps {
-    slug: string;
-    // todo: use actual wiki page name
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    onClick?: () => void;
-    className?: string;
-    startAdornment?: React.ReactNode;
-    endAdornment?: React.ReactNode;
-    useHashedColor?: boolean;
-};
-
-export const WikiPageChip = (props: WikiPageChipProps) => {
-    const wikiPath = wikiParseCanonicalWikiPath(props.slug);
-
-    return <CMChip
-        variation={props.variation}
-        size={props.size}
-        href={wikiPath.uriRelativeToHost}
-        className={props.className}
-    >
-        {props.startAdornment}
-        <span style={{ color: props.useHashedColor ? getHashedColor(props.slug) : undefined }}>
-            {props.slug}
-        </span>
-        {props.endAdornment}
-    </CMChip>
-}
-
-
-// we want the tooltip to actually be quite complete.
-// - the attendance response & description
-// - the event name & date
-// - last updated date & by whom
-interface AttendanceChipTooltipProps {
-    value: db3.EventAttendanceBasePayload | null;
-    eventResponse?: Prisma.EventUserResponseGetPayload<{ select: { instrumentId: true, userComment: true } }> | undefined;
-    segmentResponse?: Prisma.EventSegmentUserResponseGetPayload<{ select: { attendanceId: true, createdByUserId: true, createdAt: true, updatedAt: true, updatedByUserId: true } }> | undefined;
-    event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventSegment?: Prisma.EventSegmentGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-};
-export const AttendanceChipTooltip = (props: AttendanceChipTooltipProps) => {
-    const dashboardContext = useDashboardContext();
-
-    const userIds: number[] = [];
-    if (props.segmentResponse?.updatedByUserId) {
-        userIds.push(props.segmentResponse.updatedByUserId);
-    }
-    if (props.segmentResponse?.createdByUserId) {
-        userIds.push(props.segmentResponse.createdByUserId);
-    }
-    const fetchedUsers = useDb3Query<db3.UserPayloadMinimum>({
-        schema: db3.xUser,
-        filterSpec: {
-            pks: userIds,
-            items: [],
-        },
-        enable: userIds.length > 0,
-    });
-
-    const updatedByUser = fetchedUsers && props.segmentResponse?.updatedByUserId ? fetchedUsers.items.find(u => u.id === props.segmentResponse!.updatedByUserId) : undefined;
-
-    return <div>
-        <div className="attendanceChipTooltip">
-            <div className="attendanceChipTooltipResponse">
-                {props.value?.text || "No response"}
-            </div>
-            <div className="attendanceChipTooltipDescription" style={{ marginTop: "4px" }}>
-                {props.value?.description || "No description"}
-            </div>
-        </div>
-        {props.event &&
-            <div className="attendanceChipTooltipEvent" style={{ marginTop: "4px" }}>
-                {db3.EventAPI.getLabel(props.event)}
-            </div>
-        }
-        {props.eventSegment?.name &&
-            <div className="attendanceChipTooltipEventSegment" style={{ marginTop: "4px" }}>
-                {props.eventSegment.name}
-            </div>
-        }
-        {/* updated by user on ... */}
-        {props.segmentResponse && props.segmentResponse.updatedAt &&
-            <div className="attendanceChipTooltipUpdated" style={{ marginTop: "4px" }}>
-                Updated on <DateValue value={props.segmentResponse.updatedAt} />
-                {updatedByUser && `by ${updatedByUser.name}`}
-            </div>
-        }
-    </div>;
-};
-
-export interface AttendanceChipProps {
-    event?: Prisma.EventGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventSegment?: Prisma.EventSegmentGetPayload<{ select: { id: true, name: true, startsAt: true } }> | undefined;
-    eventResponse?: Prisma.EventUserResponseGetPayload<{ select: { instrumentId: true, userComment: true } }> | undefined;
-    segmentResponse?: Prisma.EventSegmentUserResponseGetPayload<{ select: { attendanceId: true, createdByUserId: true, createdAt: true, updatedAt: true, updatedByUserId: true } }> | undefined;
-
-    showLabel?: boolean | undefined;
-    fadeNoResponse?: boolean | undefined;
-    value: number | db3.EventAttendanceBasePayload | null;
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    onClick?: () => void;
-    className?: string;
-};
-
-export const AttendanceChip = ({ fadeNoResponse = false, showLabel = true, ...props }: AttendanceChipProps) => {
-    let value = props.value;
-    const dashboardContext = useDashboardContext();
-    if (typeof value === "number") {
-        value = dashboardContext.eventAttendance.getById(value);
-    }
-    let label: React.ReactNode = showLabel && (value?.text || "No response");
-    if (!label && !value?.iconName) {
-        label = <Icon />;
-    }
-
-    const style: React.CSSProperties = {};
-    if (fadeNoResponse && !value) {
-        style.opacity = "40%";
-    }
-
-    return <CMChip
-        variation={props.variation}
-        size={props.size}
-        onClick={props.onClick}
-        className={`${props.className} AttendanceChip`}
-        color={value?.color || null}
-        shape="rectangle"
-        tooltip={<Suspense><AttendanceChipTooltip
-            value={value}
-            event={props.event}
-            eventSegment={props.eventSegment}
-            eventResponse={props.eventResponse}
-            segmentResponse={props.segmentResponse}
-        /></Suspense>}
-        style={style}
-    >
-        {RenderMuiIcon(value?.iconName)}
-        {label}
     </CMChip>
 }
 

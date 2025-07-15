@@ -6,6 +6,8 @@ import * as db3 from "src/core/db3/db3";
 import { getHashedColor } from "shared/utils";
 import { getURIForUser } from "../../db3/clientAPILL";
 import { ColorVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../DashboardContext";
+import { Permission } from "@/shared/permissions";
 
 
 export interface UserChipBaseProps {
@@ -33,9 +35,10 @@ type QueriedUserChipProps = UserChipBaseProps & {
 };
 
 const ValuedUserChip = (props: ValuedUserChipProps) => {
+    const dashboardContext = useDashboardContext();
 
     const userId = props.value?.id || null;
-    const userURI = userId ? getURIForUser({ id: userId }) : undefined;
+    const userURI = userId && dashboardContext.isAuthorized(Permission.view_users_basic_info) ? getURIForUser({ id: userId }) : undefined;
 
     const clickHandler = props.onClick;
 
