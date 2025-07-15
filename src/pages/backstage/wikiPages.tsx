@@ -1,4 +1,3 @@
-import { NavRealm } from "@/src/core/components/dashboard/MenuStructure";
 import { EnrichedVerboseWikiPage, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "@/src/core/components/wiki/WikiClientBaseTypes";
 import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
 import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
@@ -15,6 +14,7 @@ import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { wikiPageSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 
 // for serializing in compact querystring
 interface WikiPagesFilterSpecStatic {

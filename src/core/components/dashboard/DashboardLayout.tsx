@@ -6,8 +6,8 @@ import { Permission } from "shared/permissions";
 import { CoerceToBoolean } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { LoginSignup } from "../LoginSignupForm";
-import { NavRealm } from "./MenuStructure";
 import Dashboard2 from "./Dashboard2";
+import { NavRealm } from "./StaticMenuItems";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;

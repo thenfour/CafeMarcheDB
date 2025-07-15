@@ -1,6 +1,5 @@
 import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
 import { FileListItem } from "@/src/core/components/file/FileListItem";
-import { NavRealm } from "@/src/core/components/dashboard/MenuStructure";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
@@ -15,6 +14,7 @@ import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { fileSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {

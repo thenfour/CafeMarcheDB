@@ -1567,7 +1567,7 @@ export const DefineManyToManyRelationship = <TLocalPayload, TAssociationPayload,
 
 };
 
-
+export type DashboardDynMenuLink = Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>;
 
 export interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -1587,7 +1587,8 @@ export abstract class DashboardContextDataBase {
 
     wikiPageTag: TableAccessor<Prisma.WikiPageTagGetPayload<{}>>;
 
-    dynMenuLinks: TableAccessor<Prisma.MenuLinkGetPayload<{ include: { createdByUser, visiblePermission } }>>; permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
+    dynMenuLinks: TableAccessor<DashboardDynMenuLink>;
+    permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     role: TableAccessor<Prisma.RoleGetPayload<{}>>;
     rolePermission: TableAccessor<Prisma.RolePermissionGetPayload<{}>>;
     // UNCOMMENT AFTER PRISMA GENERATE

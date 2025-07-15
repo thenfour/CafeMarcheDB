@@ -160,21 +160,21 @@ export function assertIsStringArray(value: any): asserts value is string[] {
 }
 
 
-export function groupByMap<T, K>(
+export function groupByMap<T, K, V = T>(
     array: T[],
-    getKey: (item: T) => K
-): Map<K, T[]> {
+    getKey: (item: T) => K,
+    valueSelector?: (item: T) => V
+): Map<K, V[]> {
     return array.reduce((result, item) => {
         const key = getKey(item);
-        if (!result.has(key)) {
-            result.set(key, []);
-        }
-        result.get(key)!.push(item);
+        if (!result.has(key)) result.set(key, []);
+
+        const value = valueSelector ? valueSelector(item) : (item as unknown as V);
+        result.get(key)!.push(value);
+
         return result;
-    }, new Map<K, T[]>());
+    }, new Map<K, V[]>());
 }
-
-
 
 // like filter() but
 // returns both matching & nonmatching items.

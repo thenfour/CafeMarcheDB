@@ -227,6 +227,7 @@ export const MenuLinkList = () => {
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
 
+                new DB3Client.GenericStringColumnClient({ columnName: "applicationPage", cellWidth: 250, fieldCaption: "Section name" }),
                 new DB3Client.GenericStringColumnClient({ columnName: "groupName", cellWidth: 250, fieldCaption: "Group name" }),
                 new DB3Client.GenericStringColumnClient({ columnName: "caption", cellWidth: 250, fieldCaption: "Item text", className: "titleText" }),
                 new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120, fieldCaption: "Icon" }),

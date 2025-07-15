@@ -25,9 +25,9 @@ ul.mechanicalSelector>li {
     display: flex;
     color: #fff4;
     background-color: #fff2;
-    border-radius: 6px;
-    margin: 0 5px;
-    padding: 6px;
+    border-radius: 2px;
+    margin: 0 6px;
+    padding: 4px;
 }
 
 .bpmControlsContainer {

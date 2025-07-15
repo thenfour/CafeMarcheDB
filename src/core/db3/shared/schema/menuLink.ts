@@ -102,11 +102,10 @@ export const xMenuLink = new db3.xTable({
             format: "uri",
             authMap: xAuthMap,
         }),
-        new ConstEnumStringField({
+        new GenericStringField({
             columnName: "applicationPage",
             allowNull: true,
-            defaultValue: DynamicMenuLinkApplicationPage.BackstageHome,
-            options: DynamicMenuLinkApplicationPage,
+            format: "plain",
             authMap: xAuthMap,
         }),
         new GenericStringField({

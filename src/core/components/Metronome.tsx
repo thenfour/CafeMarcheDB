@@ -905,7 +905,7 @@ export const MetronomeDialogButton = () => {
     //const [open, setOpen] = useURLState<boolean>("metronome", false);
     const [open, setOpen] = React.useState<boolean>(false);
     return <>
-        <Tooltip title="Open metronome app">
+        <Tooltip title="Open the metronome">
             <div
                 className="freeButton globalMetronomeButton"
                 onClick={() => setOpen(!open)}

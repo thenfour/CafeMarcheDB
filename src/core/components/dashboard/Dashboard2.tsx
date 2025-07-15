@@ -29,7 +29,6 @@ import { LoginSignup } from "../LoginSignupForm";
 import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import {
-    NavRealm,
     SideMenu
 } from "./MenuStructure";
 import { MessageBoxProvider } from "../MessageBoxContext";
@@ -39,6 +38,7 @@ import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SnackbarContext } from "../SnackbarContext";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { Setting } from "@/shared/settings";
+import { NavRealm } from "./StaticMenuItems";
 
 const drawerWidth = 260;
 

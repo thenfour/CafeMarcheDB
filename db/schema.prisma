@@ -1160,17 +1160,17 @@ model MenuLink {
 
   realm String? @db.VarChar(768)
 
-  groupName     String @db.VarChar(768)
+  applicationPage String? @db.VarChar(768) // section name where to house this, or a custom section name
+  groupName     String @db.VarChar(768) // freeform group id to group links together separated by divider
   groupCssClass String @db.VarChar(768)
 
   itemCssClass String @db.VarChar(768)
-  linkType     String @db.VarChar(768) // external, application, wiki
+  linkType     String @db.VarChar(768) // external, wiki
 
   // for external, this is a URL
   // for application, this is empty.
   // for wiki, this is the slug
   externalURI     String? @db.MediumText
-  applicationPage String? @db.VarChar(768) // an enum.
   wikiSlug        String? @db.VarChar(768)
 
   iconName String? @db.VarChar(768)
