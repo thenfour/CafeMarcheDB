@@ -24,7 +24,7 @@ update WikiPage set namespace = 'eventdescription' where slug like 'EventDescrip
 ALTER TABLE `EventSongList` DROP FOREIGN KEY `EventSongList_userId_fkey`;
 
 -- DropIndex
-DROP INDEX `SongTag_showOnSongLists_idx` ON `songtag`;
+DROP INDEX `SongTag_showOnSongLists_idx` ON `SongTag`;
 
 -- custom: truncate long text columns
 update `Action`
