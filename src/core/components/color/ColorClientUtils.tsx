@@ -9,7 +9,7 @@
 // - weak - enabled - not selected
 // - weak - enabled - selected
 
-import { ColorPaletteEntry, ColorPaletteEntryVariation, ColorVariationSpec, CreateNullPaletteEntry, GetColorPaletteEntryWithVariation, gGeneralPaletteList } from "./palette";
+import { type ColorPaletteEntry, type ColorPaletteEntryVariation, type ColorVariationSpec, CreateNullPaletteEntry, GetColorPaletteEntryWithVariation, gGeneralPaletteList } from "./palette";
 
 // each has a foreground and background color, and are known in code so all we need to emit is
 // foreground / background / border stuff.

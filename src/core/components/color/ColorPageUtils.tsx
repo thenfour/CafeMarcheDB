@@ -10,9 +10,9 @@ import { GetStyleVariablesForColorVariation } from "./ColorClientUtils";
 import { hslToCssString, rgbToCssString } from "./ColorEditorBaseUtils";
 import { ColorPick } from "./ColorPick";
 import * as libcolor from "./libcolor";
-import { ColorPaletteEntry, ColorPaletteEntryVariation, ColorVariationSpec, gGeneralPaletteList, StandardVariationSpec } from "./palette";
-import { ParseColor, ParsedPalette, ParsedPaletteEntry, ParsePaletteEntry } from "./TextPalette";
-import { ColorBlenderParamsBundle } from "./ColorBlender";
+import { type ColorPaletteEntry, type ColorPaletteEntryVariation, type ColorVariationSpec, gGeneralPaletteList, StandardVariationSpec } from "./palette";
+import { ParseColor, type ParsedPalette, type ParsedPaletteEntry, ParsePaletteEntry } from "./TextPalette";
+import type { ColorBlenderParamsBundle } from "./ColorBlender";
 import { Swatch } from "./ColorPageSwatch";
 
 // LAB colors in CSS too...

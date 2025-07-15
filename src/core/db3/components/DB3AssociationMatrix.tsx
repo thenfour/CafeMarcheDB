@@ -12,16 +12,16 @@
 import { Checkbox } from '@mui/material';
 import {
     DataGrid,
-    GridColDef,
-    GridFilterModel,
-    GridSortModel
+    type GridColDef,
+    type GridFilterModel,
+    type GridSortModel
 } from '@mui/x-data-grid';
 import React from "react";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import * as db3 from '../db3';
-import { CMDBTableFilterItem, CMDBTableFilterModel, TAnyModel } from '../shared/apiTypes';
+import type { CMDBTableFilterItem, CMDBTableFilterModel, TAnyModel } from '../shared/apiTypes';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 

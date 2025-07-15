@@ -18,10 +18,10 @@ import {
 import {
     DataGrid,
     GridActionsCellItem,
-    GridColDef,
-    GridFilterModel,
-    GridPaginationModel,
-    GridRowModel, GridRowModes, GridRowModesModel, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
+    type GridColDef,
+    type GridFilterModel,
+    type GridPaginationModel,
+    type GridRowModel, GridRowModes, type GridRowModesModel, type GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
     GridToolbarQuickFilter
 } from '@mui/x-data-grid';
 import React from "react";
@@ -33,7 +33,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { API } from '../clientAPI';
 import * as db3 from '../db3';
-import { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
+import type { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 import { useDashboardContext } from 'src/core/components/DashboardContext';

@@ -1,6 +1,6 @@
 import { DialogContent } from "@mui/material";
 import React from "react";
-import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, StandardVariationSpec } from "./palette";
+import { type ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, StandardVariationSpec } from "./palette";
 import { ColorSwatch } from "./ColorSwatch";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { ColorPaletteListComponent } from "./ColorPaletteListComponent";

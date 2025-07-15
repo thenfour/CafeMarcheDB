@@ -11,10 +11,10 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { RestPaginatedResult, RestQueryResult, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { type RestPaginatedResult, type RestQueryResult, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import React from "react";
 //import * as db3 from "../db3";
-import { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
+import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Coalesce, HasFlag, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -24,8 +24,8 @@ import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
-import { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
-import { SettingKey } from "shared/settings";
+import type { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
+import type { SettingKey } from "shared/settings";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

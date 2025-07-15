@@ -15,7 +15,7 @@
 // DB hookup
 
 import { isNumber } from "@mui/x-data-grid/internals";
-import {
+import type {
     XYPosition
 } from '@xyflow/react';
 import { assert } from "blitz";
@@ -23,7 +23,7 @@ import { Prisma } from "db";
 
 import '@xyflow/react/dist/style.css';
 import { getNextSequenceId, getUniqueNegativeID } from "shared/utils";
-import { TinsertOrUpdateWorkflowDefArgs, TUpdateEventWorkflowInstanceArgs, WorkflowLogItemType, WorkflowNodeProgressState, WorkflowObjectType } from "src/core/db3/shared/apiTypes";
+import { type TinsertOrUpdateWorkflowDefArgs, type TUpdateEventWorkflowInstanceArgs, type WorkflowLogItemType, WorkflowNodeProgressState, type WorkflowObjectType } from "src/core/db3/shared/apiTypes";
 import { gMillisecondsPerDay } from "./time";
 import { ChangeAction } from "./activityLog";
 import { toSorted } from "./arrayUtils";

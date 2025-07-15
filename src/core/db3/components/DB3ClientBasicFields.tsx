@@ -8,7 +8,7 @@
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
 import { Checkbox, FormControlLabel, MenuItem, Select, Stack } from "@mui/material";
-import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
+import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { assert } from "blitz";
 import dayjs, { Dayjs } from "dayjs";
@@ -24,15 +24,15 @@ import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { CMDBTableFilterModel, TAnyModel, gNullValue } from "../shared/apiTypes";
+import { type CMDBTableFilterModel, type TAnyModel, gNullValue } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { SettingKey } from "shared/settings";
+import type { SettingKey } from "shared/settings";
 import { GenericStringField } from "../shared/genericStringField";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
-import { ColorPaletteEntry } from "../../components/color/palette";
+import type { ColorPaletteEntry } from "../../components/color/palette";
 import { ColorPick } from "../../components/color/ColorPick";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

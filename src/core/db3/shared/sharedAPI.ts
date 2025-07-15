@@ -3,7 +3,7 @@
 import { Prisma } from "db";
 import { Clamp, gMinImageDimension } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./apiTypes";
+import { AddCoord2DSize, type Coord2D, type ImageEditParams, type Size, getFileCustomData } from "./apiTypes";
 
 
 

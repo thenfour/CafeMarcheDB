@@ -2,7 +2,7 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { ForeignSingleField, GenericIntegerField, GhostField, MakePKfield } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { ChangeNaturalOrderBy, ChangePayload } from "./prismArgs";
+import { ChangeNaturalOrderBy, type ChangePayload } from "./prismArgs";
 import { GenericStringField } from "../genericStringField";
 
 

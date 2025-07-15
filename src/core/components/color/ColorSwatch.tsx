@@ -1,5 +1,5 @@
 import React from "react";
-import { ColorPaletteEntry, ColorVariationSpec, CreateNullPaletteEntry, gGeneralPaletteList, StandardVariationSpec } from "./palette";
+import { type ColorPaletteEntry, type ColorVariationSpec, CreateNullPaletteEntry, gGeneralPaletteList, StandardVariationSpec } from "./palette";
 import { GetStyleVariablesForColor } from "./ColorClientUtils";
 
 export interface ColorSwatchProps {

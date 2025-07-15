@@ -1,16 +1,21 @@
-import { EmptyPublicData } from "@blitzjs/auth";
+import type { EmptyPublicData } from "@blitzjs/auth";
 import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
-import { CalculateChanges, CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
+import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
 import { SqlCombineAndExpression } from "shared/mysqlUtils";
 import { Permission, gPublicPermissions } from "shared/permissions";
-import { SortDirection } from "shared/rootroot";
-import { PublicDataType } from "types";
-import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
+import type { SortDirection } from "shared/rootroot";
+import type { PublicDataType } from "types";
+import {
+    type CMDBTableFilterModel, type CriterionQueryElements,
+    type DiscreteCriterion, type GetSearchResultsSortModel,
+    SearchCustomDataHookId,
+    type SearchResultsFacetQuery, type SortQueryElements, type TAnyModel
+} from "./apiTypes";
 import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
-import { UserWithRolesPayload } from "./schema/userPayloads";
-import { ColorPaletteEntry } from "../../components/color/palette";
+import type { UserWithRolesPayload } from "./schema/userPayloads";
+import type { ColorPaletteEntry } from "../../components/color/palette";
 
 export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 

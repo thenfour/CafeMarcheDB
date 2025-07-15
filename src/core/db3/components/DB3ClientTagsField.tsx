@@ -1,6 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Button } from "@mui/material";
-import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
+import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React, { Suspense } from "react";
 //import * as DB3Client from "../DB3Client";
 import { useAuthenticatedSession } from '@blitzjs/auth';
@@ -17,7 +17,7 @@ import {
     ListItemButton
 } from "@mui/material";
 import { SplitQuickFilter } from 'shared/quickFilter';
-import { SettingKey } from 'shared/settings';
+import type { SettingKey } from 'shared/settings';
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
@@ -32,11 +32,11 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { TAnyModel } from '../shared/apiTypes';
-import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
-import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
+import type { TAnyModel } from '../shared/apiTypes';
+import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, type TMutateFn, xTableRenderClient } from './DB3ClientCore';
+import type { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { RenderMuiIcon } from './IconMap';
-import { ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
+import { type ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
 
 
 const gMaxVisibleTags = 6;

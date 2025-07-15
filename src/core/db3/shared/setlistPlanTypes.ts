@@ -1,4 +1,4 @@
-import { Nullish } from "@/shared/rootroot";
+import type { Nullish } from "@/shared/rootroot";
 import { Prisma } from "db";
 import { QuickSearchItemType } from "shared/quickFilter";
 import { z } from "zod";

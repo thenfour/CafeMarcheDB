@@ -1,4 +1,4 @@
-import { Ctx } from "blitz";
+import type { Ctx } from "blitz";
 import db from "db";
 import * as db3 from "src/core/db3/db3";
 

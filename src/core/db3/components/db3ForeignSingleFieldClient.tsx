@@ -13,15 +13,15 @@ import {
     List,
     ListItemButton
 } from "@mui/material";
-import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
+import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import React, { Suspense } from "react";
 import { SplitQuickFilter } from "shared/quickFilter";
-import { SettingKey } from "shared/settings";
+import type { SettingKey } from "shared/settings";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
 import updateSetting from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
-import { CMChip, CMChipContainer, CMChipSizeOptions } from "src/core/components/CMChip";
+import { CMChip, CMChipContainer, type CMChipSizeOptions } from "src/core/components/CMChip";
 import { AdminInspectObject, CMDialogContentText, CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
@@ -30,10 +30,10 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { TAnyModel } from "../shared/apiTypes";
-import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
+import type { TAnyModel } from "../shared/apiTypes";
+import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, type TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconMap";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "../../components/color/palette";
+import { type ColorPaletteEntry, type ColorVariationSpec, StandardVariationSpec } from "../../components/color/palette";
 
 
 

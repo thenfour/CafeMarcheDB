@@ -1,16 +1,16 @@
 import { BigintToNumber } from "@/shared/utils";
-import { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
+import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { generateToken, hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
+import type { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { Stopwatch } from "shared/rootroot";
 import { getServerStartState } from "shared/serverStateBase";
-import { gEventRelevanceClass, EventStatusSignificance, gVisibleEventRelevanceClasses, xEvent, xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
+import { gEventRelevanceClass, EventStatusSignificance, gVisibleEventRelevanceClasses, xEvent, xMenuLink, type xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
-import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 
 
 async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {

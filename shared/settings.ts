@@ -1,5 +1,5 @@
 import db from "db";
-import { Ctx } from "@blitzjs/next";
+import type { Ctx } from "@blitzjs/next";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "./activityLog";
 
 // SETTINGS /////////////////////////////////////////////////////////////////////////////////////////////////////////

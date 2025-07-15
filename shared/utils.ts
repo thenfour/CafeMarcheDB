@@ -1,6 +1,6 @@
 import { crc32 } from "@foxglove/crc";
 import db from "db";
-import { Size } from "src/core/db3/shared/apiTypes";
+import type { Size } from "src/core/db3/shared/apiTypes";
 import z from "zod";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);

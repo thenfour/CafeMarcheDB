@@ -2,7 +2,7 @@
 import { Prisma } from "db";
 import { z } from "zod";
 
-import { SortDirection } from "shared/rootroot";
+import type { SortDirection } from "shared/rootroot";
 
 // types used by mutations and other blitzy-things which can't export more than 1 thing, or just as a "no dependency" base
 

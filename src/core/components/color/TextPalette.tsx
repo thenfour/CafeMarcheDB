@@ -3,7 +3,7 @@ import parse from 'parse-css-color';
 import * as libcolor from "./libcolor";
 
 import { hslToCssString, rgbToCssString } from './ColorEditorBaseUtils';
-import { ColorBlenderParamsBundle, ParseParamBundle } from './ColorBlender';
+import { type ColorBlenderParamsBundle, ParseParamBundle } from './ColorBlender';
 
 const gDarkSelectedBorderColor = "#444";
 const gLightSelectedBorderColor = "#ccc";

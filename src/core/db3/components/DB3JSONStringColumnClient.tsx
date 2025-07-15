@@ -1,7 +1,7 @@
 // specifically for the activity log viewer.
 import { useQuery } from "@blitzjs/rpc";
 import { DialogContent, Tooltip } from "@mui/material";
-import { GridRenderCellParams } from "@mui/x-data-grid";
+import type { GridRenderCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Prisma } from "db";
 import React, { Suspense } from "react";
@@ -15,12 +15,12 @@ import { getURIForEvent } from "../clientAPILL";
 import { EventAPI } from "../db3";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
-import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
+import type { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
 import { Notes } from "@mui/icons-material";
-import { MutationArgsToWorkflowDef, TWorkflowMutationResult, WorkflowDef } from "shared/workflowEngine";
+import { MutationArgsToWorkflowDef, type TWorkflowMutationResult, type WorkflowDef } from "shared/workflowEngine";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { GenericStringField } from "../shared/genericStringField";
 import { CMTable } from "../../components/CMTable";

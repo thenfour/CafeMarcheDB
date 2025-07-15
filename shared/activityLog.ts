@@ -1,7 +1,7 @@
 import db from "db";
-import { Ctx } from "@blitzjs/next";
+import type { Ctx } from "@blitzjs/next";
 import { randomUUID } from "crypto";
-import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { CoalesceBool } from "./utils";
 import { CalculateChanges } from "./associationUtils";
 

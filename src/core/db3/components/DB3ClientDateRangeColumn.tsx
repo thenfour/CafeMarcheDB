@@ -7,14 +7,14 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
+import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { DateTimeRangeControl } from "src/core/components/DateTime/DateTimeRangeControl";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 //import { API } from '../clientAPI';
 import * as db3 from "../db3";
-import { TAnyModel } from "../shared/apiTypes";
-import { SettingKey } from "shared/settings";
+import type { TAnyModel } from "../shared/apiTypes";
+import type { SettingKey } from "shared/settings";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

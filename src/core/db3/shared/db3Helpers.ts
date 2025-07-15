@@ -1,6 +1,6 @@
 import { assert } from "blitz";
 import db, { Prisma, PrismaClient } from "db";
-import { PermissionSignificance, TransactionalPrismaClient } from "./apiTypes";
+import { PermissionSignificance, type TransactionalPrismaClient } from "./apiTypes";
 
 // PermissionSignificance.Visibility_Members
 export const GetDefaultVisibilityPermission = async (dbt: TransactionalPrismaClient) => {

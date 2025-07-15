@@ -1,4 +1,4 @@
-import { BlitzLayout } from "@blitzjs/next";
+import type { BlitzLayout } from "@blitzjs/next";
 import { Backdrop, CircularProgress } from "@mui/material";
 import Head from "next/head";
 import React, { Suspense } from "react";

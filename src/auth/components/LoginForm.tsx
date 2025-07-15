@@ -1,4 +1,4 @@
-import { AuthenticationError, PromiseReturnType } from "blitz"
+import { AuthenticationError, type PromiseReturnType } from "blitz"
 import Link from "next/link"
 //import { LabeledTextField } from "src/core/components/LabeledTextField"
 //import { Form, FORM_ERROR } from "src/core/components/Form"
