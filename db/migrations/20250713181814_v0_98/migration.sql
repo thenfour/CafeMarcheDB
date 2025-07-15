@@ -18,7 +18,7 @@
 */
 
 -- ensure namespaces are correct; for some reason on my dev system this was not the case.
-update wikipage set namespace = 'eventdescription' where slug like 'EventDescription/%';
+update WikiPage set namespace = 'eventdescription' where slug like 'EventDescription/%';
 
 -- DropForeignKey
 ALTER TABLE `EventSongList` DROP FOREIGN KEY `EventSongList_userId_fkey`;
