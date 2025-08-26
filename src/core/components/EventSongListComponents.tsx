@@ -1490,6 +1490,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         id: newRowId,
                         eventSongListId: value.id,
                         sortOrder: rowItems.length,
+                        songsWithUnknownLength: 0,
+                        runningTimeSeconds: null,
                     }}
                     setlistRowItems={rowItems}
                     pinnedRecordings={pinnedRecordings || {}}
