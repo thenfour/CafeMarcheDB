@@ -1,5 +1,5 @@
 import { useQuery } from "@blitzjs/rpc";
-import { Button, ButtonGroup, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, Divider, DialogContent, DialogTitle, Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { QuickSearchItemType, QuickSearchItemTypeSets } from "shared/quickFilter";
@@ -7,12 +7,13 @@ import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, DotMenu, DialogActionsCM, InspectObject, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
@@ -84,6 +85,81 @@ const AddSongComponent = (props: AddSongComponentProps) => {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////
+interface SetlistPlannerRowEditorProps {
+    doc: SetlistPlan;
+    mutator: SetlistPlanMutator;
+    rowId: string;
+    open: boolean;
+    onClose: () => void;
+}
+
+const SetlistPlannerRowEditor = (props: SetlistPlannerRowEditorProps) => {
+    const allSongs = useSongsContext().songs;
+    const row = props.doc.payload.rows.find((x) => x.rowId === props.rowId);
+    
+    if (!row) {
+        return null;
+    }
+
+    const handleSongCommentChange = React.useCallback((newMarkdown: string) => {
+        props.mutator.setRowComment(props.rowId, newMarkdown);
+    }, [props.mutator, props.rowId]);
+
+    const song = row.type === "song" ? allSongs.find((x) => x.id === row.songId) : null;
+
+    return (
+        <ReactiveInputDialog
+            open={props.open}
+            onCancel={props.onClose}
+        >
+            <DialogTitle>
+                Edit {row.type === "song" ? "Song" : "Divider"}: {song?.name || ""}
+            </DialogTitle>
+            <DialogContent dividers>
+                <div>
+                    {row.type === "song" && song && (
+                        <div>
+                            <h3 className="name">{song.name}</h3>
+                        </div>
+                    )}
+
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: "20px" }}>
+                        <Button 
+                            onClick={() => {
+                                props.mutator.deleteRow(row.rowId);
+                                props.onClose();
+                            }}
+                            startIcon={gIconMap.Delete()}
+                        >
+                            Delete
+                        </Button>
+                        <div className="type">
+                            <CMChip color={row.type === "divider" ? gSwatchColors.brown : gSwatchColors.blue}>
+                                {row.type}
+                            </CMChip>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4>Comment</h4>
+                        <Markdown3Editor
+                            nominalHeight={100}
+                            onChange={handleSongCommentChange}
+                            initialValue={row.commentMarkdown || ""}
+                        />
+                    </div>
+                </div>
+                
+                <DialogActionsCM>
+                    <Button onClick={props.onClose}>Close</Button>
+                </DialogActionsCM>
+            </DialogContent>
+        </ReactiveInputDialog>
+    );
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
 type SetlistPlannerMatrixRowProps = {
     doc: SetlistPlan;
     mutator: SetlistPlanMutator;
@@ -100,6 +176,9 @@ type SetlistPlannerMatrixRowProps = {
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
+    const [showEditDialog, setShowEditDialog] = React.useState(false);
+    const [closeMenuProc, setCloseMenuProc] = React.useState<(() => void) | null>(null);
+    
     let songStats = props.stats.songStats.find((x) => x.rowId === props.rowId);
     if (!songStats) {
         // in intermediate contexts this can happen; use an empty stat object
@@ -246,6 +325,25 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 <NumberField inert value={songStats.balance || null} showPositiveSign />
             </div>
         </Tooltip>
+        <div className="td dotMenu">
+            <DotMenu setCloseMenuProc={setCloseMenuProc}>
+                <MenuItem onClick={() => {
+                    setShowEditDialog(true);
+                    closeMenuProc?.();
+                }}>
+                    Edit
+                </MenuItem>
+            </DotMenu>
+        </div>
+        {showEditDialog && (
+            <SetlistPlannerRowEditor
+                doc={props.doc}
+                mutator={props.mutator}
+                rowId={props.rowId}
+                open={showEditDialog}
+                onClose={() => setShowEditDialog(false)}
+            />
+        )}
     </div >;
 }
 
@@ -260,6 +358,8 @@ type SetlistPlannerDividerRowProps = {
 };
 
 const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
+    const [showEditDialog, setShowEditDialog] = React.useState(false);
+    const [closeMenuProc, setCloseMenuProc] = React.useState<(() => void) | null>(null);
 
     const row = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
 
@@ -294,7 +394,32 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
                 <Markdown compact markdown={row.commentMarkdown || ""} />
             </div>
         </div>
-        <div className="td play"></div>
+        <div className="td songLength"></div>
+        {/* Add empty cells for each segment column */}
+        {props.doc.payload.columns.map((segment, index) => (
+            <div key={index} className="td segment"></div>
+        ))}
+        <div className="td rehearsalTime"></div>
+        <div className="td balance"></div>
+        <div className="td dotMenu">
+            <DotMenu setCloseMenuProc={setCloseMenuProc}>
+                <MenuItem onClick={() => {
+                    setShowEditDialog(true);
+                    closeMenuProc?.();
+                }}>
+                    Edit
+                </MenuItem>
+            </DotMenu>
+        </div>
+        {showEditDialog && (
+            <SetlistPlannerRowEditor
+                doc={props.doc}
+                mutator={props.mutator}
+                rowId={props.rowId}
+                open={showEditDialog}
+                onClose={() => setShowEditDialog(false)}
+            />
+        )}
     </div>;
 };
 
@@ -578,7 +703,6 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         <div className="tr header">
             <div className="td delete"></div>
             <div className="td songName"></div>
-            <div className="td play"></div>
             <div className="td songLength">
             </div>
             {docOrTempDoc.payload.columns.map((segment, index) => <div key={index} className="td segment">
@@ -615,6 +739,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             </div>)}
             <div className="td rehearsalTime">total</div>
             <div className="td balance">bal</div>
+            <div className="td dotMenu"></div>
         </div>
         <div className="matrix">
             <ReactSmoothDndContainer
@@ -657,7 +782,6 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songName numberCell">
                     {/* <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} /> */}
                 </div>
-                <div className="td play"></div>
                 <Tooltip
                     disableInteractive
                     title={`Total song length for all songs`}
@@ -692,6 +816,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         <NumberField inert value={props.stats.totalPlanSongBalance} showPositiveSign />
                     </div>
                 </Tooltip>
+                <div className="td dotMenu"></div>
             </div>
 
             <div className="tr footer">
@@ -726,6 +851,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     </div>
                 </Tooltip>
                 <div className="td balance"></div>
+                <div className="td dotMenu"></div>
             </div>
 
             <div className="tr footer">
@@ -754,6 +880,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     </div>
                 </Tooltip>
                 <div className="td balance"></div>
+                <div className="td dotMenu"></div>
             </div>
 
         </div >
