@@ -591,7 +591,7 @@ const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, pla
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-const SetlistPlannerPageContent = () => {
+const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: string) => void }) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
@@ -639,6 +639,15 @@ const SetlistPlannerPageContent = () => {
             columns: Object.values(SetlistPlanGroupClientColumns),
         }),
     });
+
+    // Update page title when doc changes
+    React.useEffect(() => {
+        if (doc) {
+            onTitleChange(doc.name || "Setlist Planner");
+        } else {
+            onTitleChange("Setlist Planner");
+        }
+    }, [doc, onTitleChange]);
 
 
     // removes cells where rowId or columnId is not found in the document.
@@ -1463,11 +1472,13 @@ const SetlistPlannerPageContent = () => {
 };
 
 const SetlistPlannerPage: BlitzPage = (props) => {
+    const [pageTitle, setPageTitle] = React.useState<string>("Setlist Planner");
+
     return (
-        <DashboardLayout title="Setlist Planner" basePermission={Permission.setlist_planner_access}>
+        <DashboardLayout title={pageTitle} basePermission={Permission.setlist_planner_access}>
             <AppContextMarker name="Setlist plan page">
                 <SongsProvider>
-                    <SetlistPlannerPageContent />
+                    <SetlistPlannerPageContent onTitleChange={setPageTitle} />
                 </SongsProvider>
             </AppContextMarker>
         </DashboardLayout>
