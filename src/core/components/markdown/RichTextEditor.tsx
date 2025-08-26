@@ -64,7 +64,15 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         if ((e.clipboardData?.files?.length || 0) > 0) {
             props.onFileSelect(e.clipboardData!.files);
             e.preventDefault();
+            return;
         }
+        
+        // Check for Shift key modifier to allow raw markdown paste
+        if (e.shiftKey) {
+            // Allow default paste behavior for raw text when Shift is held
+            return;
+        }
+        
         // TODO: rich text paste handling via turndown.
         // if text/html, then use turndown
         const pastedHtml = e.clipboardData?.getData('text/html');
