@@ -504,51 +504,61 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
     // Convert setlist plan data to LocalSongListPayload format so we can use SetlistAPI.GetRowItems
     const convertToLocalSongListPayload = React.useMemo(() => {
-        const songList = {
-            songs: docOrTempDoc.payload.rows
-                .filter(row => row.type === 'song' && row.songId)
-                .map((row, index) => {
-                    const song = allSongs.find(s => s.id === row.songId);
-                    if (!song) return null;
-                    return {
-                        eventSongListId: 0, // not used for running time calculation
+        try {
+            const songList = {
+                songs: docOrTempDoc.payload.rows
+                    .filter(row => row.type === 'song' && row.songId)
+                    .map((row, index) => {
+                        const song = allSongs.find(s => s.id === row.songId);
+                        if (!song) return null;
+                        return {
+                            eventSongListId: 0, // not used for running time calculation
+                            id: index, // not used for running time calculation
+                            sortOrder: docOrTempDoc.payload.rows.indexOf(row),
+                            subtitle: row.commentMarkdown || "",
+                            songId: song.id,
+                            song: {
+                                id: song.id,
+                                name: song.name,
+                                lengthSeconds: song.lengthSeconds,
+                                startBPM: song.startBPM,
+                                endBPM: song.endBPM,
+                                tags: song.tags,
+                                pinnedRecordingId: song.pinnedRecordingId,
+                            }
+                        };
+                    })
+                    .filter(Boolean) as any[],
+                dividers: docOrTempDoc.payload.rows
+                    .filter(row => row.type === 'divider')
+                    .map((row, index) => ({
                         id: index, // not used for running time calculation
-                        sortOrder: docOrTempDoc.payload.rows.indexOf(row),
+                        eventSongListId: 0, // not used for running time calculation
+                        isInterruption: false, // TODO: this will be true for breaks in the future
+                        subtitleIfSong: null,
+                        isSong: false,
+                        lengthSeconds: null,
+                        textStyle: 0, // not used for running time calculation
                         subtitle: row.commentMarkdown || "",
-                        songId: song.id,
-                        song: {
-                            id: song.id,
-                            name: song.name,
-                            lengthSeconds: song.lengthSeconds,
-                            startBPM: song.startBPM,
-                            endBPM: song.endBPM,
-                            tags: song.tags,
-                            pinnedRecordingId: song.pinnedRecordingId,
-                        }
-                    };
-                })
-                .filter(Boolean) as any[],
-            dividers: docOrTempDoc.payload.rows
-                .filter(row => row.type === 'divider')
-                .map((row, index) => ({
-                    id: index, // not used for running time calculation
-                    eventSongListId: 0, // not used for running time calculation
-                    isInterruption: false, // TODO: this will be true for breaks in the future
-                    subtitleIfSong: null,
-                    isSong: false,
-                    lengthSeconds: null,
-                    textStyle: 0, // not used for running time calculation
-                    subtitle: row.commentMarkdown || "",
-                    color: row.color,
-                    sortOrder: docOrTempDoc.payload.rows.indexOf(row),
-                }))
-        };
-        return songList;
+                        color: row.color,
+                        sortOrder: docOrTempDoc.payload.rows.indexOf(row),
+                    }))
+            };
+            return songList;
+        } catch (error) {
+            console.error('Error converting setlist plan to LocalSongListPayload:', error);
+            return { songs: [], dividers: [] };
+        }
     }, [docOrTempDoc.payload.rows, allSongs]);
 
     // Calculate running times using the setlist API
     const rowItemsWithRunningTimes = React.useMemo(() => {
-        return SetlistAPI.GetRowItems(convertToLocalSongListPayload);
+        try {
+            return SetlistAPI.GetRowItems(convertToLocalSongListPayload);
+        } catch (error) {
+            console.error('Error calculating running times:', error);
+            return [];
+        }
     }, [convertToLocalSongListPayload]);
 
     // Collect all song IDs from the planner for pinned recording query
@@ -739,7 +749,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     <div className={`td ${lengthColumnMode === "length" ? "songLength" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>
                         {lengthColumnMode === "length" 
                             ? formatSongLength(props.stats.totalSongLengthSeconds)
-                            : (rowItemsWithRunningTimes.length > 0 && rowItemsWithRunningTimes[rowItemsWithRunningTimes.length - 1]?.runningTimeSeconds
+                            : (rowItemsWithRunningTimes.length > 0 && rowItemsWithRunningTimes[rowItemsWithRunningTimes.length - 1]?.runningTimeSeconds != null
                                 ? formatSongLength(rowItemsWithRunningTimes[rowItemsWithRunningTimes.length - 1]!.runningTimeSeconds!)
                                 : formatSongLength(props.stats.totalSongLengthSeconds)
                             )
