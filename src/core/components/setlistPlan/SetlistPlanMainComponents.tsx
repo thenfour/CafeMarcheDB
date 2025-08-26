@@ -744,7 +744,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     const rowItemsWithRunningTimes = React.useMemo(() => {
         try {
             const r = SetlistAPI.GetRowItems(convertToLocalSongListPayload);
-            console.log(`calculated portable song list from,to`, docOrTempDoc.payload.rows, convertToLocalSongListPayload, r);
+            //console.log(`calculated portable song list from,to`, docOrTempDoc.payload.rows, convertToLocalSongListPayload, r);
             return r;
         } catch (error) {
             console.error('Error calculating running times:', error);
