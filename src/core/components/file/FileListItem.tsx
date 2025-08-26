@@ -5,15 +5,14 @@ import * as db3 from "src/core/db3/db3";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
 import { FileClass, GetFileClass } from "../../db3/shared/fileAPI";
+import { InstrumentChip } from "../CMCoreComponents";
+import { StandardVariationSpec } from "../color/palette";
+import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
 import { GenericSearchListItem } from "../search/SearchListItem";
-import { FilesFilterSpec } from "./FileClientBaseTypes";
-import { StandardVariationSpec } from "../color/palette";
-import { UserChip } from "../user/userChip";
 import { SongChip } from "../song/SongChip";
-import { EventChip } from "../event/EventChips";
-import { InstrumentChip } from "../CMCoreComponents";
 import { WikiPageChip } from "../wiki/WikiPageChip";
+import { FilesFilterSpec } from "./FileClientBaseTypes";
 
 
 type FileListItemProps = {

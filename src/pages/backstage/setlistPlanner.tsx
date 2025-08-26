@@ -5,12 +5,14 @@
 // - break out setlist planner client utils into a lib
 
 import { CMSmallButton } from "@/src/core/components/CMCoreComponents2";
+import { GetStyleVariablesForColor } from "@/src/core/components/color/ColorClientUtils";
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { CMSelectNullBehavior, CMSingleSelectDialog } from "@/src/core/components/select/CMSingleSelectDialog";
 import { SetlistPlanGroupClientColumns, SetlistPlanGroupList } from "@/src/core/components/setlistPlan/SetlistPlanGroupComponents";
 import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
-import { UserChip } from "@/src/core/components/user/userChip";
 import { API } from "@/src/core/db3/clientAPI";
 import * as db3 from "@/src/core/db3/db3";
 import * as DB3Client from "@/src/core/db3/DB3Client";
@@ -37,15 +39,12 @@ import { SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanSearchProgress
 import { AutoSelectingNumberField } from "src/core/components/setlistPlan/SetlistPlanUtilityComponents";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongsProvider } from "src/core/components/song/SongsContext";
+import { useLocalStorageState } from "src/core/components/useLocalStorageState";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
 import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useLocalStorageState } from "src/core/components/useLocalStorageState";
-import { StandardVariationSpec } from "@/src/core/components/color/palette";
-import { GetStyleVariablesForColor } from "@/src/core/components/color/ColorClientUtils";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
