@@ -206,7 +206,7 @@ type SetlistPlannerMatrixRowProps = {
     allPinnedRecordings: Record<number, TSongPinnedRecording>;
     thisTrack: MediaPlayerTrack;
     getPlaylist: () => MediaPlayerTrack[];
-    
+
     lengthColumnMode: LengthColumnMode;
     toggleLengthColumnMode: () => void;
     rowItemWithRunningTime?: SetlistAPI.EventSongListItem;
@@ -305,9 +305,9 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             </div>
         </div>
         <div className={`td ${props.lengthColumnMode === "length" ? "songLength" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
-            {props.lengthColumnMode === "length" 
+            {props.lengthColumnMode === "length"
                 ? songLengthFormatted
-                : (props.rowItemWithRunningTime?.runningTimeSeconds 
+                : (props.rowItemWithRunningTime?.runningTimeSeconds
                     ? <>{formatSongLength(props.rowItemWithRunningTime.runningTimeSeconds)}{props.rowItemWithRunningTime.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>
                     : null
                 )
@@ -671,7 +671,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         return {
                             eventSongListId: 0, // not used for running time calculation
                             id: index, // not used for running time calculation
-                            sortOrder: docOrTempDoc.payload.rows.indexOf(row),
+                            sortOrder: index,
                             subtitle: row.commentMarkdown || "",
                             songId: song.id,
                             song: {
@@ -695,10 +695,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                         subtitleIfSong: null,
                         isSong: false,
                         lengthSeconds: null,
-                        textStyle: 0, // not used for running time calculation
+                        textStyle: db3.EventSongListDividerTextStyle.Default,
                         subtitle: row.commentMarkdown || "",
-                        color: row.color,
-                        sortOrder: docOrTempDoc.payload.rows.indexOf(row),
+                        color: row.color || null,
+                        sortOrder: index,
                     }))
             };
             return songList;
@@ -711,7 +711,8 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     // Calculate running times using the setlist API
     const rowItemsWithRunningTimes = React.useMemo(() => {
         try {
-            return SetlistAPI.GetRowItems(convertToLocalSongListPayload);
+            const r = SetlistAPI.GetRowItems(convertToLocalSongListPayload);
+            return r;
         } catch (error) {
             console.error('Error calculating running times:', error);
             return [];
@@ -879,12 +880,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                             allPinnedRecordings={pinnedRecordings || {}}
                             thisTrack={rowToPlaylistTrack(song, index)}
                             getPlaylist={getPlaylist}
-                            
+
                             lengthColumnMode={lengthColumnMode}
                             toggleLengthColumnMode={toggleLengthColumnMode}
-                            rowItemWithRunningTime={rowItemsWithRunningTimes.find(item => 
-                                item.type === 'song' && item.song.id === song.songId
-                            )}
+                            rowItemWithRunningTime={rowItemsWithRunningTimes[index]}
                         />
                     }
                 </ReactSmoothDndDraggable>
@@ -905,7 +904,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     title={lengthColumnMode === "length" ? `Total song length for all songs` : `Total running time for setlist`}
                 >
                     <div className={`td ${lengthColumnMode === "length" ? "songLength" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>
-                        {lengthColumnMode === "length" 
+                        {lengthColumnMode === "length"
                             ? formatSongLength(props.stats.totalSongLengthSeconds)
                             : (rowItemsWithRunningTimes.length > 0 && rowItemsWithRunningTimes[rowItemsWithRunningTimes.length - 1]?.runningTimeSeconds != null
                                 ? formatSongLength(rowItemsWithRunningTimes[rowItemsWithRunningTimes.length - 1]!.runningTimeSeconds!)
@@ -943,6 +942,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             </div>
 
             <div className="tr footer">
+                <div className="td delete"></div>
                 <div className="td songName"></div>
                 <div className="td songLength">
                 </div>
@@ -978,6 +978,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             </div>
 
             <div className="tr footer">
+                <div className="td delete"></div>
                 <div className="td songName"></div>
                 <div className="td songLength">
                 </div>

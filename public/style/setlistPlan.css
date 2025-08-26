@@ -175,15 +175,22 @@
     white-space: nowrap;
 }
 
-.SetlistPlannerMatrix .td.songLength {
+.SetlistPlannerMatrix .td.songLength,
+.SetlistPlannerMatrix .td.runningLength {
     width: var(--song-length-width);
     white-space: nowrap;
     display: flex;
     font-family: var(--ff-mono);
     justify-content: flex-end;
+    align-items: center;
     padding-right: 3px;
     font-size: 14px;
     opacity: 50%;
+}
+
+.SetlistPlannerMatrix .td.runningLength {
+    color: #080;
+    background-color: #fff;
 }
 
 .SetlistPlannerMatrix .td.songName input {
@@ -250,6 +257,10 @@
 .SetlistPlannerMatrix .td.delete {
     width: var(--delete-width);
     opacity: 30%;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .SetlistPlannerMatrix .tr:hover .td.delete {

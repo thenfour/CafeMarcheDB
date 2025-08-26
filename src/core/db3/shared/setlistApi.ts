@@ -43,13 +43,16 @@ export type EventSongListSongItemWithSong = Prisma.EventSongListSongGetPayload<{
     }
 }>;
 
+type EventSongListCommonFields = {
+    runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
+    songsWithUnknownLength: number;
+};
+
 export type EventSongListSongItem = EventSongListSongItemWithSong & {
     type: "song";
     index: number; // the display index.
     //songArrayIndex: number; // index into the songs array (for play button)
-    runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
-    songsWithUnknownLength: number;
-};
+} & EventSongListCommonFields;
 
 export type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{
     select: {
@@ -67,16 +70,14 @@ export type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{
 }> & {
     type: "divider"
     index?: number | null;
-    runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
-    songsWithUnknownLength: number;
-};
+} & EventSongListCommonFields;
 
 export type EventSongListNewItem = {
     eventSongListId: number,
     id: number,
     sortOrder: number,
     type: "new";
-};
+} & EventSongListCommonFields;
 
 export type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
 
