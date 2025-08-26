@@ -21,7 +21,7 @@ export function CMLink({ trackingFeature = ActivityFeature.link_follow_internal,
 
     const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         //if (trackingFeature) {
-        console.log("CMLink clicked", { trackingFeature, appContext });
+        //console.log("CMLink clicked", { trackingFeature, appContext });
 
         void recordFeature({
             feature: trackingFeature,
