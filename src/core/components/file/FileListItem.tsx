@@ -9,6 +9,11 @@ import { Markdown } from "../markdown/Markdown";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { FilesFilterSpec } from "./FileClientBaseTypes";
 import { StandardVariationSpec } from "../color/palette";
+import { UserChip } from "../user/userChip";
+import { SongChip } from "../song/SongChip";
+import { EventChip } from "../event/EventChips";
+import { InstrumentChip } from "../CMCoreComponents";
+import { WikiPageChip } from "../wiki/WikiPageChip";
 
 
 type FileListItemProps = {
@@ -68,6 +73,26 @@ export const FileListItem = (props: FileListItemProps) => {
                     >
                         {tag.fileTag.text}
                     </CMChip>
+                ))}
+                
+                {(props.file.taggedEvents || []).map(taggedEvent => (
+                    <EventChip key={taggedEvent.id} value={taggedEvent.event} size="small" variation={StandardVariationSpec.Weak} />
+                ))}
+
+                {(props.file.taggedUsers || []).map(taggedUser => (
+                    <UserChip key={taggedUser.id} value={taggedUser.user} size="small" variation={StandardVariationSpec.Weak} />
+                ))}
+
+                {(props.file.taggedSongs || []).map(taggedSong => (
+                    <SongChip key={taggedSong.id} value={taggedSong.song} size="small" variation={StandardVariationSpec.Weak} />
+                ))}
+
+                {(props.file.taggedInstruments || []).map(taggedInstrument => (
+                    <InstrumentChip key={taggedInstrument.id} value={taggedInstrument.instrument} size="small" variation={StandardVariationSpec.Weak} />
+                ))}
+
+                {(props.file.taggedWikiPages || []).map(taggedWikiPage => (
+                    <WikiPageChip key={taggedWikiPage.id} slug={taggedWikiPage.wikiPage.slug} size="small" variation={StandardVariationSpec.Weak} />
                 ))}
             </div>
         }
