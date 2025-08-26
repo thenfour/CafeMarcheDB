@@ -371,17 +371,19 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                 </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <div className="name">
-                    {/* {gIconMap.LibraryMusic()} */}
-                    {dbPlan.name}
-                </div>
-                <div className="createdBy">
-                    {dbPlan.createdAt && (
-                        <div className="fieldItem">Created on <DateValue value={dbPlan.createdAt} /></div>
-                    )}
-                    {dbPlan.createdByUserId && (
-                        <div className="fieldItem">by <UserChip size="small" userId={dbPlan.createdByUserId} /></div>
-                    )}
+                <div className="freeButton" style={{ display: "flex", flexDirection: "column", flexGrow: 1, alignItems: "flex-start" }}>
+                    <div className="name">
+                        {/* {gIconMap.LibraryMusic()} */}
+                        {dbPlan.name}
+                    </div>
+                    <div className="createdBy" style={{ opacity: 0.7 }}>
+                        {dbPlan.createdAt && (
+                            <div className="fieldItem">Created on <DateValue value={dbPlan.createdAt} /></div>
+                        )}
+                        {/* {dbPlan.createdByUserId && (
+                            <div className="fieldItem">by <UserChip size="small" userId={dbPlan.createdByUserId} /></div>
+                        )} */}
+                    </div>
                 </div>
                 <Markdown markdown={dbPlan.description} />
             </div>
