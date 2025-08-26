@@ -223,7 +223,7 @@ type SetlistPlannerMatrixRowProps = {
 
     lengthColumnMode: LengthColumnMode;
     toggleLengthColumnMode: () => void;
-    rowItemWithRunningTime?: SetlistAPI.EventSongListItem;
+    rowItemWithRunningTime: SetlistAPI.EventSongListItem;
 };
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
@@ -253,6 +253,9 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     }
     const songLengthFormatted = song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds);
 
+    if (props.rowItemWithRunningTime.type !== "song") throw new Error("Expected song item in SetlistPlannerMatrixSongRow");
+    const songItemWithRunningTime = props.rowItemWithRunningTime;
+
     // Duplicate detection
     const songOccurrences = props.doc.payload.rows.reduce((acc, row) => {
         return acc + (row.type === "song" && row.songId === song.id ? 1 : 0);
@@ -271,7 +274,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
 
             <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
                 {/* #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")} */}
-                #{props.rowItemWithRunningTime ? props.rowIndex.toString().padStart(2, " ") : "--"}
+                #{props.rowItemWithRunningTime ? songItemWithRunningTime.index.toString().padStart(2, " ") : "--"}
                 ☰
             </div>
 
@@ -913,7 +916,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
                             lengthColumnMode={lengthColumnMode}
                             toggleLengthColumnMode={toggleLengthColumnMode}
-                            rowItemWithRunningTime={rowItemsWithRunningTimes[index]}
+                            rowItemWithRunningTime={rowItemsWithRunningTimes[index]!}
                         />
                     }
                 </ReactSmoothDndDraggable>

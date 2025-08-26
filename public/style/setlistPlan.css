@@ -179,8 +179,8 @@
     /* maximum compatibility with contents, nothing fancy, appear as an interruption*/
     /* background-color: #0002; */
     /* flex-grow: 1; */
-    /* background is vertical gradient from white to black*/
-    background: linear-gradient(to bottom, #fff1, #0001);
+    /* background is vertical gradient with a thin line of white, then all black */
+    background: linear-gradient(to bottom, #0000, #0000 40%, #0001 50%, #0000 59%, #0000);
 }
 
 .SetlistPlannerMatrix .td.songLength,
