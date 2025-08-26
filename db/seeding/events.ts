@@ -424,11 +424,11 @@ export const SeedEvents_VeryRandom = async (gState: SeedingState) => {
 
     eventDates = faker.helpers.shuffle(eventDates);
 
-    eventDates.forEach((e, i) => {
+    for (const [i, e] of eventDates.entries()) {
         console.log(`creating event #${i} ${e.name}`);
 
-        MakeEvent(gState, e.name, e.typeId, e.segments);
-    });
+        await MakeEvent(gState, e.name, e.typeId, e.segments);
+    }
 
     gState.gAllEvents = await gState.prisma.event.findMany({});
 };
