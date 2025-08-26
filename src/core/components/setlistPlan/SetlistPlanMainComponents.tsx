@@ -12,6 +12,7 @@ import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
+import * as SetlistAPI from "src/core/db3/shared/setlistApi";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
@@ -96,6 +97,10 @@ type SetlistPlannerMatrixRowProps = {
     allPinnedRecordings: Record<number, TSongPinnedRecording>;
     thisTrack: MediaPlayerTrack;
     getPlaylist: () => MediaPlayerTrack[];
+    
+    lengthColumnMode: LengthColumnMode;
+    toggleLengthColumnMode: () => void;
+    rowItemWithRunningTime?: SetlistAPI.EventSongListItem;
 };
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
@@ -188,8 +193,14 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 />
             </div>
         </div>
-        <div className="td songLength">
-            {songLengthFormatted}
+        <div className={`td ${props.lengthColumnMode === "length" ? "songLength" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
+            {props.lengthColumnMode === "length" 
+                ? songLengthFormatted
+                : (props.rowItemWithRunningTime?.runningTimeSeconds 
+                    ? <>{formatSongLength(props.rowItemWithRunningTime.runningTimeSeconds)}{props.rowItemWithRunningTime.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>
+                    : null
+                )
+            }
         </div>
         {
             props.doc.payload.columns.map((segment, index) => {
@@ -468,6 +479,8 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+type LengthColumnMode = "length" | "runningTime";
+
 type SetlistPlannerMatrixProps = {
     doc: SetlistPlan;
     tempDoc: SetlistPlan | undefined;
@@ -480,9 +493,63 @@ type SetlistPlannerMatrixProps = {
 const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     const allSongs = useSongsContext().songs;
     const [showCostBreakdown, setShowCostBreakdown] = React.useState(false);
+    const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
 
     const docOrTempDoc = props.tempDoc || props.doc;
     //const isTempDoc = !!props.tempDoc;
+
+    const toggleLengthColumnMode = () => {
+        setLengthColumnMode(prev => prev === "length" ? "runningTime" : "length");
+    };
+
+    // Convert setlist plan data to LocalSongListPayload format so we can use SetlistAPI.GetRowItems
+    const convertToLocalSongListPayload = React.useMemo(() => {
+        const songList = {
+            songs: docOrTempDoc.payload.rows
+                .filter(row => row.type === 'song' && row.songId)
+                .map((row, index) => {
+                    const song = allSongs.find(s => s.id === row.songId);
+                    if (!song) return null;
+                    return {
+                        eventSongListId: 0, // not used for running time calculation
+                        id: index, // not used for running time calculation
+                        sortOrder: docOrTempDoc.payload.rows.indexOf(row),
+                        subtitle: row.commentMarkdown || "",
+                        songId: song.id,
+                        song: {
+                            id: song.id,
+                            name: song.name,
+                            lengthSeconds: song.lengthSeconds,
+                            startBPM: song.startBPM,
+                            endBPM: song.endBPM,
+                            tags: song.tags,
+                            pinnedRecordingId: song.pinnedRecordingId,
+                        }
+                    };
+                })
+                .filter(Boolean) as any[],
+            dividers: docOrTempDoc.payload.rows
+                .filter(row => row.type === 'divider')
+                .map((row, index) => ({
+                    id: index, // not used for running time calculation
+                    eventSongListId: 0, // not used for running time calculation
+                    isInterruption: false, // TODO: this will be true for breaks in the future
+                    subtitleIfSong: null,
+                    isSong: false,
+                    lengthSeconds: null,
+                    textStyle: 0, // not used for running time calculation
+                    subtitle: row.commentMarkdown || "",
+                    color: row.color,
+                    sortOrder: docOrTempDoc.payload.rows.indexOf(row),
+                }))
+        };
+        return songList;
+    }, [docOrTempDoc.payload.rows, allSongs]);
+
+    // Calculate running times using the setlist API
+    const rowItemsWithRunningTimes = React.useMemo(() => {
+        return SetlistAPI.GetRowItems(convertToLocalSongListPayload);
+    }, [convertToLocalSongListPayload]);
 
     // Collect all song IDs from the planner for pinned recording query
     const songIds = React.useMemo(() => {
@@ -579,7 +646,8 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             <div className="td delete"></div>
             <div className="td songName"></div>
             <div className="td play"></div>
-            <div className="td songLength">
+            <div className={`td ${lengthColumnMode === "length" ? "songLength" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>
+                {lengthColumnMode === "length" ? "Len" : "∑T"}
             </div>
             {docOrTempDoc.payload.columns.map((segment, index) => <div key={index} className="td segment">
                 <div style={{ display: "flex" }}>
@@ -643,6 +711,12 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                             allPinnedRecordings={pinnedRecordings || {}}
                             thisTrack={rowToPlaylistTrack(song, index)}
                             getPlaylist={getPlaylist}
+                            
+                            lengthColumnMode={lengthColumnMode}
+                            toggleLengthColumnMode={toggleLengthColumnMode}
+                            rowItemWithRunningTime={rowItemsWithRunningTimes.find(item => 
+                                item.type === 'song' && item.song.id === song.songId
+                            )}
                         />
                     }
                 </ReactSmoothDndDraggable>
@@ -660,10 +734,16 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td play"></div>
                 <Tooltip
                     disableInteractive
-                    title={`Total song length for all songs`}
+                    title={lengthColumnMode === "length" ? `Total song length for all songs` : `Total running time for setlist`}
                 >
-                    <div className="td songLength">
-                        {formatSongLength(props.stats.totalSongLengthSeconds)}
+                    <div className={`td ${lengthColumnMode === "length" ? "songLength" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>
+                        {lengthColumnMode === "length" 
+                            ? formatSongLength(props.stats.totalSongLengthSeconds)
+                            : (rowItemsWithRunningTimes.length > 0 && rowItemsWithRunningTimes[rowItemsWithRunningTimes.length - 1]?.runningTimeSeconds
+                                ? formatSongLength(rowItemsWithRunningTimes[rowItemsWithRunningTimes.length - 1]!.runningTimeSeconds!)
+                                : formatSongLength(props.stats.totalSongLengthSeconds)
+                            )
+                        }
                     </div>
                 </Tooltip>
                 {/* </Tooltip> */}
