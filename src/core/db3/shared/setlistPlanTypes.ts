@@ -43,6 +43,7 @@ export const ZSetlistPlanRow = z.object({
     color: z.string().nullable().optional(),
     type: z.enum(["song", "divider"]),
     leds: z.array(ZSetlistPlanLedValue).optional(),
+    isInterruption: z.boolean().optional().default(true),
 });
 
 export type SetlistPlanRow = z.infer<typeof ZSetlistPlanRow>;

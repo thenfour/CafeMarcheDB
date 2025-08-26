@@ -371,7 +371,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                 </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <div className="freeButton" style={{ display: "flex", flexDirection: "column", flexGrow: 1, alignItems: "flex-start" }}>
+                <div className="freeButton" style={{ display: "flex", flexDirection: "column", flexGrow: 1, alignItems: "flex-start" }} onClick={() => onSelect(dbPlan)}>
                     <div className="name">
                         {/* {gIconMap.LibraryMusic()} */}
                         {dbPlan.name}
@@ -831,6 +831,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                                 commentMarkdown: "",
                                 type: "song",
                                 pointsRequired: 0,
+                                isInterruption: false,
                             }],
                         },
                     });
@@ -844,6 +845,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                         commentMarkdown: "",
                         type: "song",
                         pointsRequired: 0,
+                        isInterruption: false,
                     }));
                     setDocWrapper({
                         ...doc,
@@ -863,6 +865,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                             rows: [...doc.payload.rows, {
                                 rowId: getId("row"),
                                 type: "divider",
+                                isInterruption: true,
                             }],
                         },
                     });
@@ -880,11 +883,13 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                                 commentMarkdown: "",
                                 type: "song",
                                 pointsRequired: 0,
+                                isInterruption: false,
                             };
                         } else {
                             return {
                                 rowId: getId("row"),
                                 type: "divider",
+                                isInterruption: item.isInterruption ?? true,
                             };
                         }
                     });
@@ -948,7 +953,25 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                     });
                 }
             },
-            addColumn: () => {
+            setRowIsInterruption: (rowId: string, isInterruption: boolean) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rows: doc.payload.rows.map((x) => {
+                                if (x.rowId === rowId) {
+                                    return {
+                                        ...x,
+                                        isInterruption,
+                                    };
+                                }
+                                return x;
+                            }),
+                        },
+                    });
+                }
+            }, addColumn: () => {
                 if (doc) {
                     setDocWrapper({
                         ...doc,

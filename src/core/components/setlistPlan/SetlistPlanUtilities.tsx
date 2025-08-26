@@ -96,6 +96,7 @@ export interface SetlistPlanMutator {
     deleteRow: (rowId: string) => void;
     setRowPointsRequired: (rowId: string, points: number | undefined) => void;
     setRowComment: (rowId: string, comment: string) => void;
+    setRowIsInterruption: (rowId: string, isInterruption: boolean | undefined) => void;
     reorderRows: (args: ReactSmoothDnd.DropResult) => void;
     //setRowColor: (rowId: string, color: string | undefined) => void;
 

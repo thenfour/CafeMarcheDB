@@ -175,6 +175,14 @@
     white-space: nowrap;
 }
 
+.SetlistPlannerMatrix .tr.divider.interruption {
+    /* maximum compatibility with contents, nothing fancy, appear as an interruption*/
+    /* background-color: #0002; */
+    /* flex-grow: 1; */
+    /* background is vertical gradient from white to black*/
+    background: linear-gradient(to bottom, #fff1, #0001);
+}
+
 .SetlistPlannerMatrix .td.songLength,
 .SetlistPlannerMatrix .td.runningLength {
     width: var(--song-length-width);

@@ -1,5 +1,5 @@
 import { useQuery } from "@blitzjs/rpc";
-import { Button, ButtonGroup, DialogContent, DialogTitle, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, DialogContent, DialogTitle, Divider, FormControlLabel, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { QuickSearchItemType, QuickSearchItemTypeSets } from "shared/quickFilter";
@@ -140,6 +140,20 @@ const SetlistPlannerRowEditor = (props: SetlistPlannerRowEditorProps) => {
                     initialValue={row.commentMarkdown || ""}
                 />
             </div>
+
+            {row.type === "divider" && (
+                <div style={{ marginTop: "20px" }}>
+                    <FormControlLabel
+                        label="This is a break, and resets the running time"
+                        control={
+                            <Switch
+                                checked={row.isInterruption ?? true}
+                                onChange={(e) => props.mutator.setRowIsInterruption(props.rowId, e.target.checked)}
+                            />
+                        }
+                    />
+                </div>
+            )}
         </div>
     );
 };
@@ -256,7 +270,8 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
         <div className="td songName" style={{ "--song-hash-color": getHashedColor(song.name), position: "relative" } as any}>
 
             <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
-                #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")}
+                {/* #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")} */}
+                #{props.rowItemWithRunningTime ? props.rowIndex.toString().padStart(2, " ") : "--"}
                 ☰
             </div>
 
@@ -369,7 +384,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
             </div>
         </Tooltip>
         <div className="td dotMenu">
-            <DotMenu setCloseMenuProc={setCloseMenuProc}>
+            <DotMenu setCloseMenuProc={(newProc) => setCloseMenuProc(() => newProc)}>
                 <MenuItem onClick={() => {
                     setShowEditDialog(true);
                     closeMenuProc?.();
@@ -398,6 +413,7 @@ type SetlistPlannerDividerRowProps = {
     mutator: SetlistPlanMutator;
     rowId: string;
     stats: SetlistPlanStats;
+    rowItemWithRunningTime?: SetlistAPI.EventSongListItem;
 };
 
 const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
@@ -405,16 +421,14 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
     const [closeMenuProc, setCloseMenuProc] = React.useState<(() => void) | null>(null);
     const row = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
 
-    return <div className="tr divider">
+    return <div className={`tr divider ${row.isInterruption ? "interruption" : " noInterruption"}`}>
         <div className="td delete">
             <div className="freeButton" onClick={() => props.mutator.deleteRow(props.rowId)}>
                 {gIconMap.Delete()}
             </div>
         </div>
         <div className="td songName">
-            <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
-                #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")}
-                ☰
+            <div className="dragHandle draggable" style={{ fontFamily: "monospace" }} dangerouslySetInnerHTML={{ __html: "&nbsp;&nbsp;&nbsp;☰" }}>
             </div>
 
             <div className="numberCell">
@@ -425,7 +439,7 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
                 />
             </div>
 
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center" }} className="textContent">
                 <SetlistPlannerLedArray
                     direction="row"
                     ledDefs={props.doc.payload.rowLeds || []}
@@ -445,12 +459,27 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
         <div className="td rehearsalTime"></div>
         <div className="td balance"></div>
         <div className="td dotMenu">
-            <DotMenu setCloseMenuProc={setCloseMenuProc}>
+            <DotMenu setCloseMenuProc={(newProc) => setCloseMenuProc(() => newProc)}>
                 <MenuItem onClick={() => {
-                    setShowEditDialog(true);
                     closeMenuProc?.();
+                    setShowEditDialog(true);
                 }}>
                     Edit
+                </MenuItem>
+                <MenuItem onClick={() => {
+                    props.mutator.setRowIsInterruption(props.rowId, !(row.isInterruption ?? true));
+                    //closeMenuProc?.();
+                }}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                size="small"
+                                checked={row.isInterruption ?? true}
+                                readOnly
+                            />
+                        }
+                        label="Break; reset running time"
+                    />
                 </MenuItem>
             </DotMenu>
         </div>
@@ -665,13 +694,13 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             const songList = {
                 songs: docOrTempDoc.payload.rows
                     .filter(row => row.type === 'song' && row.songId)
-                    .map((row, index) => {
+                    .map((row) => {
                         const song = allSongs.find(s => s.id === row.songId);
                         if (!song) return null;
                         return {
                             eventSongListId: 0, // not used for running time calculation
-                            id: index, // not used for running time calculation
-                            sortOrder: index,
+                            id: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
+                            sortOrder: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
                             subtitle: row.commentMarkdown || "",
                             songId: song.id,
                             song: {
@@ -689,16 +718,16 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 dividers: docOrTempDoc.payload.rows
                     .filter(row => row.type === 'divider')
                     .map((row, index) => ({
-                        id: index, // not used for running time calculation
+                        id: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
                         eventSongListId: 0, // not used for running time calculation
-                        isInterruption: false, // TODO: this will be true for breaks in the future
+                        isInterruption: row.isInterruption ?? true, // defaults to true for dividers
                         subtitleIfSong: null,
                         isSong: false,
                         lengthSeconds: null,
                         textStyle: db3.EventSongListDividerTextStyle.Default,
                         subtitle: row.commentMarkdown || "",
                         color: row.color || null,
-                        sortOrder: index,
+                        sortOrder: docOrTempDoc.payload.rows.indexOf(row), // cannot use index; that's only divider index.
                     }))
             };
             return songList;
@@ -712,6 +741,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
     const rowItemsWithRunningTimes = React.useMemo(() => {
         try {
             const r = SetlistAPI.GetRowItems(convertToLocalSongListPayload);
+            console.log(`calculated portable song list from,to`, docOrTempDoc.payload.rows, convertToLocalSongListPayload, r);
             return r;
         } catch (error) {
             console.error('Error calculating running times:', error);
@@ -1276,7 +1306,7 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
                             sortOrder: index,
                             comment: row.commentMarkdown || "",
                             color: row.color || null,
-                            isInterruption: false,
+                            isInterruption: row.isInterruption ?? true, // defaults to true for dividers
                             isSong: false,
                             subtitleIfSong: null,
                             lengthSeconds: null,
