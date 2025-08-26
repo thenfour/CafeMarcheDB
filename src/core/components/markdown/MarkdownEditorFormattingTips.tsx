@@ -80,6 +80,11 @@ export const MarkdownEditorFormattingTips = (props: { in: boolean }) => {
                         <Pre>{`Play this scale: {{abc:C D E F G}} and then this chord: {{abc:[CEG]}}`}</Pre>
                     </dd>
 
+                    <dt><span className='highlight'>Raw Markdown Paste</span></dt>
+                    <dd>
+                        By default, pasting rich text converts it to markdown. To paste raw markdown text without processing, hold <strong>Shift</strong> while pasting (Shift+Ctrl+V or Shift+Cmd+V).
+                    </dd>
+
                 </dl>
             </div>
         </Collapse>
