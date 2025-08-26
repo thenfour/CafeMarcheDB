@@ -1,5 +1,5 @@
 import { useQuery } from "@blitzjs/rpc";
-import { Button, ButtonGroup, DialogContent, DialogTitle, Divider, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, DialogContent, DialogTitle, Divider, FormControlLabel, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { QuickSearchItemType, QuickSearchItemTypeSets } from "shared/quickFilter";
@@ -140,6 +140,20 @@ const SetlistPlannerRowEditor = (props: SetlistPlannerRowEditorProps) => {
                     initialValue={row.commentMarkdown || ""}
                 />
             </div>
+            
+            {row.type === "divider" && (
+                <div style={{ marginTop: "20px" }}>
+                    <FormControlLabel
+                        label="This is a break, and resets the running time"
+                        control={
+                            <Switch
+                                checked={row.isInterruption ?? true}
+                                onChange={(e) => props.mutator.setRowIsInterruption(props.rowId, e.target.checked)}
+                            />
+                        } 
+                    />
+                </div>
+            )}
         </div>
     );
 };
@@ -452,6 +466,21 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
                 }}>
                     Edit
                 </MenuItem>
+                <MenuItem onClick={() => {
+                    props.mutator.setRowIsInterruption(props.rowId, !(row.isInterruption ?? true));
+                    closeMenuProc?.();
+                }}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                size="small"
+                                checked={row.isInterruption ?? true}
+                                readOnly
+                            />
+                        }
+                        label="Reset running time"
+                    />
+                </MenuItem>
             </DotMenu>
         </div>
         {showEditDialog && (
@@ -691,7 +720,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                     .map((row, index) => ({
                         id: index, // not used for running time calculation
                         eventSongListId: 0, // not used for running time calculation
-                        isInterruption: false, // TODO: this will be true for breaks in the future
+                        isInterruption: row.isInterruption ?? true, // defaults to true for dividers
                         subtitleIfSong: null,
                         isSong: false,
                         lengthSeconds: null,
@@ -1276,7 +1305,7 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
                             sortOrder: index,
                             comment: row.commentMarkdown || "",
                             color: row.color || null,
-                            isInterruption: false,
+                            isInterruption: row.isInterruption ?? true,
                             isSong: false,
                             subtitleIfSong: null,
                             lengthSeconds: null,

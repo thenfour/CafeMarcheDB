@@ -948,6 +948,25 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
                     });
                 }
             },
+            setRowIsInterruption: (rowId: string, isInterruption: boolean | undefined) => {
+                if (doc) {
+                    setDocWrapper({
+                        ...doc,
+                        payload: {
+                            ...doc.payload,
+                            rows: doc.payload.rows.map((x) => {
+                                if (x.rowId === rowId) {
+                                    return {
+                                        ...x,
+                                        isInterruption,
+                                    };
+                                }
+                                return x;
+                            }),
+                        },
+                    });
+                }
+            },
             addColumn: () => {
                 if (doc) {
                     setDocWrapper({
