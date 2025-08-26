@@ -1389,9 +1389,9 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                 </div>}
 
                                 <div style={{ display: "flex", alignItems: "center" }}>
-                                    <Button onClick={() => {
+                                    <div className="freeButton" onClick={() => {
                                         props.mutator.deleteRow(song.rowId);
-                                    }}>{gIconMap.Delete()}</Button>
+                                    }}>{gIconMap.Delete()}</div>
                                     <div className="type"><CMChip color={song.type === "divider" ? gSwatchColors.brown : gSwatchColors.blue}>{song.type}</CMChip></div>
                                     {/* <ColorPick
                                     value={song.color || null}
