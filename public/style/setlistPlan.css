@@ -235,6 +235,14 @@
     align-items: stretch;
 }
 
+.SetlistPlannerMatrix .td.delete {
+    opacity: 30%;
+}
+
+.SetlistPlannerMatrix .tr:hover .td.delete {
+    opacity: 100%;
+}
+
 .audioPreviewGatewayContainer,
 .audioPreviewGatewayContainer .playingIndicatorSpinner {
     display: flex;

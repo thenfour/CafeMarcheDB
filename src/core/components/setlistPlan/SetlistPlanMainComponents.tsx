@@ -130,6 +130,13 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const isDupeWarning = songOccurrences > 1;
 
     return <div className="tr">
+
+        <div className="td delete">
+            <div className="freeButton" onClick={() => props.mutator.deleteRow(props.rowId)}>
+                {gIconMap.Delete()}
+            </div>
+        </div>
+
         <div className="td songName" style={{ "--song-hash-color": getHashedColor(song.name), position: "relative" } as any}>
 
             <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
@@ -257,6 +264,11 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
     const row = props.doc.payload.rows.find((x) => x.rowId === props.rowId)!;
 
     return <div className="tr divider">
+        <div className="td delete">
+            <div className="freeButton" onClick={() => props.mutator.deleteRow(props.rowId)}>
+                {gIconMap.Delete()}
+            </div>
+        </div>
         <div className="td songName">
             <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
                 #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")}
@@ -564,6 +576,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
     return <div className="SetlistPlannerMatrix">
         <div className="tr header">
+            <div className="td delete"></div>
             <div className="td songName"></div>
             <div className="td play"></div>
             <div className="td songLength">
@@ -639,6 +652,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
 
         <div className="footerContainer">
             <div className="tr footer">
+                <div className="td delete"></div>
                 {/* <Tooltip disableInteractive title={`Total required rehearsal points for all songs`}> */}
                 <div className="td songName numberCell">
                     {/* <NumberField inert value={props.stats.totalPointsRequired} style={{ backgroundColor: gColors.songRequiredPoints[1] }} /> */}
