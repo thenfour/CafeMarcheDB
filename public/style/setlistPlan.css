@@ -130,6 +130,8 @@
     --song-name-width: 400px;
     --segment-width: 80px;
     --song-length-width: 50px;
+    --dot-menu-width: 24px;
+    --delete-width: 24px;
     background-color: #eee;
 }
 
@@ -207,6 +209,14 @@
     width: var(--segment-width);
 }
 
+
+.SetlistPlannerMatrix .td.dotMenu {
+    width: var(--dot-menu-width);
+    white-space: nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
 .SetlistPlannerMatrix .header .td {
     display: flex;
     flex-direction: column;
@@ -238,6 +248,7 @@
 }
 
 .SetlistPlannerMatrix .td.delete {
+    width: var(--delete-width);
     opacity: 30%;
 }
 

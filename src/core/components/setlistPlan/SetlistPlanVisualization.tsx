@@ -155,33 +155,34 @@ const SongStackedBars: React.FC<SetlistPlannerVisualizationsProps> = (props) => 
     songs.sort((a, b) => b.songStat.requiredPoints - a.songStat.requiredPoints);
 
     return <table>
-        {songs.map(song => {
-            return <tr key={song.song.id}>
-                <td>{song.name}</td>
-                <td>
-                    <div style={{ display: "flex", color: "#fff", fontFamily: "monospace" }}>
-                        {song.columnValues.map((columnValue, columnIndex) => {
-                            const isEmpty = columnValue.cell.pointsAllocated === 0;
-                            const isInBounds = columnIndex >= song.firstAllocatedColumnIndex! && columnIndex <= song.lastAllocatedColumnIndex!;
-                            return <div
-                                key={columnValue.column.columnId}
-                                style={{
-                                    backgroundColor: isInBounds ? (isEmpty ? "#fa0" : "#8cc4") : "transparent",//getHashedColor(columnValue.column.name),
-                                    width: 25,
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    "--fc": "#f80",
-                                } as any}
-                                className={`${isInBounds ? (columnValue.cell.pointsAllocated === 0 ? "hatch" : "") : "out-of-bounds"}`}
-                            >
-                                {!isEmpty && columnValue.cell.pointsAllocated}
-                            </div>;
-                        })}
-                    </div>
-                </td>
-            </tr>
-        })}
-
+        <tbody>
+            {songs.map(song => {
+                return <tr key={song.song.id}>
+                    <td>{song.name}</td>
+                    <td>
+                        <div style={{ display: "flex", color: "#fff", fontFamily: "monospace" }}>
+                            {song.columnValues.map((columnValue, columnIndex) => {
+                                const isEmpty = columnValue.cell.pointsAllocated === 0;
+                                const isInBounds = columnIndex >= song.firstAllocatedColumnIndex! && columnIndex <= song.lastAllocatedColumnIndex!;
+                                return <div
+                                    key={columnValue.column.columnId}
+                                    style={{
+                                        backgroundColor: isInBounds ? (isEmpty ? "#fa0" : "#8cc4") : "transparent",//getHashedColor(columnValue.column.name),
+                                        width: 25,
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        "--fc": "#f80",
+                                    } as any}
+                                    className={`${isInBounds ? (columnValue.cell.pointsAllocated === 0 ? "hatch" : "") : "out-of-bounds"}`}
+                                >
+                                    {!isEmpty && columnValue.cell.pointsAllocated}
+                                </div>;
+                            })}
+                        </div>
+                    </td>
+                </tr>
+            })}
+        </tbody>
     </table>
 }
 
