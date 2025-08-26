@@ -371,7 +371,7 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                 </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <div className="freeButton" style={{ display: "flex", flexDirection: "column", flexGrow: 1, alignItems: "flex-start" }}>
+                <div className="freeButton" style={{ display: "flex", flexDirection: "column", flexGrow: 1, alignItems: "flex-start" }} onClick={() => onSelect(dbPlan)}>
                     <div className="name">
                         {/* {gIconMap.LibraryMusic()} */}
                         {dbPlan.name}
