@@ -1500,6 +1500,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryIcon={gIconMap.Public()}
             summaryTitle="Frontpage"
             summarySubtitle={<>{eventData.event.frontpageVisible && gCharMap.Checkmark()}</>}
+            enabled={dashboardContext.settings.HostingMode === db3.HostingMode.CafeMarche}
         >
             <AppContextMarker name="frontpage tab">
                 <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
