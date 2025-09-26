@@ -1,29 +1,9 @@
 // https://github.com/vercel/next.js/discussions/15341
 // Run code once per node server startup
-import { Permission } from "../shared/permissions";
 import db from "db"
 import { execSync } from "child_process";
 import { nanoid } from "nanoid";
-
-async function SyncPermissionsTable() {
-    console.log(`Synchronizing permissions table...`);
-    const dbPermissions = await db.permission.findMany({
-        include: { roles: { include: { role: true } } }
-    });
-    for (const codePermission of Object.values(Permission)) {
-        const exists = dbPermissions.find(dbp => dbp.name === codePermission);
-        console.log(`Permission ${codePermission} ${exists ? "already exists" : "DOESN'T EXIST"} on database`);
-        if (!exists) {
-            const newPerm = await db.permission.create({
-                data: {
-                    name: codePermission,
-                    description: `auto-inserted by server`,
-                },
-            });
-            console.log(` -> INSERTED Permission ${codePermission}. Be sure to associate it with roles.`);
-        }
-    }
-}
+import { instrumentationSetup } from "./setup/instrumentation-setup";
 
 async function CorrectUserUids() {
     // ensure users have uids populated
@@ -85,7 +65,7 @@ async function CorrectEventSegmentUids() {
 
 export async function register() {
     console.log(`INSTRUMENTATION RUNNING`);
-    await SyncPermissionsTable();
+    await instrumentationSetup();
 
     await CorrectUserUids();
     await CorrectEventSegmentUids();

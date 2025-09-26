@@ -8,6 +8,8 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { LoginSignup } from "../LoginSignupForm";
 import Dashboard2 from "./Dashboard2";
 import { NavRealm } from "./StaticMenuItems";
+import { useQuery } from "@blitzjs/rpc";
+import getDashboardSettings from "@/src/auth/queries/getDashboardSettings";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
@@ -40,7 +42,11 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
         </Backdrop>
         ;
 
-    const titleText = `CM: ${title}`;
+    // TODO: find a way to access this from dashboard context...
+    const [settings] = useQuery(getDashboardSettings, {}, { suspense: false });
+
+    const titleText = `${settings?.Dashboard_SiteTitlePrefix ?? "CM: "}${title}`;
+    const faviconUrl = settings?.Dashboard_SiteFaviconUrl ?? "/favicon.png";
 
     return (
         <>
@@ -54,7 +60,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
                 for that yet.
                 */}
                 <meta name="viewport" content="width=750" />
-                <link rel="icon" type="image/png" href="/favicon.png" />
+                <link rel="icon" type="image/png" href={faviconUrl} />
             </Head>
             <Suspense fallback={fallback}>
                 <DashboardLayout2 disableLoginRedirect={CoerceToBoolean(disableLoginRedirect, false)} navRealm={navRealm} basePermission={basePermission}>

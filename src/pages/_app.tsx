@@ -1,6 +1,7 @@
 import { AppProps, ErrorBoundary, ErrorComponent, ErrorFallbackProps } from "@blitzjs/next";
 import { CacheProvider, EmotionCache } from "@emotion/react";
 import { CssBaseline } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
 import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
 import '@xyflow/react/dist/style.css';
@@ -9,7 +10,9 @@ import React from "react";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { withBlitz } from "src/blitz-client";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";
+import { DashboardContextProvider } from "src/core/components/DashboardContext";
 import createEmotionCache from "src/core/createEmotionCache";
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { themeOptions } from "src/core/theme";
 import '../../public/eventSongList.css';
 import '../../public/frontpage.css';
@@ -72,9 +75,13 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
   }, []);
 
   return getLayout(
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
     <SnackbarProvider>
-      <Component {...pageProps} />
+      {/* <DashboardContextProvider> */}
+        <Component {...pageProps} />
+      {/* </DashboardContextProvider> */}
     </SnackbarProvider>
+    </LocalizationProvider>
   );
 }
 

@@ -25,6 +25,12 @@ export enum Setting {
     EventAttendanceCommentDialog_TitleMarkdown = "EventAttendanceCommentDialog_TitleMarkdown",
     EventAttendanceCommentDialog_DescriptionMarkdown = "EventAttendanceCommentDialog_DescriptionMarkdown",
 
+    // for dashboard context
+    Dashboard_HostingMode = "Dashboard_HostingMode",
+    Dashboard_SiteTitle = "Dashboard_SiteTitle", // default "Café Marché Backstage"
+    Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix", // short like "CM: "
+    Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl", // default "/favicon.png"
+
     // mostly pages or sections of pages...
     HomeDescription = "HomeDescription",
     event_description_mockup_markdown = "event_description_mockup_markdown",

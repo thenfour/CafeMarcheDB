@@ -167,6 +167,14 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     refreshCachedData(): void {
         this.refetchDashboardData();
     }
+
+    // defaults
+    settings = {
+        HostingMode: db3.HostingMode.CafeMarche,
+        SiteTitle: "Café Marché Backstage",
+        SiteTitlePrefix: "CM: ",
+        SiteFaviconUrl: "/favicon.png",
+    }
 };
 
 
@@ -222,6 +230,14 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventCustomField = new TableAccessor(dashboardData.eventCustomField);
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
+
+    // settings
+    valueRef.current.settings = {
+        HostingMode: dashboardData.settings?.Dashboard_HostingMode ? (dashboardData.settings.Dashboard_HostingMode as db3.HostingMode) : db3.HostingMode.CafeMarche,
+        SiteTitle: dashboardData.settings?.Dashboard_SiteTitle ?? "Café Marché Backstage",
+        SiteTitlePrefix: dashboardData.settings?.Dashboard_SiteTitlePrefix ?? "CM: ",
+        SiteFaviconUrl: dashboardData.settings?.Dashboard_SiteFaviconUrl ?? "/favicon.png",
+    };
 
     // do enrichment after fundamentals are set up.
     valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks.map(link => {

@@ -6,8 +6,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import { AppBar, Avatar, Box, Divider, IconButton, ListItemIcon, Menu, MenuItem, Toolbar, Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from "@mui/material/styles";
-import { LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
@@ -225,6 +223,7 @@ interface PrimarySearchAppBarProps {
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const theme = useTheme();
     const router = useRouter();
+    const dashboardContext = React.useContext(DashboardContext);
     //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
     const session = useSession();
@@ -259,7 +258,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     component="div"
                     sx={{ display: { xs: 'none', sm: 'block' } }}
                 >
-                    <Link href={"/backstage"} className={`logo`}>Café Marché Backstage</Link>
+                    <Link href={"/backstage"} className={`logo`}>{dashboardContext.settings.SiteTitle}</Link>
                 </Typography>
 
                 <MetronomeDialogButton />
@@ -427,7 +426,6 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
                     <AppContextMarker name="bs">
@@ -443,7 +441,6 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
                     </AppContextMarker>
                 </DashboardContextProvider>
             </Box>
-        </LocalizationProvider>
     );
 }
 
