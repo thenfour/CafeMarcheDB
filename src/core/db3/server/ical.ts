@@ -11,13 +11,33 @@ interface CreateCalendarArgs {
     sourceURL: string;
 };
 
-export const createCalendar = (args: CreateCalendarArgs): ICalCalendar => {
+interface ICalSettings {
+    calendarName: string;
+    calendarCompany: string;
+    calendarProduct: string;
+};
+
+async function GetICalSettings(): Promise<ICalSettings> {
+    const calendarName = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarName } });
+    const calendarCompany = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarCompany } });
+    const calendarProduct = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarProduct } });
+
+    return {
+        calendarName: calendarName?.value || "Café Marché Agenda",
+        calendarCompany: calendarCompany?.value || "Café Marché",
+        calendarProduct: calendarProduct?.value || "Backstage",
+    };
+};
+
+export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCalendar> => {
+
+    const settings = await GetICalSettings();
 
     const calendar = ical({
-        name: "Café Marché Agenda",
+        name: settings.calendarName,
         prodId: {
-            company: "Café Marché",
-            product: "Backstage",
+            company: settings.calendarCompany,
+            product: settings.calendarProduct,
             language: "EN",
         },
         source: args.sourceURL, // * cal.source('http://example.com/my/original_source.ical');
@@ -186,7 +206,7 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
 
     const events = eventsRaw.items as db3.EventClientPayload_Verbose[];
 
-    const cal = createCalendar({
+    const cal = await createCalendar({
         sourceURL: args.sourceURI,
     });
 

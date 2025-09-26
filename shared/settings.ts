@@ -31,6 +31,11 @@ export enum Setting {
     Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix", // short like "CM: "
     Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl", // default "/favicon.png"
 
+    // brand
+    Ical_CalendarName = "Ical_CalendarName", // default "Café Marché Agenda"
+    Ical_CalendarCompany = "Ical_CalendarCompany", // default "Café Marché"
+    Ical_CalendarProduct = "Ical_CalendarProduct", // default "Backstage"
+
     // mostly pages or sections of pages...
     HomeDescription = "HomeDescription",
     event_description_mockup_markdown = "event_description_mockup_markdown",
