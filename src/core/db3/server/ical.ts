@@ -5,6 +5,7 @@ import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
+import { Setting } from "@/shared/settings";
 
 interface CreateCalendarArgs {
     sourceURL: string;
@@ -41,7 +42,8 @@ export const addEventToCalendar2 = (
     user: null | db3.UserForCalBackendPayload,
     event: EventCalendarInput | null,
     eventVerbose: db3.EventClientPayload_Verbose,
-    eventAttendanceIdsRepresentingGoing: number[]
+    eventAttendanceIdsRepresentingGoing: number[],
+    siteTitlePrefix: string
 ): ICalEvent | null => {
 
     if (!event) {
@@ -73,9 +75,9 @@ export const addEventToCalendar2 = (
 
     const eventUserResponse = getEventUserResponse();
 
-    let summary = `CM: ${event.name}`;
+    let summary = `${siteTitlePrefix}${event.name}`;
     if (user && isUserAttending(user.id)) {
-        summary = `CM👍 ${event.name}`;
+        summary = `${siteTitlePrefix}👍 ${event.name}`;
     }
 
     const calEvent = calendar.createEvent({
@@ -106,6 +108,12 @@ export const addEventToCalendar2 = (
     return calEvent;
 };
 
+async function GetSiteTitlePrefix(): Promise<string> {
+    const setting = await db.setting.findFirst({ where: { name: Setting.Dashboard_SiteTitlePrefix } });
+    if (!setting) return "CM: ";
+    return setting.value;
+};
+
 export const addEventToCalendar = async (
     calendar: ICalCalendar,
     user: null | db3.UserForCalBackendPayload,
@@ -115,9 +123,12 @@ export const addEventToCalendar = async (
     cancelledStatusIds: number[],
 ): Promise<ICalEvent[]> => {
     const inputs = GetEventCalendarInput(event, cancelledStatusIds)!;
+
+    const siteTitlePrefix = await GetSiteTitlePrefix();
+
     return inputs
         .segments
-        .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing))
+        .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing, siteTitlePrefix))
         .filter(x => !!x);
 };
 
