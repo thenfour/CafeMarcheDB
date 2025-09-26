@@ -183,6 +183,13 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: D
     };
 };
 
+function IsLinkEnabled(dashboardContext: DashboardContextData, link: MenuLink): boolean {
+    if (link.enabledForGenericSingleTenant === false && dashboardContext.settings.HostingMode === db3.HostingMode.GenericSingleTenant) {
+        return false;
+    }
+    return dashboardContext.isAuthorized(link.permission);
+};
+
 // New flattening function for hierarchical menu structure
 export const FlattenMenuSections = (
     dashboardContext: DashboardContextData,
@@ -198,7 +205,7 @@ export const FlattenMenuSections = (
 
         // Check if any items in this section are authorized
         const checkAuthorizedItems = (links: MenuLink[]): boolean => {
-            return links.some(link => dashboardContext.isAuthorized(link.permission));
+            return links.some(link => IsLinkEnabled(dashboardContext, link));
         };
 
         const hasAuthorizedLinks = section.groups.some(group =>
@@ -255,7 +262,7 @@ export const FlattenMenuSections = (
 
             // Add links from this group
             for (const link of group.links) {
-                if (dashboardContext.isAuthorized(link.permission)) {
+                if (IsLinkEnabled(dashboardContext, link)) {
                     menuItems.push({
                         sectionInfo: { section: section, className: group.className || section.className },
                         item: {

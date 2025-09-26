@@ -39,6 +39,7 @@ export interface MenuLink {
     openInNewTab?: boolean;
     realm?: NavRealm;
     renderIcon: () => React.ReactNode;
+    enabledForGenericSingleTenant?: boolean; // default true
 }
 
 // groups are separated by dividers
@@ -93,9 +94,9 @@ export const gMenuSections: MenuSection[] = [
         groups: [
             {
                 links: [
-                    { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public },
-                    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Photo Gallery", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
-                    { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage },
+                    { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public, enabledForGenericSingleTenant: false },
+                    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Photo Gallery", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage, enabledForGenericSingleTenant: false },
+                    { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage, enabledForGenericSingleTenant: false },
                 ]
             }
         ]
