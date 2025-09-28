@@ -61,3 +61,4 @@ dist/
 
 # Release tooling local overrides (do not commit secrets)
 .env.release.local
+.env.deploy.local

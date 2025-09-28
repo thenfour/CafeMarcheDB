@@ -112,3 +112,15 @@ export function loadEnvFiles(paths) {
         }
     }
 }
+
+// Initialize a local env override file by copying the base if the local file is missing
+export function ensureLocalEnvPair(basePath, localPath, logSection = "env") {
+    try {
+        if (!fs.existsSync(localPath) && fs.existsSync(basePath)) {
+            fs.copyFileSync(basePath, localPath)
+            log(logSection, `Initialized ${path.basename(localPath)} from ${path.basename(basePath)} — update secrets as needed.`)
+        }
+    } catch (e) {
+        log(logSection, `Failed to initialize ${path.basename(localPath)}: ${e.message || e}`)
+    }
+}
