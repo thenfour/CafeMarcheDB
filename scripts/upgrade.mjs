@@ -33,7 +33,8 @@ const ENV_DEPLOY_LOCAL = path.join(REPO_ROOT, ".env.deploy.local")
 
 // Initialize local env override if missing
 ensureLocalEnvPair(ENV_DEPLOY, ENV_DEPLOY_LOCAL, "deploy")
-loadEnvFiles([ENV_DEPLOY, ENV_DEPLOY_LOCAL])
+// Precedence: process.env > .env.deploy.local > .env.deploy
+loadEnvFiles([ENV_DEPLOY_LOCAL, ENV_DEPLOY])
 
 const SERVICE = process.env.SERVICE || "cmdb"
 const DB_NAME = process.env.DB_NAME || "tenfour_cmdb"
@@ -156,10 +157,22 @@ async function upgradeWithArtifact(artifactPath, releaseTag) {
 
 async function main() {
     log("task", "Upgrade (server-side)")
+    const ownerRepo = ownerRepoFromGit()
+
+    // Display effective config for confirmation
+    const tokenSet = token ? "yes" : "no"
+    log("cfg", `repo=${ownerRepo}`)
+    log("cfg", `SERVICE=${SERVICE}`)
+    log("cfg", `DB_NAME=${DB_NAME}`)
+    log("cfg", `BACKUP_DIR=${BACKUP_DIR}`)
+    log("cfg", `RELEASES_TO_SHOW=${RELEASES_TO_SHOW}`)
+    log("cfg", `GITHUB_TOKEN set=${tokenSet}`)
+    log("cfg", `cwd=${REPO_ROOT}`)
+    log("cfg", `node=${process.version}`)
+
     if (!token) {
         throw new Error("GITHUB_TOKEN (or GH_TOKEN) is required on the server to list/download releases")
     }
-    const ownerRepo = ownerRepoFromGit()
 
     // List releases
     const list = await listReleases(ownerRepo, RELEASES_TO_SHOW)
