@@ -8,7 +8,7 @@ export const GenericPublicIndex: React.FC = () => {
     const destination = "/backstage";
 
     React.useEffect(() => {
-        router.replace(destination, undefined, { shallow: false });
+        void router.replace(destination, undefined, { shallow: false });
     }, [router, destination]);
 
     return (

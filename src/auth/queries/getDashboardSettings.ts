@@ -1,6 +1,5 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
-import { GetSettingSchema } from "../schemas";
 
 export default resolver.pipe(
     async (args, ctx) => {
