@@ -176,11 +176,78 @@ async function uploadAsset(uploadUrl, filePath) {
     }
 }
 
-function moveRollingTag(versionTag) {
-    if (!ROLLING_TAG) return
-    // tag ROLLING_TAG to point at versionTag (same commit), force push
-    sh("git", ["tag", "-f", ROLLING_TAG, versionTag])
-    sh("git", ["push", "-f", "origin", `refs/tags/${ROLLING_TAG}`])
+// --- Git Tag helpers via GitHub API (avoid interactive git push) ---
+async function getGitRef(ownerRepo, ref) {
+    const fixed = ref.replace(/^refs\//, "")
+    // Do not URL-encode slashes; GitHub expects path segments like tags/v1.0.0
+    return githubApi("GET", `https://api.github.com/repos/${ownerRepo}/git/ref/${fixed}`)
+}
+
+async function createAnnotatedTag(ownerRepo, tagName, message, objectSha) {
+    // Create a tag object (annotated)
+    const tagObj = await githubApi("POST", `https://api.github.com/repos/${ownerRepo}/git/tags`, {
+        tag: tagName,
+        message,
+        object: objectSha,
+        type: "commit",
+    })
+    // Point a ref at the tag object
+    await githubApi("POST", `https://api.github.com/repos/${ownerRepo}/git/refs`, {
+        ref: `refs/tags/${tagName}`,
+        sha: tagObj.sha,
+    })
+    return tagObj
+}
+
+async function ensureRemoteVersionTag(ownerRepo, tagName, headCommitSha) {
+    // Ensure refs/tags/<tagName> exists and ultimately points to headCommitSha
+    try {
+        const ref = await getGitRef(ownerRepo, `refs/tags/${tagName}`)
+        const objType = ref?.object?.type
+        const objSha = ref?.object?.sha
+        if (!objType || !objSha) throw new Error("Malformed ref payload")
+        if (objType === "commit") {
+            if (objSha !== headCommitSha) {
+                throw new Error(`Remote tag ${tagName} points to ${objSha.slice(0, 7)}, not ${headCommitSha.slice(0, 7)}. Create a new version tag.`)
+            }
+            return
+        }
+        if (objType === "tag") {
+            // Annotated tag: fetch the tag object and compare its target
+            const tagObj = await githubApi("GET", `https://api.github.com/repos/${ownerRepo}/git/tags/${objSha}`)
+            const targetSha = tagObj?.object?.sha
+            if (targetSha !== headCommitSha) {
+                throw new Error(`Remote tag ${tagName} (annotated) points to ${String(targetSha).slice(0, 7)}, not ${headCommitSha.slice(0, 7)}. Create a new version tag.`)
+            }
+            return
+        }
+        throw new Error(`Unsupported ref object type for tag ${tagName}: ${objType}`)
+    } catch (e) {
+        const msg = String(e?.message || e)
+        if (!/Not Found/i.test(msg)) throw e
+        // Create annotated tag at this commit
+        await createAnnotatedTag(ownerRepo, tagName, `release ${tagName}`, headCommitSha)
+    }
+}
+
+async function moveRollingTagViaApi(ownerRepo, rollingTag, headCommitSha) {
+    if (!rollingTag) return
+    const fixed = `tags/${rollingTag}`
+    try {
+        // Update if exists
+        await githubApi("PATCH", `https://api.github.com/repos/${ownerRepo}/git/refs/${fixed}`, {
+            sha: headCommitSha,
+            force: true,
+        })
+    } catch (e) {
+        const msg = String(e?.message || e)
+        if (!/Not Found/i.test(msg)) throw e
+        // Create if missing (lightweight is fine for rolling)
+        await githubApi("POST", `https://api.github.com/repos/${ownerRepo}/git/refs`, {
+            ref: `refs/tags/${rollingTag}`,
+            sha: headCommitSha,
+        })
+    }
 }
 
 // Ensure the current HEAD has an annotated tag; if not, interactively prompt to create and push one.
@@ -211,9 +278,9 @@ async function ensureHeadTagOrPrompt(currentTag) {
         process.exit(1)
     }
 
-    // Show what will run and confirm
-    const cmd1 = `git tag ${proposed} `
-    const cmd2 = `git push origin ${proposed}`
+    // Show what will run and confirm (using GitHub API for remote tag creation)
+    const cmd1 = `Create annotated tag ${proposed} on HEAD via GitHub API`
+    const cmd2 = `Create ref refs/tags/${proposed} -> <tag-object>`
     log("git", `About to run:\n  ${cmd1}\n  ${cmd2}`)
     const confirm = (await rl.question("Proceed? (y/N): ")).trim().toLowerCase()
     rl.close()
@@ -222,18 +289,12 @@ async function ensureHeadTagOrPrompt(currentTag) {
         process.exit(0)
     }
 
-    // Create and push the tag
-    try {
-        sh("git", ["tag", proposed], { cwd: REPO_ROOT })
-    } catch (e) {
-        throw new Error(`Failed to create tag '${proposed}': ${e.message || e}`)
-    }
-    try {
-        sh("git", ["push", "origin", proposed], { cwd: REPO_ROOT })
-    } catch (e) {
-        throw new Error(`Failed to push tag '${proposed}' to origin: ${e.message || e}`)
-    }
-    log("git", `Created and pushed tag ${proposed}`)
+    // Create remote annotated tag via API, and also create a local tag (no push) for convenience
+    const ownerRepo = getOwnerRepo()
+    const headFull = sh("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT })
+    await ensureRemoteVersionTag(ownerRepo, proposed, headFull)
+    try { sh("git", ["tag", proposed], { cwd: REPO_ROOT }) } catch { /* ignore if exists */ }
+    log("git", `Created remote tag ${proposed} and local tag (no push)`)
     return proposed
 }
 
@@ -287,6 +348,10 @@ async function main() {
     }
 
     const ownerRepo = getOwnerRepo()
+    // Ensure the version tag exists remotely at this commit (non-interactive)
+    const headFull = sh("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT })
+    await ensureRemoteVersionTag(ownerRepo, tag, headFull)
+
     const release = await ensureRelease(ownerRepo, tag, false)
     const uploadUrl = release.upload_url
     if (!uploadUrl) throw new Error("No upload_url in release payload")
@@ -296,8 +361,8 @@ async function main() {
     await uploadAsset(uploadUrl, sumPath)
     await uploadAsset(uploadUrl, manifestPath)
 
-    // Move rolling tag pointer
-    moveRollingTag(tag)
+    // Move rolling tag pointer (via API)
+    await moveRollingTagViaApi(ownerRepo, ROLLING_TAG, headFull)
 
     // Display URLs
     const releaseHtmlUrl = release.html_url || `https://github.com/${ownerRepo}/releases/tag/${encodeURIComponent(tag)}`
