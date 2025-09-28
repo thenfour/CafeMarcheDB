@@ -57,3 +57,7 @@ lib-cov
 
 # CMDB release packages
 cmdb_*.tar.gz
+dist/
+
+# Release tooling local overrides (do not commit secrets)
+.env.release.local
