@@ -9,6 +9,7 @@ import updateSetting from "@/src/auth/mutations/updateSetting";
 import clearBrandCache from "@/src/auth/mutations/clearBrandCache";
 import { Setting } from "@/shared/settingKeys";
 import { SnackbarContext } from "@/src/core/components/SnackbarContext";
+import { DefaultDbBrandConfig } from "@/shared/brandConfig";
 
 const fields = [
   { key: Setting.Dashboard_SiteTitle, label: "Site Title" },
@@ -62,16 +63,32 @@ const BrandForm = () => {
         {fields.map(f => (
           <Grid item xs={12} md={6} key={f.key}>
             {/* Use native color picker for color-ish fields */}
-            {(/Primary|Secondary|Background|TextPrimary|ContrastText/i.test(f.key)) ? (
-              <TextField
-                fullWidth
-                type="color"
-                label={f.label}
-                value={(values[f.key] ?? "").toString() || "#000000"}
-                onChange={e => onChange(f.key, e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            ) : (
+            {(/Primary|Secondary|Background|TextPrimary|ContrastText/i.test(f.key)) ? (() => {
+              const defaults: Record<string, string | undefined> = {
+                [String(Setting.Dashboard_Theme_PrimaryMain)]: DefaultDbBrandConfig.theme?.primaryMain,
+                [String(Setting.Dashboard_Theme_SecondaryMain)]: DefaultDbBrandConfig.theme?.secondaryMain,
+                [String(Setting.Dashboard_Theme_BackgroundDefault)]: DefaultDbBrandConfig.theme?.backgroundDefault,
+                [String(Setting.Dashboard_Theme_BackgroundPaper)]: DefaultDbBrandConfig.theme?.backgroundPaper,
+                [String(Setting.Dashboard_Theme_TextPrimary)]: DefaultDbBrandConfig.theme?.textPrimary,
+                [String(Setting.Dashboard_Theme_ContrastText)]: DefaultDbBrandConfig.theme?.contrastText,
+              };
+              const defVal = defaults[String(f.key)] ?? "";
+              const current = (values[f.key] ?? "").toString();
+              const onReset = () => onChange(f.key, defVal || "");
+              return (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TextField
+                    fullWidth
+                    type="color"
+                    label={f.label}
+                    value={current || "#000000"}
+                    onChange={e => onChange(f.key, e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <Button size="small" variant="outlined" onClick={onReset} disabled={current === (defVal || "")}>Reset</Button>
+                </Box>
+              );
+            })() : (
               <TextField fullWidth label={f.label} value={values[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value)} />
             )}
           </Grid>
