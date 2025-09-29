@@ -19,6 +19,7 @@ const fields = [
   { key: Setting.Dashboard_Theme_BackgroundDefault, label: "Background Default" },
   { key: Setting.Dashboard_Theme_BackgroundPaper, label: "Background Paper" },
   { key: Setting.Dashboard_Theme_TextPrimary, label: "Text Primary (optional)" },
+  { key: Setting.Dashboard_Theme_ContrastText, label: "Contrast Text (primary/secondary)" },
 ];
 
 const BrandForm = () => {
@@ -61,7 +62,7 @@ const BrandForm = () => {
         {fields.map(f => (
           <Grid item xs={12} md={6} key={f.key}>
             {/* Use native color picker for color-ish fields */}
-            {(/Primary|Secondary|Background|TextPrimary/i.test(f.key)) ? (
+            {(/Primary|Secondary|Background|TextPrimary|ContrastText/i.test(f.key)) ? (
               <TextField
                 fullWidth
                 type="color"

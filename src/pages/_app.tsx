@@ -82,10 +82,12 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
       primary: {
         ...(base?.palette?.primary ?? {}),
         main: brand.theme?.primaryMain ?? base?.palette?.primary?.main ?? '#1976d2',
+        contrastText: brand.theme?.contrastText ?? base?.palette?.primary?.contrastText,
       },
       secondary: {
         ...(base?.palette?.secondary ?? {}),
         main: brand.theme?.secondaryMain ?? base?.palette?.secondary?.main ?? '#9c27b0',
+        contrastText: brand.theme?.contrastText ?? base?.palette?.secondary?.contrastText,
       },
       background: {
         ...(base?.palette?.background ?? {}),
@@ -102,7 +104,8 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
     document.documentElement.style.setProperty('--bg-default', theme.palette.background.default);
     document.documentElement.style.setProperty('--bg-paper', theme.palette.background.paper);
     document.documentElement.style.setProperty('--text-primary', theme.palette.text.primary);
-  }, [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.background.default, theme.palette.background.paper, theme.palette.text.primary]);
+    document.documentElement.style.setProperty('--contrast-text', theme.palette.primary.contrastText);
+  }, [theme.palette.primary.main, theme.palette.primary.contrastText, theme.palette.secondary.main, theme.palette.secondary.contrastText, theme.palette.background.default, theme.palette.background.paper, theme.palette.text.primary]);
 
   return getLayout(
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -111,14 +114,15 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
         <Head>
           <meta name="theme-color" content={theme.palette.primary.main} />
           <link rel="icon" type="image/png" href={brand.siteFaviconUrl} />
-          <style id="brand-css-vars">{`:root{
-              --primary-color: ${theme.palette.primary.main};
-              --secondary-color: ${theme.palette.secondary.main};
-              --bg-default: ${theme.palette.background.default};
-              --bg-paper: ${theme.palette.background.paper};
-              --text-primary: ${theme.palette.text.primary};
-            }
-          `}</style>
+          <style id="brand-css-vars">{`
+            :root{
+            --primary-color: ${theme.palette.primary.main};
+            --secondary-color: ${theme.palette.secondary.main};
+            --bg-default: ${theme.palette.background.default};
+            --bg-paper: ${theme.palette.background.paper};
+            --text-primary: ${theme.palette.text.primary};
+            --contrast-text: ${theme.palette.primary.contrastText};
+          }`}</style>
         </Head>
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>

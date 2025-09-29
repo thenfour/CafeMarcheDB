@@ -30,6 +30,7 @@ export enum Setting {
     Dashboard_Theme_BackgroundDefault = "Dashboard_Theme_BackgroundDefault",
     Dashboard_Theme_BackgroundPaper = "Dashboard_Theme_BackgroundPaper",
     Dashboard_Theme_TextPrimary = "Dashboard_Theme_TextPrimary",
+    Dashboard_Theme_ContrastText = "Dashboard_Theme_ContrastText",
     // iCal
     Ical_CalendarName = "Ical_CalendarName",
     Ical_CalendarCompany = "Ical_CalendarCompany",

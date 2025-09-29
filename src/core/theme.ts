@@ -5,11 +5,12 @@ export const themeOptions: ThemeOptions = {
     mode: 'light',
     primary: {
       main: '#344873',
-      contrastText: '#ede331',
+      // Use CSS var fallback; SSR will set concrete value in _app
+      contrastText: 'var(--contrast-text, #ede331)' as any,
     },
     secondary: {
       main: '#831012',
-      contrastText: '#ede331',
+      contrastText: 'var(--contrast-text, #ede331)' as any,
     },
   },
   transitions: {

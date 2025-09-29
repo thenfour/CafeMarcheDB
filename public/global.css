@@ -40,7 +40,7 @@ a.logo,
 a.logo:link,
 a.logo:hover,
 a.logo:visited {
-  color: #ede331;
+  color: var(--contrast-text, #ede331);
 }
 
 

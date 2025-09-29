@@ -37,6 +37,7 @@ export enum Setting {
     Dashboard_Theme_BackgroundDefault = "Dashboard_Theme_BackgroundDefault", // e.g., #fafafa
     Dashboard_Theme_BackgroundPaper = "Dashboard_Theme_BackgroundPaper", // e.g., #ffffff
     Dashboard_Theme_TextPrimary = "Dashboard_Theme_TextPrimary", // optional e.g., #111111
+    Dashboard_Theme_ContrastText = "Dashboard_Theme_ContrastText", // e.g., #ede331
     Ical_CalendarName = "Ical_CalendarName", // default "Café Marché Agenda"
     Ical_CalendarCompany = "Ical_CalendarCompany", // default "Café Marché"
     Ical_CalendarProduct = "Ical_CalendarProduct", // default "Backstage"

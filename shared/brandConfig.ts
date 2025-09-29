@@ -23,6 +23,7 @@ export type ThemeBrand = {
   backgroundDefault?: string;
   backgroundPaper?: string;
   textPrimary?: string;
+  contrastText?: string;
 };
 
 export type DbBrandConfig = {
@@ -42,6 +43,7 @@ export const DefaultDbBrandConfig: DbBrandConfig = {
     backgroundDefault: "#fafafa",
     backgroundPaper: "#ffffff",
     // textPrimary omitted to let MUI compute suitable contrast
+    contrastText: "#ede331",
   },
 };
 

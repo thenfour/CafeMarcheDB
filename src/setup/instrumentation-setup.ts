@@ -838,7 +838,7 @@ async function EnsureBrandingDefaults() {
     if (DefaultDbBrandConfig.theme?.secondaryMain) desired.push({ name: Setting.Dashboard_Theme_SecondaryMain, value: DefaultDbBrandConfig.theme.secondaryMain });
     if (DefaultDbBrandConfig.theme?.backgroundDefault) desired.push({ name: Setting.Dashboard_Theme_BackgroundDefault, value: DefaultDbBrandConfig.theme.backgroundDefault });
     if (DefaultDbBrandConfig.theme?.backgroundPaper) desired.push({ name: Setting.Dashboard_Theme_BackgroundPaper, value: DefaultDbBrandConfig.theme.backgroundPaper });
-    // textPrimary is intentionally optional; omit if undefined to let MUI compute contrast
+    if (DefaultDbBrandConfig.theme?.contrastText) desired.push({ name: Setting.Dashboard_Theme_ContrastText, value: DefaultDbBrandConfig.theme.contrastText });
     if (DefaultDbBrandConfig.theme?.textPrimary) desired.push({ name: Setting.Dashboard_Theme_TextPrimary, value: DefaultDbBrandConfig.theme.textPrimary });
 
     const names = desired.map(d => d.name);

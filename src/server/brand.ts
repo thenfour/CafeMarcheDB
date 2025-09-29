@@ -43,6 +43,7 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
     Setting.Dashboard_Theme_BackgroundDefault,
     Setting.Dashboard_Theme_BackgroundPaper,
     Setting.Dashboard_Theme_TextPrimary,
+    Setting.Dashboard_Theme_ContrastText,
   ];
 
   const rows = await db.setting.findMany({ where: { name: { in: names } } });
@@ -58,6 +59,7 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
     backgroundDefault: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_BackgroundDefault)) ?? DefaultDbBrandConfig.theme?.backgroundDefault,
     backgroundPaper: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_BackgroundPaper)) ?? DefaultDbBrandConfig.theme?.backgroundPaper,
     textPrimary: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_TextPrimary)) ?? DefaultDbBrandConfig.theme?.textPrimary,
+    contrastText: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_ContrastText)) ?? DefaultDbBrandConfig.theme?.contrastText,
   } as DbBrandConfig["theme"];
 
   const value: DbBrandConfig = { siteTitle, siteTitlePrefix, siteFaviconUrl, theme };
