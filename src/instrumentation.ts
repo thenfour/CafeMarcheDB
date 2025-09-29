@@ -77,4 +77,8 @@ export async function register() {
     console.log(`process.env.CMDB_START_TIME = ${process.env.CMDB_START_TIME}`);
     console.log(`process.env.CMDB_GIT_REVISION = ${process.env.CMDB_GIT_REVISION}`);
     console.log(`process.env.CMDB_GIT_COMMIT_DATE = ${process.env.CMDB_GIT_COMMIT_DATE}`);
+    console.log(`process.env.NEXT_PUBLIC_CMDB_SITE_TITLE = ${process.env.NEXT_PUBLIC_CMDB_SITE_TITLE}`);
+    console.log(`process.env.NEXT_PUBLIC_CMDB_SITE_TITLE_PREFIX = ${process.env.NEXT_PUBLIC_CMDB_SITE_TITLE_PREFIX}`);
+    console.log(`process.env.NEXT_PUBLIC_CMDB_SITE_FAVICON_URL = ${process.env.NEXT_PUBLIC_CMDB_SITE_FAVICON_URL}`);
+    console.log(`process.env.NEXT_PUBLIC_CMDB_HOSTING_MODE = ${process.env.NEXT_PUBLIC_CMDB_HOSTING_MODE}`);
 }

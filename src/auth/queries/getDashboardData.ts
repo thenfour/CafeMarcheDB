@@ -206,7 +206,6 @@ export default resolver.pipe(
                 db.eventCustomField.findMany(),
                 db.wikiPageTag.findMany(),
                 relevantEventsCall,
-                db.setting.findMany({ where: { name: { startsWith: "Dashboard_" } } }),
             ]);
 
             const rsp = await RefreshSessionPermissions(ctx);
@@ -230,7 +229,6 @@ export default resolver.pipe(
                 eventCustomField,
                 wikiPageTag,
                 relevantEventIds,
-                settings,
             ] = results;
 
             const ret = {
@@ -254,7 +252,6 @@ export default resolver.pipe(
                 sessionPermissionsChanged: rsp,
                 serverStartupState: getServerStartState(),
                 relevantEventIds,
-                settings: Object.fromEntries(settings.map(s => [s.name, s.value])),
             };
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);

@@ -1573,18 +1573,6 @@ export interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
 };
 
-export enum HostingMode {
-    CafeMarche = "CafeMarche",
-    GenericSingleTenant = "GenericSingleTenant",
-}
-
-export interface DashboardContextSettings {
-    HostingMode: HostingMode;
-    SiteTitle: string;
-    SiteTitlePrefix: string;
-    SiteFaviconUrl: string;
-};
-
 export abstract class DashboardContextDataBase {
     userTag: TableAccessor<Prisma.UserTagGetPayload<{}>>;
     eventType: TableAccessor<Prisma.EventTypeGetPayload<{}>>;
@@ -1613,8 +1601,6 @@ export abstract class DashboardContextDataBase {
     serverStartupState: ServerStartInfo;
 
     relevantEventIds: number[];
-
-    settings: DashboardContextSettings;
 
     abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
     abstract sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[];

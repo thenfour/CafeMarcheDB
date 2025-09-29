@@ -149,7 +149,6 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
 
     const [setSetting] = useMutation(updateSetting);
 
-    //const setSetting = API.settings.updateSetting.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.tableName, props.columnName);

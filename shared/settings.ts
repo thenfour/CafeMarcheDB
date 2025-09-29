@@ -25,11 +25,7 @@ export enum Setting {
     EventAttendanceCommentDialog_TitleMarkdown = "EventAttendanceCommentDialog_TitleMarkdown",
     EventAttendanceCommentDialog_DescriptionMarkdown = "EventAttendanceCommentDialog_DescriptionMarkdown",
 
-    // for dashboard context
-    Dashboard_HostingMode = "Dashboard_HostingMode",
-    Dashboard_SiteTitle = "Dashboard_SiteTitle", // default "Café Marché Backstage"
-    Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix", // short like "CM: "
-    Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl", // default "/favicon.png"
+    // for dashboard context (migrated to env-based BrandConfig; enum values kept only if referenced for legacy)
 
     // brand
     Ical_CalendarName = "Ical_CalendarName", // default "Café Marché Agenda"

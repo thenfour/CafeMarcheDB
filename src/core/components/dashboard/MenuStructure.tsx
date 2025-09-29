@@ -1,3 +1,5 @@
+import { groupByMap } from '@/shared/arrayUtils';
+import { BrandConfig, HostingMode } from '@/shared/brandConfig';
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -8,14 +10,13 @@ import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
+import { gNullValue } from '../../db3/shared/apiTypes';
 import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from '../CMCoreComponents2';
 import { DashboardContext, DashboardContextData, useClientTelemetryEvent } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { useLocalStorageSet } from "../useLocalStorageState";
 import { gMenuSections, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
-import { groupByMap } from '@/shared/arrayUtils';
-import { gNullValue } from '../../db3/shared/apiTypes';
 
 // NOTE: types look like this:
 
@@ -184,7 +185,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: D
 };
 
 function IsLinkEnabled(dashboardContext: DashboardContextData, link: MenuLink): boolean {
-    if (link.enabledForGenericSingleTenant === false && dashboardContext.settings.HostingMode === db3.HostingMode.GenericSingleTenant) {
+    if (link.enabledForGenericSingleTenant === false && BrandConfig.hostingMode === HostingMode.GenericSingleTenant) {
         return false;
     }
     return dashboardContext.isAuthorized(link.permission);

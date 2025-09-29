@@ -8,8 +8,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { LoginSignup } from "../LoginSignupForm";
 import Dashboard2 from "./Dashboard2";
 import { NavRealm } from "./StaticMenuItems";
-import { useQuery } from "@blitzjs/rpc";
-import getDashboardSettings from "@/src/auth/queries/getDashboardSettings";
+import { BrandConfig } from "shared/brandConfig";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
@@ -42,11 +41,8 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
         </Backdrop>
         ;
 
-    // TODO: find a way to access this from dashboard context...
-    const [settings] = useQuery(getDashboardSettings, {}, { suspense: false });
-
-    const titleText = `${settings?.Dashboard_SiteTitlePrefix ?? "CM: "}${title}`;
-    const faviconUrl = settings?.Dashboard_SiteFaviconUrl ?? "/favicon.png";
+    const titleText = `${BrandConfig.siteTitlePrefix}${title}`;
+    const faviconUrl = BrandConfig.siteFaviconUrl;
 
     return (
         <>

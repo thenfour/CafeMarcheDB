@@ -6,6 +6,7 @@ import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
 import { Setting } from "@/shared/settings";
+import { BrandConfig } from "shared/brandConfig";
 
 interface CreateCalendarArgs {
     sourceURL: string;
@@ -129,9 +130,7 @@ export const addEventToCalendar2 = (
 };
 
 async function GetSiteTitlePrefix(): Promise<string> {
-    const setting = await db.setting.findFirst({ where: { name: Setting.Dashboard_SiteTitlePrefix } });
-    if (!setting) return "CM: ";
-    return setting.value;
+    return BrandConfig.siteTitlePrefix;
 };
 
 export const addEventToCalendar = async (

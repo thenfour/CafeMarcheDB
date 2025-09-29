@@ -37,6 +37,7 @@ import { SnackbarContext } from "../SnackbarContext";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { Setting } from "@/shared/settings";
 import { NavRealm } from "./StaticMenuItems";
+import { BrandConfig } from "../../../../shared/brandConfig";
 
 const drawerWidth = 260;
 
@@ -232,6 +233,8 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     //     backgroundColor = "#844";
     // }
 
+    console.log(BrandConfig);
+
     return (
         <AppBar
             position="static"
@@ -258,7 +261,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     component="div"
                     sx={{ display: { xs: 'none', sm: 'block' } }}
                 >
-                    <Link href={"/backstage"} className={`logo`}>{dashboardContext.settings.SiteTitle}</Link>
+                    <Link href={"/backstage"} className={`logo`}>{BrandConfig.siteTitle}</Link>
                 </Typography>
 
                 <MetronomeDialogButton />
@@ -426,21 +429,21 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     return (
-            <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
-                <DashboardContextProvider>
-                    <AppContextMarker name="bs">
-                        <ConfirmProvider>
-                            <MessageBoxProvider>
-                                <MediaPlayerProvider>
-                                    <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
-                                        {children}
-                                    </Dashboard3>
-                                </MediaPlayerProvider>
-                            </MessageBoxProvider>
-                        </ConfirmProvider>
-                    </AppContextMarker>
-                </DashboardContextProvider>
-            </Box>
+        <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
+            <DashboardContextProvider>
+                <AppContextMarker name="bs">
+                    <ConfirmProvider>
+                        <MessageBoxProvider>
+                            <MediaPlayerProvider>
+                                <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
+                                    {children}
+                                </Dashboard3>
+                            </MediaPlayerProvider>
+                        </MessageBoxProvider>
+                    </ConfirmProvider>
+                </AppContextMarker>
+            </DashboardContextProvider>
+        </Box>
     );
 }
 
