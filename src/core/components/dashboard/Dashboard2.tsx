@@ -233,7 +233,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     //     backgroundColor = "#844";
     // }
 
-    console.log(BrandConfig);
+    // BrandConfig is a proxy backed by runtime instance-config; avoid logging secrets to console
 
     return (
         <AppBar
