@@ -10,7 +10,7 @@ import { SnackbarContext } from "@/src/core/components/SnackbarContext";
 import type { UploadResponsePayload } from "@/src/core/db3/shared/apiTypes";
 import { BlitzPage } from "@blitzjs/next";
 import { invoke, useMutation } from "@blitzjs/rpc";
-import { Box, Button, Divider, Grid, TextField, Typography } from "@mui/material";
+import { Box, Button, Divider, TextField, Typography } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
 
@@ -143,7 +143,7 @@ const BrandForm = () => {
       {/* <Grid container spacing={2}> */}
       {fields.map(f => (
         // <Grid item xs={12} md={6} key={f.key} style={{ border: "1px solid #800" }}>
-        <div>
+        <div key={f.key}>
           {/* Use native color picker for color-ish fields */}
           {(/Primary|Secondary|Background|TextPrimary|ContrastText/i.test(f.key)) ? (() => {
             const defaults: Record<string, string | undefined> = {
