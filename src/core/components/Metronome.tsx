@@ -12,7 +12,7 @@ import { ActivityFeature } from "./featureReports/activityTracking";
 import { useLocalStorageState } from "./useLocalStorageState";
 import { Add, Remove } from "@mui/icons-material";
 
-const gTickSampleFilePath = "/Metronome2.mp3";
+const gTickSampleFilePath = "/metronome3.mp3";
 const gMinBPM = 40;
 const gMaxBPM = 220;
 
