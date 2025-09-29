@@ -8,37 +8,39 @@ import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUt
 import { Setting } from "@/shared/settings";
 import { BrandConfig } from "shared/brandConfig";
 
-interface CreateCalendarArgs {
-    sourceURL: string;
-};
-
 interface ICalSettings {
     calendarName: string;
     calendarCompany: string;
     calendarProduct: string;
+    eventNamePrefix: string;
 };
 
 async function GetICalSettings(): Promise<ICalSettings> {
     const calendarName = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarName } });
     const calendarCompany = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarCompany } });
     const calendarProduct = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarProduct } });
+    const eventNamePrefix = await db.setting.findFirst({ where: { name: Setting.Ical_CalendarEventPrefix } });
 
     return {
         calendarName: calendarName?.value || "Café Marché Agenda",
         calendarCompany: calendarCompany?.value || "Café Marché",
         calendarProduct: calendarProduct?.value || "Backstage",
+        eventNamePrefix: eventNamePrefix?.value || "CM: ",
     };
+};
+
+interface CreateCalendarArgs {
+    sourceURL: string;
+    icalSettings: ICalSettings;
 };
 
 export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCalendar> => {
 
-    const settings = await GetICalSettings();
-
     const calendar = ical({
-        name: settings.calendarName,
+        name: args.icalSettings.calendarName,
         prodId: {
-            company: settings.calendarCompany,
-            product: settings.calendarProduct,
+            company: args.icalSettings.calendarCompany,
+            product: args.icalSettings.calendarProduct,
             language: "EN",
         },
         source: args.sourceURL, // * cal.source('http://example.com/my/original_source.ical');
@@ -64,7 +66,7 @@ export const addEventToCalendar2 = (
     event: EventCalendarInput | null,
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[],
-    siteTitlePrefix: string
+    icalSettings: ICalSettings
 ): ICalEvent | null => {
 
     if (!event) {
@@ -96,9 +98,9 @@ export const addEventToCalendar2 = (
 
     const eventUserResponse = getEventUserResponse();
 
-    let summary = `${siteTitlePrefix}${event.name}`;
+    let summary = `${icalSettings.eventNamePrefix}${event.name}`;
     if (user && isUserAttending(user.id)) {
-        summary = `${siteTitlePrefix}👍 ${event.name}`;
+        summary = `${icalSettings.eventNamePrefix}👍 ${event.name}`;
     }
 
     const calEvent = calendar.createEvent({
@@ -129,10 +131,6 @@ export const addEventToCalendar2 = (
     return calEvent;
 };
 
-async function GetSiteTitlePrefix(): Promise<string> {
-    return BrandConfig.siteTitlePrefix;
-};
-
 export const addEventToCalendar = async (
     calendar: ICalCalendar,
     user: null | db3.UserForCalBackendPayload,
@@ -140,14 +138,13 @@ export const addEventToCalendar = async (
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[],
     cancelledStatusIds: number[],
+    icalSettings: ICalSettings,
 ): Promise<ICalEvent[]> => {
     const inputs = GetEventCalendarInput(event, cancelledStatusIds)!;
 
-    const siteTitlePrefix = await GetSiteTitlePrefix();
-
     return inputs
         .segments
-        .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing, siteTitlePrefix))
+        .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing, icalSettings))
         .filter(x => !!x);
 };
 
@@ -205,8 +202,11 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
 
     const events = eventsRaw.items as db3.EventClientPayload_Verbose[];
 
+    const settings = await GetICalSettings();
+
     const cal = await createCalendar({
         sourceURL: args.sourceURI,
+        icalSettings: settings,
     });
 
     const eventAttendances = await db.eventAttendance.findMany();
@@ -215,7 +215,7 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
 
     for (let i = 0; i < events.length; ++i) {
         const event = events[i]!;
-        await addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id), cancelledStatusIds);
+        await addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id), cancelledStatusIds, settings);
     }
 
     return cal;

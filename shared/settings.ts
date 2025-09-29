@@ -31,6 +31,7 @@ export enum Setting {
     Ical_CalendarName = "Ical_CalendarName", // default "Café Marché Agenda"
     Ical_CalendarCompany = "Ical_CalendarCompany", // default "Café Marché"
     Ical_CalendarProduct = "Ical_CalendarProduct", // default "Backstage"
+    Ical_CalendarEventPrefix = "Ical_CalendarEventPrefix", // default "CM: "
 
     // mostly pages or sections of pages...
     HomeDescription = "HomeDescription",
