@@ -10,6 +10,7 @@ import { QuickSearchItemMatch, QuickSearchItemTypeSets } from 'shared/quickFilte
 import { CollapsableUploadFileComponent, FileDropWrapper } from "../file/FileDrop";
 import { fetchObjectQuery } from '../ItemAssociation';
 import { fetchInlineClasses } from './MarkdownReactPlugins';
+import { useKeyboardState } from '../../hooks/useKeyboardState';
 
 var turndownService = new TurndownService();
 
@@ -51,6 +52,7 @@ interface MarkdownEditorProps {
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
+    const kb = useKeyboardState();
 
     const handleNativeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -64,13 +66,20 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         if ((e.clipboardData?.files?.length || 0) > 0) {
             props.onFileSelect(e.clipboardData!.files);
             e.preventDefault();
+            return;
         }
+
+        // Allow raw (untransformed) paste only when explicit raw-paste shortcut was used.
+        if (kb.consumeRawPasteIntent()) {
+            // Let the browser perform the default paste (usually plain text).
+            return;
+        }
+
         // TODO: rich text paste handling via turndown.
         // if text/html, then use turndown
         const pastedHtml = e.clipboardData?.getData('text/html');
         if (pastedHtml) {
             const turndownResult = turndownService.turndown(pastedHtml);
-            //props.onValueChanged(turndownResult);
             props.onCustomPaste?.(turndownResult); // call the custom paste handler.
             e.preventDefault(); // prevent the default paste action.
         }
