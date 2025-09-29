@@ -109,6 +109,7 @@ export const gMenuSections: MenuSection[] = [
                 links: [
                     { type: "link", path: "/backstage/menuLinks", linkCaption: "Menu Links", renderIcon: () => <FeaturedPlayList />, permission: Permission.customize_menu },
                     { type: "link", path: "/backstage/customLinks", linkCaption: "Custom URLs", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
+                    { type: "link", path: "/backstage/brand", linkCaption: "Brand", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
                 ]
             },
             {

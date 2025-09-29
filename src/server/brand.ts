@@ -38,6 +38,11 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
     Setting.Dashboard_SiteTitle,
     Setting.Dashboard_SiteTitlePrefix,
     Setting.Dashboard_SiteFaviconUrl,
+    Setting.Dashboard_Theme_PrimaryMain,
+    Setting.Dashboard_Theme_SecondaryMain,
+    Setting.Dashboard_Theme_BackgroundDefault,
+    Setting.Dashboard_Theme_BackgroundPaper,
+    Setting.Dashboard_Theme_TextPrimary,
   ];
 
   const rows = await db.setting.findMany({ where: { name: { in: names } } });
@@ -47,7 +52,15 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
   const siteTitlePrefix = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteTitlePrefix)) ?? DefaultDbBrandConfig.siteTitlePrefix;
   const siteFaviconUrl = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteFaviconUrl)) ?? DefaultDbBrandConfig.siteFaviconUrl;
 
-  const value: DbBrandConfig = { siteTitle, siteTitlePrefix, siteFaviconUrl };
+  const theme = {
+    primaryMain: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_PrimaryMain)) ?? DefaultDbBrandConfig.theme?.primaryMain,
+    secondaryMain: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_SecondaryMain)) ?? DefaultDbBrandConfig.theme?.secondaryMain,
+    backgroundDefault: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_BackgroundDefault)) ?? DefaultDbBrandConfig.theme?.backgroundDefault,
+    backgroundPaper: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_BackgroundPaper)) ?? DefaultDbBrandConfig.theme?.backgroundPaper,
+    textPrimary: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_TextPrimary)) ?? DefaultDbBrandConfig.theme?.textPrimary,
+  } as DbBrandConfig["theme"];
+
+  const value: DbBrandConfig = { siteTitle, siteTitlePrefix, siteFaviconUrl, theme };
   cache.set(host, { value, expiresAt: now + CACHE_TTL_MS });
   return value;
 }

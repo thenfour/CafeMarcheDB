@@ -1,6 +1,7 @@
 import db from "db";
 import type { Ctx } from "@blitzjs/next";
-import { randomUUID } from "crypto";
+// Use server-only dynamic import to avoid bundling Node's crypto in client builds
+const { randomUUID } = require("crypto") as typeof import("crypto");
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { CoalesceBool } from "./utils";
 import { CalculateChanges } from "./associationUtils";

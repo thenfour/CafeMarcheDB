@@ -1,5 +1,7 @@
 // https://github.com/vercel/next.js/discussions/15341
 // Run code once per node server startup
+export const runtime = 'nodejs';
+
 import db from "db"
 import { execSync } from "child_process";
 import { nanoid } from "nanoid";

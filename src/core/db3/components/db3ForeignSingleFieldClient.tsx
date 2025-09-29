@@ -17,7 +17,7 @@ import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data
 import { assert } from "blitz";
 import React, { Suspense } from "react";
 import { SplitQuickFilter } from "shared/quickFilter";
-import type { SettingKey } from "shared/settings";
+import type { SettingKey } from "shared/settingKeys";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
 import updateSetting from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";

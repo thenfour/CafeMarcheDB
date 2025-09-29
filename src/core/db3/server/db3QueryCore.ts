@@ -1,5 +1,5 @@
 import { AuthenticatedCtx, paginate } from "blitz";
-import { randomUUID } from "crypto";
+const { randomUUID } = require("crypto") as typeof import("crypto");
 import db from "db";
 import { sleep } from "shared/utils";
 import { CreatePublicData } from "types";

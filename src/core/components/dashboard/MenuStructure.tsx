@@ -1,5 +1,5 @@
 import { groupByMap } from '@/shared/arrayUtils';
-import { BrandConfig, HostingMode } from '@/shared/brandConfig';
+import { getHostingMode, HostingMode } from '@/shared/brandConfig';
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -185,7 +185,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: D
 };
 
 function IsLinkEnabled(dashboardContext: DashboardContextData, link: MenuLink): boolean {
-    if (link.enabledForGenericSingleTenant === false && BrandConfig.hostingMode === HostingMode.GenericSingleTenant) {
+    if (link.enabledForGenericSingleTenant === false && getHostingMode() === HostingMode.GenericSingleTenant) {
         return false;
     }
     return dashboardContext.isAuthorized(link.permission);

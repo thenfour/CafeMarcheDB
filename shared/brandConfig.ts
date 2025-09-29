@@ -17,21 +17,32 @@ export function getHostingMode(): HostingMode {
   return raw === HostingMode.CafeMarche ? HostingMode.CafeMarche : HostingMode.GenericSingleTenant;
 }
 
-// Exposed constant for convenience where only hosting mode is needed
-export const BrandConfig = {
-  hostingMode: getHostingMode(),
-} as const;
+export type ThemeBrand = {
+  primaryMain?: string;
+  secondaryMain?: string;
+  backgroundDefault?: string;
+  backgroundPaper?: string;
+  textPrimary?: string;
+};
 
 export type DbBrandConfig = {
   siteTitle: string;
   siteTitlePrefix: string;
   siteFaviconUrl: string;
+  theme?: ThemeBrand;
 };
 
 export const DefaultDbBrandConfig: DbBrandConfig = {
-  siteTitle: "defaultSiteTitle",
-  siteTitlePrefix: "D: ",
+  siteTitle: "Café Marché Backstage",
+  siteTitlePrefix: "CM: ",
   siteFaviconUrl: "/favicon.png",
+  theme: {
+    primaryMain: "#344873", // matches themeOptions
+    secondaryMain: "#831012",
+    backgroundDefault: "#fafafa",
+    backgroundPaper: "#ffffff",
+    // textPrimary omitted to let MUI compute suitable contrast
+  },
 };
 
 export const BrandContext = React.createContext<DbBrandConfig>(DefaultDbBrandConfig);

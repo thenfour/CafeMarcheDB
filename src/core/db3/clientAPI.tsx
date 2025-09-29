@@ -7,7 +7,7 @@ import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { EnNlFr, LangSelectString } from "shared/lang";
-import { SettingKey } from "shared/settings";
+import { SettingKey } from "shared/settingKeys";
 import { DateTimeRange } from "shared/time";
 import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";

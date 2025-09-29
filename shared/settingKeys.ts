@@ -1,10 +1,5 @@
-import db from "db";
-import type { Ctx } from "@blitzjs/next";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "./activityLog";
-
-// SETTINGS /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// for use on the server only.
-// if you need to get / set settings on client, useQuery is required.
+// Client-safe export of Setting keys (no server imports here)
+// Use this in any code that runs in the browser to avoid bundling server-only modules.
 
 export enum Setting {
     // event dialog text
@@ -25,22 +20,21 @@ export enum Setting {
     EventAttendanceCommentDialog_TitleMarkdown = "EventAttendanceCommentDialog_TitleMarkdown",
     EventAttendanceCommentDialog_DescriptionMarkdown = "EventAttendanceCommentDialog_DescriptionMarkdown",
 
-    // for dashboard context (migrated to env-based BrandConfig; enum values kept only if referenced for legacy)
-
     // brand
-    Dashboard_SiteTitle = "Dashboard_SiteTitle", // plain text
-    Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix", // plain text
-    Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl", // plain text URL path or absolute
-    // theme (plain text values)
-    Dashboard_Theme_PrimaryMain = "Dashboard_Theme_PrimaryMain", // e.g., #1976d2
-    Dashboard_Theme_SecondaryMain = "Dashboard_Theme_SecondaryMain", // e.g., #9c27b0
-    Dashboard_Theme_BackgroundDefault = "Dashboard_Theme_BackgroundDefault", // e.g., #fafafa
-    Dashboard_Theme_BackgroundPaper = "Dashboard_Theme_BackgroundPaper", // e.g., #ffffff
-    Dashboard_Theme_TextPrimary = "Dashboard_Theme_TextPrimary", // optional e.g., #111111
-    Ical_CalendarName = "Ical_CalendarName", // default "Café Marché Agenda"
-    Ical_CalendarCompany = "Ical_CalendarCompany", // default "Café Marché"
-    Ical_CalendarProduct = "Ical_CalendarProduct", // default "Backstage"
-    Ical_CalendarEventPrefix = "Ical_CalendarEventPrefix", // default "CM: "
+    Dashboard_SiteTitle = "Dashboard_SiteTitle",
+    Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix",
+    Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl",
+    // theme
+    Dashboard_Theme_PrimaryMain = "Dashboard_Theme_PrimaryMain",
+    Dashboard_Theme_SecondaryMain = "Dashboard_Theme_SecondaryMain",
+    Dashboard_Theme_BackgroundDefault = "Dashboard_Theme_BackgroundDefault",
+    Dashboard_Theme_BackgroundPaper = "Dashboard_Theme_BackgroundPaper",
+    Dashboard_Theme_TextPrimary = "Dashboard_Theme_TextPrimary",
+    // iCal
+    Ical_CalendarName = "Ical_CalendarName",
+    Ical_CalendarCompany = "Ical_CalendarCompany",
+    Ical_CalendarProduct = "Ical_CalendarProduct",
+    Ical_CalendarEventPrefix = "Ical_CalendarEventPrefix",
 
     // mostly pages or sections of pages...
     HomeDescription = "HomeDescription",
@@ -93,7 +87,7 @@ export enum Setting {
     SongHistoryTabDescription = "SongHistoryTabDescription",
     StatsPage_markdown = "StatsPage_markdown",
     Workflow_SelectAssigneesDialogDescription = "Workflow_SelectAssigneesDialogDescription",
-    EditEventCustomFieldsPage_markdown = "EditEventCustomFieldsPage_markdown",
+    EditEventCustomFieldValuesPage_markdown = "EditEventCustomFieldValuesPage_markdown",
     EventEditCustomFieldValuesDialog_TitleMarkdown = "EventEditCustomFieldValuesDialog_TitleMarkdown",
     EventEditCustomFieldValuesDialog_DescriptionMarkdown = "EventEditCustomFieldValuesDialog_DescriptionMarkdown",
     profile_description_markdown = "profile_description_markdown",
@@ -101,62 +95,10 @@ export enum Setting {
     QrCodeForThisPageDescriptionMarkdown = "QrCodeForThisPageDescriptionMarkdown",
 
     // not markdown....
-
-    // on the backstage home dashboard, which events to display
     BackstageFrontpageEventMaxAgeDays = "BackstageFrontpageEventMaxAgeDays",
-
-    // on the backstage home dashboard, a song is considered "current" if it's at MOST this long since playing it.
     BackstageFrontpageCurrentSongMaxAgeDays = "BackstageFrontpageCurrentSongMaxAgeDays",
-
     textPalette = "textPalette",
-    //EnableOldPublicHomepageBackstageLink = "EnableOldPublicHomepageBackstageLink",
-    //EnableNewPublicHomepageBackstageLink = "EnableNewPublicHomepageBackstageLink",
-
-    // for markdown editor drop images
     maxImageDimension = "maxImageDimension",
-};
+}
 
 export type SettingKey = keyof typeof Setting;
-
-export interface SetSettingArgs {
-    ctx: Ctx,
-    setting: Setting | string,
-    value?: any,
-};
-
-export async function SetSetting(args: SetSettingArgs) {
-    const settingName = args.setting as string;
-    if (args.value === null || args.value === undefined) {
-        const existing = await db.setting.findFirst({ where: { name: settingName, } });
-        if (!existing) return;
-
-        await db.setting.deleteMany({ where: { name: settingName, } });
-
-        await RegisterChange({
-            action: ChangeAction.delete,
-            ctx: args.ctx,
-            changeContext: CreateChangeContext("SetSetting"),
-            table: "setting",
-            pkid: existing.id,
-            oldValues: existing,
-        });
-
-        return;
-    }
-
-    const obj = await db.setting.create({
-        data: {
-            name: settingName,
-            value: JSON.stringify(args.value),
-        }
-    });
-
-    await RegisterChange({
-        action: ChangeAction.delete,
-        ctx: args.ctx,
-        changeContext: CreateChangeContext("SetSetting"),
-        table: "setting",
-        pkid: obj.id,
-        newValues: obj,
-    });
-}

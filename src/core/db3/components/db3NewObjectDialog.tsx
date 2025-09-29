@@ -7,7 +7,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
-import type { SettingKey } from "shared/settings";
+import type { SettingKey } from "shared/settingKeys";
 import { AdminInspectObject, CMDialogContentText, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";

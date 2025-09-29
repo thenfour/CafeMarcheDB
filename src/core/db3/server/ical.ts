@@ -6,7 +6,6 @@ import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
 import { Setting } from "@/shared/settings";
-import { BrandConfig } from "shared/brandConfig";
 
 interface ICalSettings {
     calendarName: string;

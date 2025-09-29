@@ -17,7 +17,7 @@ import {
     ListItemButton
 } from "@mui/material";
 import { SplitQuickFilter } from 'shared/quickFilter';
-import type { SettingKey } from 'shared/settings';
+import type { SettingKey } from 'shared/settingKeys';
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';

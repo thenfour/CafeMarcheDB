@@ -11,7 +11,7 @@ import { CMSmallButton } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/Markdown";
-import { SettingKey } from "shared/settings";
+import { SettingKey } from "shared/settingKeys";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;

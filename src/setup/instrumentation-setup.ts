@@ -1,6 +1,8 @@
 import { Permission } from "@/shared/permissions";
+import { DefaultDbBrandConfig } from "@/shared/brandConfig";
 import db from "db"
 import { SeedTable, UpdateTable } from "./setupUtils";
+import { Setting } from "@/shared/settingKeys";
 
 // Ensure all permissions in code are present in the database
 async function SyncPermissionsTable() {
@@ -816,5 +818,39 @@ export async function instrumentationSetup() {
     await EnsureSongCreditTypes();
     await EnsureUserTags();
     await EnsureFileTags();
+    await EnsureBrandingDefaults();
+}
+
+// Ensure Dashboard_* branding settings are present with sensible defaults.
+// We only CREATE missing keys; existing values are never overwritten.
+async function EnsureBrandingDefaults() {
+    console.log("Ensuring branding default settings...");
+
+    // Build desired settings list from DefaultDbBrandConfig
+    const desired: { name: string; value: string }[] = [
+        { name: Setting.Dashboard_SiteTitle, value: DefaultDbBrandConfig.siteTitle },
+        { name: Setting.Dashboard_SiteTitlePrefix, value: DefaultDbBrandConfig.siteTitlePrefix },
+        { name: Setting.Dashboard_SiteFaviconUrl, value: DefaultDbBrandConfig.siteFaviconUrl },
+    ];
+
+    // Theme values (optional)
+    if (DefaultDbBrandConfig.theme?.primaryMain) desired.push({ name: Setting.Dashboard_Theme_PrimaryMain, value: DefaultDbBrandConfig.theme.primaryMain });
+    if (DefaultDbBrandConfig.theme?.secondaryMain) desired.push({ name: Setting.Dashboard_Theme_SecondaryMain, value: DefaultDbBrandConfig.theme.secondaryMain });
+    if (DefaultDbBrandConfig.theme?.backgroundDefault) desired.push({ name: Setting.Dashboard_Theme_BackgroundDefault, value: DefaultDbBrandConfig.theme.backgroundDefault });
+    if (DefaultDbBrandConfig.theme?.backgroundPaper) desired.push({ name: Setting.Dashboard_Theme_BackgroundPaper, value: DefaultDbBrandConfig.theme.backgroundPaper });
+    // textPrimary is intentionally optional; omit if undefined to let MUI compute contrast
+    if (DefaultDbBrandConfig.theme?.textPrimary) desired.push({ name: Setting.Dashboard_Theme_TextPrimary, value: DefaultDbBrandConfig.theme.textPrimary });
+
+    const names = desired.map(d => d.name);
+    const existing = await db.setting.findMany({ where: { name: { in: names } } });
+    const existingSet = new Set(existing.map(s => s.name));
+    const toCreate = desired.filter(d => !existingSet.has(d.name));
+
+    if (toCreate.length === 0) {
+        console.log("Branding settings already present. Skipping insert.");
+        return;
+    }
+
+    await SeedTable("setting", db.setting, toCreate);
 }
 

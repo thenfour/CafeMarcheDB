@@ -35,7 +35,7 @@ import { QrCodeButton } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SnackbarContext } from "../SnackbarContext";
 import { SettingMarkdown } from "../SettingMarkdown";
-import { Setting } from "@/shared/settings";
+import { Setting } from "@/shared/settingKeys";
 import { NavRealm } from "./StaticMenuItems";
 import { useBrand } from "../../../../shared/brandConfig";
 

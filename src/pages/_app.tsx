@@ -3,7 +3,7 @@ import { CacheProvider, EmotionCache } from "@emotion/react";
 import { CssBaseline } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
-import { ThemeProvider, createTheme, useTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import '@xyflow/react/dist/style.css';
 import { AuthenticationError, AuthorizationError } from "blitz";
@@ -15,7 +15,6 @@ import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
 import Head from "next/head";
 import { BrandContext, DefaultDbBrandConfig, type DbBrandConfig } from "@/shared/brandConfig";
-import { loadDbBrandConfig } from "@/src/server/brand";
 import '../../public/eventSongList.css';
 import '../../public/frontpage.css';
 import '../../public/global.css';
@@ -69,31 +68,69 @@ function RootErrorFallback({ error }: ErrorFallbackProps) {
 // in order to emit css from the theme, this must be a CHILD of ThemeProvider.
 function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache }) {
   const getLayout = Component.getLayout || ((page) => page)
-  const theme = useTheme();
-  const brand: DbBrandConfig = pageProps?.brand ?? DefaultDbBrandConfig;
+  // Persist brand across client navigations; only update when a new brand is provided
+  const [brand, setBrand] = React.useState<DbBrandConfig>(pageProps?.brand ?? DefaultDbBrandConfig)
+  React.useEffect(() => {
+    if (pageProps?.brand) setBrand(pageProps.brand as DbBrandConfig)
+  }, [pageProps?.brand])
+  const base = themeOptions as any;
+  const theme = createTheme({
+    ...base,
+    palette: {
+      ...base?.palette,
+      mode: base?.palette?.mode ?? 'light',
+      primary: {
+        ...(base?.palette?.primary ?? {}),
+        main: brand.theme?.primaryMain ?? base?.palette?.primary?.main ?? '#1976d2',
+      },
+      secondary: {
+        ...(base?.palette?.secondary ?? {}),
+        main: brand.theme?.secondaryMain ?? base?.palette?.secondary?.main ?? '#9c27b0',
+      },
+      background: {
+        ...(base?.palette?.background ?? {}),
+        default: brand.theme?.backgroundDefault ?? base?.palette?.background?.default ?? '#fafafa',
+        paper: brand.theme?.backgroundPaper ?? base?.palette?.background?.paper ?? '#ffffff',
+      },
+      ...(brand.theme?.textPrimary ? { text: { ...(base?.palette?.text ?? {}), primary: brand.theme.textPrimary } } : {}),
+    },
+  });
 
   React.useEffect(() => {
     document.documentElement.style.setProperty('--primary-color', theme.palette.primary.main);
     document.documentElement.style.setProperty('--secondary-color', theme.palette.secondary.main);
-  }, []);
+    document.documentElement.style.setProperty('--bg-default', theme.palette.background.default);
+    document.documentElement.style.setProperty('--bg-paper', theme.palette.background.paper);
+    document.documentElement.style.setProperty('--text-primary', theme.palette.text.primary);
+  }, [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.background.default, theme.palette.background.paper, theme.palette.text.primary]);
 
   return getLayout(
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Head>
-        <link rel="icon" type="image/png" href={brand.siteFaviconUrl} />
-      </Head>
-      <SnackbarProvider>
-        <BrandContext.Provider value={brand}>
-          {/* <DashboardContextProvider> */}
-          <Component {...pageProps} />
-          {/* </DashboardContextProvider> */}
-        </BrandContext.Provider>
-      </SnackbarProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Head>
+          <meta name="theme-color" content={theme.palette.primary.main} />
+          <link rel="icon" type="image/png" href={brand.siteFaviconUrl} />
+          <style id="brand-css-vars">{`:root{
+              --primary-color: ${theme.palette.primary.main};
+              --secondary-color: ${theme.palette.secondary.main};
+              --bg-default: ${theme.palette.background.default};
+              --bg-paper: ${theme.palette.background.paper};
+              --text-primary: ${theme.palette.text.primary};
+            }
+          `}</style>
+        </Head>
+        <SnackbarProvider>
+          <BrandContext.Provider value={brand}>
+            {/* <DashboardContextProvider> */}
+            <Component {...pageProps} />
+            {/* </DashboardContextProvider> */}
+          </BrandContext.Provider>
+        </SnackbarProvider>
+      </ThemeProvider>
     </LocalizationProvider>
   );
 }
-
-const theme = createTheme(themeOptions);
 
 function MyApp({
   Component,
@@ -102,33 +139,36 @@ function MyApp({
 }: MyAppProps) {
   return (
     <CacheProvider value={emotionCache}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <ErrorBoundary FallbackComponent={RootErrorFallback}>
-          <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
-        </ErrorBoundary>
-      </ThemeProvider>
+      <ErrorBoundary FallbackComponent={RootErrorFallback}>
+        <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
+      </ErrorBoundary>
     </CacheProvider>
   );
 }
 
 // Ensure SSR per-request loads brand from DB and injects into pageProps
 const BlitzedApp = withBlitz(MyApp);
+const originalGetInitialProps = (BlitzedApp as any).getInitialProps as
+  | ((ctx: any) => Promise<any>)
+  | undefined;
 (BlitzedApp as any).getInitialProps = async (appCtx) => {
-  const appProps: any = await (async () => {
-    if (typeof (withBlitz as any).getInitialProps === "function") {
-      // If withBlitz wraps getInitialProps, let Next handle it; we'll still add brand below
-      return await (withBlitz as any).getInitialProps(appCtx);
-    }
+  let appProps: any;
+  if (typeof originalGetInitialProps === "function") {
+    appProps = await originalGetInitialProps(appCtx);
+  } else {
     const NextApp = (await import("next/app")).default as any;
-    return await NextApp.getInitialProps(appCtx);
-  })();
+    appProps = await NextApp.getInitialProps(appCtx);
+  }
 
   try {
     const req = appCtx.ctx?.req as any;
-    const host = req?.headers?.host as string | undefined;
-    const brand = await loadDbBrandConfig(host);
-    appProps.pageProps = { ...(appProps.pageProps || {}), brand };
+    if (req) {
+      // Only import and call server code on the server
+      const { loadDbBrandConfig } = await import("@/src/server/brand");
+      const host = req?.headers?.host as string | undefined;
+      const brand = await loadDbBrandConfig(host);
+      appProps.pageProps = { ...(appProps.pageProps || {}), brand };
+    }
   } catch (e) {
     // Non-fatal; fall back to defaults
     appProps.pageProps = { ...(appProps.pageProps || {}), brand: DefaultDbBrandConfig };

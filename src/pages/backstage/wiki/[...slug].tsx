@@ -2,7 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
-import { SettingKey } from "shared/settings";
+import { SettingKey } from "shared/settingKeys";
 import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { useRecordFeatureUse } from "src/core/components/DashboardContext";
