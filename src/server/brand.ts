@@ -1,7 +1,6 @@
-import db from "db";
-import { Setting } from "@/shared/settings";
 import type { DbBrandConfig } from "@/shared/brandConfig";
-import { DefaultDbBrandConfig } from "@/shared/brandConfig";
+import { Setting } from "@/shared/settings";
+import db from "db";
 
 type CacheEntry = { value: DbBrandConfig; expiresAt: number };
 const CACHE_TTL_MS = 10_000; // 10s, fast follow for admin changes without heavy DB churn
@@ -11,20 +10,6 @@ function normalizeHost(hostHeader?: string | null): string {
   if (!hostHeader) return "default";
   // strip port
   return hostHeader.split(":")[0]!.toLowerCase();
-}
-
-function parseMaybeJsonString(s: string | null | undefined): string | undefined {
-  if (!s) return undefined;
-  const trimmed = s.trim();
-  if (!trimmed) return undefined;
-  try {
-    const v = JSON.parse(trimmed);
-    if (typeof v === "string") return v;
-  } catch {
-    // not JSON, fall through
-  }
-  // treat raw as plain text
-  return trimmed;
 }
 
 export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbBrandConfig> {
@@ -50,18 +35,18 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
   const rows = await db.setting.findMany({ where: { name: { in: names } } });
   const byName = new Map(rows.map(r => [r.name, r.value] as const));
 
-  const siteTitle = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteTitle)) ?? DefaultDbBrandConfig.siteTitle;
-  const siteTitlePrefix = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteTitlePrefix)) ?? DefaultDbBrandConfig.siteTitlePrefix;
-  const siteFaviconUrl = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteFaviconUrl)) ?? DefaultDbBrandConfig.siteFaviconUrl;
-  const siteLogoUrl = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteLogoUrl)) ?? DefaultDbBrandConfig.siteLogoUrl;
+  const siteTitle = byName.get(Setting.Dashboard_SiteTitle) ?? "";
+  const siteTitlePrefix = byName.get(Setting.Dashboard_SiteTitlePrefix) ?? "";
+  const siteFaviconUrl = byName.get(Setting.Dashboard_SiteFaviconUrl) ?? "";
+  const siteLogoUrl = byName.get(Setting.Dashboard_SiteLogoUrl) ?? "";
 
   const theme = {
-    primaryMain: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_PrimaryMain)) ?? DefaultDbBrandConfig.theme?.primaryMain,
-    secondaryMain: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_SecondaryMain)) ?? DefaultDbBrandConfig.theme?.secondaryMain,
-    backgroundDefault: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_BackgroundDefault)) ?? DefaultDbBrandConfig.theme?.backgroundDefault,
-    backgroundPaper: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_BackgroundPaper)) ?? DefaultDbBrandConfig.theme?.backgroundPaper,
-    textPrimary: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_TextPrimary)) ?? DefaultDbBrandConfig.theme?.textPrimary,
-    contrastText: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_ContrastText)) ?? DefaultDbBrandConfig.theme?.contrastText,
+    primaryMain: byName.get(Setting.Dashboard_Theme_PrimaryMain) ?? "",
+    secondaryMain: byName.get(Setting.Dashboard_Theme_SecondaryMain) ?? "",
+    backgroundDefault: byName.get(Setting.Dashboard_Theme_BackgroundDefault) ?? "",
+    backgroundPaper: byName.get(Setting.Dashboard_Theme_BackgroundPaper) ?? "",
+    textPrimary: byName.get(Setting.Dashboard_Theme_TextPrimary) ?? "",
+    contrastText: byName.get(Setting.Dashboard_Theme_ContrastText) ?? "",
   } as DbBrandConfig["theme"];
 
   const value: DbBrandConfig = { siteTitle, siteTitlePrefix, siteFaviconUrl, siteLogoUrl, theme };

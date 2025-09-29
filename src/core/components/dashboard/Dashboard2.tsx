@@ -38,6 +38,7 @@ import { SettingMarkdown } from "../SettingMarkdown";
 import { Setting } from "@/shared/settingKeys";
 import { NavRealm } from "./StaticMenuItems";
 import { useBrand } from "../../../../shared/brandConfig";
+import { IsNullOrWhitespace } from "@/shared/utils";
 
 const drawerWidth = 260;
 
@@ -257,7 +258,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
                     {brand.siteLogoUrl && (
                         <Link href={"/backstage"} aria-label="Home" style={{ display: 'inline-flex' }}>
-                            <img src={brand.siteLogoUrl} alt="logo" style={{ height: 28, display: 'block' }} />
+                            <img src={brand.siteLogoUrl} alt="logo" style={{ display: 'block' }} />
                         </Link>
                     )}
                     <Typography
@@ -265,7 +266,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         noWrap
                         component="div"
                     >
-                        <Link href={"/backstage"} className={`logo`}>{brand.siteTitle}</Link>
+                        {!IsNullOrWhitespace(brand.siteTitle) && <Link href={"/backstage"} className={`logo`}>{brand.siteTitle}</Link>}
                     </Typography>
                 </Box>
 
