@@ -234,7 +234,6 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     // }
 
     const brand = useBrand();
-    console.log(brand);
     return (
         <AppBar
             position="static"
