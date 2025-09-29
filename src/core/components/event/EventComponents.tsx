@@ -58,7 +58,7 @@ import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from '.
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { AttendanceChip } from './AttendanceChips';
-import { getHostingMode, HostingMode } from '@/shared/brandConfig';
+import { HostingMode } from '@/shared/brandConfigBase';
 
 // type EventWithTypePayload = Prisma.EventGetPayload<{
 //     include: {
@@ -1501,7 +1501,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryIcon={gIconMap.Public()}
             summaryTitle="Frontpage"
             summarySubtitle={<>{eventData.event.frontpageVisible && gCharMap.Checkmark()}</>}
-            enabled={getHostingMode() === HostingMode.CafeMarche}
+            enabled={dashboardContext.brand.hostingMode === HostingMode.CafeMarche}
         >
             <AppContextMarker name="frontpage tab">
                 <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />

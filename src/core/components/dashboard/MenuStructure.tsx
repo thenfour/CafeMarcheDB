@@ -1,5 +1,4 @@
 import { groupByMap } from '@/shared/arrayUtils';
-import { getHostingMode, HostingMode } from '@/shared/brandConfig';
 import { Box, Collapse, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Typography } from '@mui/material';
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -17,6 +16,7 @@ import { DashboardContext, DashboardContextData, useClientTelemetryEvent } from 
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { useLocalStorageSet } from "../useLocalStorageState";
 import { gMenuSections, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
+import { HostingMode } from '@/shared/brandConfigBase';
 
 // NOTE: types look like this:
 
@@ -185,7 +185,7 @@ export const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: D
 };
 
 function IsLinkEnabled(dashboardContext: DashboardContextData, link: MenuLink): boolean {
-    if (link.enabledForGenericSingleTenant === false && getHostingMode() === HostingMode.GenericSingleTenant) {
+    if (link.enabledForGenericSingleTenant === false && dashboardContext.brand.hostingMode === HostingMode.GenericSingleTenant) {
         return false;
     }
     return dashboardContext.isAuthorized(link.permission);

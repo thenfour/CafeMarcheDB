@@ -1,4 +1,4 @@
-import { DefaultDbBrandConfig } from "@/shared/brandConfig";
+import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 import { Setting } from "@/shared/settingKeys";
 import clearBrandCache from "@/src/auth/mutations/clearBrandCache";
 import updateSetting from "@/src/auth/mutations/updateSetting";
@@ -84,6 +84,7 @@ const UploadSettingControl = (props: {
 };
 
 const fields = [
+  { key: Setting.Dashboard_HostingMode, label: "Hosting Mode" },
   { key: Setting.Dashboard_SiteTitle, label: "Site Title" },
   { key: Setting.Dashboard_SiteTitlePrefix, label: "Title Prefix" },
   { key: Setting.Dashboard_SiteFaviconUrl, label: "Favicon URL" },

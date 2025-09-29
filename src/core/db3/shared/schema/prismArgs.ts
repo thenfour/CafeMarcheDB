@@ -5,6 +5,7 @@ import { TableAccessor } from "shared/rootroot";
 import { ServerStartInfo } from "shared/serverStateBase";
 import { AuxUserArgs } from "types";
 import { CMDBTableFilterModel, ImageEditParams, MakeDefaultImageEditParams, TAnyModel, parsePayloadJSON } from "../apiTypes";
+import { DbBrandConfig } from "@/shared/brandConfigBase";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -1601,6 +1602,8 @@ export abstract class DashboardContextDataBase {
     serverStartupState: ServerStartInfo;
 
     relevantEventIds: number[];
+
+    brand: DbBrandConfig;
 
     abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
     abstract sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[];

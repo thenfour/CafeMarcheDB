@@ -5,7 +5,7 @@ import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
-import { Setting } from "@/shared/settings";
+import { Setting } from "@/shared/settingKeys";
 
 interface ICalSettings {
     calendarName: string;

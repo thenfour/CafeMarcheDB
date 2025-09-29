@@ -21,6 +21,7 @@ export enum Setting {
     EventAttendanceCommentDialog_DescriptionMarkdown = "EventAttendanceCommentDialog_DescriptionMarkdown",
 
     // brand
+    Dashboard_HostingMode = "Dashboard_HostingMode", // CafeMarche or GenericSingleTenant
     Dashboard_SiteTitle = "Dashboard_SiteTitle",
     Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix",
     Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl",

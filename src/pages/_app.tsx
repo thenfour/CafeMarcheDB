@@ -14,7 +14,7 @@ import { SnackbarProvider } from "src/core/components/SnackbarContext";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
 import Head from "next/head";
-import { BrandContext, DefaultDbBrandConfig, type DbBrandConfig } from "@/shared/brandConfig";
+import { BrandContext } from "@/shared/brandConfig";
 import '../../public/eventSongList.css';
 import '../../public/frontpage.css';
 import '../../public/global.css';
@@ -33,6 +33,7 @@ import '../../public/style/setlistPlan.css';
 import '../../public/style/songSearch.css';
 import '../../public/style/tabs.css';
 import '../../public/style/workflow.css';
+import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();

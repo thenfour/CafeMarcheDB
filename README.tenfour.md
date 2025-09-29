@@ -296,31 +296,6 @@ Some things to try:
 
 - change the type def of TransactionalPrismaClient to `any`
 
-## Branding via Environment Variables (no more Dashboard_* in DB)
-
-Branding settings that were previously stored in the DB under `Dashboard_*` have been migrated to build/runtime environment variables to eliminate client-side flicker and ensure SSR correctness.
-
-Set these in your `.env.local` for local dev and in your deployment environment for prod:
-
-- `NEXT_PUBLIC_CMDB_SITE_TITLE` — Full site title. Default: `Café Marché Backstage`
-- `NEXT_PUBLIC_CMDB_SITE_TITLE_PREFIX` — Prefix for page titles and calendar summaries. Default: `CM: `
-- `NEXT_PUBLIC_CMDB_SITE_FAVICON_URL` — Path/URL to the favicon shown in the dashboard. Default: `/favicon.png`
-- `NEXT_PUBLIC_CMDB_HOSTING_MODE` — One of `CafeMarche` or `GenericSingleTenant`. Default: `GenericSingleTenant`
-
-Notes:
-- These are read by both server and client via `shared/brandConfig.ts`. Because they are `NEXT_PUBLIC_*`, they will be inlined at build time for the client bundles and used directly on the server. No DB reads = no initial title/favicon flicker.
-- If unset, sensible defaults are used so local development works immediately.
-- Server-side code that previously queried `Dashboard_*` has been removed/updated. The `Setting` enum retains other non-branding settings.
-
-Where it’s used:
-- Dashboard layout `<Head>` title and favicon (SSR-safe)
-- Public homepage rendering mode (hosting mode)
-- iCal export event summaries (uses the title prefix)
-
-Initial setup quick reminder:
-1. Create `.env.local` and set the above variables if you want to override defaults.
-2. Restart dev server after changing env vars.
-
 # feature analytics
 
 * client:

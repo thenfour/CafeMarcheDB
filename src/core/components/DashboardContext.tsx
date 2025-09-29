@@ -15,6 +15,8 @@ import { useAppContext } from './AppContext';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
 import { ColorVariationSpec, gAppColors } from './color/palette';
 import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from './featureReports/activityTracking';
+import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
+import { useBrand } from '@/shared/brandConfig';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -167,6 +169,8 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     refreshCachedData(): void {
         this.refetchDashboardData();
     }
+
+    brand: DbBrandConfig = DefaultDbBrandConfig;
 };
 
 
@@ -177,6 +181,7 @@ export const useDashboardContext = () => React.useContext(DashboardContext);
 
 export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{}>) => {
     const valueRef = React.useRef(new DashboardContextData());
+    const brand = useBrand();
 
     const [currentUser] = useCurrentUser();
     valueRef.current.currentUser = currentUser;
@@ -222,6 +227,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventCustomField = new TableAccessor(dashboardData.eventCustomField);
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
+    valueRef.current.brand = brand;
 
     // do enrichment after fundamentals are set up.
     valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks.map(link => {

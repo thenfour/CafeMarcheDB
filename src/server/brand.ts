@@ -1,5 +1,5 @@
-import type { DbBrandConfig } from "@/shared/brandConfig";
-import { Setting } from "@/shared/settings";
+import { DbBrandConfig, HostingMode } from "@/shared/brandConfigBase";
+import { Setting } from "@/shared/settingKeys";
 import db from "db";
 
 type CacheEntry = { value: DbBrandConfig; expiresAt: number };
@@ -20,6 +20,7 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
 
   // For now, global settings; future: scope by host realm if schema supports it
   const names = [
+    Setting.Dashboard_HostingMode,
     Setting.Dashboard_SiteTitle,
     Setting.Dashboard_SiteTitlePrefix,
     Setting.Dashboard_SiteFaviconUrl,
@@ -49,7 +50,15 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
     contrastText: byName.get(Setting.Dashboard_Theme_ContrastText) ?? "",
   } as DbBrandConfig["theme"];
 
-  const value: DbBrandConfig = { siteTitle, siteTitlePrefix, siteFaviconUrl, siteLogoUrl, theme };
+  const value: DbBrandConfig =
+  {
+    hostingMode: (byName.get(Setting.Dashboard_HostingMode) === "CafeMarche") ? HostingMode.CafeMarche : HostingMode.GenericSingleTenant,
+    siteTitle,
+    siteTitlePrefix,
+    siteFaviconUrl,
+    siteLogoUrl,
+    theme
+  };
   cache.set(host, { value, expiresAt: now + CACHE_TTL_MS });
   return value;
 }

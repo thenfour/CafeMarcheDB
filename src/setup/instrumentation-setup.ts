@@ -1,8 +1,8 @@
 import { Permission } from "@/shared/permissions";
-import { DefaultDbBrandConfig } from "@/shared/brandConfig";
 import db from "db"
 import { SeedTable, UpdateTable } from "./setupUtils";
 import { Setting } from "@/shared/settingKeys";
+import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 
 // Ensure all permissions in code are present in the database
 async function SyncPermissionsTable() {
