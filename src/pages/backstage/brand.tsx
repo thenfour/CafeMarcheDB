@@ -85,10 +85,17 @@ const UploadSettingControl = (props: {
 
 const fields = [
   { key: Setting.Dashboard_HostingMode, label: "Hosting Mode" },
-  { key: Setting.Dashboard_SiteTitle, label: "Site Title" },
-  { key: Setting.Dashboard_SiteTitlePrefix, label: "Title Prefix" },
   { key: Setting.Dashboard_SiteFaviconUrl, label: "Favicon URL" },
-  { key: Setting.Dashboard_SiteLogoUrl, label: "App Bar Logo URL" },
+
+  { key: Setting.Dashboard_SiteTitle, label: "Site Title" },
+  { key: Setting.Dashboard_SiteLogoUrl, label: "Site Logo URL" },
+  { key: Setting.Dashboard_SiteTitlePrefix, label: "Page title prefix" },
+
+  { key: Setting.Ical_CalendarName, label: "Calendar Name (My Band's Agenda)" },
+  { key: Setting.Ical_CalendarCompany, label: "Calendar Company (My Band)" },
+  { key: Setting.Ical_CalendarProduct, label: "Calendar Product (Backstage)" },
+  { key: Setting.Ical_CalendarEventPrefix, label: "Event Name Prefix (MB:)" },
+
   { key: Setting.Dashboard_Theme_PrimaryMain, label: "Primary Main" },
   { key: Setting.Dashboard_Theme_SecondaryMain, label: "Secondary Main" },
   { key: Setting.Dashboard_Theme_BackgroundDefault, label: "Background Default" },
@@ -133,67 +140,68 @@ const BrandForm = () => {
   return (
     <Box display="flex" flexDirection="column" gap={2}>
       <Typography variant="h6">Brand Settings</Typography>
-      <Grid container spacing={2}>
-        {fields.map(f => (
-          <Grid item xs={12} md={6} key={f.key}>
-            {/* Use native color picker for color-ish fields */}
-            {(/Primary|Secondary|Background|TextPrimary|ContrastText/i.test(f.key)) ? (() => {
-              const defaults: Record<string, string | undefined> = {
-                [String(Setting.Dashboard_Theme_PrimaryMain)]: DefaultDbBrandConfig.theme?.primaryMain,
-                [String(Setting.Dashboard_Theme_SecondaryMain)]: DefaultDbBrandConfig.theme?.secondaryMain,
-                [String(Setting.Dashboard_Theme_BackgroundDefault)]: DefaultDbBrandConfig.theme?.backgroundDefault,
-                [String(Setting.Dashboard_Theme_BackgroundPaper)]: DefaultDbBrandConfig.theme?.backgroundPaper,
-                [String(Setting.Dashboard_Theme_TextPrimary)]: DefaultDbBrandConfig.theme?.textPrimary,
-                [String(Setting.Dashboard_Theme_ContrastText)]: DefaultDbBrandConfig.theme?.contrastText,
-              };
-              const defVal = defaults[String(f.key)] ?? "";
-              const current = (values[f.key] ?? "").toString();
-              const onReset = () => onChange(f.key, defVal || "");
-              return (
-                <Box display="flex" alignItems="center" gap={1}>
-                  <TextField
-                    fullWidth
-                    type="color"
-                    label={f.label}
-                    value={current || "#000000"}
-                    onChange={e => onChange(f.key, e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                  <Button size="small" variant="outlined" onClick={onReset} disabled={current === (defVal || "")}>Reset</Button>
-                </Box>
-              );
-            })() : (
-              <TextField fullWidth label={f.label} value={values[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value)} />
-            )}
+      {/* <Grid container spacing={2}> */}
+      {fields.map(f => (
+        // <Grid item xs={12} md={6} key={f.key} style={{ border: "1px solid #800" }}>
+        <div>
+          {/* Use native color picker for color-ish fields */}
+          {(/Primary|Secondary|Background|TextPrimary|ContrastText/i.test(f.key)) ? (() => {
+            const defaults: Record<string, string | undefined> = {
+              [String(Setting.Dashboard_Theme_PrimaryMain)]: DefaultDbBrandConfig.theme?.primaryMain,
+              [String(Setting.Dashboard_Theme_SecondaryMain)]: DefaultDbBrandConfig.theme?.secondaryMain,
+              [String(Setting.Dashboard_Theme_BackgroundDefault)]: DefaultDbBrandConfig.theme?.backgroundDefault,
+              [String(Setting.Dashboard_Theme_BackgroundPaper)]: DefaultDbBrandConfig.theme?.backgroundPaper,
+              [String(Setting.Dashboard_Theme_TextPrimary)]: DefaultDbBrandConfig.theme?.textPrimary,
+              [String(Setting.Dashboard_Theme_ContrastText)]: DefaultDbBrandConfig.theme?.contrastText,
+            };
+            const defVal = defaults[String(f.key)] ?? "";
+            const current = (values[f.key] ?? "").toString();
+            const onReset = () => onChange(f.key, defVal || "");
+            return (
+              <Box display="flex" alignItems="center" gap={1}>
+                <TextField
+                  fullWidth
+                  type="color"
+                  label={f.label}
+                  value={current || "#000000"}
+                  onChange={e => onChange(f.key, e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <Button size="small" variant="outlined" onClick={onReset} disabled={current === (defVal || "")}>Reset</Button>
+              </Box>
+            );
+          })() : (
+            <TextField fullWidth label={f.label} value={values[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value)} />
+          )}
 
-            {/* Specialized upload UI for the Favicon field */}
-            {f.key === Setting.Dashboard_SiteFaviconUrl && (
-              <UploadSettingControl
-                settingKey={Setting.Dashboard_SiteFaviconUrl}
-                value={values[Setting.Dashboard_SiteFaviconUrl] ?? ""}
-                setValue={(v) => onChange(String(Setting.Dashboard_SiteFaviconUrl), v)}
-                instructions="Upload a favicon (drag/drop/paste or click):"
-                previewAlt="Favicon Preview"
-                previewStyle={{ height: 32, width: 32, objectFit: "contain", background: "#fff", padding: 2, borderRadius: 4 }}
-                containerClassName="brandFaviconUploadArea"
-              />
-            )}
+          {/* Specialized upload UI for the Favicon field */}
+          {f.key === Setting.Dashboard_SiteFaviconUrl && (
+            <UploadSettingControl
+              settingKey={Setting.Dashboard_SiteFaviconUrl}
+              value={values[Setting.Dashboard_SiteFaviconUrl] ?? ""}
+              setValue={(v) => onChange(String(Setting.Dashboard_SiteFaviconUrl), v)}
+              instructions="Upload a favicon (drag/drop/paste or click):"
+              previewAlt="Favicon Preview"
+              previewStyle={{ height: 32, width: 32, objectFit: "contain", background: "#fff", padding: 2, borderRadius: 4 }}
+              containerClassName="brandFaviconUploadArea"
+            />
+          )}
 
-            {/* Specialized upload UI for the App Bar Logo field */}
-            {f.key === Setting.Dashboard_SiteLogoUrl && (
-              <UploadSettingControl
-                settingKey={Setting.Dashboard_SiteLogoUrl}
-                value={values[Setting.Dashboard_SiteLogoUrl] ?? ""}
-                setValue={(v) => onChange(String(Setting.Dashboard_SiteLogoUrl), v)}
-                instructions="Upload a logo (drag/drop/paste or click):"
-                previewAlt="App Bar Logo Preview"
-                previewStyle={{ maxHeight: 48, maxWidth: 200, objectFit: "contain", background: "#fff", padding: 4, borderRadius: 4 }}
-                containerClassName="brandLogoUploadArea"
-              />
-            )}
-          </Grid>
-        ))}
-      </Grid>
+          {/* Specialized upload UI for the App Bar Logo field */}
+          {f.key === Setting.Dashboard_SiteLogoUrl && (
+            <UploadSettingControl
+              settingKey={Setting.Dashboard_SiteLogoUrl}
+              value={values[Setting.Dashboard_SiteLogoUrl] ?? ""}
+              setValue={(v) => onChange(String(Setting.Dashboard_SiteLogoUrl), v)}
+              instructions="Upload a logo (drag/drop/paste or click):"
+              previewAlt="App Bar Logo Preview"
+              previewStyle={{ maxHeight: 48, maxWidth: 200, objectFit: "contain", background: "#fff", padding: 4, borderRadius: 4 }}
+              containerClassName="brandLogoUploadArea"
+            />
+          )}
+        </div>
+      ))}
+      {/* </Grid> */}
       <Box>
         <Button variant="contained" onClick={onSave}>Save</Button>
       </Box>
