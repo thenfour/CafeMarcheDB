@@ -1,6 +1,6 @@
-import React from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import React from "react";
 
 export const GenericPublicIndex: React.FC = () => {
     const router = useRouter();
@@ -16,8 +16,7 @@ export const GenericPublicIndex: React.FC = () => {
             <Head>
                 <title>Redirecting…</title>
                 <meta name="robots" content="noindex, nofollow" />
-                {/* No-JS fallback: immediate meta refresh to the destination */}
-                <meta httpEquiv="refresh" content={`10; url=${destination}`} />
+                {/* <meta httpEquiv="refresh" content={`10; url=${destination}`} /> */}
             </Head>
 
             {/* Content for users while redirect occurs, and as a last-resort fallback */}
