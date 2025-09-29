@@ -31,6 +31,7 @@ export enum Setting {
     Dashboard_SiteTitle = "Dashboard_SiteTitle", // plain text
     Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix", // plain text
     Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl", // plain text URL path or absolute
+    Dashboard_SiteLogoUrl = "Dashboard_SiteLogoUrl", // plain text URL path or absolute (app bar)
     // theme (plain text values)
     Dashboard_Theme_PrimaryMain = "Dashboard_Theme_PrimaryMain", // e.g., #1976d2
     Dashboard_Theme_SecondaryMain = "Dashboard_Theme_SecondaryMain", // e.g., #9c27b0

@@ -30,6 +30,7 @@ export type DbBrandConfig = {
   siteTitle: string;
   siteTitlePrefix: string;
   siteFaviconUrl: string;
+  siteLogoUrl?: string;
   theme?: ThemeBrand;
 };
 
@@ -37,6 +38,7 @@ export const DefaultDbBrandConfig: DbBrandConfig = {
   siteTitle: "Café Marché Backstage",
   siteTitlePrefix: "CM: ",
   siteFaviconUrl: "/favicon.png",
+  siteLogoUrl: undefined,
   theme: {
     primaryMain: "#344873", // matches themeOptions
     secondaryMain: "#831012",

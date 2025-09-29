@@ -832,6 +832,7 @@ async function EnsureBrandingDefaults() {
         { name: Setting.Dashboard_SiteTitlePrefix, value: DefaultDbBrandConfig.siteTitlePrefix },
         { name: Setting.Dashboard_SiteFaviconUrl, value: DefaultDbBrandConfig.siteFaviconUrl },
     ];
+    if (DefaultDbBrandConfig.siteLogoUrl) desired.push({ name: Setting.Dashboard_SiteLogoUrl, value: DefaultDbBrandConfig.siteLogoUrl });
 
     // Theme values (optional)
     if (DefaultDbBrandConfig.theme?.primaryMain) desired.push({ name: Setting.Dashboard_Theme_PrimaryMain, value: DefaultDbBrandConfig.theme.primaryMain });

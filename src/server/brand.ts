@@ -38,6 +38,7 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
     Setting.Dashboard_SiteTitle,
     Setting.Dashboard_SiteTitlePrefix,
     Setting.Dashboard_SiteFaviconUrl,
+    Setting.Dashboard_SiteLogoUrl,
     Setting.Dashboard_Theme_PrimaryMain,
     Setting.Dashboard_Theme_SecondaryMain,
     Setting.Dashboard_Theme_BackgroundDefault,
@@ -52,6 +53,7 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
   const siteTitle = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteTitle)) ?? DefaultDbBrandConfig.siteTitle;
   const siteTitlePrefix = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteTitlePrefix)) ?? DefaultDbBrandConfig.siteTitlePrefix;
   const siteFaviconUrl = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteFaviconUrl)) ?? DefaultDbBrandConfig.siteFaviconUrl;
+  const siteLogoUrl = parseMaybeJsonString(byName.get(Setting.Dashboard_SiteLogoUrl)) ?? DefaultDbBrandConfig.siteLogoUrl;
 
   const theme = {
     primaryMain: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_PrimaryMain)) ?? DefaultDbBrandConfig.theme?.primaryMain,
@@ -62,7 +64,7 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
     contrastText: parseMaybeJsonString(byName.get(Setting.Dashboard_Theme_ContrastText)) ?? DefaultDbBrandConfig.theme?.contrastText,
   } as DbBrandConfig["theme"];
 
-  const value: DbBrandConfig = { siteTitle, siteTitlePrefix, siteFaviconUrl, theme };
+  const value: DbBrandConfig = { siteTitle, siteTitlePrefix, siteFaviconUrl, siteLogoUrl, theme };
   cache.set(host, { value, expiresAt: now + CACHE_TTL_MS });
   return value;
 }

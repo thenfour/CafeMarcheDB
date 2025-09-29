@@ -24,6 +24,7 @@ export enum Setting {
     Dashboard_SiteTitle = "Dashboard_SiteTitle",
     Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix",
     Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl",
+    Dashboard_SiteLogoUrl = "Dashboard_SiteLogoUrl",
     // theme
     Dashboard_Theme_PrimaryMain = "Dashboard_Theme_PrimaryMain",
     Dashboard_Theme_SecondaryMain = "Dashboard_Theme_SecondaryMain",

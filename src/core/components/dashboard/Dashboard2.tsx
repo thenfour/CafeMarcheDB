@@ -254,14 +254,20 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 >
                     <MenuIcon />
                 </IconButton>
-                <Typography
-                    variant="h6"
-                    noWrap
-                    component="div"
-                    sx={{ display: { xs: 'none', sm: 'block' } }}
-                >
-                    <Link href={"/backstage"} className={`logo`}>{brand.siteTitle}</Link>
-                </Typography>
+                <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
+                    {brand.siteLogoUrl && (
+                        <Link href={"/backstage"} aria-label="Home" style={{ display: 'inline-flex' }}>
+                            <img src={brand.siteLogoUrl} alt="logo" style={{ height: 28, display: 'block' }} />
+                        </Link>
+                    )}
+                    <Typography
+                        variant="h6"
+                        noWrap
+                        component="div"
+                    >
+                        <Link href={"/backstage"} className={`logo`}>{brand.siteTitle}</Link>
+                    </Typography>
+                </Box>
 
                 <MetronomeDialogButton />
 

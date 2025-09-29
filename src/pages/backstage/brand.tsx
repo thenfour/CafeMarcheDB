@@ -15,6 +15,7 @@ const fields = [
   { key: Setting.Dashboard_SiteTitle, label: "Site Title" },
   { key: Setting.Dashboard_SiteTitlePrefix, label: "Title Prefix" },
   { key: Setting.Dashboard_SiteFaviconUrl, label: "Favicon URL" },
+  { key: Setting.Dashboard_SiteLogoUrl, label: "App Bar Logo URL" },
   { key: Setting.Dashboard_Theme_PrimaryMain, label: "Primary Main" },
   { key: Setting.Dashboard_Theme_SecondaryMain, label: "Secondary Main" },
   { key: Setting.Dashboard_Theme_BackgroundDefault, label: "Background Default" },
