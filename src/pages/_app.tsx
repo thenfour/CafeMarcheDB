@@ -13,6 +13,9 @@ import { withBlitz } from "src/blitz-client";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
+import Head from "next/head";
+import { BrandContext, DefaultDbBrandConfig, type DbBrandConfig } from "@/shared/brandConfig";
+import { loadDbBrandConfig } from "@/src/server/brand";
 import '../../public/eventSongList.css';
 import '../../public/frontpage.css';
 import '../../public/global.css';
@@ -67,6 +70,7 @@ function RootErrorFallback({ error }: ErrorFallbackProps) {
 function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache }) {
   const getLayout = Component.getLayout || ((page) => page)
   const theme = useTheme();
+  const brand: DbBrandConfig = pageProps?.brand ?? DefaultDbBrandConfig;
 
   React.useEffect(() => {
     document.documentElement.style.setProperty('--primary-color', theme.palette.primary.main);
@@ -75,10 +79,15 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
 
   return getLayout(
     <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Head>
+        <link rel="icon" type="image/png" href={brand.siteFaviconUrl} />
+      </Head>
       <SnackbarProvider>
-        {/* <DashboardContextProvider> */}
-        <Component {...pageProps} />
-        {/* </DashboardContextProvider> */}
+        <BrandContext.Provider value={brand}>
+          {/* <DashboardContextProvider> */}
+          <Component {...pageProps} />
+          {/* </DashboardContextProvider> */}
+        </BrandContext.Provider>
       </SnackbarProvider>
     </LocalizationProvider>
   );
@@ -103,4 +112,29 @@ function MyApp({
   );
 }
 
-export default withBlitz(MyApp)
+// Ensure SSR per-request loads brand from DB and injects into pageProps
+const BlitzedApp = withBlitz(MyApp);
+(BlitzedApp as any).getInitialProps = async (appCtx) => {
+  const appProps: any = await (async () => {
+    if (typeof (withBlitz as any).getInitialProps === "function") {
+      // If withBlitz wraps getInitialProps, let Next handle it; we'll still add brand below
+      return await (withBlitz as any).getInitialProps(appCtx);
+    }
+    const NextApp = (await import("next/app")).default as any;
+    return await NextApp.getInitialProps(appCtx);
+  })();
+
+  try {
+    const req = appCtx.ctx?.req as any;
+    const host = req?.headers?.host as string | undefined;
+    const brand = await loadDbBrandConfig(host);
+    appProps.pageProps = { ...(appProps.pageProps || {}), brand };
+  } catch (e) {
+    // Non-fatal; fall back to defaults
+    appProps.pageProps = { ...(appProps.pageProps || {}), brand: DefaultDbBrandConfig };
+  }
+
+  return appProps;
+};
+
+export default BlitzedApp;

@@ -28,6 +28,9 @@ export enum Setting {
     // for dashboard context (migrated to env-based BrandConfig; enum values kept only if referenced for legacy)
 
     // brand
+    Dashboard_SiteTitle = "Dashboard_SiteTitle", // plain text
+    Dashboard_SiteTitlePrefix = "Dashboard_SiteTitlePrefix", // plain text
+    Dashboard_SiteFaviconUrl = "Dashboard_SiteFaviconUrl", // plain text URL path or absolute
     Ical_CalendarName = "Ical_CalendarName", // default "Café Marché Agenda"
     Ical_CalendarCompany = "Ical_CalendarCompany", // default "Café Marché"
     Ical_CalendarProduct = "Ical_CalendarProduct", // default "Backstage"

@@ -1,17 +1,38 @@
-// Centralized, build/runtime brand configuration for dashboard/public branding.
-// Client-safe values must begin with NEXT_PUBLIC_ so Next/Blitz inlines them at build time.
+// Centralized branding model
+// - HostingMode comes from NEXT_PUBLIC_* env (build-time safe & public)
+// - Title/Prefix/Favicon come from DB (SSR per request), provided via React context
+
+import React from "react";
 
 export enum HostingMode {
   CafeMarche = "CafeMarche",
   GenericSingleTenant = "GenericSingleTenant",
 }
 
-// Note: these are read on both server and client. Defaults preserve current behavior.
+// Strictly parse env into our enum, supporting historical var names
+export function getHostingMode(): HostingMode {
+  const raw = (process.env.NEXT_PUBLIC_CMDB_HOSTING_MODE
+    || process.env.NEXT_PUBLIC_DASHBOARD_HOSTING_MODE
+    || "").trim();
+  return raw === HostingMode.CafeMarche ? HostingMode.CafeMarche : HostingMode.GenericSingleTenant;
+}
+
+// Exposed constant for convenience where only hosting mode is needed
 export const BrandConfig = {
-  siteTitle: process.env.NEXT_PUBLIC_CMDB_SITE_TITLE,// ?? "Café Marché Backstage",
-  siteTitlePrefix: process.env.NEXT_PUBLIC_CMDB_SITE_TITLE_PREFIX,// ?? "CM: ",
-  siteFaviconUrl: process.env.NEXT_PUBLIC_CMDB_SITE_FAVICON_URL,// ?? "/favicon.png",
-  hostingMode: (process.env.NEXT_PUBLIC_CMDB_HOSTING_MODE as HostingMode),// ?? HostingMode.GenericSingleTenant,
+  hostingMode: getHostingMode(),
 } as const;
 
-export type BrandConfigType = typeof BrandConfig;
+export type DbBrandConfig = {
+  siteTitle: string;
+  siteTitlePrefix: string;
+  siteFaviconUrl: string;
+};
+
+export const DefaultDbBrandConfig: DbBrandConfig = {
+  siteTitle: "defaultSiteTitle",
+  siteTitlePrefix: "D: ",
+  siteFaviconUrl: "/favicon.png",
+};
+
+export const BrandContext = React.createContext<DbBrandConfig>(DefaultDbBrandConfig);
+export const useBrand = () => React.useContext(BrandContext);

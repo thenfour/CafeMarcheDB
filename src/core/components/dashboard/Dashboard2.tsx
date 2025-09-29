@@ -37,7 +37,7 @@ import { SnackbarContext } from "../SnackbarContext";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { Setting } from "@/shared/settings";
 import { NavRealm } from "./StaticMenuItems";
-import { BrandConfig } from "../../../../shared/brandConfig";
+import { useBrand } from "../../../../shared/brandConfig";
 
 const drawerWidth = 260;
 
@@ -233,8 +233,8 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     //     backgroundColor = "#844";
     // }
 
-    // BrandConfig is a proxy backed by runtime instance-config; avoid logging secrets to console
-
+    const brand = useBrand();
+    console.log(brand);
     return (
         <AppBar
             position="static"
@@ -261,7 +261,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     component="div"
                     sx={{ display: { xs: 'none', sm: 'block' } }}
                 >
-                    <Link href={"/backstage"} className={`logo`}>{BrandConfig.siteTitle}</Link>
+                    <Link href={"/backstage"} className={`logo`}>{brand.siteTitle}</Link>
                 </Typography>
 
                 <MetronomeDialogButton />

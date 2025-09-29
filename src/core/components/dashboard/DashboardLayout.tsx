@@ -8,7 +8,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { LoginSignup } from "../LoginSignupForm";
 import Dashboard2 from "./Dashboard2";
 import { NavRealm } from "./StaticMenuItems";
-import { BrandConfig } from "shared/brandConfig";
+import { useBrand } from "shared/brandConfig";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
@@ -41,8 +41,8 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
         </Backdrop>
         ;
 
-    const titleText = `${BrandConfig.siteTitlePrefix}${title}`;
-    const faviconUrl = BrandConfig.siteFaviconUrl;
+    const brand = useBrand();
+    const titleText = `${brand.siteTitlePrefix}${title}`;
 
     return (
         <>
@@ -56,7 +56,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
                 for that yet.
                 */}
                 <meta name="viewport" content="width=750" />
-                <link rel="icon" type="image/png" href={faviconUrl} />
+                {/* favicon is set globally in _app to avoid flicker */}
             </Head>
             <Suspense fallback={fallback}>
                 <DashboardLayout2 disableLoginRedirect={CoerceToBoolean(disableLoginRedirect, false)} navRealm={navRealm} basePermission={basePermission}>
