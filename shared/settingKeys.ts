@@ -90,6 +90,7 @@ export enum Setting {
     StatsPage_markdown = "StatsPage_markdown",
     Workflow_SelectAssigneesDialogDescription = "Workflow_SelectAssigneesDialogDescription",
     EditEventCustomFieldValuesPage_markdown = "EditEventCustomFieldValuesPage_markdown",
+    EditEventCustomFieldsPage_markdown = "EditEventCustomFieldsPage_markdown",
     EventEditCustomFieldValuesDialog_TitleMarkdown = "EventEditCustomFieldValuesDialog_TitleMarkdown",
     EventEditCustomFieldValuesDialog_DescriptionMarkdown = "EventEditCustomFieldValuesDialog_DescriptionMarkdown",
     profile_description_markdown = "profile_description_markdown",
