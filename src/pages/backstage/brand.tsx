@@ -1,18 +1,18 @@
-import { BlitzPage } from "@blitzjs/next";
-import { useMutation, invoke } from "@blitzjs/rpc";
-import { Box, Button, Grid, TextField, Typography, MenuItem, Divider } from "@mui/material";
-import React from "react";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { Permission } from "shared/permissions";
-import getSetting from "@/src/auth/queries/getSetting";
-import updateSetting from "@/src/auth/mutations/updateSetting";
-import clearBrandCache from "@/src/auth/mutations/clearBrandCache";
-import { Setting } from "@/shared/settingKeys";
-import { SnackbarContext } from "@/src/core/components/SnackbarContext";
 import { DefaultDbBrandConfig } from "@/shared/brandConfig";
-import { FileDropWrapper, CollapsableUploadFileComponent } from "@/src/core/components/file/FileDrop";
+import { Setting } from "@/shared/settingKeys";
+import clearBrandCache from "@/src/auth/mutations/clearBrandCache";
+import updateSetting from "@/src/auth/mutations/updateSetting";
+import getSetting from "@/src/auth/queries/getSetting";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { CMDBUploadFile } from "@/src/core/components/file/CMDBUploadFile";
+import { CollapsableUploadFileComponent, FileDropWrapper } from "@/src/core/components/file/FileDrop";
+import { SnackbarContext } from "@/src/core/components/SnackbarContext";
 import type { UploadResponsePayload } from "@/src/core/db3/shared/apiTypes";
+import { BlitzPage } from "@blitzjs/next";
+import { invoke, useMutation } from "@blitzjs/rpc";
+import { Box, Button, Divider, Grid, TextField, Typography } from "@mui/material";
+import React from "react";
+import { Permission } from "shared/permissions";
 
 // Reusable upload control for a string setting that holds a file URL
 const UploadSettingControl = (props: {
@@ -105,7 +105,7 @@ const BrandForm = () => {
   // Load current values
   React.useEffect(() => {
     let mounted = true;
-    (async () => {
+    void (async () => {
       const entries = await Promise.all(
         fields.map(async f => {
           try {
