@@ -370,16 +370,18 @@ export interface SortByGroupProps {
 
 export const SortByGroup = (props: SortByGroupProps) => {
 
-    return <div className='filterGroup'>
+    return <div className='filterGroup sortByGroup'>
         <div className='filterGroupHeader'>
-            <div className='filterGroupLabel'>Sort by</div>
+            <div className='filterGroupLabel'>
+                {/* Sort by */}
+            </div>
             <div className='filterGroupOptions'>
                 {
                     props.columnOptions.map(k => {
                         const selected = props.value.columnName === k;
                         return <div
                             key={k}
-                            className={`option freeButton ${selected && "selected"}`}
+                            className={`freeButton ${selected && "selected"}`}
                             onClick={() => {
                                 if (selected) {
                                     props.setValue({ ...props.value, direction: OpposingSortDirection(props.value.direction) });

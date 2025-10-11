@@ -125,8 +125,14 @@
 
 .filterGroupOptions {
     display: flex;
+    gap: 12px;
 }
 
+.filterGroup.sortByGroup .freeButton {
+    opacity: 0.8;
+    font-size: 12px;
+    font-style: italic;
+}
 
 .filterGroupOptions>.option {
     margin: 0 4px;
@@ -136,6 +142,7 @@
     color: #888;
     box-sizing: border-box;
     border-radius: 3px;
+
 }
 
 .filterGroupOptions>.option.selected {
