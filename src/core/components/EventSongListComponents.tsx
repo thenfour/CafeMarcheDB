@@ -919,15 +919,15 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
         variation: 'strong',
     });
 
-    const handleSubtitleChange = (newText: string) => {
+    const handleSubtitleChange = React.useCallback((newText: string) => {
         const item = { ...props.value, subtitle: newText };
         props.onChange(item);
-    };
+    }, [props.value, props.onChange]);
 
-    const handleSubtitleIfSongChange = (newText: string) => {
+    const handleSubtitleIfSongChange = React.useCallback((newText: string) => {
         const item = { ...props.value, subtitleIfSong: newText };
         props.onChange(item);
-    };
+    }, [props.value, props.onChange]);
 
     const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.textStyle);
     const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
@@ -1031,11 +1031,11 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         props.onChange(item);
     }
 
-    const handleCommentChange = (newText: string) => {
+    const handleCommentChange = React.useCallback((newText: string) => {
         if (props.value.type === 'new') return;
         const item = { ...props.value, subtitle: newText };
         props.onChange(item);
-    };
+    }, [props.value, props.onChange]);
 
     let occurrences = 0;
     if (props.value.type === 'song') {
@@ -1220,7 +1220,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
         songIds: songIds,
     }, {
-        enabled: songIds.length > 0
+        enabled: songIds.length > 0,
+        suspense: false, // #629
     });
 
     const rowItems = SetlistAPI.GetRowItems(value);
@@ -1273,9 +1274,9 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         setValue(newValue);
     };
 
-    const handleRowChange = (newValue: SetlistAPI.EventSongListItem) => {
+    const handleRowChange = React.useCallback((newValue: SetlistAPI.EventSongListItem) => {
         handleRowsUpdated([...rowItems.filter(row => row.id !== newValue.id), newValue]);
-    };
+    }, [rowItems]);
 
     const handleRowDelete = (row: SetlistAPI.EventSongListItem) => {
         handleRowsUpdated(rowItems.filter(existing => existing.id !== row.id));
