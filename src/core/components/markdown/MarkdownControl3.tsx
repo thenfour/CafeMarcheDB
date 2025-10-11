@@ -25,6 +25,7 @@ interface Markdown3EditorPropsBase {
     initialValue?: string;
     autoFocus?: boolean;
     nominalHeight: number;
+    autoSizeFromInitialValue?: boolean;
     onChange: (v: string) => void;
     wikiPageApi?: WikiPageApi | null;
     startWithPreviewOpen?: boolean;
@@ -84,6 +85,27 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const controlledTextArea = useControlledTextArea(textAreaRef, useValue, handleChange);
     const [nativeFileInputRef, setNativeFileInputRef] = React.useState<HTMLInputElement | null>(null);
+
+    const autoSizeFromInitialValue = props.autoSizeFromInitialValue ?? true;
+
+    const estimateHeightForText = React.useCallback((text: string | undefined, fallback: number) => {
+        if (!text) return fallback;
+        const lineHeightPx = 22;
+        const lineCount = text.split(/\r?\n/).length;
+        return Math.max(fallback, lineCount * lineHeightPx);
+    }, []);
+
+    const nominalHeightRef = React.useRef<number>();
+    if (nominalHeightRef.current === undefined) {
+        if (autoSizeFromInitialValue) {
+            const seedText = props.initialValue ?? props.value;
+            nominalHeightRef.current = estimateHeightForText(seedText, props.nominalHeight);
+        } else {
+            nominalHeightRef.current = props.nominalHeight;
+        }
+    }
+
+    const effectiveNominalHeight = nominalHeightRef.current ?? props.nominalHeight;
 
     const makeApi = (): MarkdownEditorCommandApi => ({
         controlledTextArea,
@@ -264,7 +286,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                 <MarkdownEditor
                     onValueChanged={handleChange}
                     onSave={props.handleSave}
-                    nominalHeight={props.nominalHeight}
+                    nominalHeight={effectiveNominalHeight}
                     value={useValue}
                     autoFocus={autoFocus}
 
