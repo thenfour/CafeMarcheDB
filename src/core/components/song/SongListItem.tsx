@@ -29,6 +29,7 @@ export const SongListItem = (props: SongListItemProps) => {
     const hasPartitions = fileInfo.partitions.length > 0;
     const hasRecordings = fileInfo.recordings.length > 0;
     const hasOtherFiles = fileInfo.otherFiles.length > 0;
+    const hasAnyFooterInfo = hasBpm || hasLength || hasPartitions || hasRecordings || hasOtherFiles;
 
     return <div className={`songListItem`}>
         <AppContextMarker name="SongListItem" songId={props.song.id}>
@@ -66,7 +67,7 @@ export const SongListItem = (props: SongListItemProps) => {
                     </div>
                 )}
 
-                {(hasBpm || hasLength) && (
+                {hasAnyFooterInfo && (
                     <div className="lengthBpmLine row">
                         {hasBpm && <div className="bpm fieldItem"><span className="label">BPM: </span><div className="value">{songData.formattedBPM}</div></div>}
                         {hasLength && <div className="length  fieldItem"><span className="label">Length: </span><div className="value">{songData.formattedLength}</div></div>}
