@@ -18,6 +18,8 @@ import { ActivityFeature } from "@/src/core/components/featureReports/activityTr
 
 const kMaxImageDimension = 750;
 
+type MarkdownPreviewLayout = "stacked" | "side-by-side";
+
 //////////////////////////////////////////////////
 interface Markdown3EditorPropsBase {
     readonly?: boolean;
@@ -29,6 +31,7 @@ interface Markdown3EditorPropsBase {
     onChange: (v: string) => void;
     wikiPageApi?: WikiPageApi | null;
     startWithPreviewOpen?: boolean;
+    markdownPreviewLayout?: MarkdownPreviewLayout;
     /**
      * Optional file upload context for tagging uploaded files (e.g. song, event, instrument, user, fileTagId, etc)
      */
@@ -62,6 +65,8 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [showPreview, setShowPreview] = React.useState<boolean>(startWithPreviewOpen);
     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
+    //const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>("stacked");
+    const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>(props.markdownPreviewLayout ?? "stacked");
     //const [contextMap, setContextMap] = React.useState<MarkdownContextMap>({});
     const commandInvocationTriggerMap = React.useRef<MarkdownCommandInvocationTriggerMap>({});
     const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
@@ -235,6 +240,9 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     //     setContextMap(newContextMap);
     // }, [textAreaRef, props.value, controlledTextArea.selectionStart, controlledTextArea.selectionEnd]);
 
+    const isSideBySide = previewLayout === "side-by-side";
+    const shouldShowPreview = !IsNullOrWhitespace(useValue);
+
     if (readonly) {
         return <pre>{props.value}</pre>
     }
@@ -282,22 +290,41 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
             <MarkdownEditorFormattingTips in={showFormattingTips} />
         </div>
         <div className={`content`} ref={setPopoverAnchorEl}>
-            <div className="editorContainer">
-                <MarkdownEditor
-                    onValueChanged={handleChange}
-                    onSave={props.handleSave}
-                    nominalHeight={effectiveNominalHeight}
-                    value={useValue}
-                    autoFocus={autoFocus}
+            <div className={`editorPreviewWrapper ${isSideBySide ? "sideBySide" : "stacked"}`}>
+                <div className="editorContainer">
+                    <MarkdownEditor
+                        onValueChanged={handleChange}
+                        onSave={props.handleSave}
+                        nominalHeight={effectiveNominalHeight}
+                        value={useValue}
+                        autoFocus={autoFocus}
 
-                    uploadProgress={uploadProgress}
-                    textAreaRef={(ref) => textAreaRef.current = ref}
-                    nativeFileInputRef={setNativeFileInputRef}
-                    onFileSelect={handleFileSelect}
-                    onCustomPaste={(pastedHtml) => {
-                        void controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
-                    }}
-                />
+                        uploadProgress={uploadProgress}
+                        textAreaRef={(ref) => textAreaRef.current = ref}
+                        nativeFileInputRef={setNativeFileInputRef}
+                        onFileSelect={handleFileSelect}
+                        onCustomPaste={(pastedHtml) => {
+                            void controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
+                        }}
+                    />
+                </div>
+                {shouldShowPreview &&
+                    <div className={`previewContainer ${isSideBySide ? "sideBySide" : "stacked"}`}>
+                        {!isSideBySide &&
+                            <div className='previewTitle freeButton' onClick={() => setShowPreview(!showPreview)}>Preview {showPreview ? gCharMap.DownTriangle() : gCharMap.UpTriangle()}</div>
+                        }
+                        {isSideBySide
+                            ? <div className='previewMarkdownContainer hatch'>
+                                <Markdown markdown={useValue} />
+                            </div>
+                            : <Collapse in={showPreview}>
+                                <div className='previewMarkdownContainer hatch'>
+                                    <Markdown markdown={useValue} />
+                                </div>
+                            </Collapse>
+                        }
+                    </div>
+                }
             </div>
             {props.showActionButtons &&
                 <div className="actionButtonsRow">
@@ -313,16 +340,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                         </div>
                     </Tooltip>
                     <div className={`freeButton saveButton saveAndCloseButton ${props.hasEdits ? "changed" : "unchanged disabled"}`} onClick={props.hasEdits ? async () => { await props.handleSaveAndClose() } : undefined}>Save & close</div>
-                </div>
-            }
-            {!IsNullOrWhitespace(useValue) &&
-                <div className="previewContainer">
-                    <div className='previewTitle freeButton' onClick={() => setShowPreview(!showPreview)}>Preview {showPreview ? gCharMap.DownTriangle() : gCharMap.UpTriangle()}</div>
-                    <Collapse in={showPreview}>
-                        <div className='previewMarkdownContainer hatch'>
-                            <Markdown markdown={useValue} />
-                        </div>
-                    </Collapse>
                 </div>
             }
         </div>

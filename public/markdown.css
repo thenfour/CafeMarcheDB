@@ -239,8 +239,41 @@ test cases:
     font-size: 20px;
 }
 
-.MD3Container.editor .editorContainer {
-    /* background-color: #eee; */
+.MD3Container.editor .content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.MD3Container.editor .editorPreviewWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.MD3Container.editor .editorPreviewWrapper.sideBySide {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.MD3Container.editor .editorPreviewWrapper.sideBySide .editorContainer,
+.MD3Container.editor .editorPreviewWrapper.sideBySide .previewContainer {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.MD3Container.editor .previewContainer.sideBySide .previewTitle {
+    display: none;
+}
+
+.MD3Container.editor .previewContainer.sideBySide .previewMarkdownContainer {
+    height: 100%;
+}
+
+@media (max-width: 960px) {
+    .MD3Container.editor .editorPreviewWrapper.sideBySide {
+        flex-direction: column;
+    }
 }
 
 .MD3Container.editor .toolbar .divider {
@@ -523,8 +556,6 @@ test cases:
 }
 
 /* -  --------------------------------- */
-.wikiRevisionHistoryPage tr.revisionItem {}
-
 .wikiRevisionHistoryPage .revisionItem.selected {
     --selection-color: #ddd;
     background-color: var(--selection-color);

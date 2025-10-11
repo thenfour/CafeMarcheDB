@@ -218,6 +218,7 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
                         wikiPageApi={props.wikiPageApi}
                         onChange={(v) => setContent(v)}
                         value={content}
+                        markdownPreviewLayout="side-by-side"
                         autoFocus={true}
                         nominalHeight={600}
                         showActionButtons={true}
