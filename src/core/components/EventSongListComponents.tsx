@@ -1152,8 +1152,8 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         <div className="td tempo">
             {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
             {(props.value.type === 'new') && <Tooltip title="Add a divider"><span>
-                <CMSmallButton onClick={() => handleNewDivider("divider")}>+Divider</CMSmallButton>
-                <CMSmallButton onClick={() => handleNewDivider("break")}>+Break</CMSmallButton>
+                <CMSmallButton className='SetlistEditorNewDividerButton' onClick={() => handleNewDivider("divider")}>+Divider</CMSmallButton>
+                <CMSmallButton className='SetlistEditorNewDividerButton' onClick={() => handleNewDivider("break")}>+Break</CMSmallButton>
             </span></Tooltip>}
         </div>
         <div className="td comment">
