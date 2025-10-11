@@ -18,7 +18,7 @@ import { ActivityFeature } from "@/src/core/components/featureReports/activityTr
 
 const kMaxImageDimension = 750;
 
-type MarkdownPreviewLayout = "stacked" | "side-by-side";
+type MarkdownPreviewLayout = "stacked" | "side-by-side" | "tabbed";
 
 //////////////////////////////////////////////////
 interface Markdown3EditorPropsBase {
@@ -67,6 +67,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
     //const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>("stacked");
     const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>(props.markdownPreviewLayout ?? "stacked");
+    const [activeEditorTab, setActiveEditorTab] = React.useState<"write" | "preview">(startWithPreviewOpen ? "preview" : "write");
     //const [contextMap, setContextMap] = React.useState<MarkdownContextMap>({});
     const commandInvocationTriggerMap = React.useRef<MarkdownCommandInvocationTriggerMap>({});
     const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
@@ -90,6 +91,34 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const controlledTextArea = useControlledTextArea(textAreaRef, useValue, handleChange);
     const [nativeFileInputRef, setNativeFileInputRef] = React.useState<HTMLInputElement | null>(null);
+    const instanceId = React.useId();
+    const writeTabId = `${instanceId}-write-tab`;
+    const previewTabId = `${instanceId}-preview-tab`;
+    const writePanelId = `${instanceId}-write-panel`;
+    const previewPanelId = `${instanceId}-preview-panel`;
+
+    const handleLayoutChange = React.useCallback((layout: MarkdownPreviewLayout) => {
+        if (layout === previewLayout) return;
+
+        if (layout === "tabbed") {
+            setActiveEditorTab(showPreview ? "preview" : "write");
+            setShowPreview(true);
+        } else {
+            if (previewLayout === "tabbed") {
+                setShowPreview(activeEditorTab === "preview");
+            }
+            if (layout === "side-by-side") {
+                setShowPreview(true);
+            }
+        }
+
+        setPreviewLayout(layout);
+    }, [previewLayout, showPreview, activeEditorTab]);
+
+    React.useEffect(() => {
+        if (!props.markdownPreviewLayout) return;
+        handleLayoutChange(props.markdownPreviewLayout);
+    }, [props.markdownPreviewLayout, handleLayoutChange]);
 
     const autoSizeFromInitialValue = props.autoSizeFromInitialValue ?? true;
 
@@ -241,7 +270,10 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     // }, [textAreaRef, props.value, controlledTextArea.selectionStart, controlledTextArea.selectionEnd]);
 
     const isSideBySide = previewLayout === "side-by-side";
-    const shouldShowPreview = !IsNullOrWhitespace(useValue);
+    const isTabbed = previewLayout === "tabbed";
+    const hasPreviewContent = !IsNullOrWhitespace(useValue);
+    const allowPreview = isTabbed ? true : hasPreviewContent;
+    const layoutClassName = isSideBySide ? "sideBySide" : isTabbed ? "tabbed" : "stacked";
 
     if (readonly) {
         return <pre>{props.value}</pre>
@@ -290,41 +322,112 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
             <MarkdownEditorFormattingTips in={showFormattingTips} />
         </div>
         <div className={`content`} ref={setPopoverAnchorEl}>
-            <div className={`editorPreviewWrapper ${isSideBySide ? "sideBySide" : "stacked"}`}>
-                <div className="editorContainer">
-                    <MarkdownEditor
-                        onValueChanged={handleChange}
-                        onSave={props.handleSave}
-                        nominalHeight={effectiveNominalHeight}
-                        value={useValue}
-                        autoFocus={autoFocus}
-
-                        uploadProgress={uploadProgress}
-                        textAreaRef={(ref) => textAreaRef.current = ref}
-                        nativeFileInputRef={setNativeFileInputRef}
-                        onFileSelect={handleFileSelect}
-                        onCustomPaste={(pastedHtml) => {
-                            void controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
-                        }}
-                    />
-                </div>
-                {shouldShowPreview &&
-                    <div className={`previewContainer ${isSideBySide ? "sideBySide" : "stacked"}`}>
-                        {!isSideBySide &&
-                            <div className='previewTitle freeButton' onClick={() => setShowPreview(!showPreview)}>Preview {showPreview ? gCharMap.DownTriangle() : gCharMap.UpTriangle()}</div>
-                        }
-                        {isSideBySide
-                            ? <div className='previewMarkdownContainer hatch'>
-                                <Markdown markdown={useValue} />
+            <div className={`editorPreviewWrapper ${layoutClassName}`}>
+                {isTabbed ? (
+                    <>
+                        <div className="tabbedLayoutTabs" role="tablist" aria-label="Markdown editor tabs">
+                            <div
+                                className={`tabbedTabButton interactable ${activeEditorTab === "write" ? "selected" : ""}`}
+                                onClick={() => setActiveEditorTab("write")}
+                                role="tab"
+                                aria-selected={activeEditorTab === "write"}
+                                aria-controls={writePanelId}
+                                id={writeTabId}
+                            >
+                                Write
                             </div>
-                            : <Collapse in={showPreview}>
-                                <div className='previewMarkdownContainer hatch'>
-                                    <Markdown markdown={useValue} />
+                            <div
+                                className={`tabbedTabButton interactable ${activeEditorTab === "preview" ? "selected" : ""}`}
+                                onClick={() => setActiveEditorTab("preview")}
+                                role="tab"
+                                aria-selected={activeEditorTab === "preview"}
+                                aria-controls={previewPanelId}
+                                id={previewTabId}
+                            >
+                                Preview
+                            </div>
+                        </div>
+                        <div className="tabbedLayoutPanels">
+                            <div
+                                className={`tabbedPanel ${activeEditorTab === "write" ? "active" : "inactive"}`}
+                                role="tabpanel"
+                                id={writePanelId}
+                                aria-labelledby={writeTabId}
+                                hidden={activeEditorTab !== "write"}
+                            >
+                                <div className="editorContainer">
+                                    <MarkdownEditor
+                                        onValueChanged={handleChange}
+                                        onSave={props.handleSave}
+                                        nominalHeight={effectiveNominalHeight}
+                                        value={useValue}
+                                        autoFocus={autoFocus}
+
+                                        uploadProgress={uploadProgress}
+                                        textAreaRef={(ref) => textAreaRef.current = ref}
+                                        nativeFileInputRef={setNativeFileInputRef}
+                                        onFileSelect={handleFileSelect}
+                                        onCustomPaste={(pastedHtml) => {
+                                            void controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
+                                        }}
+                                    />
                                 </div>
-                            </Collapse>
-                        }
-                    </div>
-                }
+                            </div>
+                            <div
+                                className={`tabbedPanel ${activeEditorTab === "preview" ? "active" : "inactive"}`}
+                                role="tabpanel"
+                                id={previewPanelId}
+                                aria-labelledby={previewTabId}
+                                hidden={activeEditorTab !== "preview"}
+                            >
+                                <div className="previewContainer tabbed">
+                                    <div className='previewMarkdownContainer hatch'>
+                                        {hasPreviewContent ? <Markdown markdown={useValue} /> : <div className='previewEmptyState'>
+                                            &nbsp;
+                                        </div>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="editorContainer">
+                            <MarkdownEditor
+                                onValueChanged={handleChange}
+                                onSave={props.handleSave}
+                                nominalHeight={effectiveNominalHeight}
+                                value={useValue}
+                                autoFocus={autoFocus}
+
+                                uploadProgress={uploadProgress}
+                                textAreaRef={(ref) => textAreaRef.current = ref}
+                                nativeFileInputRef={setNativeFileInputRef}
+                                onFileSelect={handleFileSelect}
+                                onCustomPaste={(pastedHtml) => {
+                                    void controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
+                                }}
+                            />
+                        </div>
+                        {allowPreview && (
+                            <div className={`previewContainer ${isSideBySide ? "sideBySide" : "stacked"}`}>
+                                {!isSideBySide &&
+                                    <div className='previewTitle freeButton' onClick={() => setShowPreview(!showPreview)}>Preview {showPreview ? gCharMap.DownTriangle() : gCharMap.UpTriangle()}</div>
+                                }
+                                {isSideBySide
+                                    ? <div className='previewMarkdownContainer hatch'>
+                                        <Markdown markdown={useValue} />
+                                    </div>
+                                    : <Collapse in={showPreview}>
+                                        <div className='previewMarkdownContainer hatch'>
+                                            <Markdown markdown={useValue} />
+                                        </div>
+                                    </Collapse>
+                                }
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
             {props.showActionButtons &&
                 <div className="actionButtonsRow">

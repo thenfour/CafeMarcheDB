@@ -248,7 +248,7 @@ test cases:
 .MD3Container.editor .editorPreviewWrapper {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    /* gap: 12px; */
 }
 
 .MD3Container.editor .editorPreviewWrapper.sideBySide {
@@ -256,11 +256,85 @@ test cases:
     align-items: stretch;
 }
 
+.MD3Container.editor .editorPreviewWrapper.tabbed {
+    flex-direction: column;
+}
+
 .MD3Container.editor .editorPreviewWrapper.sideBySide .editorContainer,
 .MD3Container.editor .editorPreviewWrapper.sideBySide .previewContainer {
     flex: 1 1 0;
     min-width: 0;
 }
+
+.MD3Container.editor .tabbedLayoutTabs {
+    display: inline-flex;
+    gap: 9px;
+    font-style: italic;
+    /* font-size: 13px; */
+    margin-left: 12px;
+    /* 
+    padding: 2px;
+    border-radius: calc(var(--radius) / 2);
+    background-color: rgba(255, 255, 255, 0.7);
+    align-self: flex-start; */
+}
+
+.MD3Container.editor .tabbedTabButton {
+    color: #ccc;
+    opacity: 80%;
+    padding: 2px 9px;
+    /* 
+    border-radius: var(--radius); */
+    /* border: 1px solid transparent;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 120ms ease, border-color 120ms ease; */
+}
+
+.MD3Container.editor .tabbedTabButton.selected {
+    color: #444;
+    opacity: 100%;
+    background-color: #fff8;
+}
+
+
+/* 
+.MD3Container.editor .tabbedTabButton.selected {
+    background-color: #fff;
+    border-color: #888;
+    font-weight: 600;
+}
+
+.MD3Container.editor .tabbedTabButton:not(.selected):hover {
+    background-color: #e4e4e4;
+}
+
+.MD3Container.editor .tabbedTabButton:focus-visible {
+    outline: 2px solid #4d90fe;
+    outline-offset: 2px;
+}
+
+.MD3Container.editor .tabbedLayoutPanels {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.MD3Container.editor .tabbedPanel.inactive {
+    display: none;
+}
+
+.MD3Container.editor .previewContainer.tabbed {
+    padding-top: 0;
+}
+
+.MD3Container.editor .previewEmptyState {
+    padding: 16px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+} */
 
 .MD3Container.editor .previewContainer.sideBySide .previewTitle {
     display: none;

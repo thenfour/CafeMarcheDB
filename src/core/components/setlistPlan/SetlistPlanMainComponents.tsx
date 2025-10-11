@@ -138,6 +138,7 @@ const SetlistPlannerRowEditor = (props: SetlistPlannerRowEditorProps) => {
                     nominalHeight={100}
                     onChange={handleSongCommentChange}
                     initialValue={row.commentMarkdown || ""}
+                    markdownPreviewLayout="tabbed"
                 />
             </div>
 
@@ -1045,6 +1046,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
         <Markdown3Editor
             //beginInPreview={true}
             initialValue={docOrTempDoc.payload.notes || ""}
+            markdownPreviewLayout="tabbed"
             onChange={(newMarkdown) => {
                 props.mutator.setNotes(newMarkdown);
             }}
@@ -1604,6 +1606,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                     onChange={handleDescriptionChange}
                     initialValue={docOrTempDoc.description}
                     nominalHeight={75}
+                    markdownPreviewLayout="tabbed"
                 //beginInPreview={true}
                 />
             </CMTab>
@@ -1646,6 +1649,7 @@ export const SetlistPlannerDocumentEditor = (props: SetlistPlannerDocumentEditor
                                         //key={`segment-comment-${segment.columnId}`}
                                         onChange={handleSegmentCommentChange(segment.columnId)}
                                         initialValue={segment.commentMarkdown || ""}
+                                        markdownPreviewLayout="tabbed"
                                         nominalHeight={75}
                                     />
                                     <AssociationSelect
