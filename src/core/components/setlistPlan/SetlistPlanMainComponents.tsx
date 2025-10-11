@@ -274,7 +274,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
 
             <div className="dragHandle draggable" style={{ fontFamily: "monospace" }}>
                 {/* #{(props.doc.payload.rows.findIndex((x) => x.rowId === props.rowId) + 1).toString().padStart(2, " ")} */}
-                #{props.rowItemWithRunningTime ? songItemWithRunningTime.index.toString().padStart(2, " ") : "--"}
+                #{props.rowItemWithRunningTime ? (songItemWithRunningTime.index + 1).toString().padStart(2, " ") : "--"}
                 ☰
             </div>
 
