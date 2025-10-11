@@ -20,6 +20,7 @@ import { WikiPageApi } from './useWikiPageApi';
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 
 const kMaxImageDimension = 750;
+const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";
 
 type MarkdownPreviewLayout = "stacked" | "side-by-side" | "tabbed";
 
@@ -72,6 +73,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>(props.markdownPreviewLayout ?? "stacked");
     const [activeEditorTab, setActiveEditorTab] = React.useState<"write" | "preview">(startWithPreviewOpen ? "preview" : "write");
     const [isFullscreen, setIsFullscreen] = React.useState<boolean>(false);
+    const [isFullscreenBreakpointMatch, setIsFullscreenBreakpointMatch] = React.useState<boolean>(false);
     //const [contextMap, setContextMap] = React.useState<MarkdownContextMap>({});
     const commandInvocationTriggerMap = React.useRef<MarkdownCommandInvocationTriggerMap>({});
     const [totalInvokations, setTotalInvocations] = React.useState<number>(0);
@@ -149,6 +151,20 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
 
     const handleToggleFullscreen = React.useCallback(() => {
         setIsFullscreen(prev => !prev);
+    }, []);
+
+    React.useEffect(() => {
+        if (typeof window === "undefined") return;
+        const mq = window.matchMedia(kFullscreenSideBySideBreakpointQuery);
+        const updateMatch = () => setIsFullscreenBreakpointMatch(mq.matches);
+        updateMatch();
+        if (mq.addEventListener) {
+            mq.addEventListener("change", updateMatch);
+            return () => mq.removeEventListener("change", updateMatch);
+        } else {
+            mq.addListener(updateMatch);
+            return () => mq.removeListener(updateMatch);
+        }
     }, []);
 
     const autoSizeFromInitialValue = props.autoSizeFromInitialValue ?? true;
@@ -300,11 +316,19 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     //     setContextMap(newContextMap);
     // }, [textAreaRef, props.value, controlledTextArea.selectionStart, controlledTextArea.selectionEnd]);
 
-    const isSideBySide = previewLayout === "side-by-side";
-    const isTabbed = previewLayout === "tabbed";
+    const isForcedFullscreenSideBySide = isFullscreen && previewLayout !== "tabbed" && isFullscreenBreakpointMatch;
+    const effectivePreviewLayout: MarkdownPreviewLayout = isForcedFullscreenSideBySide ? "side-by-side" : previewLayout;
+    const isTabbed = effectivePreviewLayout === "tabbed";
+    const isSideBySide = effectivePreviewLayout === "side-by-side";
     const hasPreviewContent = !IsNullOrWhitespace(useValue);
     const allowPreview = isTabbed ? true : hasPreviewContent;
     const layoutClassName = isSideBySide ? "sideBySide" : isTabbed ? "tabbed" : "stacked";
+
+    React.useEffect(() => {
+        if (isForcedFullscreenSideBySide && !showPreview) {
+            setShowPreview(true);
+        }
+    }, [isForcedFullscreenSideBySide, showPreview]);
 
     const renderEditorShell = (inFullscreen: boolean) => (
         <div className={`MD3 editor MD3Container${inFullscreen ? " fullscreen" : ""}`}>
