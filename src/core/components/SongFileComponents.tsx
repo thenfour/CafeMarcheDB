@@ -21,7 +21,7 @@ import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip } from "./CMCoreComponents";
-import { DotMenu } from './CMCoreComponents2';
+import { CMSmallButton, DotMenu } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
 import { DashboardContext, useDashboardContext, useFeatureRecorder } from './DashboardContext';
@@ -759,36 +759,25 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
 
                             <div className="row">
                                 <CMChipContainer>
-                                    <CMChip
-                                        size='small'
+
+                                    <CMSmallButton
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedAt', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
-                                        variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'uploadedAt' }}
-                                    >Upload Date {props.value.sortBy === 'uploadedAt' && sortArrow}</CMChip>
-                                    <CMChip
-                                        size='small'
+                                    >Upload Date {props.value.sortBy === 'uploadedAt' && sortArrow}</CMSmallButton>
+                                    <CMSmallButton
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'fileCreatedAt', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
-                                        variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'fileCreatedAt' }}
-                                    >File Date {props.value.sortBy === 'fileCreatedAt' && sortArrow}</CMChip>
-                                    <CMChip
-                                        size='small'
+                                    >File Date {props.value.sortBy === 'fileCreatedAt' && sortArrow}</CMSmallButton>
+                                    <CMSmallButton
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'fileLeafName', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
-                                        variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'fileLeafName' }}
-                                    >Filename {props.value.sortBy === 'fileLeafName' && sortArrow}</CMChip>
-                                    <CMChip
-                                        size='small'
+                                    >Filename {props.value.sortBy === 'fileLeafName' && sortArrow}</CMSmallButton>
+                                    <CMSmallButton
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'sizeBytes', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
-                                        variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'sizeBytes' }}
-                                    >Size {props.value.sortBy === 'sizeBytes' && sortArrow}</CMChip>
-                                    <CMChip
-                                        size='small'
+                                    >Size {props.value.sortBy === 'sizeBytes' && sortArrow}</CMSmallButton>
+                                    <CMSmallButton
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'mimeType', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
-                                        variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'mimeType' }}
-                                    >Type {props.value.sortBy === 'mimeType' && sortArrow}</CMChip>
-                                    <CMChip
-                                        size='small'
+                                    >Type {props.value.sortBy === 'mimeType' && sortArrow}</CMSmallButton>
+                                    <CMSmallButton
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedByUserId', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
-                                        variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'uploadedByUserId' }}
-                                    >Uploader {props.value.sortBy === 'uploadedByUserId' && sortArrow}</CMChip>
+                                    >Uploader {props.value.sortBy === 'uploadedByUserId' && sortArrow}</CMSmallButton>
                                 </CMChipContainer>
                             </div>
 
