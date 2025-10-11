@@ -97,7 +97,7 @@ export const EditTextField = (props: EditTextFieldProps) => {
         row: { [props.columnSpec.member]: props.value }
     });
     return <CMTextField
-        autoFocus={false} // see #408
+        autoFocus={false} // see #408 auto-focusing on mobile is undesirable; short-term fix is to disable.
         onChange={(e, value) => { props.onChange(value) }}
         validationError={validationResult.errorMessage || null}
         value={props.value}

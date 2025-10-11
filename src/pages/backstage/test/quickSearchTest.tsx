@@ -17,14 +17,14 @@ const TestMatchStrength = () => {
     return <div>
         <NameValuePair name="Db text to search" value={
             <CMTextField
-                autoFocus={false} // see #408
+                autoFocus={false} // see #408// see #408 auto-focusing on mobile is undesirable; short-term fix is to disable.
                 value={sourceText}
                 onChange={(e) => setSourceText(e.target.value)}
             />
         } />
         <NameValuePair name="User query" value={
             <CMTextField
-                autoFocus={false} // see #408
+                autoFocus={false} // see #408 auto-focusing on mobile is undesirable; short-term fix is to disable.
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
             />
