@@ -58,13 +58,14 @@ export interface EventChipProps {
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
+    renderAsLink?: boolean; // default true
     className?: string;
     startAdornment?: React.ReactNode;
     endAdornment?: React.ReactNode;
     useHashedColor?: boolean;
 };
 
-export const EventChip = (props: EventChipProps) => {
+export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => {
     const dashboardContext = useDashboardContext();
 
     // cancelled events should be shown with a strikethrough
@@ -75,7 +76,7 @@ export const EventChip = (props: EventChipProps) => {
     return <CMChip
         variation={props.variation}
         size={props.size}
-        href={href}
+        href={renderAsLink ? href : undefined}
         className={`eventChip ${status?.significance} ${props.className}`}
         color={props.useHashedColor ? undefined : dashboardContext.eventType.getById(props.value.typeId)?.color}
         tooltip={<div>

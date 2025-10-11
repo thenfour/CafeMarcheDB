@@ -374,10 +374,10 @@ export const FileEditor = (props: FileEditorProps) => {
                     if (!args.value) {
                         return <CMChip>--</CMChip>
                     }
-                    return <EventChip value={args.value.event} />;
+                    return <EventChip renderAsLink={false} value={args.value.event} />;
                 },
                 renderAsListItem: (props, value, selected) => {
-                    return <EventChip value={value.event} />;
+                    return <EventChip renderAsLink={false} value={value.event} />;
                 }
             }),
             new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName: "taggedWikiPages", cellWidth: 150, allowDeleteFromCell: false }),
