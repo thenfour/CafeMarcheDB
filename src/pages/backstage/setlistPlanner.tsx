@@ -345,11 +345,86 @@ interface SetlistPlannerDocumentOverviewItemProps {
     refetch: () => void;
 };
 
+const getDuplicatedPlanName = (originalName: string) => {
+    const trimmed = (originalName || "").trim() || "Untitled Setlist Plan";
+    const copyRegex = /^(.*?)(?:\s*\(Copy(?: (\d+))?\))$/i;
+    const match = trimmed.match(copyRegex);
+    if (match) {
+        const baseName = (match[1] ?? "").trim() || "Untitled Setlist Plan";
+        const currentNumber = match[2] ? Number(match[2]) : 1;
+        const nextNumber = Number.isFinite(currentNumber) ? currentNumber + 1 : 2;
+        return `${baseName} (Copy ${nextNumber})`;
+    }
+    return `${trimmed} (Copy)`;
+};
+
+const createDuplicatedPlan = (plan: SetlistPlan, currentUserId?: number): SetlistPlan => {
+    const rowIdMap = new Map<string, string>();
+    const columnIdMap = new Map<string, string>();
+
+    const duplicatedRows = plan.payload.rows.map((row) => {
+        const newRowId = getId("row");
+        rowIdMap.set(row.rowId, newRowId);
+        return {
+            ...row,
+            rowId: newRowId,
+            leds: row.leds?.map((led) => ({ ...led })),
+        };
+    });
+
+    const duplicatedColumns = plan.payload.columns.map((column) => {
+        const newColumnId = getId("col");
+        columnIdMap.set(column.columnId, newColumnId);
+        return {
+            ...column,
+            columnId: newColumnId,
+            leds: column.leds?.map((led) => ({ ...led })),
+            associatedItem: column.associatedItem ? { ...column.associatedItem } : undefined,
+        };
+    });
+
+    const duplicatedCells = plan.payload.cells.map((cell) => ({
+        ...cell,
+        rowId: rowIdMap.get(cell.rowId) ?? cell.rowId,
+        columnId: columnIdMap.get(cell.columnId) ?? cell.columnId,
+    }));
+
+    const duplicatedPlan: SetlistPlan = {
+        ...plan,
+        id: getUniqueNegativeID(),
+        name: getDuplicatedPlanName(plan.name),
+        createdAt: new Date(),
+        createdByUserId: currentUserId ?? plan.createdByUserId,
+        sortOrder: undefined,
+        payload: {
+            ...plan.payload,
+            rows: duplicatedRows,
+            columns: duplicatedColumns,
+            cells: duplicatedCells,
+            columnLeds: plan.payload.columnLeds?.map((led) => ({
+                ...led,
+                associatedItem: led.associatedItem ? { ...led.associatedItem } : undefined,
+            })),
+            rowLeds: plan.payload.rowLeds?.map((led) => ({
+                ...led,
+                associatedItem: led.associatedItem ? { ...led.associatedItem } : undefined,
+            })),
+        },
+    };
+
+    delete duplicatedPlan.payload.autoCompleteDurationSeconds;
+    delete duplicatedPlan.payload.autoCompleteDepth;
+    delete duplicatedPlan.payload.autoCompleteIterations;
+
+    return duplicatedPlan;
+};
+
 const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupTableClient, refetch }: SetlistPlannerDocumentOverviewItemProps) => {
     const [showingGroupSelectDialog, setShowingGroupSelectDialog] = React.useState(false);
     const coloring = GetStyleVariablesForColor({ color: group?.color, ...StandardVariationSpec.Strong });
     const snackbar = useSnackbar();
     const confirm = useConfirm();
+    const dashboardContext = useDashboardContext();
 
     const [upsertSetlistPlanToken] = useMutation(upsertSetlistPlan);
     const [deleteSetlistPlanToken] = useMutation(deleteSetlistPlan);
@@ -393,6 +468,15 @@ const SetlistPlannerOverviewItem = ({ dbPlan, onSelect, className, group, groupT
                     }}
                 >
                     {gIconMap.Edit()} Edit
+                </CMSmallButton>
+                <CMSmallButton
+                    onClick={() => {
+                        const duplicatedPlan = createDuplicatedPlan(dbPlan, dashboardContext.currentUser?.id);
+                        onSelect(duplicatedPlan);
+                        snackbar.showSuccess("Duplicated setlist plan. Update details and save to keep it.");
+                    }}
+                >
+                    {gIconMap.ContentCopy()} Duplicate
                 </CMSmallButton>
                 <CMSmallButton
                     onClick={async () => {
