@@ -1135,15 +1135,18 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
     };
     const handlePasteFromClipboard = async () => {
         const text = await navigator.clipboard.readText()
-        let newDoc: any
+        let newDoc: SetlistPlan;
 
         try {
-            newDoc = JSON.parse(text)
+            newDoc = JSON.parse(text) as SetlistPlan;
         } catch (e) {
             console.error(e)
             snackbar.showError("Failed to parse clipboard contents")
             return
         }
+
+        // #632 the parsed object will only contain primitives; Date objects will be strings.
+        if (newDoc.createdAt) newDoc.createdAt = new Date(newDoc.createdAt);
 
         if (await confirm({ title: "Paste from clipboard", description: "This will replace the current document. Are you sure?" })) {
             void snackbar.invokeAsync(async () => {

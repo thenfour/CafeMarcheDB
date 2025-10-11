@@ -103,6 +103,8 @@ export const ZSetlistPlan = z.object({
     createdByUserId: z.number(),
     payload: ZSetlistPlanPayload,
     visiblePermissionId: z.number().nullable(),
+    // NOTE: Adding non-primitives (e.g. Date) here will cause issues with serialization to/from JSON.
+    // make sure deserialization and paste from clipboard gets updated if you do that.
 });
 
 export type SetlistPlan = z.infer<typeof ZSetlistPlan>;
@@ -135,7 +137,10 @@ export const DeserializeSetlistPlan = (obj: Prisma.SetlistPlanGetPayload<{}>): S
         cells: [],
     };
     try {
-        payload = ZSetlistPlanPayload.parse(JSON.parse(obj.payloadJson));
+        const parsed = JSON.parse(obj.payloadJson);
+        // convert any date strings back to Date objects.
+        if (parsed.createdAt) parsed.createdAt = new Date(parsed.createdAt);
+        payload = ZSetlistPlanPayload.parse(parsed);
     } catch (e) {
         console.error(e);
     }
