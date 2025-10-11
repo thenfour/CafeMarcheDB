@@ -82,6 +82,7 @@ export interface SongListStats {
     songCount: number;
     durationSeconds: number;
     songsOfUnknownDuration: number; // true if the duration excludes songs which have unknown duration
+    maxBpm: number | null;
     // credits?
     // tags?
 };
@@ -193,6 +194,7 @@ class EventsAPI {
             durationSeconds: 0,
             songsOfUnknownDuration: 0,
             songCount: 0,
+            maxBpm: null,
         };
         // filter out "new" items which have no song specified yet.
         return songList.songs.filter(s => !!s.songId).reduce((acc, song) => {
@@ -204,6 +206,9 @@ class EventsAPI {
                 ret.durationSeconds += song.song.lengthSeconds;
             }
             ret.songCount++;
+            if (song.song.startBPM != null) {
+                ret.maxBpm = ret.maxBpm == null ? song.song.startBPM : Math.max(ret.maxBpm, song.song.startBPM);
+            }
             return ret;
         }, initialValue);
     };

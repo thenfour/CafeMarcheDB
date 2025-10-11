@@ -225,9 +225,31 @@ interface EventSongListValueViewerRowProps {
     toggleLengthColumnMode: () => void;
     mediaPlayerTrack: MediaPlayerTrack | undefined;
     getPlaylist: () => MediaPlayerTrack[];
+    maxBpm: number | null;
 };
 
-export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings" | "lengthColumnMode" | "toggleLengthColumnMode">) => {
+const getRowStartBpm = (item: SetlistAPI.EventSongListItem): number | null => {
+    if (item.type === "song") {
+        return item.song.startBPM ?? null;
+    }
+    if (item.type === "divider") {
+        const dividerWithBpm = item as unknown as { startBPM?: number | null };
+        if (typeof dividerWithBpm.startBPM === "number") {
+            return dividerWithBpm.startBPM;
+        }
+    }
+    return null;
+};
+
+const getBpmBarStyle = (bpm: number | null, maxBpm: number | null): React.CSSProperties | undefined => {
+    if (maxBpm == null || maxBpm <= 0 || bpm == null) {
+        return undefined;
+    }
+    const fill = Math.max(0, Math.min(1, bpm / maxBpm));
+    return { "--event-songlist-bpm-bar-fill": fill } as React.CSSProperties;
+};
+
+export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings" | "lengthColumnMode" | "toggleLengthColumnMode" | "maxBpm">) => {
     if (props.value.type !== 'divider') throw new Error(`wrongtype`);
 
     const colorInfo = GetStyleVariablesForColor({
@@ -257,7 +279,7 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
 
 };
 
-export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings" | "lengthColumnMode" | "toggleLengthColumnMode">) => {
+export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongListValueViewerRowProps, "value" | "pinnedRecordings" | "lengthColumnMode" | "toggleLengthColumnMode" | "maxBpm">) => {
     if (props.value.type !== 'divider') throw new Error(`wrongtype`);
 
     const colorInfo = GetStyleVariablesForColor({
@@ -267,6 +289,9 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
         selected: false,
         variation: 'strong',
     });
+
+    const bpmValue = getRowStartBpm(props.value);
+    const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
     return <div className={`SongListValueViewerRow tr existingItem item validItem type_divider ${colorInfo.cssClass}`} style={colorInfo.style}>
         <div className="td songIndex">
@@ -280,7 +305,7 @@ export const EventSongListValueViewerDividerSongRow = (props: Pick<EventSongList
                 : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
             }
         </div>
-        <div className="td tempo">
+        <div className="td tempo" style={tempoCellStyle}>
         </div>
         <div className="td comment">{props.value.subtitleIfSong}</div>
     </div>
@@ -300,6 +325,8 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     }
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
+    const bpmValue = getRowStartBpm(props.value);
+    const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
     const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
@@ -343,7 +370,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                         : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
                 )}
             </div>
-            <div className="td tempo">
+            <div className="td tempo" style={tempoCellStyle}>
                 {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
             </div>
 
@@ -746,6 +773,7 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                         rowIndex: index,
                         songListId: props.value.id,
                     })}
+                    maxBpm={stats.maxBpm}
                 />)
             }
 
@@ -903,6 +931,7 @@ interface EventSongListValueEditorRowProps {
 
     mediaPlayerTrack: MediaPlayerTrack | undefined;
     getPlaylist: () => MediaPlayerTrack[];
+    maxBpm: number | null;
 };
 
 // Editor component for song-like dividers (when isSong is true)
@@ -937,6 +966,9 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
         ...colorInfo.style,
     };
 
+    const bpmValue = getRowStartBpm(props.value);
+    const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
+
     return <div
         className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
         style={style as any}
@@ -959,7 +991,7 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
                 : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
             }
         </div>
-        <div className="td tempo"></div>
+        <div className="td tempo" style={tempoCellStyle}></div>
         <div className="td comment">
             <CMTextInputBase
                 className="cmdbSimpleInput"
@@ -984,6 +1016,8 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     const mediaPlayer = useMediaPlayer();
     const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
     const showDragHandle = CoalesceBool(props.showDragHandle, true);
+    const bpmValue = getRowStartBpm(props.value);
+    const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
     // Collect all unique tag IDs from all songs in the song list
     const allTagIds = React.useMemo(() => {
@@ -1149,7 +1183,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                     : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
             )}
         </div>
-        <div className="td tempo">
+        <div className="td tempo" style={tempoCellStyle}>
             {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
             {(props.value.type === 'new') && <Tooltip title="Add a divider"><span>
                 <CMSmallButton className='SetlistEditorNewDividerButton' onClick={() => handleNewDivider("divider")}>+Divider</CMSmallButton>
@@ -1478,6 +1512,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                                 rowIndex: index,
                                 songListId: value.id,
                             })}
+                            maxBpm={stats.maxBpm}
                         />
                     </ReactSmoothDndDraggable>
                     )
@@ -1502,6 +1537,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     toggleLengthColumnMode={toggleLengthColumnMode}
                     getPlaylist={getPlaylist}
                     mediaPlayerTrack={undefined}
+                    maxBpm={stats.maxBpm}
                 />
             </ReactSmoothDndContainer>
         </div>

@@ -39,6 +39,8 @@
     --col-songName-width: 360px;
     --col-length-width: 60px;
     --col-tempo-width: 50px;
+    --event-songlist-bpm-bar-color: #00000008;
+    --event-songlist-bpm-bar-fill: 0;
 }
 
 
@@ -306,6 +308,12 @@
 .songListSongTable .td.tempo {
     font-family: var(--ff-mono);
     color: blue;
+    background-image: linear-gradient(to right,
+            var(--event-songlist-bpm-bar-color) 0%,
+            var(--event-songlist-bpm-bar-color) calc(var(--event-songlist-bpm-bar-fill, 0) * 100%),
+            transparent calc(var(--event-songlist-bpm-bar-fill, 0) * 100%),
+            transparent 100%);
+    background-repeat: no-repeat;
 }
 
 .songListSongTable .td.comment,
