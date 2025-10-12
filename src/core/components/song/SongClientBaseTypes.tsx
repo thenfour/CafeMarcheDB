@@ -3,7 +3,7 @@ import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 export enum SongOrderByColumnOptions {
-    id = "id",
+    //id = "id",
     name = "name",
     startBPM = "startBPM",
 };

@@ -3,7 +3,7 @@ import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 export enum EventOrderByColumnOptions {
-    id = "id",
+    //id = "id",
     startsAt = "startsAt",
     name = "name",
 };

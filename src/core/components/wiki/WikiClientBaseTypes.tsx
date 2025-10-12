@@ -3,7 +3,7 @@ import { SortDirection } from "@/shared/rootroot";
 import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 
 export enum WikiPageOrderByColumnOptions {
-    id = "id",
+    //id = "id",
     slug = "slug",
     createdAt = "createdAt",
     namespace = "namespace",

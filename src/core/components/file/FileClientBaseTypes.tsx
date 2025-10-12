@@ -2,7 +2,7 @@ import { SortDirection } from 'shared/rootroot';
 import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 
 export enum FileOrderByColumnOptions {
-    id = "id",
+    //id = "id",
     uploadedAt = "uploadedAt",
     fileLeafName = "fileLeafName",
     sizeBytes = "sizeBytes",
