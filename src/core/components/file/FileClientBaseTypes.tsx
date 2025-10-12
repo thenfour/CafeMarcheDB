@@ -9,6 +9,13 @@ export enum FileOrderByColumnOptions {
     mimeType = "mimeType",
 }
 
+export enum FileOrderByColumnNames {
+    uploadedAt = "Upload Date",
+    fileLeafName = "Filename",
+    sizeBytes = "Size",
+    mimeType = "Type",
+}
+
 export type FileOrderByColumnOption = keyof typeof FileOrderByColumnOptions;
 
 export interface FilesFilterSpec {

@@ -14,7 +14,7 @@ import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
+import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -255,6 +255,7 @@ const EventListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: EventOrderByColumnOptions,
+        sortColumnNames: EventOrderByColumnNames,
         searchConfig: eventSearchConfig,
         renderItem: (event, index, filterSpec, results, refetch) => (
             <EventListItem

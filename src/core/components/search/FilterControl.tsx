@@ -363,7 +363,8 @@ export interface SortBySpec {
 };
 
 export interface SortByGroupProps {
-    columnOptions: string[];
+    //columnOptions: string[];
+    columnOptions: Record<string, string>; // key = columnName, value = display name
     value: SortBySpec;
     setValue: (v: SortBySpec) => void;
 };
@@ -376,28 +377,27 @@ export const SortByGroup = (props: SortByGroupProps) => {
                 {/* Sort by */}
             </div>
             <div className='filterGroupOptions'>
-                {
-                    props.columnOptions.map(k => {
-                        const selected = props.value.columnName === k;
-                        return <div
-                            key={k}
-                            className={`freeButton ${selected && "selected"}`}
-                            onClick={() => {
-                                if (selected) {
-                                    props.setValue({ ...props.value, direction: OpposingSortDirection(props.value.direction) });
-                                } else {
-                                    props.setValue({ columnName: k, direction: "asc" });
-                                }
-                            }}
-                        >
-                            <div className="sortFieldName">
-                                {k}
-                            </div>
-                            <div className="sortFieldDirection">
-                                {selected && (props.value.direction === "asc" ? gCharMap.DownArrow() : gCharMap.UpArrow())}
-                            </div>
+                {Object.entries(props.columnOptions).map(([k, displayName]) => {
+                    const selected = props.value.columnName === k;
+                    return <div
+                        key={k}
+                        className={`freeButton ${selected && "selected"}`}
+                        onClick={() => {
+                            if (selected) {
+                                props.setValue({ ...props.value, direction: OpposingSortDirection(props.value.direction) });
+                            } else {
+                                props.setValue({ columnName: k, direction: "asc" });
+                            }
+                        }}
+                    >
+                        <div className="sortFieldName">
+                            {displayName}
                         </div>
-                    })
+                        <div className="sortFieldDirection">
+                            {selected && (props.value.direction === "asc" ? gCharMap.DownArrow() : gCharMap.UpArrow())}
+                        </div>
+                    </div>
+                })
                 }
             </div>
         </div>

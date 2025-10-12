@@ -25,6 +25,7 @@ export interface SearchPageContentConfig<TStaticFilterSpec extends Record<string
 
     // Sort configuration
     sortColumnOptions: Record<string, string>; // Available sort options enum    // Data fetching configuration
+    sortColumnNames: Record<string, string>; // Available sort options enum    // Data fetching configuration
     searchConfig: SearchableListConfig<TFilterSpec, TRawItem, TItem>;
 
     // Rendering configuration
@@ -96,8 +97,8 @@ export const SearchPageContent = <
                 staticFilters={config.staticFilters}
                 filterGroups={filterGroups}
                 sortConfig={{
-                    columnOptions: Object.keys(config.sortColumnOptions),
-                    columnOptionsEnum: config.sortColumnOptions as any,
+                    columnOptions: Object.keys(config.sortColumnNames),
+                    columnOptionsEnum: config.sortColumnNames,
                 }}
                 results={results}
                 showAdminControls={config.showAdminControls ?? true}

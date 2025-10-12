@@ -117,8 +117,7 @@ export function SearchPageFilterControls<TStaticFilter extends { label: string; 
         <div>
             <div className="divider" />
             <SortByGroup
-                columnOptions={Object.keys(props.sortConfig.columnOptionsEnum ||
-                    props.sortConfig.columnOptions.reduce((acc, col) => ({ ...acc, [col]: col }), {}))}
+                columnOptions={props.sortConfig.columnOptionsEnum || {}}
                 value={props.searchPage.sortModel}
                 setValue={props.searchPage.setSortModel}
             />

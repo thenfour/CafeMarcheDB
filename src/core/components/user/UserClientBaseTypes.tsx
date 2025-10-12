@@ -4,9 +4,12 @@ import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export enum UserOrderByColumnOptions {
-    //id = "id",
     name = "name",
     createdAt = "createdAt",
+};
+export enum UserOrderByColumnNames {
+    name = "Name",
+    createdAt = "Join Date",
 };
 
 export type UserOrderByColumnOption = keyof typeof UserOrderByColumnOptions;

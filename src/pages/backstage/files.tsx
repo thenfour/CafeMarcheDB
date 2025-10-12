@@ -1,4 +1,4 @@
-import { FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
+import { FileOrderByColumnNames, FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
 import { FileListItem } from "@/src/core/components/file/FileListItem";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
@@ -116,6 +116,7 @@ const FileListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: FileOrderByColumnOptions,
+        sortColumnNames: FileOrderByColumnNames,
         searchConfig: fileSearchConfig,
         renderItem: (file, index, filterSpec, results, refetch) => (
             <FileListItem

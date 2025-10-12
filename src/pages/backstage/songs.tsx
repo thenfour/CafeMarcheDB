@@ -1,4 +1,4 @@
-import { SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "@/src/core/components/song/SongClientBaseTypes";
+import { SongOrderByColumnNames, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "@/src/core/components/song/SongClientBaseTypes";
 import { SongListItem } from "@/src/core/components/song/SongListItem";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
@@ -98,6 +98,7 @@ const SongListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: SongOrderByColumnOptions,
+        sortColumnNames: SongOrderByColumnNames,
         searchConfig: songSearchConfig,
         renderItem: (song, index, filterSpec, results, refetch) => (
             <SongListItem

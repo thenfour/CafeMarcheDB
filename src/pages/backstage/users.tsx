@@ -13,7 +13,7 @@ import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { EnrichedVerboseUser } from "./wikiPageHistory";
-import { UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "@/src/core/components/user/UserClientBaseTypes";
+import { UserOrderByColumnNames, UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "@/src/core/components/user/UserClientBaseTypes";
 
 
 // for serializing in compact querystring
@@ -155,6 +155,7 @@ const UserListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: UserOrderByColumnOptions,
+        sortColumnNames: UserOrderByColumnNames,
         //useDataHook: (filterSpec) => useSearchableList(filterSpec, userSearchConfig),
         searchConfig: userSearchConfig,
         renderItem: (user, index, filterSpec, results, refetch) => (

@@ -8,6 +8,11 @@ export enum WikiPageOrderByColumnOptions {
     createdAt = "createdAt",
     namespace = "namespace",
 }
+export enum WikiPageOrderByColumnNames {
+    slug = "Name",
+    createdAt = "Created At",
+    namespace = "Namespace",
+}
 
 export type WikiPageOrderByColumnOption = keyof typeof WikiPageOrderByColumnOptions;
 

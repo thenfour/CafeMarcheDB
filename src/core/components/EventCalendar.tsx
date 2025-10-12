@@ -313,7 +313,7 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
         // in dto...
         quickFilter: `${DateToYYYYMMDD(minDate)}-${DateToYYYYMMDD(maxDate)}`,
 
-        orderByColumn: EventOrderByColumnOptions.id,
+        orderByColumn: EventOrderByColumnOptions.startsAt,
         orderByDirection: 'asc',
 
         tagFilter: { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },

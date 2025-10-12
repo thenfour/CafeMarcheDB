@@ -1,4 +1,4 @@
-import { EnrichedVerboseWikiPage, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "@/src/core/components/wiki/WikiClientBaseTypes";
+import { EnrichedVerboseWikiPage, WikiPageOrderByColumnNames, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "@/src/core/components/wiki/WikiClientBaseTypes";
 import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
 import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
 import { BlitzPage } from "@blitzjs/next";
@@ -114,6 +114,7 @@ const WikiPageListOuter = () => {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: WikiPageOrderByColumnOptions,
+        sortColumnNames: WikiPageOrderByColumnNames,
         searchConfig: wikiPageSearchConfig,
         renderItem: (wikiPage, index, filterSpec, results, refetch) => (
             <WikiPageListItem

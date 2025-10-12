@@ -3,9 +3,12 @@ import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 export enum EventOrderByColumnOptions {
-    //id = "id",
     startsAt = "startsAt",
     name = "name",
+};
+export enum EventOrderByColumnNames {
+    startsAt = "Date",
+    name = "Name",
 };
 
 export type EventOrderByColumnOption = keyof typeof EventOrderByColumnOptions;// "startsAt" | "name";
