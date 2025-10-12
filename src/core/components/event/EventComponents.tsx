@@ -1521,6 +1521,10 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
                     uploadTags={{
                         taggedEventId: event.id,
                     }}
+                    hiddenTagIds={{
+                        eventTagIds: [event.id],
+                    }
+                    }
                     refetch={refetch}
                     readonly={props.readonly}
                     contextEvent={event}

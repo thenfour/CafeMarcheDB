@@ -551,6 +551,9 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         setSelectedTab(slug);
     }
 
+    const partitionTagId = dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id;
+    const recordingTagId = dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id;
+
     return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} showVisibility={true}>
 
         <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
@@ -583,7 +586,11 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.id,
-                            fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
+                            fileTagId: partitionTagId,
+                        }}
+                        hiddenTagIds={{
+                            songTagIds: [song.id],
+                            fileTagIds: partitionTagId ? [partitionTagId] : [],
                         }}
                         contextSong={song}
                     />
@@ -603,7 +610,11 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                         refetch={refetch}
                         uploadTags={{
                             taggedSongId: song.id,
-                            fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
+                            fileTagId: recordingTagId,
+                        }}
+                        hiddenTagIds={{
+                            songTagIds: [song.id],
+                            fileTagIds: recordingTagId ? [recordingTagId] : [],
                         }}
                         contextSong={song}
                     />
@@ -625,6 +636,9 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                             taggedSongId: song.id,
                         }}
                         contextSong={song}
+                        hiddenTagIds={{
+                            songTagIds: [song.id],
+                        }}
                     />
                 </AppContextMarker>
             </CMTab>

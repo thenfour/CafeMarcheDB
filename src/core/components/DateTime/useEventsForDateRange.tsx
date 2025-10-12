@@ -27,7 +27,7 @@ export const useEventsForDateRange = (dateRange: DateTimeRange | null) => {
         return {
             refreshSerial: 1,
             quickFilter: `${DateToYYYYMMDD(startDate)}-${DateToYYYYMMDD(endDate)}`,
-            orderByColumn: EventOrderByColumnOptions.id,
+            orderByColumn: EventOrderByColumnOptions.startsAt,
             orderByDirection: 'asc' as const,
             tagFilter: { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
             statusFilter: {

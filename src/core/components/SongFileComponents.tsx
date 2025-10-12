@@ -157,6 +157,15 @@ export const FileExternalLink = ({ file, highlight }: { file: EnrichedFile, high
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface FileViewerHiddenTagIds {
+    fileTagIds?: number[];
+    userTagIds?: number[];
+    instrumentTagIds?: number[];
+    songTagIds?: number[];
+    eventTagIds?: number[];
+    wikiPageTagIds?: number[]; // wikiPage ids
+};
+
 interface FileViewerProps {
     value: EnrichedFile;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
@@ -164,6 +173,8 @@ interface FileViewerProps {
     statHighlight: SortByKey;
     contextEvent?: MediaPlayerEventContextPayload;
     contextSong?: MediaPlayerSongContextPayload;
+    hiddenTagIds: FileViewerHiddenTagIds;
+
     refetch?: () => void;
 };
 
@@ -265,27 +276,39 @@ export const FileValueViewer = (props: FileViewerProps) => {
             <div className="content">
                 <CMChipContainer>
                     {(file.tags.length > 0) && (
-                        file.tags.map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variation={variation} />)
+                        file.tags
+                            .filter(a => !props.hiddenTagIds.fileTagIds || !existsInArray(props.hiddenTagIds.fileTagIds, a.fileTag.id))
+                            .map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variation={variation} />)
                     )}
 
                     {(file.taggedEvents.length > 0) && (
-                        file.taggedEvents.map(a => <EventChip key={a.id} value={a.event} size="small" variation={variation} />)
+                        file.taggedEvents
+                            .filter(a => !props.hiddenTagIds.eventTagIds || !existsInArray(props.hiddenTagIds.eventTagIds, a.event.id))
+                            .map(a => <EventChip key={a.id} value={a.event} size="small" variation={variation} />)
                     )}
 
                     {(file.taggedUsers.length > 0) && (
-                        file.taggedUsers.map(a => <UserChip key={a.id} value={a.user} size="small" variation={variation} />)
+                        file.taggedUsers
+                            .filter(a => !props.hiddenTagIds.userTagIds || !existsInArray(props.hiddenTagIds.userTagIds, a.user.id))
+                            .map(a => <UserChip key={a.id} value={a.user} size="small" variation={variation} />)
                     )}
 
                     {(file.taggedSongs.length > 0) && (
-                        file.taggedSongs.map(a => <SongChip key={a.id} value={a.song} size="small" variation={variation} />)
+                        file.taggedSongs
+                            .filter(a => !props.hiddenTagIds.songTagIds || !existsInArray(props.hiddenTagIds.songTagIds, a.song.id))
+                            .map(a => <SongChip key={a.id} value={a.song} size="small" variation={variation} />)
                     )}
 
                     {(file.taggedInstruments.length > 0) && (
-                        file.taggedInstruments.map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
+                        file.taggedInstruments
+                            .filter(a => !props.hiddenTagIds.instrumentTagIds || !existsInArray(props.hiddenTagIds.instrumentTagIds, a.instrument.id))
+                            .map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
                     )}
 
                     {(file.taggedWikiPages.length > 0) && (
-                        file.taggedWikiPages.map(a => <WikiPageChip key={a.id} slug={a.wikiPage.slug} size="small" variation={variation} />)
+                        file.taggedWikiPages
+                            .filter(a => !props.hiddenTagIds.wikiPageTagIds || !existsInArray(props.hiddenTagIds.wikiPageTagIds, a.wikiPage.id))
+                            .map(a => <WikiPageChip key={a.id} slug={a.wikiPage.slug} size="small" variation={variation} />)
                     )}
                 </CMChipContainer>
 
@@ -803,6 +826,7 @@ interface FileControlProps {
     statHighlight: SortByKey;
     contextEvent?: MediaPlayerEventContextPayload;
     contextSong?: MediaPlayerSongContextPayload;
+    hiddenTagIds: FileViewerHiddenTagIds;
 };
 
 export const FileControl = (props: FileControlProps) => {
@@ -822,6 +846,7 @@ export const FileControl = (props: FileControlProps) => {
             contextEvent={props.contextEvent}
             contextSong={props.contextSong}
             refetch={props.refetch}
+            hiddenTagIds={props.hiddenTagIds}
         />
     </>;
 };
@@ -834,6 +859,7 @@ export interface FilesTabContentProps {
     uploadTags: TClientFileUploadTags;
     contextEvent?: MediaPlayerEventContextPayload;
     contextSong?: MediaPlayerSongContextPayload;
+    hiddenTagIds: FileViewerHiddenTagIds;
 };
 
 export const FilesTabContent = (props: FilesTabContentProps) => {
@@ -949,6 +975,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
                 statHighlight={filterSpec.sortBy}
                 contextEvent={props.contextEvent}
                 contextSong={props.contextSong}
+                hiddenTagIds={props.hiddenTagIds}
             />)}
         </div>
     </FileDropWrapper>;
