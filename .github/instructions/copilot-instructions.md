@@ -2,167 +2,93 @@
 
 CafeMarcheDB is a web application for managing a music community, built with Blitz.js (React/Next.js + Prisma ORM), TypeScript, and Material-UI. It handles events, users, songs, setlists, and calendar integration for a musical group.
 
-Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
+These rules guide any AI coding agent contributing to this repository. Always conform to this style guide when making any changes.
 
-## Working Effectively
+Code must read like a story that makes design intent obvious.
 
-### Initial Setup and Dependencies
-- Install dependencies: `yarn install` -- takes 102 seconds. NEVER CANCEL. Set timeout to 180+ seconds.
-- Husky git hooks are automatically installed during `yarn install`
+## Story-First Structure
 
-### Database Setup
-The application uses MySQL in both production and development:
+- Reflect every product description directly in code structure. If a feature has three sections, expose three clearly named components or functions.
+- Favor readability over brevity. Expand logic so that each step telegraphs why it exists.
+- Keep parent modules high-level by composing focused helpers/components rather than embedding sprawling logic.
 
-**Production/Standard Setup (MySQL):**
-- Ensure MySQL server is running: `sudo service mysql start`
-- Create databases: `CREATE DATABASE cmdb; CREATE DATABASE cmdb_test;`
-- Configure `.env.local`:
-  ```
-  DATABASE_URL="mysql://username:password@localhost:3306/cmdb"
-  SESSION_SECRET_KEY="your-secret-key-32-chars-minimum"
-  ```
-- Configure `.env.test.local`:
-  ```
-  DATABASE_URL="mysql://username:password@localhost:3306/cmdb_test"
-  ```
+## Algorithms Live in Helpers
 
-**Database Operations:**
-- Generate Prisma client: `yarn blitz prisma generate` -- requires network access to binaries.prisma.sh
-- **NETWORK LIMITATION**: If network access to binaries.prisma.sh is blocked, Prisma operations will fail
-- Apply migrations: `yarn blitz prisma migrate dev` -- NEVER use in production
-- Deploy migrations: `yarn blitz prisma migrate deploy` -- safe for production
-- Reset database (dev only): `yarn blitz prisma migrate reset` -- DESTRUCTIVE
-- Database seeding: `yarn blitz prisma db seed`
+- Never inline even "small" formulas inside loops, JSX, or conditionals. Wrap them in descriptive functions such as `ApplyGammaCorrection`, `WithinDistance`, or `AverageColorRgb255`.
+- When extending existing logic, introduce a new helper and call it rather than stuffing the algorithm into the current block.
+- Reuse existing utilities whenever they already express the operation.
 
-### Build and Development
-- Lint code: `yarn lint` -- takes 183 seconds. NEVER CANCEL. Set timeout to 300+ seconds.
-- Development server: `yarn dev` -- runs on http://localhost:10455 (custom port)
-- Production build: `yarn build` -- typically takes 2-5 minutes. NEVER CANCEL. Set timeout to 600+ seconds.
-- Start production server: `yarn start --port 10455`
-- Prisma Studio (database GUI): `yarn studio`
-- List all routes: `yarn blitz routes` -- helpful for navigation understanding
+## Naming Expectations
 
-### Testing
-- Manual test pages exist at `/src/pages/test/` and `/src/pages/backstage/test/` (these are UI test pages, not unit tests)
-- Currently no unit testing configured.
+- Use descriptive, intent-revealing identifiers. Length is not a concern; ambiguity is.
+- Reserve short names (e.g., `i`, `x`, `y`) for tiny local scopes like loop indices.
+- Components/classes are nouns; functions that act are verbs.
 
-## Validation
+## Magic Numbers Become Constants
 
-### CRITICAL: Network Dependency Issues
-**ALWAYS check network connectivity to binaries.prisma.sh before attempting database operations.**
-If blocked, you CANNOT:
-- Generate Prisma client (`yarn blitz prisma generate`)
-- Run migrations (`yarn blitz prisma migrate dev`)
-- Build the application (`yarn build`)
-- Start the development server (`yarn dev`)
+- Do not bury raw numbers or heuristic values. Declare named constants near the top of the file or within a dedicated config module.
+- Document how a constant was derived or tuned so future readers understand its origin.
 
-In this case, document the limitation and focus on:
-- Code analysis and navigation
-- Linting and code quality checks
-- Static file examination
-- Documentation updates
+## Components and Modularity
 
-### Manual Validation Steps
-When network access is available, ALWAYS test these scenarios:
-1. **Database Setup**: Verify migrations run cleanly and seeding works
-2. **Development Server**: Start server and verify it loads without errors
-3. **Login Flow**: Test both local authentication and Google OAuth (if configured)
-4. **Navigation**: Access backstage admin area (requires admin permissions)
-5. **Core Features**: Test event creation, user management, and calendar views
-6. **Build Process**: Verify production build completes successfully
+- Each component/function/class should own a single responsibility.
+- Adding a feature means creating a new component or helper, not appending JSX or logic into an existing "god" block.
+- Compose the page or tool out of smaller, obviously named pieces (e.g., `ImageManipulationControls`, `ImageExportControls`).
 
-### Pre-commit Validation
-Always run these commands before committing:
-- `yarn lint` -- NEVER CANCEL, wait for completion (3+ minutes)
-- Verify no TypeScript errors in your changes
-- **NOTE**: `yarn test` currently has configuration issues, focus on linting and manual testing
+## Error Handling Discipline
 
-## Common Tasks
+- Avoid redundant checks when callees already guard a condition.
+- Let real bugs surface. Do not swallow exceptions or return arbitrary fallback values.
+- Assertions are acceptable to document assumptions; generic catch-alls are not.
 
-### Repository Structure
-```
-cmdb/
-├── src/                     # Main application code
-│   ├── auth/               # Authentication (login, signup, Google OAuth)
-│   ├── core/               # Core components and layouts
-│   ├── pages/              # Next.js pages (API routes and UI)
-│   └── ...
-├── db/                     # Database configuration
-│   ├── schema.prisma       # Database schema (MySQL/SQLite compatible)
-│   ├── migrations/         # Migration files (29 existing migrations)
-│   ├── seeding/           # Database seeding scripts
-│   └── seeds.ts           # Main seeding entry point
-├── shared/                 # Shared utilities and types
-├── public/                 # Static assets
-├── README.tenfour.md       # Detailed developer documentation
-├── package.json            # Dependencies and scripts
-└── .env*                   # Environment configuration
-```
+## Strong Typing and Validation
 
-### Key Configuration Files
-- `package.json` -- scripts: dev, build, start, lint, test; uses Yarn workspaces setup
-- `next.config.js` -- Blitz.js and Next.js configuration with i18n support (EN/NL/FR)
-- `.eslintrc.js` -- ESLint rules (includes unused imports detection, circular import detection)
-- `tsconfig.json` -- TypeScript strict configuration
-- `db/schema.prisma` -- Database schema with 29+ tables including User, Event, Song, Role, Permission
-- `.env` -- Base environment config (PORT=10455, database examples)
-- `.gitignore` -- Includes Blitz-specific ignores (*.sqlite, .blitz/, cmdb_*.tar.gz)
+- Preserve strict typing. Do not cast to `any`, `unknown`, `void*`, etc., to silence errors.
+- When dealing with uncertain external data, add explicit runtime validation (e.g., Zod schemas) instead of unsafe casts.
 
-### Environment Variables
-Required in `.env.local`:
-- `DATABASE_URL` -- Database connection string
-- `SESSION_SECRET_KEY` -- Authentication secret (32+ characters)
+## Units, Ranges, and Intent
 
-Optional (for full functionality):
-- `GOOGLE_CLIENT_ID` -- Google OAuth
-- `GOOGLE_CLIENT_SECRET` -- Google OAuth
-- `ADMIN_EMAIL` -- Auto-admin user
-- `FILE_UPLOAD_PATH` -- File upload directory
+- Embed units in names, such as `colorRgb01`, `durationMs`, or `ampDb`.
+- Helpers and props should signal the value’s domain in their names and documentation.
 
-### Special URLs and Features
-- Admin controls: Alt+9 hotkey shows/hides admin controls on any page
-- Test page: `/backstage/test/test` -- internal testing utilities (UI-based tests)
-- Public test page: `/test/test` -- public testing interface  
-- Auth endpoints: `/auth/logout`, `/auth/stopImpersonating`
-- Prisma Studio: `yarn studio` -- database GUI on different port
-- Custom port: Always use 10455 for consistency with project configuration
-- API routes: Located in `src/pages/api/` following Next.js conventions
+## Document Unusual Decisions
 
-### Common Patterns
-- Material-UI components throughout
-- TypeScript strict mode enabled
-- Prisma for all database operations
-- Blitz.js RPC for API calls
-- Role-based permissions system
-- Activity logging and audit trails
+- If a design deviates from the obvious approach, leave a brief comment explaining why so the story stays clear.
 
-### Known Issues and Workarounds
-- TypeScript 5.8.2 generates warnings with ESLint (expected, not critical)
-- Some peer dependency warnings during `yarn install` (non-blocking)  
-- Network access required for Prisma binary downloads
-- Build process requires generated Prisma client to succeed
-- Test setup incomplete: Vitest configured but missing Vite dependency and test files
-- Husky git hooks automatically installed during `yarn install`
+## Change Etiquette
 
-### File Upload and Static Assets
-- Upload directory: `uploads/` (relative to project root)
-- Static assets: `public/` directory
-- File uploads handled via custom middleware
+- When editing existing files, keep the top-level flow descriptive and offload new work into new helpers/components.
+- Never introduce fresh algorithms inline within pre-existing loops or conditionals.
+- Keep the codebase incremental and refactor-friendly; resist the urge to lump unrelated behavior together.
 
-### Internationalization
-- Supports EN, NL, FR locales
-- Default locale: EN
-- i18n configured in `next.config.js`
+## Duplication and modularity
 
-## Deployment
+- **Do not repeat algorithms or processing steps in multiple places.**
+  - If an operation (e.g. multi-step image processing) is already implemented in a function, new code must **reuse that function or a shared helper**, not reimplement the steps in the caller.
+  - If the caller needs access to intermediate results (e.g. step 1 / step 2 images), refactor the processing function to return a richer result object instead of duplicating the algorithm inline.
 
-Production deployment process:
-- **Build first**: `yarn build` -- NEVER CANCEL, takes 5+ minutes when working
-- **Start production**: `yarn start --port 10455`
-- **Deploy script**: `./deploy.sh username@server:/path` creates `cmdb_deploy.tar.gz`
-- **Deploy contents**: Uses `files_to_deploy.txt` (currently only `.next/` directory)
-- **Database migrations**: `yarn blitz prisma migrate deploy` -- SAFE for production, never clobbers data
-- **Database seeding**: `yarn blitz prisma db seed` -- only if database is empty
+  ```ts
+  // Prefer this:
+  const result = processImage(input);
+  return <>
+    <ImageViewer bitmap={result.finalImage} />
+    <ImageViewer bitmap={result.step1Image} />
+    <ImageViewer bitmap={result.step2Image} />
+  </>;
 
-**CRITICAL**: Never use `yarn blitz prisma migrate dev` in production - it can clobber data.
+  // NOT this:
+  const finalImage = processImage(input);
+  const step1Image = /* repeat step 1 logic here */;
+  const step2Image = /* repeat step 2 logic here */;
+````
+
+* When you detect similar logic in two or more places, **extract a shared utility**.
+
+  * Move the common behavior into a helper (e.g. `applyProcessingSteps`, `processImageSteps`) and call it from both locations.
+  * Keep the core algorithm “tight and centralized” so it can be maintained in one place.
+
+* **Reuse utilities instead of duplicating even short expressions.**
+
+  * If there is (or should be) a helper for a pattern (e.g. averaging, float comparison with epsilon, clamping, distance computation), use or create that helper and reuse it consistently.
+  * Example utilities: `average`, `withinDistance`, `floatEquals`, `clamp`, `lerp`, conversions, date/time helpers, etc.
 
