@@ -49,8 +49,6 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
         };
     }, { totalSegmentCount: 0, responseCount: 0, goingCount: 0 });
 
-    console.log(qr);
-
     const sortedQr = sortEvents(qr.events);
     const sortedQrWithIndex = sortedQr.map((event, index) => ({
         ...event,

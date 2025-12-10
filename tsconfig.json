@@ -11,6 +11,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@db3/*": [
+        "./src/core/db3/*"
+      ],
+      "@components/*": [
+        "./src/core/components/*"
       ]
     },
     "allowJs": true,
