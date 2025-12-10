@@ -12,9 +12,9 @@ import wikiRenewYourLock from "src/core/wiki/mutations/wikiRenewYourLock";
 import getWikiPage from "src/core/wiki/queries/getWikiPage";
 import { GetWikiPageUpdatabilityResult, gWikiEditPingIntervalMilliseconds, gWikiLockAutoRenewThrottleInterval, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiUpdatePayload, WikiPageData, wikiParseCanonicalWikiPath, WikiPath } from "src/core/wiki/shared/wikiUtils";
 import { v4 as uuidv4 } from "uuid";
-import { useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { useMessageBox } from "../MessageBoxContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 
 // upon begin edit:
 //     - try to acquire lock (with your client-generated uid)

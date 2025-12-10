@@ -5,8 +5,8 @@ import * as db3 from "src/core/db3/db3";
 import { getURIForFile } from "../../db3/clientAPILL";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
-import { useDashboardContext } from "../DashboardContext";
 import { Markdown } from "../markdown/Markdown";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 export interface FileChipProps {

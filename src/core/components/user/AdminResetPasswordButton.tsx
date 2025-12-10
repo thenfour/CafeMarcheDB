@@ -5,9 +5,9 @@ import { useTheme } from "@mui/material/styles";
 import * as React from 'react';
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import { DialogActionsCM } from "src/core/components/CMCoreComponents2";
-import * as db3 from "src/core/db3/db3";
+import { EnrichedVerboseUser } from "./UserListItem";
 
-export const AdminResetPasswordButton = ({ user }: { user: db3.EnrichedVerboseUser }) => {
+export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }) => {
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
     const [resetURL, setResetURL] = React.useState<string | null>(null);
     const [showCopied, setShowCopied] = React.useState<boolean>(false);

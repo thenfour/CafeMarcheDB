@@ -8,10 +8,10 @@ import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CMSmallButton } from "./CMCoreComponents2";
-import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/Markdown";
 import { SettingKey } from "shared/settingKeys";
+import { useDashboardContext } from "./dashboardContext/DashboardContext";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;
@@ -76,7 +76,7 @@ interface SettingMarkdownProps {
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const [editing, setEditing] = React.useState<boolean>(false);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const showAdminControls = dashboardContext.isShowingAdminControls;
 
     const editable = dashboardContext.isAuthorized(Permission.sysadmin) && showAdminControls;

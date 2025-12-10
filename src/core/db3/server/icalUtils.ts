@@ -7,6 +7,7 @@ import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
 import { slugify } from "shared/rootroot";
+import { SharedAPI } from "../shared/sharedAPI";
 
 
 export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
@@ -168,7 +169,7 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
         isAllDay: CoalesceBool(segment.isAllDay, true),
     });
 
-    const eventUri = process.env.CMDB_BASE_URL + `backstage/event/${event.id}/${slugify(event.name || "")}`; // 
+    const eventUri = SharedAPI.serverGetAbsoluteUri(`/backstage/event/${event.id}/${slugify(event.name || "")}`); // 
 
     if (dateRange.isTBD()) {
         return null;

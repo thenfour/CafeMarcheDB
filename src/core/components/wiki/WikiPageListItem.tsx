@@ -1,7 +1,6 @@
 import { Article } from "@mui/icons-material";
 import React from "react";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { DateValue } from "../DateTime/DateTimeComponents";
@@ -9,6 +8,7 @@ import { GenericSearchListItem } from "../search/SearchListItem";
 import { UserChip } from "../user/userChip";
 import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from "./WikiClientBaseTypes";
 import { StandardVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export interface WikiPageListItemProps {
     index: number;
@@ -20,7 +20,7 @@ export interface WikiPageListItemProps {
 
 export const WikiPageListItem = (props: WikiPageListItemProps) => {
     const { wikiPage } = props;
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const wikiUrl = getAbsoluteUrl(`/backstage/wiki/${wikiPage.slug}`);
     const visInfo = dashboardContext.getVisibilityInfo(wikiPage);

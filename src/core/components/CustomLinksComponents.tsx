@@ -12,10 +12,10 @@ import { AppContextMarker } from "./AppContext";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
-import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { Markdown } from "./markdown/Markdown";
 import { gLightSwatchColors, gSwatchColors } from "./color/palette";
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
+import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {
@@ -179,7 +179,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
 }
 
 export const CustomLinkList = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 

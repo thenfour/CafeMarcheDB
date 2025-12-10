@@ -5,9 +5,8 @@ import { Permission } from "shared/permissions";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
@@ -18,6 +17,7 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { ProfilePageIdentityControl } from "@/src/core/components/user/UserIdentityIndicator";
 import { StandardVariationSpec } from "@/src/core/components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
+import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
@@ -26,10 +26,11 @@ type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInst
 
 const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const dashboardContext = useDashboardContext();
+    const { showMessage: showSnackbar } = useSnackbar();
+    const recordFeature = useFeatureRecorder();
+
     const updatePrimaryMutationToken = API.users.updateUserPrimaryInstrument.useToken();
     const currentUser = dashboardContext.currentUser;
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const recordFeature = useFeatureRecorder();
 
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [oldValue, setOldValue] = React.useState<db3.UserInstrumentPayload[]>([]);

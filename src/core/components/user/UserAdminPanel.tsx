@@ -1,19 +1,19 @@
-import * as db3 from "src/core/db3/db3";
+import { Permission } from "@/shared/permissions";
+import { Routes } from "@blitzjs/next";
+import { Button, Tooltip } from "@mui/material";
+import { useRouter } from "next/router";
 import * as DB3Client from "src/core/db3/DB3Client";
+import { gIconMap } from "../../db3/components/IconMap";
+import { useConfirm } from "../ConfirmationDialog";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
 import { useSnackbar } from "../SnackbarContext";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
-import { useDashboardContext } from "../DashboardContext";
-import { Permission } from "@/shared/permissions";
-import { Button, Tooltip } from "@mui/material";
-import { gIconMap } from "../../db3/components/IconMap";
-import { Routes } from "@blitzjs/next";
-import { useRouter } from "next/router";
-import { useConfirm } from "../ConfirmationDialog";
+import { EnrichedVerboseUser } from "./UserListItem";
 
 interface UserAdminPanelProps {
-    user: db3.EnrichedVerboseUser;
+    user: EnrichedVerboseUser;
     tableClient: DB3Client.xTableRenderClient;
     refetch?: () => void;
     readonly: boolean;

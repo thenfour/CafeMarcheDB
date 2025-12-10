@@ -1,14 +1,15 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { UserBreadcrumbs } from "@/src/core/components/user/UserComponents";
 import { UserDetail } from "@/src/core/components/user/UserDetail";
+import { enrichUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 import { BlitzPage, Routes, useParams } from "@blitzjs/next";
 import db from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 
@@ -17,7 +18,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
     const router = useRouter();
     const [id__, slug, tab] = params.id_slug_tab as string[];
 
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     //const id = CoerceToNumberOrNull(id__);
     //if (!id) throw new Error(`no id`);
 
@@ -62,7 +63,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
         return null;
     }
     const userRaw = tableClient.items[0]! as db3.UserPayload;
-    const user = db3.enrichUser(userRaw, dashboardContext.role, dashboardContext.userTag, dashboardContext.instrument);
+    const user = enrichUser(userRaw, dashboardContext.role, dashboardContext.userTag, dashboardContext.instrument);
 
     return <div className="songsDetailComponent">
         {user ? <>

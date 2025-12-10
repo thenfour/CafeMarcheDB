@@ -15,7 +15,6 @@ import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { NameValuePair, InspectObject } from '../CMCoreComponents2';
-import { DashboardContext, useFeatureRecorder } from '../DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { Markdown3Editor } from '../markdown/MarkdownControl3';
 import { MetronomeButton } from '../Metronome';
@@ -33,6 +32,8 @@ import { CMLink } from '../CMLink';
 import { UserChip } from '../user/userChip';
 import { StandardVariationSpec } from '../color/palette';
 import { TAnyModel } from '@/shared/rootroot';
+import { useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';
+import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
 
 
 export const SongClientColumns = {
@@ -269,7 +270,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     const user = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const publicData = useAuthenticatedSession();
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -402,7 +403,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
     const recordFeature = useFeatureRecorder();
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
     const highlightedTagIds = props.highlightedTagIds || [];
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const refetch = () => {
         tableClient?.refetch();
@@ -452,7 +453,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     onCancel={() => { }}
-                    onOK={(obj: db3.EnrichedVerboseSong, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: EnrichedVerboseSong, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.song_edit,
                             context: "song detail dialog",
@@ -521,14 +522,14 @@ export enum SongDetailTabSlug {
 
 
 export interface SongDetailArgs {
-    song: db3.EnrichedVerboseSong;
+    song: EnrichedVerboseSong;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTab?: SongDetailTabSlug;
 }
 
 export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const router = useRouter();
 
     const refetch = () => {

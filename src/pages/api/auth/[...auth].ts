@@ -8,11 +8,12 @@ import { api } from "src/blitz-server";
 import { recordAction } from "src/core/db3/server/recordActionServer";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { CreatePublicData } from "types";
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
     successRedirectUrl: process.env.CMDB_LOGIN_SUCCESS_REDIRECT,
-    errorRedirectUrl: process.env.CMDB_BASE_URL,
+    errorRedirectUrl: SharedAPI.serverGetAbsoluteUri('/'),
     strategies: [
       {
         strategy: new GoogleStrategy(

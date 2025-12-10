@@ -8,11 +8,12 @@ import { GetSongActivityReportFilterSpec, GetSongActivityReportFilterSpecTimingF
 import { ActivityVis, ActivityVisBucket } from '../ActivityVis';
 import { SettingMarkdown } from '../SettingMarkdown';
 
-import { EnrichedVerboseSong, EventAPI } from '../../db3/db3';
-import { DashboardContext } from '../DashboardContext';
+import { EventAPI } from '../../db3/db3';
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from '../search/FilterControl';
 import { arraysContainSameValues } from 'shared/arrayUtils';
 import { AdminInspectObject } from '../CMCoreComponents2';
+import { useDashboardContext } from '../dashboardContext/DashboardContext';
+import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,7 +24,7 @@ interface SongHistoryFilterControlsProps {
 }
 
 export const SongHistoryFilterControls = ({ filterSpec, setFilterSpec, defaultFilterSpec }: SongHistoryFilterControlsProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const hasExtraFilters = () => {
         if (!arraysContainSameValues(filterSpec.eventStatusIds, defaultFilterSpec.eventStatusIds)) return true;

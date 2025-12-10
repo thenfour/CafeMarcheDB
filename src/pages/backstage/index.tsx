@@ -4,12 +4,12 @@ import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiStandaloneControl } from "src/core/components/wiki/WikiStandaloneComponents";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 const HomepageBigEventCalendar = () => {

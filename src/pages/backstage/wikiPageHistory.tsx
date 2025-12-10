@@ -10,7 +10,6 @@ import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import { useMessageBox } from "src/core/components/MessageBoxContext";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -23,8 +22,10 @@ import rebuildWikiPageRevisionStats from "src/core/wiki/mutations/rebuildWikiPag
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision";
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
 import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { EnrichedUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 
-export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
+export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
 
 interface WikiDiffViewerProps {
     revisionIdLeft: number | null;

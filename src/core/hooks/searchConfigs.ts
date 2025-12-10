@@ -6,12 +6,17 @@ import { EventsFilterSpec } from '../components/event/EventClientBaseTypes';
 import { EnrichedVerboseWikiPage, WikiPagesFilterSpec } from '../components/wiki/WikiClientBaseTypes';
 import { UsersFilterSpec } from '../components/user/UserClientBaseTypes';
 import { FilesFilterSpec } from '../components/file/FileClientBaseTypes';
+import { EnrichedVerboseUser } from '../components/user/UserListItem';
+import { enrichUser } from '../db3/shared/schema/enrichedUserTypes';
+import { EnrichedVerboseSong, enrichSong } from '../db3/shared/schema/enrichedSongTypes';
+import { EnrichedSearchEventPayload, enrichSearchResultEvent } from '../db3/shared/schema/enrichedEventTypes';
+import { EnrichedVerboseFile, enrichFile } from '../db3/shared/schema/enrichedFileTypes';
 
 // Song search configuration
 export const songSearchConfig: SearchableListConfig<
     SongsFilterSpec,
     db3.SongPayload_Verbose,
-    db3.EnrichedVerboseSong
+    EnrichedVerboseSong
 > = {
     getQueryArgs: (filterSpec: SongsFilterSpec, offset: number, take: number) => ({
         offset,
@@ -29,7 +34,7 @@ export const songSearchConfig: SearchableListConfig<
     }),
 
     enrichItem: (rawItem: db3.SongPayload_Verbose, dashboardContext) =>
-        db3.enrichSong(rawItem, dashboardContext),
+        enrichSong(rawItem, dashboardContext),
 
     errorMessage: 'Failed to load more songs.',
 };
@@ -38,7 +43,7 @@ export const songSearchConfig: SearchableListConfig<
 export const eventSearchConfig: SearchableListConfig<
     EventsFilterSpec,
     db3.EventVerbose_Event,
-    db3.EnrichedSearchEventPayload
+    EnrichedSearchEventPayload
 > = {
     getQueryArgs: (filterSpec: EventsFilterSpec, offset: number, take: number) => ({
         offset,
@@ -59,7 +64,7 @@ export const eventSearchConfig: SearchableListConfig<
     }),
 
     enrichItem: (rawItem: db3.EventVerbose_Event, dashboardContext) =>
-        db3.enrichSearchResultEvent(rawItem, dashboardContext),
+        enrichSearchResultEvent(rawItem, dashboardContext),
 
     errorMessage: 'Failed to load more events.',
 };
@@ -68,7 +73,7 @@ export const eventSearchConfig: SearchableListConfig<
 export const userSearchConfig: SearchableListConfig<
     UsersFilterSpec,
     db3.UserPayload,
-    db3.EnrichedVerboseUser
+    EnrichedVerboseUser
 > = {
     getQueryArgs: (filterSpec: UsersFilterSpec, offset: number, take: number) => ({
         offset,
@@ -88,7 +93,7 @@ export const userSearchConfig: SearchableListConfig<
     }),
 
     enrichItem: (rawItem: db3.UserPayload, dashboardContext, role, userTag, instrument) =>
-        db3.enrichUser(rawItem, role, userTag, instrument),
+        enrichUser(rawItem, role, userTag, instrument),
 
     getEnrichmentArgs: (dashboardContext) => [
         dashboardContext.role,
@@ -103,7 +108,7 @@ export const userSearchConfig: SearchableListConfig<
 export const fileSearchConfig: SearchableListConfig<
     FilesFilterSpec,
     db3.FilePayload,
-    db3.EnrichedVerboseFile
+    EnrichedVerboseFile
 > = {
     getQueryArgs: (filterSpec: FilesFilterSpec, offset: number, take: number) => ({
         offset,
@@ -122,7 +127,7 @@ export const fileSearchConfig: SearchableListConfig<
     }),
 
     enrichItem: (rawItem: db3.FilePayload, dashboardContext) =>
-        db3.enrichFile(rawItem, dashboardContext),
+        enrichFile(rawItem, dashboardContext),
 
     errorMessage: 'Failed to load more files.',
 };

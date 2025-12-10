@@ -12,7 +12,6 @@ import getUserTagWithAssignments from "../../db3/queries/getUserTagWithAssignmen
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../../db3/shared/apiTypes";
 import { AppContextMarker } from "../AppContext";
 import { CMLink } from "../CMLink";
-import { useDashboardContext } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { SearchItemBigCardLink } from "../SearchItemBigCardLink";
 import { EventStatusMinimal } from "./EventChips";
@@ -20,6 +19,8 @@ import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { RelevanceClassOverrideIndicator } from "./EventRelevanceOverrideComponents";
 import { StandardVariationSpec } from "../color/palette";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { EnrichedSearchEventPayload, enrichSearchResultEvent } from "../../db3/shared/schema/enrichedEventTypes";
 
 function formatShortDate(date: Date, locale: string = navigator.language): string {
     const now = new Date();
@@ -56,7 +57,7 @@ export const EventShortDate = ({ event }: EventShortDateProps) => {
 };
 
 
-export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {
+export const SubtleEventCard = ({ event, ...props }: { event: EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {
     const dashboardContext = useDashboardContext();
     const visInfo = dashboardContext.getVisibilityInfo(event);
     const typeStyle = GetStyleVariablesForColor({
@@ -111,7 +112,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: db3.EnrichedSearch
     </AppContextMarker>;
 };
 
-function MakeMockSearchResultsRetFromEvents(events: db3.EnrichedSearchEventPayload[], userTags: db3.UserTagWithAssignmentPayload[]): SearchResultsRet {
+function MakeMockSearchResultsRetFromEvents(events: EnrichedSearchEventPayload[], userTags: db3.UserTagWithAssignmentPayload[]): SearchResultsRet {
     const customData: db3.EventSearchCustomData = {
         userTags,
     };
@@ -139,7 +140,7 @@ export const RelevantEvents = () => {
     });
     const items = tableClient.items;
 
-    let enrichedEvents: db3.EnrichedSearchEventPayload[] = items.map(e => db3.enrichSearchResultEvent(e, dashboardContext));
+    let enrichedEvents: EnrichedSearchEventPayload[] = items.map(e => enrichSearchResultEvent(e, dashboardContext));
 
     // relevant user tags
     let relevantUserTagIds = enrichedEvents.map(e => e.expectedAttendanceUserTagId)

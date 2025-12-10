@@ -3,14 +3,13 @@ import { DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import { Clamp, CoerceToNumberOrNull } from "shared/utils";
 import { CMTextInputBase } from "./CMTextField";
-import { DashboardContext, useFeatureRecorder } from './DashboardContext';
-//import { useURLState } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
 import { Knob } from "./Knob";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { useLocalStorageState } from "./useLocalStorageState";
 import { Add, Remove } from "@mui/icons-material";
+import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
 
 const gTickSampleFilePath = "/metronome3.mp3";
 const gMinBPM = 40;
@@ -388,7 +387,7 @@ export const MetronomeButton = React.forwardRef<
     }
 >(({ bpm, mountPlaying, tapTrigger, isTapping, onSyncClick, variant }, ref) => {
     const [playing, setPlaying] = React.useState<boolean>(mountPlaying || false);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
     const [beatSyncTrigger, setBeatSyncTrigger] = React.useState<number>(0);
     const mySilencer = React.useRef<() => void>(() => setPlaying(false));

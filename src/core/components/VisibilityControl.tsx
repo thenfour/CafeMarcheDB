@@ -4,9 +4,9 @@ import React from 'react';
 import * as db3 from "src/core/db3/db3";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { ChoiceEditCell } from "./select/ChooseItemDialog";
-import { DashboardContext } from "./DashboardContext";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { StandardVariationSpec } from "./color/palette";
+import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ export interface VisibilityValueProps {
 };
 
 export const VisibilityValue = ({ variant, onClick, ...props }: VisibilityValueProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     let permission = props.permission || null;
     if (!permission && props.permissionId) {
@@ -63,7 +63,7 @@ interface VisibilityControlProps {
     selectDialogTitle?: React.ReactNode;
 };
 export const VisibilityControl = (props: VisibilityControlProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const variant = props.variant || "verbose";
     const visibilityChoices = [null, ...(dashboardContext.permission.items).filter(p => {

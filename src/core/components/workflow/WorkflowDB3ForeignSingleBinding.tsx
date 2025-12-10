@@ -3,10 +3,10 @@ import { WorkflowDef, WorkflowFieldValueOperator, WorkflowNodeDef, WorkflowTidie
 import { z } from "zod";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
-import { useDashboardContext } from "../DashboardContext";
 import { EvaluatedWorkflowContext, FieldComponentProps, WFFieldBinding } from "./WorkflowUserComponents";
 import { assertUnreachable } from "shared/utils";
 import { arraysContainSameValues } from "shared/arrayUtils";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 type TPK = number | null | undefined;
 

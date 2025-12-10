@@ -2,11 +2,11 @@ import React from "react";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
-import { DashboardContext } from "../DashboardContext";
 import { FilterControls, SortByGroup, TagsFilterGroup } from "./FilterControl";
 import { CMSinglePageSurfaceCard } from "../CMCoreComponents";
 import { DiscreteFilterState, SearchPageState } from "../../hooks/useSearchFilters";
 import { StandardVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Filter Group Configuration Types
@@ -60,7 +60,7 @@ export interface SearchPageFilterControlsProps<TStaticFilter> {
 export function SearchPageFilterControls<TStaticFilter extends { label: string; helpText: string }>(
     props: SearchPageFilterControlsProps<TStaticFilter>
 ) {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     // Primary filter: static filter chips
     const primaryFilter = (

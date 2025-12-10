@@ -1,13 +1,14 @@
 // calendar of all upcoming events
 
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { Ctx } from "@blitzjs/next";
 import db from "db";
 import { ICalCalendar } from "ical-generator";
-import { CoerceToString, concatenateUrlParts } from "shared/utils";
+import { CoerceToString } from "shared/utils";
 import { api } from "src/blitz-server";
 import { CalExportCore } from "src/core/db3/server/ical";
 import { recordAction } from "src/core/db3/server/recordActionServer";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { GetICalRelativeURIForUserUpcomingEvents } from "src/core/db3/shared/apiTypes";
 
 export default api(async (req, res, ctx: Ctx) => {
@@ -18,8 +19,7 @@ export default api(async (req, res, ctx: Ctx) => {
             const cal: ICalCalendar = await CalExportCore({
                 type: "upcoming",
                 accessToken,
-                sourceURI: concatenateUrlParts(
-                    process.env.CMDB_BASE_URL!,
+                sourceURI: SharedAPI.serverGetAbsoluteUri(
                     GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: accessToken || null })
                 )
             });

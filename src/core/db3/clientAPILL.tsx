@@ -5,6 +5,7 @@ import { slugify, slugifyWithDots } from "shared/rootroot";
 
 import { IsNullOrWhitespace } from "shared/utils";
 
+// TODO: move to dashboard context
 export const getAbsoluteUrl = (slug: string): string => {
     if (!slug.startsWith('/')) {
         slug = '/' + slug;

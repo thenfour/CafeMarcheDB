@@ -4,9 +4,9 @@ import { useMutation } from "@blitzjs/rpc";
 import React from "react";
 import signup from "src/auth/mutations/signup";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { useFeatureRecorder } from "src/core/components/DashboardContext";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
+import { useSnackbar } from "@/src/core/components/SnackbarContext";
 
 type SignupFormProps = {
   onSuccess?: () => void
@@ -17,7 +17,7 @@ export const SignupForm = (props: SignupFormProps) => {
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+  const { showMessage: showSnackbar } = useSnackbar();
   const recordFeature = useFeatureRecorder();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 

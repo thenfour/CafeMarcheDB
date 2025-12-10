@@ -28,7 +28,6 @@ import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreCompon
 import { AdminInspectObject, CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
-import { DashboardContext, useFeatureRecorder } from './DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
@@ -44,6 +43,8 @@ import { ColorPick } from './color/ColorPick';
 import { gSwatchColors } from './color/palette';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
 import { TAnyModel } from '@/shared/rootroot';
+import { enrichSong } from '../db3/shared/schema/enrichedSongTypes';
+import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
@@ -324,8 +325,8 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             return <EventSongListValueViewerDividerRow {...props} />;
         }
     }
-    const dashboardContext = React.useContext(DashboardContext);
-    const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
+    const dashboardContext = useDashboardContext();
+    const enrichedSong = props.value.type === 'song' ? enrichSong(props.value.song, dashboardContext) : null;
     const bpmValue = getRowStartBpm(props.value);
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
@@ -1013,9 +1014,9 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
 };
 
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const mediaPlayer = useMediaPlayer();
-    const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
+    const enrichedSong = (props.value.type === 'song') ? enrichSong(props.value.song, dashboardContext) : null;
     const showDragHandle = CoalesceBool(props.showDragHandle, true);
     const bpmValue = getRowStartBpm(props.value);
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);

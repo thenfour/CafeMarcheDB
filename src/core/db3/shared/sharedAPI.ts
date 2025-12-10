@@ -1,7 +1,7 @@
 // internal APIs which can be called from server code.
 
 import { Prisma } from "db";
-import { Clamp, gMinImageDimension } from "shared/utils";
+import { Clamp, concatenateUrlParts, gMinImageDimension } from "shared/utils";
 import * as db3 from "@db3/db3";
 import { PublicGalleryItemSpec } from "./publicTypes";
 import { Size } from "recharts/types/util/types";
@@ -129,4 +129,10 @@ const gFilesSharedAPI = new FilesSharedAPI();
 
 export const SharedAPI = {
     files: gFilesSharedAPI,
+
+    // clients cannot access process.env. For client-side, use the routing API on the dashboardContext.
+    serverGetAbsoluteUri: (relativePath: string) => {
+        return concatenateUrlParts(process.env.CMDB_BASE_URL!, relativePath);
+    },
+
 };

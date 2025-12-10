@@ -127,7 +127,6 @@ import { Button, CircularProgress, DialogContent, DialogTitle } from "@mui/mater
 import { Prisma } from "db";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
-import { DashboardContext, useDashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { Markdown3Editor } from "./markdown/MarkdownControl3";
 import { Markdown } from "./markdown/Markdown";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
@@ -135,6 +134,9 @@ import { SettingMarkdown } from "./SettingMarkdown";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { AppContextMarker } from "./AppContext";
 import { AttendanceChip } from "./event/AttendanceChips";
+import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
+import { UserInstrumentList } from "../db3/shared/schema/eventAPI";
+import { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
 
 
 
@@ -229,7 +231,7 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
   const token = API.events.updateUserEventAttendance.useToken();
   const [inProgress, setInProgress] = React.useState<boolean>(false);
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-  const dashboardContext = React.useContext(DashboardContext);
+  const dashboardContext = useDashboardContext();
   const recordFeature = useFeatureRecorder();
 
   const selectedInstrument = dashboardContext.instrument.getById(props.eventUserResponse.response.instrumentId);
@@ -437,7 +439,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
 
   const selectedResponse = props.segmentUserResponse.response;
   const selectedAttendanceId: number | null = props.segmentUserResponse.response.attendanceId;
-  const dashboardContext = React.useContext(DashboardContext);
+  const dashboardContext = useDashboardContext();
 
   const handleReadonlyClick = () => {
     props.onReadonlyClick();
@@ -510,7 +512,7 @@ export interface EventAttendanceSegmentControlProps {
 };
 
 export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }: EventAttendanceSegmentControlProps) => {
-  const dashboardContext = React.useContext(DashboardContext);
+  const dashboardContext = useDashboardContext();
 
   const name = props.isSingleSegment ? null : (<>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</>);
 
@@ -544,13 +546,13 @@ export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }:
 // big attendance alert (per event, multiple segments)
 export interface EventAttendanceControlProps {
   eventData: EventWithMetadata<
-    db3.EnrichedSearchEventPayload,
+    EnrichedSearchEventPayload,
     db3.EventResponses_MinimalEventUserResponse,
     db3.EventResponses_MinimalEventSegment,
     db3.EventResponses_MinimalEventSegmentUserResponse
   >;
   onRefetch: () => void,
-  userMap: db3.UserInstrumentList,
+  userMap: UserInstrumentList,
   minimalWhenNotAlert: boolean,
   //alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };

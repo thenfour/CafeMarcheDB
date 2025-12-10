@@ -1,7 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import React from 'react';
 import { Permission } from "shared/permissions";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -23,8 +22,6 @@ const tableSpec = new DB3Client.xTableClientSpec({
 });
 
 const MainContent = () => {
-    const dashboardContext = React.useContext(DashboardContext);
-
     return <>
         <SettingMarkdown setting="EditEventTagsPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />

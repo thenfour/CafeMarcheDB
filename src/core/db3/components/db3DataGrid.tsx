@@ -28,7 +28,7 @@ import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
 import { DialogActionsCM, InspectObject, KeyValueTable } from 'src/core/components/CMCoreComponents2';
-import { AgeRelativeToNow } from '@/src/core/components/DateTime/RelativeTimeComponents';
+import { AgeRelativeToNow } from '@components/DateTime/RelativeTimeComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { API } from '../clientAPI';
@@ -36,8 +36,8 @@ import * as db3 from '../db3';
 import type { CMDBTableFilterItem } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
-import { useDashboardContext } from 'src/core/components/DashboardContext';
 import { TAnyModel } from '@/shared/rootroot';
+import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;

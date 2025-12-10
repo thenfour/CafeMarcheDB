@@ -17,9 +17,9 @@ import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMSt
 import { CMLink } from "./CMLink";
 import { CMTextField } from "./CMTextField";
 import { ColorVariationSpec } from "./color/palette";
-import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { Coord2D, TAnyModel } from "@/shared/rootroot";
+import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
 export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {
@@ -164,7 +164,7 @@ export interface InstrumentChipProps {
 };
 
 export const InstrumentChip = (props: InstrumentChipProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     let instrument = typeof (props.value) === "number" ? dashboardContext.instrument.getById(props.value) : props.value;
     const functionalGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument?.functionalGroupId || -1);
@@ -334,7 +334,7 @@ export interface PermissionBoundaryProps {
 };
 
 export const PermissionBoundary = (props: React.PropsWithChildren<PermissionBoundaryProps>) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     if (!dashboardContext.isAuthorized(props.permission)) {
         return <>{props.fallback}</>;
     }

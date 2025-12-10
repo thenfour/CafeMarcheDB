@@ -13,17 +13,18 @@ import { GenericSearchListItem } from "../search/SearchListItem";
 import { SongChip } from "../song/SongChip";
 import { WikiPageChip } from "../wiki/WikiPageChip";
 import { FilesFilterSpec } from "./FileClientBaseTypes";
+import { EnrichedFile } from "../../db3/shared/schema/enrichedFileTypes";
 
 
 type FileListItemProps = {
     index: number;
-    file: db3.EnrichedFile<db3.FilePayload>;
+    file: EnrichedFile<db3.FilePayload>;
     results: SearchResultsRet;
     refetch: () => void;
     filterSpec: FilesFilterSpec;
 };
 
-export const FileIcon = ({ file }: { file: db3.EnrichedFile<db3.FilePayload> }) => {
+export const FileIcon = ({ file }: { file: EnrichedFile<db3.FilePayload> }) => {
     const fileClass = GetFileClass(file);
     switch (fileClass) {
         case FileClass.Audio:
@@ -50,7 +51,7 @@ export const FileListItem = (props: FileListItemProps) => {
     //const visInfo = dashboardContext.getVisibilityInfo(props.file);
     const uploadedAt = props.file.uploadedAt ? new Date(props.file.uploadedAt) : null;
     const uploadedByUser = props.file.uploadedByUser ? props.file.uploadedByUser.name : null;
-    return <GenericSearchListItem<db3.EnrichedFile<db3.FilePayload>>
+    return <GenericSearchListItem<EnrichedFile<db3.FilePayload>>
         index={props.index}
         item={props.file}
         icon={<FileIcon file={props.file} />}

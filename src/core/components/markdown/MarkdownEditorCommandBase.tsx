@@ -1,4 +1,4 @@
-import { DashboardContextData } from "../DashboardContext";
+import { DashboardContextData } from "../dashboardContext/DashboardContext";
 import { ControlledTextAreaAPI } from "./useControlledTextArea";
 
 // export type MarkdownContextMap = {

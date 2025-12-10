@@ -3,8 +3,7 @@ import { getHashedColor } from "@/shared/utils";
 import { wikiParseCanonicalWikiPath } from "../../wiki/shared/wikiUtils";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
-import { useDashboardContext } from "../DashboardContext";
-
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export interface WikiPageChipProps {
     slug: string;

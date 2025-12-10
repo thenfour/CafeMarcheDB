@@ -1,3 +1,5 @@
+import { Setting } from "@/shared/settingKeys";
+import { IsNullOrWhitespace } from "@/shared/utils";
 import { useSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
@@ -13,6 +15,7 @@ import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
+import { useBrand } from "../../../../shared/brandConfig";
 import { API } from "../../db3/clientAPI";
 import { getAbsoluteUrl } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -21,24 +24,21 @@ import { QrHelpers } from "../../db3/shared/qrApi";
 import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from "../CMCoreComponents2";
 import { ConfirmProvider } from "../ConfirmationDialog";
-import { DashboardContext, DashboardContextProvider, useFeatureRecorder } from "../DashboardContext";
+import { DashboardContextProvider, useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { LoginSignup } from "../LoginSignupForm";
 import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
-import {
-    SideMenu
-} from "./MenuStructure";
 import { MessageBoxProvider } from "../MessageBoxContext";
 import { MetronomeDialogButton } from "../Metronome";
 import { QrCodeButton } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
-import { SnackbarContext } from "../SnackbarContext";
 import { SettingMarkdown } from "../SettingMarkdown";
-import { Setting } from "@/shared/settingKeys";
+import { useSnackbar } from "../SnackbarContext";
+import {
+    SideMenu
+} from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
-import { useBrand } from "../../../../shared/brandConfig";
-import { IsNullOrWhitespace } from "@/shared/utils";
 
 const drawerWidth = 260;
 
@@ -50,9 +50,10 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
     const sess = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
     const isShowingAdminControls = !!sess.showAdminControls;
-    const [currentUser] = useCurrentUser();
+    const dashboardContext = useDashboardContext();
+    const currentUser = dashboardContext.currentUser;
     const recordFeature = useFeatureRecorder();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const { showMessage: showSnackbar } = useSnackbar();
 
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
 
@@ -225,7 +226,7 @@ interface PrimarySearchAppBarProps {
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const theme = useTheme();
     const router = useRouter();
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
     const session = useSession();
@@ -310,7 +311,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 }; // PrimarySearchAppBar
 
 const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission; }>) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
 

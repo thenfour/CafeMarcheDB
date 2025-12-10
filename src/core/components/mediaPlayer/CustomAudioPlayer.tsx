@@ -5,8 +5,8 @@ import { gIconMap } from "../../db3/components/IconMap";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerSlider } from "./MediaPlayerSlider";
-import { useClientTelemetryEvent } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
+import { useClientTelemetryEvent } from "../dashboardContext/DashboardContext";
 
 // Constants
 const DEFAULT_VOLUME = 75;

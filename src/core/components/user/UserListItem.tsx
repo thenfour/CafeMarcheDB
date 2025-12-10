@@ -9,8 +9,9 @@ import { GenericSearchListItem } from "../search/SearchListItem";
 import { UsersFilterSpec } from "./UserClientBaseTypes";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { StandardVariationSpec } from "../color/palette";
+import { EnrichedUser } from "../../db3/shared/schema/enrichedUserTypes";
 
-export type EnrichedVerboseUser = db3.EnrichedUser<db3.UserPayload>;
+export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
 
 type UserListItemProps = {
     index: number;

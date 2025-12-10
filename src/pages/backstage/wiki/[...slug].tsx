@@ -5,7 +5,6 @@ import { Permission } from "shared/permissions";
 import { SettingKey } from "shared/settingKeys";
 import { gSSP } from "src/blitz-server";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/wiki/WikiComponents";
 import { getAuthenticatedCtx } from "src/core/db3/server/db3mutationCore";
@@ -13,6 +12,7 @@ import { ActivityFeature } from "@/src/core/components/featureReports/activityTr
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { GetWikiPageCore } from "src/core/wiki/server/getWikiPageCore";
 import { wikiParsePathComponents, WikiPath } from "src/core/wiki/shared/wikiUtils";
+import { useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 const WikiPageComponent = ({ wikiPath, wikiPageId }: { wikiPath: WikiPath, wikiPageId: number | undefined }) => {

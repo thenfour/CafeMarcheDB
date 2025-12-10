@@ -1,15 +1,15 @@
 
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { TableAccessor, TAnyModel } from "shared/rootroot";
+import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
 import { BoolField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
-import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 
 // for basic user fields.
 // everyone can view
@@ -755,72 +755,3 @@ export const MakeVisiblePermissionField = (args: db3.DB3AuthSpec) => (
     new VisiblePermissionField(args)
 );
 
-
-////////////////////////////////////////////////////////////////
-// server API...
-
-export type EnrichUserInput = Partial<Prisma.UserGetPayload<{
-    include: {
-        tags: true,
-        instruments: true,
-    }
-}>>;
-export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
-    'tags'
-    | 'instruments'
-> & Prisma.UserGetPayload<{
-    select: {
-        role: true,
-        tags: {
-            include: {
-                userTag: true,
-            }
-        },
-        instruments: {
-            include: {
-                instrument: {
-                    include: {
-                        functionalGroup: true,
-                    }
-                }
-            }
-        }
-    },
-}>;
-
-
-// takes a bare event and applies eventstatus, type, visiblePermission, et al
-export function enrichUser<T extends EnrichUserInput>(
-    item: T,
-    roles: TableAccessor<Prisma.RoleGetPayload<{}>>,
-    userTags: TableAccessor<Prisma.UserTagGetPayload<{}>>,
-    instruments: TableAccessor<EnrichedInstrument<Prisma.InstrumentGetPayload<{}>>>
-): EnrichedUser<T> {
-    // original payload type,
-    // removing items we're replacing,
-    // + stuff we're adding/changing.
-    const ret = {
-        ...item,
-        role: roles.getById(item.roleId),
-
-        tags: (item.tags || []).map((assoc) => {
-            const ret: Prisma.UserTagAssignmentGetPayload<{ include: { userTag: true } }> = {
-                ...assoc,
-                userTag: userTags.getById(assoc.userTagId)! // enrich!
-            };
-            return ret;
-        }).sort((a, b) => a.userTag.sortOrder - b.userTag.sortOrder), // respect ordering
-
-        instruments: (item.instruments || []).map((assoc) => {
-            const ret: Prisma.UserInstrumentGetPayload<{ include: { instrument: { include: { functionalGroup: true } } } }> = {
-                ...assoc,
-                instrument: instruments.getById(assoc.instrumentId)! // enrich!
-            };
-            return ret;
-        }).sort((a, b) => a.instrument.sortOrder - b.instrument.sortOrder), // respect ordering
-    };
-
-    return ret;
-}
-
-export type EnrichedVerboseUser = EnrichedUser<UserPayload>;

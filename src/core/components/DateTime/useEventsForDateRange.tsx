@@ -5,8 +5,8 @@ import { DiscreteCriterionFilterType } from "../../db3/shared/apiTypes";
 import { useSearchableList } from "../../hooks/useSearchableList";
 import { eventSearchConfig } from "../../hooks/searchConfigs";
 import { EventOrderByColumnOptions, EventsFilterSpec } from "../event/EventClientBaseTypes";
-import { useDashboardContext } from "../DashboardContext";
 import { EventStatusSignificance } from "../../db3/db3";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export const useEventsForDateRange = (dateRange: DateTimeRange | null) => {
     const [events, setEvents] = React.useState<CalendarEventSpec[]>([]);

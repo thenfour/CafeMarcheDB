@@ -3,13 +3,13 @@ import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 import React from 'react';
 import { Permission } from "shared/permissions";
-import { DashboardContext } from "@components/DashboardContext";
 import { EventTableClientColumns } from "@components/event/EventComponentsBase";
 import { SettingMarkdown } from "@components/SettingMarkdown";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "@db3/components/db3DataGrid";
 import * as db3 from "@db3/db3";
 import * as DB3Client from "@db3/DB3Client";
 import DashboardLayout from "@components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter(); return <>
@@ -29,7 +29,7 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 };
 
 const MainContent = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,

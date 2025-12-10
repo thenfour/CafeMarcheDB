@@ -23,7 +23,6 @@ import { InstrumentChip } from "./CMCoreComponents";
 import { CMSmallButton, DotMenu } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
-import { DashboardContext, useDashboardContext, useFeatureRecorder } from './DashboardContext';
 import { VisibilityValue } from './VisibilityControl';
 import { EventChip } from './event/EventChips';
 import { ActivityFeature } from './featureReports/activityTracking';
@@ -38,9 +37,11 @@ import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
 import { SongChip } from './song/SongChip';
 import { WikiPageChip } from './wiki/WikiPageChip';
 import { TClientFileUploadTags } from '../db3/shared/fileTypes';
+import { EnrichedFile } from '../db3/shared/schema/enrichedFileTypes';
+import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
 
 
-type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
+type EnrichedFileEx = EnrichedFile<db3.FileWithTagsPayload>;
 
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
 //const gMaximumFilterTagsPerType = 10 as const;
@@ -52,14 +53,14 @@ type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedI
 
 export interface FileTagBase {
     id: number;
-    file: EnrichedFile;
+    file: EnrichedFileEx;
     fileId: number;
     // plus a songId, eventId, whatever...
 };
 
 //////////////////////////////////////////////////////////////////
 interface PinSongRecordingMenuItemProps {
-    value: EnrichedFile;
+    value: EnrichedFileEx;
     contextSong: MediaPlayerSongContextPayload;
     closeProc: () => void; // proc to close the menu.
     refetch?: () => void; // optional, if provided, will be called after pinning the file.
@@ -135,7 +136,7 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
 }
 
 
-export const FileExternalLink = ({ file, highlight }: { file: EnrichedFile, highlight?: boolean }) => {
+export const FileExternalLink = ({ file, highlight }: { file: EnrichedFileEx, highlight?: boolean }) => {
     const filenameClass = highlight ? "filename highlight" : "filename";
 
     return file.externalURI ? (
@@ -167,7 +168,7 @@ interface FileViewerHiddenTagIds {
 };
 
 interface FileViewerProps {
-    value: EnrichedFile;
+    value: EnrichedFileEx;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
     readonly: boolean;
     statHighlight: SortByKey;
@@ -359,8 +360,8 @@ interface FileEditorProps {
 };
 export const FileEditor = (props: FileEditorProps) => {
 
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const dashboardContext = React.useContext(DashboardContext);
+    const { showMessage: showSnackbar } = useSnackbar();
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const currentUser = useCurrentUser()[0]!;
@@ -614,7 +615,7 @@ const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): Calculate
 };
 
 export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const getInstrumentColor = (instrument: db3.InstrumentPayloadMinimum) => {
         const fg = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
@@ -820,7 +821,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileControlProps {
-    value: EnrichedFile;
+    value: EnrichedFileEx;
     readonly: boolean;
     refetch: () => void;
     statHighlight: SortByKey;
@@ -866,7 +867,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const [progress, setProgress] = React.useState<number | null>(null);
     const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const permissionId = dashboardContext.getDefaultVisibilityPermission().id;

@@ -13,12 +13,12 @@ import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
 import { DialogActionsCM } from "../CMCoreComponents2";
-import { DashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { EventSegmentClientColumns } from "./EventSegmentComponents";
 import { TAnyModel } from "@/shared/rootroot";
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -31,7 +31,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
     const router = useRouter();
 
@@ -176,7 +176,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
 export const NewEventButton = (props: {}) => {
     const [open, setOpen] = React.useState<boolean>(false);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     if (!dashboardContext.isAuthorized(Permission.manage_events)) {
         return null;

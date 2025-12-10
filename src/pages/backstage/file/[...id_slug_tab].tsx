@@ -23,7 +23,6 @@ import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext, useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
@@ -33,10 +32,12 @@ import { FileTagChip } from "@/src/core/components/file/FileChip";
 import { SongChip } from "@/src/core/components/song/SongChip";
 import { WikiPageChip } from "@/src/core/components/wiki/WikiPageChip";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { EnrichedFile, enrichFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
+import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 
 ////////////////////////////////////////////////////////////////
 export interface FileBreadcrumbProps {
-    file: db3.EnrichedFile<db3.FilePayload>,
+    file: EnrichedFile<db3.FilePayload>,
 };
 export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
     return <Breadcrumbs aria-label="breadcrumb">
@@ -63,14 +64,14 @@ export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
 
 
 interface FileDetailProps {
-    file: db3.EnrichedFile<db3.FilePayload>;
+    file: EnrichedFile<db3.FilePayload>;
     readonly: boolean;
     tableClient: DB3Client.xTableRenderClient<db3.FilePayload>;
 };
 
 
 const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const visInfo = dashboardContext.getVisibilityInfo(file);
     const recordFeature = useFeatureRecorder();
     const snackbar = useSnackbar();
@@ -258,7 +259,7 @@ const MyComponent = ({ fileId }: { fileId: number | null }) => {
     if (tableClient.items.length < 1) throw new Error(`File not found`);
 
     const fileRaw = tableClient.items[0]!;
-    const file = db3.enrichFile(fileRaw, dashboardContext);
+    const file = enrichFile(fileRaw, dashboardContext);
 
     return (
         <div className="fileDetailComponent">

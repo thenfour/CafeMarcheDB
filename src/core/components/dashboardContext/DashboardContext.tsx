@@ -11,18 +11,20 @@ import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls'
 import getDashboardData from 'src/auth/queries/getDashboardData';
 import * as db3 from "src/core/db3/db3";
 import { z } from 'zod';
-import { useAppContext } from './AppContext';
-import { GetStyleVariablesForColor } from './color/ColorClientUtils';
-import { ColorVariationSpec, gAppColors } from './color/palette';
-import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from './featureReports/activityTracking';
+import { useAppContext } from '../AppContext';
+import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
+import { ColorVariationSpec, gAppColors } from '../color/palette';
+import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUseClientActivityParams, ZTRecordActionArgs } from '../featureReports/activityTracking';
 import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
 import { useBrand } from '@/shared/brandConfig';
+import { DashboardContextDataBase } from './dashboardContextTypes';
+import { enrichInstrument } from '@db3/shared/schema/enrichedInstrumentTypes';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
 };
 
-export class DashboardContextData extends db3.DashboardContextDataBase {
+export class DashboardContextData extends DashboardContextDataBase {
     metronomeSilencers: (() => void)[];
     userClientIntention: db3.xTableClientUsageContext;
 
@@ -237,7 +239,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         }
     }));
 
-    valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => db3.enrichInstrument(i, valueRef.current)));
+    valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => enrichInstrument(i, valueRef.current)));
 
     return (
         <DashboardContext.Provider value={valueRef.current}>

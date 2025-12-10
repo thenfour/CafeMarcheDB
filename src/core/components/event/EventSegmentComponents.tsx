@@ -18,13 +18,13 @@ import { DB3EditObjectDialog } from '../../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../../db3/mutations/clearEventSegmentResponses";
 import copyEventSegmentResponses from "../../db3/mutations/copyEventSegmentResponses";
 import { useConfirm } from "../ConfirmationDialog";
-import { useDashboardContext } from "../DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
 import { Markdown } from "../markdown/Markdown";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { toSorted } from "shared/arrayUtils";
 import { Prisma } from "db";
 import { EventStatusValue } from "../event/EventChips";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 
@@ -60,9 +60,9 @@ interface EventSegmentEditDialogProps {
 };
 
 export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
-    const currentUser = useCurrentUser()[0]!;
+    //const currentUser = useCurrentUser()[0]!;
     const dashboardContext = useDashboardContext();
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
+    //const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', dash };
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSegment,
@@ -84,7 +84,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
             status: dashboardContext.eventStatus.getById(props.initialValue.statusId),
         }}
         onDelete={props.onDelete}
-        clientIntention={clientIntention}
+        clientIntention={dashboardContext.userClientIntention}
         onCancel={props.onCancel}
         onOK={props.onSave}
         table={tableSpec}

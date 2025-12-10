@@ -2,7 +2,6 @@ import { BlitzPage } from "@blitzjs/next";
 import React from 'react';
 import { Permission } from "shared/permissions";
 import { parseIntOrNull } from "shared/utils";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -24,8 +23,6 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MainContent = () => {
-    const dashboardContext = React.useContext(DashboardContext);
-
     const urlParams = new URLSearchParams(window.location.search);
     const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
 

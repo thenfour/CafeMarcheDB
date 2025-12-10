@@ -15,7 +15,6 @@ import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "s
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
-import { DashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
 import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/file/FileDrop";
 import { Markdown } from "src/core/components/markdown/Markdown";
@@ -36,6 +35,7 @@ import * as db3 from "src/core/db3/db3";
 import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
 import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImageParams } from "@/src/core/db3/shared/fileTypes";
 import { Size } from "recharts/types/util/types";
+import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 
@@ -51,7 +51,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     const [progress, setProgress] = React.useState<number | null>(null);
     //const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const permissionId = dashboardContext.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;

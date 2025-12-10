@@ -1,16 +1,17 @@
 
 import { assert } from 'blitz';
 import { Prisma } from "db";
-import React from 'react';
 import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
-import { DashboardContext } from "src/core/components/DashboardContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../../db3/components/DB3ClientCore';
 import { SearchResultsRet } from '../../db3/shared/apiTypes';
-import { DashboardContextData } from '../DashboardContext';
+import { EnrichedEvent, EnrichedSearchEventPayload } from '../../db3/shared/schema/enrichedEventTypes';
+import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
+import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
+import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
@@ -32,7 +33,7 @@ export interface EventWithMetadata<
     event: TEvent;
     tabSlug: string | undefined;
     eventURI: string;
-    responseInfo: db3.EventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse> | null;
+    responseInfo: EventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse> | null;
     eventTiming: Timing;
     expectedAttendanceTag: null | db3.EventResponses_ExpectedUserTag;
     dateRange: DateTimeRange,
@@ -47,17 +48,17 @@ export function CalculateEventMetadata<
 >(
     event: TEvent,
     tabSlug: string | undefined,
-    data: db3.DashboardContextDataBase,
-    userMap: db3.UserInstrumentList, // unique list of all relevant users.
+    data: DashboardContextDataBase,
+    userMap: UserInstrumentList, // unique list of all relevant users.
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null, // unique list of all invited user tags.
-    makeMockEventSegmentResponse: db3.fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>,
-    makeMockEventUserResponse: db3.fn_makeMockEventUserResponse<TEvent, TEventResponse>,
+    makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>,
+    makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>,
 ): EventWithMetadata<TEvent,
     TEventResponse,
     TEventSegment,
     TSegmentResponse> {
 
-    const responseInfo = db3.GetEventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse>({
+    const responseInfo = GetEventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse>({
         event,
         expectedAttendanceTag,
         data,
@@ -82,7 +83,7 @@ export function CalculateEventMetadata<
 
 
 
-export type EventEnrichedVerbose_Event = db3.EnrichedEvent<Prisma.EventGetPayload<typeof db3.EventArgs_Verbose>>;
+export type EventEnrichedVerbose_Event = EnrichedEvent<Prisma.EventGetPayload<typeof db3.EventArgs_Verbose>>;
 
 interface CalculateEventMetadata_VerboseArgs {
     event: EventEnrichedVerbose_Event,
@@ -127,7 +128,7 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
         }
     });
 
-    const userMap = dynMenuClient.items as db3.UserInstrumentList;
+    const userMap = dynMenuClient.items as UserInstrumentList;
 
     const eventData = CalculateEventMetadata<
         EventEnrichedVerbose_Event,
@@ -182,12 +183,12 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
 //////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CalcEventAttendanceArgs {
     eventData: EventWithMetadata<
-        db3.EnrichedSearchEventPayload,
+        EnrichedSearchEventPayload,
         db3.EventResponses_MinimalEventUserResponse,
         db3.EventResponses_MinimalEventSegment,
         db3.EventResponses_MinimalEventSegmentUserResponse
     >;
-    userMap: db3.UserInstrumentList,
+    userMap: UserInstrumentList,
 };
 
 export interface EventAttendanceResult {
@@ -228,7 +229,7 @@ export interface EventAttendanceResult {
 // eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
 // segmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
 export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttendanceResult => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const user = dashboardContext.currentUser!;
 
     //const alertOnly = CoalesceBool(props.alertOnly, false);
@@ -317,22 +318,22 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 export interface EventListItemProps {
-    event: db3.EnrichedSearchEventPayload;
+    event: EnrichedSearchEventPayload;
     results: SearchResultsRet;
     //refetch: () => void;
     //filterSpec: EventsFilterSpec;
 };
 
 export const CalculateEventSearchResultsMetadata = ({ event, results }: EventListItemProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
-    const userMap: db3.UserInstrumentList = [dashboardContext.currentUser!];
+    const userMap: UserInstrumentList = [dashboardContext.currentUser!];
     const customData = results.customData as db3.EventSearchCustomData;
     const userTags = (customData ? customData.userTags : []) as db3.EventResponses_ExpectedUserTag[];
     const expectedAttendanceUserTag = userTags.find(t => t.id === event.expectedAttendanceUserTagId) || null;
 
     const eventData = CalculateEventMetadata<
-        db3.EnrichedSearchEventPayload,
+        EnrichedSearchEventPayload,
         db3.EventSearch_EventUserResponse,
         db3.EventSearch_EventSegment,
         db3.EventSearch_EventSegmentUserResponse

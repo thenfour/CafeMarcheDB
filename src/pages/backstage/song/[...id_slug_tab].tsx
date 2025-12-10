@@ -4,7 +4,6 @@ import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { useDashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/song/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -12,6 +11,8 @@ import * as db3 from "src/core/db3/db3";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
+import { enrichSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();
@@ -63,7 +64,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     if (tableClient.items.length > 1) throw new Error(`db returned too many songs; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
     if (tableClient.items.length < 1) throw new Error(`Song not found`);
     const songRaw = tableClient.items[0]! as db3.SongPayload_Verbose;
-    const song = db3.enrichSong(songRaw, dashboardContext);
+    const song = enrichSong(songRaw, dashboardContext);
 
     return <div className="songsDetailComponent">
         <NewSongButton />

@@ -8,6 +8,7 @@ import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression2 } from "src/core/db3/shared/db3Helpers";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
+import { SharedAPI } from "../shared/sharedAPI";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -99,7 +100,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
         }
 
         const makeSongInfo = (x: typeof songs[0]): QuickSearchItemMatch => {
-            const absoluteUri = process.env.CMDB_BASE_URL + `backstage/song/${x.id}/${slugify(x.name || "")}`;
+            const absoluteUri = SharedAPI.serverGetAbsoluteUri(`/backstage/song/${x.id}/${slugify(x.name || "")}`);
             let bestMatch = CalculateMatchStrength(songFields, x, query);
 
             const bestMatchForTags = CalculateMatchStrengthForTags(songTagField, x.tags.map(st => st.tag), query);
@@ -208,7 +209,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
             });
         }
         const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch => {
-            const absoluteUri = process.env.CMDB_BASE_URL + `backstage/event/${x.id}/${slugify(x.name || "")}`;
+            const absoluteUri = SharedAPI.serverGetAbsoluteUri(`/backstage/event/${x.id}/${slugify(x.name || "")}`);
 
             let bestMatch = CalculateMatchStrength(eventFields, x, query);
 
@@ -266,7 +267,6 @@ const UserQuickSearchPlugin: QuickSearchPlugin = {
         });
 
         const makeUserInfo = (x: typeof users[0]): QuickSearchItemMatch => {
-            //const absoluteUri = process.env.CMDB_BASE_URL + `backstage/song/${x.id}/${slugify(x.name || "")}`;
             const bestMatch = CalculateMatchStrength(userFields, x, query);
             return {
                 id: x.id,
@@ -339,7 +339,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
         const wikiPages = await db.wikiPage.findMany(wikiArgs);
 
         const makeWikiPageInfo = (x: typeof wikiPages[0]): QuickSearchItemMatch => {
-            const absoluteUri = process.env.CMDB_BASE_URL + `backstage/wiki/${x.slug}`; // 
+            const absoluteUri = SharedAPI.serverGetAbsoluteUri(`/backstage/wiki/${x.slug}`); // 
             let bestMatch = CalculateMatchStrength(wikiPageFields, x, query);
             if (x.currentRevision) {
                 const bestMatchForRevision = CalculateMatchStrength(wikiPageRevisionFields, x.currentRevision, query);

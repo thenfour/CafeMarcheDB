@@ -7,7 +7,6 @@ import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from 'src/core/components/CMCoreComponents';
 import { CMTextInputBase } from 'src/core/components/CMTextField';
-import { useDashboardContext } from 'src/core/components/DashboardContext';
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { useSnackbar } from 'src/core/components/SnackbarContext';
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -18,6 +17,7 @@ import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { ColorPick } from "@/src/core/components/color/ColorPick";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 // export type EventCustomFieldOption = {
 //     label: string,

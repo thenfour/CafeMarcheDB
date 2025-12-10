@@ -14,7 +14,6 @@ import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
 import { CMLink } from "../CMLink";
 import { CMTable } from "../CMTable";
 import { StandardVariationSpec } from "../color/palette";
-import { useDashboardContext } from "../DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { AttendanceChip } from "../event/AttendanceChips";
 import { EventChip } from "../event/EventChips";
@@ -23,10 +22,12 @@ import { SongChip } from "../song/SongChip";
 import { useSongsContext } from "../song/SongsContext";
 import { UserChip } from "./userChip";
 import { AddUserButton } from "./UserComponents";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { EnrichedVerboseUser } from "./UserListItem";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {
-    user: db3.EnrichedVerboseUser;
+    user: EnrichedVerboseUser;
 };
 export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -172,7 +173,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 
 ////////////////////////////////////////////////////////////////
 type UserCreditsTabContentProps = {
-    user: db3.EnrichedVerboseUser;
+    user: EnrichedVerboseUser;
 };
 export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -238,7 +239,7 @@ export const UserCreditsTabContent = (props: UserCreditsTabContentProps) => {
 
 ////////////////////////////////////////////////////////////////
 type UserWikiContributionsTabContentProps = {
-    user: db3.EnrichedVerboseUser;
+    user: EnrichedVerboseUser;
 };
 export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabContentProps) => {
     const dashboardContext = useDashboardContext();
@@ -311,7 +312,7 @@ export const UserWikiContributionsTabContent = (props: UserWikiContributionsTabC
 
 ////////////////////////////////////////////////////////////////
 type UserMassAnalysisTabContentProps = {
-    user: db3.EnrichedVerboseUser;
+    user: EnrichedVerboseUser;
 };
 
 export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProps) => {

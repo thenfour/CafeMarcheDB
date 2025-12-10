@@ -10,8 +10,8 @@ import { useLocalStorageState } from "../useLocalStorageState";
 import { MediaPlayerContextType, MediaPlayerTrack } from "./MediaPlayerTypes";
 import { Tooltip } from "@mui/material";
 import { AppContextMarker } from "../AppContext";
-import { useClientTelemetryEvent } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
+import { useClientTelemetryEvent } from "../dashboardContext/DashboardContext";
 
 const TEN_MINUTES = 10 * 60;          // 600 s
 const MIN_ROW_PX = 120;              // visual floor (unchanged)

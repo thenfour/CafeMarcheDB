@@ -6,8 +6,8 @@ import { RenderMuiIcon } from "../../db3/components/IconMap";
 import { useDb3Query } from "../../db3/DB3Client";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
-import { useDashboardContext } from "../DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 // we want the tooltip to actually be quite complete.
 // - the attendance response & description

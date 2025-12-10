@@ -14,7 +14,6 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import { GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
 import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
 import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
-import { useDashboardContext } from "../DashboardContext";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
 import { Markdown } from "../markdown/Markdown";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
@@ -23,6 +22,7 @@ import { SetlistPlanMutator } from "./SetlistPlanUtilities";
 import { ColorPick } from "../color/ColorPick";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 import { AttendanceChip } from "../event/AttendanceChips";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 //import getUserEventAttendance from "src/core/db3/queries/getUserEventAttendance";
 
 

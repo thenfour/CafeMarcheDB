@@ -5,8 +5,8 @@ import { generateQrApiUrl, QrCodeErrorCorrectionLevel, QrContentConfig, QrHelper
 import { CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { DialogActionsCM, DotMenu } from './CMCoreComponents2';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
-import { useClientTelemetryEvent } from './DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
+import { useClientTelemetryEvent } from './dashboardContext/DashboardContext';
 
 interface QrCodeProps {
     content: QrContentConfig;

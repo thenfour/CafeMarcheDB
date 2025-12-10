@@ -1,5 +1,6 @@
 import { CMTable, CMTableSlot } from "@/src/core/components/CMTable";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { getURIForFile } from "@/src/core/db3/clientAPILL";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
@@ -8,7 +9,6 @@ import { Permission } from "shared/permissions";
 import { formatFileSize } from "shared/rootroot";
 import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS } from "shared/time";
 import { InspectObject, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { ActivityLogUserChip } from "src/core/db3/DB3Client";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
@@ -146,7 +146,7 @@ enum TabId {
 
 
 const MainContent = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const [tabId, setTabId] = React.useState<TabId>(TabId.Database);
     const [serverHealthResults, serverHealthQueryResult] = useQuery(getServerHealth, {});
     //console.log(serverHealthResults.env);

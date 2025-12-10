@@ -2,9 +2,9 @@ import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
 import { getURIForSong } from "../../db3/clientAPILL";
-import { useDashboardContext } from "../DashboardContext";
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 

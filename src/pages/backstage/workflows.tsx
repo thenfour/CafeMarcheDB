@@ -8,7 +8,6 @@ import { MakeNewWorkflowDef, mapWorkflowDef, WorkflowDef, WorkflowDefToMutationA
 import { CMSingleSelect } from "src/core/components/select/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { WorkflowEditorForEvent } from "src/core/components/workflow/WorkflowEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -17,6 +16,7 @@ import * as db3 from "src/core/db3/db3";
 import deleteWorkflowDefMutation from "src/core/db3/mutations/deleteWorkflowDefMutation";
 import insertOrUpdateWorkflowDefMutation from "src/core/db3/mutations/insertOrUpdateWorkflowDefMutation";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 type ModeOption = "empty" | "new" | "edit";
 

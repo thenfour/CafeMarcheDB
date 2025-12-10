@@ -7,8 +7,8 @@ import { CustomAudioPlayer, CustomAudioPlayerAPI } from "./CustomAudioPlayer";
 import { MediaPlayerContextType } from "./MediaPlayerTypes";
 import { SetlistVisualizationBars } from "./SetlistVisualizationBar";
 import { AppContextMarker } from "../AppContext";
-import { useClientTelemetryEvent } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
+import { useClientTelemetryEvent } from "../dashboardContext/DashboardContext";
 
 export const AnimatedFauxEqualizer: React.FC<{
     className?: string;

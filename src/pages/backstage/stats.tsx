@@ -8,7 +8,6 @@ import { getEnumValues } from "shared/utils";
 import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
 import { CMChip } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/search/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForSong } from "src/core/db3/clientAPILL";
@@ -17,6 +16,7 @@ import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { StandardVariationSpec } from "@/src/core/components/color/palette";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 
@@ -29,7 +29,7 @@ interface GlobalStatsFilterControlsProps {
 }
 
 export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFilterSpec }: GlobalStatsFilterControlsProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const hasExtraFilters = () => {
         if (!arraysContainSameValues(filterSpec.eventStatusIds, defaultFilterSpec.eventStatusIds)) return true;
@@ -186,7 +186,7 @@ const StatsPageQuerier = (props: StatsPageQuerierProps) => {
 
 
 const StatsPageInner = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const defaultFilterSpec: GetGlobalStatsFilterSpec = {
         // primary

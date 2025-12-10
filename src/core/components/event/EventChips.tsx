@@ -8,7 +8,6 @@ import React from "react";
 import { CoalesceBool, getHashedColor, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions, CMStandardDBChip } from "../CMChip";
-import { useDashboardContext } from "../DashboardContext";
 import { getURIForEvent } from "../../db3/clientAPILL";
 import { CMStatusIndicator } from "../CMCoreComponents";
 import { Tooltip } from "@mui/material";
@@ -17,6 +16,7 @@ import { RenderMuiIcon } from "../../db3/components/IconMap";
 import { ColorVariationSpec, StandardVariationSpec } from "../color/palette";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 import { Permission } from "@/shared/permissions";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 
 export interface EventStatusChipProps {

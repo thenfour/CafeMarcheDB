@@ -7,7 +7,6 @@ import { DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -21,6 +20,7 @@ import { TGetImportEventDataRet, TinsertEventArgs } from "src/core/db3/shared/ap
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { DateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 import { TAnyModel } from "@/shared/rootroot";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 interface InsertResult {
     event: {
@@ -42,7 +42,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
         const ret = db3.xEvent.createNew(clientIntention) as Partial<db3.EventPayload>;
         return ret as any;

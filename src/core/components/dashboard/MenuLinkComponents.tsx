@@ -15,10 +15,11 @@ import { DB3EditRowButton, type DB3EditRowButtonAPI } from '../../db3/components
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { KeyValueDisplay } from '../CMCoreComponents2';
 import { CMTextInputBase, type CMTextInputBaseProps } from "../CMTextField";
-import { DashboardContext, useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { VisibilityValue } from "../VisibilityControl";
 import { AppContextMarker } from "../AppContext";
 import { CMLink } from "../CMLink";
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import { enrichMenuLink } from "../../db3/shared/schema/enrichedMenuLinkTypes";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -215,7 +216,7 @@ export class SearchableWikiSlugColumnClient extends DB3Client.GenericStringColum
 export const MenuLinkList = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const client = DB3Client.useTableRenderContext({
@@ -271,7 +272,7 @@ export const MenuLinkList = () => {
     };
 
     const itemsRaw = client.items as db3.MenuLinkPayload[];
-    const items = itemsRaw.map(i => db3.enrichMenuLink(i, dashboardContext));
+    const items = itemsRaw.map(i => enrichMenuLink(i, dashboardContext));
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved

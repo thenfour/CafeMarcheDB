@@ -6,7 +6,6 @@ import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext, useRecordFeatureUse } from "src/core/components/DashboardContext";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/event/EventComponents";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
@@ -15,11 +14,13 @@ import * as db3 from "src/core/db3/db3";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
+import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = React.useState<number>(0);
 
     //if (!idOrSlug) return <div>no event specified</div>;
@@ -66,7 +67,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
-    const event = eventRaw ? db3.enrichSearchResultEvent(eventRaw, dashboardContext) : null;
+    const event = eventRaw ? enrichSearchResultEvent(eventRaw, dashboardContext) : null;
 
     const refetch = () => {
         tableClient.refetch();

@@ -1,7 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import React from 'react';
 import { Permission } from "shared/permissions";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -10,8 +9,6 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MainContent = () => {
-    const dashboardContext = React.useContext(DashboardContext);
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xFile,
         columns: [

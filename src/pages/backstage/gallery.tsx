@@ -13,7 +13,6 @@ import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { InspectObject, KeyValueDisplay, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
@@ -32,6 +31,7 @@ import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilte
 import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
 import AbcNotationRenderer from "@/src/core/components/AbcNotationRenderer";
 import { QrTester } from "@/src/core/components/QrCode";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 interface FilterSpec {
     qfText: string;
@@ -50,7 +50,7 @@ const FilterControlsTester = () => {
         selectedTiming: Timing.Present,
     };
     const [spec, setSpec] = React.useState<FilterSpec>(defaultFilter);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const HasExtraFilters = (val: FilterSpec) => {
         if (!arraysContainSameValues(val.selectedSongTagIds, defaultFilter.selectedSongTagIds)) return true;

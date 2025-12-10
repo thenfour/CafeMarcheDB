@@ -5,7 +5,7 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { gIconMap } from '../../db3/components/IconMap';
-import { useClientTelemetryEvent } from '../DashboardContext';
+import { useClientTelemetryEvent } from '../dashboardContext/DashboardContext';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { useMediaPlayer } from '../mediaPlayer/MediaPlayerContext';
 import { MediaPlayerTrack } from '../mediaPlayer/MediaPlayerTypes';

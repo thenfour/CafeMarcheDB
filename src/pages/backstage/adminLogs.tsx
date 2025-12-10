@@ -9,7 +9,6 @@ import { CoerceToNumberOrNull, IsNullOrWhitespace, getHashedColor } from "shared
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { getURIForUser } from "src/core/db3/clientAPILL";
@@ -18,6 +17,7 @@ import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { StandardVariationSpec } from "@/src/core/components/color/palette";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 type AdHocUser = Prisma.UserGetPayload<{
     select: {
@@ -44,7 +44,7 @@ const MainContent = () => {
     const [userNameFilter, setUserNameFilter] = React.useState<string>("");
     const [tableNames, setTableNames] = React.useState<string[]>([]);
     const [users, setUsers] = React.useState<AdHocUser[]>([]);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
 

@@ -31,7 +31,6 @@ import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponen
 import { AdminInspectObject, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
 import { CMTextInputBase } from '../CMTextField';
-import { DashboardContext, DashboardContextData, useDashboardContext, useFeatureRecorder } from '../DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { EventStatusChip } from '../event/EventChips';
 import { EventAttendanceControl } from '../EventAttendanceComponents';
@@ -59,6 +58,10 @@ import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '.
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { AttendanceChip } from './AttendanceChips';
 import { HostingMode } from '@/shared/brandConfigBase';
+import { EventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
+import { DashboardContextData, useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';
+import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
+import { EnrichedSearchEventPayload, enrichSearchResultEvent } from '../../db3/shared/schema/enrichedEventTypes';
 
 // type EventWithTypePayload = Prisma.EventGetPayload<{
 //     include: {
@@ -73,7 +76,7 @@ import { HostingMode } from '@/shared/brandConfigBase';
 
 
 
-type VerboseEventResponseInfo = db3.EventResponseInfo<
+type VerboseEventResponseInfo = EventResponseInfo<
     EventEnrichedVerbose_Event,
     db3.EventVerbose_EventSegment,
     db3.EventVerbose_EventUserResponse,
@@ -304,7 +307,7 @@ interface EventCustomFieldsControlProps {
 
 export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) => {
     const [open, setOpen] = React.useState<boolean>(false);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const recordFeature = useFeatureRecorder();
 
@@ -412,7 +415,7 @@ export interface EventAttendanceEditDialogProps {
     responseInfo: VerboseEventResponseInfo;
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
-    userMap: db3.UserInstrumentList;
+    userMap: UserInstrumentList;
     refetch: () => void;
 
     onCancel: () => void;
@@ -429,7 +432,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const mutationToken = API.events.updateUserEventAttendance.useToken();
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
     const [showCancelledSegments, setShowCancelledSegments] = React.useState<boolean>(false);
 
@@ -587,7 +590,7 @@ export interface EventAttendanceEditButtonProps {
     responseInfo: VerboseEventResponseInfo;
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
-    userMap: db3.UserInstrumentList;
+    userMap: UserInstrumentList;
     refetch: () => void;
 };
 export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps) => {
@@ -611,7 +614,7 @@ export interface EventAttendanceDetailRowProps {
     responseInfo: VerboseEventResponseInfo;
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
-    userMap: db3.UserInstrumentList;
+    userMap: UserInstrumentList;
     showCancelledSegments: boolean;
     refetch: () => void;
     readonly: boolean;
@@ -619,7 +622,7 @@ export interface EventAttendanceDetailRowProps {
 
 export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly, userMap, showCancelledSegments }: EventAttendanceDetailRowProps) => {
     const currentUser = useCurrentUser()[0]!;
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const realUser: { color: string | null } & typeof user = {
         ...user,
@@ -697,7 +700,7 @@ export interface EventAttendanceDetailProps {
     //functionalGroups: db3.InstrumentFunctionalGroupPayload[];
     refetch: () => void;
     readonly: boolean;
-    userMap: db3.UserInstrumentList;
+    userMap: UserInstrumentList;
 };
 
 type EventAttendanceDetailSortField = "user" | "instrument" | "response";
@@ -706,7 +709,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     if (!eventData.responseInfo) return null;
     const event = eventData.event;
     const responseInfo = eventData.responseInfo;
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const token = API.events.updateUserEventAttendance.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
@@ -907,7 +910,7 @@ export const EventAttendanceUserTagValue = (props: EventAttendanceUserTagValuePr
 export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: db3.EventWithAttendanceUserTagPayload, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const user = useCurrentUser()[0]!;
@@ -989,7 +992,7 @@ const EventSegmentAttendeeStat = (props: { stat: SegmentResponseStat }) => {
     </div>;
 };
 
-const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: number, eventData: VerboseEventWithMetadata, userMap: db3.UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
+const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: number, eventData: VerboseEventWithMetadata, userMap: UserInstrumentList, dashboardContext: DashboardContextData): string[] => {
     const responseInfo = eventData.responseInfo!;
     const segmentResponses = responseInfo.getResponsesForSegment(segmentId)
         .filter(r => dashboardContext.isAttendanceIdGoing(r.response.attendanceId));
@@ -1004,13 +1007,13 @@ const GetSegmentAttendeeNames = (copyInstrumentNames: boolean, segmentId: number
 
 export interface EventCompletenessTabContentProps {
     eventData: VerboseEventWithMetadata;
-    userMap: db3.UserInstrumentList;
+    userMap: UserInstrumentList;
     readonly: boolean;
     refetch: () => void;
 }
 
 export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: EventCompletenessTabContentProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const event = eventData.event;
     const responseInfo = eventData.responseInfo;
@@ -1401,11 +1404,11 @@ type EventDetailFullTabAreaProps = EventDetailFullProps & {
     selectedTab: string;
     setSelectedTab: (v: string) => void;
     eventData: VerboseEventWithMetadata;
-    userMap: db3.UserInstrumentList;
+    userMap: UserInstrumentList;
 };
 
 export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const handleTabChange = (_: undefined | React.SyntheticEvent, newValue: string) => {
         props.setSelectedTab(newValue);
@@ -1424,7 +1427,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
     const enrichedFiles = eventData.event.fileTags.map(ft => {
         return {
             ...ft,
-            file: db3.enrichFile(ft.file, dashboardContext),
+            file: enrichFile(ft.file, dashboardContext),
         };
     });
     //const elevation = 1;
@@ -1542,7 +1545,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
     const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
     const tabSlug = selectedTab;//Object.keys(gEventDetailTabSlugIndices)[selectedTab];
     const router = useRouter();
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     const { eventData, userMap } = CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContext });
 
@@ -1586,8 +1589,8 @@ export interface EventSearchItemContainerProps {
 }
 
 export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
-    const dashboardContext = React.useContext(DashboardContext);
-    const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
+    const dashboardContext = useDashboardContext();
+    const event = enrichSearchResultEvent(props.event, dashboardContext);
 
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusIds || [];
@@ -1694,7 +1697,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 };
 
 export interface EventListItemProps {
-    event: db3.EnrichedSearchEventPayload;
+    event: EnrichedSearchEventPayload;
     results: SearchResultsRet;
     refetch: () => void;
     filterSpec?: EventsFilterSpec; // for highlighting matching fields

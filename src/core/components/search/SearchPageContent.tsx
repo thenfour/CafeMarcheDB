@@ -1,10 +1,10 @@
 import React from "react";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { SearchPageFilterControls, createFilterGroupConfig } from "./SearchPageFilterControls";
 import { SearchResultsList } from "./SearchResultsList";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { DiscreteFilterState, useSearchPage } from "src/core/hooks/useSearchFilters";
 import { SearchableListConfig, useSearchableList } from "src/core/hooks/useSearchableList";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Configuration interfaces for SearchPageContent
@@ -71,7 +71,7 @@ export const SearchPageContent = <
     filterGroupDefinitions,
     searchPageHook
 }: SearchPageContentProps<TStaticFilterSpec, TFilterSpec, TRawItem, TItem>): React.JSX.Element => {
-    const dashboardContext = React.useContext(DashboardContext);    // Get data using the configured search config
+    const dashboardContext = useDashboardContext();
     const dataHookRet = useSearchableList(searchPageHook.filterSpec, config.searchConfig);
     const { enrichedItems = [], results, loadMoreData } = dataHookRet;
 

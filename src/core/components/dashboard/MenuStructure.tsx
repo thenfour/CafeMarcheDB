@@ -11,11 +11,11 @@ import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from '../CMCoreComponents2';
-import { DashboardContext, DashboardContextData, useClientTelemetryEvent } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { useLocalStorageSet } from "../useLocalStorageState";
 import { gMenuSections, MenuLink, MenuSection, NavRealm } from './StaticMenuItems';
 import { HostingMode } from '@/shared/brandConfigBase';
+import { DashboardContextData, useClientTelemetryEvent, useDashboardContext } from '../dashboardContext/DashboardContext';
 
 // NOTE: types look like this:
 
@@ -477,7 +477,7 @@ interface SideMenuProps {
 }
 
 export const SideMenu = ({ navRealm, open, onClose, variant, drawerWidth, theme }: SideMenuProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const router = useRouter();    // Initialize expanded sections with default expanded sections
     const getInitialExpandedSections = React.useCallback(() => {
         const expanded = new Set<string>();

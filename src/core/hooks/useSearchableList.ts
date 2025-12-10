@@ -1,8 +1,8 @@
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { DashboardContext } from 'src/core/components/DashboardContext';
-import { SnackbarContext } from 'src/core/components/SnackbarContext';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet } from 'src/core/db3/shared/apiTypes';
+import { useDashboardContext } from '../components/dashboardContext/DashboardContext';
 import { fetchSearchResultsApi } from '../components/search/SearchBase';
+import { useSnackbar } from '../components/SnackbarContext';
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -33,8 +33,8 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
     config: SearchableListConfig<TFilterSpec, TRawItem, TEnrichedItem>,
     pageSize: number = DEFAULT_PAGE_SIZE
 ): UseSearchableListResult<TEnrichedItem> {
-    const dashboardContext = useContext(DashboardContext);
-    const snackbarContext = useContext(SnackbarContext);
+    const dashboardContext = useDashboardContext();
+    const snackbarContext = useSnackbar();
 
     const filterSpecHash = JSON.stringify(filterSpec);
 

@@ -7,7 +7,6 @@ import { Permission } from 'shared/permissions';
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
 import { CMDBUploadFile } from '../file/CMDBUploadFile';
-import { useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { useSnackbar } from '../SnackbarContext';
 import { Markdown } from './Markdown';
 import { MarkdownCommandInvocationTriggerMap, MarkdownEditorCommand, MarkdownEditorCommandApi } from './MarkdownEditorCommandBase';
@@ -18,6 +17,7 @@ import { MarkdownEditor } from "./RichTextEditor";
 import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 
 const kMaxImageDimension = 750;
 const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";

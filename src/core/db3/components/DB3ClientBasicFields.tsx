@@ -27,7 +27,6 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { type CMDBTableFilterModel } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import type { SettingKey } from "shared/settingKeys";
 import { GenericStringField } from "../shared/genericStringField";
@@ -35,6 +34,7 @@ import { ColorSwatch } from "../../components/color/ColorSwatch";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 import { ColorPick } from "../../components/color/ColorPick";
 import { gNullValue, TAnyModel } from "@/shared/rootroot";
+import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {

@@ -3,6 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { ForgotPassword } from "../schemas"
 import { Permission } from "shared/permissions"
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 
@@ -41,7 +42,7 @@ export default resolver.pipe(
     }
 
     // 8. Return the same result whether a password reset email was sent or not
-    const origin = process.env.CMDB_BASE_URL || process.env.APP_ORIGIN || process.env.BLITZ_DEV_SERVER_ORIGIN;
-    const resetUrl = `${origin}/auth/reset-password?token=${token}`
+
+    const resetUrl = SharedAPI.serverGetAbsoluteUri(`/auth/reset-password?token=${token}`);
     return resetUrl;
   })

@@ -8,7 +8,6 @@ import React, { Suspense } from "react";
 import { formatFileSize } from "shared/rootroot";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSmallButton, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { getURIForEvent } from "../clientAPILL";
@@ -26,6 +25,7 @@ import { GenericStringField } from "../shared/genericStringField";
 import { CMTable } from "../../components/CMTable";
 import { gGeneralPaletteList, gStrong } from "../../components/color/palette";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
+import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;

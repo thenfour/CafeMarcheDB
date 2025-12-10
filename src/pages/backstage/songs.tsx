@@ -5,7 +5,6 @@ import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
@@ -15,6 +14,8 @@ import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { songSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { EnrichedVerboseSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
 
 
 // for serializing in compact querystring
@@ -49,7 +50,7 @@ const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultS
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SongListOuter = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
@@ -94,7 +95,7 @@ const SongListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, db3.SongPayload_Verbose, db3.EnrichedVerboseSong> = {
+    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, db3.SongPayload_Verbose, EnrichedVerboseSong> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: SongOrderByColumnOptions,

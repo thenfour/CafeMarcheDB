@@ -10,7 +10,6 @@ import { DiscreteCriterionFilterType, SearchResultsRet } from '../db3/shared/api
 import { AppContextMarker } from "./AppContext";
 import { CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { AdminInspectObject, useURLState } from './CMCoreComponents2';
-import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult } from './event/EventComponentsBase';
 import { useSearchableList } from 'src/core/hooks/useSearchableList';
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
@@ -19,17 +18,19 @@ import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClient
 import { DateToYYYYMMDD } from "@/shared/time";
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
+import { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
+import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 
 // attach useful data to the event for passing around the calendar.
 type EventWithSearchResult = {
-    event: db3.EnrichedSearchEventPayload;
+    event: EnrichedSearchEventPayload;
     result: SearchResultsRet;
 }
 
 type TCalendarEventItem = {
-    segment: db3.EnrichedSearchEventPayload["segments"][0];
-    event: db3.EnrichedSearchEventPayload;
+    segment: EnrichedSearchEventPayload["segments"][0];
+    event: EnrichedSearchEventPayload;
     result: SearchResultsRet;
     isSingleSegmentEvent: boolean;
 };
@@ -100,7 +101,7 @@ interface AttendanceIndicatorProps {
 };
 
 const AttendanceIndicator = (props: AttendanceIndicatorProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     // many cases don't show anything.
     if (!props.attendanceInfo.visible) return null;
@@ -179,7 +180,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     // moment.locale('nl-be'); // doesn't work.
     const localizer = momentLocalizer(moment) // or globalizeLocalizer
 
-    const isSegmentCancelled = (segment: db3.EnrichedSearchEventPayload["segments"][0]) => {
+    const isSegmentCancelled = (segment: EnrichedSearchEventPayload["segments"][0]) => {
         const status = dashboardContext.eventStatus.getById(segment.statusId);
         return (status?.significance === db3.EventStatusSignificance.Cancelled);
     };

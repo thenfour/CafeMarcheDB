@@ -5,7 +5,6 @@ import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForFile } from "src/core/db3/clientAPILL";
@@ -15,6 +14,7 @@ import { fileSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { EnrichedFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {
@@ -54,7 +54,6 @@ const gStaticFilters: FilesFilterSpecStatic[] = []
 
 
 const FileListOuter = () => {
-    const dashboardContext = React.useContext(DashboardContext);
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
@@ -112,7 +111,7 @@ const FileListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<FilesFilterSpecStatic, FilesFilterSpec, db3.FilePayload, db3.EnrichedFile<db3.FilePayload>> = {
+    const config: SearchPageContentConfig<FilesFilterSpecStatic, FilesFilterSpec, db3.FilePayload, EnrichedFile<db3.FilePayload>> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: FileOrderByColumnOptions,

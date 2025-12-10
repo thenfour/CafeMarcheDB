@@ -10,7 +10,6 @@ import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { AdminContainer, AdminInspectObject, InspectObject, NameValuePair } from "../CMCoreComponents2";
 import { CMTextField } from "../CMTextField";
-import { DashboardContextData, useDashboardContext } from "../DashboardContext";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
@@ -29,6 +28,7 @@ import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding,
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { ColorPick } from "../color/ColorPick";
 import { gGeneralPaletteList } from "../color/palette";
+import { DashboardContextData, useDashboardContext } from "../dashboardContext/DashboardContext";
 
 const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
     const ret: MockEventModel = {

@@ -2,17 +2,17 @@ import { Permission } from "@/shared/permissions";
 import React, { Suspense } from "react";
 import { StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
-import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
-import { useDashboardContext } from "../DashboardContext";
 import { CMTab, CMTabPanel } from "../TabPanel";
+import { StandardVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { SongsProvider } from "../song/SongsContext";
 import { UserAdminPanel } from "./UserAdminPanel";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
-import { StandardVariationSpec } from "../color/palette";
+import { EnrichedVerboseUser } from "./UserListItem";
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -24,7 +24,7 @@ export enum UserDetailTabSlug {
 
 ////////////////////////////////////////////////////////////////
 export interface UserDetailArgs {
-    user: db3.EnrichedVerboseUser;
+    user: EnrichedVerboseUser;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTab?: UserDetailTabSlug;

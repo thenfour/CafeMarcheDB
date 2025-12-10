@@ -6,8 +6,8 @@ import * as db3 from "src/core/db3/db3";
 import { getHashedColor } from "shared/utils";
 import { getURIForUser } from "../../db3/clientAPILL";
 import { ColorVariationSpec } from "../color/palette";
-import { useDashboardContext } from "../DashboardContext";
 import { Permission } from "@/shared/permissions";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 export interface UserChipBaseProps {

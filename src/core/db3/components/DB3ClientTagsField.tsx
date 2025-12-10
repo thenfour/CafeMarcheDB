@@ -25,7 +25,6 @@ import getSetting from 'src/auth/queries/getSetting';
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
 import { CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
 import { SearchInput } from 'src/core/components/CMTextField';
-import { useDashboardContext } from 'src/core/components/DashboardContext';
 import { ReactiveInputDialog } from 'src/core/components/ReactiveInputDialog';
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -37,6 +36,7 @@ import type { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { RenderMuiIcon } from './IconMap';
 import { type ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
 import { TAnyModel } from '@/shared/rootroot';
+import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 
 
 const gMaxVisibleTags = 6;

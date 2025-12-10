@@ -16,12 +16,12 @@ import { CMChip, CMChipContainer } from "../CMChip";
 import { EditTextField } from "../CMCoreComponents";
 import { CMDialogContentText, DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
-import { DashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
+import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 
 
 
@@ -327,7 +327,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const confirm = useConfirm();
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
     const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {

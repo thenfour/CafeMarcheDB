@@ -5,7 +5,6 @@ import { CoalesceBool } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMDialogContentText, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import * as db3 from "src/core/db3/db3";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { CMDBTableFilterModel } from "../shared/apiTypes";
 import { SearchInput } from "src/core/components/CMTextField";
@@ -17,6 +16,7 @@ import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { StandardVariationSpec } from "../../components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
+import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 
 type Tnull = undefined | null;
 

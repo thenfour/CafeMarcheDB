@@ -6,7 +6,7 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { useFeatureRecorder } from "./DashboardContext";
+import { useFeatureRecorder } from "./dashboardContext/DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

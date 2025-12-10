@@ -1,12 +1,13 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { sortEvents } from "@/src/core/db3/shared/apiTypes";
+import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventDetailContainer } from "src/core/components/event/EventComponents";
 import { CalculateEventMetadata_Verbose } from "src/core/components/event/EventComponentsBase";
 import { EventFrontpageTabContent } from "src/core/components/event/EventFrontpageComponents";
@@ -16,7 +17,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 const EventsList = () => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
 
@@ -45,7 +46,7 @@ const EventsList = () => {
     });
 
     const eventsRaw = eventsClient.items as db3.EventClientPayload_Verbose[];
-    const eventsRich = eventsRaw.map(e => db3.enrichSearchResultEvent(e, dashboardContext));
+    const eventsRich = eventsRaw.map(e => enrichSearchResultEvent(e, dashboardContext));
 
     const events = sortEvents(eventsRich);
 

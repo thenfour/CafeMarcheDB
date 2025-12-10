@@ -8,9 +8,9 @@ import { Tooltip } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { DashboardContext } from './DashboardContext';
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
+import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 // Aligned version that shows all possible tags with consistent spacing
 // Tags with the same sort order can share the same lane
@@ -18,7 +18,7 @@ export const SongTagIndicatorContainer = ({ tagIds, allPossibleTags }: {
     tagIds: number[],
     allPossibleTags: number[]
 }) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     // Get all possible tags that have indicators
     const allTags = allPossibleTags

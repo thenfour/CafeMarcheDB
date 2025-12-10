@@ -1,7 +1,7 @@
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { useClientTelemetryEvent } from "./DashboardContext";
 import Link from "next/link";
 import { useAppContext } from "./AppContext";
+import { useClientTelemetryEvent } from "./dashboardContext/DashboardContext";
 
 type CMLinkProps = React.PropsWithChildren<{
     trackingFeature?: ActivityFeature | undefined;

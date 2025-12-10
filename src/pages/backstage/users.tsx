@@ -3,7 +3,6 @@ import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForUser } from "src/core/db3/clientAPILL";
@@ -14,6 +13,7 @@ import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilter
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { EnrichedVerboseUser } from "./wikiPageHistory";
 import { UserOrderByColumnNames, UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "@/src/core/components/user/UserClientBaseTypes";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 // for serializing in compact querystring
@@ -80,7 +80,7 @@ const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultS
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const UserListOuter = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({

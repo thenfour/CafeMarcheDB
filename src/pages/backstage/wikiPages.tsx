@@ -1,20 +1,18 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { EnrichedVerboseWikiPage, WikiPageOrderByColumnNames, WikiPageOrderByColumnOption, WikiPageOrderByColumnOptions, WikiPagesFilterSpec } from "@/src/core/components/wiki/WikiClientBaseTypes";
 import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
 import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
 import { BlitzPage } from "@blitzjs/next";
-import React from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { wikiPageSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 
 // for serializing in compact querystring
 interface WikiPagesFilterSpecStatic {
@@ -52,7 +50,7 @@ const gDefaultStaticFilterValue: WikiPagesFilterSpecStatic = {
 const gStaticFilters: WikiPagesFilterSpecStatic[] = []
 
 const WikiPageListOuter = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    //const dashboardContext = React.useContext(DashboardContext);
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({

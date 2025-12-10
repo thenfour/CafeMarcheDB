@@ -18,7 +18,6 @@ import { AdminContainer, AdminInspectObject, DotMenu, KeyValueTable, NameValuePa
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { CMTextInputBase } from "../CMTextField";
-import { DashboardContext, useClientTelemetryEvent, useDashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { Markdown } from "../markdown/Markdown";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
@@ -27,6 +26,7 @@ import UnsavedChangesHandler from "../UnsavedChangesHandler";
 import { VisibilityValue } from "../VisibilityControl";
 import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
 import { AppContextMarker } from "../AppContext";
+import { useClientTelemetryEvent, useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 
 
 //////////////////////////////////////////////////
@@ -291,7 +291,7 @@ interface WikiPageViewModeProps {
 };
 //////////////////////////////////////////////////
 export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = true, ...props }: WikiPageViewModeProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     const authorizedForEdit = !props.readonly && dashboardContext.isAuthorized(Permission.edit_wiki_pages);
     const snackbar = useSnackbar();
     const router = useRouter();

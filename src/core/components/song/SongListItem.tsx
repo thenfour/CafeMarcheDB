@@ -4,13 +4,13 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { CMLink } from "src/core/components/CMLink";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { CalculateSongMetadata, GetSongFileInfo } from "src/core/components/song/SongComponentsBase";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
-import { EnrichedVerboseSong } from "../../db3/db3";
 import { SongsFilterSpec } from "./SongClientBaseTypes";
 import { StandardVariationSpec } from "../color/palette";
+import { EnrichedVerboseSong } from "../../db3/shared/schema/enrichedSongTypes";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 type SongListItemProps = {
     index: number;

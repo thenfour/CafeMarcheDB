@@ -3,7 +3,6 @@ import React, { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/event/EventComponents";
 import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
@@ -15,6 +14,8 @@ import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { EnrichedSearchEventPayload } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -166,7 +167,7 @@ const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultS
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const EventListOuter = () => {
-    const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
@@ -251,7 +252,7 @@ const EventListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EventVerbose_Event, db3.EnrichedSearchEventPayload> = {
+    const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EventVerbose_Event, EnrichedSearchEventPayload> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: EventOrderByColumnOptions,

@@ -8,12 +8,12 @@ import * as DB3Client from "../../db3/DB3Client";
 import { SetlistPlanGroupPayload } from "../../db3/shared/schema/setlistPlan";
 import { CMSmallButton } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
-import { useDashboardContext } from "../DashboardContext";
 import { Markdown } from "../markdown/Markdown";
 import { useSnackbar } from "../SnackbarContext";
 import { CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { ColorSwatch } from "../color/ColorSwatch";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 interface SetlistPlanGroupSelectProps {
     tableClient: DB3Client.xTableRenderClient<SetlistPlanGroupPayload>
