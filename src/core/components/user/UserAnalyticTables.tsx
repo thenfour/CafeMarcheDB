@@ -2,27 +2,27 @@ import { useQuery } from "@blitzjs/rpc";
 import { CompareArrows } from "@mui/icons-material";
 import React from "react";
 import * as db3 from "src/core/db3/db3";
-import { API } from '../../db3/clientAPI';
 import getUserCredits from "../../db3/queries/getUserCredits";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
 import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
 import getUserWikiContributions from "../../db3/queries/getUserWikiContributions";
+import { sortEvents } from "../../db3/shared/apiTypes";
 import { getContentCountsRows, getParticipationCountsRows, getSummaryRows, getSystemCountsRows, getUserInfoRows, MassAnalysisDataRow } from "../../db3/shared/getUserMassAnalysisTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { InstrumentChip } from "../CMCoreComponents";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
 import { CMLink } from "../CMLink";
 import { CMTable } from "../CMTable";
+import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { AttendanceChip } from "../event/AttendanceChips";
 import { EventChip } from "../event/EventChips";
 import { Markdown } from "../markdown/Markdown";
+import { SongChip } from "../song/SongChip";
 import { useSongsContext } from "../song/SongsContext";
 import { UserChip } from "./userChip";
 import { AddUserButton } from "./UserComponents";
-import { StandardVariationSpec } from "../color/palette";
-import { AttendanceChip } from "../event/AttendanceChips";
-import { SongChip } from "../song/SongChip";
 
 ////////////////////////////////////////////////////////////////
 type UserAttendanceTabContentProps = {
@@ -49,7 +49,9 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
         };
     }, { totalSegmentCount: 0, responseCount: 0, goingCount: 0 });
 
-    const sortedQr = API.events.sortEvents(qr.events);
+    console.log(qr);
+
+    const sortedQr = sortEvents(qr.events);
     const sortedQrWithIndex = sortedQr.map((event, index) => ({
         ...event,
         index: index + 1, // add an index for display purposes
@@ -57,7 +59,6 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
 
     return <div className="UserAttendanceTabContent">
         <AdminInspectObject src={qr} label="results" />
-
 
         {agg.totalSegmentCount > 0 &&
             <KeyValueTable data={{
@@ -91,7 +92,8 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                     backgroundColor: colorSet[month % 2],
                 }
             }}
-            rows={sortedQrWithIndex} columns={[
+            rows={sortedQrWithIndex}
+            columns={[
                 {
                     allowSort: true,
                     memberName: "index",
@@ -139,7 +141,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
                     allowSort: false,
                     header: "Response(s)",
                     render: (row) => {
-                        const segs = API.events.sortEvents(row.row.segments);
+                        const segs = sortEvents(row.row.segments);
                         return <CMChipContainer>
                             {segs.map(seg => {
                                 const att = dashboardContext.eventAttendance.getById(seg.attendanceId);

@@ -3,17 +3,25 @@
 import { Prisma } from "db";
 import { Clamp, gMinImageDimension } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
-import { AddCoord2DSize, type Coord2D, type ImageEditParams, type Size, getFileCustomData } from "./apiTypes";
+import { AddCoord2DSize, type Coord2D, type ImageEditParams, MakeDefaultImageEditParams, type Size, getFileCustomData, parsePayloadJSON } from "./apiTypes";
+import { PublicGalleryItemSpec } from "./publicTypes";
 
 
+// db3.FilePayloadMinimum
+type GetImageFileEditInfo_File = {
+    storedLeafName: string;
+    customData: string | null;
+    id: number;
+    mimeType: string | null;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class FilesSharedAPI {
-    getURIForFile = (file: Prisma.FileGetPayload<{}>) => {
+    getURIForFile = (file: Prisma.FileGetPayload<{ select: { storedLeafName: true } }>) => {
         return `/api/files/download/${file.storedLeafName}`;
     }
 
-    getImageFileDimensions = (file: db3.FilePayloadMinimum): Size | undefined => {
+    getImageFileDimensions = (file: GetImageFileEditInfo_File): Size | undefined => {
         const customData = getFileCustomData(file);
 
         if (customData.imageMetadata?.height != null && customData.imageMetadata?.width != null) {
@@ -27,7 +35,7 @@ class FilesSharedAPI {
 
 
     // if editParams is omitted, use the ones embedded in the post.
-    getImageFileEditInfo = (file: db3.FilePayloadMinimum, editParams: ImageEditParams) => {
+    getImageFileEditInfo = (file: GetImageFileEditInfo_File, editParams: ImageEditParams) => {
         const imageURI = this.getURIForFile(file);
         const fileDimensions = this.getImageFileDimensions(file) || { width: gMinImageDimension, height: gMinImageDimension };
 
@@ -91,11 +99,27 @@ class FilesSharedAPI {
     }; // getGalleryItemImageInfo
 
 
+    // always returns valid
+    getGalleryItemDisplayParams = (f: Prisma.FrontpageGalleryItemGetPayload<{ select: { displayParams: true, id: true } }>): ImageEditParams => {
+        const ret = parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
+            console.log(`failed to parse gallery item display params for gallery item id ${f.id}, val:${f.displayParams}`);
+        });
+        // validate since this is coming from db.
+        if (!ret.cropBegin) ret.cropBegin = { x: 0, y: 0 };
+        if (!ret.rotate) ret.rotate = 0;
+        if (!ret.cropSize) ret.cropSize = null;
+        return ret;
+    };
+
 
     // if editParams is omitted, use the ones embedded in the post.
     getGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayload, editParams?: ImageEditParams) => {
-        return this.getImageFileEditInfo(post.file, editParams || db3.getGalleryItemDisplayParams(post));
+        return this.getImageFileEditInfo(post.file, editParams || this.getGalleryItemDisplayParams(post));
     }; // getGalleryItemImageInfo
+
+    getPublicGalleryImageInfo = (item: PublicGalleryItemSpec) => {
+        return this.getImageFileEditInfo(item, this.getGalleryItemDisplayParams(item));
+    }
 };
 
 const gFilesSharedAPI = new FilesSharedAPI();

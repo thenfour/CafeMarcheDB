@@ -5,7 +5,7 @@
 // all of which propagate up to a db controller
 
 import { BlitzPage } from "@blitzjs/next";
-import { Button, Checkbox, FormControlLabel, Tooltip } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
@@ -15,34 +15,35 @@ import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "s
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
-import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { DashboardContext, useFeatureRecorder } from "src/core/components/DashboardContext";
+import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/file/FileDrop";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 //import { Markdown2Control } from "src/core/components/MarkdownControl2";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
 import { getURIForFile } from "@/src/core/db3/clientAPILL";
+import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicTypes";
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
-import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
+import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 
 
 
 ////////////////////////////////////////////////////////////////
 export interface NewGalleryItemComponentProps {
     client: DB3Client.xTableRenderClient;
-    showImages: boolean;
-    onChangeShowImages: (newValue: boolean) => void;
+    //showImages: boolean;
+    //onChangeShowImages: (newValue: boolean) => void;
 };
 
 
@@ -109,21 +110,21 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
 
     return <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }} progress={progress}>
 
+        <h2>
+            Manage gallery items on the public homepage
+        </h2>
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
-                <div className="header">
-                    Manage gallery items on the public homepage
-                </div>
-
+                {/* 
                 <FormControlLabel label="Show images" control={
                     <div>
                         <div><Checkbox size="small" checked={props.showImages} onClick={() => props.onChangeShowImages(!props.showImages)} /></div>
                     </div>
-                } />
-
+                } /> */}
+                {/* 
                 <div className="CMSidenote">
                     Images may be a big / heavy download, so they're hidden by default. This also can facilitate re-ordering.
-                </div>
+                </div> */}
 
                 <CollapsableUploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
             </div>
@@ -214,13 +215,13 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
 export interface GalleryItemDescriptionControlProps {
     value: db3.FrontpageGalleryItemPayload;
     client: DB3Client.xTableRenderClient;
+    editMode: boolean;
+    setEditMode: (newValue: boolean) => void;
 };
 export const GalleryItemDescriptionControl = (props: GalleryItemDescriptionControlProps) => {
-    const [editing, setEditing] = React.useState<boolean>(false);
     return <div className='descriptionContainer'>
-        {!editing && <Button onClick={() => setEditing(true)}>Edit description</Button>}
-        {editing && <GalleryItemDescriptionEditor
-            onClose={() => setEditing(false)}
+        {props.editMode && <GalleryItemDescriptionEditor
+            onClose={() => props.setEditMode(false)}
             client={props.client}
             galleryItem={props.value}
             //initialValue={props.value.caption}
@@ -408,10 +409,12 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 
     //const internalValue: db3.FrontpageGalleryItemPayload = { ...props.value, displayParams: JSON.stringify(editParams) };
 
-    const content: HomepageContentSpec = {
-        agenda: [],
-        gallery: [editingValue],
-    };
+    // const content: HomepageContentSpec = {
+    //     agenda: [],
+    //     gallery: [editingValue],
+    // };
+
+    const content = MakePublicFeedResponseSpec([], "en", [editingValue]);
 
     const origArea = info.fileDimensions.width * info.fileDimensions.height;
     const croppedArea = info.cropSize.width * info.cropSize.height;
@@ -489,17 +492,19 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 export interface GalleryItemImageControlProps {
     value: db3.FrontpageGalleryItemPayload;
     client: DB3Client.xTableRenderClient;
+    editMode: boolean;
+    setEditMode: (newValue: boolean) => void;
 };
 export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => {
-    const [editMode, setEditMode] = React.useState<boolean>(false);
+    //const [editMode, setEditMode] = React.useState<boolean>(false);
 
-    return editMode ? (
-        <GalleryItemImageEditControl client={props.client} value={props.value} onExitEditMode={() => setEditMode(false)} />
+    return props.editMode ? (
+        <GalleryItemImageEditControl client={props.client} value={props.value} onExitEditMode={() => props.setEditMode(false)} />
     ) : (
         <div className="imageEditControlContainer">
-            <div className="buttonRow">
-                <Button onClick={() => setEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
-            </div>
+            {/* <div className="buttonRow">
+                <Button style={{ whiteSpace: "nowrap" }} onClick={() => setEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
+            </div> */}
             <img src={getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
         </div>
     );
@@ -510,13 +515,15 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
 ////////////////////////////////////////////////////////////////
 interface GalleryItemProps {
     value: db3.FrontpageGalleryItemPayload;
-    showImages: boolean;
+    //showImages: boolean;
     client: DB3Client.xTableRenderClient;
 };
 
 const GalleryItem = (props: GalleryItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
+    const [imageEditMode, setImageEditMode] = React.useState<boolean>(false);
+    const [descriptionEditMode, setDescriptionEditMode] = React.useState<boolean>(false);
     const recordFeature = useFeatureRecorder();
 
     const handleSoftDeleteClick = () => {
@@ -556,7 +563,10 @@ const GalleryItem = (props: GalleryItemProps) => {
 
     return <CMSinglePageSurfaceCard className="GalleryItem">
         <div className="header">
-            <div className="dragHandle draggable">☰ Order: {props.value.sortOrder}</div>
+            <div className="dragHandle draggable">☰ #{props.value.sortOrder + 1}
+                <span style={{ marginLeft: "12px" }}>{props.value.file.fileLeafName}</span>
+
+            </div>
             <VisibilityControl value={props.value.visiblePermission} onChange={handleVisibilityChange} />
             <Button onClick={() => setShowingDeleteConfirmation(true)} startIcon={gIconMap.Delete()}>Delete</Button>
 
@@ -572,13 +582,12 @@ const GalleryItem = (props: GalleryItemProps) => {
                 <div>{formatFileSize(props.value.file.sizeBytes)}</div>
                 <div>{largeFile && "Big file warning: Consider baking a new one with web-friendly dimensions & compression factor."}</div>
             </div>}
-            <GalleryItemDescriptionControl value={props.value} client={props.client} />
-            {props.showImages &&
-                <>
-                    <GalleryItemImageControl value={props.value} client={props.client} />
-                    <div>NOTE: This preview does not apply any edits you've made.</div>
-                </>
-            }
+            <GalleryItemImageControl value={props.value} client={props.client} editMode={imageEditMode} setEditMode={setImageEditMode} />
+            <GalleryItemDescriptionControl value={props.value} client={props.client} editMode={descriptionEditMode} setEditMode={setDescriptionEditMode} />
+
+            <Button style={{ whiteSpace: "nowrap" }} onClick={() => setImageEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
+            <Button style={{ whiteSpace: "nowrap" }} onClick={() => setDescriptionEditMode(true)} startIcon={gIconMap.Edit()}>Edit description</Button>
+
         </div>
     </CMSinglePageSurfaceCard>;
 };
@@ -586,7 +595,6 @@ const GalleryItem = (props: GalleryItemProps) => {
 
 ////////////////////////////////////////////////////////////////
 const MainContent = () => {
-    const [showImages, setShowImages] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
@@ -649,7 +657,7 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="frontpage_gallery_markdown"></SettingMarkdown>
-        <NewGalleryItemComponent client={client} showImages={showImages} onChangeShowImages={setShowImages} />
+        <NewGalleryItemComponent client={client} />
 
         <ReactSmoothDndContainer
             dragHandleSelector=".dragHandle"
@@ -658,7 +666,7 @@ const MainContent = () => {
         >
             {items.length < 1 ? "Nothing here!" : items.map(i =>
                 <ReactSmoothDndDraggable key={i.id}>
-                    <GalleryItem value={i} client={client} showImages={showImages} />
+                    <GalleryItem value={i} client={client} />
                 </ReactSmoothDndDraggable>)
             }
         </ReactSmoothDndContainer>

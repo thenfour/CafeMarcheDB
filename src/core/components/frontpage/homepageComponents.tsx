@@ -2,12 +2,12 @@ import { nanoid } from 'nanoid';
 import React from "react";
 import { EnNlFr, LangSelectString } from 'shared/lang';
 import { IsNullOrWhitespace, modulo } from "shared/utils";
-import { HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
-import { getURIForFile } from '../db3/clientAPILL';
-import { gIconMap } from '../db3/components/IconMap';
-import * as db3 from "../db3/db3";
-import { SharedAPI } from '../db3/shared/sharedAPI';
-import { Markdown } from "./markdown/Markdown";
+//import { HomepageAgendaItemSpec, HomepageContentSpec } from "../../db3/clientAPI";
+import { gIconMap } from '../../db3/components/IconMap';
+//import * as db3 from "../../db3/db3";
+import { SharedAPI } from '../../db3/shared/sharedAPI';
+import { Markdown } from "../markdown/Markdown";
+import { PublicAgendaItemSpec, PublicFeedResponseSpec, PublicGalleryItemSpec } from '../../db3/shared/publicTypes';
 
 const gSettings = {
     backstageURL: `/backstage`,
@@ -20,13 +20,13 @@ export const generateHomepageId = (n: string, instanceKey: string, postId: numbe
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const AWrapper = ({ children, ...props }: any) => {
-    return <a {...props as any}>{children}</a>;
-};
+// const AWrapper = ({ children, ...props }: any) => {
+//     return <a {...props as any}>{children}</a>;
+// };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface HomepagePhotoPatternProps {
-    post: db3.FrontpageGalleryItemPayload;
+    post: PublicGalleryItemSpec;
     editable?: boolean;
     instanceKey: string; // unique-to-page instance key for generating IDs.
 };
@@ -35,7 +35,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 
     const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
 
-    const info = SharedAPI.files.getGalleryItemImageInfo(post);
+    const info = SharedAPI.files.getPublicGalleryImageInfo(post);
 
     return <pattern
         id={id("galleryPattern")}
@@ -63,7 +63,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
     const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
-    const info = SharedAPI.files.getGalleryItemImageInfo(post);
+    const info = SharedAPI.files.getPublicGalleryImageInfo(post);
 
     /*
         (0,0)+-------------------------------+ (fdwidth, 0)          <- y= 0
@@ -162,7 +162,7 @@ class Gallery {
 
     private selectedIdx: number; // may be out of bounds; modulo when accessing.
     ab: boolean;
-    content: HomepageContentSpec | null;
+    content: PublicFeedResponseSpec | null;
     //photoIDMap: Record<number, string>;
     instanceKey: string;
     mainSVGRefs: MainSVGRefs;
@@ -177,7 +177,7 @@ class Gallery {
         this.ab = false; // to swap A and B for transitioning
     }
 
-    setContent(content: HomepageContentSpec | null) {
+    setContent(content: PublicFeedResponseSpec | null) {
         this.content = content;
     };
 
@@ -203,11 +203,11 @@ class Gallery {
 
         const thisPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${post.id}`);
         if (thisPostImage) {
-            thisPostImage.setAttribute('href', getURIForFile(post.file))
+            thisPostImage.setAttribute('href', post.imageFileUri)
         }
         const nextPostImage = document.getElementById(`galleryPatternImage_${this.instanceKey}_${nextPost.id}`);
         if (nextPostImage) {
-            nextPostImage.setAttribute('href', getURIForFile(nextPost.file));
+            nextPostImage.setAttribute('href', nextPost.imageFileUri);
         }
 
         const a = this.ab ? this.mainSVGRefs.galleryPhoto2Ref : this.mainSVGRefs.galleryPhoto1Ref;
@@ -224,7 +224,7 @@ class Gallery {
         b.style.opacity = "0%";
     }
 
-    getSelectedPost(): db3.FrontpageGalleryItemPayload | null {
+    getSelectedPost(): PublicGalleryItemSpec | null {
         if (!this.content) return null;
         return this.content.gallery[this.getSelectedIndex()]! as any; // it's hard to understand the typing here; no time to fix.
     }
@@ -250,7 +250,7 @@ class Gallery {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface AgendaItemProps {
-    item: HomepageAgendaItemSpec;
+    item: PublicAgendaItemSpec;
 };
 
 export class AgendaItem extends React.Component<AgendaItemProps> {
@@ -314,7 +314,7 @@ const TopRight2 = () => {
 };
 
 export interface MainSVGComponentProps {
-    content: HomepageContentSpec;
+    content: PublicFeedResponseSpec;
     instanceKey: string; // unique-to-page instance key for generating IDs.
     editable?: boolean;
     //rotate?: number;
@@ -551,7 +551,7 @@ const correctLayoutFromRef = (refel: SVGForeignObjectElement | undefined | null,
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface HomepageMainProps {
-    content: HomepageContentSpec;
+    content: PublicFeedResponseSpec;
     className?: string;
     fullPage: boolean; //
     editable?: boolean;

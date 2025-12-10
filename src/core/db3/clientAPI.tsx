@@ -6,7 +6,6 @@ import { useSession } from "@blitzjs/auth";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
-import { EnNlFr, LangSelectString } from "shared/lang";
 import { SettingKey } from "shared/settingKeys";
 import { DateTimeRange } from "shared/time";
 import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
@@ -120,33 +119,25 @@ class EventsAPI {
 
 
     // sorts by start date, from newest to latest, NULL = future.
-    sortEvents<T extends { startsAt: null | Date }>(events: T[]): T[] {
-        const ret = [...events];
-        ret.sort((a, b) => {
-            if (a.startsAt === null || b.startsAt === null) {
-                return a.startsAt === null ? 1 : -1;
-            }
-            return a.startsAt.valueOf() - b.startsAt.valueOf();
-        });
+    //sortEvents // use global ver (in apitypes)
 
-        return ret;
-    }
-
-    // null-or-whitespace values in EN will not show the field
-    // null-or-whitespace values in NL and FR fallback to english
-    getAgendaItem(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
-        //const fallbacks = this.getAgendaItemFallbackValues(event, lang);
-        const ret: HomepageAgendaItemSpec = {
-            date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || "",
-            time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || "",
-            detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || "",
-            location: LangSelectString(lang, event.frontpageLocation, event.frontpageLocation_nl, event.frontpageLocation_fr) || "",
-            locationURI: LangSelectString(lang, event.frontpageLocationURI, event.frontpageLocationURI_nl, event.frontpageLocationURI_fr) || "",
-            tags: LangSelectString(lang, event.frontpageTags, event.frontpageTags_nl, event.frontpageTags_fr) || "",
-            title: LangSelectString(lang, event.frontpageTitle, event.frontpageTitle_nl, event.frontpageTitle_fr) || "",
-        }
-        return ret;
-    }
+    // // null-or-whitespace values in EN will not show the field
+    // // null-or-whitespace values in NL and FR fallback to english
+    // getAgendaItem(event: db3.EventWithTagsPayload, lang: EnNlFr): PublicAgendaItemSpec {
+    //     //const fallbacks = this.getAgendaItemFallbackValues(event, lang);
+    //     const ret: PublicAgendaItemSpec = {
+    //         id: event.id,
+    //         startsAt: event.startsAt,
+    //         date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || "",
+    //         time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || "",
+    //         detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || "",
+    //         location: LangSelectString(lang, event.frontpageLocation, event.frontpageLocation_nl, event.frontpageLocation_fr) || "",
+    //         locationURI: LangSelectString(lang, event.frontpageLocationURI, event.frontpageLocationURI_nl, event.frontpageLocationURI_fr) || "",
+    //         tags: LangSelectString(lang, event.frontpageTags, event.frontpageTags_nl, event.frontpageTags_fr) || "",
+    //         title: LangSelectString(lang, event.frontpageTitle, event.frontpageTitle_nl, event.frontpageTitle_fr) || "",
+    //     }
+    //     return ret;
+    // }
 
     // getAgendaItemFallbackValues(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
     //     const ret: HomepageAgendaItemSpec = {
@@ -242,29 +233,6 @@ class SongsAPI {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// export interface HomepageGalleryItemSpec {
-//     descriptionMarkdown: string;
-//     uri: string;
-// };
-export interface HomepageAgendaItemSpec {
-    date?: string | null;
-    time?: string | null;
-    title?: string | null;
-    detailsMarkdown?: string | null;
-    location?: string | null;
-    locationURI?: string | null;
-    tags?: string | null;
-};
-export interface HomepageContentSpec {
-    agenda: HomepageAgendaItemSpec[];
-    gallery: db3.FrontpageGalleryItemPayloadWithAncestorFile[];
-};
-
-
-
-class FrontpageAPI {
-
-};
 
 class OtherAPI {
     updateGenericSortOrderMutation = CreateAPIMutationFunction(updateGenericSortOrder);
@@ -297,11 +265,10 @@ class SettingsAPI {
     updateSetting = CreateAPIMutationFunction(updateSettingMutation);
 };
 
-
+// todo: this should be in context
 export const API = {
     events: new EventsAPI(),
     songs: new SongsAPI(),
-    frontpage: new FrontpageAPI(),
     users: gUsersAPI,
     files: gFilesAPI,
     other: new OtherAPI(),

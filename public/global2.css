@@ -1132,11 +1132,12 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     flex-grow: 1;
 }
 
-.contentSection.GalleryItem .imageEditControlContainer {
+.contentSection.GalleryItem .imageEditControlContainer.editorMain {
     border: 2px dashed #ccc;
     padding: 10px 10px;
     width: min-content;
     margin-top: 10px;
+    background-color: white;
 }
 
 .galleryPatternMask .imageStroke {

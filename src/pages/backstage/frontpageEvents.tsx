@@ -1,3 +1,5 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { sortEvents } from "@/src/core/db3/shared/apiTypes";
 import { BlitzPage } from "@blitzjs/next";
 import React, { Suspense } from 'react';
 import { Permission } from "shared/permissions";
@@ -9,10 +11,8 @@ import { EventDetailContainer } from "src/core/components/event/EventComponents"
 import { CalculateEventMetadata_Verbose } from "src/core/components/event/EventComponentsBase";
 import { EventFrontpageTabContent } from "src/core/components/event/EventFrontpageComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import * as DB3Client from "src/core/db3/DB3Client";
 
 const EventsList = () => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
@@ -47,7 +47,7 @@ const EventsList = () => {
     const eventsRaw = eventsClient.items as db3.EventClientPayload_Verbose[];
     const eventsRich = eventsRaw.map(e => db3.enrichSearchResultEvent(e, dashboardContext));
 
-    const events = API.events.sortEvents(eventsRich);
+    const events = sortEvents(eventsRich);
 
     const refetch = eventsClient.refetch;
 

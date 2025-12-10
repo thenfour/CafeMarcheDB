@@ -9,6 +9,14 @@ type LangSelectStringWithDetailResult<T extends string | null | undefined> = {
     chosenLang: EnNlFr | null;
 };
 
+export function ParseLanguageCode(langCode: string | undefined | null): EnNlFr {
+    if (!langCode) return "en";
+    const lc = langCode.toLowerCase();
+    if (lc.startsWith("nl")) return "nl";
+    if (lc.startsWith("fr")) return "fr";
+    return "en";
+}
+
 export function LangSelectStringWithDetail<
     T extends string | null | undefined
 >(

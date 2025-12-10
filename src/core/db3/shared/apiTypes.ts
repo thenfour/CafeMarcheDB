@@ -352,9 +352,9 @@ export const parsePayloadJSON = <T,>(value: null | undefined | string, createDef
 };
 
 // always returns valid
-export const getFileCustomData = (f: Prisma.FileGetPayload<{}>): FileCustomData => {
+export const getFileCustomData = (f: Prisma.FileGetPayload<{ select: { customData: true, id: true } }>): FileCustomData => {
     return parsePayloadJSON<FileCustomData>(f.customData, MakeDefaultFileCustomData, (e) => {
-        console.log(`failed to parse file custom data for file id ${f.id}, storedLeafName:${f.storedLeafName}, mime:${f.mimeType}`);
+        console.log(`failed to parse file custom data for file id ${f.id}`);
     });
 };
 
@@ -1143,3 +1143,17 @@ export const PermissionSignificance = {
 } as const satisfies Record<string, string>;
 
 export type TSongPinnedRecording = Prisma.FileGetPayload<{}>;
+
+
+// sorts by start date, from newest to latest, NULL = future.
+export function sortEvents<T extends { startsAt: null | Date }>(events: T[]): T[] {
+    const ret = [...events];
+    ret.sort((a, b) => {
+        if (a.startsAt === null || b.startsAt === null) {
+            return a.startsAt === null ? 1 : -1;
+        }
+        return a.startsAt.valueOf() - b.startsAt.valueOf();
+    });
+
+    return ret;
+}

@@ -8,7 +8,7 @@ import { DateTimeRange } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
-import { API, HomepageAgendaItemSpec } from '../../db3/clientAPI';
+import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { CMChip, CMChipContainer } from "../CMChip";
@@ -17,9 +17,10 @@ import { CMDialogContentText, DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { DashboardContext, useFeatureRecorder } from "../DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
-import { AgendaItem } from '../homepageComponents';
+import { AgendaItem } from '../frontpage/homepageComponents';
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SettingMarkdown } from "../SettingMarkdown";
+import { getAgendaItem, PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
 
 
 
@@ -345,7 +346,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         });
     }
 
-    const agendaItem: HomepageAgendaItemSpec = API.events.getAgendaItem(props.event, previewLang);
+    const agendaItem: PublicAgendaItemSpec = getAgendaItem(props.event, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
         clientIntention,
@@ -458,7 +459,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                     label="Show this event on the front page?"
                 />
 
-                {!dashboardContext.isPublic(props.event) && <div className="warning CMSidenote">This event still won't be visible, because it has restricted visibility</div>}
+                {!dashboardContext.isPublic(props.event) && <div className="warning CMSidenote">❗This event still won't be visible, because it has restricted visibility</div>}
 
             </div>
             <div className='editButtonContainer'>

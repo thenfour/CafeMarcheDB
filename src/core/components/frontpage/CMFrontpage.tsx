@@ -1,86 +1,71 @@
+import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
 import { useSession } from "@blitzjs/auth";
 import { NoSsr } from "@mui/material";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
-import { EnNlFr, LangSelectString } from "shared/lang";
+import { EnNlFr, LangSelectString, ParseLanguageCode } from "shared/lang";
 import GoogleAnalytics from "src/core/components/GoogleAnalytics";
-import { HomepageMain } from "src/core/components/homepageComponents";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
-import * as db3 from "src/core/db3/db3";
-import { CMDBTableFilterModel } from "src/core/db3/shared/apiTypes";
+import { PublicFeedResponseSpec } from "../../db3/shared/publicTypes";
 
-const MainContent = ({ lang, onLangChange }: { lang: EnNlFr, onLangChange: (newLang: EnNlFr) => void }) => {
+const MainContent = ({ lang, onLangChange, publicFeed }: { lang: EnNlFr, onLangChange: (newLang: EnNlFr) => void, publicFeed: PublicFeedResponseSpec }) => {
     const sess = useSession();
-    const eventsTableSpec = new DB3Client.xTableClientSpec({
-        table: db3.xEvent,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-        ],
-    });
 
-    const clientIntention: db3.xTableClientUsageContext = { intention: "public", mode: "primary" };
+    // const eventsTableSpec = new DB3Client.xTableClientSpec({
+    //     table: db3.xEvent,
+    //     columns: [
+    //         new DB3Client.PKColumnClient({ columnName: "id" }),
+    //     ],
+    // });
 
-    const eventsFilterModel: CMDBTableFilterModel = {
-        items: [
-            {
-                field: "frontpageVisible",
-                operator: "equals",
-                value: true
-            }
-        ],
-    };
+    // const clientIntention: db3.xTableClientUsageContext = { intention: "public", mode: "primary" };
 
-    const eventsClient = DB3Client.useTableRenderContext({
-        clientIntention,
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: eventsTableSpec,
-        filterModel: eventsFilterModel,
-    });
+    // const eventsFilterModel: CMDBTableFilterModel = {
+    //     items: [
+    //         {
+    //             field: "frontpageVisible",
+    //             operator: "equals",
+    //             value: true
+    //         }
+    //     ],
+    // };
 
-    const galleryTableSpec = new DB3Client.xTableClientSpec({
-        table: db3.xFrontpageGalleryItem,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-        ],
-    });
+    // const eventsClient = DB3Client.useTableRenderContext({
+    //     clientIntention,
+    //     requestedCaps: DB3Client.xTableClientCaps.Query,
+    //     tableSpec: eventsTableSpec,
+    //     filterModel: eventsFilterModel,
+    // });
 
-    const galleryClient = DB3Client.useTableRenderContext({
-        clientIntention,
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: galleryTableSpec,
-        //filterModel: ,
-    });
+    // const galleryTableSpec = new DB3Client.xTableClientSpec({
+    //     table: db3.xFrontpageGalleryItem,
+    //     columns: [
+    //         new DB3Client.PKColumnClient({ columnName: "id" }),
+    //     ],
+    // });
 
-    const events = API.events.sortEvents(eventsClient.items as db3.EventPayload[]);
-    const agenda = events.map(x => API.events.getAgendaItem(x, lang));
+    // const galleryClient = DB3Client.useTableRenderContext({
+    //     clientIntention,
+    //     requestedCaps: DB3Client.xTableClientCaps.Query,
+    //     tableSpec: galleryTableSpec,
+    // });
 
-    const content: HomepageContentSpec = {
-        gallery: (galleryClient.items as db3.FrontpageGalleryItemPayload[]),
-        agenda,
-    };
+    // const events = API.events.sortEvents(eventsClient.items as db3.EventPayload[]);
+    // const agenda = events.map(x => API.events.getAgendaItem(x, lang));
+
+    // const content: PublicFeedResponseSpec = {
+    //     gallery: galleryClient.items,
+    //     agenda,
+    // };
 
     return <NoSsr>
         <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_BACKSTAGE} />
-        <HomepageMain content={content} className="realFrontpage" fullPage={true} lang={lang} onLangChange={onLangChange} />
+        <HomepageMain content={publicFeed} className="realFrontpage" fullPage={true} lang={lang} onLangChange={onLangChange} />
     </NoSsr>;
 };
 
 
-
-
-const toEnNlFr = (s): EnNlFr | undefined => {
-    if (!s) return undefined;
-    if (s.startsWith("nl")) {
-        return "nl";
-    } else if (s.startsWith("fr")) {
-        return "fr";
-    }
-    return "en";
-};
-
-export const CMPublicIndex = () => {
+export const CMPublicIndex = (props: { publicFeed: PublicFeedResponseSpec }) => {
     const router = useRouter();
     const { locale } = router;
 
@@ -91,7 +76,7 @@ export const CMPublicIndex = () => {
         await router.push(router.pathname, router.asPath, { locale: newLang });
     };
 
-    const lang = userSelectedLang || toEnNlFr(locale) || "en";
+    const lang = userSelectedLang || ParseLanguageCode(locale);
     const titleText = `Café Marché | Brussels fanfare-orkest`;
 
     return <>
@@ -122,7 +107,7 @@ export const CMPublicIndex = () => {
         </Head>
         <link href="/homepage/public.css" rel="stylesheet" type="text/css" />
         <Suspense>
-            <MainContent lang={lang} onLangChange={handleManualLangChange} />
+            <MainContent lang={lang} onLangChange={handleManualLangChange} publicFeed={props.publicFeed} />
             <div></div>
         </Suspense>
 

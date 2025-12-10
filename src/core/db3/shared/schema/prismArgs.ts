@@ -1,11 +1,11 @@
 import { Prisma } from "db";
 import { z } from "zod";
 //import * as db3 from "../db3core"; // circular
+import { DbBrandConfig } from "@/shared/brandConfigBase";
 import { TableAccessor } from "shared/rootroot";
 import { ServerStartInfo } from "shared/serverStateBase";
 import { AuxUserArgs } from "types";
-import { CMDBTableFilterModel, ImageEditParams, MakeDefaultImageEditParams, TAnyModel, parsePayloadJSON } from "../apiTypes";
-import { DbBrandConfig } from "@/shared/brandConfigBase";
+import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -1514,20 +1514,6 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
 
 
 
-
-
-
-// always returns valid
-export const getGalleryItemDisplayParams = (f: Prisma.FrontpageGalleryItemGetPayload<{}>): ImageEditParams => {
-    const ret = parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
-        console.log(`failed to parse gallery item display params for gallery item id ${f.id}, val:${f.displayParams}`);
-    });
-    // validate since this is coming from db.
-    if (!ret.cropBegin) ret.cropBegin = { x: 0, y: 0 };
-    if (!ret.rotate) ret.rotate = 0;
-    if (!ret.cropSize) ret.cropSize = null;
-    return ret;
-};
 
 
 ////////////////////////////////////////////////////////////////
