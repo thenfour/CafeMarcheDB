@@ -21,7 +21,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
-import { TAnyModel, TSongPinnedRecording } from '../db3/shared/apiTypes';
+import { TSongPinnedRecording } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
@@ -43,6 +43,7 @@ import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
 import { ColorPick } from './color/ColorPick';
 import { gSwatchColors } from './color/palette';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
+import { TAnyModel } from '@/shared/rootroot';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {

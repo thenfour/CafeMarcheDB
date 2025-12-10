@@ -5,9 +5,9 @@ import { EventRelevanceClassName, gEventRelevanceClass } from "../../db3/db3";
 import { useSnackbar } from "../SnackbarContext";
 import { useMutation } from "@blitzjs/rpc";
 import setEventRelevanceClassOverride from "../../db3/mutations/setEventRelevanceClassOverride";
-import { gNullValue } from "../../db3/shared/apiTypes";
 import { useClientTelemetryEvent } from "../DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
+import { gNullValue } from "@/shared/rootroot";
 
 
 interface RelevanceClassOverrideIndicatorProps {

@@ -1,13 +1,14 @@
 
 import { MysqlEscape } from "shared/mysqlUtils";
 import { CoalesceBool, CoerceToBoolean, isValidURL } from "shared/utils";
-import { type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType, type SearchResultsFacetQuery, type SortQueryElements, type TAnyModel } from "./apiTypes";
+import { type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType, type SearchResultsFacetQuery, type SortQueryElements } from "./apiTypes";
 import {
     type DB3AuthSpec, ErrorValidateAndParseResult, FieldBase,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult,
     UndefinedValidateAndParseResult, type ValidateAndParseArgs, type ValidateAndParseResult, xTable, type xTableClientUsageContext
 } from "./db3core";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
+import { TAnyModel } from "@/shared/rootroot";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for validation and client UI behavior.

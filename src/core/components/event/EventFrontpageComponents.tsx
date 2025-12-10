@@ -7,20 +7,21 @@ import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
 import { DateTimeRange } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import * as db3 from "src/core/db3/db3";
+import * as db3 from "@db3/db3"
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from "../../db3/components/IconMap";
-import { ActivityFeature } from "../featureReports/activityTracking";
+import { getAgendaItem } from "../../db3/shared/publicFeedApi";
+import { PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { EditTextField } from "../CMCoreComponents";
 import { CMDialogContentText, DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { DashboardContext, useFeatureRecorder } from "../DashboardContext";
-import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
+import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SettingMarkdown } from "../SettingMarkdown";
-import { getAgendaItem, PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
+import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 
 
 

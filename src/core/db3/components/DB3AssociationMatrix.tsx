@@ -21,7 +21,8 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import * as db3 from '../db3';
-import type { CMDBTableFilterItem, CMDBTableFilterModel, TAnyModel } from '../shared/apiTypes';
+import type { CMDBTableFilterItem, CMDBTableFilterModel } from '../shared/apiTypes';
+import { TAnyModel } from '@/shared/rootroot';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 

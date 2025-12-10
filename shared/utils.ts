@@ -1,7 +1,7 @@
 import { crc32 } from "@foxglove/crc";
 import db from "db";
-import type { Size } from "src/core/db3/shared/apiTypes";
 import z from "zod";
+import { Size } from "./rootroot";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);

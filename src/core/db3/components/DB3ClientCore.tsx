@@ -24,8 +24,9 @@ import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
-import type { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
+import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { SettingKey } from "shared/settingKeys";
+import { TAnyModel } from "@/shared/rootroot";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

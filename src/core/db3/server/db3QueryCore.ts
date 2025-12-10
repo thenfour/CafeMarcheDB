@@ -5,10 +5,9 @@ import { sleep } from "shared/utils";
 import { CreatePublicData } from "types";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TAnyModel, TransactionalPrismaClient } from "../shared/apiTypes";
+import { TransactionalPrismaClient } from "../shared/apiTypes";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
-
-
+import { TAnyModel } from "@/shared/rootroot";
 
 export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient) => {
     try {

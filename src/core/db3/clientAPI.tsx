@@ -25,7 +25,7 @@ import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateSongBasicFields from "./mutations/updateSongBasicFields";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
-import { TAnyModel } from "./shared/apiTypes";
+import { TAnyModel } from "@/shared/rootroot";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {

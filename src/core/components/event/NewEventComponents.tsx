@@ -9,7 +9,7 @@ import { VisibilityControl } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
-import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
+import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
 import { DialogActionsCM } from "../CMCoreComponents2";
@@ -18,6 +18,7 @@ import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { EventSegmentClientColumns } from "./EventSegmentComponents";
+import { TAnyModel } from "@/shared/rootroot";
 
 interface NewEventDialogProps {
     onCancel: () => void;

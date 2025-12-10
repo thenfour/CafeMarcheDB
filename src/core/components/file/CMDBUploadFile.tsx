@@ -3,7 +3,8 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { getAntiCSRFToken } from "@blitzjs/auth";
-import { MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadResponsePayload } from "../../db3/shared/apiTypes";
+import { TClientUploadFileArgs, UploadResponsePayload } from "../../db3/shared/fileTypes";
+import { MakeErrorUploadResponsePayload } from "../../db3/shared/fileAPI";
 
 //import dynamic from 'next/dynamic';
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency

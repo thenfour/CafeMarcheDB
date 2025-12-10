@@ -13,11 +13,14 @@ import { TWorkflowChange } from "shared/workflowEngine";
 import sharp from "sharp";
 import { z } from "zod";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType, getFileCustomData } from "../shared/apiTypes";
+import { CMDBTableFilterModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { UserWithRolesArgs } from "../shared/schema/userPayloads";
+import { getFileCustomData } from "../shared/fileAPI";
+import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from "../shared/fileTypes";
+import { TAnyModel } from "@/shared/rootroot";
 
 var path = require('path');
 var fs = require('fs');

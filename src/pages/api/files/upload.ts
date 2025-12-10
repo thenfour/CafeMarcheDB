@@ -1,5 +1,6 @@
 // for mimetype db https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json
 
+import { TClientUploadFileArgs, UploadResponsePayload } from "@/src/core/db3/shared/fileTypes";
 import { Ctx } from "@blitzjs/next";
 import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
@@ -10,7 +11,7 @@ import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL } 
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { AutoAssignInstrumentPartition, TClientUploadFileArgs, UploadResponsePayload } from 'src/core/db3/shared/apiTypes';
+import { AutoAssignInstrumentPartition } from 'src/core/db3/shared/apiTypes';
 
 var path = require('path');
 var fs = require('fs');

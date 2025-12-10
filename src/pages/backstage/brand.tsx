@@ -7,7 +7,7 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { CMDBUploadFile } from "@/src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "@/src/core/components/file/FileDrop";
 import { SnackbarContext } from "@/src/core/components/SnackbarContext";
-import type { UploadResponsePayload } from "@/src/core/db3/shared/apiTypes";
+import { UploadResponsePayload } from "@/src/core/db3/shared/fileTypes";
 import { BlitzPage } from "@blitzjs/next";
 import { invoke, useMutation } from "@blitzjs/rpc";
 import { Box, Button, Divider, TextField, Typography } from "@mui/material";

@@ -16,9 +16,9 @@ import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { CMSelectDisplayStyle } from "src/core/components/select/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import * as db3 from "src/core/db3/db3";
-import { TAnyModel } from "../shared/apiTypes";
 import { DB3MultiSelectDialog, DB3SingleSelectDialog, useDB3MultiSelectLogic, useDB3SingleSelectLogic } from "./db3SelectDialog";
 import { StandardVariationSpec } from "../../components/color/palette";
+import { TAnyModel } from "@/shared/rootroot";
 
 type Tnull = undefined | null;
 

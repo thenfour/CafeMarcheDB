@@ -32,11 +32,11 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import type { TAnyModel } from '../shared/apiTypes';
 import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, type TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import type { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { RenderMuiIcon } from './IconMap';
 import { type ColorVariationSpec, StandardVariationSpec } from '../../components/color/palette';
+import { TAnyModel } from '@/shared/rootroot';
 
 
 const gMaxVisibleTags = 6;

@@ -4,7 +4,7 @@ import { AuthenticatedCtx } from 'blitz';
 import { Prisma } from "db";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { ImageEditParams, UpdateGalleryItemImageParams } from 'src/core/db3/shared/apiTypes';
+import { ImageEditParams, UpdateGalleryItemImageParams } from "../shared/fileTypes";
 
 
 // entry point ////////////////////////////////////////////////

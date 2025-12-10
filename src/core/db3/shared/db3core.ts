@@ -5,13 +5,13 @@ import { isEmptyArray } from "shared/arrayUtils";
 import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
 import { SqlCombineAndExpression } from "shared/mysqlUtils";
 import { Permission, gPublicPermissions } from "shared/permissions";
-import type { SortDirection } from "shared/rootroot";
+import type { SortDirection, TAnyModel } from "shared/rootroot";
 import type { PublicDataType } from "types";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements,
     type DiscreteCriterion, type GetSearchResultsSortModel,
     SearchCustomDataHookId,
-    type SearchResultsFacetQuery, type SortQueryElements, type TAnyModel
+    type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
 import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";

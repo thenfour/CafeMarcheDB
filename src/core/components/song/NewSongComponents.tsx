@@ -9,8 +9,8 @@ import { API } from "src/core/db3/clientAPI";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "../../db3/components/IconMap";
-import { TAnyModel } from "../../db3/shared/apiTypes";
 import { useDashboardContext } from "../DashboardContext";
+import { TAnyModel } from "@/shared/rootroot";
 
 export const NewSongButton = () => {
     const router = useRouter();

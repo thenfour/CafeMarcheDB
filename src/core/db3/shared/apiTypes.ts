@@ -2,16 +2,7 @@
 import { Prisma } from "db";
 import { z } from "zod";
 
-import type { SortDirection } from "shared/rootroot";
-
-// types used by mutations and other blitzy-things which can't export more than 1 thing, or just as a "no dependency" base
-
-export type TAnyModel = { [key: string]: any };
-
-
-export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
-export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
-export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
+import type { SortDirection, TAnyModel } from "shared/rootroot";
 
 // this really loves to break the typescript compiler... safest to just use "any"
 //export type TransactionalPrismaClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
@@ -34,47 +25,6 @@ export interface CMDBTableFilterModel {
 
     tagIds?: number[];
     tableParams?: TAnyModel;
-};
-
-
-
-export interface Size {
-    width: number;
-    height: number;
-}
-
-export const SizeToString = (x: Size): string => {
-    return `[${x.width.toFixed(0)} x ${x.height.toFixed(0)}]`;
-}
-
-export interface Coord2D {
-    x: number;
-    y: number;
-};
-
-export const Coord2DToString = (x: Coord2D): string => {
-    return `(${x.x.toFixed(0)}, ${x.y.toFixed(0)})`;
-}
-
-export const MulSize = (a: Size, f: number): Size => {
-    return {
-        width: a.width * f,
-        height: a.height * f,
-    }
-};
-
-export const MulSizeBySize = (a: Size, f: Size): Size => {
-    return {
-        width: a.width * f.width,
-        height: a.height * f.height,
-    }
-};
-
-export const AddCoord2DSize = (a: Coord2D, b: Size): Coord2D => {
-    return {
-        x: a.x + b.width,
-        y: a.y + b.height,
-    }
 };
 
 
@@ -260,104 +210,6 @@ export interface TinsertOrUpdateEventSongListArgs {
     dividers: TinsertOrUpdateEventSongListDivider[];
 };
 
-export interface TClientFileUploadTags {
-    taggedUserId?: number;
-    taggedSongId?: number;
-    taggedEventId?: number;
-    taggedInstrumentId?: number;
-    taggedWikiPageId?: number;
-    fileTagId?: number;
-};
-
-// interface from upload.ts to mutation. files themselves contain much of the data; this is only for associations.
-export interface TClientUploadFileArgs extends TClientFileUploadTags {
-    visiblePermissionId?: number;
-    visiblePermission?: string; // in case you don't have access to an ID.
-    externalURI?: string | null;
-};
-
-export interface TClientUpdateFile {
-    id?: number;
-    fileLeafName?: string;
-    description?: string;
-    isDeleted?: boolean; // allow soft delete via mutation
-    visiblePermissionId?: number | null;
-
-    tagsIds?: number[];
-    taggedUserIds?: number[];
-    taggedSongIds?: number[];
-    taggedEventIds?: number[];
-    taggedInstrumentIds?: number[];
-    taggedWikiPageIds?: number[];
-};
-
-
-// https://stackoverflow.com/questions/36836011/checking-validity-of-string-literal-union-type-at-runtime
-export const ImageFileFormatOptions = {
-    "png": {},
-    "jpg": {},
-    "heic": {},
-    "webp": {},
-} as const;
-
-export type ImageFileFormat = keyof typeof ImageFileFormatOptions;
-
-
-
-export interface ImageEditParams {
-    cropBegin: Coord2D;
-    cropSize: Size | null; // if null use image end bound.
-    rotate: number;
-};
-
-export const MakeDefaultImageEditParams = (): ImageEditParams => ({
-    cropBegin: { x: 0, y: 0 },
-    cropSize: null,
-    rotate: 0
-});
-
-export interface ImageMetadata {
-    width?: number | undefined;
-    height?: number | undefined;
-};
-
-export interface FileCustomData {
-    // each physical file gets its own File record, therefore this should explain what its relationship is to its parent / related file(s).
-    // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
-    relationToParent?: "thumbnail" | "forkedImage";
-    forkedImage?: { // when relationToParent is forkedImage.
-        creationEditParams: ImageEditParams, // the parameters that were used to generate this forked image.
-    };
-    imageMetadata?: ImageMetadata;
-    audioMetadata?: {
-        bitrate: string;
-        lengthMillis?: number;
-    };
-};
-
-export const MakeDefaultFileCustomData = (): FileCustomData => ({});
-
-// always returns valid due to having createDefault
-export const parsePayloadJSON = <T,>(value: null | undefined | string, createDefault: (val: null | undefined | string) => T, onError?: (e) => void): T => {
-    if (value === null || value === undefined || (typeof value !== 'string') || value.trim() === "") {
-        return createDefault(value);
-    }
-    try {
-        return JSON.parse(value) as T;
-    } catch (err) {
-        if (onError) onError(err);
-        console.log(err);
-        return createDefault(value);
-    }
-};
-
-// always returns valid
-export const getFileCustomData = (f: Prisma.FileGetPayload<{ select: { customData: true, id: true } }>): FileCustomData => {
-    return parsePayloadJSON<FileCustomData>(f.customData, MakeDefaultFileCustomData, (e) => {
-        console.log(`failed to parse file custom data for file id ${f.id}`);
-    });
-};
-
 export const ZupdateGenericSortOrderArgs = z.object({
     tableID: z.string(),
     tableName: z.string(),
@@ -368,33 +220,6 @@ export const ZupdateGenericSortOrderArgs = z.object({
 });
 
 export type TupdateGenericSortOrderArgs = z.infer<typeof ZupdateGenericSortOrderArgs>;
-
-export interface UploadResponsePayload {
-    files: Prisma.FileGetPayload<{}>[];
-    isSuccess: boolean;
-    errorMessage?: string;
-};
-
-export const MakeErrorUploadResponsePayload = (errorMessage: string): UploadResponsePayload => ({
-    files: [],
-    isSuccess: false,
-    errorMessage,
-});
-
-
-export interface ForkImageParams {
-    parentFileId: number; // which image file to use. for gallery items it may be different than the previous one.
-    outputType: ImageFileFormat;
-    quality: number; // 0-100 corresponds with jpeg quality / https://sharp.pixelplumbing.com/api-output options.quality.
-    editParams: ImageEditParams;
-    newDimensions?: Size;
-};
-
-export interface UpdateGalleryItemImageParams {
-    galleryItemId: number;
-    imageParams: ForkImageParams;
-};
-
 
 
 export interface GetEventFilterInfoChipInfo {

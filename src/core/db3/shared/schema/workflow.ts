@@ -1,11 +1,12 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { TAnyModel, TUpdateEventWorkflowInstanceArgs, WorkflowNodeProgressState } from "../apiTypes";
+import { TUpdateEventWorkflowInstanceArgs, WorkflowNodeProgressState } from "../apiTypes";
 import { BoolField, GhostField, MakePKfield, MakeSortOrderField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { MakeColorAsStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { TAnyModel } from "@/shared/rootroot";
 
 // (todo: refine these)
 const xColumnAuthMap: db3.DB3AuthContextPermissionMap = {

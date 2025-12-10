@@ -2,10 +2,10 @@ import { Prisma } from "db";
 import { z } from "zod";
 //import * as db3 from "../db3core"; // circular
 import { DbBrandConfig } from "@/shared/brandConfigBase";
-import { TableAccessor } from "shared/rootroot";
+import { TableAccessor, TAnyModel } from "shared/rootroot";
 import { ServerStartInfo } from "shared/serverStateBase";
 import { AuxUserArgs } from "types";
-import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
+import { CMDBTableFilterModel } from "../apiTypes";
 //import { DateRangeInfo } from "shared/time";
 
 /*

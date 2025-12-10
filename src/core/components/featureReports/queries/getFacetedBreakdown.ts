@@ -1,6 +1,5 @@
-import { Stopwatch } from "@/shared/rootroot";
+import { Stopwatch, TAnyModel } from "@/shared/rootroot";
 import { getCurrentUserCore } from "@/src/core/db3/server/db3mutationCore";
-import { TAnyModel } from "@/src/core/db3/shared/apiTypes";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";

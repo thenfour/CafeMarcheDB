@@ -13,7 +13,6 @@ import { Prisma } from "db";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
-import { TAnyModel } from '../../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { NameValuePair, InspectObject } from '../CMCoreComponents2';
 import { DashboardContext, useFeatureRecorder } from '../DashboardContext';
@@ -33,6 +32,7 @@ import { ActivityFeature } from '../featureReports/activityTracking';
 import { CMLink } from '../CMLink';
 import { UserChip } from '../user/userChip';
 import { StandardVariationSpec } from '../color/palette';
+import { TAnyModel } from '@/shared/rootroot';
 
 
 export const SongClientColumns = {

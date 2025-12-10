@@ -2,8 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from 'blitz';
 import { Permission } from "shared/permissions";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { ForkImageParams } from 'src/core/db3/shared/apiTypes';
-
+import { ForkImageParams } from "../shared/fileTypes";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
@@ -16,19 +15,6 @@ export default resolver.pipe(
         return newFile;
     },
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // NOTE that you CAN make forks of forks, so hierarchy is not just 1 layer deep.

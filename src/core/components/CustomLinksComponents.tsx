@@ -8,7 +8,6 @@ import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gIconMap } from "../db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
 import { AppContextMarker } from "./AppContext";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
@@ -16,6 +15,7 @@ import { CMTextInputBase } from './CMTextField';
 import { DashboardContext, useFeatureRecorder } from "./DashboardContext";
 import { Markdown } from "./markdown/Markdown";
 import { gLightSwatchColors, gSwatchColors } from "./color/palette";
+import { gNullValue, TAnyModel } from "@/shared/rootroot";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {

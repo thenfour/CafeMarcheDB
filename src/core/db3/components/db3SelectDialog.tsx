@@ -7,7 +7,7 @@ import { CMDialogContentText, DialogActionsCM } from "src/core/components/CMCore
 import * as db3 from "src/core/db3/db3";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
+import { CMDBTableFilterModel } from "../shared/apiTypes";
 import { SearchInput } from "src/core/components/CMTextField";
 import { gIconMap } from "./IconMap";
 import { useAuthenticatedSession } from "@blitzjs/auth";
@@ -16,6 +16,7 @@ import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectD
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { StandardVariationSpec } from "../../components/color/palette";
+import { TAnyModel } from "@/shared/rootroot";
 
 type Tnull = undefined | null;
 

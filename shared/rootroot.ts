@@ -215,3 +215,68 @@ export function calculateMatchStrengthAnyKeyword(text: string, keywords: string[
     }
     return score;
 }
+
+
+// always returns valid due to having createDefault
+export const parsePayloadJSON = <T,>(value: null | undefined | string, createDefault: (val: null | undefined | string) => T, onError?: (e) => void): T => {
+    if (value === null || value === undefined || (typeof value !== 'string') || value.trim() === "") {
+        return createDefault(value);
+    }
+    try {
+        return JSON.parse(value) as T;
+    } catch (err) {
+        if (onError) onError(err);
+        console.log(err);
+        return createDefault(value);
+    }
+};
+
+
+export type TAnyModel = { [key: string]: any };
+
+
+export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
+export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
+export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
+
+
+
+export interface Size {
+    width: number;
+    height: number;
+}
+
+export const SizeToString = (x: Size): string => {
+    return `[${x.width.toFixed(0)} x ${x.height.toFixed(0)}]`;
+}
+
+export interface Coord2D {
+    x: number;
+    y: number;
+};
+
+export const Coord2DToString = (x: Coord2D): string => {
+    return `(${x.x.toFixed(0)}, ${x.y.toFixed(0)})`;
+}
+
+export const MulSize = (a: Size, f: number): Size => {
+    return {
+        width: a.width * f,
+        height: a.height * f,
+    }
+};
+
+export const MulSizeBySize = (a: Size, f: Size): Size => {
+    return {
+        width: a.width * f.width,
+        height: a.height * f.height,
+    }
+};
+
+export const AddCoord2DSize = (a: Coord2D, b: Size): Coord2D => {
+    return {
+        x: a.x + b.width,
+        y: a.y + b.height,
+    }
+};
+

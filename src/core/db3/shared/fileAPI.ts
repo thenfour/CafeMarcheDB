@@ -1,6 +1,8 @@
 
 import { Prisma } from "db";
 import { isNonEmptyString } from "@/shared/utils";
+import { parsePayloadJSON } from "@/shared/rootroot";
+import { FileCustomData, UploadResponsePayload } from "./fileTypes";
 
 export enum FileClass {
     Audio = "audio",
@@ -32,3 +34,21 @@ export const GetFileClass = (file: Prisma.FileGetPayload<{ select: { externalURI
     }
     return FileClass.Other;
 }
+
+
+export const MakeDefaultFileCustomData = (): FileCustomData => ({});
+
+// always returns valid
+export const getFileCustomData = (f: Prisma.FileGetPayload<{ select: { customData: true, id: true } }>): FileCustomData => {
+    return parsePayloadJSON<FileCustomData>(f.customData, MakeDefaultFileCustomData, (e) => {
+        console.log(`failed to parse file custom data for file id ${f.id}`);
+    });
+};
+
+export const MakeErrorUploadResponsePayload = (errorMessage: string): UploadResponsePayload => ({
+    files: [],
+    isSuccess: false,
+    errorMessage,
+});
+
+

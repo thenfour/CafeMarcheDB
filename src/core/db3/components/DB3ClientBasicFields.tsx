@@ -24,7 +24,7 @@ import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { type CMDBTableFilterModel, type TAnyModel, gNullValue } from "../shared/apiTypes";
+import { type CMDBTableFilterModel } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useDashboardContext } from "src/core/components/DashboardContext";
@@ -34,6 +34,7 @@ import { GenericStringField } from "../shared/genericStringField";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 import { ColorPick } from "../../components/color/ColorPick";
+import { gNullValue, TAnyModel } from "@/shared/rootroot";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -585,7 +586,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
 
         this.gridOptions = Object.entries(this.enumSchemaColumn.options).map(([k, v]) => {
-            return { value: k, label: v };
+            return { value: k, label: v as string };
         });
 
         // if we use datagrid's builtin singleselect column, it doesn't support null. so use a sentinel value.

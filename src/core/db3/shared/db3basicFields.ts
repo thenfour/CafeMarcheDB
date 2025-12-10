@@ -5,7 +5,7 @@ import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull } from "
 import {
     type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCriterion, DiscreteCriterionFilterType,
     EventFutureFilterExpression, EventPast60DaysFilterExpression, EventPastFilterExpression, EventRelevantFilterExpression, type SearchResultsFacetOption,
-    type SearchResultsFacetQuery, type SortQueryElements, type TAnyModel
+    type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
 import {
     ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
@@ -14,6 +14,7 @@ import {
 } from "./db3core";
 import { type UserWithRolesPayload } from "./schema/userPayloads";
 import { type ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gSwatchColors } from "../../components/color/palette";
+import { TAnyModel } from "@/shared/rootroot";
 
 // export type DB3AuthSpec = {
 //     authMap: DB3AuthContextPermissionMap;

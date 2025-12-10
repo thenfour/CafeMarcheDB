@@ -10,7 +10,7 @@ import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
-import { formatFileSize } from "shared/rootroot";
+import { Coord2D, formatFileSize, MulSize } from "shared/rootroot";
 import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
@@ -20,12 +20,10 @@ import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/file/FileDrop";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
-//import { Markdown2Control } from "src/core/components/MarkdownControl2";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
 import { getURIForFile } from "@/src/core/db3/clientAPILL";
-import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicTypes";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -35,7 +33,9 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
+import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
+import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImageParams } from "@/src/core/db3/shared/fileTypes";
+import { Size } from "recharts/types/util/types";
 
 
 

@@ -13,8 +13,8 @@ import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 //import { API } from '../clientAPI';
 import * as db3 from "../db3";
-import type { TAnyModel } from "../shared/apiTypes";
 import type { SettingKey } from "shared/settingKeys";
+import { TAnyModel } from "@/shared/rootroot";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

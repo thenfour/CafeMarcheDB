@@ -5,10 +5,10 @@
 import { xEvent } from "@/src/core/db3/db3";
 import { DB3QueryCore2 } from "@/src/core/db3/server/db3QueryCore";
 import { CMDBTableFilterModel } from "@/src/core/db3/shared/apiTypes";
+import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
 import { NextApiRequest, NextApiResponse } from "next";
 import { EnNlFr } from "shared/lang";
 import * as db3 from "src/core/db3/db3";
-import { MakePublicFeedResponseSpec } from "src/core/db3/shared/publicTypes";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const langParam = req.query.lang;
@@ -56,20 +56,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const galleryResult: db3.FrontpageGalleryItemPayload[] = galleryResultRaw.items as db3.FrontpageGalleryItemPayload[];
 
     const payload = MakePublicFeedResponseSpec(eventsResult, lang, galleryResult);
-
-    // // trim down events to agenda items
-    // const agenda: PublicAgendaItemSpec[] = eventsResult.map(e => getAgendaItem(e, lang));
-    // const sortedAgenda = sortEvents(agenda);
-
-    // // handle gallery
-    // const publicGallery: PublicGalleryItemSpec[] = galleryResult.map(g => convertGalleryItem(g));
-    // // sort by sortorder
-    // publicGallery.sort((a, b) => a.sortOrder - b.sortOrder);
-
-    // const payload: PublicFeedResponseSpec = {
-    //     agenda: sortedAgenda,
-    //     gallery: publicGallery,
-    // };
 
     res.status(200).json(payload);
 }

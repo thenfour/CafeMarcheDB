@@ -2,9 +2,12 @@
 
 import { Prisma } from "db";
 import { Clamp, gMinImageDimension } from "shared/utils";
-import * as db3 from "src/core/db3/db3";
-import { AddCoord2DSize, type Coord2D, type ImageEditParams, MakeDefaultImageEditParams, type Size, getFileCustomData, parsePayloadJSON } from "./apiTypes";
+import * as db3 from "@db3/db3";
 import { PublicGalleryItemSpec } from "./publicTypes";
+import { Size } from "recharts/types/util/types";
+import { ImageEditParams, MakeDefaultImageEditParams } from "./fileTypes";
+import { AddCoord2DSize, Coord2D, parsePayloadJSON } from "@/shared/rootroot";
+import { getFileCustomData } from "./fileAPI";
 
 
 // db3.FilePayloadMinimum

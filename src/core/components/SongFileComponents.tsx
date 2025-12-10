@@ -17,7 +17,6 @@ import { getURIForFile, getURIForFileLandingPage } from '../db3/clientAPILL';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
-import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AppContextMarker } from './AppContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip } from "./CMCoreComponents";
@@ -38,6 +37,7 @@ import { UserChip } from './user/userChip';
 import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
 import { SongChip } from './song/SongChip';
 import { WikiPageChip } from './wiki/WikiPageChip';
+import { TClientFileUploadTags } from '../db3/shared/fileTypes';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

@@ -8,7 +8,7 @@ import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
-import { type CMDBTableFilterModel, SearchCustomDataHookId, type TAnyModel } from "../apiTypes";
+import { type CMDBTableFilterModel, SearchCustomDataHookId } from "../apiTypes";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import {
@@ -37,6 +37,7 @@ import { type EventResponses_ExpectedUserTag, MakeCreatedByField, MakeUpdatedByF
 import { type WorkflowDef_Minimum } from "./workflow";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../genericStringField";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import { TAnyModel } from "@/shared/rootroot";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {

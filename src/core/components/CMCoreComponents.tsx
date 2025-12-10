@@ -13,13 +13,13 @@ import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { getURIForEvent } from "../db3/clientAPILL";
 import { RenderMuiIcon } from "../db3/components/IconMap";
-import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
 import { CMTextField } from "./CMTextField";
 import { ColorVariationSpec } from "./color/palette";
 import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { ActivityFeature } from "./featureReports/activityTracking";
+import { Coord2D, TAnyModel } from "@/shared/rootroot";
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
 export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {

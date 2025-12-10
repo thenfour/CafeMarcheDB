@@ -12,10 +12,10 @@ import { AdminInspectObject, CMDialogContentText, CMSmallButton, DialogActionsCM
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
-import type { TAnyModel } from "../shared/apiTypes";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 import { AppContextMarker } from "src/core/components/AppContext";
+import { TAnyModel } from "@/shared/rootroot";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
