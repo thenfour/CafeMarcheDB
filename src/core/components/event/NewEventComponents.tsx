@@ -126,7 +126,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
 
-            void router.push(API.events.getURIForEvent(ret.event));
+            void router.push(dashboardContext.routingApi.getURIForEvent(ret.event));
 
         }).catch(err => {
             console.log(err);

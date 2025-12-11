@@ -5,7 +5,7 @@ import { GetServerSideProps } from "next";
 import { CMPublicIndex } from "../core/components/frontpage/CMFrontpage";
 import { GenericPublicIndex } from "../core/components/frontpage/GenericFrontpage";
 import { PublicFeedResponseSpec } from "../core/db3/shared/publicTypes";
-import { SharedAPI } from "../core/db3/shared/sharedAPI";
+import { ServerApi } from "../server/serverApi";
 
 const PublicIndex: BlitzPage<{ publicFeed: PublicFeedResponseSpec }> = (props) => {
     const brand = useBrand();
@@ -19,7 +19,7 @@ const PublicIndex: BlitzPage<{ publicFeed: PublicFeedResponseSpec }> = (props) =
 }
 
 export const getServerSideProps: GetServerSideProps<{ publicFeed: PublicFeedResponseSpec }> = async (ctx) => {
-    const uri = SharedAPI.serverGetAbsoluteUri(`/api/public?lang=${ctx.locale || "en"}`);
+    const uri = ServerApi.getAbsoluteUri(`/api/public?lang=${ctx.locale || "en"}`);
     const res = await fetch(uri);
     const publicFeed: PublicFeedResponseSpec = await res.json();
     return {

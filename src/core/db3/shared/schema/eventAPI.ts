@@ -79,7 +79,7 @@ export interface createMockEventUserResponseArgs<TEvent extends db3.EventRespons
     userId: number,
     event: TEvent;
     defaultInvitees: Set<number>;
-    data: DashboardContextDataBase;
+    dashboardContext: DashboardContextDataBase;
     users: UserInstrumentList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
 };
@@ -109,7 +109,7 @@ export function createMockEventUserResponse<TEvent extends db3.EventResponses_Mi
         event: args.event,
         isInvited: invitedByDefault,
         isRelevantForDisplay: invitedByDefault,
-        instrument: getInstrumentForEventUserResponse(mockResponse, args.userId, args.data, args.users),
+        instrument: getInstrumentForEventUserResponse(mockResponse, args.userId, args.dashboardContext, args.users),
         response: mockResponse,
     };
 };
@@ -171,7 +171,7 @@ export interface GetEventResponseForUserArgs<
     user: db3.UserWithInstrumentsPayload;
     event: TEvent;
     defaultInvitationUserIds: Set<number>;
-    data: DashboardContextDataBase;
+    dashboardContext: DashboardContextDataBase;
     userMap: UserInstrumentList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
 };
@@ -179,11 +179,11 @@ export interface GetEventResponseForUserArgs<
 
 export function getEventResponseForUser<TEvent extends db3.EventResponses_MinimalEvent,
     TEventResponse extends db3.EventResponses_MinimalEventUserResponse
->({ event, user, defaultInvitationUserIds, data, userMap, makeMockEventUserResponse }: GetEventResponseForUserArgs<TEvent, TEventResponse>): db3.EventUserResponse<TEvent, TEventResponse> | null {
+>({ event, user, defaultInvitationUserIds, dashboardContext, userMap, makeMockEventUserResponse }: GetEventResponseForUserArgs<TEvent, TEventResponse>): db3.EventUserResponse<TEvent, TEventResponse> | null {
     const response = event.responses.find(r => r.userId === user.id);
     if (response) {
         const isInvited = response.isInvited || defaultInvitationUserIds.has(user.id); // #162 default invitation overrides "uninvite"
-        const instrument = getInstrumentForEventUserResponse(response, user.id, data, userMap);
+        const instrument = getInstrumentForEventUserResponse(response, user.id, dashboardContext, userMap);
         return {
             isInvited,
             event,
@@ -194,7 +194,7 @@ export function getEventResponseForUser<TEvent extends db3.EventResponses_Minima
         };
     }
 
-    return createMockEventUserResponse({ event, defaultInvitees: defaultInvitationUserIds, userId: user.id, data, users: userMap, makeMockEventUserResponse });
+    return createMockEventUserResponse({ event, defaultInvitees: defaultInvitationUserIds, userId: user.id, dashboardContext, users: userMap, makeMockEventUserResponse });
 };
 
 
@@ -277,9 +277,9 @@ export class EventResponseInfo<
 
     getResponsesForSegment = (segmentId: number) => this.allSegmentResponses.filter(r => r.segment.id === segmentId);
 
-    getEventResponseForUser = (user: db3.UserWithInstrumentsPayload, data: DashboardContextDataBase, userMap: UserInstrumentList) => {
+    getEventResponseForUser = (user: db3.UserWithInstrumentsPayload, dashboardContext: DashboardContextDataBase, userMap: UserInstrumentList) => {
         const ret = this.allEventResponses.find(r => r.user.id === user.id);
-        if (!ret) return createMockEventUserResponse({ event: this.event, defaultInvitees: this.defaultInvitationUserIds, data, users: userMap, userId: user.id, makeMockEventUserResponse: this.makeMockEventUserResponse });
+        if (!ret) return createMockEventUserResponse({ event: this.event, defaultInvitees: this.defaultInvitationUserIds, dashboardContext, users: userMap, userId: user.id, makeMockEventUserResponse: this.makeMockEventUserResponse });
         return ret;
     }
 };
@@ -296,7 +296,7 @@ interface EventResponsesPerUserArgs<
 > {
     event: TEvent;
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null;
-    data: DashboardContextDataBase;
+    dashboardContext: DashboardContextDataBase;
     userMap: UserInstrumentList;
 
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
@@ -311,7 +311,7 @@ export function GetEventResponseInfo<
     TEventResponse extends db3.EventResponses_MinimalEventUserResponse,
     TSegmentResponse extends db3.EventResponses_MinimalEventSegmentUserResponse,
 >
-    ({ event, expectedAttendanceTag, data, userMap, makeMockEventSegmentResponse, makeMockEventUserResponse }: EventResponsesPerUserArgs<TEvent, TEventResponse, TEventSegment, TSegmentResponse>
+    ({ event, expectedAttendanceTag, dashboardContext, userMap, makeMockEventSegmentResponse, makeMockEventUserResponse }: EventResponsesPerUserArgs<TEvent, TEventResponse, TEventSegment, TSegmentResponse>
     ):
     (null | EventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse>) {
     if (!event.segments) return null; // limited users don't see segments.
@@ -389,7 +389,7 @@ export function GetEventResponseInfo<
             user,
             event,
             defaultInvitationUserIds,
-            data,
+            dashboardContext,
             makeMockEventUserResponse,
             userMap,
         });
@@ -405,6 +405,6 @@ export function GetEventResponseInfo<
         allEventResponses,
         makeMockEventSegmentResponse,
         makeMockEventUserResponse,
-    }, data, userMap);
+    }, dashboardContext, userMap);
 
 };

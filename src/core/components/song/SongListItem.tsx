@@ -22,7 +22,7 @@ type SongListItemProps = {
 
 export const SongListItem = (props: SongListItemProps) => {
     const dashboardContext = useDashboardContext();
-    const songData = CalculateSongMetadata(props.song);
+    const songData = CalculateSongMetadata(props.song, undefined, dashboardContext);
     const fileInfo = GetSongFileInfo(props.song, dashboardContext);
     const hasBpm = !IsNullOrWhitespace(songData.formattedBPM);
     const hasLength = !!songData.song.lengthSeconds;

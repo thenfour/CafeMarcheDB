@@ -1,13 +1,14 @@
-// internal APIs which can be called from server code.
+// app apis which can be called from server or client code.
+// it's useful to group things like this instead of freestanding functions
 
-import { Prisma } from "db";
-import { Clamp, concatenateUrlParts, gMinImageDimension } from "shared/utils";
-import * as db3 from "@db3/db3";
-import { PublicGalleryItemSpec } from "./publicTypes";
-import { Size } from "recharts/types/util/types";
-import { ImageEditParams, MakeDefaultImageEditParams } from "./fileTypes";
 import { AddCoord2DSize, Coord2D, parsePayloadJSON } from "@/shared/rootroot";
+import * as db3 from "@db3/db3";
+import { Prisma } from "db";
+import { Size } from "recharts/types/util/types";
+import { Clamp, gMinImageDimension } from "shared/utils";
 import { getFileCustomData } from "./fileAPI";
+import { ImageEditParams, MakeDefaultImageEditParams } from "./fileTypes";
+import { PublicGalleryItemSpec } from "./publicTypes";
 
 
 // db3.FilePayloadMinimum
@@ -129,10 +130,4 @@ const gFilesSharedAPI = new FilesSharedAPI();
 
 export const SharedAPI = {
     files: gFilesSharedAPI,
-
-    // clients cannot access process.env. For client-side, use the routing API on the dashboardContext.
-    serverGetAbsoluteUri: (relativePath: string) => {
-        return concatenateUrlParts(process.env.CMDB_BASE_URL!, relativePath);
-    },
-
 };

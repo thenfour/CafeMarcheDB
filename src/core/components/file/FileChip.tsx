@@ -2,7 +2,6 @@ import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
 import { Prisma } from "@prisma/client";
 import * as db3 from "src/core/db3/db3";
-import { getURIForFile } from "../../db3/clientAPILL";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
 import { Markdown } from "../markdown/Markdown";
@@ -22,7 +21,7 @@ export interface FileChipProps {
 
 export const FileChip = (props: FileChipProps) => {
     const dashboardContext = useDashboardContext();
-    const href = dashboardContext.isAuthorized(Permission.view_files) ? getURIForFile(props.value) : undefined;
+    const href = dashboardContext.isAuthorized(Permission.view_files) ? dashboardContext.routingApi.getURIForFile(props.value) : undefined;
     return <CMChip
         variation={props.variation}
         size={props.size}

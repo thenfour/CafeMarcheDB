@@ -17,7 +17,6 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { useBrand } from "../../../../shared/brandConfig";
 import { API } from "../../db3/clientAPI";
-import { getAbsoluteUrl } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../../db3/shared/apiTypes";
 import { QrHelpers } from "../../db3/shared/qrApi";
@@ -103,7 +102,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
                     How to use calendar sync...
                 </MenuItem>
                 <MenuItem onClick={async () => {
-                    const uri = getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
+                    const uri = dashboardContext.getAbsoluteUri(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
                     await navigator.clipboard.writeText(uri);
                     closeMenu();
                     showSnackbar({ children: "Link address copied", severity: 'success' });
@@ -277,7 +276,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     <div>
                         <AppContextMarker name="appBarQrCode">
                             <QrCodeButton
-                                content={QrHelpers.url(getAbsoluteUrl(router.asPath))}
+                                content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
                                 title="QR code for this page"
                                 description={<SettingMarkdown setting={Setting.QrCodeForThisPageDescriptionMarkdown} />}
                                 renderButton={({ onClick }) => (

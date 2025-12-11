@@ -8,7 +8,6 @@ import React from "react";
 import { CoalesceBool, getHashedColor, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions, CMStandardDBChip } from "../CMChip";
-import { getURIForEvent } from "../../db3/clientAPILL";
 import { CMStatusIndicator } from "../CMCoreComponents";
 import { Tooltip } from "@mui/material";
 import { Markdown } from "../markdown/Markdown";
@@ -70,7 +69,7 @@ export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => 
 
     // cancelled events should be shown with a strikethrough
     const status = dashboardContext.eventStatus.getById(props.value.statusId);
-    const href = dashboardContext.isAuthorized(Permission.view_events) ? getURIForEvent(props.value) : undefined;
+    const href = dashboardContext.isAuthorized(Permission.view_events) ? dashboardContext.routingApi.getURIForEvent(props.value) : undefined;
     //const isCancelled = status?.significance === db3.EventStatusSignificance.Cancelled;
 
     return <CMChip

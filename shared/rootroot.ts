@@ -280,3 +280,10 @@ export const AddCoord2DSize = (a: Coord2D, b: Size): Coord2D => {
     }
 };
 
+export function isAbsoluteUri(input: string): boolean {
+    // RFC 3986: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+    // So an absolute URI starts with `scheme:`
+    const trimmed = input.trim();
+    return /^[A-Za-z][A-Za-z0-9+.-]*:/.test(trimmed);
+}
+

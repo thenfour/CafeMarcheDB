@@ -25,7 +25,6 @@ import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { FileTagChip } from "@/src/core/components/file/FileChip";
@@ -40,6 +39,7 @@ export interface FileBreadcrumbProps {
     file: EnrichedFile<db3.FilePayload>,
 };
 export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
+    const dashboardContext = useDashboardContext();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
             href="/backstage"
@@ -54,7 +54,7 @@ export const FileBreadcrumbs = (props: FileBreadcrumbProps) => {
         </CMLink>
 
         <CMLink
-            href={getURIForFileLandingPage(props.file)}
+            href={dashboardContext.routingApi.getURIForFileLandingPage(props.file)}
         >
             {props.file.fileLeafName}
         </CMLink>
@@ -181,19 +181,19 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                             ))}
                         </CMChipContainer>) : "",
                     "Frontpage gallery usage": file.frontpageGalleryItems && file.frontpageGalleryItems.length || "",
-                    "Parent File": <>{file.parentFileId ? <CMLink href={getURIForFileLandingPage({ id: file.parentFileId })}>{file.parentFileId}</CMLink> : ''}</>,
+                    "Parent File": <>{file.parentFileId ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage({ id: file.parentFileId })}>{file.parentFileId}</CMLink> : ''}</>,
                     "Child files": <CMChipContainer>
                         {file.childFiles && file.childFiles.length > 0 && (
                             file.childFiles.map((childFile, index) => (
-                                <CMLink key={index} href={getURIForFileLandingPage(childFile)}>{childFile.id}</CMLink>
+                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(childFile)}>{childFile.id}</CMLink>
                             ))
                         )}
                     </CMChipContainer>,
-                    "Preview File": file.previewFileId ? <CMLink href={getURIForFileLandingPage({ id: file.previewFileId })}>{file.previewFileId}</CMLink> : '',
+                    "Preview File": file.previewFileId ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage({ id: file.previewFileId })}>{file.previewFileId}</CMLink> : '',
                     "Preview for": <CMChipContainer>
                         {file.previewForFile && file.previewForFile.length > 0 && (
                             file.previewForFile.map((previewForFile, index) => (
-                                <CMLink key={index} href={getURIForFileLandingPage(previewForFile)}>{previewForFile.id}</CMLink>
+                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(previewForFile)}>{previewForFile.id}</CMLink>
                             ))
                         )}
                     </CMChipContainer>,

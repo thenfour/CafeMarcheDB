@@ -2,8 +2,10 @@
 // this file NEEDS clientbasicfields because we have tableclients & corresponding columns.
 // so it means the clientbasicfields is lower level than this file, which feels wrong but ok.
 
+import { TAnyModel } from "@/shared/rootroot";
 import { useSession } from "@blitzjs/auth";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
+import * as db3 from "@db3/db3";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { SettingKey } from "shared/settingKeys";
@@ -12,8 +14,6 @@ import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
-import * as db3 from "src/core/db3/db3";
-import * as ClientAPILL from "./clientAPILL";
 import deleteEventSongList from "./mutations/deleteEventSongList";
 import insertEvent from "./mutations/insertEvent";
 import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
@@ -25,7 +25,6 @@ import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateSongBasicFields from "./mutations/updateSongBasicFields";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
-import { TAnyModel } from "@/shared/rootroot";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -118,40 +117,6 @@ const gUsersAPI = new UsersAPI();
 class EventsAPI {
 
 
-    // sorts by start date, from newest to latest, NULL = future.
-    //sortEvents // use global ver (in apitypes)
-
-    // // null-or-whitespace values in EN will not show the field
-    // // null-or-whitespace values in NL and FR fallback to english
-    // getAgendaItem(event: db3.EventWithTagsPayload, lang: EnNlFr): PublicAgendaItemSpec {
-    //     //const fallbacks = this.getAgendaItemFallbackValues(event, lang);
-    //     const ret: PublicAgendaItemSpec = {
-    //         id: event.id,
-    //         startsAt: event.startsAt,
-    //         date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || "",
-    //         time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || "",
-    //         detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || "",
-    //         location: LangSelectString(lang, event.frontpageLocation, event.frontpageLocation_nl, event.frontpageLocation_fr) || "",
-    //         locationURI: LangSelectString(lang, event.frontpageLocationURI, event.frontpageLocationURI_nl, event.frontpageLocationURI_fr) || "",
-    //         tags: LangSelectString(lang, event.frontpageTags, event.frontpageTags_nl, event.frontpageTags_fr) || "",
-    //         title: LangSelectString(lang, event.frontpageTitle, event.frontpageTitle_nl, event.frontpageTitle_fr) || "",
-    //     }
-    //     return ret;
-    // }
-
-    // getAgendaItemFallbackValues(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
-    //     const ret: HomepageAgendaItemSpec = {
-    //         date: "",
-    //         time: "",
-    //         detailsMarkdown: "",
-    //         location: event.locationDescription,
-    //         locationURI: event.locationURL,
-    //         tags: event.tags.filter(a => a.eventTag.visibleOnFrontpage).map(a => `#${a.eventTag.text}`).join(" "),
-    //         title: event.name,
-    //     };
-    //     return ret;
-    // }
-
     getEventSegmentFormattedDateRange(segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay: true, } }>) {
         return db3.getEventSegmentDateTimeRange(segment).toString();
         //return "daterangehere";
@@ -163,20 +128,6 @@ class EventsAPI {
             durationMillis: Number(event.durationMillis),
             isAllDay: event.isAllDay,
         });
-    }
-
-    // getEventDateRange(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
-    //     let ret = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
-    //     for (const segment of event.segments) {
-    //         const r = db3.getEventSegmentDateTimeRange(segment);
-    //         const newRet = ret.unionWith(r);
-    //         ret = newRet;
-    //     }
-    //     return ret;
-    // }
-
-    getURIForEvent(event: Prisma.EventGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) {
-        return ClientAPILL.getURIForEvent(event, tabSlug);
     }
 
     getSongListStats = (songList: db3.EventSongListPayload): SongListStats => {
@@ -219,14 +170,6 @@ class EventsAPI {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class SongsAPI {
-
-    getURIForSong(song: Prisma.SongGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) {
-        return ClientAPILL.getURIForSong(song, tabSlug);
-    }
-
-    getFormattedBPM(song: Prisma.SongGetPayload<{ select: { startBPM: true, endBPM: true } }>) {
-        return ClientAPILL.getFormattedBPM(song);
-    }
 
     updateSongBasicFields = CreateAPIMutationFunction(updateSongBasicFields);
 };

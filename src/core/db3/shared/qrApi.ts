@@ -1,4 +1,4 @@
-import { getAbsoluteUrl } from "../clientAPILL";
+import { DashboardContextDataBase } from "../../components/dashboardContext/dashboardContextTypes";
 
 export type QrCodeErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
 
@@ -75,7 +75,7 @@ export interface QrCodeOptions {
  * @param options - QR code generation options
  * @returns The complete API URL with query parameters
  */
-export function generateQrApiUrl(options: QrCodeOptions): string {
+export function generateQrApiUrl(options: QrCodeOptions, dashboardContext: DashboardContextDataBase): string {
     const {
         type = 'svg',
         errorCorrectionLevel = 'M',
@@ -138,7 +138,7 @@ export function generateQrApiUrl(options: QrCodeOptions): string {
     }
 
     // Build URL manually to avoid double-encoding query parameters
-    const baseUrl = getAbsoluteUrl('/api/qr');
+    const baseUrl = dashboardContext.getAbsoluteUri('/api/qr');
     return `${baseUrl}?${params.toString()}`;
 }
 

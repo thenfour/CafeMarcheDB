@@ -1,6 +1,7 @@
 // consider unifying with the normal search api for consistency and simplicity.
 
 import { Permission } from "@/shared/permissions";
+import { ServerApi } from "@/src/server/serverApi";
 import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
 import { CalculateMatchStrength, CalculateMatchStrengthForTags, MakeWhereCondition, MakeWhereConditionForTags, ParseQuickFilter, ParseQuickFilterResult, QuickSearchItemMatch, QuickSearchItemType, SearchableTableFieldSpec } from "shared/quickFilter";
@@ -8,7 +9,6 @@ import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression2 } from "src/core/db3/shared/db3Helpers";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
-import { SharedAPI } from "../shared/sharedAPI";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -100,7 +100,7 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
         }
 
         const makeSongInfo = (x: typeof songs[0]): QuickSearchItemMatch => {
-            const absoluteUri = SharedAPI.serverGetAbsoluteUri(`/backstage/song/${x.id}/${slugify(x.name || "")}`);
+            const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/song/${x.id}/${slugify(x.name || "")}`);
             let bestMatch = CalculateMatchStrength(songFields, x, query);
 
             const bestMatchForTags = CalculateMatchStrengthForTags(songTagField, x.tags.map(st => st.tag), query);
@@ -209,7 +209,7 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
             });
         }
         const makeEventInfo = (x: typeof events[0]): QuickSearchItemMatch => {
-            const absoluteUri = SharedAPI.serverGetAbsoluteUri(`/backstage/event/${x.id}/${slugify(x.name || "")}`);
+            const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/event/${x.id}/${slugify(x.name || "")}`);
 
             let bestMatch = CalculateMatchStrength(eventFields, x, query);
 
@@ -339,7 +339,7 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
         const wikiPages = await db.wikiPage.findMany(wikiArgs);
 
         const makeWikiPageInfo = (x: typeof wikiPages[0]): QuickSearchItemMatch => {
-            const absoluteUri = SharedAPI.serverGetAbsoluteUri(`/backstage/wiki/${x.slug}`); // 
+            const absoluteUri = ServerApi.getAbsoluteUri(`/backstage/wiki/${x.slug}`); // 
             let bestMatch = CalculateMatchStrength(wikiPageFields, x, query);
             if (x.currentRevision) {
                 const bestMatchForRevision = CalculateMatchStrength(wikiPageRevisionFields, x.currentRevision, query);

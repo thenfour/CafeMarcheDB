@@ -20,6 +20,14 @@ import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
 import { enrichInstrument } from '@db3/shared/schema/enrichedInstrumentTypes';
 
+type CmdbWindow = Window & {
+    cmdbDashboardContext?: DashboardContextData;
+};
+
+export const getCmdbWindow = (): CmdbWindow => {
+    return window as CmdbWindow;
+}
+
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
 };
@@ -231,6 +239,8 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
     valueRef.current.brand = brand;
 
+    getCmdbWindow().cmdbDashboardContext = valueRef.current;
+
     // do enrichment after fundamentals are set up.
     valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks.map(link => {
         return {
@@ -323,3 +333,7 @@ export const useRecordFeatureUse = (params: UseFeatureUseClientActivityParams) =
 
     React.useEffect(throttledRecordAction, []);
 }
+
+export const getDashboardContextDataSingleton = () => {
+    return getCmdbWindow().cmdbDashboardContext;
+};

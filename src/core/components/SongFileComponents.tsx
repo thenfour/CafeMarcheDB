@@ -7,16 +7,17 @@ import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
 import { SplitQuickFilter } from 'shared/quickFilter';
-import { SortDirection, formatFileSize } from 'shared/rootroot';
+import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { getURIForFile, getURIForFileLandingPage } from '../db3/clientAPILL';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import updateSongPinnedRecording from '../db3/mutations/updateSongPinnedRecording';
+import { TClientFileUploadTags } from '../db3/shared/fileTypes';
+import { EnrichedFile } from '../db3/shared/schema/enrichedFileTypes';
 import { AppContextMarker } from './AppContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip } from "./CMCoreComponents";
@@ -24,6 +25,8 @@ import { CMSmallButton, DotMenu } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
 import { VisibilityValue } from './VisibilityControl';
+import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
+import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
 import { EventChip } from './event/EventChips';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { CMDBUploadFile } from './file/CMDBUploadFile';
@@ -32,13 +35,9 @@ import { Markdown } from "./markdown/Markdown";
 import { AnimatedFauxEqualizer } from './mediaPlayer/MediaPlayerBar';
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
 import { MediaPlayerEventContextPayload, MediaPlayerSongContextPayload } from './mediaPlayer/MediaPlayerTypes';
-import { UserChip } from './user/userChip';
-import { gGeneralPaletteList, StandardVariationSpec } from './color/palette';
 import { SongChip } from './song/SongChip';
+import { UserChip } from './user/userChip';
 import { WikiPageChip } from './wiki/WikiPageChip';
-import { TClientFileUploadTags } from '../db3/shared/fileTypes';
-import { EnrichedFile } from '../db3/shared/schema/enrichedFileTypes';
-import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
 
 
 type EnrichedFileEx = EnrichedFile<db3.FileWithTagsPayload>;
@@ -137,6 +136,7 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
 
 
 export const FileExternalLink = ({ file, highlight }: { file: EnrichedFileEx, highlight?: boolean }) => {
+    const dashboardContext = useDashboardContext();
     const filenameClass = highlight ? "filename highlight" : "filename";
 
     return file.externalURI ? (
@@ -147,7 +147,7 @@ export const FileExternalLink = ({ file, highlight }: { file: EnrichedFileEx, hi
             </Tooltip>
         </CMLink>
     ) : (
-        <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={getURIForFile(file)}>
+        <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={dashboardContext.routingApi.getURIForFile(file)}>
             <FileDownloadIcon />
             <Tooltip title={file.fileLeafName}>
                 <div className={filenameClass}>{smartTruncate(file.fileLeafName)}</div>
@@ -201,7 +201,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
     }
 
     const variation = StandardVariationSpec.Weak;
-    const uri = file.externalURI || getURIForFile(file);
+    const uri = file.externalURI || dashboardContext.routingApi.getURIForFile(file);
 
     const isPinned = props.contextSong?.pinnedRecordingId === file.id;
 
@@ -269,7 +269,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                     {dashboardContext.isAuthorized(Permission.access_file_landing_page) &&
                         <MenuItem>
                             <ListItemIcon>{gIconMap.Link()}</ListItemIcon>
-                            <CMLink href={getURIForFileLandingPage(file)}>Visit file landing page</CMLink>
+                            <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage(file)}>Visit file landing page</CMLink>
                         </MenuItem>
                     }
                 </DotMenu>

@@ -1,3 +1,4 @@
+import { TAnyModel } from "@/shared/rootroot";
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
@@ -5,11 +6,9 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { SongClientColumns } from "src/core/components/song/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API } from "src/core/db3/clientAPI";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "../../db3/components/IconMap";
-import { TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export const NewSongButton = () => {
@@ -57,10 +56,12 @@ export const NewSongButton = () => {
         clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.Mutation,
         tableSpec: songTableSpec,
-    }); const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
-        songTableClient.doInsertMutation(obj).then(async (ret) => {
+    });
+
+    const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        songTableClient.doInsertMutation(obj).then(async (ret: db3.SongPayloadMinimum) => {
             showSnackbar({ severity: "success", children: "success" });
-            void router.push(API.songs.getURIForSong(ret as any));
+            void router.push(dashboardContext.routingApi.getURIForSong(ret));
             api.closeDialog();
         }).catch(e => {
             console.log(e);

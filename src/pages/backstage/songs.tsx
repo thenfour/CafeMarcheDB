@@ -8,7 +8,6 @@ import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { NewSongButton } from "src/core/components/song/NewSongComponents";
-import { getURIForSong } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { songSearchConfig } from "src/core/hooks/searchConfigs";
@@ -117,7 +116,7 @@ const SongListOuter = () => {
                 Order: index.toString(),
                 ID: song.id.toString(),
                 Name: song.name,
-                URL: getURIForSong(song),
+                URL: dashboardContext.routingApi.getURIForSong(song),
             }),
             filename: "songs"
         },

@@ -4,7 +4,6 @@ import { useQuery } from "@blitzjs/rpc";
 import getUser from "../../db3/queries/getUser";
 import * as db3 from "src/core/db3/db3";
 import { getHashedColor } from "shared/utils";
-import { getURIForUser } from "../../db3/clientAPILL";
 import { ColorVariationSpec } from "../color/palette";
 import { Permission } from "@/shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
@@ -38,7 +37,7 @@ const ValuedUserChip = (props: ValuedUserChipProps) => {
     const dashboardContext = useDashboardContext();
 
     const userId = props.value?.id || null;
-    const userURI = userId && dashboardContext.isAuthorized(Permission.view_users_basic_info) ? getURIForUser({ id: userId }) : undefined;
+    const userURI = userId && dashboardContext.isAuthorized(Permission.view_users_basic_info) ? dashboardContext.routingApi.getURIForUser({ id: userId }) : undefined;
 
     const clickHandler = props.onClick;
 

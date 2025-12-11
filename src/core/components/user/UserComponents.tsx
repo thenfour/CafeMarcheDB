@@ -5,11 +5,11 @@ import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { getURIForUser } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMLink } from "../CMLink";
 import { ChooseItemDialog } from "../select/ChooseItemDialog";
 //import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
+import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { UserChip } from "./userChip";
 
 
@@ -77,6 +77,7 @@ export interface UserBreadcrumbProps {
     user: Prisma.UserGetPayload<{ select: { id: true, name: true } }>,
 };
 export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
+    const dashboardContext = useDashboardContext();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
             href="/backstage"
@@ -91,7 +92,7 @@ export const UserBreadcrumbs = (props: UserBreadcrumbProps) => {
         </CMLink>
 
         <CMLink
-            href={getURIForUser(props.user)}
+            href={dashboardContext.routingApi.getURIForUser(props.user)}
         >
             {IsNullOrWhitespace(props.user.name) ? props.user.id : props.user.name}
         </CMLink>

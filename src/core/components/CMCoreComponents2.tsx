@@ -11,8 +11,14 @@ import { IsNullOrWhitespace, lerp } from "shared/utils";
 import { UrlObject } from "url";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import * as db3 from "../db3/db3";
+import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 
+
+export const AbsoluteUriText = (props: { relativeUri: string }) => {
+    const dashboardContext = useDashboardContext();
+    return <>{dashboardContext.getAbsoluteUri(props.relativeUri)}</>;
+};
 
 
 

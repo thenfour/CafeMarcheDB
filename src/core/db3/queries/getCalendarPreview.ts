@@ -1,4 +1,5 @@
 
+import { ServerApi } from "@/src/server/serverApi";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { ICalCalendar, ICalDateTimeValue } from "ical-generator";
@@ -6,7 +7,6 @@ import { Permission } from "shared/permissions";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { CalExportCore } from "../server/ical";
 import { GetICalRelativeURIForUserUpcomingEvents, ICalCalendarJSON } from "../shared/apiTypes";
-import { SharedAPI } from "../shared/sharedAPI";
 
 
 function ICalConvertToDate(value: ICalDateTimeValue): Date {
@@ -34,7 +34,7 @@ export default resolver.pipe(
             const cal: ICalCalendar = await CalExportCore({
                 type: "upcoming",
                 accessToken,
-                sourceURI: SharedAPI.serverGetAbsoluteUri(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: accessToken })),
+                sourceURI: ServerApi.getAbsoluteUri(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: accessToken })),
             });
 
             const ret: ICalCalendarJSON = {

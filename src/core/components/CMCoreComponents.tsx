@@ -11,7 +11,6 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { getURIForEvent } from "../db3/clientAPILL";
 import { RenderMuiIcon } from "../db3/components/IconMap";
 import { CMChip, CMChipBorderOption, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 import { CMLink } from "./CMLink";
@@ -360,7 +359,14 @@ export const EventTextLink = (props: {
 
     const isCancelled = status?.significance === db3.EventStatusSignificance.Cancelled;
 
-    return <CMLink rel="noreferrer" target="_blank" className={`${props.className} EventTextLink`} style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }} href={getURIForEvent(props.event)} trackingFeature={ActivityFeature.link_follow_internal}>
+    return <CMLink
+        rel="noreferrer"
+        target="_blank"
+        className={`${props.className} EventTextLink`}
+        style={{ display: "block", whiteSpace: "nowrap", maxWidth: "150px" }}
+        href={dashboardContext.routingApi.getURIForEvent(props.event)}
+        trackingFeature={ActivityFeature.link_follow_internal}
+    >
         <CMChip
             color={type?.color}
             size="small"

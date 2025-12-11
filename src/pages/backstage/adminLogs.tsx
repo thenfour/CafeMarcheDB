@@ -11,7 +11,6 @@ import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { getURIForUser } from "src/core/db3/clientAPILL";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
@@ -66,7 +65,7 @@ const MainContent = () => {
                         size="small"
                         tooltip={`${user.name} #${user.id}`}
                     >
-                        <a href={getURIForUser(user)} target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.id.toString()) }}>
+                        <a href={dashboardContext.routingApi.getURIForUser(user)} target="_blank" rel="noreferrer" style={{ color: getHashedColor(user.id.toString()) }}>
                             {user.name}
                         </a>
                     </CMChip>;

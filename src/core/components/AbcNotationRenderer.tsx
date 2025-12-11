@@ -1,5 +1,5 @@
 import React from 'react';
-import { getAbsoluteUrl } from '../db3/clientAPILL';
+import { useDashboardContext } from './dashboardContext/DashboardContext';
 
 interface AbcNotationRendererProps {
     notation: string;
@@ -18,8 +18,9 @@ export const AbcNotationRenderer: React.FC<AbcNotationRendererProps> = ({
     style,
     alt = "Music notation",
 }) => {
+    const dashboardContext = useDashboardContext();
     const encodedNotation = encodeURIComponent(notation);
-    const apiUrl = getAbsoluteUrl(`/api/abc/render?notation=${encodedNotation}&width=${width}&scale=${scale}`);
+    const apiUrl = dashboardContext.getAbsoluteUri(`/api/abc/render?notation=${encodedNotation}&width=${width}&scale=${scale}`);
 
     return (
         <img

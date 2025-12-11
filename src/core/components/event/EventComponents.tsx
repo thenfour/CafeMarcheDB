@@ -21,7 +21,6 @@ import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContex
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
-import { getAbsoluteUrl } from '../../db3/clientAPILL';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../../db3/components/IconMap';
 import { GetICalRelativeURIForUserUpcomingEvents, SearchResultsRet } from '../../db3/shared/apiTypes';
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
@@ -374,6 +373,7 @@ export interface EventBreadcrumbProps {
     event: db3.EventVerbose_Event,
 };
 export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
+    const dashboardContext = useDashboardContext();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
             //underline="hover"
@@ -396,7 +396,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
         <CMLink
             //underline="hover"
             //color="inherit"
-            href={API.events.getURIForEvent(props.event)}
+            href={dashboardContext.routingApi.getURIForEvent(props.event)}
         //sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.event.name}
@@ -1154,7 +1154,7 @@ const EventDotMenu = ({ event, showVisibility, refetch }: { event: Prisma.EventG
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
 
-    const uriForGlobalCalendar = dashboardContext.currentUser && getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: dashboardContext.currentUser!.accessToken }));
+    const uriForGlobalCalendar = dashboardContext.currentUser && dashboardContext.getAbsoluteUri(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: dashboardContext.currentUser!.accessToken }));
 
     const closeMenu = () => {
         endMenuItemRef.current();
@@ -1173,7 +1173,7 @@ const EventDotMenu = ({ event, showVisibility, refetch }: { event: Prisma.EventG
 
 
         <MenuItem onClick={async () => {
-            const uri = API.events.getURIForEvent(event);
+            const uri = dashboardContext.routingApi.getURIForEvent(event);
             await navigator.clipboard.writeText(uri);
             closeMenu();
             snackbar.showSuccess("Link address copied");
@@ -1596,7 +1596,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
     const highlightStatusIds = props.highlightStatusIds || [];
     const highlightTypeIds = props.highlightTypeIds || [];
 
-    const eventURI = API.events.getURIForEvent(event);
+    const eventURI = dashboardContext.routingApi.getURIForEvent(event);
     const dateRange = API.events.getEventDateRange(event);
     const eventTiming = dateRange.hitTestDateTime();
 
@@ -1707,7 +1707,7 @@ export interface EventListItemProps {
 };
 
 export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
-
+    const dashboardContext = useDashboardContext();
     const { eventData, userMap } = CalculateEventSearchResultsMetadata({ event, results: props.results });
 
     return <EventSearchItemContainer
@@ -1731,14 +1731,14 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <SearchItemBigCardLink
                     icon={<EditNote />}
                     title="View info"
-                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
                     eventId={event.id}
                 />
                 }
                 {event.songLists.length > 0 && <SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="View setlist"
-                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
                     eventId={event.id}
                 />
                 }

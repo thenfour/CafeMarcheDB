@@ -24,11 +24,11 @@ import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 
 import { NoSsr } from '@mui/material';
-import { getURLClass } from "../../db3/clientAPILL";
 import { AbcNotationMarkdownPlugin } from './AbcNotationMarkdownPlugin';
 import { CMDBLinkMarkdownPlugin } from './CMDBLinkMarkdownPlugin';
 import { ImageDimensionsMarkdownPlugin } from './ImageDimensionsMarkdownPlugin';
 import { ReactInlineMarkdownPlugin } from './ReactInlineMarkdownPlugin';
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +41,7 @@ interface MarkdownProps {
 }
 export const Markdown = (props: MarkdownProps) => {
     const [html, setHtml] = React.useState('');
+    const dashboardContext = useDashboardContext();
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
@@ -69,7 +70,7 @@ export const Markdown = (props: MarkdownProps) => {
                 // distinguish internal vs. external.
                 const href = tokens[idx].attrs[ihref][1];
                 if (href) {
-                    const hrefClass = getURLClass(href);
+                    const hrefClass = dashboardContext.routingApi.getURLClass(href);
                     switch (hrefClass) {
                         case "external":
                             className = " externalLink opensInNewTab";

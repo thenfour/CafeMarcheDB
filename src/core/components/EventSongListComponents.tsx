@@ -4,6 +4,7 @@
 // clipboard custom formats
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
+import { TAnyModel } from '@/shared/rootroot';
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
@@ -22,12 +23,17 @@ import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import getSongPinnedRecording from '../db3/queries/getSongPinnedRecording';
 import { TSongPinnedRecording } from '../db3/shared/apiTypes';
+import { enrichSong } from '../db3/shared/schema/enrichedSongTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
 import { AdminInspectObject, CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
+import { GetStyleVariablesForColor } from './color/ColorClientUtils';
+import { ColorPick } from './color/ColorPick';
+import { gSwatchColors } from './color/palette';
+import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { Markdown } from "./markdown/Markdown";
 import { useMediaPlayer } from './mediaPlayer/MediaPlayerContext';
@@ -39,12 +45,6 @@ import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
-import { ColorPick } from './color/ColorPick';
-import { gSwatchColors } from './color/palette';
-import { GetStyleVariablesForColor } from './color/ColorClientUtils';
-import { TAnyModel } from '@/shared/rootroot';
-import { enrichSong } from '../db3/shared/schema/enrichedSongTypes';
-import { useDashboardContext, useFeatureRecorder } from './dashboardContext/DashboardContext';
 
 const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, TSongPinnedRecording>, rowIndex: number, rowItem: SetlistAPI.EventSongListItem, songListId: number }): MediaPlayerTrack => {
     if (args.rowItem.type === 'song') {
@@ -358,7 +358,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             />}</div>
             <div className="td songName">
                 {props.value.type === 'song' && <>
-                    <CMLink target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
+                    <CMLink target='_blank' rel="noreferrer" href={dashboardContext.routingApi.getURIForSong(props.value.song)} trackingFeature={ActivityFeature.link_follow_internal} >{props.value.song.name}</CMLink>
                     <SongTagIndicatorContainer
                         tagIds={props.value.song.tags.map(tag => tag.tagId)}
                         allPossibleTags={allTagIds}

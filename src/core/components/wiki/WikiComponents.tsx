@@ -7,7 +7,6 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { getAbsoluteUrl } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
 import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
@@ -41,8 +40,9 @@ interface WikiTitleControlProps {
 };
 
 const WikiTitleViewer = (props: WikiTitleControlProps) => {
+    const dashboardContext = useDashboardContext();
     return <a
-        href={getAbsoluteUrl(props.wikiPageApi.wikiPath.uriRelativeToHost)}
+        href={dashboardContext.getAbsoluteUri(props.wikiPageApi.wikiPath.uriRelativeToHost)}
         rel="noreferrer">
         <span className="WikiTitleView">
             {props.potentiallyEditedTitle}
@@ -315,7 +315,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
         </MenuItem>,
         pageExists && dashboardContext.isAuthorized(Permission.view_wiki_page_revisions) &&
         <MenuItem key={"copylink"} onClick={async () => {
-            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(getAbsoluteUrl(props.wikiPageApi.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
+            await snackbar.invokeAsync(async () => navigator.clipboard.writeText(dashboardContext.getAbsoluteUri(props.wikiPageApi.wikiPath.uriRelativeToHost)), "Copied link to clipboard");
             endMenuItemRef.current();
         }}>
             <ListItemIcon>

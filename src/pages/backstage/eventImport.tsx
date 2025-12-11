@@ -1,3 +1,7 @@
+import { TAnyModel } from "@/shared/rootroot";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { DateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
@@ -11,16 +15,11 @@ import { EventTableClientColumns } from "src/core/components/event/EventComponen
 import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl } from "src/core/components/VisibilityControl";
-import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
-import { getURIForEvent } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
 import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { TGetImportEventDataRet, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { DateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
-import { TAnyModel } from "@/shared/rootroot";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 interface InsertResult {
     event: {
@@ -255,6 +254,7 @@ const ImportEventsPageContent = () => {
     recordings`);
 
     const [eventSaveLog, setEventSaveLog] = React.useState<InsertResult[]>([]);
+    const dashboardContext = useDashboardContext();
 
     const [serverData, setServerData] = React.useState<TGetImportEventDataRet | null>(null);
 
@@ -270,7 +270,7 @@ const ImportEventsPageContent = () => {
                 <textarea className="configTxt" value={configTxt} onChange={(e) => setConfigTxt(e.target.value)} />
                 <textarea className="eventTxt" value={eventTxt} onChange={(e) => setEventTxt(e.target.value)} />
                 <ul className="history">
-                    {eventSaveLog.map((e, i) => <li key={i}><a href={getURIForEvent(e.event)} target="_blank" rel="noreferrer">{e.event.id} / {e.segment.startsAt?.toDateString()} / {e.event.name}</a></li>)}
+                    {eventSaveLog.map((e, i) => <li key={i}><a href={dashboardContext.routingApi.getURIForEvent(e.event)} target="_blank" rel="noreferrer">{e.event.id} / {e.segment.startsAt?.toDateString()} / {e.event.name}</a></li>)}
                 </ul>
             </div>
             <div>

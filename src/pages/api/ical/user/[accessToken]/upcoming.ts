@@ -1,7 +1,7 @@
 // calendar of all upcoming events
 
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
+import { ServerApi } from "@/src/server/serverApi";
 import { Ctx } from "@blitzjs/next";
 import db from "db";
 import { ICalCalendar } from "ical-generator";
@@ -19,7 +19,7 @@ export default api(async (req, res, ctx: Ctx) => {
             const cal: ICalCalendar = await CalExportCore({
                 type: "upcoming",
                 accessToken,
-                sourceURI: SharedAPI.serverGetAbsoluteUri(
+                sourceURI: ServerApi.getAbsoluteUri(
                     GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: accessToken || null })
                 )
             });

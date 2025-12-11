@@ -1,7 +1,6 @@
 import * as db3 from "src/core/db3/db3";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { ColorVariationSpec } from "../color/palette";
-import { getURIForSong } from "../../db3/clientAPILL";
 import { Permission } from "@/shared/permissions";
 import { getHashedColor } from "@/shared/utils";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
@@ -21,7 +20,7 @@ export interface SongChipProps {
 
 export const SongChip = (props: SongChipProps) => {
     const dashboardContext = useDashboardContext();
-    const href = dashboardContext.isAuthorized(Permission.view_songs) ? getURIForSong(props.value) : undefined;
+    const href = dashboardContext.isAuthorized(Permission.view_songs) ? dashboardContext.routingApi.getURIForSong(props.value) : undefined;
 
     return <CMChip
         variation={props.variation}

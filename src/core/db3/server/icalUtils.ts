@@ -1,13 +1,13 @@
+import { ServerApi } from "@/src/server/serverApi";
 import { hash256 } from "@blitzjs/auth";
 import { Prisma } from "db";
 import { ICalEventStatus } from "ical-generator";
 import { markdownToPlainText } from "shared/markdownUtils";
+import { slugify } from "shared/rootroot";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
-import { slugify } from "shared/rootroot";
-import { SharedAPI } from "../shared/sharedAPI";
 
 
 export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
@@ -169,7 +169,7 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
         isAllDay: CoalesceBool(segment.isAllDay, true),
     });
 
-    const eventUri = SharedAPI.serverGetAbsoluteUri(`/backstage/event/${event.id}/${slugify(event.name || "")}`); // 
+    const eventUri = ServerApi.getAbsoluteUri(`/backstage/event/${event.id}/${slugify(event.name || "")}`); // 
 
     if (dateRange.isTBD()) {
         return null;

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import * as db3 from "src/core/db3/db3";
-import { getURIForUser } from "../../db3/clientAPILL";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SearchResultsRet } from "../../db3/shared/apiTypes";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
@@ -10,6 +9,7 @@ import { UsersFilterSpec } from "./UserClientBaseTypes";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { StandardVariationSpec } from "../color/palette";
 import { EnrichedUser } from "../../db3/shared/schema/enrichedUserTypes";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
 
@@ -22,12 +22,13 @@ type UserListItemProps = {
 };
 
 export const UserListItem = (props: UserListItemProps) => {
+    const dashboardContext = useDashboardContext();
     return <GenericSearchListItem<EnrichedVerboseUser>
         index={props.index}
         item={props.user}
         icon={gIconMap.Person()}
         refetch={props.refetch}
-        href={getURIForUser(props.user)}
+        href={dashboardContext.routingApi.getURIForUser(props.user)}
         title={props.user.name}
         credits={[
             props.user.email,

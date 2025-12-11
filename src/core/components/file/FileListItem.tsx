@@ -1,6 +1,5 @@
 import { FolderZip, OndemandVideo } from "@mui/icons-material";
 import { CMChip } from "src/core/components/CMChip";
-import { getURIForFileLandingPage } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
@@ -14,6 +13,7 @@ import { SongChip } from "../song/SongChip";
 import { WikiPageChip } from "../wiki/WikiPageChip";
 import { FilesFilterSpec } from "./FileClientBaseTypes";
 import { EnrichedFile } from "../../db3/shared/schema/enrichedFileTypes";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 type FileListItemProps = {
@@ -46,7 +46,7 @@ export const FileIcon = ({ file }: { file: EnrichedFile<db3.FilePayload> }) => {
 
 
 export const FileListItem = (props: FileListItemProps) => {
-    // const dashboardContext = React.useContext(DashboardContext);
+    const dashboardContext = useDashboardContext();
     // const appContext = useAppContext();
     //const visInfo = dashboardContext.getVisibilityInfo(props.file);
     const uploadedAt = props.file.uploadedAt ? new Date(props.file.uploadedAt) : null;
@@ -56,7 +56,7 @@ export const FileListItem = (props: FileListItemProps) => {
         item={props.file}
         icon={<FileIcon file={props.file} />}
         refetch={props.refetch}
-        href={getURIForFileLandingPage(props.file)}
+        href={dashboardContext.routingApi.getURIForFileLandingPage(props.file)}
         title={props.file.fileLeafName}
         credits={[
             props.file.description && <Markdown markdown={props.file.description} />,

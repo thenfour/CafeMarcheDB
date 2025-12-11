@@ -22,7 +22,6 @@ import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
-import { getURIForFile } from "@/src/core/db3/clientAPILL";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -496,6 +495,7 @@ export interface GalleryItemImageControlProps {
     setEditMode: (newValue: boolean) => void;
 };
 export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => {
+    const dashboardContext = useDashboardContext();
     //const [editMode, setEditMode] = React.useState<boolean>(false);
 
     return props.editMode ? (
@@ -505,7 +505,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
             {/* <div className="buttonRow">
                 <Button style={{ whiteSpace: "nowrap" }} onClick={() => setEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
             </div> */}
-            <img src={getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
+            <img src={dashboardContext.routingApi.getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
         </div>
     );
 };

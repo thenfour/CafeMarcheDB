@@ -5,7 +5,6 @@ import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { getURIForUser } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { userSearchConfig } from "src/core/hooks/searchConfigs";
@@ -174,7 +173,7 @@ const UserListOuter = () => {
                 Order: index.toString(),
                 ID: user.id.toString(),
                 Name: user.name,
-                URL: getURIForUser(user),
+                URL: dashboardContext.routingApi.getURIForUser(user),
             }),
             filename: "users"
         },

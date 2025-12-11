@@ -1,7 +1,6 @@
 import { Article } from "@mui/icons-material";
 import React from "react";
 import { CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
-import { getAbsoluteUrl } from "src/core/db3/clientAPILL";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { GenericSearchListItem } from "../search/SearchListItem";
@@ -22,7 +21,7 @@ export const WikiPageListItem = (props: WikiPageListItemProps) => {
     const { wikiPage } = props;
     const dashboardContext = useDashboardContext();
 
-    const wikiUrl = getAbsoluteUrl(`/backstage/wiki/${wikiPage.slug}`);
+    const wikiUrl = dashboardContext.getAbsoluteUri(`/backstage/wiki/${wikiPage.slug}`);
     const visInfo = dashboardContext.getVisibilityInfo(wikiPage);
 
     return <GenericSearchListItem<EnrichedVerboseWikiPage>
@@ -30,7 +29,7 @@ export const WikiPageListItem = (props: WikiPageListItemProps) => {
         item={props.wikiPage}
         icon={<Article />}
         refetch={props.refetch}
-        href={getAbsoluteUrl(`/backstage/wiki/${props.wikiPage.slug}`)}
+        href={wikiUrl}
         title={props.wikiPage.slug}
         credits={[
             props.wikiPage.createdAt && <DateValue key="createdAt" value={props.wikiPage.createdAt} format={(dateStr) => `Created on ${dateStr}`} />,

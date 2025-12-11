@@ -1,7 +1,6 @@
 import { CMTable, CMTableSlot } from "@/src/core/components/CMTable";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { getURIForFile } from "@/src/core/db3/clientAPILL";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
@@ -17,6 +16,7 @@ import { GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } fro
 
 const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerHealthResult }) => {
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
+    const dashboardContext = useDashboardContext();
     const totalSize = serverHealthResults.uploads.files.reduce((sum, f) => sum + f.size, 0);
 
     const totalsRow: ServerHealthFileResult = {
@@ -53,7 +53,7 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                     if (args.slot === CMTableSlot.Footer) {
                         return args.row.fileName;
                     }
-                    return <a href={!args.row.fileName ? undefined : getURIForFile({
+                    return <a href={!args.row.fileName ? undefined : dashboardContext.routingApi.getURIForFile({
                         fileLeafName: args.row.leafName || "?",
                         storedLeafName: args.row.fileName,
                         externalURI: args.row.externalURI || null,

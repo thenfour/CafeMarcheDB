@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from "react";
-import { getURIForFile } from "../../db3/clientAPILL";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { MediaPlayerContextType, MediaPlayerTrack, MediaPlayerTrackTitle } from "./MediaPlayerTypes";
 
 const MediaPlayerContext = createContext<MediaPlayerContextType | undefined>(undefined);
@@ -11,6 +11,7 @@ export const useMediaPlayer = () => {
 };
 
 export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const dashboardContext = useDashboardContext();
     const [playlist, setPlaylistState] = useState<MediaPlayerTrack[]>([]);
     const [currentIndex, setCurrentIndex] = useState<number | undefined>(undefined);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -188,7 +189,7 @@ export const MediaPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (track.url) return track.url; // If track has a URL, return it
         if (track.file?.externalURI) return track.file.externalURI; // If track has a file with external URI, return it
         if (track.file) {
-            return getURIForFile(track.file); // Use the utility function to get the URI for the file
+            return dashboardContext.routingApi.getURIForFile(track.file); // Use the utility function to get the URI for the file
         }
     }, []);
 

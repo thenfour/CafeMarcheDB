@@ -6,7 +6,7 @@ import { CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { DialogActionsCM, DotMenu } from './CMCoreComponents2';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { ActivityFeature } from './featureReports/activityTracking';
-import { useClientTelemetryEvent } from './dashboardContext/DashboardContext';
+import { useClientTelemetryEvent, useDashboardContext } from './dashboardContext/DashboardContext';
 
 interface QrCodeProps {
     content: QrContentConfig;
@@ -33,8 +33,9 @@ export const QrCode: React.FC<QrCodeProps> = ({
     backgroundColor = '#ffffff',
     width
 }) => {
+    const dashboardContext = useDashboardContext();
     const options = { content, errorCorrectionLevel, margin, color, backgroundColor, width };
-    const apiUrl = generateQrApiUrl(options);
+    const apiUrl = generateQrApiUrl(options, dashboardContext);
 
     // Generate display text for alt attribute
     const displayText = (content.contentType === 'text' || content.contentType === 'url' ? content.text : `${content.contentType} QR code`);

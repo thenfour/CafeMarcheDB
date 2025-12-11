@@ -78,7 +78,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: EnrichedSearchEven
 
     return <AppContextMarker eventId={event.id}>
         <div className={classes.join(" ")} style={typeStyle.style} >
-            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={API.events.getURIForEvent(event)} className="SubtleEventCardLink">
+            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={dashboardContext.routingApi.getURIForEvent(event)} className="SubtleEventCardLink">
                 <div className="SubtleEventCardTitle">
                     <div>{event.name}</div>
                 </div>
@@ -93,7 +93,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: EnrichedSearchEven
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
                     icon={<InfoOutlined />}
                     title="Info"
-                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
                     eventId={event.id}
                 />
                 </AppContextMarker>
@@ -101,7 +101,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: EnrichedSearchEven
                 {event.songLists.length > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="Setlist"
-                    uri={API.events.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
                     eventId={event.id}
                 />
                 </AppContextMarker>

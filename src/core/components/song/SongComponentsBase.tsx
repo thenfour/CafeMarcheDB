@@ -1,10 +1,10 @@
 
 import { formatSongLength } from 'shared/time';
 import * as db3 from "src/core/db3/db3";
-import { API } from '../../db3/clientAPI';
+import { getFormattedBPM } from '../../db3/clientAPILL';
+import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
 import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
 import { DashboardContextData } from '../dashboardContext/DashboardContext';
-import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongWithMetadata {
@@ -14,11 +14,11 @@ export interface SongWithMetadata {
     formattedLength: null | string;
 };
 
-export const CalculateSongMetadata = (song: EnrichedVerboseSong, tabSlug?: string | undefined | null): SongWithMetadata => {
+export const CalculateSongMetadata = (song: EnrichedVerboseSong, tabSlug: string | undefined | null, dashboardContext: DashboardContextData): SongWithMetadata => {
     return {
         song,
-        songURI: API.songs.getURIForSong(song, tabSlug || undefined),
-        formattedBPM: (song.startBPM === null && song.endBPM === null) ? null : API.songs.getFormattedBPM(song),
+        songURI: dashboardContext.routingApi.getURIForSong(song, tabSlug || undefined),
+        formattedBPM: (song.startBPM === null && song.endBPM === null) ? null : getFormattedBPM(song),
         formattedLength: song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds),
     };
 };

@@ -48,7 +48,7 @@ export function CalculateEventMetadata<
 >(
     event: TEvent,
     tabSlug: string | undefined,
-    data: DashboardContextDataBase,
+    dashboardContext: DashboardContextDataBase,
     userMap: UserInstrumentList, // unique list of all relevant users.
     expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null, // unique list of all invited user tags.
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>,
@@ -61,12 +61,12 @@ export function CalculateEventMetadata<
     const responseInfo = GetEventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse>({
         event,
         expectedAttendanceTag,
-        data,
+        dashboardContext,
         userMap,
         makeMockEventSegmentResponse,
         makeMockEventUserResponse,
     });
-    const eventURI = API.events.getURIForEvent(event, tabSlug);
+    const eventURI = dashboardContext.routingApi.getURIForEvent(event, tabSlug);
 
     const dateRange = API.events.getEventDateRange(event);
 

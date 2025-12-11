@@ -12,22 +12,25 @@ import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
 import { Markdown } from "src/core/components/markdown/Markdown";
-import * as SetlistAPI from "src/core/db3/shared/setlistApi";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
-import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import getSongPinnedRecording from "src/core/db3/queries/getSongPinnedRecording";
+import * as SetlistAPI from "src/core/db3/shared/setlistApi";
 import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
 import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
 import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
 import { EventSongListDividerItem } from "../../db3/shared/setlistApi";
+import { ColorPick } from "../color/ColorPick";
+import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
 import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
+import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { useSongsContext } from "../song/SongsContext";
 import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
 import { VisibilityControl } from "../VisibilityControl";
@@ -37,9 +40,6 @@ import { SetlistPlannerLedArray, SetlistPlannerLedDefArray } from "./SetlistPlan
 import { CalculateSetlistPlanCost, CalculateSetlistPlanStats, CalculateSetlistPlanStatsForCostCalc, SetlistPlanCostPenalties, SetlistPlanMutator, SetlistPlanStats } from "./SetlistPlanUtilities";
 import { NumberField } from "./SetlistPlanUtilityComponents";
 import { SetlistPlannerVisualizations } from "./SetlistPlanVisualization";
-import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "../color/palette";
-import { ColorPick } from "../color/ColorPick";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
 
 interface AddSongComponentProps {
     mutator: SetlistPlanMutator;
@@ -229,6 +229,7 @@ type SetlistPlannerMatrixRowProps = {
 
 const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
     const allSongs = useSongsContext().songs;
+    const dashboardContext = useDashboardContext();
     const [showEditDialog, setShowEditDialog] = React.useState(false);
     const [closeMenuProc, setCloseMenuProc] = React.useState<(() => void) | null>(null);
     let songStats = props.stats.songStats.find((x) => x.rowId === props.rowId);
@@ -311,7 +312,7 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     {isDupeWarning && <Tooltip title={`This song occurs ${songOccurrences} times in this plan. Is that right?`}><div className='warnIndicator'>!{songOccurrences}</div></Tooltip>}
                     <Tooltip disableInteractive title={songRow.commentMarkdown ? <Markdown markdown={songRow.commentMarkdown || null} /> : null}>
-                        <a href={getURIForSong(song)} target="_blank" rel="noreferrer" style={{
+                        <a href={dashboardContext.routingApi.getURIForSong(song)} target="_blank" rel="noreferrer" style={{
                             //"--song-hash-color": getHashedColor(song.name),
                             color: `var(--song-hash-color)`,
                         } as any}>{song.name}</a>

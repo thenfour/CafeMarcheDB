@@ -7,7 +7,6 @@ import { EventListItem } from "src/core/components/event/EventComponents";
 import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { getURIForEvent } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
@@ -279,7 +278,7 @@ const EventListOuter = () => {
                 DurationMinutes: (new Number(event.durationMillis).valueOf() / 60000).toString(),
                 Location: event.locationDescription || "",
                 LocationURL: event.locationURL || "",
-                URL: getURIForEvent(event),
+                URL: dashboardContext.routingApi.getURIForEvent(event),
             }),
             filename: "events"
         },

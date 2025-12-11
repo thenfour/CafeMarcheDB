@@ -10,7 +10,6 @@ import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSmallButton, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { getURIForEvent } from "../clientAPILL";
 import { EventAPI } from "../db3";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
@@ -21,11 +20,11 @@ import { gIconMap } from "./IconMap";
 import { Notes } from "@mui/icons-material";
 import { MutationArgsToWorkflowDef, type TWorkflowMutationResult, type WorkflowDef } from "shared/workflowEngine";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
-import { GenericStringField } from "../shared/genericStringField";
 import { CMTable } from "../../components/CMTable";
-import { gGeneralPaletteList, gStrong } from "../../components/color/palette";
 import { ColorSwatch } from "../../components/color/ColorSwatch";
+import { gGeneralPaletteList, gStrong } from "../../components/color/palette";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
+import { GenericStringField } from "../shared/genericStringField";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -98,6 +97,7 @@ export const ActivityLogUserChip = ({ userId, cacheData }: { userId: number | nu
 };
 
 const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+    const dashboardContext = useDashboardContext();
     const foundSegment = cacheData.eventSegments.find(es => es.id === eventSegmentId);
     if (!foundSegment) {
         return <ActivityLogChip>eventSegmentId:<Id value={eventSegmentId} /></ActivityLogChip>;
@@ -106,16 +106,17 @@ const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId
     if (!foundEvent) {
         return <ActivityLogChip><Id value={foundSegment.eventId} />, seg:{foundSegment.id}</ActivityLogChip>;
     }
-    return <ActivityLogChip uri={getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
+    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
 };
 
 const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+    const dashboardContext = useDashboardContext();
     const foundEvent = cacheData.events.find(e => e.id === eventId);
     if (!foundEvent) {
         return <ActivityLogChip><Id value={eventId} /></ActivityLogChip>;
     }
 
-    return <ActivityLogChip uri={getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
+    return <ActivityLogChip uri={dashboardContext.routingApi.getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
 };
 
 const ActivityLogEventTag = ({ eventTagId, cacheData }: { eventTagId: number | null | undefined, cacheData: ActivityLogCacheData }) => {

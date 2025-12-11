@@ -1,9 +1,9 @@
+import { ServerApi } from "@/src/server/serverApi"
 import { generateToken, hash256 } from "@blitzjs/auth"
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
-import { ForgotPassword } from "../schemas"
 import { Permission } from "shared/permissions"
-import { SharedAPI } from "@/src/core/db3/shared/sharedAPI"
+import { ForgotPassword } from "../schemas"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 
@@ -43,6 +43,6 @@ export default resolver.pipe(
 
     // 8. Return the same result whether a password reset email was sent or not
 
-    const resetUrl = SharedAPI.serverGetAbsoluteUri(`/auth/reset-password?token=${token}`);
+    const resetUrl = ServerApi.getAbsoluteUri(`/auth/reset-password?token=${token}`);
     return resetUrl;
   })

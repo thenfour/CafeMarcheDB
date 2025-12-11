@@ -7,7 +7,6 @@ import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { getURIForFile } from "src/core/db3/clientAPILL";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { fileSearchConfig } from "src/core/hooks/searchConfigs";
@@ -15,6 +14,7 @@ import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilter
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { EnrichedFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {
@@ -54,6 +54,7 @@ const gStaticFilters: FilesFilterSpecStatic[] = []
 
 
 const FileListOuter = () => {
+    const dashboardContext = useDashboardContext();
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
@@ -138,7 +139,7 @@ const FileListOuter = () => {
                 SizeBytes: file.sizeBytes?.toString() || "",
                 UploadedAt: file.uploadedAt?.toISOString() || "",
                 UploadedBy: file.uploadedByUser?.name || "",
-                URL: getURIForFile(file),
+                URL: dashboardContext.routingApi.getURIForFile(file),
             })
         },
         className: "filesListContainer",

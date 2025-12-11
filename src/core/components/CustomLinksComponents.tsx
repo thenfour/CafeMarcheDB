@@ -1,21 +1,20 @@
+import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { Tooltip } from "@mui/material";
 import React from "react";
 import { Permission } from 'shared/permissions';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gIconMap } from "../db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
-import { ActivityFeature } from "./featureReports/activityTracking";
 import { AppContextMarker } from "./AppContext";
 import { CMChip, CMChipContainer } from "./CMChip";
-import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
+import { AbsoluteUriText, CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
-import { Markdown } from "./markdown/Markdown";
 import { gLightSwatchColors, gSwatchColors } from "./color/palette";
-import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
+import { ActivityFeature } from "./featureReports/activityTracking";
+import { Markdown } from "./markdown/Markdown";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {
@@ -25,7 +24,6 @@ const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, str
     [db3.CustomLinkRedirectType.Client]: gSwatchColors.teal,
     [db3.CustomLinkRedirectType.IntermediatePage]: gSwatchColors.purple,
 };
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CustomLinkSlugColumnArgs {
@@ -52,7 +50,7 @@ export class CustomLinkSlugColumn extends DB3Client.GenericStringColumnClient {
                 value={params.value as string}
                 className={this.className}
             />
-            <>{params.value && <div className='preview'>{getAbsoluteUrl(((params.value as string) || "").trim())}</div>}</>
+            <>{params.value && <div className='preview'><AbsoluteUriText relativeUri={((params.value as string) || "").trim()} /></div>}</>
         </div>
     });
 };
@@ -72,6 +70,7 @@ interface CustomLinkItemProps {
 export const CustomLinkItem = (props: CustomLinkItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
+    const dashboardContext = useDashboardContext();
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({
@@ -106,7 +105,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
 
     const redirectType: keyof typeof db3.CustomLinkRedirectType = props.item.redirectType as any;
 
-    const absoluteLocalURL = getAbsoluteUrl(props.item.slug);
+    const absoluteLocalURL = dashboardContext.getAbsoluteUri(props.item.slug);
 
     const clipboardCopy = async (text: string) => {
         await navigator.clipboard.writeText(text);

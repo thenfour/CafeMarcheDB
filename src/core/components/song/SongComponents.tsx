@@ -1,7 +1,9 @@
 
+import { TAnyModel } from '@/shared/rootroot';
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Button, Tooltip } from "@mui/material";
+import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React from "react";
 import { IsNullOrWhitespace, StringToEnumValue } from 'shared/utils';
@@ -9,31 +11,29 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { Prisma } from "db";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
+import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
+import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
-import { NameValuePair, InspectObject } from '../CMCoreComponents2';
+import { InspectObject, NameValuePair } from '../CMCoreComponents2';
+import { CMLink } from '../CMLink';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
-import { Markdown3Editor } from '../markdown/MarkdownControl3';
 import { MetronomeButton } from '../Metronome';
-import { Markdown } from '../markdown/Markdown';
 import { SearchableNameColumnClient } from '../SearchableNameColumnClient';
 import { SettingMarkdown } from '../SettingMarkdown';
-import { CalculateSongMetadata, GetSongFileInfo, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from '../SongFileComponents';
-import { SongHistory } from './SongHistory';
-import { VisibilityValue } from '../VisibilityControl';
 import { CMTab, CMTabPanel } from '../TabPanel';
-import { AppContextMarker } from '../AppContext';
-import { ActivityFeature } from '../featureReports/activityTracking';
-import { CMLink } from '../CMLink';
-import { UserChip } from '../user/userChip';
+import { VisibilityValue } from '../VisibilityControl';
 import { StandardVariationSpec } from '../color/palette';
-import { TAnyModel } from '@/shared/rootroot';
 import { useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';
-import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
+import { ActivityFeature } from '../featureReports/activityTracking';
+import { Markdown } from '../markdown/Markdown';
+import { Markdown3Editor } from '../markdown/MarkdownControl3';
+import { UserChip } from '../user/userChip';
+import { CalculateSongMetadata, GetSongFileInfo, SongWithMetadata } from './SongComponentsBase';
+import { SongHistory } from './SongHistory';
 
 
 export const SongClientColumns = {
@@ -63,6 +63,7 @@ export interface SongBreadcrumbProps {
     song: db3.SongPayloadMinimum,
 };
 export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
+    const dashboardContext = useDashboardContext();
     return <Breadcrumbs aria-label="breadcrumb">
         <CMLink
             // underline="hover"
@@ -85,7 +86,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
         <CMLink
             // underline="hover"
             // color="inherit"
-            href={API.songs.getURIForSong(props.song)}
+            href={dashboardContext.routingApi.getURIForSong(props.song)}
         // sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.song.name}
@@ -541,7 +542,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const [selectedTab, setSelectedTab] = React.useState<SongDetailTabSlug>(props.initialTab || ((IsNullOrWhitespace(song.description) && (fileInfo.enrichedFiles.length > 0)) ? SongDetailTabSlug.files : SongDetailTabSlug.info));
 
     // convert index to tab slug
-    const songData = CalculateSongMetadata(song, selectedTab);
+    const songData = CalculateSongMetadata(song, selectedTab, dashboardContext);
 
     React.useEffect(() => {
         void router.replace(songData.songURI, undefined, { shallow: true }); // shallow prevents annoying re-scroll behavior

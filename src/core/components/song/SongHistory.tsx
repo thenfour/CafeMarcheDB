@@ -2,7 +2,6 @@
 import { useQuery } from '@blitzjs/rpc';
 import React, { Suspense } from "react";
 import { getEnumValues } from 'shared/utils';
-import { getURIForEvent } from '../../db3/clientAPILL';
 import getSongActivityReport from '../../db3/queries/getSongActivityReport';
 import { GetSongActivityReportFilterSpec, GetSongActivityReportFilterSpecTimingFilter, GetSongActivityReportRet, GetSongActivityReportRetEvent } from '../../db3/shared/apiTypes';
 import { ActivityVis, ActivityVisBucket } from '../ActivityVis';
@@ -119,6 +118,7 @@ export interface SongHistoryProps {
 }
 
 export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
+    const dashboardContext = useDashboardContext();
 
     const defaultFilterSpec: GetSongActivityReportFilterSpec = {
         // primary
@@ -183,7 +183,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
         <ul>
             {selectedBucket && selectedBucket.items.map(i => {
                 return <li key={i.item.id}>
-                    <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
+                    <a rel="noreferrer" target="_blank" href={dashboardContext.routingApi.getURIForEvent(i.item)}>
                         {EventAPI.getLabel(i.item)}
                     </a></li>;
             })}

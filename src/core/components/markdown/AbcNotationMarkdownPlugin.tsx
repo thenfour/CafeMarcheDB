@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
-import { getAbsoluteUrl } from '../../db3/clientAPILL';
+import { getDashboardContextDataSingleton } from '../dashboardContext/DashboardContext';
+import { assert } from 'blitz';
 
 // block only
 export function AbcNotationMarkdownPlugin(md: MarkdownIt) {
@@ -14,9 +15,11 @@ export function AbcNotationMarkdownPlugin(md: MarkdownIt) {
         if (info === 'abc' && token.content) {
             // Encode the ABC content for URL
             const encodedAbc = encodeURIComponent(token.content.trim());
+            const dashboardContext = getDashboardContextDataSingleton();
+            assert(dashboardContext, 'Dashboard context is not available');
 
             // Generate the image tag pointing to our ABC rendering API
-            return `<div class="abc-notation-block-container"><img src="${getAbsoluteUrl(`/api/abc/render`)}?notation=${encodedAbc}" alt="ABC Notation" class="abc-notation-rendered" /></div>`;
+            return `<div class="abc-notation-block-container"><img src="${dashboardContext?.getAbsoluteUri(`/api/abc/render`)}?notation=${encodedAbc}" alt="ABC Notation" class="abc-notation-rendered" /></div>`;
         }
 
         // For all other code blocks, use the default renderer

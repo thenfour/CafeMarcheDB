@@ -10,7 +10,6 @@ import { CMChip } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard, EventTextLink } from "src/core/components/CMCoreComponents";
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/search/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { getURIForSong } from "src/core/db3/clientAPILL";
 import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
@@ -121,11 +120,12 @@ export const GlobalStatsFilterControls = ({ filterSpec, setFilterSpec, defaultFi
 
 const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGlobalStatsRetPopularSongOccurrance[], expanded: boolean }) => {
     const [selectedBucket, setSelectedBucket] = React.useState<null | ActivityVisBucket<GetGlobalStatsRetPopularSongOccurrance>>(null);
+    const dashboardContext = useDashboardContext();
 
     return <div>
         <h2>
             <a
-                href={getURIForSong({
+                href={dashboardContext.routingApi.getURIForSong({
                     id: occurrances[0]!.songId,
                     name: occurrances[0]!.songName,
                 })}

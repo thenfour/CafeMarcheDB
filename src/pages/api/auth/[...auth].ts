@@ -1,4 +1,6 @@
 // src/pages/api/auth/[...auth].ts
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { ServerApi } from "@/src/server/serverApi";
 import { passportAuth } from "@blitzjs/auth";
 import db from "db";
 import { nanoid } from 'nanoid';
@@ -6,14 +8,12 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import signupMutation from "src/auth/mutations/signup";
 import { api } from "src/blitz-server";
 import { recordAction } from "src/core/db3/server/recordActionServer";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { CreatePublicData } from "types";
-import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
     successRedirectUrl: process.env.CMDB_LOGIN_SUCCESS_REDIRECT,
-    errorRedirectUrl: SharedAPI.serverGetAbsoluteUri('/'),
+    errorRedirectUrl: ServerApi.getAbsoluteUri('/'),
     strategies: [
       {
         strategy: new GoogleStrategy(
