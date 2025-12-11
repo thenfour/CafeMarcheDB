@@ -21,6 +21,7 @@ import { useControlledTextArea } from './useControlledTextArea';
 import { WikiPageApi } from './useWikiPageApi';
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import { useLocalStorageState } from "../useLocalStorageState";
 
 const kMaxImageDimension = 750;
 const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";
@@ -106,8 +107,11 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [showFormattingTips, setShowFormattingTips] = React.useState<boolean>(false);
     const [showPreview, setShowPreview] = React.useState<boolean>(startWithPreviewOpen);
     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
-    //const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>("stacked");
-    const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>(props.markdownPreviewLayout ?? "stacked");
+    const [previewLayout, setPreviewLayout] = useLocalStorageState<MarkdownPreviewLayout>({
+        key: "MarkdownEditor_PreviewLayout",
+        initialValue: props.markdownPreviewLayout ?? "stacked",
+    });
+
     const nextPreviewLayout = React.useMemo(() => getNextMarkdownPreviewLayout(previewLayout), [previewLayout]);
     const currentLayoutLabel = React.useMemo(() => describeMarkdownPreviewLayout(previewLayout), [previewLayout]);
     const nextLayoutLabel = React.useMemo(() => describeMarkdownPreviewLayout(nextPreviewLayout), [nextPreviewLayout]);
@@ -162,13 +166,14 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         setPreviewLayout(layout);
     }, [previewLayout, showPreview, activeEditorTab]);
 
-    const handleLayoutChangeRef = React.useRef(handleLayoutChange);
-    handleLayoutChangeRef.current = handleLayoutChange;
+    const lastForcedLayoutRef = React.useRef<MarkdownPreviewLayout | undefined>(props.markdownPreviewLayout);
 
     React.useEffect(() => {
-        if (!props.markdownPreviewLayout) return;
-        handleLayoutChangeRef.current(props.markdownPreviewLayout);
-    }, [props.markdownPreviewLayout]);
+        if (props.markdownPreviewLayout === undefined) return;
+        if (lastForcedLayoutRef.current === props.markdownPreviewLayout) return;
+        lastForcedLayoutRef.current = props.markdownPreviewLayout;
+        setPreviewLayout(props.markdownPreviewLayout);
+    }, [props.markdownPreviewLayout, setPreviewLayout]);
 
     const portalTarget = typeof window !== "undefined" ? window.document.body : null;
 
