@@ -153,6 +153,8 @@ test cases:
     border-radius: var(--radius);
     max-width: var(--content-max-width);
     background-color: #eee;
+    display: flex;
+    flex-direction: column;
 }
 
 .MD3Container.editor .header {
