@@ -39,18 +39,18 @@ import {
 } from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
 import { ServerStartInfo } from "@/shared/serverStateBase";
+import { DateValue } from "../DateTime/DateTimeComponents";
 
 const drawerWidth = 260;
 
 const formatVersionLabel = (versionInfo?: ServerStartInfo): string => {
     if (!versionInfo) return "";
-    const tagLabel = versionInfo.versionTag || versionInfo.gitRevision || "-";
-    const commitCount = Number.isFinite(versionInfo.versionCommitsSinceTag)
-        ? versionInfo.versionCommitsSinceTag
-        : 0;
+    const tagLabel = versionInfo.versionTag;
+    const commitCount = versionInfo.versionCommitsSinceTag;
     const commitSuffix = commitCount > 0 ? `+${commitCount}` : "";
-    const dirtySuffix = versionInfo.versionIsDirty ? " (modified)" : "";
-    return `${tagLabel}${commitSuffix}${dirtySuffix}`;
+    const isUnderDevelopment = commitCount > 0 || versionInfo.versionIsDirty;
+    const devIndicator = isUnderDevelopment ? "🚧" : "";
+    return `${devIndicator}${tagLabel}${commitSuffix}`;
 };
 
 
@@ -318,10 +318,28 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                 <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
-                {session.isSysAdmin && versionLabel && (
-                    <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, alignItems: 'center' }}>
-                        {versionLabel}
-                    </Typography>
+                {session.isSysAdmin && versionLabel && dashboardContext.serverStartupState && (
+                    <Tooltip title={<>
+                        <Typography variant="subtitle1">Server version</Typography>
+                        {/* display version details breakdown and explanation */}
+                        <Box sx={{ mt: 1 }}>
+                            <Typography variant="body2">Tag: {dashboardContext.serverStartupState.versionTag}</Typography>
+                            {dashboardContext.serverStartupState.versionCommitsSinceTag > 0 && (
+                                <Typography variant="body2">Commits since tag: {dashboardContext.serverStartupState.versionCommitsSinceTag}</Typography>)
+                            }
+                            {dashboardContext.serverStartupState.versionIsDirty && (
+                                <Typography variant="body2">With local modifications</Typography>
+                            )}
+                            <Typography variant="body2">Git commit date: <DateValue value={dashboardContext.serverStartupState.gitCommitDate} /></Typography>
+                        </Box>
+
+                    </>}>
+                        <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, alignItems: 'center', cursor: 'pointer' }}>
+                            <a href="/backstage/serverHealth" style={{ color: 'inherit', textDecoration: 'none' }}>
+                                {versionLabel}
+                            </a>
+                        </Typography>
+                    </Tooltip>
                 )}
 
                 {(session.userId != null) && <>
