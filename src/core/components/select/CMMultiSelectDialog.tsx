@@ -36,40 +36,59 @@ export const useMultiSelectLogic = <T,>(
     const [selectedOptionsX, setSelectedOptionsX] = React.useState<TX[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
+    // Stable refs keep option loaders/inspectors from thrashing the effects below when parent components re-render.
+    // Without these, new lambdas would cause a fresh fetch on every render, making chips flicker (seen in wiki tags).
+    const getOptionsRef = React.useRef(props.getOptions);
+    const getOptionInfoRef = React.useRef(props.getOptionInfo);
+
+    React.useEffect(() => {
+        getOptionsRef.current = props.getOptions;
+    }, [props.getOptions]);
+
+    React.useEffect(() => {
+        getOptionInfoRef.current = props.getOptionInfo;
+    }, [props.getOptionInfo]);
+
     const isSelected = (info: ItemInfo) => {
         return selectedOptionsX.some(x => x.info.id === info.id);
     }
 
-    const makeTX = (option: T): TX => {
-        const info = props.getOptionInfo(option);
+    // map to the enriched shape while avoiding a changing dependency signature.
+    const makeTX = React.useCallback((option: T): TX => {
+        const info = getOptionInfoRef.current(option);
         return {
             info,
             option,
         };
-    };
+    }, []);
 
+    // Only refetch when the user changes the filter; refs keep parent re-renders from triggering fetches.
     React.useEffect(() => {
+        let isCancelled = false;
         const fetchOptions = async () => {
             setIsLoading(true);
             try {
-                const options = await Promise.resolve(props.getOptions({ quickFilter: filterText }));
-                setAllOptionsX(options.map(o => makeTX(o)));
+                const options = await Promise.resolve(getOptionsRef.current({ quickFilter: filterText }));
+                if (!isCancelled) {
+                    setAllOptionsX(options.map(o => makeTX(o)));
+                }
             } catch (error) {
                 console.error("Error fetching options:", error);
             } finally {
-                setIsLoading(false);
+                if (!isCancelled) {
+                    setIsLoading(false);
+                }
             }
         };
         void fetchOptions();
-    }, [props.getOptions, selectedOptions, props.getOptionInfo, filterText]);
+        return () => {
+            isCancelled = true;
+        };
+    }, [filterText, makeTX]);
 
     React.useEffect(() => {
         setSelectedOptionsX(selectedOptions.map(o => makeTX(o)));
-    }, [props.getOptions, props.getOptionInfo, allOptionsX]);
-
-    React.useEffect(() => {
-        setSelectedOptionsX(selectedOptions.map(o => makeTX(o)));
-    }, [selectedOptions]);
+    }, [selectedOptions, makeTX]);
 
     const toggleSelection = (x: TX): T[] => {
         if (isSelected(x.info)) {
