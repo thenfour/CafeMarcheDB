@@ -1,6 +1,9 @@
 import { Collapse, Tooltip } from "@mui/material";
 import CloseFullscreenIcon from "@mui/icons-material/CloseFullscreen";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import TabIcon from "@mui/icons-material/Tab";
+import ViewAgendaIcon from "@mui/icons-material/ViewAgenda";
+import ViewWeekIcon from "@mui/icons-material/ViewWeek";
 import React from "react";
 import { createPortal } from "react-dom";
 import { Permission } from 'shared/permissions';
@@ -23,6 +26,40 @@ const kMaxImageDimension = 750;
 const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";
 
 type MarkdownPreviewLayout = "stacked" | "side-by-side" | "tabbed";
+
+const kMarkdownPreviewLayouts: readonly MarkdownPreviewLayout[] = [
+    "stacked",
+    "side-by-side",
+    "tabbed",
+] as const;
+
+const getNextMarkdownPreviewLayout = (current: MarkdownPreviewLayout): MarkdownPreviewLayout => {
+    const index = kMarkdownPreviewLayouts.indexOf(current);
+    const nextIndex = (index + 1) % kMarkdownPreviewLayouts.length;
+    return kMarkdownPreviewLayouts[nextIndex]!;
+};
+
+const describeMarkdownPreviewLayout = (layout: MarkdownPreviewLayout): string => {
+    switch (layout) {
+        case "side-by-side":
+            return "Side by side";
+        case "tabbed":
+            return "Tabbed";
+        default:
+            return "Stacked";
+    }
+};
+
+const renderMarkdownPreviewLayoutIcon = (layout: MarkdownPreviewLayout) => {
+    switch (layout) {
+        case "side-by-side":
+            return <ViewWeekIcon fontSize="small" />;
+        case "tabbed":
+            return <TabIcon fontSize="small" />;
+        default:
+            return <ViewAgendaIcon fontSize="small" />;
+    }
+};
 
 //////////////////////////////////////////////////
 interface Markdown3EditorPropsBase {
@@ -71,6 +108,9 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
     //const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>("stacked");
     const [previewLayout, setPreviewLayout] = React.useState<MarkdownPreviewLayout>(props.markdownPreviewLayout ?? "stacked");
+    const nextPreviewLayout = React.useMemo(() => getNextMarkdownPreviewLayout(previewLayout), [previewLayout]);
+    const currentLayoutLabel = React.useMemo(() => describeMarkdownPreviewLayout(previewLayout), [previewLayout]);
+    const nextLayoutLabel = React.useMemo(() => describeMarkdownPreviewLayout(nextPreviewLayout), [nextPreviewLayout]);
     const [activeEditorTab, setActiveEditorTab] = React.useState<"write" | "preview">(startWithPreviewOpen ? "preview" : "write");
     const [isFullscreen, setIsFullscreen] = React.useState<boolean>(false);
     const [isFullscreenBreakpointMatch, setIsFullscreenBreakpointMatch] = React.useState<boolean>(false);
@@ -122,10 +162,13 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         setPreviewLayout(layout);
     }, [previewLayout, showPreview, activeEditorTab]);
 
+    const handleLayoutChangeRef = React.useRef(handleLayoutChange);
+    handleLayoutChangeRef.current = handleLayoutChange;
+
     React.useEffect(() => {
         if (!props.markdownPreviewLayout) return;
-        handleLayoutChange(props.markdownPreviewLayout);
-    }, [props.markdownPreviewLayout, handleLayoutChange]);
+        handleLayoutChangeRef.current(props.markdownPreviewLayout);
+    }, [props.markdownPreviewLayout]);
 
     const portalTarget = typeof window !== "undefined" ? window.document.body : null;
 
@@ -362,6 +405,17 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                     </div>
 
                     <div className='flex-spacer' />
+
+                    <Tooltip title={`Switch to ${nextLayoutLabel} layout`} disableInteractive>
+                        <button
+                            type="button"
+                            className={`toolItem interactable layoutToggleButton`}
+                            onClick={() => handleLayoutChange(nextPreviewLayout)}
+                            aria-label={`Current layout ${currentLayoutLabel}. Switch to ${nextLayoutLabel}`}
+                        >
+                            {renderMarkdownPreviewLayoutIcon(previewLayout)}
+                        </button>
+                    </Tooltip>
 
                     <Tooltip title={isFullscreen ? "Exit full screen" : "Full screen"} disableInteractive>
                         <button
