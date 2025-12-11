@@ -38,8 +38,20 @@ import {
     SideMenu
 } from "./MenuStructure";
 import { NavRealm } from "./StaticMenuItems";
+import { ServerStartInfo } from "@/shared/serverStateBase";
 
 const drawerWidth = 260;
+
+const formatVersionLabel = (versionInfo?: ServerStartInfo): string => {
+    if (!versionInfo) return "";
+    const tagLabel = versionInfo.versionTag || versionInfo.gitRevision || "-";
+    const commitCount = Number.isFinite(versionInfo.versionCommitsSinceTag)
+        ? versionInfo.versionCommitsSinceTag
+        : 0;
+    const commitSuffix = commitCount > 0 ? `+${commitCount}` : "";
+    const dirtySuffix = versionInfo.versionIsDirty ? " (modified)" : "";
+    return `${tagLabel}${commitSuffix}${dirtySuffix}`;
+};
 
 
 const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
@@ -65,12 +77,21 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
         await showAdminControlsMutation.invoke({ showAdminControls });
     };
 
+    const versionLabel = React.useMemo(() => formatVersionLabel(dashboardContext.serverStartupState), [dashboardContext.serverStartupState]);
+
     return <>
         {(sess.impersonatingFromUserId != null) && (
             <MenuItem onClick={onClickStopImpersonating}>Stop impersonating</MenuItem>
         )}
 
         {(!!sess.isSysAdmin) && <>
+
+            {versionLabel && (
+                <MenuItem component={Link} href='/backstage/serverHealth' onClick={closeMenu}>
+                    <ListItemIcon>{gIconMap.Info()}</ListItemIcon>
+                    Version: {versionLabel}
+                </MenuItem>
+            )}
 
             {isShowingAdminControls ?
                 <MenuItem onClick={async () => {
@@ -235,6 +256,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     // }
 
     const brand = useBrand();
+    const versionLabel = React.useMemo(() => formatVersionLabel(dashboardContext.serverStartupState), [dashboardContext.serverStartupState]);
     return (
         <AppBar
             position="static"
@@ -295,6 +317,12 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 <MainSiteSearch />
 
                 <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
+
+                {session.isSysAdmin && versionLabel && (
+                    <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' }, alignItems: 'center' }}>
+                        {versionLabel}
+                    </Typography>
+                )}
 
                 {(session.userId != null) && <>
                     <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
