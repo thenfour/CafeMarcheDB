@@ -49,6 +49,68 @@ function formatRms(rms: number): string {
     return `${(rms * 100).toFixed(1)}% level`;
 }
 
+export const TunerDevDisplay: React.FC<{
+    handleRefreshDevices: () => Promise<void>;
+    handleStart: () => Promise<void>;
+    handleStop: () => Promise<void>;
+    devices: MediaDeviceInfo[];
+    selectedDeviceId: string;
+    setSelectedDeviceId: (id: string) => void;
+    reading: TunerReading | null;
+    status: TunerStatusUpdate;
+}> = (props) => {
+
+    const { noteLabel, centsLabel } = deriveNoteData(props.reading);
+
+    return <Stack spacing={2}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" component="h2">Tuner (beta)</Typography>
+            <Stack direction="row" spacing={1}>
+                <Button variant="outlined" onClick={props.handleRefreshDevices}>Refresh inputs</Button>
+                {props.status.status !== "running" && <Button variant="contained" onClick={props.handleStart}>Start</Button>}
+                {props.status.status === "running" && <Button variant="text" onClick={props.handleStop}>Stop</Button>}
+            </Stack>
+        </Stack>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="body2">Input:</Typography>
+            <Select
+                size="small"
+                value={props.selectedDeviceId}
+                onChange={(e) => props.setSelectedDeviceId(e.target.value)}
+                sx={{ minWidth: 200 }}
+            >
+                <MenuItem value={NO_DEVICE_ID}>System default</MenuItem>
+                {props.devices.map(d => (
+                    <MenuItem key={d.deviceId || d.label} value={d.deviceId}>{d.label || "Mic"}</MenuItem>
+                ))}
+            </Select>
+        </Stack>
+
+        {props.status.status === "error" && (
+            <Alert severity="error">{props.status.message ?? "Tuner error"}</Alert>
+        )}
+
+        <Box>
+            <Typography variant="subtitle2" gutterBottom>Pitch</Typography>
+            <Typography variant="h4">{noteLabel}</Typography>
+            <Typography variant="body2" color="text.secondary">{formatFrequency(props.reading?.frequencyHz ?? null)} · {centsLabel}</Typography>
+        </Box>
+
+        <Box>
+            <Typography variant="subtitle2" gutterBottom>Confidence</Typography>
+            <LinearProgress variant="determinate" value={(props.reading?.confidence01 ?? 0) * 100} />
+            <Typography variant="caption" color="text.secondary">{formatConfidence(props.reading?.confidence01 ?? 0)}</Typography>
+        </Box>
+
+        <Box>
+            <Typography variant="subtitle2" gutterBottom>Input level</Typography>
+            <LinearProgress variant="determinate" value={Math.min(100, (props.reading?.rms ?? 0) * 200)} />
+            <Typography variant="caption" color="text.secondary">{formatRms(props.reading?.rms ?? 0)}</Typography>
+        </Box>
+    </Stack>
+};
+
 export const TunerCard: React.FC = () => {
     const [reading, setReading] = React.useState<TunerReading | null>(null);
     const [status, setStatus] = React.useState<TunerStatusUpdate>({ status: "idle" });
@@ -63,8 +125,6 @@ export const TunerCard: React.FC = () => {
         });
     }
     const engine = engineRef.current;
-
-    const { noteLabel, centsLabel } = deriveNoteData(reading);
 
     const handleRefreshDevices = React.useCallback(async () => {
         try {
@@ -92,53 +152,16 @@ export const TunerCard: React.FC = () => {
 
     return (
         <CMSinglePageSurfaceCard>
-            <Stack spacing={2}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6" component="h2">Tuner (beta)</Typography>
-                    <Stack direction="row" spacing={1}>
-                        <Button variant="outlined" onClick={handleRefreshDevices}>Refresh inputs</Button>
-                        {status.status !== "running" && <Button variant="contained" onClick={handleStart}>Start</Button>}
-                        {status.status === "running" && <Button variant="text" onClick={handleStop}>Stop</Button>}
-                    </Stack>
-                </Stack>
-
-                <Stack direction="row" spacing={2} alignItems="center">
-                    <Typography variant="body2">Input:</Typography>
-                    <Select
-                        size="small"
-                        value={selectedDeviceId}
-                        onChange={(e) => setSelectedDeviceId(e.target.value)}
-                        sx={{ minWidth: 200 }}
-                    >
-                        <MenuItem value={NO_DEVICE_ID}>System default</MenuItem>
-                        {devices.map(d => (
-                            <MenuItem key={d.deviceId || d.label} value={d.deviceId}>{d.label || "Mic"}</MenuItem>
-                        ))}
-                    </Select>
-                </Stack>
-
-                {status.status === "error" && (
-                    <Alert severity="error">{status.message ?? "Tuner error"}</Alert>
-                )}
-
-                <Box>
-                    <Typography variant="subtitle2" gutterBottom>Pitch</Typography>
-                    <Typography variant="h4">{noteLabel}</Typography>
-                    <Typography variant="body2" color="text.secondary">{formatFrequency(reading?.frequencyHz ?? null)} · {centsLabel}</Typography>
-                </Box>
-
-                <Box>
-                    <Typography variant="subtitle2" gutterBottom>Confidence</Typography>
-                    <LinearProgress variant="determinate" value={(reading?.confidence01 ?? 0) * 100} />
-                    <Typography variant="caption" color="text.secondary">{formatConfidence(reading?.confidence01 ?? 0)}</Typography>
-                </Box>
-
-                <Box>
-                    <Typography variant="subtitle2" gutterBottom>Input level</Typography>
-                    <LinearProgress variant="determinate" value={Math.min(100, (reading?.rms ?? 0) * 200)} />
-                    <Typography variant="caption" color="text.secondary">{formatRms(reading?.rms ?? 0)}</Typography>
-                </Box>
-            </Stack>
+            <TunerDevDisplay
+                handleRefreshDevices={handleRefreshDevices}
+                handleStart={handleStart}
+                handleStop={handleStop}
+                devices={devices}
+                selectedDeviceId={selectedDeviceId}
+                setSelectedDeviceId={setSelectedDeviceId}
+                reading={reading}
+                status={status}
+            />
         </CMSinglePageSurfaceCard>
     );
 };
