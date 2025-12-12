@@ -1,0 +1,11 @@
+.tunerPro {
+    margin: 12px;
+    width: 518px;
+    padding: 23px;
+}
+
+.tunerPro .bigNote {
+    font-size: 96px;
+    font-weight: bold;
+    text-align: center;
+}

@@ -29,6 +29,7 @@ import '../../public/style/filterControls.css';
 import '../../public/style/ImportEvents.css';
 import '../../public/style/mediaPlayer.css';
 import '../../public/style/metronome.css';
+import '../../public/style/tuner.css';
 import '../../public/style/setlistPlan.css';
 import '../../public/style/songSearch.css';
 import '../../public/style/tabs.css';

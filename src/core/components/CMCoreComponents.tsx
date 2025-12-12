@@ -69,9 +69,9 @@ export const RowInfoChip = (props: RowInfoChipProps) => {
 
 // well tbh, it's hard to know whether to use this or what <EventDetail> uses...
 // .contentSection seems more developed, with 
-export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren<{ className?: string }>) => {
+export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren<{ className?: string, style?: React.CSSProperties }>) => {
     // return <Card className='singlePageSurface'>{props.children}</Card>;
-    return <div className={`contentSection ${props.className}`}>{props.children}</div>;
+    return <div className={`contentSection ${props.className}`} style={props.style}>{props.children}</div>;
 };
 
 

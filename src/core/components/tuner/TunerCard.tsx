@@ -1,7 +1,10 @@
 import React from "react";
-import { Alert, Box, Button, LinearProgress, MenuItem, Select, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Chip, Divider, LinearProgress, MenuItem, Select, Stack, Typography, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { TunerEngine, TunerReading, TunerStatusUpdate } from "@/src/core/audio/tuner/tunerEngine";
 import { CMSinglePageSurfaceCard } from "../CMCoreComponents";
+import { SegmentedVuMeter } from "./SegmentedVuMeter";
+import { AdminContainer } from "../CMCoreComponents2";
 
 const NO_DEVICE_ID = "default";
 
@@ -28,9 +31,15 @@ function formatCents(detuneCents: number | null): string {
     return `${rounded} cents`;
 }
 
-function deriveNoteData(reading: TunerReading | null) {
+type NoteData = {
+    noteLabel: string;
+    centsLabel: string;
+    centsValue: number | null;
+};
+
+function deriveNoteData(reading: TunerReading | null): NoteData {
     if (!reading || !reading.frequencyHz) {
-        return { noteLabel: "—", centsLabel: "—" };
+        return { noteLabel: "—", centsLabel: "—", centsValue: null };
     }
     const midi = frequencyToMidi(reading.frequencyHz);
     const nearest = Math.round(midi);
@@ -38,6 +47,7 @@ function deriveNoteData(reading: TunerReading | null) {
     return {
         noteLabel: midiToNoteName(nearest),
         centsLabel: formatCents(cents),
+        centsValue: cents,
     };
 }
 
@@ -48,6 +58,104 @@ function formatConfidence(confidence01: number): string {
 function formatRms(rms: number): string {
     return `${(rms * 100).toFixed(1)}% level`;
 }
+
+function mapCentsToPercent(cents: number | null): number {
+    if (cents === null) return 50;
+    const clamped = Math.min(50, Math.max(-50, cents));
+    return (clamped + 50) * 1; // -50..50 -> 0..100
+}
+
+function levelPercent(rms: number | undefined): number {
+    if (!rms || rms <= 0) return 0;
+    // scale roughly to 0-1 range then to percent; rms of 0.5 ~ very loud
+    const scaled = Math.min(1, rms * 2);
+    return scaled * 100;
+}
+
+const TunerStatusChip = ({ status }: { status: TunerStatusUpdate }) => {
+    if (status.status === "running") return <Chip size="small" color="success" label="Listening" />;
+    if (status.status === "starting") return <Chip size="small" color="warning" label="Starting" />;
+    if (status.status === "error") return <Chip size="small" color="error" label="Error" />;
+    return <Chip size="small" variant="outlined" label="Idle" />;
+};
+
+export const TunerUserDisplay: React.FC<{
+    handleRefreshDevices: () => Promise<void>;
+    handleStart: () => Promise<void>;
+    handleStop: () => Promise<void>;
+    devices: MediaDeviceInfo[];
+    selectedDeviceId: string;
+    setSelectedDeviceId: (id: string) => void;
+    reading: TunerReading | null;
+    status: TunerStatusUpdate;
+}> = (props) => {
+    const noteData = deriveNoteData(props.reading);
+    const centsPercent = mapCentsToPercent(noteData.centsValue);
+
+    return (
+        <div className="tunerPro">
+            <div className="tunerHeader" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Typography variant="h6" component="h2">Tuner</Typography>
+                    <TunerStatusChip status={props.status} />
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                    <Button variant="outlined" onClick={props.handleRefreshDevices}>Refresh inputs</Button>
+                    {props.status.status !== "running" && <Button variant="contained" onClick={props.handleStart}>Start</Button>}
+                    {props.status.status === "running" && <Button variant="text" onClick={props.handleStop}>Stop</Button>}
+                </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: "8px" }}>
+                <Typography variant="body2">Input</Typography>
+                <Select
+                    size="small"
+                    value={props.selectedDeviceId}
+                    onChange={(e) => props.setSelectedDeviceId(e.target.value)}
+                    sx={{ minWidth: 220 }}
+                >
+                    <MenuItem value={NO_DEVICE_ID}>System default</MenuItem>
+                    {props.devices.map(d => (
+                        <MenuItem key={d.deviceId || d.label} value={d.deviceId}>{d.label || "Mic"}</MenuItem>
+                    ))}
+                </Select>
+            </div>
+
+            {props.status.status === "error" && (
+                <Alert severity="error">{props.status.message ?? "Tuner error"}</Alert>
+            )}
+
+            <div>
+                <div className="bigNote">{noteData.noteLabel}</div>
+
+                <div>
+                    <Typography variant="subtitle2" gutterBottom>Cents offset</Typography>
+                    <div style={{ position: "relative", height: 10, borderRadius: 5, backgroundColor: "rgba(0,0,0,0.08)" }}>
+                        <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, backgroundColor: "rgba(0,0,0,0.2)" }} />
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: -4,
+                                height: 18,
+                                width: 4,
+                                borderRadius: 2,
+                                backgroundColor: "#1976d2",
+                                transition: "left 120ms ease-out",
+                                left: `${centsPercent}%`,
+                                transform: "translateX(-50%)",
+                            }}
+                        />
+                    </div>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{noteData.centsLabel}</Typography>
+                </div>
+            </div>
+
+            <div>
+                <SegmentedVuMeter valueRms={props.reading?.rms ?? 0} />
+            </div>
+        </div>
+    );
+};
 
 export const TunerDevDisplay: React.FC<{
     handleRefreshDevices: () => Promise<void>;
@@ -150,8 +258,19 @@ export const TunerCard: React.FC = () => {
         };
     }, [engine]);
 
-    return (
-        <CMSinglePageSurfaceCard>
+    return (<>
+        <TunerUserDisplay
+            handleRefreshDevices={handleRefreshDevices}
+            handleStart={handleStart}
+            handleStop={handleStop}
+            devices={devices}
+            selectedDeviceId={selectedDeviceId}
+            setSelectedDeviceId={setSelectedDeviceId}
+            reading={reading}
+            status={status}
+        />
+
+        <AdminContainer>
             <TunerDevDisplay
                 handleRefreshDevices={handleRefreshDevices}
                 handleStart={handleStart}
@@ -162,6 +281,8 @@ export const TunerCard: React.FC = () => {
                 reading={reading}
                 status={status}
             />
-        </CMSinglePageSurfaceCard>
-    );
+
+        </AdminContainer>
+
+    </>);
 };

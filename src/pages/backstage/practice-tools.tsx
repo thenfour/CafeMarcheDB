@@ -37,12 +37,10 @@ const PracticeToolsPage: BlitzPage = () => {
         <DashboardLayout title="Practice tools" basePermission={Permission.practice_tools_use}>
             <AppContextMarker name="practice tools page">
                 <PracticeToolsBreadcrumbs />
-                <Stack spacing={2}>
-                    <CMSinglePageSurfaceCard>
-                        <MetronomePanel />
-                    </CMSinglePageSurfaceCard>
+                <CMSinglePageSurfaceCard style={{ display: "flex", flexDirection: "column", alignItems: "center" }} >
                     <TunerCard />
-                </Stack>
+                    <MetronomePanel />
+                </CMSinglePageSurfaceCard>
             </AppContextMarker>
         </DashboardLayout>
     );
