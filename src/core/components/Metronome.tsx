@@ -763,7 +763,7 @@ export const MetronomePanel: React.FC<MetronomePanelProps> = ({ onClose }) => {
                 <MetronomeButton
                     ref={metronomeButtonRef}
                     bpm={bpm}
-                    mountPlaying={true}
+                    mountPlaying={false}
                     isTapping={isTapping}
                     tapTrigger={tapTrigger}
                     onSyncClick={handleSync}

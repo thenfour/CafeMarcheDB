@@ -5,8 +5,9 @@ import { CMLink } from "@/src/core/components/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { MetronomePanel } from "@/src/core/components/Metronome";
+import { TunerCard } from "@/src/core/components/tuner/TunerCard";
 import { BlitzPage } from "@blitzjs/next";
-import { Breadcrumbs } from "@mui/material";
+import { Breadcrumbs, Stack } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
 
 
@@ -36,9 +37,12 @@ const PracticeToolsPage: BlitzPage = () => {
         <DashboardLayout title="Practice tools" basePermission={Permission.practice_tools_use}>
             <AppContextMarker name="practice tools page">
                 <PracticeToolsBreadcrumbs />
-                <CMSinglePageSurfaceCard>
-                    <MetronomePanel />
-                </CMSinglePageSurfaceCard>
+                <Stack spacing={2}>
+                    <CMSinglePageSurfaceCard>
+                        <MetronomePanel />
+                    </CMSinglePageSurfaceCard>
+                    <TunerCard />
+                </Stack>
             </AppContextMarker>
         </DashboardLayout>
     );

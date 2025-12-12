@@ -1,5 +1,7 @@
 # CafeMarcheDB - GitHub Copilot Instructions
 
+ALWAYS PRIORITIZE the style in this guide. Never deviate from these rules.
+
 CafeMarcheDB is a web application for managing a music community, built with Blitz.js (React/Next.js + Prisma ORM), TypeScript, and Material-UI. It handles events, users, songs, setlists, and calendar integration for a musical group.
 
 These rules guide any AI coding agent contributing to this repository. Always conform to this style guide when making any changes.
