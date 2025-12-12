@@ -1,11 +1,9 @@
-import React from "react";
-import { Alert, Box, Button, Chip, Divider, LinearProgress, MenuItem, Select, Stack, Typography, Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { TunerEngine, TunerReading, TunerStatusUpdate } from "@/src/core/audio/tuner/tunerEngine";
-import { CMSinglePageSurfaceCard } from "../CMCoreComponents";
-import { SegmentedVuMeter } from "./SegmentedVuMeter";
-import { StrobeVisualizer } from "./StrobeVisualizer";
+import { Alert, Box, Button, Chip, LinearProgress, MenuItem, Select, Stack, Typography } from "@mui/material";
+import React from "react";
 import { AdminContainer } from "../CMCoreComponents2";
+import { FanSegmentTuner } from "./FanSegmentTuner";
+import { SegmentedVuMeter } from "./SegmentedVuMeter";
 
 const NO_DEVICE_ID = "default";
 
@@ -162,9 +160,18 @@ export const TunerUserDisplay: React.FC<{
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{noteData.centsLabel}</Typography>
                 </div>
             </div>
-
-            <div className="strobeVizContainer" style={{ width: 200 }}>
+            {/* 
+            <div className="strobeVizContainer">
                 <StrobeVisualizer centsOffset={noteData.centsValue} isActive={trusted} />
+            </div>
+
+            <div className="strobeVizContainer">
+                <HorizontalStrobeVisualizer centsOffset={noteData.centsValue} isActive={trusted} />
+            </div> */}
+
+            <div>
+                {/* <SnarkNeedleTuner centsOffset={noteData.centsValue} isActive={trusted} noteLabel={noteData.noteLabel} /> */}
+                <FanSegmentTuner centsOffset={noteData.centsValue} isActive={trusted} />
             </div>
 
             <div>
