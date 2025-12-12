@@ -7,50 +7,49 @@ export type StrobeVisualizerProps = {
 
 type RingDefinition = {
     sizePercent: number; // diameter relative to container
-    thicknessPx: number;
     segments: number;
     direction: 1 | -1;
     speedScale: number;
 };
 
 const MAX_DETUNE_CENTS = 50;
-const MAX_ROTATION_SPEED_DEG_PER_SEC = 240; // feels lively but readable
+
+// Visual tuning
+const MAX_ROTATION_SPEED_DEG_PER_SEC = 240;
 const IDLE_ROTATION_SPEED_DEG_PER_SEC = 0; // gentle drift when untrusted
-const SEGMENT_FILL_RATIO = 0.5; // percent of each segment arc that is lit
-const RING_DEFINITIONS: RingDefinition[] = [
-    { sizePercent: 90, thicknessPx: 32, segments: 8, direction: 1, speedScale: 1 },
-    { sizePercent: 90, thicknessPx: 32, segments: 8, direction: -1, speedScale: 1 },
-    //{ sizePercent: 90, thicknessPx: 32, segments: 24, direction: 1, speedScale: 1.4 },
-];
+const DEAD_BAND_CENTS = 0.1; // freeze when very close to in-tune
+//const SPEED_CURVE = ; // tanh curve strength
+
+const SEGMENT_FILL_RATIO = .5;
+
+// Slightly de-correlate the rings so they don't just "brightness-mix"
 // const RING_DEFINITIONS: RingDefinition[] = [
-//     { sizePercent: 100, thicknessPx: 16, segments: 30, direction: 1, speedScale: 1 },
-//     { sizePercent: 78, thicknessPx: 14, segments: 24, direction: -1, speedScale: 1.2 },
-//     { sizePercent: 56, thicknessPx: 12, segments: 16, direction: 1, speedScale: 0.85 },
+//     { sizePercent: 100, segments: 16, direction: 1, speedScale: 1.0 },
+//     { sizePercent: 90, segments: 16, direction: -1, speedScale: 0.618 },
+//     { sizePercent: 80, segments: 16, direction: 1, speedScale: 1.2 },
 // ];
 
-const PRIMARY_STROBE_COLOR = "rgba(25, 118, 210, 0.9)"; // MUI primary tone
-const MUTED_STROBE_COLOR = "rgba(25, 118, 210, 0.25)";
-const GAP_COLOR = "rgba(15, 23, 42, 0.08)";
-const BACKDROP_COLOR = "rgba(0, 0, 0, 0.03)";
-const INNER_DISC_COLOR = "#f7f9fb";
+const ringSize = 20;
+
+const RING_DEFINITIONS: RingDefinition[] = [
+    { sizePercent: 100, segments: 32, direction: 1, speedScale: 1 },
+    { sizePercent: 100 - ringSize, segments: 16, direction: -1, speedScale: 1 },
+    { sizePercent: 100 - ringSize * 2, segments: 8, direction: 1, speedScale: 1.85 },
+    { sizePercent: 100 - ringSize * 3, segments: 4, direction: -1, speedScale: 2.85 },
+];
+
+
+//const INNER_DISC_SIZE_PERCENT = 80;
+
+const PRIMARY_STROBE_COLOR = "#444"; // MUI primary tone
+//const MUTED_STROBE_COLOR = "#080";
+const GAP_COLOR = "#ccc";
+//const BACKDROP_COLOR = "rgba(0, 0, 0, 0.03)";
+const INNER_DISC_COLOR = "#fff";
 
 function clampDetuneCents(detuneCents: number | null): number | null {
     if (detuneCents === null) return null;
     return Math.max(-MAX_DETUNE_CENTS, Math.min(MAX_DETUNE_CENTS, detuneCents));
-}
-
-function normalizeDetune(detuneCents: number | null): number {
-    if (detuneCents === null) return 0;
-    const clamped = clampDetuneCents(detuneCents) ?? 0;
-    return clamped / MAX_DETUNE_CENTS; // -1..1
-}
-
-function deriveRotationSpeed(detuneCents: number | null, direction: 1 | -1, speedScale: number, isActive: boolean): number {
-    const normalized = normalizeDetune(detuneCents);
-    if (!isActive) {
-        return direction * IDLE_ROTATION_SPEED_DEG_PER_SEC * speedScale;
-    }
-    return direction * normalized * MAX_ROTATION_SPEED_DEG_PER_SEC * speedScale;
 }
 
 function normalizeRotation(rotationDeg: number): number {
@@ -62,52 +61,101 @@ function buildSegmentGradient(fillColor: string, segmentCount: number): string {
     const segmentSpanDeg = 360 / segmentCount;
     const litSpanDeg = segmentSpanDeg * SEGMENT_FILL_RATIO;
     const gapSpanDeg = segmentSpanDeg - litSpanDeg;
-    return `repeating-conic-gradient(${fillColor} 0deg ${litSpanDeg}deg, ${GAP_COLOR} ${litSpanDeg}deg ${litSpanDeg + gapSpanDeg}deg)`;
+    return `repeating-conic-gradient(${fillColor} 0deg ${litSpanDeg}deg, ${GAP_COLOR} ${litSpanDeg}deg ${litSpanDeg + gapSpanDeg
+        }deg)`;
 }
 
-function useRingRotation(ref: React.RefObject<HTMLDivElement>, rotationSpeedDegPerSec: number): void {
-    React.useEffect(() => {
-        const element = ref.current;
-        if (!element) return;
+// function prefersReducedMotion(): boolean {
+//     if (typeof window === "undefined" || !window.matchMedia) return false;
+//     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// }
 
-        if (rotationSpeedDegPerSec === 0) {
-            element.style.transform = "rotate(0deg)";
+function computeNormalizedDetune(detuneCents: number | null): number {
+    if (detuneCents == null) return 0;
+    const c = clampDetuneCents(detuneCents) ?? 0;
+    const abs = Math.abs(c);
+    if (abs < DEAD_BAND_CENTS) return 0;
+    return c / MAX_DETUNE_CENTS; // -1..1
+}
+
+// Smooth, stable mapping: deadband + tanh curve
+function detuneToSpeed(
+    detuneCents: number | null,
+    direction: 1 | -1,
+    speedScale: number,
+    isActive: boolean
+): number {
+    if (!isActive) return direction * IDLE_ROTATION_SPEED_DEG_PER_SEC * speedScale;
+
+    const x = computeNormalizedDetune(detuneCents); // -1..1
+    //const curved = Math.tanh(SPEED_CURVE * x); // -1..1, gentler near 0
+    return direction * x * MAX_ROTATION_SPEED_DEG_PER_SEC * speedScale;
+}
+
+function useRingRotation(ref: React.RefObject<HTMLDivElement>, speedDegPerSec: number, enabled: boolean): void {
+    const speedTargetRef = React.useRef(speedDegPerSec);
+    const speedSmoothedRef = React.useRef(speedDegPerSec);
+    const rotationRef = React.useRef(0);
+    const lastTRef = React.useRef<number | null>(null);
+
+    // Update target speed without restarting rAF.
+    React.useEffect(() => {
+        speedTargetRef.current = speedDegPerSec;
+    }, [speedDegPerSec]);
+
+    React.useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+
+        if (!enabled) {
+            console.log("strobe visualizer: rotation disabled");
+            // Freeze without snapping back to 0deg.
             return;
         }
 
-        let animationFrame: number;
-        let lastTimestamp = performance.now();
-        let rotationDeg = 0;
+        let raf = 0;
 
         const step = (now: number) => {
-            const deltaSeconds = (now - lastTimestamp) / 1000;
-            lastTimestamp = now;
-            rotationDeg = normalizeRotation(rotationDeg + rotationSpeedDegPerSec * deltaSeconds);
-            element.style.transform = `rotate(${rotationDeg}deg)`;
-            animationFrame = requestAnimationFrame(step);
+            if (lastTRef.current == null) lastTRef.current = now;
+            const dt = (now - lastTRef.current) / 1000;
+            lastTRef.current = now;
+
+            // Smooth speed changes (one-pole low-pass)
+            // tau ~ 80ms => stable but still responsive
+            const tau = 0.08;
+            const alpha = 1 - Math.exp(-dt / tau);
+            speedSmoothedRef.current += (speedTargetRef.current - speedSmoothedRef.current) * alpha;
+
+            rotationRef.current = normalizeRotation(rotationRef.current + speedSmoothedRef.current * dt);
+            //console.log(rotationRef.current);
+            el.style.transform = `rotate(${rotationRef.current}deg)`;
+
+            raf = requestAnimationFrame(step);
         };
 
-        animationFrame = requestAnimationFrame(step);
-        return () => cancelAnimationFrame(animationFrame);
-    }, [ref, rotationSpeedDegPerSec]);
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+    }, [ref, enabled]);
 }
 
 function RingLayer({
     definition,
     rotationSpeedDegPerSec,
-    muted,
+    enabled,
 }: {
     definition: RingDefinition;
     rotationSpeedDegPerSec: number;
-    muted: boolean;
+    enabled: boolean;
 }) {
+    if (!enabled) {
+        return null;
+    }
     const ringRef = React.useRef<HTMLDivElement>(null);
-    useRingRotation(ringRef, rotationSpeedDegPerSec);
+    useRingRotation(ringRef, rotationSpeedDegPerSec, enabled);
 
-    const fillColor = muted ? MUTED_STROBE_COLOR : PRIMARY_STROBE_COLOR;
+    const fillColor = PRIMARY_STROBE_COLOR;
     const gradient = buildSegmentGradient(fillColor, definition.segments);
     const outerSize = `${definition.sizePercent}%`;
-    const innerSize = `calc(100% - ${definition.thicknessPx * 2}px)`;
 
     return (
         <div
@@ -127,19 +175,18 @@ function RingLayer({
                     borderRadius: "50%",
                     backgroundImage: gradient,
                     position: "relative",
-                    transition: "opacity 180ms ease-out",
-                    opacity: muted ? 0.7 : 1,
+                    //transition: "opacity 180ms ease-out",
+                    //opacity: muted ? 0.7 : 1,
                     transform: "rotate(0deg)",
+                    willChange: "transform",
                 }}
             >
                 <div
                     style={{
                         position: "absolute",
-                        inset: `${definition.thicknessPx}px`,
-                        width: innerSize,
-                        height: innerSize,
+                        //inset: `${definition.thicknessPx}px`,
                         borderRadius: "50%",
-                        backgroundColor: BACKDROP_COLOR,
+                        //backgroundColor: BACKDROP_COLOR,
                     }}
                 />
             </div>
@@ -149,10 +196,12 @@ function RingLayer({
 
 export const StrobeVisualizer: React.FC<StrobeVisualizerProps> = ({ centsOffset, isActive }) => {
     const clampedCents = clampDetuneCents(centsOffset);
+
+    // Only compute the speed plan on prop changes; animation itself is imperative.
     const rotationPlan = React.useMemo(() => {
         return RING_DEFINITIONS.map((definition) => ({
             definition,
-            rotationSpeedDegPerSec: deriveRotationSpeed(clampedCents, definition.direction, definition.speedScale, isActive),
+            rotationSpeedDegPerSec: detuneToSpeed(clampedCents, definition.direction, definition.speedScale, isActive),
         }));
     }, [clampedCents, isActive]);
 
@@ -161,12 +210,10 @@ export const StrobeVisualizer: React.FC<StrobeVisualizerProps> = ({ centsOffset,
             style={{
                 position: "relative",
                 width: "100%",
-                maxWidth: 320,
-                margin: "12px auto 0",
-                aspectRatio: "1 / 1",
                 borderRadius: "50%",
-                background: BACKDROP_COLOR,
                 overflow: "hidden",
+                height: "100%",
+                aspectRatio: "1 / 1",
             }}
         >
             {rotationPlan.map((plan, index) => (
@@ -174,18 +221,9 @@ export const StrobeVisualizer: React.FC<StrobeVisualizerProps> = ({ centsOffset,
                     key={index}
                     definition={plan.definition}
                     rotationSpeedDegPerSec={plan.rotationSpeedDegPerSec}
-                    muted={!isActive}
+                    enabled={isActive}
                 />
             ))}
-            <div
-                style={{
-                    position: "absolute",
-                    inset: "32%",
-                    borderRadius: "50%",
-                    background: INNER_DISC_COLOR,
-                    boxShadow: "0 0 18px rgba(0,0,0,0.08) inset",
-                }}
-            />
         </div>
     );
 };

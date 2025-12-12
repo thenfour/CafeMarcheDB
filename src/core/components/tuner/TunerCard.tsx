@@ -10,8 +10,8 @@ import { AdminContainer } from "../CMCoreComponents2";
 const NO_DEVICE_ID = "default";
 
 const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
-const MIN_CONFIDENCE_FOR_PITCH = 0.5;
-const MIN_RMS_FOR_PITCH = 0.002; // ~ -54 dB
+const MIN_CONFIDENCE_FOR_PITCH = 0.44;
+const MIN_RMS_FOR_PITCH = 0.0001;
 
 function frequencyToMidi(frequencyHz: number): number {
     return 69 + 12 * Math.log2(frequencyHz / 440);
@@ -163,7 +163,9 @@ export const TunerUserDisplay: React.FC<{
                 </div>
             </div>
 
-            <StrobeVisualizer centsOffset={noteData.centsValue} isActive={trusted} />
+            <div className="strobeVizContainer" style={{ width: 200 }}>
+                <StrobeVisualizer centsOffset={noteData.centsValue} isActive={trusted} />
+            </div>
 
             <div>
                 <SegmentedVuMeter valueRms={props.reading?.rms ?? 0} idle={!trusted} />
