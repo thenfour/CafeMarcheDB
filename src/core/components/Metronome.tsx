@@ -608,7 +608,11 @@ export interface MetronomeDialogProps {
     onClose: () => void;
 }
 
-export const MetronomeDialog = (props: MetronomeDialogProps) => {
+interface MetronomePanelProps {
+    onClose?: () => void;
+}
+
+export const MetronomePanel: React.FC<MetronomePanelProps> = ({ onClose }) => {
     //const [bpm, setBPM] = useURLState<number>("bpm", 120);
     const [bpm, setBPM] = useLocalStorageState<number>({
         key: "metronomeBPM",
@@ -744,7 +748,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             document.removeEventListener('keydown', handleKeyDown);
             document.removeEventListener('wheel', handleWheel);
         };
-    }, [bpm, props.onClose]);
+    }, [bpm, onClose]);
 
     // Get unified tempo configurations
     const knobSegments = getKnobSegments();
@@ -753,150 +757,120 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
 
 
 
-    return <ReactiveInputDialog onCancel={props.onClose} className="GlobalMetronomeDialog">
-        <DialogContent dividers>
-            <MetronomeButton
-                ref={metronomeButtonRef}
-                bpm={bpm}
-                mountPlaying={true}
-                isTapping={isTapping}
-                tapTrigger={tapTrigger}
-                onSyncClick={handleSync}
-                variant="normal"
-            />
-            <div className="bpmAndTapRow">
-                <div className="nudge minus freeButton" onClick={() => {
-                    setBPM(bpm - 1);
-                    setTextBpm((bpm - 1).toString());
-                }}><Remove /></div>
-                <div className="nudge plus freeButton" onClick={() => {
-                    setBPM(bpm + 1);
-                    setTextBpm((bpm + 1).toString());
-                }}><Add /></div>
-                <CMTextInputBase
-                    onChange={(e, v) => {
-                        setTextBpm(v);
-                        const n = CoerceToNumberOrNull(v);
-                        if (!n) return;
-                        if (n < gMinBPM) return;
-                        if (n > gMaxBPM) return;
-                        setBPM(n);
-                    }}
-                    value={textBpm}
+    return (
+        <div className="GlobalMetronomeDialog">
+            <DialogContent dividers>
+                <MetronomeButton
+                    ref={metronomeButtonRef}
+                    bpm={bpm}
+                    mountPlaying={true}
+                    isTapping={isTapping}
+                    tapTrigger={tapTrigger}
+                    onSyncClick={handleSync}
+                    variant="normal"
                 />
-                <TapTempo
-                    ref={tapTempoRef}
-                    killTapTrigger={killTapTrigger}
-                    onStopTapping={() => {
-                        setIsTapping(false);
-                    }}
-                    onTap={(newBpm, count) => {
-                        setIsTapping(true);
-                        setTapTrigger(tapTrigger + 1);
-                        if (newBpm !== null) {
-                            setBPM(newBpm);
-                            setTextBpm(newBpm.toString());
-                        }
-                    }} />
-                <Button className="closeButton freeButton" onClick={props.onClose}>{gIconMap.Close()}</Button>
-            </div>
-            <div className="sliderContainer">
-                {/* <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
-                    setBPM(e.target.valueAsNumber);
-                    setTextBpm(e.target.value);
-                }} /> */}
-                <Knob
-                    className="bpmSlider"
-                    min={gMinBPM}
-                    max={gMaxBPM}
-                    value={bpm}
-                    size={500}
-                    centerRadius={110}
-                    dragBehavior="vertical"
-                    // Main value arc configuration (radius-based)
-                    valueArcInnerRadius={130}  // centerRadius + 20 (gap from center)
-                    valueArcOuterRadius={185}  // valueArcInnerRadius + 55 (old lineWidth)
-                    // Segment arc configuration (radius-based)
-                    segmentArcInnerRadius={193}  // valueArcOuterRadius + 8
-                    segmentArcOuterRadius={218}  // segmentArcInnerRadius + 25 (old segmentArcWidth)
-                    segmentTextRadius={205}      // middle of segment arc (segmentArcInnerRadius + segmentArcOuterRadius) / 2 - 10
-                    // Needle configuration (radius-based)
-                    needleStartRadius={70}
-                    needleEndRadius={223}        // point to middle of value arc
-                    needleColor="#888"
-                    needleWidth={3}
-                    // Tick mark configuration (radius-based)
-                    tickStartRadius={224}        // segmentArcOuterRadius + 6
-                    tickEndRadius={235}          // tickStartRadius + 11
-                    tickLabelRadius={246}        // tickEndRadius + 8 (old tickLabelOffset)
-                    tickColor="#999"
-                    tickFontSize={12}
-                    tickMarks={tickMarks}
-                    segments={knobSegments}
-                    // Interactive tick labels
-                    useInteractiveTickLabels={true}
-                    onTickLabelClick={(value) => {
-                        setBPM(value);
-                        setTextBpm(value.toString());
-                    }}
-                    // Snap-to-tick behavior for precise BPM selection
-                    snapToTick={true}
-                    snapDragToTick={true}
-                    onChange={e => {
-                        //const valueAsNumber = value as number;
-                        setBPM(e);
-                        setTextBpm(e.toString());
-                    }} />
-
-            </div>
-            {/* <div className="buttonRow">
-                {presetTempos.row1.map((preset, i) => {
-                    return <div key={i} className={`preset freeButton ${preset.bpm === bpm ? "selected" : ""}`} onClick={() => {
-                        setBPM(preset.bpm);
-                        setTextBpm(String(preset.bpm));
-                    }}>
-                        <div className="title">{preset.bpm}</div>
-                    </div>
-                })}
-            </div>
-            <div className="buttonRow">
-                {presetTempos.row2.map((preset, i) => {
-                    return <div key={i} className={`preset freeButton ${preset.bpm === bpm ? "selected" : ""}`} onClick={() => {
-                        setBPM(preset.bpm);
-                        setTextBpm(String(preset.bpm));
-                    }}>
-                        <div className="title">{preset.bpm}</div>
-                    </div>
-                })}
-            </div>
-            <div className="buttonRow">
-                {presetTempos.row3.map((preset, i) => {
-                    return <div key={i} className={`preset freeButton ${preset.bpm === bpm ? "selected" : ""}`} onClick={() => {
-                        setBPM(preset.bpm);
-                        setTextBpm(String(preset.bpm));
-                    }}>
-                        <div className="title">{preset.bpm}</div>
-                    </div>
-                })}
-            </div> */}
-            <div className="keyboardShortcutsHelp" style={{
-                fontSize: '11px',
-                color: '#999',
-                marginTop: '10px',
-                textAlign: 'center',
-                lineHeight: '1.3'
-            }}>
-                {/* <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Keyboard Shortcuts:</div> */}
-                <div>
-                    <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: Jump to tick • <strong>Shift+Wheel</strong>: BPM ±1 • <strong>Shift+Drag</strong>: Fine control • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
+                <div className="bpmAndTapRow">
+                    <div className="nudge minus freeButton" onClick={() => {
+                        setBPM(bpm - 1);
+                        setTextBpm((bpm - 1).toString());
+                    }}><Remove /></div>
+                    <div className="nudge plus freeButton" onClick={() => {
+                        setBPM(bpm + 1);
+                        setTextBpm((bpm + 1).toString());
+                    }}><Add /></div>
+                    <CMTextInputBase
+                        onChange={(e, v) => {
+                            setTextBpm(v);
+                            const n = CoerceToNumberOrNull(v);
+                            if (!n) return;
+                            if (n < gMinBPM) return;
+                            if (n > gMaxBPM) return;
+                            setBPM(n);
+                        }}
+                        value={textBpm}
+                    />
+                    <TapTempo
+                        ref={tapTempoRef}
+                        killTapTrigger={killTapTrigger}
+                        onStopTapping={() => {
+                            setIsTapping(false);
+                        }}
+                        onTap={(newBpm, count) => {
+                            setIsTapping(true);
+                            setTapTrigger(tapTrigger + 1);
+                            if (newBpm !== null) {
+                                setBPM(newBpm);
+                                setTextBpm(newBpm.toString());
+                            }
+                        }} />
+                    {onClose && <Button className="closeButton freeButton" onClick={onClose}>{gIconMap.Close()}</Button>}
                 </div>
-            </div>
-            {/* <div className="buttonRow">
-                <Button className="closeButton" onClick={props.onClose}>Close</Button>
-            </div> */}
-        </DialogContent>
+                <div className="sliderContainer">
+                    <Knob
+                        className="bpmSlider"
+                        min={gMinBPM}
+                        max={gMaxBPM}
+                        value={bpm}
+                        size={500}
+                        centerRadius={110}
+                        dragBehavior="vertical"
+                        // Main value arc configuration (radius-based)
+                        valueArcInnerRadius={130}  // centerRadius + 20 (gap from center)
+                        valueArcOuterRadius={185}  // valueArcInnerRadius + 55 (old lineWidth)
+                        // Segment arc configuration (radius-based)
+                        segmentArcInnerRadius={193}  // valueArcOuterRadius + 8
+                        segmentArcOuterRadius={218}  // segmentArcInnerRadius + 25 (old segmentArcWidth)
+                        segmentTextRadius={205}      // middle of segment arc (segmentArcInnerRadius + segmentArcOuterRadius) / 2 - 10
+                        // Needle configuration (radius-based)
+                        needleStartRadius={70}
+                        needleEndRadius={223}        // point to middle of value arc
+                        needleColor="#888"
+                        needleWidth={3}
+                        // Tick mark configuration (radius-based)
+                        tickStartRadius={224}        // segmentArcOuterRadius + 6
+                        tickEndRadius={235}          // tickStartRadius + 11
+                        tickLabelRadius={246}        // tickEndRadius + 8 (old tickLabelOffset)
+                        tickColor="#999"
+                        tickFontSize={12}
+                        tickMarks={tickMarks}
+                        segments={knobSegments}
+                        // Interactive tick labels
+                        useInteractiveTickLabels={true}
+                        onTickLabelClick={(value) => {
+                            setBPM(value);
+                            setTextBpm(value.toString());
+                        }}
+                        // Snap-to-tick behavior for precise BPM selection
+                        snapToTick={true}
+                        snapDragToTick={true}
+                        onChange={e => {
+                            setBPM(e);
+                            setTextBpm(e.toString());
+                        }} />
 
-    </ReactiveInputDialog>;
+                </div>
+                <div className="keyboardShortcutsHelp" style={{
+                    fontSize: '11px',
+                    color: '#999',
+                    marginTop: '10px',
+                    textAlign: 'center',
+                    lineHeight: '1.3'
+                }}>
+                    <div>
+                        <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: Jump to tick • <strong>Shift+Wheel</strong>: BPM ±1 • <strong>Shift+Drag</strong>: Fine control • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
+                    </div>
+                </div>
+            </DialogContent>
+        </div>
+    );
+};
+
+export const MetronomeDialog = (props: MetronomeDialogProps) => {
+    return (
+        <ReactiveInputDialog onCancel={props.onClose} className="GlobalMetronomeDialog">
+            <MetronomePanel onClose={props.onClose} />
+        </ReactiveInputDialog>
+    );
 };
 
 export const MetronomeDialogButton = () => {

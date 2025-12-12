@@ -29,7 +29,6 @@ import { LoginSignup } from "../LoginSignupForm";
 import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import { MessageBoxProvider } from "../MessageBoxContext";
-import { MetronomeDialogButton } from "../Metronome";
 import { QrCodeButton } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SettingMarkdown } from "../SettingMarkdown";
@@ -305,7 +304,11 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     </Typography>
                 </Box>
 
-                <MetronomeDialogButton />
+                <Tooltip title="Practice tools">
+                    <Link href="/backstage/practice-tools" aria-label="Practice tools" className="freeButton globalMetronomeButton">
+                        {gIconMap.VolumeDown()}
+                    </Link>
+                </Tooltip>
 
                 <MainSiteSearch />
 
