@@ -135,6 +135,19 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
                     <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
                     Calendar feed (iCal format)
                 </MenuItem>
+                <AppContextMarker name="appBarQrCode">
+                    <QrCodeButton
+                        content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
+                        title="QR code for this page"
+                        description={<SettingMarkdown setting={Setting.QrCodeForThisPageDescriptionMarkdown} />}
+                        renderButton={({ onClick }) => (
+                            <MenuItem onClick={() => { onClick(); closeMenu(); }}>
+                                <ListItemIcon><QrCode /></ListItemIcon>
+                                Show QR code for this page
+                            </MenuItem>
+                        )}
+                    />
+                </AppContextMarker>
                 <Divider />
             </>
         }
@@ -293,26 +306,6 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 </Box>
 
                 <MetronomeDialogButton />
-
-                <Tooltip title="Show QR code for this page">
-                    <div>
-                        <AppContextMarker name="appBarQrCode">
-                            <QrCodeButton
-                                content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
-                                title="QR code for this page"
-                                description={<SettingMarkdown setting={Setting.QrCodeForThisPageDescriptionMarkdown} />}
-                                renderButton={({ onClick }) => (
-                                    <div
-                                        className="freeButton globalMetronomeButton"
-                                        onClick={() => onClick()}
-                                    >
-                                        <QrCode />
-                                    </div>
-                                )}
-                            />
-                        </AppContextMarker>
-                    </div>
-                </Tooltip>
 
                 <MainSiteSearch />
 
