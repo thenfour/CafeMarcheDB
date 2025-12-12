@@ -4,6 +4,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { TunerEngine, TunerReading, TunerStatusUpdate } from "@/src/core/audio/tuner/tunerEngine";
 import { CMSinglePageSurfaceCard } from "../CMCoreComponents";
 import { SegmentedVuMeter } from "./SegmentedVuMeter";
+import { StrobeVisualizer } from "./StrobeVisualizer";
 import { AdminContainer } from "../CMCoreComponents2";
 
 const NO_DEVICE_ID = "default";
@@ -161,6 +162,8 @@ export const TunerUserDisplay: React.FC<{
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{noteData.centsLabel}</Typography>
                 </div>
             </div>
+
+            <StrobeVisualizer centsOffset={noteData.centsValue} isActive={trusted} />
 
             <div>
                 <SegmentedVuMeter valueRms={props.reading?.rms ?? 0} idle={!trusted} />
