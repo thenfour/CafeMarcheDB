@@ -9,6 +9,8 @@ import { AdminContainer } from "../CMCoreComponents2";
 const NO_DEVICE_ID = "default";
 
 const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
+const MIN_CONFIDENCE_FOR_PITCH = 0.5;
+const MIN_RMS_FOR_PITCH = 0.002; // ~ -54 dB
 
 function frequencyToMidi(frequencyHz: number): number {
     return 69 + 12 * Math.log2(frequencyHz / 440);
@@ -72,6 +74,14 @@ function levelPercent(rms: number | undefined): number {
     return scaled * 100;
 }
 
+function isPitchTrusted(reading: TunerReading | null): boolean {
+    if (!reading) return false;
+    if (!reading.frequencyHz) return false;
+    if (reading.confidence01 < MIN_CONFIDENCE_FOR_PITCH) return false;
+    if (reading.rms < MIN_RMS_FOR_PITCH) return false;
+    return true;
+}
+
 const TunerStatusChip = ({ status }: { status: TunerStatusUpdate }) => {
     if (status.status === "running") return <Chip size="small" color="success" label="Listening" />;
     if (status.status === "starting") return <Chip size="small" color="warning" label="Starting" />;
@@ -89,7 +99,9 @@ export const TunerUserDisplay: React.FC<{
     reading: TunerReading | null;
     status: TunerStatusUpdate;
 }> = (props) => {
-    const noteData = deriveNoteData(props.reading);
+    const trusted = isPitchTrusted(props.reading);
+    const safeReading = trusted ? props.reading : null;
+    const noteData = deriveNoteData(safeReading);
     const centsPercent = mapCentsToPercent(noteData.centsValue);
 
     return (
@@ -151,7 +163,7 @@ export const TunerUserDisplay: React.FC<{
             </div>
 
             <div>
-                <SegmentedVuMeter valueRms={props.reading?.rms ?? 0} />
+                <SegmentedVuMeter valueRms={props.reading?.rms ?? 0} idle={!trusted} />
             </div>
         </div>
     );

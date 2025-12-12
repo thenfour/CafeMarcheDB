@@ -4,6 +4,7 @@ export type SegmentedVuMeterProps = {
     valueRms: number; // expected 0..1, clamped internally
     segments?: number;
     silentThresholdDb?: number;
+    idle?: boolean; // force gray coloring (e.g., below trust threshold)
 };
 
 const DEFAULT_SEGMENTS = 20;
@@ -37,16 +38,17 @@ function segmentColor(index: number, segments: number): string {
     return "#43a047"; // green
 }
 
-export const SegmentedVuMeter: React.FC<SegmentedVuMeterProps> = ({ valueRms, segments = DEFAULT_SEGMENTS, silentThresholdDb = SILENT_DEFAULT_DB }) => {
+export const SegmentedVuMeter: React.FC<SegmentedVuMeterProps> = ({ valueRms, segments = DEFAULT_SEGMENTS, silentThresholdDb = SILENT_DEFAULT_DB, idle = false }) => {
     const clampedRms = Math.max(0, Math.min(1, valueRms));
     const db = rmsToDb(clampedRms);
     const activeCount = mapDbToActiveSegments(db, segments, silentThresholdDb);
+    const idleColor = "#c0c0c0";
 
     return (
         <div style={{ display: "flex", flexDirection: "row", gap: "2px", alignItems: "center", width: "100%" }}>
             {Array.from({ length: segments }).map((_, i) => {
                 const isActive = i < activeCount;
-                const color = isActive ? segmentColor(i, segments) : "#d0d0d0";
+                const color = idle ? idleColor : (isActive ? segmentColor(i, segments) : "#d0d0d0");
                 return (
                     <div
                         key={i}
