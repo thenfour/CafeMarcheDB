@@ -19,7 +19,7 @@ import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import getSongPinnedRecording from "src/core/db3/queries/getSongPinnedRecording";
 import * as SetlistAPI from "src/core/db3/shared/setlistApi";
-import { SetlistPlan, SetlistPlanColumn } from "src/core/db3/shared/setlistPlanTypes";
+import { CreatePastedSetlistPlanPreservingMetadata, SetlistPlan, SetlistPlanColumn, ZSetlistPlan } from "src/core/db3/shared/setlistPlanTypes";
 import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
 import { TSongPinnedRecording } from "../../db3/shared/apiTypes";
@@ -1138,22 +1138,30 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
     };
     const handlePasteFromClipboard = async () => {
         const text = await navigator.clipboard.readText()
-        let newDoc: SetlistPlan;
+        let pastedDoc: SetlistPlan;
 
         try {
-            newDoc = JSON.parse(text) as SetlistPlan;
+            const parsedClipboardObject = JSON.parse(text) as Record<string, unknown>;
+
+            // #680 #632 the parsed object will only contain primitives; Date objects will be strings.
+            if (parsedClipboardObject.createdAt) {
+                parsedClipboardObject.createdAt = new Date(parsedClipboardObject.createdAt as string);
+            }
+
+            pastedDoc = ZSetlistPlan.parse(parsedClipboardObject);
         } catch (e) {
             console.error(e)
             snackbar.showError("Failed to parse clipboard contents")
             return
         }
 
-        // #632 the parsed object will only contain primitives; Date objects will be strings.
-        if (newDoc.createdAt) newDoc.createdAt = new Date(newDoc.createdAt);
-
-        if (await confirm({ title: "Paste from clipboard", description: "This will replace the current document. Are you sure?" })) {
+        if (await confirm({ title: "Paste from clipboard", description: "This will replace the current plan content while preserving the current plan metadata. Are you sure?" })) {
             void snackbar.invokeAsync(async () => {
-                props.mutator.setDoc(newDoc)
+                const planWithPreservedMetadata = CreatePastedSetlistPlanPreservingMetadata({
+                    pastedPlan: pastedDoc,
+                    existingPlan: props.doc,
+                });
+                props.mutator.setDoc(planWithPreservedMetadata)
                 setAnchorEl(null)
             }, "Pasted from clipboard")
         }
@@ -1401,7 +1409,7 @@ const MainDropdownMenu = (props: MainDropdownMenuProps) => {
                 <div>
                     <div>Paste plan from clipboard</div>
                     <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
-                        Replace current plan with JSON from clipboard
+                        Replace current plan content from clipboard JSON
                     </div>
                 </div>
             </MenuItem>

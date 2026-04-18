@@ -44,7 +44,7 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import deleteSetlistPlan from "src/core/db3/mutations/deleteSetlistPlan";
 import upsertSetlistPlan from "src/core/db3/mutations/upsertSetlistPlan";
 import getSetlistPlans from "src/core/db3/queries/getSetlistPlans";
-import { CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
+import { CopySetlistPlanPayloadWithoutDerivedStats, CreateNewSetlistPlan, SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanCell, SetlistPlanLedDef, SetlistPlanLedValue, SetlistPlanRow } from "src/core/db3/shared/setlistPlanTypes";
 
 function getId(prefix: string) {
     //return `${prefix}${nanoid(3)}`;
@@ -397,7 +397,7 @@ const createDuplicatedPlan = (plan: SetlistPlan, currentUserId?: number): Setlis
         createdByUserId: currentUserId ?? plan.createdByUserId,
         sortOrder: undefined,
         payload: {
-            ...plan.payload,
+            ...CopySetlistPlanPayloadWithoutDerivedStats(plan.payload),
             rows: duplicatedRows,
             columns: duplicatedColumns,
             cells: duplicatedCells,
@@ -411,10 +411,6 @@ const createDuplicatedPlan = (plan: SetlistPlan, currentUserId?: number): Setlis
             })),
         },
     };
-
-    delete duplicatedPlan.payload.autoCompleteDurationSeconds;
-    delete duplicatedPlan.payload.autoCompleteDepth;
-    delete duplicatedPlan.payload.autoCompleteIterations;
 
     return duplicatedPlan;
 };

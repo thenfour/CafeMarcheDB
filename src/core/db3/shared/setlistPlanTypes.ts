@@ -109,6 +109,40 @@ export const ZSetlistPlan = z.object({
 
 export type SetlistPlan = z.infer<typeof ZSetlistPlan>;
 
+export const CopySetlistPlanPayloadWithoutDerivedStats = (payload: SetlistPlanPayload): SetlistPlanPayload => {
+    const payloadWithoutDerivedStats: SetlistPlanPayload = {
+        ...payload,
+    };
+
+    delete payloadWithoutDerivedStats.autoCompleteDurationSeconds;
+    delete payloadWithoutDerivedStats.autoCompleteDepth;
+    delete payloadWithoutDerivedStats.autoCompleteIterations;
+
+    return payloadWithoutDerivedStats;
+};
+
+export const CreatePastedSetlistPlanPreservingMetadata = ({
+    pastedPlan,
+    existingPlan,
+}: {
+    pastedPlan: SetlistPlan;
+    existingPlan: SetlistPlan;
+}): SetlistPlan => {
+    return {
+        ...pastedPlan,
+        id: existingPlan.id,
+        name: existingPlan.name,
+        groupId: existingPlan.groupId,
+        sortOrder: existingPlan.sortOrder,
+        description: existingPlan.description,
+        createdAt: existingPlan.createdAt,
+        createdByUserId: existingPlan.createdByUserId,
+        visiblePermissionId: existingPlan.visiblePermissionId,
+        // Keep the current plan identity and ownership metadata while replacing the editable plan content.
+        payload: CopySetlistPlanPayloadWithoutDerivedStats(pastedPlan.payload),
+    };
+};
+
 // doesn't serialize to db.
 export const CreateNewSetlistPlan = (id: number, name: string, groupId: number | Nullish, createdByUserId: number): SetlistPlan => {
     //if (!dashboardContext.currentUser) throw new Error("must be logged in to create a new setlist plan");
