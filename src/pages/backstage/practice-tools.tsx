@@ -5,7 +5,7 @@ import { CMLink } from "@/src/core/components/CMLink";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { MetronomePanel } from "@/src/core/components/Metronome";
-import { TunerCard } from "@/src/core/components/tuner/TunerCard";
+//import { TunerCard } from "@/src/core/components/tuner/TunerCard";
 import { BlitzPage } from "@blitzjs/next";
 import { Breadcrumbs, Stack } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
@@ -38,7 +38,7 @@ const PracticeToolsPage: BlitzPage = () => {
             <AppContextMarker name="practice tools page">
                 <PracticeToolsBreadcrumbs />
                 <CMSinglePageSurfaceCard style={{ display: "flex", flexDirection: "column", alignItems: "center" }} >
-                    <TunerCard />
+                    {/* <TunerCard /> */}
                     <MetronomePanel />
                 </CMSinglePageSurfaceCard>
             </AppContextMarker>
