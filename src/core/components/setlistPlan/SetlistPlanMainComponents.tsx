@@ -367,9 +367,9 @@ const SetlistPlannerMatrixSongRow = (props: SetlistPlannerMatrixRowProps) => {
                 ) : "white";
 
                 style["backgroundColor"] = bgColor;
-                return <div key={index} className={`td segment numberCell pointAllocationCell ${cell?.autoFilled ? "autoFilled" : "notAutoFilled"} ${hasPointsAllocated ? "" : "hatch"}`} style={style}>
+                return <div key={segment.columnId} className={`td segment numberCell pointAllocationCell ${cell?.autoFilled ? "autoFilled" : "notAutoFilled"} ${hasPointsAllocated ? "" : "hatch"}`} style={style}>
                     <NumberField
-                        //key={`cell-${props.rowId}-${segment.columnId}`}
+                        key={`cell-${props.rowId}-${segment.columnId}`}
                         initialValue={hasPointsAllocated ? pointsAllocated : null}
                         onChange={(e, newValue) => {
                             props.mutator.setManualCellPoints(props.rowId, segment.columnId, newValue == null ? undefined : newValue);
@@ -458,8 +458,8 @@ const SetlistPlannerDividerRow = (props: SetlistPlannerDividerRowProps) => {
         <div className="td play"></div>
         <div className="td songLength"></div>
         {/* Add empty cells for each segment column */}
-        {props.doc.payload.columns.map((segment, index) => (
-            <div key={index} className="td segment"></div>
+        {props.doc.payload.columns.map((segment) => (
+            <div key={segment.columnId} className="td segment"></div>
         ))}
         <div className="td rehearsalTime"></div>
         <div className="td balance"></div>
@@ -651,8 +651,8 @@ const ColumnHeaderDropdownMenu = (props: ColumnHeaderDropdownMenuProps) => {
                 props.doc.payload.columns.length > 1 && <>
                     <Divider />
                     {
-                        props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c, index) => (
-                            <MenuItem key={index} onClick={() => handleSwapAllocationWith(c.columnId)}>
+                        props.doc.payload.columns.filter(c => c.columnId != props.columnId).map((c) => (
+                            <MenuItem key={c.columnId} onClick={() => handleSwapAllocationWith(c.columnId)}>
                                 <div>
                                     <div>Swap allocation with {c.name}</div>
                                     <div style={{ fontSize: '0.75em', color: 'text.secondary', opacity: 0.7 }}>
@@ -852,7 +852,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
             <div className={`td ${lengthColumnMode === "length" ? "songLength" : "runningLength"} interactable`} onClick={toggleLengthColumnMode}>
                 {lengthColumnMode === "length" ? "Len" : "∑T"}
             </div>
-            {docOrTempDoc.payload.columns.map((segment, index) => <div key={index} className="td segment">
+            {docOrTempDoc.payload.columns.map((segment) => <div key={segment.columnId} className="td segment">
                 <div style={{ display: "flex" }}>
                     <Tooltip
                         disableInteractive
@@ -876,7 +876,7 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </div>
                 <div className="numberCell" style={{ backgroundColor: LerpColor(segment.pointsAvailable, props.stats.minSegmentPointsAvailable, props.stats.maxSegmentPointsAvailable, props.colorScheme.segmentPointsAvailable) }}>
                     <NumberField
-                        //key={`segment-avail-${segment.columnId}`}
+                        key={`segment-avail-${segment.columnId}`}
                         initialValue={segment.pointsAvailable || null}
                         onChange={(e, newValue) => {
                             props.mutator.setColumnAvailablePoints(segment.columnId, newValue || undefined);
@@ -894,18 +894,18 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 lockAxis="y"
                 onDrop={onDrop}
             >
-                {docOrTempDoc.payload.rows.map((song, index) => <ReactSmoothDndDraggable key={index}>
+                {docOrTempDoc.payload.rows.map((song, index) => <ReactSmoothDndDraggable key={song.rowId}>
                     {song.type === "divider" ? <SetlistPlannerDividerRow
                         mutator={props.mutator}
                         stats={props.stats}
-                        key={index}
+                        key={song.rowId}
                         doc={docOrTempDoc}
                         rowId={song.rowId}
                     /> :
                         <SetlistPlannerMatrixSongRow
                             mutator={props.mutator}
                             stats={props.stats}
-                            key={index}
+                            key={song.rowId}
                             doc={docOrTempDoc}
                             colorScheme={props.colorScheme}
                             rowId={song.rowId}
@@ -950,10 +950,10 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 </Tooltip>
                 {/* </Tooltip> */}
                 {//docOrTempDoc.payload.columns.map((segment, index) => {
-                    props.stats.segmentStats.map((segStat, index) => {
+                    props.stats.segmentStats.map((segStat) => {
                         const bgColor = LerpColor(segStat.totalPointsAllocated, props.stats.minSegPointsUsed, props.stats.maxSegPointsUsed, props.colorScheme.segmentPoints);
-                        return <Tooltip key={index} disableInteractive title={`Total rehearsal points you've allocated for ${segStat.segment.name}`}>
-                            <div key={index} className="td segment numberCell" style={{ backgroundColor: bgColor }}>
+                        return <Tooltip key={segStat.segment.columnId} disableInteractive title={`Total rehearsal points you've allocated for ${segStat.segment.name}`}>
+                            <div className="td segment numberCell" style={{ backgroundColor: bgColor }}>
                                 <NumberField inert value={segStat.totalPointsAllocated} />
                             </div>
                         </Tooltip>;
@@ -982,16 +982,16 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songLength">
                 </div>
                 {//docOrTempDoc.payload.columns.map((segment, index) => {
-                    props.stats.segmentStats.map((segStat, index) => {
+                    props.stats.segmentStats.map((segStat) => {
                         const balanceColor = (segStat.balance || 0) <= 0 ?
                             LerpColor(segStat.balance, 0, props.stats.maxSegmentBalance, props.colorScheme.segmentBalancePositive)
                             : LerpColor(segStat.balance, props.stats.minSegmentBalance, 0, props.colorScheme.segmentBalanceNegative);
                         return <Tooltip
-                            key={index}
+                            key={segStat.segment.columnId}
                             disableInteractive
                             title={`Rehearsal points left unallocated ${segStat.segment.name}`}
                         >
-                            <div key={index} className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
+                            <div className="td segment numberCell" style={{ backgroundColor: balanceColor }}>
                                 <NumberField inert value={segStat.balance || null} showPositiveSign />
                             </div>
                         </Tooltip>;
@@ -1018,14 +1018,14 @@ const SetlistPlannerMatrix = (props: SetlistPlannerMatrixProps) => {
                 <div className="td songLength">
                 </div>
                 {//docOrTempDoc.payload.columns.map((segment, index) => {
-                    props.stats.segmentStats.map((segStat, index) => {
+                    props.stats.segmentStats.map((segStat) => {
                         const col = LerpColor(segStat.segmentAllocatedCells.length, 0, props.stats.maxSongsInSegment, props.colorScheme.songCountPerSegment);
                         return <Tooltip
-                            key={index}
+                            key={segStat.segment.columnId}
                             disableInteractive
                             title={`Songs to rehearse in ${segStat.segment.name}`}
                         >
-                            <div key={index} className="td segment numberCell" style={{ backgroundColor: col }}>
+                            <div className="td segment numberCell" style={{ backgroundColor: col }}>
                                 <NumberField inert value={segStat.segmentAllocatedCells.length} />
                             </div>
                         </Tooltip>;
