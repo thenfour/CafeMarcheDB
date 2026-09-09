@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# THIS IS DEPRECATED; use scripts/release/deploy.sh instead
+
 # Check if command line argument is provided
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 username@server:/path"
