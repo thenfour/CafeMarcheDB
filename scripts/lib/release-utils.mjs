@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 
+/**
+ * Shared process, Git, environment-file and logging helpers for release tools.
+ *
+ * Internal module used on developer machines, in the release container and on
+ * deployed instances. Human operators should run build.mjs,
+ * package-release.mjs, upgrade.mjs or test-release.mjs instead.
+ */
+
 import { spawn, spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
@@ -29,8 +37,14 @@ export function log(section, message = "") {
     process.stdout.write(`${label} ${message ? message + " " : ""}${color.dim(`(${stamp})`)}\n`)
 }
 
-export function sh(cmd, args = [], { cwd = process.cwd(), shell = process.platform === "win32" } = {}) {
-    const res = spawnSync(cmd, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell })
+function needsShell(cmd) {
+    return process.platform === "win32" && ["yarn", "npm", "blitz"].includes(cmd)
+}
+
+export function sh(cmd, args = [], { cwd = process.cwd(), shell = needsShell(cmd) } = {}) {
+    // Tar inventories can exceed child_process's default 1 MB output limit.
+    const res = spawnSync(cmd, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell, maxBuffer: 16 * 1024 * 1024 })
+    if (res.error) throw res.error
     if (res.status !== 0) {
         const msg = (res.stderr || res.stdout || `command failed: ${cmd} ${args.join(" ")}`).trim()
         throw new Error(msg)
@@ -38,7 +52,7 @@ export function sh(cmd, args = [], { cwd = process.cwd(), shell = process.platfo
     return res.stdout.trim()
 }
 
-export function run(cmd, args = [], { cwd = process.cwd(), shell = process.platform === "win32" } = {}) {
+export function run(cmd, args = [], { cwd = process.cwd(), shell = needsShell(cmd) } = {}) {
     return new Promise((resolve, reject) => {
         const child = spawn(cmd, args, { cwd, stdio: "inherit", shell })
         child.on("error", reject)
@@ -50,47 +64,21 @@ export function git(args, repoRoot = process.cwd()) {
     return sh("git", args, { cwd: repoRoot })
 }
 
-export function ensureClean(repoRoot, ALLOW_DIRTY) {
+// returns boolean
+export function isClean(repoRoot) {
     const p = git(["status", "--porcelain"], repoRoot)
+    const isDirty = p.trim().length > 0
+    return !isDirty
+}
+
+// throws when not clean (if ALLOW_DIRTY is false)
+export function ensureClean(repoRoot, ALLOW_DIRTY) {
     if (ALLOW_DIRTY) return;
-    if (p.trim().length) {
-        const lines = p.split(/\r?\n/).filter(Boolean).length
-        throw new Error(`Working tree has ${lines} modified/untracked file(s). Commit or stash first.`)
+    const localIsClean = isClean(repoRoot);
+    if (!localIsClean) {
+        throw new Error(`Working tree has modified/untracked content. Commit or stash first.`);
     }
-}
-
-export function gitInfo(repoRoot = process.cwd()) {
-    const branch = git(["rev-parse", "--abbrev-ref", "HEAD"], repoRoot) || "HEAD"
-    const short = git(["rev-parse", "--short", "HEAD"], repoRoot)
-    const cdate = git(["show", "-s", "--format=%ci", "HEAD"], repoRoot)
-    return { branch, short, cdate }
-}
-
-export function tagInfo(repoRoot = process.cwd()) {
-    let headTag = ""
-    try { headTag = git(["describe", "--tags", "--exact-match"], repoRoot) } catch { }
-    let latest = ""
-    try { latest = git(["describe", "--tags", "--abbrev=0"], repoRoot) } catch { }
-    let desc = ""
-    try { desc = git(["describe", "--tags", "--long"], repoRoot) } catch { }
-    const m = desc && /-(\d+)-g[0-9a-f]+$/.exec(desc)
-    const commitsSince = m ? m[1] : undefined
-    return { headTag, latest, desc, commitsSince }
-}
-
-export function ensureYarnAvailable(repoRoot = process.cwd()) {
-    const res = spawnSync("yarn", ["--version"], { cwd: repoRoot, encoding: "utf8", shell: process.platform === "win32" })
-    if (res.status === 0) {
-        const v = (res.stdout || "").trim()
-        log("env", `yarn=${v || "<unknown>"}`)
-        return
-    }
-    const msg = [
-        "'yarn' was not found on PATH.",
-        "Install Yarn Classic and ensure it is on PATH, then re-run:",
-        process.platform === "win32" ? "- Windows: npm install -g yarn" : "- Linux/macOS: npm install -g yarn",
-    ].join("\n")
-    throw new Error(msg)
+    return "clean"
 }
 
 export function loadEnvFiles(paths) {

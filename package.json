@@ -3,7 +3,10 @@
   "browser": {
     "child_process": false
   },
-  "version": "1.0.0",
+  "version": "3.0.0",
+  "cmdb": {
+    "product": "cafemarche"
+  },
   "scripts": {
     "dev": "blitz dev --port 10455",
     "build": "blitz build",
@@ -12,6 +15,7 @@
     "lint": "eslint --ignore-path .gitignore --ext .js,.ts,.tsx .",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
+    "test:release": "node scripts/test-release.mjs",
     "prepare": "husky install"
   },
   "prisma": {

@@ -4,6 +4,8 @@ Management dashboard designed for bands, with a lot of extras.
 
 https://github.com/thenfour/CafeMarcheDB
 
+See [Releases and deployment](docs/deployment.md) for manual GitHub Actions releases and instance upgrades.
+
 ## Main features
 
 * Wiki documentation system

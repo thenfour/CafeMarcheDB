@@ -1,224 +1,121 @@
 #!/usr/bin/env node
 
 /**
- * Upgrade script (server-side) to install a published release artifact.
+ * Installs a published CafeMarcheDB release on one deployed instance.
  *
- * Flow:
- * - Load .env.deploy and .env.deploy.local
- * - List latest N releases from GitHub and let the user select one (or provide --tag/--url later)
- * - Download artifact (.tar.gz) and .sha256 to /tmp/cmdb-deploy/<tag>/
- * - Verify checksum
- * - Run upgrade steps:
- *   - supervisorctl stop <SERVICE>
- *   - mysqldump backup to BACKUP_DIR
- *   - git pull (existing convention)
- *   - yarn install --frozen-lockfile
- *   - tar -xzf artifact into repo root
- *   - blitz prisma generate
- *   - blitz prisma migrate deploy
- *   - supervisorctl start <SERVICE>
+ * Intended for the human operator of a Uberspace deployment. Run it from the
+ * deployed repository checkout, where .env.deploy.local, application settings,
+ * Git access, MySQL credentials and the Supervisor service are configured.
+ *
+ * Usage: node scripts/upgrade.mjs
+ *        node scripts/upgrade.mjs --version 3.0.0
+ *        node scripts/upgrade.mjs --version 3.0.0 --dry-run
+ * A dry run only downloads and verifies. Installation always asks for explicit
+ * confirmation, then stops the service, backs up the database, installs the
+ * selected commit and build, applies migrations, and starts the service.
  */
 
 import fs from "node:fs"
 import path from "node:path"
-import crypto from "node:crypto"
 import os from "node:os"
 import readline from "node:readline/promises"
-import { stdin as input, stdout as output } from "node:process"
-import { getRepoRoot, log, sh, run, loadEnvFiles, ensureLocalEnvPair } from "./lib/release-utils.mjs"
+import { parseArgs } from "node:util"
+import { getRepoRoot, log, git, sh, ensureClean, loadEnvFiles, ensureLocalEnvPair } from "./lib/release-utils.mjs"
+import { readJson, isMain, reportError } from "./lib/release-files.mjs"
+import { releaseIdentity, identityForVersion, identityFromTag, readRuntime } from "./lib/release-model.mjs"
+import { createGitHubClient, ownerRepoFromOrigin } from "./lib/github-releases.mjs"
+import { prepareRelease, fetchReleaseSource, installPreparedRelease, withDeploymentLock } from "./lib/deploy-release.mjs"
 
 const REPO_ROOT = getRepoRoot(import.meta.url)
-const ENV_DEPLOY = path.join(REPO_ROOT, ".env.deploy")
-const ENV_DEPLOY_LOCAL = path.join(REPO_ROOT, ".env.deploy.local")
 
-// Initialize local env override if missing
-ensureLocalEnvPair(ENV_DEPLOY, ENV_DEPLOY_LOCAL, "deploy")
-// Precedence: process.env > .env.deploy.local > .env.deploy
-loadEnvFiles([ENV_DEPLOY_LOCAL, ENV_DEPLOY])
-
-const SERVICE = process.env.SERVICE || "cmdb"
-const DB_NAME = process.env.DB_NAME || "tenfour_cmdb"
-const BACKUP_DIR = expandHome(process.env.BACKUP_DIR || "~/backups")
-const RELEASES_TO_SHOW = parseInt(process.env.RELEASES_TO_SHOW || "10", 10)
-const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || ""
-
-function expandHome(p) {
-    if (!p) return p
-    if (p.startsWith("~/")) return path.join(os.homedir(), p.slice(2))
-    return p
-}
-
-function ownerRepoFromGit() {
-    const url = sh("git", ["remote", "get-url", "origin"], { cwd: REPO_ROOT }) || ""
-    const m = url.match(/github\.com[:/](.+?)(?:\.git)?$/)
-    if (!m) throw new Error("origin is not a GitHub repo or cannot parse owner/repo")
-    return m[1]
-}
-
-async function ghApi(method, url, body) {
-    const headers = {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "cmdb-upgrade",
+export function deploymentConfig(repoRoot = REPO_ROOT, environment = process.env) {
+    const identity = releaseIdentity(readJson(path.join(repoRoot, "package.json")))
+    const backup = environment.BACKUP_DIR || "~/backups"
+    const config = {
+        product: identity.product,
+        service: environment.SERVICE || "cmdb",
+        database: environment.DB_NAME || "tenfour_cmdb",
+        backupDirectory: backup.startsWith("~/") ? path.join(os.homedir(), backup.slice(2)) : path.resolve(backup),
+        releasesToShow: Number(environment.RELEASES_TO_SHOW || "10"),
     }
-    if (token) headers["Authorization"] = `Bearer ${token}`
-    const res = await fetch(url, {
-        method,
-        headers: { ...headers, ...(body ? { "Content-Type": "application/json" } : {}) },
-        body: body ? JSON.stringify(body) : undefined,
+    if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(config.database)) throw new Error("DB_NAME must be a simple database name.")
+    if (!/^[A-Za-z0-9_][A-Za-z0-9_.:-]*$/.test(config.service)) throw new Error("SERVICE must be a Supervisor service name.")
+    if (!Number.isInteger(config.releasesToShow) || config.releasesToShow < 1) throw new Error("RELEASES_TO_SHOW must be a positive integer.")
+    return config
+}
+
+async function ask(question) {
+    if (!process.stdin.isTTY) throw new Error("Deployment requires an interactive terminal. Use --dry-run for unattended inspection.")
+    const prompt = readline.createInterface({ input: process.stdin, output: process.stdout })
+    try { return (await prompt.question(question)).trim() } finally { prompt.close() }
+}
+
+async function selectRelease(client, config, version) {
+    if (version) {
+        const identity = identityForVersion(config.product, version)
+        const release = await client.findRelease(identity.tag)
+        if (!release || release.draft) throw new Error(`No published release for ${config.product}/${version}.`)
+        return { release, identity }
+    }
+    const releases = await client.listProductReleases(config.product, config.releasesToShow)
+    if (!releases.length) throw new Error(`No releases for ${config.product}. Legacy v2.xx releases use the previous upgrade script.`)
+    releases.forEach((release, index) => {
+        const identity = identityFromTag(release.tag_name, config.product)
+        console.log(`[${index}] ${identity.product}/${identity.version}  ${release.published_at}${release.prerelease ? "  prerelease" : ""}`)
     })
-    if (!res.ok) {
-        const t = await res.text()
-        throw new Error(`GitHub API ${method} ${url} -> ${res.status} ${t}`)
+    const answer = await ask("Select release index (empty cancels): ")
+    if (answer === "") return null
+    if (!/^\d+$/.test(answer) || !releases[Number(answer)]) throw new Error("Invalid selection.")
+    const release = releases[Number(answer)]
+    return { release, identity: identityFromTag(release.tag_name, config.product) }
+}
+
+function showInstalledVersion() {
+    const statePath = path.join(REPO_ROOT, ".cmdb-deployment.json")
+    if (!fs.existsSync(statePath)) { log("installed", "No deployment record yet (legacy or fresh installation)."); return }
+    const installed = readJson(statePath)
+    log("installed", `${installed.product}/${installed.version} ${installed.commit} status=${installed.status}`)
+}
+
+export async function main() {
+    const { values } = parseArgs({ options: { version: { type: "string" }, "dry-run": { type: "boolean" }, help: { type: "boolean" } } })
+    if (values.help) {
+        console.log("Usage: node scripts/upgrade.mjs [--version 3.0.0] [--dry-run]\nProduct comes from package.json; target settings come from .env.deploy.local.\n--dry-run downloads and verifies a release without changing the checkout, service or database.\nInstallation always requires interactive confirmation.")
+        return
     }
-    return res.json()
-}
+    const baseEnv = path.join(REPO_ROOT, ".env.deploy")
+    const localEnv = path.join(REPO_ROOT, ".env.deploy.local")
+    if (!values["dry-run"]) ensureLocalEnvPair(baseEnv, localEnv, "deploy")
+    loadEnvFiles([localEnv, baseEnv])
+    const config = deploymentConfig()
+    ensureClean(REPO_ROOT, false)
+    const runtime = readRuntime(sh("yarn", ["--version"], { cwd: REPO_ROOT }))
+    const ownerRepo = ownerRepoFromOrigin(git(["remote", "get-url", "origin"], REPO_ROOT))
+    const client = createGitHubClient(ownerRepo, process.env.GITHUB_TOKEN || process.env.GH_TOKEN)
+    log("target", `${config.product} service=${config.service} database=${config.database}`)
+    showInstalledVersion()
+    const selection = await selectRelease(client, config, values.version)
+    if (!selection) { log("cancel", "No release selected."); return }
 
-async function listReleases(ownerRepo, limit = 10) {
-    const url = `https://api.github.com/repos/${ownerRepo}/releases?per_page=${limit}`
-    const arr = await ghApi("GET", url)
-    // Filter out drafts and prereleases; sort by published_at desc
-    return arr
-        .filter((r) => !r.draft && !r.prerelease)
-        .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-}
-
-function pickAsset(release) {
-    // Prefer .tar.gz; also capture .sha256
-    const tar = release.assets.find((a) => a.name.endsWith(".tar.gz"))
-    const sum = release.assets.find((a) => a.name.endsWith(".tar.gz.sha256") || a.name.endsWith(".sha256"))
-    if (!tar) throw new Error(`No .tar.gz asset found for tag ${release.tag_name}`)
-    if (!sum) throw new Error(`No .sha256 asset found for tag ${release.tag_name}`)
-    return { tar, sum }
-}
-
-async function download(url, destPath) {
-    const headers = { "User-Agent": "cmdb-upgrade" }
-    if (token) headers["Authorization"] = `Bearer ${token}`
-    const res = await fetch(url, { headers })
-    if (!res.ok) {
-        const t = await res.text()
-        throw new Error(`Download failed ${url} -> ${res.status} ${t}`)
-    }
-    const buf = Buffer.from(await res.arrayBuffer())
-    fs.mkdirSync(path.dirname(destPath), { recursive: true })
-    fs.writeFileSync(destPath, buf)
-}
-
-function verifySha256(filePath, shaFilePath) {
-    const wantLine = fs.readFileSync(shaFilePath, "utf8").split(/\r?\n/).find(Boolean) || ""
-    const want = wantLine.split(/\s+/)[0]
-    const got = crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex")
-    if (!want || want.toLowerCase() !== got.toLowerCase()) {
-        throw new Error(`Checksum mismatch for ${path.basename(filePath)}\n  expected: ${want}\n  actual:   ${got}`)
-    }
-}
-
-async function upgradeWithArtifact(artifactPath, releaseTag) {
-    // Stop service
-    log("svc", `Stopping ${SERVICE}`)
-    await run("supervisorctl", ["stop", SERVICE], { cwd: REPO_ROOT })
-
+    const workDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "cmdb-upgrade-"))
     try {
-        // Backup DB
-        fs.mkdirSync(BACKUP_DIR, { recursive: true })
-        const ts = new Date().toISOString().replace(/[:T]/g, "-").replace(/\..+$/, "")
-        const outSql = path.join(BACKUP_DIR, `${DB_NAME}_${releaseTag}_${ts}.sql`)
-        log("db", `Backup ${DB_NAME} -> ${outSql}`)
-        await run("mysqldump", ["--single-transaction", "--routines", "--triggers", DB_NAME, "-r", outSql], { cwd: REPO_ROOT })
-
-        // Git pull (conform to existing procedure)
-        log("git", "Pull latest")
-        await run("git", ["pull", "--ff-only"], { cwd: REPO_ROOT })
-
-        // Dependencies
-        log("deps", "yarn install --frozen-lockfile")
-        await run("yarn", ["install", "--frozen-lockfile"], { cwd: REPO_ROOT, shell: process.platform === "win32" })
-
-        // Extract
-        log("pack", `Extract ${path.basename(artifactPath)} -> repo root`)
-        await run("tar", ["-xzf", artifactPath, "-C", REPO_ROOT], { cwd: REPO_ROOT })
-
-        // Prisma / Blitz
-        log("prisma", "blitz prisma generate")
-        await run("blitz", ["prisma", "generate"], { cwd: REPO_ROOT, shell: process.platform === "win32" })
-        log("prisma", "blitz prisma migrate deploy")
-        await run("blitz", ["prisma", "migrate", "deploy"], { cwd: REPO_ROOT, shell: process.platform === "win32" })
-
-    } catch (e) {
-        // Attempt to start service back to reduce downtime on failure
-        try { await run("supervisorctl", ["start", SERVICE], { cwd: REPO_ROOT }) } catch { }
-        throw e
+        const prepared = await prepareRelease(client, selection.release, selection.identity, runtime, workDirectory)
+        const { manifest } = prepared
+        log("release", `${manifest.product}/${manifest.version} from ${manifest.sourceRef}`)
+        log("source", manifest.commit)
+        log("verified", "Runtime, source identity, tag, checksum and build metadata match.")
+        if (values["dry-run"]) { log("done", "Dry run complete; checkout, service and database unchanged."); return }
+        const confirmation = `${manifest.product}/${manifest.version}`
+        console.log("Installation applies this release's database migrations; it does not reverse existing migrations.")
+        if (await ask(`Type ${confirmation} to install (empty cancels): `) !== confirmation) { log("cancel", "Installation cancelled."); return }
+        await withDeploymentLock(REPO_ROOT, async () => {
+            await fetchReleaseSource(REPO_ROOT, manifest)
+            await installPreparedRelease(REPO_ROOT, config, prepared)
+        })
+    } finally {
+        // This directory is created above with a fixed prefix under os.tmpdir().
+        fs.rmSync(workDirectory, { recursive: true, force: true })
     }
-
-    // Start service
-    log("svc", `Starting ${SERVICE}`)
-    await run("supervisorctl", ["start", SERVICE], { cwd: REPO_ROOT })
 }
 
-async function main() {
-    log("task", "Upgrade (server-side)")
-    const ownerRepo = ownerRepoFromGit()
-
-    // Display effective config for confirmation
-    const tokenSet = token ? "yes" : "no"
-    log("cfg", `repo=${ownerRepo}`)
-    log("cfg", `SERVICE=${SERVICE}`)
-    log("cfg", `DB_NAME=${DB_NAME}`)
-    log("cfg", `BACKUP_DIR=${BACKUP_DIR}`)
-    log("cfg", `RELEASES_TO_SHOW=${RELEASES_TO_SHOW}`)
-    log("cfg", `GITHUB_TOKEN set=${tokenSet}`)
-    log("cfg", `cwd=${REPO_ROOT}`)
-    log("cfg", `node=${process.version}`)
-
-    if (!token) {
-        throw new Error("GITHUB_TOKEN (or GH_TOKEN) is required on the server to list/download releases")
-    }
-
-    // List releases
-    const list = await listReleases(ownerRepo, RELEASES_TO_SHOW)
-    if (!list.length) throw new Error("No releases found")
-    log("rel", `Showing latest ${Math.min(list.length, RELEASES_TO_SHOW)} releases:`)
-    list.slice(0, RELEASES_TO_SHOW).forEach((r, i) => {
-        const when = r.published_at || r.created_at || ""
-        const star = i === 0 ? "* " : "  "
-        const { tar } = pickAsset(r)
-        process.stdout.write(`${star}[${i}] ${r.tag_name}  ${when}  (${tar.name})\n`)
-    })
-
-    // Prompt selection
-    const rl = readline.createInterface({ input, output })
-    let idxStr = await rl.question(`Select release index [0-${Math.min(list.length, RELEASES_TO_SHOW) - 1}] (default 0): `)
-    rl.close()
-    idxStr = (idxStr || "").trim()
-    const idx = idxStr === "" ? 0 : Number(idxStr)
-    if (!Number.isInteger(idx) || idx < 0 || idx >= Math.min(list.length, RELEASES_TO_SHOW)) {
-        throw new Error("Invalid selection")
-    }
-
-    const release = list[idx]
-    const { tar, sum } = pickAsset(release)
-    const tag = release.tag_name
-
-    // Download
-    const workDir = path.join(os.tmpdir(), "cmdb-deploy", tag)
-    const tarPath = path.join(workDir, tar.name)
-    const sumPath = path.join(workDir, sum.name)
-    log("dl", `Downloading ${tar.name}`)
-    await download(tar.browser_download_url, tarPath)
-    log("dl", `Downloading ${sum.name}`)
-    await download(sum.browser_download_url, sumPath)
-
-    // Verify
-    log("dl", "Verifying checksum")
-    verifySha256(tarPath, sumPath)
-
-    // Upgrade steps
-    await upgradeWithArtifact(tarPath, tag)
-
-    log("done", `Upgrade to ${tag} complete`)
-}
-
-main().catch((err) => {
-    process.stderr.write(`Error: ${err.message || err}\n`)
-    process.exit(1)
-})
+if (isMain(import.meta.url)) main().catch(reportError)

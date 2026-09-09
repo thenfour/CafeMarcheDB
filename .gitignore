@@ -10,6 +10,9 @@ node_modules
 .npm
 web_modules/
 
+# temp, local, scratch...
+temp/
+
 # blitz
 /.blitz/
 /.next/
@@ -62,3 +65,8 @@ dist/
 # Release tooling local overrides (do not commit secrets)
 .env.release.local
 .env.deploy.local
+
+# Target-local installation record
+.cmdb-deployment.json
+.cmdb-deployment.json.tmp
+.cmdb-deployment.lock

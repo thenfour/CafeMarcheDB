@@ -1,0 +1,71 @@
+name: Release
+
+# Manual release workflow for maintainers. In GitHub, open Actions > Release >
+# Run workflow and choose the product branch. It tests, builds in the Uberspace
+# compatibility container, packages and publishes that package.json version.
+# There are no push, tag or schedule triggers, and this workflow never deploys.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Product versions share one release catalogue. Never interrupt an active publication.
+concurrency:
+  group: cmdb-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out the selected commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node for tooling tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 18.20.8
+
+      - name: Test release and deployment contracts
+        run: node scripts/test-release.mjs
+
+      - name: Prepare the Uberspace build environment
+        run: docker build --tag cmdb-release --file scripts/release/Dockerfile scripts/release
+
+      - name: Build the application
+        env:
+          # Build placeholders only. Target credentials remain on their respective servers.
+          DATABASE_URL: mysql://build:build@127.0.0.1:3306/cmdb_build
+          SESSION_SECRET_KEY: cmdb-build-placeholder-not-a-runtime-secret
+          CMDB_BASE_URL: http://localhost:10455
+          FILE_UPLOAD_PATH: /tmp/cmdb-build-uploads
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --env GITHUB_REF \
+            --env DATABASE_URL \
+            --env SESSION_SECRET_KEY \
+            --env CMDB_BASE_URL \
+            --env FILE_UPLOAD_PATH \
+            --env NODE_OPTIONS=--max-old-space-size=5632 \
+            cmdb-release node scripts/build.mjs
+
+      - name: Check native runtime dependencies
+        run: |
+          docker run --rm --volume "$GITHUB_WORKSPACE:/workspace" \
+            cmdb-release node scripts/release/check-native.cjs
+
+      - name: Package and publish the product version
+        env:
+          # Usually the built-in token suffices. See docs/deployment.md for branches
+          # whose workflow files differ from the default branch.
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          docker run --rm --volume "$GITHUB_WORKSPACE:/workspace" \
+            --env GITHUB_TOKEN cmdb-release node scripts/package-release.mjs
