@@ -114,6 +114,8 @@
     "vite-tsconfig-paths": "3.6.0",
     "vitest": "0.25.3"
   },
-  "resolutions": {},
+  "resolutions": {
+    "sodium-native": "3.3.0"
+  },
   "private": true
 }

@@ -69,6 +69,12 @@ The initial profile is `uberspace7-node18`:
 
 `scripts/release/Dockerfile` pins a CentOS 7-based PyPA manylinux2014 image by digest. It installs the Node project's **unofficial-builds** glibc-217 binary and Yarn using pinned download checksums. This Node distribution is a community compatibility build, distinct from the standard nodejs.org Linux binary. It matches the supplied host baseline; it does not replace Uberspace's installed Node.
 
+`package.json` deliberately resolves `sodium-native` to 3.3.0. Its bundled
+Linux binary supports glibc 2.17; the 3.4.x binaries require a newer glibc and
+fall back to a source build that cannot currently fetch its archived libsodium
+source. Keep this pin until a password-library upgrade is validated in the
+release container.
+
 GitHub's checkout/setup actions execute on Ubuntu.
 The application build executes in the container, so those actions do not need
 to run their own modern Node binaries against glibc 2.17.

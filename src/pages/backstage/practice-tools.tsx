@@ -7,7 +7,7 @@ import { useDashboardContext } from "@/src/core/components/dashboardContext/Dash
 import { MetronomePanel } from "@/src/core/components/Metronome";
 //import { TunerCard } from "@/src/core/components/tuner/TunerCard";
 import { BlitzPage } from "@blitzjs/next";
-import { Breadcrumbs, Stack } from "@mui/material";
+import { Breadcrumbs } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
 
 
