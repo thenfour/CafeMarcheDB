@@ -25,6 +25,7 @@ The goal is complete only when all of the following are true:
 - [ ] Menu visibility, page access, and server authorization agree.
 - [ ] Positive and adversarial authorization tests cover every role tier.
 - [ ] The configured deployment has been reviewed against the single-tenant assumption.
+- [ ] The unused workflow feature has been completely removed from UI, server code, permissions, initialization, and database schema.
 - [ ] Final rollout verification has been recorded in the progress log.
 
 ## Status conventions
@@ -47,6 +48,7 @@ Snapshot date: 2026-09-10
 - The local Admin role has 49 permissions. It lacks `never_grant` and `practice_tools_use`; its user still receives universal access through `isSysAdmin`.
 - The repository currently has no `*.test.*` or `*.spec.*` files.
 - The data model is single-tenant per database: users, roles, and content have no band/site ownership key. Multi-tenancy is a planned feature.
+- The workflow feature is not used by any tenant and will be removed as a prerequisite instead of being hardened for Band Admin.
 
 Primary references:
 
@@ -63,7 +65,7 @@ These are recommended defaults. Product decisions that still require confirmatio
 | Area                                    | Band Admin                                                                 | Sysadmin only                                                          |
 | --------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Events, songs, files, instruments, wiki | Full domain administration                                                 | Server/debug internals                                                 |
-| Workflows                               | Definitions and operational workflows after field-level review             | Platform/debug operations                                              |
+| Workflows                               | Not available; remove the unused feature before rollout                    | Not available after removal                                            |
 | Users                                   | Create, edit, deactivate, and reset ordinary users; assign permitted roles | Protected accounts and `isSysAdmin`                                    |
 | Roles and permissions                   | Assign predefined non-protected roles                                      | Role CRUD, Permission CRUD, and the permission matrix                  |
 | Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus       | Hosting mode, raw settings, and bulk configuration                     |
@@ -83,7 +85,6 @@ Current Admin-over-Moderator grants:
 - `admin_instruments`
 - `admin_songs`
 - `admin_users` — include only after it has been narrowed and protected-target checks exist
-- `admin_workflow_defs`
 - `setlist_planner_access`
 - `view_feature_reports`
 - `view_users_basic_info`
@@ -91,6 +92,8 @@ Current Admin-over-Moderator grants:
 - `sysadmin` — exclude
 
 Because roles do not inherit, the final Band Admin grant set must explicitly include every intended Moderator permission as well.
+
+The inherited Moderator set must first have all workflow permissions removed. Band Admin must not receive `view_workflow_instances`, `edit_workflow_instances`, `view_workflow_defs`, `edit_workflow_defs`, or `admin_workflow_defs`; those permissions will be deleted with the feature.
 
 ### Proposed permission split
 
@@ -101,50 +104,79 @@ Prefer a small, action-oriented split rather than a permission for every button:
 - Add `assign_user_roles` for constrained role assignment.
 - Add `reset_user_passwords` for constrained password-reset initiation.
 - Add `manage_site_branding`, or retain `content_admin` only after settings are governed by a server-side key allowlist.
-- Optionally add `view_audit_log` for a redacted band-facing audit view.
+- Keep audit-log access sysadmin-only; no Band Admin audit permission is required.
 - Keep `impersonate_user`, `sysadmin`, security-topology mutation, and protected-account administration sysadmin-only.
+- Make Practice Tools genuinely public by removing its authorization gate or placing `practice_tools_use` in the public permission baseline; do not treat it as a Band Admin grant.
 
 ## Product decisions
 
 Record each decision before implementing the affected capability.
 
-- [ ] **BA-D001 — Tenant model:** Confirm that one band/site owns each deployment and database.
+- [x] **BA-D001 — Tenant model:** Confirm that one band/site owns each deployment and database.
 
-  - Recommended default: Yes; document this as an authorization invariant.
-  - If multiple bands share a database, stop this rollout and design organization-scoped memberships and row-level tenant enforcement.
+  - Decision: The site is single-tenant. Multi-tenancy is planned for the future, and current code may contain hints of that future design.
+  - Constraint: Do not treat this Band Admin design as sufficient for a future shared-database, multi-tenant deployment. That will require organization-scoped memberships and row-level tenant enforcement.
 
-- [ ] **BA-D002 — Peer administration:** Decide whether a Band Admin may appoint, edit, deactivate, or reset another Band Admin.
+- [x] **BA-D002 — Peer administration:** Decide whether a Band Admin may appoint, edit, deactivate, or reset another Band Admin.
 
-  - Recommended default: May appoint and edit peers, but may not deactivate/reset the last active Band Admin; all actions are audited.
+  - Decision: Band Admin may appoint, edit, or revoke another Band Admin through the constrained role-assignment flow.
+  - Constraint: An operation that would leave no active Band Admin must display a prominent warning and require explicit confirmation.
+  - Constraint: Band Admin cannot administer a Sysadmin or another protected principal.
 
-- [ ] **BA-D003 — Impersonation:** Decide whether Band Admin needs any impersonation ability.
+- [x] **BA-D003 — Impersonation:** Decide whether Band Admin needs any impersonation ability.
 
-  - Recommended default: No.
-  - If required later, add a target-limited capability that can never target protected users or roles.
+  - Decision: No. Impersonation is a debugging feature reserved for Sysadmin.
+  - Constraint: Keep a defense-in-depth protected-target check even on the Sysadmin-only operation.
 
-- [ ] **BA-D004 — Custom roles:** Decide whether Band Admin may create custom roles or change grants.
+- [x] **BA-D004 — Custom roles:** Decide whether Band Admin may create custom roles or change grants.
 
-  - Recommended default: No. Allow assignment among predefined non-protected roles only.
+  - Decision: Band Admin cannot create roles, change grants, or view role-permission assignments.
+  - Decision: Band Admin may assign predefined non-protected roles, including elevating a user to Band Admin or revoking Band Admin from another user.
+  - Constraint: Band Admin cannot assign, revoke, or demote Sysadmin/protected roles.
+  - Constraint: Removing the last active Band Admin requires a prominent warning and explicit confirmation.
 
-- [ ] **BA-D005 — User removal:** Choose deactivation versus hard deletion for ordinary user administration.
+- [x] **BA-D005 — User removal:** Choose deactivation versus hard deletion for ordinary user administration.
 
-  - Recommended default: Deactivate; retain hard deletion as a narrowly controlled maintenance operation.
+  - Decision: Band Admin may only soft-delete/deactivate users. Hard deletion remains a narrowly controlled Sysadmin maintenance operation.
 
-- [ ] **BA-D006 — Password reset delivery:** Decide whether administrators receive a reset URL or merely trigger delivery to the user.
+- [x] **BA-D006 — Password reset delivery:** Decide whether administrators receive a reset URL or merely trigger delivery to the user.
 
-  - Recommended default: Trigger delivery; do not reveal the token or reset URL to Band Admin.
+  - Constraint: The site cannot currently send reset email, so an administrator-mediated recovery mechanism is required for password-enabled users.
+  - Security assessment: The current URL is a bearer credential valid for 48 hours. Anyone who obtains it can choose the target's password, revoke their existing sessions, and become logged in as that user. Showing it to an administrator therefore grants temporary account-takeover/impersonation power, even when the feature is labelled password reset.
+  - Exposure paths include the administrator's clipboard and browser history, chat history used to send the URL, screenshots, console output, application/proxy logs, and accidental forwarding.
+  - Proposed interim decision, pending confirmation: Allow Band Admin to generate and manually transfer a reset URL for an authorized non-protected target, while explicitly accepting that this is a narrowly scoped account-recovery power.
+  - Required safeguards for that interim mechanism:
+    - Use a dedicated permission and the central protected-target/peer policy.
+    - Reduce expiry from 48 hours to a short operational window, recommended at most one hour.
+    - Keep only one active reset token per user and make it single-use; the current implementation already does both.
+    - Display the URL once, never write it to console or activity logs, and prevent caching where practical.
+    - Audit issuance, expiry, cancellation, and redemption without recording the token or URL.
+    - Show the target identity and expiry prominently before and after generation.
+    - Revoke existing sessions on successful reset; the current implementation already does this.
+    - Do not automatically log the browser into the target account after redemption; require an ordinary login with the new password.
+  - Preferred future replacement: verified email delivery or another user-controlled recovery channel in which the administrator never sees the bearer credential.
+  - Decision: do not allow band admins; leave the feature as-is and only enable for sysadmins as a last resort emergency mechanism until future buildout of a hardened solution.
 
-- [ ] **BA-D007 — Audit visibility:** Decide whether Band Admin receives a redacted audit log.
+- [x] **BA-D007 — Audit visibility:** Decide whether Band Admin receives a redacted audit log.
 
-  - Recommended default: Yes, after sensitive-field redaction is implemented.
+  - Decision: No. Audit logs remain visible only to Sysadmin.
+  - Constraint: Sensitive-field redaction is still required because credential-bearing values should not be stored even in Sysadmin-only logs.
 
-- [ ] **BA-D008 — Practice Tools:** Decide which roles should receive `practice_tools_use`.
-  - Current state: no role has it explicitly; sysadmins receive it only through the universal bypass.
+- [x] **BA-D008 — Practice Tools:** Decide which roles should receive `practice_tools_use`.
+
+  - Decision: Practice Tools are public, including for anonymous users.
+  - Implementation note: Remove the redundant gate/permission or include it in the public permission baseline and verify that the route itself does not require login.
+
+- [x] **BA-D009 — Workflows:** Decide whether to harden or retain the unused workflow feature.
+  - Decision: Remove the workflow feature completely as a prerequisite for Band Admin rollout.
+  - Scope: Remove the UI, server/shared implementation, DB3 registrations, five permissions and their grants, settings/setup metadata, Event/User relations, ten Prisma models, and deployed database objects.
+  - Constraint: Verify all deployment data and backups before applying the destructive schema migration.
 
 ## Workstream summary
 
 | Workstream                          | Status      | Exit condition                                                                                            |
 | ----------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
+| P0: Remove workflow feature         | Not started | Workflow UI, services, permissions, data model, and database objects no longer exist                      |
 | P0: Generic DB3 authorization       | Not started | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
 | P0: Protected accounts and signup   | Not started | No untrusted path can obtain or delegate sysadmin authority                                               |
 | P0: Secrets and object-level gaps   | Not started | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
@@ -156,6 +188,116 @@ Record each decision before implementing the affected capability.
 | P1: Test suite                      | Not started | Persona and adversarial matrices pass                                                                     |
 | P2: Optional delegated capabilities | Not started | Approved audit, peer-admin, or limited support functions are safely available                             |
 | Rollout                             | Not started | Production verification and rollback evidence are recorded                                                |
+
+## Prerequisite — Remove the unused workflow feature
+
+Decision: No tenant uses workflows. Complete removal is a prerequisite for Band Admin rollout; do not spend effort hardening or exposing this feature.
+
+The initial inventory found 44 non-migration files referencing workflow concepts, five workflow permissions, event foreign keys, user relations, and ten dedicated Prisma models. Removal must cover the complete vertical slice rather than only hiding its page.
+
+### BA-WF001 — Verify and preserve deployment state before destructive migration
+
+- [ ] Query every target deployment for counts in all workflow tables and for Events linked by `workflowDefId` or `workflowInstanceId`.
+- [ ] Confirm the product assertion that no tenant uses the feature.
+- [ ] Take or verify a recoverable database backup before dropping workflow data/schema.
+- [ ] Record the verified counts and backup reference in this document.
+- [ ] Define the migration rollback boundary before applying destructive DDL.
+
+Acceptance criteria:
+
+- [ ] Every target deployment has zero meaningful workflow data, or any exceptional data has an explicitly approved disposition.
+- [ ] A tested recovery path exists before destructive migration.
+
+### BA-WF002 — Remove workflow UI and styling
+
+- [ ] Remove the `/backstage/workflows` page and navigation entry.
+- [ ] Remove workflow editors, event workflow panels, user workflow components, and DB3 workflow bindings.
+- [ ] Remove workflow sections/tabs from event and user surfaces.
+- [ ] Remove workflow references from admin logs, event import/edit grids, gallery/demo surfaces, and other page composition.
+- [ ] Remove `public/style/workflow.css` and its `_app.tsx` import.
+
+Primary inventory:
+
+- [Workflow page](../src/pages/backstage/workflows.tsx)
+- [Workflow components](../src/core/components/workflow)
+- [Workflow stylesheet](../public/style/workflow.css)
+- [Global stylesheet import](../src/pages/_app.tsx#L36)
+
+### BA-WF003 — Remove workflow server and shared code
+
+- [ ] Remove workflow query and mutation resolvers.
+- [ ] Remove workflow evaluation/server services.
+- [ ] Remove the shared workflow engine.
+- [ ] Remove workflow DB3 table registrations, table schemas, selection arguments, payload types, and API types.
+- [ ] Remove workflow branches from event insert/update paths and user mass analysis.
+- [ ] Remove workflow-specific generic mutation support.
+
+Primary inventory:
+
+- [Workflow RPC mutations](../src/core/db3/mutations)
+- [Workflow query](../src/core/db3/queries/getWorkflowDefAndInstanceForEvent.ts)
+- [Workflow server services](../src/core/db3/server/eventWorkflow.ts)
+- [Workflow DB3 schema](../src/core/db3/shared/schema/workflow.ts)
+- [Shared workflow engine](../shared/workflowEngine.ts)
+
+### BA-WF004 — Remove workflow permissions, settings, and provisioning
+
+- [ ] Remove `view_workflow_instances`.
+- [ ] Remove `edit_workflow_instances`.
+- [ ] Remove `view_workflow_defs`.
+- [ ] Remove `edit_workflow_defs`.
+- [ ] Remove `admin_workflow_defs`.
+- [ ] Remove all workflow grants from startup provisioning and Prisma seeds.
+- [ ] Remove `Workflow_SelectAssigneesDialogDescription` and `Event.workflowDef.SelectStyle` setup/setting metadata.
+- [ ] Migrate/delete the corresponding Permission and RolePermission records safely.
+
+References:
+
+- [Workflow permissions](../shared/permissions.ts#L87)
+- [Startup grants and settings](../src/setup/instrumentation-setup.ts#L157)
+- [Seed grants](../db/seeds.ts#L651)
+- [Workflow setting key](../shared/settingKeys.ts#L92)
+
+### BA-WF005 — Remove workflow database schema
+
+- [ ] Remove `Event.workflowInstanceId` and `Event.workflowDefId`, their relations, and indexes.
+- [ ] Remove workflow relations from `User`.
+- [ ] Remove all ten workflow models:
+  - `WorkflowDef`
+  - `WorkflowDefGroup`
+  - `WorkflowDefNode`
+  - `WorkflowDefNodeDefaultAssignee`
+  - `WorkflowDefNodeDependency`
+  - `WorkflowInstance`
+  - `WorkflowInstanceLogItem`
+  - `WorkflowInstanceNode`
+  - `WorkflowInstanceNodeLastAssignee`
+  - `WorkflowInstanceNodeAssignee`
+- [ ] Create a migration that drops foreign keys, columns, indexes, and tables in dependency-safe order.
+- [ ] Regenerate the Prisma client and remove resulting dead imports/types.
+- [ ] Review `db/truncatedb.sql` and other database maintenance scripts.
+
+References:
+
+- [Event workflow relations](../db/schema.prisma#L578)
+- [Workflow models](../db/schema.prisma#L1193)
+
+### BA-WF006 — Verify complete removal
+
+- [ ] Repository search finds no functional workflow references, apart from historical migrations or an intentional migration note.
+- [ ] Typecheck and production build pass.
+- [ ] Database migration succeeds on empty and production-shaped database copies.
+- [ ] Migration rollback/recovery procedure is exercised.
+- [ ] Event create, edit, import, details, and user analytics operate without workflow fields.
+- [ ] Built-in permission registries and role matrices contain no workflow permissions.
+
+Prerequisite completion evidence:
+
+- Deployment data audit:
+- Implementation:
+- Migration verification:
+- Build/typecheck:
+- Commit/PR:
 
 ## Phase 0 — Establish security test infrastructure
 
@@ -304,6 +446,12 @@ References:
 - [ ] Enforce protected-target and peer-target rules.
 - [ ] Stop returning raw reset tokens/URLs to Band Admin unless BA-D006 explicitly chooses that behavior.
 - [ ] Audit reset initiation without logging secrets.
+- [ ] If administrator-visible URLs are approved, reduce expiry from 48 hours to at most one hour.
+- [ ] Display an administrator-generated URL only once and remove current console output of the URL.
+- [ ] Ensure application, activity, proxy, and analytics logs never record reset query tokens.
+- [ ] Audit token issuance, cancellation/expiry, and redemption without storing the token.
+- [ ] Do not automatically authenticate the browser as the target after an administrator-mediated reset.
+- [ ] Preserve the current one-active-token-per-user, single-use, and successful-reset session-revocation properties.
 
 Reference: [forgotPassword mutation](../src/auth/mutations/forgotPassword.ts#L10)
 
@@ -350,7 +498,7 @@ Phase completion evidence:
 References:
 
 - [User selection arguments](../src/core/db3/shared/schema/prismArgs.ts#L393)
-- [Activity logging](../src/core/db3/shared/activityLog.ts#L46)
+- [Activity logging](../shared/activityLog.ts#L46)
 - [Password-change logging path](../src/auth/mutations/changePassword.ts#L31)
 
 ### BA-S002 — File visibility and image operations
@@ -378,18 +526,14 @@ References:
 - [Event song-list deletion](../src/core/db3/mutations/deleteEventSongList.ts#L11)
 - [Attendance mutation](../src/core/db3/mutations/updateUserEventAttendanceMutation.ts#L9)
 
-### BA-S004 — Workflow and wiki authorization maps
+### BA-S004 — Wiki authorization maps
 
-- [ ] Replace logged-in write permissions on workflow tables with the intended workflow capabilities.
 - [ ] Replace logged-in write permissions on wiki/tag administration with the intended wiki capabilities.
-- [ ] Split or field-authorize `saveEventWorkflowModel` so workflow-instance access cannot change unrelated event identity/site fields.
 
 References:
 
-- [Workflow DB3 schema](../src/core/db3/shared/schema/workflow.ts#L11)
 - [Wiki DB3 schema](../src/core/db3/shared/schema/wiki.ts#L13)
 - [Wiki tag schema](../src/core/db3/shared/schema/wikiPageTag.ts#L19)
-- [Event workflow save mutation](../src/core/db3/mutations/saveEventWorkflowModel.ts#L13)
 
 ### BA-S005 — Metadata, telemetry, and test routes
 
@@ -411,7 +555,7 @@ Phase completion evidence:
 - [ ] Replace the split enum/order/default-grant knowledge with one authoritative registry or generated views of it.
 - [ ] Record for each permission: stable key, category, scope, description, sort order, whether it is protected, and whether it is delegable.
 - [ ] Make omissions from the display/provisioning order impossible or test-detectable.
-- [ ] Confirm the intended owner of every one of the 51 current permissions.
+- [ ] Confirm the intended owner of every remaining permission after the five workflow permissions are removed.
 
 Current drift: `gPermissionOrdered` omits nine enum permissions:
 
@@ -458,6 +602,7 @@ Possible built-in order:
 - [ ] Define same-tier administration behavior from BA-D002.
 - [ ] Prevent assignment of a role containing authority above the actor's delegation ceiling.
 - [ ] Keep raw Role, Permission, and RolePermission administration sysadmin-only initially.
+- [ ] Permit assignment to and revocation of Band Admin while warning and requiring confirmation if the change would leave no active Band Admin.
 
 Phase completion evidence:
 
@@ -533,6 +678,7 @@ Acceptance criteria:
 - [ ] Existing customized grants remain unchanged.
 - [ ] Fresh and migrated databases match the canonical manifest.
 - [ ] Band Admin never receives `sysadmin`, `impersonate_user`, `never_grant`, or another protected permission.
+- [ ] No built-in role or permission matrix contains a removed workflow permission.
 
 Phase completion evidence:
 
@@ -571,7 +717,7 @@ References:
 ### BA-C003 — Separate content editing from debug controls
 
 - [ ] Allow authorized site-copy editing without enabling sysadmin debug mode.
-- [ ] Keep raw objects, filter specifications, IDs, server versions, and workflow diagnostics sysadmin-only.
+- [ ] Keep raw objects, filter specifications, IDs, server versions, and technical diagnostics sysadmin-only.
 
 References:
 
@@ -607,7 +753,7 @@ Reference: [current static menu permissions](../src/core/components/dashboard/St
 - [ ] Front-page gallery management uses `edit_public_homepage`.
 - [ ] User Search navigation agrees with its `search_users` page capability.
 - [ ] Menu Links and Custom Links use consistent capabilities.
-- [ ] Practice Tools navigation respects `practice_tools_use`.
+- [ ] Practice Tools and all required data are accessible to anonymous users; remove the redundant gate or add the permission to the public baseline.
 
 ### BA-N003 — Close missing and incorrect page gates
 
@@ -655,14 +801,20 @@ Phase completion evidence:
 ### Role/persona cases
 
 - [ ] Public, Limited, Normal, Editor, and Moderator behavior remains unchanged except for intentional security fixes.
-- [ ] Band Admin can administer events, songs, files, instruments, wiki, workflows, homepage, branding, and approved reports.
+- [ ] Band Admin can administer events, songs, files, instruments, wiki, homepage, branding, and approved reports.
+- [ ] No user can access a workflow UI or invoke a workflow RPC because the feature has been removed.
 - [ ] Band Admin can create/edit/deactivate/reset ordinary users according to policy.
+- [ ] Band Admin can promote another user to Band Admin and revoke Band Admin from another user.
+- [ ] Removing the last active Band Admin produces the required warning and explicit confirmation.
 - [ ] Band Admin can assign only server-approved roles.
 - [ ] Band Admin cannot set `isSysAdmin`.
 - [ ] Band Admin cannot assign Admin or another role containing protected permissions.
 - [ ] Band Admin cannot edit Permission, Role, or RolePermission topology.
 - [ ] Band Admin cannot target a protected user through edit, reset, deletion, or impersonation.
+- [ ] Band Admin can only soft-delete/deactivate users; hard deletion remains unavailable.
+- [ ] Band Admin cannot view raw audit logs.
 - [ ] Band Admin cannot access Server Health, raw Settings, Hosting Mode, raw audit logs, or debug/test surfaces.
+- [ ] Anonymous users can access Practice Tools.
 - [ ] Sysadmin retains full intended access.
 
 ### Session and provisioning cases
@@ -694,6 +846,7 @@ Phase completion evidence:
 ## Rollout checklist
 
 - [ ] All product decisions above are resolved.
+- [ ] The workflow-removal prerequisite is complete and its destructive migration has been verified.
 - [ ] P0 findings are fixed and adversarial tests pass before the role is assigned to anyone.
 - [ ] Current production role and permission matrices are exported and archived.
 - [ ] Migration has been tested against a production-shaped database copy.
@@ -710,9 +863,11 @@ Phase completion evidence:
 
 Add one row for each completed or materially changed work item.
 
-| Date       | Work item | Change                                                   | Verification                                          | Commit/PR |
-| ---------- | --------- | -------------------------------------------------------- | ----------------------------------------------------- | --------- |
-| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented | Static audit; configured local DB inspected read-only | —         |
+| Date       | Work item | Change                                                                                                             | Verification                                                                                    | Commit/PR |
+| ---------- | --------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | --------- |
+| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                           | Static audit; configured local DB inspected read-only                                           | —         |
+| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, audit, and Practice Tools decisions | Owner responses incorporated; password-reset decision remains pending                           | —         |
+| 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                             | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —         |
 
 ## Deferred ideas
 
@@ -720,7 +875,7 @@ These are not required for the initial Band Admin rollout unless a product decis
 
 - Custom role authoring by Band Admin with a server-owned grantable-permission subset.
 - Target-limited impersonation for non-protected users.
-- A redacted, band-facing audit log.
+- A redacted, band-facing audit log, if the current Sysadmin-only decision is revisited.
 - Multi-band tenancy within one database.
 - Consolidating the two superuser mechanisms (`User.isSysAdmin` and `Permission.sysadmin`) into one model.
 
