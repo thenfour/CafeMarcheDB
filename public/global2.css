@@ -2652,7 +2652,8 @@ nav a:hover {
 
 
 .eventChip.Cancelled {
-    text-decoration: line-through;
+    /* #648 just doesn't look good. */
+    /* text-decoration: line-through; */
 }
 
 /* setlist plan list item ... perhaps more in the future ?*/

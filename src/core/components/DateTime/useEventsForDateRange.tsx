@@ -43,8 +43,6 @@ export const useEventsForDateRange = (dateRange: DateTimeRange | null) => {
 
     const { enrichedItems: enrichedEvents, results, loading } = useSearchableList(filterSpec, eventSearchConfig, 100);
 
-    console.log("useEventsForDateRange: filterSpec:", filterSpec, enrichedEvents);
-
     // Transform enrichedEvents to CalendarEventSpec format
     React.useEffect(() => {
         if (!filterSpec) {

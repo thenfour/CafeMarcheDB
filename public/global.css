@@ -426,6 +426,12 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 }
 
+.contentSection .cancelledTag {
+  color: #888;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
 .CustomLink.contentSection .titleText {
   font-size: 28px;
   font-weight: bold;
@@ -471,7 +477,8 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 }
 
 .searchResults .contentSection.event.status_Cancelled .titleText {
-  text-decoration: line-through;
+  /* text-decoration: line-through; */
+  /* #648 just doesn't look good. */
 }
 
 .strikethrough {

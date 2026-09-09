@@ -150,8 +150,6 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
 
     const { events, loading } = useEventsForDateRange(visibleRange);
 
-    console.log("EventCalendarMonth: events:", events, "loading:", loading);
-
     const dayProps: CustomDayProps = React.useMemo(() => ({
         selectedDay: djs,
         otherDay: otherDjs,

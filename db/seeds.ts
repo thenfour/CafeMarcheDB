@@ -230,7 +230,7 @@ const main = async () => {
       },
       {
         "label": "Cancelled",
-        "description": "The event is abandoned / cancelled. It's not happening.",
+        "description": "The event isn't happening.",
         "sortOrder": 100,
         "color": "light_gray",
         "significance": "Cancelled",

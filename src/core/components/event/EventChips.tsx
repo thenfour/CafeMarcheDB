@@ -70,7 +70,6 @@ export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => 
     // cancelled events should be shown with a strikethrough
     const status = dashboardContext.eventStatus.getById(props.value.statusId);
     const href = dashboardContext.isAuthorized(Permission.view_events) ? dashboardContext.routingApi.getURIForEvent(props.value) : undefined;
-    //const isCancelled = status?.significance === db3.EventStatusSignificance.Cancelled;
 
     return <CMChip
         variation={props.variation}
@@ -87,6 +86,7 @@ export const EventChip = ({ renderAsLink = true, ...props }: EventChipProps) => 
         {props.startAdornment}
         <span style={{ color: props.useHashedColor ? getHashedColor(props.value.id.toString()) : undefined }}>
             {db3.EventAPI.getLabel(props.value, { showDate: CoalesceBool(props.showDate, true) })}
+            {status?.significance === db3.EventStatusSignificance.Cancelled && " (Cancelled)"}
         </span>
         {props.endAdornment}
     </CMChip>

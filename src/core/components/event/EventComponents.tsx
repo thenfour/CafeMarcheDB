@@ -1215,7 +1215,6 @@ const EventDotMenu = ({ event, showVisibility, refetch }: { event: Prisma.EventG
     </DotMenu>;
 };
 
-
 // an list of slugs
 export const gEventDetailTabSlugIndices = {
     "none": "none",
@@ -1275,6 +1274,8 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
     ];
 
     const showVisibility = props.showVisibility && dashboardContext.isAuthorized(Permission.manage_events);
+
+    const isCancelled = eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled;
 
     return <div style={typeStyle.style} className={classes.join(" ")}>
         <div className='header  applyColor'>
@@ -1353,6 +1354,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                     <div className="titleText">
                         {eventData.event.name}
                     </div>
+                    {isCancelled && <div className="cancelledTag">(Cancelled)</div>}
                 </div>
             </Link>
 
@@ -1617,6 +1619,8 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
         `status_${event.status?.significance}`,
     ];
 
+    const isCancelled = event.status?.significance === db3.EventStatusSignificance.Cancelled;
+
     return <div style={typeStyle.style} className={classes.join(" ")}>
         <AppContextMarker name="event search item" eventId={event.id} >
             <div className='header applyColor'>
@@ -1663,6 +1667,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
                         <div className="titleText">
                             {event.name}
                         </div>
+                        {isCancelled && <div className="cancelledTag">(Cancelled)</div>}
                     </div>
                 </CMLink>
 
