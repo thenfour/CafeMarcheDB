@@ -13,7 +13,8 @@
     "start": "blitz start --port 10455",
     "studio": "blitz prisma studio",
     "lint": "eslint --ignore-path .gitignore --ext .js,.ts,.tsx .",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
+    "test:auth": "vitest run tests/authorization",
     "test:watch": "vitest",
     "test:release": "node scripts/test-release.mjs",
     "prepare": "husky install"
@@ -111,6 +112,7 @@
     "preview-email": "3.0.7",
     "ts-node": "10.9.1",
     "typescript": "5.8.2",
+    "vite": "^3.0.0",
     "vite-tsconfig-paths": "3.6.0",
     "vitest": "0.25.3"
   },

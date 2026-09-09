@@ -1,9 +1,9 @@
 # Band Admin Authorization Hardening
 
-Last updated: 2026-09-10  
-Overall status: Planning  
-Audit type: Static code-path audit plus read-only inspection of the configured local database  
-Implementation status: Not started
+- Last updated: 2026-09-10
+- Overall status: Implementation
+- Audit type: Static code-path audit plus read-only inspection of the configured local database
+- Implementation status: BA-T001 complete; BA-A001 next
 
 ## Goal
 
@@ -46,7 +46,7 @@ Snapshot date: 2026-09-10
 - `User.isSysAdmin` independently bypasses all permission checks. The `sysadmin` permission is a second superuser mechanism.
 - The configured local database has six roles and 51 permissions, with no Band Admin role.
 - The local Admin role has 49 permissions. It lacks `never_grant` and `practice_tools_use`; its user still receives universal access through `isSysAdmin`.
-- The repository currently has no `*.test.*` or `*.spec.*` files.
+- At audit time the repository had no `*.test.*` or `*.spec.*` files. BA-T001 introduced the initial authorization suite.
 - The data model is single-tenant per database: users, roles, and content have no band/site ownership key. Multi-tenancy is a planned feature.
 - The workflow feature is not used by any tenant and will be removed as a prerequisite instead of being hardened for Band Admin.
 
@@ -144,18 +144,9 @@ Record each decision before implementing the affected capability.
   - Constraint: The site cannot currently send reset email, so an administrator-mediated recovery mechanism is required for password-enabled users.
   - Security assessment: The current URL is a bearer credential valid for 48 hours. Anyone who obtains it can choose the target's password, revoke their existing sessions, and become logged in as that user. Showing it to an administrator therefore grants temporary account-takeover/impersonation power, even when the feature is labelled password reset.
   - Exposure paths include the administrator's clipboard and browser history, chat history used to send the URL, screenshots, console output, application/proxy logs, and accidental forwarding.
-  - Proposed interim decision, pending confirmation: Allow Band Admin to generate and manually transfer a reset URL for an authorized non-protected target, while explicitly accepting that this is a narrowly scoped account-recovery power.
-  - Required safeguards for that interim mechanism:
-    - Use a dedicated permission and the central protected-target/peer policy.
-    - Reduce expiry from 48 hours to a short operational window, recommended at most one hour.
-    - Keep only one active reset token per user and make it single-use; the current implementation already does both.
-    - Display the URL once, never write it to console or activity logs, and prevent caching where practical.
-    - Audit issuance, expiry, cancellation, and redemption without recording the token or URL.
-    - Show the target identity and expiry prominently before and after generation.
-    - Revoke existing sessions on successful reset; the current implementation already does this.
-    - Do not automatically log the browser into the target account after redemption; require an ordinary login with the new password.
-  - Preferred future replacement: verified email delivery or another user-controlled recovery channel in which the administrator never sees the bearer credential.
-  - Decision: do not allow band admins; leave the feature as-is and only enable for sysadmins as a last resort emergency mechanism until future buildout of a hardened solution.
+  - Decision: Band Admin cannot generate or receive password-reset URLs. Restrict the current mechanism to Sysadmin as a last-resort emergency operation and otherwise leave its behavior unchanged during this effort.
+  - Rejected option: Allow Band Admin to generate and manually transfer a reset URL for a non-protected target. This would grant temporary account-takeover/impersonation power.
+  - Deferred replacement: A separately scoped hardened recovery flow, preferably using verified email or another user-controlled channel in which the administrator never sees the bearer credential.
 
 - [x] **BA-D007 — Audit visibility:** Decide whether Band Admin receives a redacted audit log.
 
@@ -185,7 +176,7 @@ Record each decision before implementing the affected capability.
 | P1: Provisioning and migration      | Not started | Existing and fresh databases converge without destroying customization                                    |
 | P1: Site configuration split        | Not started | Band-owned settings are allowlisted; platform settings remain protected                                   |
 | P1: UI/page/server alignment        | Not started | Shared capability metadata drives navigation and page access                                              |
-| P1: Test suite                      | Not started | Persona and adversarial matrices pass                                                                     |
+| P1: Test suite                      | In progress | Persona and adversarial matrices pass                                                                     |
 | P2: Optional delegated capabilities | Not started | Approved audit, peer-admin, or limited support functions are safely available                             |
 | Rollout                             | Not started | Production verification and rollback evidence are recorded                                                |
 
@@ -303,22 +294,24 @@ Prerequisite completion evidence:
 
 ### BA-T001 — Authorization test harness
 
-- [ ] Add a test runner configuration that fails on real failures and does not treat absence of tests as success for authorization work.
-- [ ] Add fixtures/builders for Public, Limited, Normal, Editor, Moderator, Band Admin, and Sysadmin actors.
-- [ ] Add fixtures for ordinary, peer Band Admin, protected-role, and `isSysAdmin` targets.
-- [ ] Make it easy to invoke resolvers with forged payloads rather than testing only through UI components.
+Status: Complete
+
+- [x] Add a test runner configuration that fails on real failures and does not treat absence of tests as success for authorization work.
+- [x] Add fixtures/builders for Public, Limited, Normal, Editor, Moderator, Band Admin, and Sysadmin actors.
+- [x] Add fixtures for ordinary, peer Band Admin, protected-role, and `isSysAdmin` targets.
+- [x] Make it easy to invoke resolvers with forged payloads rather than testing only through UI components.
 
 Acceptance criteria:
 
-- [ ] Tests can exercise generic DB3 queries and mutations with an authenticated session and caller-controlled payload.
-- [ ] Tests can assert both the returned result and persisted database state.
-- [ ] Tests isolate data and are repeatable.
+- [x] Tests can exercise generic DB3 queries and mutations with an authenticated session and caller-controlled payload.
+- [x] Tests can assert both the returned result and persisted database state.
+- [x] Tests isolate data and are repeatable.
 
 Evidence:
 
-- Implementation:
-- Verification:
-- Commit/PR:
+- Implementation: `vitest.config.ts`; `tests/setup.ts`; `tests/authorization/authorizationTestHarness.test.ts`; reusable support under `tests/authorization/support`; non-empty `test` command and focused `test:auth` command in `package.json`.
+- Verification: `yarn test:auth` (14 passed); `yarn test` (14 passed); explicit empty-suite probe exited 1; `yarn tsc --noEmit`; focused ESLint on the Vitest configuration and `tests` tree.
+- Commit/PR: see gh issue #668
 
 ## Phase 1 — Repair generic DB3 authorization
 
@@ -442,16 +435,11 @@ References:
 
 ### BA-U003 — Harden password reset
 
-- [ ] Require the dedicated approved capability.
-- [ ] Enforce protected-target and peer-target rules.
-- [ ] Stop returning raw reset tokens/URLs to Band Admin unless BA-D006 explicitly chooses that behavior.
-- [ ] Audit reset initiation without logging secrets.
-- [ ] If administrator-visible URLs are approved, reduce expiry from 48 hours to at most one hour.
-- [ ] Display an administrator-generated URL only once and remove current console output of the URL.
-- [ ] Ensure application, activity, proxy, and analytics logs never record reset query tokens.
-- [ ] Audit token issuance, cancellation/expiry, and redemption without storing the token.
-- [ ] Do not automatically authenticate the browser as the target after an administrator-mediated reset.
-- [ ] Preserve the current one-active-token-per-user, single-use, and successful-reset session-revocation properties.
+- [ ] Make password-reset URL generation explicitly Sysadmin-only; `manage_users`, `admin_users`, and Band Admin must not authorize it.
+- [ ] Remove the reset action from every non-Sysadmin user-management surface.
+- [ ] Add a server-boundary test proving Band Admin cannot invoke the mutation or receive a reset URL for any target.
+- [ ] Preserve the existing mechanism as a last-resort Sysadmin operation until a separately scoped hardened recovery flow is designed.
+- [ ] Keep credential-bearing values out of activity logs even though the emergency operation is Sysadmin-only.
 
 Reference: [forgotPassword mutation](../src/auth/mutations/forgotPassword.ts#L10)
 
@@ -863,11 +851,12 @@ Phase completion evidence:
 
 Add one row for each completed or materially changed work item.
 
-| Date       | Work item | Change                                                                                                             | Verification                                                                                    | Commit/PR |
-| ---------- | --------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | --------- |
-| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                           | Static audit; configured local DB inspected read-only                                           | —         |
-| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, audit, and Practice Tools decisions | Owner responses incorporated; password-reset decision remains pending                           | —         |
-| 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                             | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —         |
+| Date       | Work item | Change                                                                                                                                                            | Verification                                                                                    | Commit/PR |
+| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------- |
+| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                          | Static audit; configured local DB inspected read-only                                           | —         |
+| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                | All product decisions resolved                                                                  | —         |
+| 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                              | —         |
+| 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                                                                            | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —         |
 
 ## Deferred ideas
 
