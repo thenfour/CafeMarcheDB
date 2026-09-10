@@ -5,9 +5,10 @@ import { passportAuth } from "@blitzjs/auth";
 import db from "db";
 import { nanoid } from 'nanoid';
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import signupMutation from "src/auth/mutations/signup";
+import { createSignupUser } from "src/auth/server/createSignupUser";
 import { api } from "src/blitz-server";
 import { recordAction } from "src/core/db3/server/recordActionServer";
+import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { CreatePublicData } from "types";
 
 export default api(
@@ -36,25 +37,25 @@ export default api(
               const displayName = profile.displayName;
 
               let user = await db.user.findFirst({
+                ...UserWithRolesArgs,
                 where: {
                   AND: [
                     { googleId },
                     { isDeleted: false }
                   ]
                 },
-                include: { role: { include: { permissions: { include: { permission: true } } } } }
               });
 
               if (!user) {
 
                 user = await db.user.findFirst({
+                  ...UserWithRolesArgs,
                   where: {
                     AND: [
                       { email },
                       { isDeleted: false }
                     ]
                   },
-                  include: { role: { include: { permissions: { include: { permission: true } } } } }
                 });
 
                 if (user) {
@@ -66,14 +67,19 @@ export default api(
                     uri: undefined,
                   }, ctx);
                   user = await db.user.update({
+                    ...UserWithRolesArgs,
                     where: { id: user.id },
                     data: { googleId },
-                    include: { role: { include: { permissions: { include: { permission: true } } } } }
                   });
                 } else {
                   // i should just create separate schema validation/mutation for when a user uses a password vs. external auth.
                   // but whatever; simpler to just supply a password that will never be used.
-                  user = await signupMutation({ email, googleId, password: "1234567890!@#$%^&aoeuAOEU" + nanoid(), name: displayName }, ctx);
+                  user = await createSignupUser({
+                    email,
+                    googleId,
+                    password: "1234567890!@#$%^&aoeuAOEU" + nanoid(),
+                    name: displayName,
+                  }, ctx);
                   await recordAction({
                     feature: ActivityFeature.signup_google,
                     userId: user.id,

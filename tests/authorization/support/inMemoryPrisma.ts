@@ -139,6 +139,43 @@ export const authorizationTestDb = new Proxy(database, {
     if (property === "$transaction") {
       return async (callback: (transaction: typeof receiver) => Promise<unknown>) => callback(receiver)
     }
+    if (property === "$queryRaw") {
+      return async (query: { strings?: readonly string[]; values?: unknown[] }) => {
+        const statement = query.strings?.join("?") ?? ""
+        if (!/FROM\s+AdminBootstrapClaim/i.test(statement)) {
+          throw new Error(`Unsupported authorization-test raw query: ${statement}`)
+        }
+
+        const tokenHash = query.values?.[0]
+        return target
+          .getDelegate("adminBootstrapClaim")
+          .snapshot()
+          .filter((row) => row.tokenHash === tokenHash)
+          .slice(0, 1)
+          .map((row) => ({ id: row.id }))
+      }
+    }
+    if (property === "$executeRaw") {
+      return async (query: { strings?: readonly string[]; values?: unknown[] }) => {
+        const statement = query.strings?.join("?") ?? ""
+        if (!/INSERT\s+IGNORE\s+INTO\s+AdminBootstrapClaim/i.test(statement)) {
+          throw new Error(`Unsupported authorization-test raw mutation: ${statement}`)
+        }
+
+        const [tokenHash, claimedByUserId] = query.values ?? []
+        const claims = target.getDelegate("adminBootstrapClaim")
+        if (claims.snapshot().some((row) => row.tokenHash === tokenHash)) return 0
+
+        await claims.create({
+          data: {
+            tokenHash,
+            claimedByUserId,
+            claimedAt: new Date(),
+          },
+        })
+        return 1
+      }
+    }
     if (property in target) {
       const value = Reflect.get(target, property, target)
       return typeof value === "function" ? value.bind(target) : value

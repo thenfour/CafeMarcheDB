@@ -232,6 +232,17 @@ model User {
   @@index([googleId])
 }
 
+// Server-only history for one-time deployment bootstrap credentials. This is
+// intentionally not related to User so the security record survives user removal.
+model AdminBootstrapClaim {
+  id              Int      @id @default(autoincrement())
+  tokenHash       String   @unique @db.VarChar(64)
+  claimedAt       DateTime @default(now())
+  claimedByUserId Int
+
+  @@index([claimedByUserId])
+}
+
 model Setting {
   id    Int    @id @default(autoincrement())
   name  String @unique @default("") @db.VarChar(768)

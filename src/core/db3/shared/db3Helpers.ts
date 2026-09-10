@@ -20,16 +20,17 @@ export const GetSoftDeleteWhereExpression = (isDeletedColumnName?: string | unde
 };
 
 export const GetPublicRole = async () => {
-    const publicRole = await db.role.findFirst({
+    const publicRoles = await db.role.findMany({
         where: {
             isPublicRole: true,
         },
         include: {
             permissions: true,
-        }
+        },
+        take: 2,
     });
-    assert(!!publicRole, "expecting a public role to be assigned in the db");
-    return publicRole;
+    assert(publicRoles.length === 1, `Expected exactly one public role; found ${publicRoles.length}.`);
+    return publicRoles[0]!;
 }
 
 

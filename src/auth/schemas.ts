@@ -19,9 +19,6 @@ export const UserEmailSchema = z
   .email()
   .transform((str) => str.toLowerCase().trim());
 
-export const googleId = z
-  .string().optional()
-
 export const password = z
   .string()
   .min(8, { message: "Password is required and must be at least 8 characters long" })
@@ -32,8 +29,6 @@ export const Signup = z.object({
   email: UserEmailSchema,
   password,
   name: UserNameSchema,
-  googleId,
-  roleId: z.number().nullable().optional(),
 })
 
 // export const InsertUserSchema = z.object({

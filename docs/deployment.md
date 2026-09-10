@@ -127,6 +127,20 @@ Use unquoted `KEY=value` entries. For these target settings, existing process en
 
 Keep application settings, including `DATABASE_URL`, in the existing `.env.local` / service configuration. `DB_NAME` must identify the same database used by the application and migrations. `mysqldump` uses the server's existing MySQL credentials configuration. Private repositories also require working Git credentials for the source fetch; the asset API token does not automatically configure Git.
 
+### One-time Sysadmin recovery
+
+Ordinary signup never grants Sysadmin. To enable a one-time sysadmin recovery path,
+configure both application environment values:
+
+```dotenv
+CMDB_ADMIN_BOOTSTRAP_EMAIL=admin@example.com
+CMDB_ADMIN_BOOTSTRAP_SECRET=<at-least-32-character-random-secret>
+```
+
+Use a cryptographically random secret; for example, `openssl rand -hex 32` produces a suitable 64-character value. The target account must already exist, be active, and be signed in with the exact configured email. Visit `/auth/admin-bootstrap` and submit the secret. The route is deliberately absent from site navigation and renders no recovery content for other accounts, but the route name is not a security boundary.
+
+The server rechecks the authenticated database user and credential, stores only the credential's SHA-256 hash in `AdminBootstrapClaim`, grants `User.isSysAdmin`, invalidates the user's other sessions, and refreshes the current session. A hash can be claimed only once, including if the same secret is later restored in the environment. Remove the two values after recovery, or rotate the secret to prepare a new one-time recovery credential. Changing or removing the configured email revokes eligibility for an unclaimed credential.
+
 ## Install manually
 
 Inspect an exact release first:

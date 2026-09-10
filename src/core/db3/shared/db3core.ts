@@ -1,6 +1,6 @@
 import type { EmptyPublicData } from "@blitzjs/auth";
 import { assert } from "blitz";
-import db, { Prisma } from "db";
+import { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
 import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
 import { SqlCombineAndExpression } from "shared/mysqlUtils";
@@ -13,7 +13,7 @@ import {
     SearchCustomDataHookId,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
-import { GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
+import { GetPublicRole, GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 
@@ -1093,15 +1093,7 @@ export class xTable /* implements TableDesc*/ {
         // and visibility
         if (this.SqlSpecialColumns.visiblePermission && !skipVisibilityCheck) {
             if (clientIntention.intention === "public") {
-                const publicRole = await db.role.findFirst({
-                    where: {
-                        isPublicRole: true,
-                    },
-                    include: {
-                        permissions: true,
-                    }
-                });
-                assert(!!publicRole, "expecting a public role to be assigned in the db");
+                const publicRole = await GetPublicRole();
                 const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
                     // current user has access to the specified visibile permission
                     [this.SqlSpecialColumns.visiblePermission.fkidMember!]: { in: publicRole.permissions.map(p => p.permissionId) }

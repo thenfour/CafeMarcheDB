@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U004, and BA-M001 complete; BA-U005 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U004, and BA-M001 complete; BA-U005 in progress
 
 ## Goal
 
@@ -62,17 +62,17 @@ Primary references:
 
 These are recommended defaults. Product decisions that still require confirmation are listed separately below.
 
-| Area                                    | Band Admin                                                                 | Sysadmin only                                                          |
-| --------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Events, songs, files, instruments, wiki | Full domain administration                                                 | Server/debug internals                                                 |
-| Workflows                               | Not available; remove the unused feature before rollout                    | Not available after removal                                            |
-| Users                                   | Create, edit, and deactivate ordinary users; assign permitted roles        | Password-reset URLs, protected accounts, and `isSysAdmin`               |
-| Roles and permissions                   | Assign predefined non-protected roles                                      | Role CRUD, Permission CRUD, and the permission matrix                  |
-| Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus       | Hosting mode, raw settings, and bulk configuration                     |
-| Reports                                 | Event and feature reports                                                  | Server diagnostics                                                     |
-| Audit                                   | Optional redacted band audit                                               | Raw change records and credential-bearing history                      |
-| Support                                 | No impersonation initially                                                 | Unrestricted impersonation                                             |
-| Technical tooling                       | None                                                                       | Environment, DB/filesystem diagnostics, debug, gallery, and test tools |
+| Area                                    | Band Admin                                                           | Sysadmin only                                                          |
+| --------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Events, songs, files, instruments, wiki | Full domain administration                                           | Server/debug internals                                                 |
+| Workflows                               | Not available; remove the unused feature before rollout              | Not available after removal                                            |
+| Users                                   | Create, edit, and deactivate ordinary users; assign permitted roles  | Password-reset URLs, protected accounts, and `isSysAdmin`              |
+| Roles and permissions                   | Assign predefined non-protected roles                                | Role CRUD, Permission CRUD, and the permission matrix                  |
+| Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus | Hosting mode, raw settings, and bulk configuration                     |
+| Reports                                 | Event and feature reports                                            | Server diagnostics                                                     |
+| Audit                                   | Optional redacted band audit                                         | Raw change records and credential-bearing history                      |
+| Support                                 | No impersonation initially                                           | Unrestricted impersonation                                             |
+| Technical tooling                       | None                                                                 | Environment, DB/filesystem diagnostics, debug, gallery, and test tools |
 
 ### Proposed initial Band Admin bundle
 
@@ -541,12 +541,12 @@ Evidence:
 
 ### BA-U005 — Harden public signup and built-in role invariants
 
-- [ ] Remove `roleId` from public signup input.
-- [ ] Construct permitted user-create data explicitly rather than spreading caller input.
-- [ ] Replace ordinary-signup `ADMIN_EMAIL` promotion with a dedicated deployment/bootstrap path.
-- [ ] Enforce exactly one default-new-user role and one public role.
-- [ ] Make default/public role flags sysadmin-only.
-- [ ] Protect built-in roles from deletion.
+- [x] Remove `roleId` from public signup input.
+- [x] Construct permitted user-create data explicitly rather than spreading caller input.
+- [x] Replace ordinary-signup `ADMIN_EMAIL` promotion with a dedicated deployment/bootstrap path.
+- [ ] Enforce exactly one default-new-user role and one public role. (Consumers now fail closed on zero or multiple matches; mutation-time atomic reassignment remains.)
+- [x] Make default/public role flags sysadmin-only.
+- [x] Protect built-in roles from deletion.
 
 References:
 
@@ -556,9 +556,9 @@ References:
 
 Phase completion evidence:
 
-- Implementation:
-- Verification:
-- Commit/PR:
+- Implementation: ordinary signup accepts only name, normalized email, and password, constructs an explicit non-Sysadmin create payload, and requires exactly one default-new-user role. Google signup supplies its provider ID only through a server-owned helper. The legacy `ADMIN_EMAIL` promotion is removed. An unlinked authenticated recovery page is visible only to the active user matching `CMDB_ADMIN_BOOTSTRAP_EMAIL`; its mutation rechecks the database identity and a minimum-32-character `CMDB_ADMIN_BOOTSTRAP_SECRET`, atomically records a unique SHA-256 token hash, grants `User.isSysAdmin`, invalidates old sessions, refreshes the current session, and writes a credential-free audit record. Public-role consumers now require exactly one matching role. Existing Role table policy restricts its flags to actual Sysadmins and disables generic deletion. Atomic mutation-time reassignment of the two role designations remains before BA-U005 is complete.
+- Verification: `yarn test:auth` and `yarn test` (127 passed, including forged signup fields, legacy `ADMIN_EMAIL`, missing/duplicate built-in role lookups, unauthenticated/deleted/stale-email rejection, eligibility non-disclosure, wrong/reused credentials, hashed claim storage, promotion, session invalidation/refresh, and credential-free audit); `yarn tsc --noEmit`; focused ESLint; `yarn build`; Prisma schema validation and client generation with a disposable build URL and output because a running Prisma Studio process owns the normal Windows engine DLL.
+- Commit/PR: see gh issue #668
 
 ## Phase 3 — Remove sensitive-data and object-level authorization gaps
 
@@ -940,15 +940,15 @@ Phase completion evidence:
 
 Add one row for each completed or materially changed work item.
 
-| Date       | Work item | Change                                                                                                                                                            | Verification                                                                                    | Commit/PR |
-| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------- |
-| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                          | Static audit; configured local DB inspected read-only                                           | —         |
-| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                | All product decisions resolved                                                                  | —         |
-| 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                              | —         |
-| 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                                                                            | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —         |
-| 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views     | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`      | see gh issue #668 |
-| 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
-| 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                      | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
+| Date       | Work item | Change                                                                                                                                                                                    | Verification                                                                                    | Commit/PR         |
+| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------- |
+| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                                                  | Static audit; configured local DB inspected read-only                                           | —                 |
+| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                                        | All product decisions resolved                                                                  | —                 |
+| 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs                         | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                              | —                 |
+| 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                                                                                                    | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —                 |
+| 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views                            | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`    | see gh issue #668 |
+| 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
+| 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                                                | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 
 ## Deferred ideas
 
