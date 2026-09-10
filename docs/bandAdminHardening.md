@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001 and BA-A001 through BA-A003 complete; BA-A004 next
+- Implementation status: BA-T001 and BA-A001 through BA-A004 complete; BA-A005 next
 
 ## Goal
 
@@ -368,7 +368,7 @@ Policy:
 
 - Generic DB3 insert and update mutations are atomic with respect to local fields: if row authorization fails or any proposed local field is forbidden or unknown, the whole mutation is rejected with HTTP 403 before Prisma create/update and before activity logging. No partial local-field update is permitted.
 - On update, the persisted row supplies the ownership and row-authorization context, while field authorization receives the proposed model. Only the resulting authorized model, plus server-owned audit fields, may reach Prisma.
-- The update primary key remains validated routing metadata and is not copied into Prisma update data. Association fields remain outside this policy until BA-A004.
+- The update primary key remains validated routing metadata and is not copied into Prisma update data. Association fields are covered by the authorization and execution policy completed in BA-A004.
 
 References:
 
@@ -390,20 +390,32 @@ Evidence:
 
 ### BA-A004 — Authorize associations
 
-- [ ] Enforce authorization on association-only mutations.
-- [ ] Authorize both removal and insertion of association records.
-- [ ] Apply protected-permission policy to `RolePermission` changes.
+- [x] Enforce authorization on association-only mutations.
+- [x] Authorize both removal and insertion of association records.
+- [x] Apply protected-permission policy to `RolePermission` changes.
+
+Policy:
+
+- Every supplied association field is authorized together with local fields against the parent table, persisted row, ownership context, and field permission before any local Prisma update. `UpdateAssociations` repeats the parent row/field authorization as a defense-in-depth boundary for direct server callers.
+- Association additions and removals are awaited, use the same transactional client for reads and writes, and emit their activity records before the parent mutation returns.
+- Per BA-D004, the raw `RolePermission` topology is sysadmin-only. Non-sysadmins cannot change it through `Role.permissions`, `Permission.roles`, or direct generic `RolePermission` insert, update, or delete mutations. This deliberately protects every grant, including `sysadmin`, `impersonate_user`, and `never_grant`, rather than relying on a partial name blacklist.
 
 References:
 
-- [Association mutation implementation](../src/core/db3/server/db3mutationCore.ts#L254)
-- [Association authorization TODO](../src/core/db3/server/db3mutationCore.ts#L551)
+- [Association mutation implementation](../src/core/db3/server/db3mutationCore.ts#L302)
+- [Insert/update association preflight](../src/core/db3/server/db3mutationCore.ts#L498)
 
 Acceptance criteria:
 
-- [ ] A non-sysadmin cannot add `sysadmin` or another protected permission to any role.
-- [ ] A non-sysadmin cannot alter associations on a protected role.
-- [ ] Association-only mutations cannot bypass row/field authorization.
+- [x] A non-sysadmin cannot add `sysadmin` or another protected permission to any role.
+- [x] A non-sysadmin cannot alter associations on a protected role.
+- [x] Association-only mutations cannot bypass row/field authorization.
+
+Evidence:
+
+- Implementation: parent row/field preauthorization for insert/update association payloads, defense-in-depth authorization inside `UpdateAssociations`, awaited association execution, consistent transactional delegate use, and a sysadmin-only `RolePermission` topology guard in `src/core/db3/server/db3mutationCore.ts`; server-derived intention supplied by the remaining direct workflow caller; insert authorization no longer derives ownership from an unpersisted partial model.
+- Verification: `yarn test:auth` and `yarn test` (53 passed, including protected grants, protected-role removal, direct topology bypass attempts, row-scope rejection before association access, awaited insert/remove behavior, insert-with-association behavior, and sysadmin controls); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ### BA-A005 — Authorize deletes
 
@@ -412,7 +424,7 @@ Acceptance criteria:
 - [ ] Protect built-in roles and permissions from deletion.
 - [ ] Review cascading effects before allowing Role or Permission deletion.
 
-Reference: [hard-delete path](../src/core/db3/server/db3mutationCore.ts#L317)
+Reference: [hard-delete path](../src/core/db3/server/db3mutationCore.ts#L397)
 
 Acceptance criteria:
 

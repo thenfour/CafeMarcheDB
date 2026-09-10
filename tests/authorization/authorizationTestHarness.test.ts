@@ -28,7 +28,12 @@ import {
   type AuthorizationPersona,
   type AuthorizationTargetKind,
 } from "./support/authorizationFixtures"
-import { forgeDb3Insert, forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders"
+import {
+  forgeDb3Delete,
+  forgeDb3Insert,
+  forgeDb3Query,
+  forgeDb3Update,
+} from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
@@ -763,5 +768,268 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     )
 
     expect(result).toEqual(expect.objectContaining({ id: target.id, isSysAdmin: true }))
+  })
+})
+
+describe("BA-A004 association authorization", () => {
+  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+  const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
+  const normal = createAuthorizationTestUser("normal", { id: 3 })
+  const otherUser = createAuthorizationTestUser("normal", { id: 4 })
+
+  const ordinaryRole = {
+    id: 100,
+    name: "Ordinary role",
+    description: "",
+    isRoleForNewUsers: false,
+    isPublicRole: false,
+    sortOrder: 10,
+    color: null,
+    significance: null,
+  }
+  const protectedRole = {
+    ...ordinaryRole,
+    id: 101,
+    name: "Protected role",
+  }
+  const ordinaryPermission = {
+    id: 200,
+    name: Permission.manage_events,
+    description: "",
+    isVisibility: false,
+    sortOrder: 10,
+    significance: null,
+    color: null,
+    iconName: null,
+  }
+  const protectedPermissions = [
+    { ...ordinaryPermission, id: 201, name: Permission.sysadmin },
+    { ...ordinaryPermission, id: 202, name: Permission.impersonate_user },
+    { ...ordinaryPermission, id: 203, name: Permission.never_grant },
+  ]
+  const ordinaryRolePermission = {
+    id: 300,
+    roleId: ordinaryRole.id,
+    permissionId: ordinaryPermission.id,
+  }
+  const protectedRolePermission = {
+    id: 301,
+    roleId: protectedRole.id,
+    permissionId: protectedPermissions[0]!.id,
+  }
+
+  beforeEach(() => {
+    authorizationTestDb.reset({
+      user: [sysadmin, bandAdmin, normal, otherUser],
+      role: [ordinaryRole, protectedRole],
+      permission: [ordinaryPermission, ...protectedPermissions],
+      rolePermission: [ordinaryRolePermission, protectedRolePermission],
+      userInstrument: [],
+      change: [],
+    })
+    vi.restoreAllMocks()
+  })
+
+  it.each(protectedPermissions)(
+    "atomically rejects Band Admin granting $name",
+    async (protectedPermission) => {
+      const roleUpdate = vi.spyOn(authorizationTestDb.getDelegate("role"), "update")
+      const associationCreate = vi.spyOn(
+        authorizationTestDb.getDelegate("rolePermission"),
+        "create",
+      )
+      const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+
+      await expect(
+        invokeResolver(
+          db3Mutation,
+          forgeDb3Update("Role", ordinaryRole.id, {
+            id: ordinaryRole.id,
+            name: "Must remain unchanged",
+            permissions: [ordinaryPermission.id, protectedPermission.id],
+          }),
+          ctx,
+        ),
+      ).rejects.toThrow("Not authorized to mutate Role fields: permissions")
+
+      expect(roleUpdate).not.toHaveBeenCalled()
+      expect(associationCreate).not.toHaveBeenCalled()
+      expect(authorizationTestDb.snapshot("role")).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: ordinaryRole.id, name: ordinaryRole.name }),
+        ]),
+      )
+      expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+        expect.arrayContaining([ordinaryRolePermission]),
+      )
+    },
+  )
+
+  it("rejects association changes on a protected role", async () => {
+    const associationDelete = vi.spyOn(
+      authorizationTestDb.getDelegate("rolePermission"),
+      "deleteMany",
+    )
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Update("Role", protectedRole.id, {
+          id: protectedRole.id,
+          permissions: [],
+        }),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate Role fields: permissions")
+
+    expect(associationDelete).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+      expect.arrayContaining([protectedRolePermission]),
+    )
+  })
+
+  it("blocks direct non-sysadmin RolePermission insert and delete mutations", async () => {
+    const rolePermissionDelegate = authorizationTestDb.getDelegate("rolePermission")
+    const create = vi.spyOn(rolePermissionDelegate, "create")
+    const deleteMany = vi.spyOn(rolePermissionDelegate, "deleteMany")
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Insert("RolePermission", {
+          roleId: ordinaryRole.id,
+          permissionId: protectedPermissions[0]!.id,
+        }),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate RolePermission fields")
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Delete("RolePermission", protectedRolePermission.id),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate RolePermission fields")
+
+    expect(create).not.toHaveBeenCalled()
+    expect(deleteMany).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+      expect.arrayContaining([ordinaryRolePermission, protectedRolePermission]),
+    )
+  })
+
+  it("rejects an association-only update outside the caller's row scope", async () => {
+    const associationDelegate = authorizationTestDb.getDelegate("userInstrument")
+    const findMany = vi.spyOn(associationDelegate, "findMany")
+    const create = vi.spyOn(associationDelegate, "create")
+    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Update("User", otherUser.id, {
+          id: otherUser.id,
+          instruments: [500],
+        }),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate User fields: instruments")
+
+    expect(findMany).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([])
+  })
+
+  it("awaits authorized association insertions and removals", async () => {
+    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("User", normal.id, {
+        id: normal.id,
+        instruments: [500],
+      }),
+      ctx,
+    )
+    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
+      expect.objectContaining({ userId: normal.id, instrumentId: 500 }),
+    ])
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("User", normal.id, {
+        id: normal.id,
+        instruments: [],
+      }),
+      ctx,
+    )
+    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "UserInstrument", action: "insert" }),
+        expect.objectContaining({ table: "UserInstrument", action: "delete" }),
+      ]),
+    )
+  })
+
+  it("authorizes and awaits associations supplied during insert", async () => {
+    const { ctx } = createAuthorizationPersona("moderator", { id: 20 })
+    const moderator = createAuthorizationTestUser("moderator", { id: 20 })
+    authorizationTestDb.reset({ user: [moderator], userInstrument: [], change: [] })
+
+    const result = await invokeResolver(
+      db3Mutation,
+      forgeDb3Insert("User", {
+        name: "User with instrument",
+        email: "instrument@test.invalid",
+        instruments: [500],
+      }),
+      ctx,
+    ) as { id: number }
+
+    expect(result).toEqual(expect.objectContaining({ id: expect.any(Number) }))
+    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
+      expect.objectContaining({ userId: result.id, instrumentId: 500 }),
+    ])
+  })
+
+  it("allows sysadmin to add and remove role permissions", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const sysadminPermission = protectedPermissions[0]!
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("Role", ordinaryRole.id, {
+        id: ordinaryRole.id,
+        permissions: [ordinaryPermission.id, sysadminPermission.id],
+      }),
+      ctx,
+    )
+    expect(authorizationTestDb.snapshot("rolePermission")).toEqual(
+      expect.arrayContaining([
+        ordinaryRolePermission,
+        expect.objectContaining({
+          roleId: ordinaryRole.id,
+          permissionId: sysadminPermission.id,
+        }),
+      ]),
+    )
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("Role", ordinaryRole.id, {
+        id: ordinaryRole.id,
+        permissions: [],
+      }),
+      ctx,
+    )
+    expect(authorizationTestDb.snapshot("rolePermission")).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ roleId: ordinaryRole.id }),
+      ]),
+    )
   })
 })

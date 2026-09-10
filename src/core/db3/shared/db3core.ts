@@ -611,9 +611,11 @@ export class xTable /* implements TableDesc*/ {
     // - pre-mutate owner/creator
 
     authorizeAndSanitize = (args: DB3AuthorizeAndSanitizeInput<TAnyModel>): DB3AuthorizeAndSanitizeResult<TAnyModel> => {
-        const authorizationModel = args.rowMode === "update" && args.existingModel !== undefined
-            ? args.existingModel
-            : args.model;
+        const authorizationModel = args.rowMode === "new"
+            ? null
+            : args.rowMode === "update" && args.existingModel !== undefined
+                ? args.existingModel
+                : args.model;
         const rowInfo = authorizationModel ? this.getRowInfo(authorizationModel) : null;
         const ownerUserId = this.getOwnerUserId(authorizationModel, rowInfo?.ownerUserId, args.fallbackOwnerId);
         const isOwner = ownerUserId != null

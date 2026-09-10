@@ -43,3 +43,19 @@ export function forgeDb3Insert(
     ...overrides,
   } as MutatorInput
 }
+
+export function forgeDb3Delete(
+  tableID: string,
+  deleteId: number,
+  deleteType: "softWhenPossible" | "hard" = "hard",
+  overrides: Partial<MutatorInput> = {},
+): MutatorInput {
+  return {
+    tableID,
+    tableName: tableID,
+    mutationType: "delete",
+    deleteId,
+    deleteType,
+    ...overrides,
+  } as MutatorInput
+}

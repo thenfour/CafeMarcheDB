@@ -60,6 +60,18 @@ const requireAuthorizedMutationFields = (
     return { ...authResult.authorizedModel };
 };
 
+const requireRolePermissionTopologyAuthorization = (
+    associationTableName: string,
+    localTable: db3.xTable,
+    publicData: ReturnType<typeof getMutationPublicData>,
+    fieldNames: string[],
+): void => {
+    const rolePermissionTableName = db3.xRolePermissionAssociation.tableName;
+    if (associationTableName.toLowerCase() === rolePermissionTableName.toLowerCase() && !publicData.isSysAdmin) {
+        throw new DB3MutationAuthorizationError(localTable.tableName, fieldNames);
+    }
+};
+
 // returns null if not authorized.
 export const getAuthenticatedCtx = (unauthenticatedCtx: Ctx, perm: Permission): AuthenticatedCtx | null => {
     try {
@@ -273,12 +285,15 @@ export const CallMutateEventHooks = async (args: {
 export interface UpdateAssociationsArgs {
     ctx: AuthenticatedCtx;
     changeContext: ChangeContext;
+    clientIntention: db3.xTableClientUsageContext;
 
     localTable: db3.xTable;
     column: db3.TagsField<TAnyModel>;
 
     desiredTagIds: number[];
     localId: number;
+    localModel?: TAnyModel;
+    rowMode?: "new" | "update";
 
     db?: TransactionalPrismaClient,
 };
@@ -288,6 +303,39 @@ export interface UpdateAssociationsArgs {
 export const UpdateAssociations = async ({ changeContext, ctx, ...args }: UpdateAssociationsArgs) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     const associationTableName = args.column.getAssociationTableShema().tableName;
+    const publicData = getMutationPublicData(args.clientIntention);
+    const rowMode = args.rowMode || "update";
+
+    if (args.clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+        throw new DB3MutationAuthorizationError(args.localTable.tableName, [args.column.member]);
+    }
+    requireRolePermissionTopologyAuthorization(
+        associationTableName,
+        args.localTable,
+        publicData,
+        [args.column.member],
+    );
+
+    let localModel = args.localModel;
+    if (rowMode === "update" && !localModel) {
+        localModel = await transactionalDb[args.localTable.tableName].findFirst({
+            where: { [args.localTable.pkMember]: args.localId },
+        });
+        if (!localModel) {
+            throw new Error(`${args.localTable.tableName} ${args.localId} was not found.`);
+        }
+    }
+
+    requireAuthorizedMutationFields(args.localTable, args.localTable.authorizeAndSanitize({
+        clientIntention: args.clientIntention,
+        contextDesc: `association:${args.localTable.tableName}.${args.column.member}`,
+        model: { [args.column.member]: args.desiredTagIds },
+        existingModel: rowMode === "update" ? localModel : undefined,
+        publicData,
+        rowMode,
+        fallbackOwnerId: null,
+    }));
+
     const currentAssociations = await transactionalDb[associationTableName].findMany({
         where: { [args.column.associationLocalIDMember]: args.localId },
     });
@@ -295,7 +343,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
     const cp = ComputeChangePlan(currentAssociations.map(a => a[args.column.associationForeignIDMember]), args.desiredTagIds, (a, b) => a === b);
 
     // remove associations which exist but aren't in the new array
-    await db[associationTableName].deleteMany({
+    await transactionalDb[associationTableName].deleteMany({
         where: {
             [args.column.associationLocalIDMember]: args.localId,
             [args.column.associationForeignIDMember]: {
@@ -342,6 +390,8 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
             db: transactionalDb,
         });
     }
+
+    return cp.delete.length > 0 || cp.create.length > 0;
 };
 
 
@@ -351,6 +401,9 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
+        const publicData = getMutationPublicData(clientIntention);
+
+        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, [table.pkMember]);
 
         // TODO: delete row authorization
 
@@ -362,22 +415,24 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
             return true;
         }
 
+        const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: id } });
+        if (!oldValues) {
+            throw new Error(`can't delete unknown '${table.tableName}' with pk '${id}'`);
+        }
+
         // delete any associations for this item first.
-        table.columns.forEach(async (column) => {
-            if (column.fieldTableAssociation !== "associationRecord") { return; }
+        for (const column of table.columns) {
+            if (column.fieldTableAssociation !== "associationRecord") continue;
             await UpdateAssociations({
                 changeContext,
                 ctx,
+                clientIntention,
                 localId: id,
+                localModel: oldValues,
                 localTable: table,
                 column: column as db3.TagsField<TAnyModel>,
                 desiredTagIds: [],
             });
-        });
-
-        const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: id } });
-        if (!oldValues) {
-            throw new Error(`can't delete unknown '${table.tableName}' with pk '${id}'`);
         }
 
         // special hooks?
@@ -426,6 +481,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
+        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
         // so those values will continue to be ID.
@@ -440,21 +496,42 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
 
         const dbModel = table.clientToDbModel(validateResult.successfulModel, "new", clientIntention);
 
-        const { localFields, associationFields } = db3.separateMutationValues({ table, fields: dbModel });
-        let obj = {};
+        const proposedMutationFields = db3.separateMutationValues({ table, fields: dbModel });
+        const proposedModel = {
+            ...proposedMutationFields.localFields,
+            ...proposedMutationFields.associationFields,
+        };
+        let authorizedLocalFields: TAnyModel = {};
+        let authorizedAssociationFields: TAnyModel = {};
+        let obj: TAnyModel = {};
 
         // at this point `fields` should not be used because it mixes foreign associations with local values
-        if (Object.keys(localFields).length > 0) {
+        if (Object.keys(proposedModel).length > 0) {
             const authResult = table.authorizeAndSanitize({
                 clientIntention,
                 contextDesc,
-                model: localFields,
+                model: proposedModel,
                 publicData,
                 rowMode: "new",
                 fallbackOwnerId: null,
             });
-            const authorizedLocalFields = requireAuthorizedMutationFields(table, authResult);
+            const authorizedMutationFields = requireAuthorizedMutationFields(table, authResult);
+            ({ localFields: authorizedLocalFields, associationFields: authorizedAssociationFields }
+                = db3.separateMutationValues({ table, fields: authorizedMutationFields }));
 
+            for (const column of table.columns) {
+                if (column.fieldTableAssociation !== "associationRecord") continue;
+                if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
+                requireRolePermissionTopologyAuthorization(
+                    (column as db3.TagsField<TAnyModel>).getAssociationTableShema().tableName,
+                    table,
+                    publicData,
+                    [column.member],
+                );
+            }
+        }
+
+        if (Object.keys(proposedModel).length > 0) {
             // createdBy and updatedBy.
             if (table.SqlSpecialColumns.createdByUser) {
                 authorizedLocalFields[table.SqlSpecialColumns.createdByUser.fkidMember!] = publicData.userId;
@@ -478,18 +555,21 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             });
         }
         // now update any associations
-        table.columns.forEach(async (column) => {
-            if (column.fieldTableAssociation !== "associationRecord") { return; }
-            if (!associationFields[column.member]) { return; }
+        for (const column of table.columns) {
+            if (column.fieldTableAssociation !== "associationRecord") continue;
+            if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
             await UpdateAssociations({
                 changeContext,
                 ctx,
+                clientIntention,
                 localId: obj[table.pkMember],
+                localModel: obj,
                 localTable: table,
                 column: column as db3.TagsField<TAnyModel>,
-                desiredTagIds: associationFields[column.member],
+                desiredTagIds: authorizedAssociationFields[column.member],
+                rowMode: "new",
             });
-        });
+        }
 
         await CallMutateEventHooks({
             tableNameOrSpecialMutationKey: table.tableName,
@@ -519,6 +599,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
+        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
         const clientModelForValidation: TAnyModel = table.getClientModel(fields, "update", clientIntention);
@@ -530,28 +611,50 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         }
         const dbModel = table.clientToDbModel(validateResult.successfulModel, "update", clientIntention);
 
-        const { localFields, associationFields } = db3.separateMutationValues({ table, fields: dbModel });
+        const proposedMutationFields = db3.separateMutationValues({ table, fields: dbModel });
+        const proposedModel = {
+            ...proposedMutationFields.localFields,
+            ...proposedMutationFields.associationFields,
+        };
         // at this point `fields` should not be used.
 
         const fullOldObj = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
         if (!fullOldObj) throw new Error(`${table.tableName} ${pkid} was not found.`);
-        let obj: TAnyModel = getIntersectingFields(localFields, fullOldObj);
+        let authorizedLocalFields: TAnyModel = {};
+        let authorizedAssociationFields: TAnyModel = {};
+        let obj: TAnyModel = {};
         let didChangesOccur = false;
 
-        if (Object.keys(localFields).length > 0) {
+        if (Object.keys(proposedModel).length > 0) {
             const authResult = table.authorizeAndSanitize({
                 clientIntention,
                 contextDesc,
                 // Authorize the proposed values while deriving ownership and
                 // row-level access from the persisted row. This prevents an
                 // ownership change from authorizing itself.
-                model: localFields,
+                model: proposedModel,
                 existingModel: fullOldObj,
                 publicData,
                 rowMode: "update",
                 fallbackOwnerId: null,
             });
-            const authorizedLocalFields = requireAuthorizedMutationFields(table, authResult);
+            const authorizedMutationFields = requireAuthorizedMutationFields(table, authResult);
+            ({ localFields: authorizedLocalFields, associationFields: authorizedAssociationFields }
+                = db3.separateMutationValues({ table, fields: authorizedMutationFields }));
+
+            for (const column of table.columns) {
+                if (column.fieldTableAssociation !== "associationRecord") continue;
+                if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
+                requireRolePermissionTopologyAuthorization(
+                    (column as db3.TagsField<TAnyModel>).getAssociationTableShema().tableName,
+                    table,
+                    publicData,
+                    [column.member],
+                );
+            }
+        }
+
+        if (Object.keys(authorizedLocalFields).length > 0) {
             const oldValues = getIntersectingFields(authorizedLocalFields, fullOldObj);
             obj = oldValues;
 
@@ -582,20 +685,21 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         }
 
         // now update any associations
-        // TODO: authorization for associations
-        table.columns.forEach(async (column) => {
-            if (column.fieldTableAssociation !== "associationRecord") { return; }
-            if (!associationFields[column.member]) { return; }
-            didChangesOccur = true; // not certain if this is correct
-            await UpdateAssociations({
+        for (const column of table.columns) {
+            if (column.fieldTableAssociation !== "associationRecord") continue;
+            if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
+            const didAssociationsChange = await UpdateAssociations({
                 changeContext,
                 ctx,
+                clientIntention,
                 localId: pkid,
+                localModel: fullOldObj,
                 localTable: table,
                 column: column as db3.TagsField<TAnyModel>,
-                desiredTagIds: associationFields[column.member],
+                desiredTagIds: authorizedAssociationFields[column.member],
             });
-        });
+            didChangesOccur = didChangesOccur || didAssociationsChange;
+        }
 
         await CallMutateEventHooks({
             tableNameOrSpecialMutationKey: table.tableName,
