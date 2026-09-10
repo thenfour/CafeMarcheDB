@@ -372,15 +372,15 @@ export interface EventTableParams {
 };
 
 const EventQueryParameters = {
-    eventId: { kind: "integer" },
-    eventIds: { kind: "integerArray" },
-    eventUids: { kind: "stringArray" },
-    eventTypeIds: { kind: "integerArray" },
-    eventStatusIds: { kind: "integerArray" },
-    minDate: { kind: "date" },
-    forFrontPageAgenda: { kind: "boolean" },
-    refreshSerial: { kind: "integer" },
-    userIdForResponses: { kind: "integer" },
+    eventId: { kind: "integer", authorizeAs: "id" },
+    eventIds: { kind: "integerArray", authorizeAs: "id" },
+    eventUids: { kind: "stringArray", authorizeAs: "uid" },
+    eventTypeIds: { kind: "integerArray", authorizeAs: "typeId" },
+    eventStatusIds: { kind: "integerArray", authorizeAs: "statusId" },
+    minDate: { kind: "date", authorizeAs: "endDateTime" },
+    forFrontPageAgenda: { kind: "boolean", authorizeAs: ["frontpageVisible", "typeId", "endDateTime"] },
+    refreshSerial: { kind: "integer", authorizeAs: null },
+    userIdForResponses: { kind: "integer", authorizeAs: "responses" },
 } satisfies db3.DB3QueryParameterMap;
 
 export type UserTagWithAssignmentPayload = Prisma.UserTagGetPayload<{
@@ -760,7 +760,7 @@ const xEventArgs_Search: db3.TableDesc = {
     tableUniqueName: "xEventArgs_Search",
     queryParameters: {
         ...EventQueryParameters,
-        userIdForResponses: { kind: "integer", required: true },
+        userIdForResponses: { kind: "integer", authorizeAs: "responses", required: true },
     },
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
         const tableParams = filterModel.tableParams as EventTableParams;
@@ -783,7 +783,7 @@ export const xEventSearch = new db3.xTable(xEventArgs_Search);
 export const xEventSegment = new db3.xTable({
     tableName: "EventSegment",
     queryParameters: {
-        eventId: { kind: "integer" },
+        eventId: { kind: "integer", authorizeAs: "eventId" },
     },
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentDefaultArgs => {
         return EventSegmentArgs;
@@ -902,7 +902,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
     },
     tableName: "EventSegmentUserResponse",
     queryParameters: {
-        eventSegmentId: { kind: "integer" },
+        eventSegmentId: { kind: "integer", authorizeAs: "eventSegmentId" },
     },
     tableAuthMap: xEventTableAuthMap_UserResponse,
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
@@ -962,7 +962,7 @@ export const xEventUserResponse = new db3.xTable({
     },
     tableName: "EventUserResponse",
     queryParameters: {
-        eventId: { kind: "integer" },
+        eventId: { kind: "integer", authorizeAs: "eventId" },
     },
     naturalOrderBy: EventUserResponseNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_UserResponse,
@@ -1028,7 +1028,7 @@ export const xEventSongList = new db3.xTable({
     },
     tableName: "EventSongList",
     queryParameters: {
-        eventId: { kind: "integer" },
+        eventId: { kind: "integer", authorizeAs: "eventId" },
     },
     naturalOrderBy: EventSongListNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
@@ -1089,7 +1089,7 @@ export const xEventSongListSong = new db3.xTable({
     },
     tableName: "EventSongListSong",
     queryParameters: {
-        eventSongListId: { kind: "integer" },
+        eventSongListId: { kind: "integer", authorizeAs: "eventSongListId" },
     },
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
@@ -1139,7 +1139,7 @@ export const xEventSongListDivider = new db3.xTable({
     },
     tableName: "EventSongListDivider",
     queryParameters: {
-        eventSongListId: { kind: "integer" },
+        eventSongListId: { kind: "integer", authorizeAs: "eventSongListId" },
     },
     naturalOrderBy: EventSongListSongNaturalOrderBy, // yea i can borrow this.
     tableAuthMap: xEventTableAuthMap_R_EManagers,

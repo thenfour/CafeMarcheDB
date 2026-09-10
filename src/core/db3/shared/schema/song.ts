@@ -161,8 +161,8 @@ export interface SongTableParams {
 const xSongArgs_Base: db3.TableDesc = {
     tableName: "Song",
     queryParameters: {
-        songId: { kind: "integer" },
-        songIds: { kind: "integerArray" },
+        songId: { kind: "integer", authorizeAs: "id" },
+        songIds: { kind: "integerArray", authorizeAs: "id" },
     },
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongDefaultArgs => {
         return SongArgs;
@@ -349,7 +349,7 @@ export const xSongCredit = new db3.xTable({
     },
     tableName: "SongCredit",
     queryParameters: {
-        songId: { kind: "integer" },
+        songId: { kind: "integer", authorizeAs: "songId" },
     },
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,

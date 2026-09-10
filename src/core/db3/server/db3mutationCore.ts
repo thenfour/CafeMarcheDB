@@ -21,6 +21,7 @@ import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { getFileCustomData } from "../shared/fileAPI";
 import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from "../shared/fileTypes";
 import { TAnyModel } from "@/shared/rootroot";
+import { CreatePublicData } from "types";
 
 var path = require('path');
 var fs = require('fs');
@@ -845,6 +846,7 @@ export interface QueryImplArgs {
 
 export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
     const currentUser = await getCurrentUserCore(ctx);
+    const publicData = CreatePublicData({ user: clientIntention.intention === "public" ? null : currentUser });
     const contextDesc = `queryManyImpl:${args.schema.tableName}`;
     if (clientIntention.intention === "public") {
         clientIntention.currentUser = undefined;// for public intentions, no user should be used.
@@ -855,6 +857,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
     const where = await args.schema.CalculateWhereClause({
         clientIntention,
         filterModel,
+        publicData,
         skipVisibilityCheck: args.skipVisibilityCheck,
     });
 
@@ -870,7 +873,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
 
     const rowAuthResult = (items as TAnyModel[]).map(row => args.schema.authorizeAndSanitize({
         contextDesc,
-        publicData: ctx.session.$publicData,
+        publicData,
         clientIntention,
         rowMode: "view",
         model: row,
@@ -895,6 +898,7 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
     const contextDesc = `queryFirstImpl:${args.schema.tableName}`;
 
     const currentUser = await getCurrentUserCore(ctx);
+    const publicData = CreatePublicData({ user: clientIntention.intention === "public" ? null : currentUser });
     if (clientIntention.intention === "public") {
         clientIntention.currentUser = undefined;// for public intentions, no user should be used.
     }
@@ -905,6 +909,7 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
     const where = await args.schema.CalculateWhereClause({
         clientIntention,
         filterModel,
+        publicData,
         skipVisibilityCheck,
     });
 
@@ -920,7 +925,7 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
     if (!!item) {
         const rowAuthResult = args.schema.authorizeAndSanitize({
             contextDesc,
-            publicData: ctx.session.$publicData,
+            publicData,
             clientIntention,
             rowMode: "view",
             model: item,

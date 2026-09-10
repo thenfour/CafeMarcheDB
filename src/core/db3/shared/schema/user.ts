@@ -73,7 +73,7 @@ export const xUserMinimum = new db3.xTable({
     },
     tableName: "User",
     queryParameters: {
-        userId: { kind: "integer" },
+        userId: { kind: "integer", authorizeAs: "id" },
     },
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayloadMinimum) => ({
@@ -411,8 +411,8 @@ const userTagBaseArgs: db3.TableDesc =
     },
     tableName: "UserTag",
     queryParameters: {
-        userTagId: { kind: "integer" },
-        ids: { kind: "integerArray" },
+        userTagId: { kind: "integer", authorizeAs: "id" },
+        ids: { kind: "integerArray", authorizeAs: "id" },
     },
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserTagNaturalOrderBy,
@@ -561,8 +561,8 @@ const userBaseArgs: db3.TableDesc = {
     },
     tableName: "User",
     queryParameters: {
-        userId: { kind: "integer" },
-        userIds: { kind: "integerArray" },
+        userId: { kind: "integer", authorizeAs: "id" },
+        userIds: { kind: "integerArray", authorizeAs: "id" },
     },
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserNaturalOrderBy,

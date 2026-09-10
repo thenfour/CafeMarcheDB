@@ -1,4 +1,4 @@
-import { AuthenticatedCtx, paginate } from "blitz";
+import { AuthenticatedCtx, AuthorizationError, paginate } from "blitz";
 const { randomUUID } = require("crypto") as typeof import("crypto");
 import db from "db";
 import { sleep } from "shared/utils";
@@ -10,22 +10,50 @@ import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { TAnyModel } from "@/shared/rootroot";
 import { deriveDB3ClientIntention } from "./db3RequestValidation";
 
+export class DB3QueryAuthorizationError extends AuthorizationError {
+    constructor() {
+        super();
+        this.message = "Not authorized to perform this DB3 query.";
+        this.name = "DB3QueryAuthorizationError";
+    }
+}
+
+const authorizeQueryBeforeDatabaseAccess = (
+    table: db3.xTable,
+    input: db3.QueryInput | db3.PaginatedQueryInput,
+    publicData: ReturnType<typeof CreatePublicData>,
+): void => {
+    if (input.clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+        throw new DB3QueryAuthorizationError();
+    }
+    if (!table.authorizeTableForView(publicData)) throw new DB3QueryAuthorizationError();
+
+    const authorizeField = (columnName: string) => {
+        if (!table.authorizeColumnForView({
+            model: null,
+            publicData,
+            clientIntention: input.clientIntention,
+            columnName,
+        })) throw new DB3QueryAuthorizationError();
+    };
+
+    input.filter.items.forEach(item => authorizeField(item.field));
+    if (input.orderBy) authorizeField(Object.keys(input.orderBy)[0]!);
+    if (input.filter.pks) authorizeField(table.pkMember);
+
+    Object.keys(input.filter.tableParams || {}).forEach(parameterName => {
+        if (!table.authorizeQueryParameter(parameterName, publicData, input.clientIntention)) {
+            throw new DB3QueryAuthorizationError();
+        }
+    });
+};
+
 export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient) => {
     try {
         const startTimestamp = Date.now();
         const table = db3.GetTableById(input.tableID);
         console.assert(!!table);
         const contextDesc = `query:${table.tableName}`;
-
-        const transactionalDb: TransactionalPrismaClient = (__transactionalDb as any) || (db as any); // have to do this way to avoid excessive stack depth by vs code
-
-        // a jolting experience is a new user signs up, and immediately gets a full-page exception because of this next call.
-        // the solution is not to lighten authorization handling here, but rather to build the client in such a way
-        // that it doesn't query things it shouldn't.
-        //CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
-        const dbTableClient = (transactionalDb || db)[table.tableName]; // the prisma interface
-
-        const orderBy = input.orderBy || table.naturalOrderBy;
 
         const clientIntention = input.clientIntention;
         if (!input.clientIntention) {
@@ -39,9 +67,19 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
         else {
             clientIntention.currentUser = currentUser;
         }
+
+        const authorizationUser = clientIntention.intention === "public" ? null : currentUser;
+        const publicData = CreatePublicData({ user: authorizationUser });
+        authorizeQueryBeforeDatabaseAccess(table, input, publicData);
+
+        const transactionalDb: TransactionalPrismaClient = (__transactionalDb as any) || (db as any); // have to do this way to avoid excessive stack depth by vs code
+        const dbTableClient = (transactionalDb || db)[table.tableName]; // the prisma interface
+        const orderBy = input.orderBy || table.naturalOrderBy;
+
         const where = await table.CalculateWhereClause({
             clientIntention,
             filterModel: input.filter,
+            publicData,
         });
 
         const selectionArgs = table.CalculateSelectionArgs(clientIntention, input.filter);
@@ -51,10 +89,6 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
             orderBy,
             take: input.take,
             ...selectionArgs,
-        });
-
-        const publicData = CreatePublicData({
-            user: currentUser,
         });
 
         const rowAuthResult = (items as TAnyModel[]).map(row => table.authorizeAndSanitize({
@@ -113,6 +147,9 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
     const table = db3.GetTableById(input.tableID);
     const contextDesc = `paginatedQuery:${table.tableName}`;
     const clientIntention = input.clientIntention;
+    const publicData = CreatePublicData({ user: currentUser });
+
+    authorizeQueryBeforeDatabaseAccess(table, input, publicData);
 
     const dbTableClient = db[table.tableName]; // the prisma interface
     const orderBy = input.orderBy || table.naturalOrderBy;
@@ -120,6 +157,7 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
     const where = await table.CalculateWhereClause({
         clientIntention,
         filterModel: input.filter,
+        publicData,
     });
 
     const selectionArgs = table.CalculateSelectionArgs(clientIntention, input.filter);
@@ -144,7 +182,7 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
 
     const rowAuthResult = (items as TAnyModel[]).map(row => table.authorizeAndSanitize({
         contextDesc,
-        publicData: ctx.session.$publicData,
+        publicData,
         clientIntention,
         rowMode: "view",
         model: row,

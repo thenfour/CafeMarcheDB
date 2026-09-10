@@ -10,12 +10,16 @@ vi.mock("db", async () => {
 })
 
 import db3Mutation from "@db3/mutations/db3mutations"
+import db3PaginatedQuery from "@db3/queries/db3paginatedQueries"
 import db3Query from "@db3/queries/db3queries"
+import * as db3 from "@db3/db3"
 import {
   validateDB3MutationRequest,
   validateDB3PaginatedQueryRequest,
   validateDB3QueryRequest,
 } from "@db3/server/db3RequestValidation"
+import { DB3QueryCore2 } from "@db3/server/db3QueryCore"
+import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads"
 import { Permission } from "shared/permissions"
 import {
   createAuthorizationPersona,
@@ -141,6 +145,7 @@ describe("BA-A001 generic DB3 request validation", () => {
     authorizationTestDb.reset({
       user: [sysadmin, moderator, target],
       change: [],
+      eventType: [],
     })
   })
 
@@ -281,6 +286,10 @@ describe("BA-A001 generic DB3 request validation", () => {
     authorizationTestDb.reset({
       user: [sysadmin, moderator, { ...target, isDeleted: true }],
       change: [],
+      eventType: [
+        { id: 10, isDeleted: false, text: "Visible event type" },
+        { id: 11, isDeleted: true, text: "Deleted event type" },
+      ],
     })
 
     const { ctx: moderatorCtx } = createAuthorizationPersona("moderator", { id: moderator.id })
@@ -296,10 +305,288 @@ describe("BA-A001 generic DB3 request validation", () => {
     )
 
     const { ctx: publicCtx } = createAuthorizationPersona("public")
-    const publicResult = await invokeResolver(db3Query, forgeDb3Query("User"), publicCtx)
+    const publicResult = await invokeResolver(db3Query, forgeDb3Query("EventType"), publicCtx)
+    expect(publicResult.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 10 })]),
+    )
     expect(publicResult.items).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: target.id })]),
+      expect.arrayContaining([expect.objectContaining({ id: 11 })]),
     )
     expect(sysadminResult).not.toHaveProperty("clientIntention")
+  })
+})
+
+describe("BA-A002 generic DB3 query authorization", () => {
+  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+  const normal = createAuthorizationTestUser("normal", { id: 2 })
+  const activeTarget = createAuthorizationTestUser("normal", { id: 3 })
+  const deletedTarget = createAuthorizationTestUser("normal", { id: 4, isDeleted: true })
+
+  beforeEach(() => {
+    authorizationTestDb.reset({
+      user: [sysadmin, normal, activeTarget, deletedTarget],
+      change: [{ id: 1, table: "User", recordId: activeTarget.id }],
+      event: [],
+      role: [],
+    })
+    vi.restoreAllMocks()
+  })
+
+  it("rejects an unauthorized table before its Prisma query executes", async () => {
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("change"), "findMany")
+    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+
+    await expect(invokeResolver(db3Query, forgeDb3Query("Change"), ctx)).rejects.toThrow(
+      "Not authorized to perform this DB3 query",
+    )
+    expect(findMany).not.toHaveBeenCalled()
+  })
+
+  it("rejects an unauthorized paginated table before querying or counting", async () => {
+    const changeDelegate = authorizationTestDb.getDelegate("change")
+    const findMany = vi.spyOn(changeDelegate, "findMany")
+    const count = vi.spyOn(changeDelegate, "count")
+    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+
+    await expect(
+      invokeResolver(
+        db3PaginatedQuery,
+        { ...forgeDb3Query("Change"), skip: 0, take: 50 },
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to perform this DB3 query")
+    expect(findMany).not.toHaveBeenCalled()
+    expect(count).not.toHaveBeenCalled()
+  })
+
+  it("rejects admin intention without a database-derived sysadmin capability", async () => {
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("user"), "findMany")
+    const databaseNormal = normal as unknown as UserWithRolesPayload
+
+    await expect(DB3QueryCore2({
+      ...forgeDb3Query("User"),
+      clientIntention: { intention: "admin", mode: "primary", currentUser: databaseNormal },
+    }, databaseNormal)).rejects.toThrow("Not authorized to perform this DB3 query")
+    expect(findMany).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { name: "filter", request: { filter: { items: [{ field: "isDeleted", operator: "equals" as const, value: true }] } } },
+    { name: "order", request: { orderBy: { isDeleted: "asc" as const } } },
+    { name: "parameter", request: { filter: { items: [], tableParams: { eventTypeIds: [12] } } } },
+  ])("rejects a protected $name field before querying", async ({ request }) => {
+    const findMany = vi.spyOn(authorizationTestDb.getDelegate("event"), "findMany")
+    const { ctx } = createAuthorizationPersona("public")
+
+    await expect(
+      invokeResolver(db3Query, forgeDb3Query("Event", request), ctx),
+    ).rejects.toThrow("Not authorized to perform this DB3 query")
+    expect(findMany).not.toHaveBeenCalled()
+  })
+
+  it("does not consult protected columns while building quick or custom filters", () => {
+    const { publicData } = createAuthorizationPersona("public")
+    const clientIntention = { intention: "public", mode: "primary" } as const
+    const protectedColumn = db3.xEvent.getColumn("isDeleted")!
+    const quickFilter = vi.spyOn(protectedColumn, "getQuickFilterWhereClause")
+    const customFilter = vi.spyOn(protectedColumn, "getCustomFilterWhereClause")
+
+    db3.xEvent.GetQuickFilterWhereClauseExpression("probe", clientIntention, publicData)
+    db3.xEvent.GetCustomWhereClauseExpression(
+      { items: [], tagIds: [12] },
+      clientIntention,
+      publicData,
+    )
+
+    expect(quickFilter).not.toHaveBeenCalled()
+    expect(customFilter).not.toHaveBeenCalled()
+  })
+
+  it("does not let a primary key qualify a row from a protected table", () => {
+    const { publicData } = createAuthorizationPersona("public")
+    const result = db3.xChange.authorizeAndSanitize({
+      contextDesc: "BA-A002 protected-row regression",
+      publicData,
+      clientIntention: { intention: "public", mode: "primary" },
+      rowMode: "view",
+      model: { id: 41, table: "User", recordId: activeTarget.id },
+      fallbackOwnerId: null,
+    })
+
+    expect(result.rowIsAuthorized).toBe(false)
+    expect(result.authorizedModel).toEqual({})
+    expect(result.unauthorizedModel).toEqual(
+      expect.objectContaining({ id: 41 }),
+    )
+  })
+
+  it("returns IDs only for rows inside the server-enforced visibility scope", async () => {
+    const publicPermissionId = 700
+    const loggedInPermissionId = 701
+    authorizationTestDb.reset({
+      user: [],
+      role: [{
+        id: 900,
+        isPublicRole: true,
+        permissions: [{ permissionId: publicPermissionId }],
+      }],
+      event: [
+        {
+          id: 20,
+          name: "Public event",
+          isDeleted: false,
+          createdByUserId: null,
+          visiblePermissionId: publicPermissionId,
+          visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+          frontpageVisible: true,
+        },
+        {
+          id: 21,
+          name: "Members event",
+          isDeleted: false,
+          createdByUserId: null,
+          visiblePermissionId: loggedInPermissionId,
+          visiblePermission: { id: loggedInPermissionId, name: Permission.visibility_logged_in_users },
+          frontpageVisible: true,
+        },
+        {
+          id: 22,
+          name: "Deleted public event",
+          isDeleted: true,
+          createdByUserId: null,
+          visiblePermissionId: publicPermissionId,
+          visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+          frontpageVisible: true,
+        },
+      ],
+    })
+    const { ctx } = createAuthorizationPersona("public")
+
+    const result = await invokeResolver(db3Query, forgeDb3Query("Event"), ctx)
+
+    expect(result.items).toEqual([
+      expect.objectContaining({ id: 20, name: "Public event" }),
+    ])
+    expect(JSON.stringify(result)).not.toContain("Members event")
+    expect(JSON.stringify(result)).not.toContain("Deleted public event")
+  })
+
+  it("uses the same soft-delete scope for paginated items and counts", async () => {
+    const { ctx: normalCtx } = createAuthorizationPersona("normal", { id: normal.id })
+    const normalResult = await invokeResolver(
+      db3PaginatedQuery,
+      { ...forgeDb3Query("User"), skip: 0, take: 50 },
+      normalCtx,
+    )
+
+    expect(normalResult.count).toBe(3)
+    expect(normalResult.items).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: deletedTarget.id })]),
+    )
+
+    const normalDeletedOnlyResult = await invokeResolver(
+      db3PaginatedQuery,
+      {
+        ...forgeDb3Query("User", {
+          filter: {
+            items: [{ field: "isDeleted", operator: "equals", value: true }],
+          },
+        }),
+        skip: 0,
+        take: 50,
+      },
+      normalCtx,
+    )
+    expect(normalDeletedOnlyResult.count).toBe(0)
+    expect(normalDeletedOnlyResult.items).toEqual([])
+
+    const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const sysadminResult = await invokeResolver(
+      db3PaginatedQuery,
+      { ...forgeDb3Query("User"), skip: 0, take: 50 },
+      sysadminCtx,
+    )
+
+    expect(sysadminResult.count).toBe(4)
+    expect(sysadminResult.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: deletedTarget.id })]),
+    )
+
+    const sysadminDeletedOnlyResult = await invokeResolver(
+      db3PaginatedQuery,
+      {
+        ...forgeDb3Query("User", {
+          filter: {
+            items: [{ field: "isDeleted", operator: "equals", value: true }],
+          },
+        }),
+        skip: 0,
+        take: 50,
+      },
+      sysadminCtx,
+    )
+    expect(sysadminDeletedOnlyResult.count).toBe(1)
+    expect(sysadminDeletedOnlyResult.items).toEqual([
+      expect.objectContaining({ id: deletedTarget.id }),
+    ])
+  })
+
+  it("does not count rows outside an authenticated user's visibility scope", async () => {
+    const visibilityPermissions = [
+      Permission.login,
+      Permission.basic_trust,
+      Permission.visibility_public,
+    ]
+    const visibilityUser = createAuthorizationTestUser("normal", {
+      id: normal.id,
+      permissions: visibilityPermissions,
+    })
+    const publicPermissionId = visibilityUser.role!.permissions.find(
+      entry => entry.permission.name === Permission.visibility_public,
+    )!.permissionId
+    authorizationTestDb.reset({
+      user: [visibilityUser],
+      event: [
+        {
+          id: 30,
+          name: "Visible event",
+          isDeleted: false,
+          createdByUserId: null,
+          visiblePermissionId: publicPermissionId,
+          visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+        },
+        {
+          id: 31,
+          name: "Hidden event",
+          isDeleted: false,
+          createdByUserId: null,
+          visiblePermissionId: 999,
+          visiblePermission: { id: 999, name: Permission.visibility_members },
+        },
+        {
+          id: 32,
+          name: "Deleted event",
+          isDeleted: true,
+          createdByUserId: null,
+          visiblePermissionId: publicPermissionId,
+          visiblePermission: { id: publicPermissionId, name: Permission.visibility_public },
+        },
+      ],
+    })
+    const { ctx } = createAuthorizationPersona("normal", {
+      id: visibilityUser.id,
+      permissions: visibilityPermissions,
+    })
+
+    const result = await invokeResolver(
+      db3PaginatedQuery,
+      { ...forgeDb3Query("Event"), skip: 0, take: 50 },
+      ctx,
+    )
+
+    expect(result.count).toBe(1)
+    expect(result.items).toEqual([
+      expect.objectContaining({ id: 30, name: "Visible event" }),
+    ])
   })
 })

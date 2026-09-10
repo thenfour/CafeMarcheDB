@@ -9,8 +9,8 @@ import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeTi
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.basic_trust,
-    View: Permission.basic_trust,
+    ViewOwn: Permission.public,
+    View: Permission.public,
     EditOwn: Permission.edit_public_homepage,
     Edit: Permission.edit_public_homepage,
     Insert: Permission.edit_public_homepage,
@@ -366,8 +366,8 @@ export interface xFileFilterParams {
 const xFileBaseArgs = {
     tableName: "File",
     queryParameters: {
-        fileId: { kind: "integer" },
-        fileTagIds: { kind: "integerArray" },
+        fileId: { kind: "integer", authorizeAs: "id" },
+        fileTagIds: { kind: "integerArray", authorizeAs: "tags" },
     } satisfies db3.DB3QueryParameterMap,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileDefaultArgs => {
         return FileArgs;

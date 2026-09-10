@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001 and BA-A001 complete; BA-A002 next
+- Implementation status: BA-T001, BA-A001, and BA-A002 complete; BA-A003 next
 
 ## Goal
 
@@ -337,19 +337,25 @@ References:
 
 ### BA-A002 — Enforce query authorization before database access
 
-- [ ] Enforce table authorization before querying.
-- [ ] Authorize filter and order fields before constructing Prisma clauses.
-- [ ] Enforce row visibility before returning results.
-- [ ] Remove unconditional primary-key authorization as a way to qualify a protected row.
-- [ ] Prevent anonymous or low-privilege inference through protected-field filters and result counts.
-- [ ] Prevent callers from requesting admin/deleted-row query behavior.
+- [x] Enforce table authorization before querying.
+- [x] Authorize filter and order fields before constructing Prisma clauses.
+- [x] Enforce row visibility before returning results.
+- [x] Remove unconditional primary-key authorization as a way to qualify a protected row.
+- [x] Prevent anonymous or low-privilege inference through protected-field filters and result counts.
+- [x] Prevent callers from requesting admin/deleted-row query behavior.
 
 Acceptance criteria:
 
-- [ ] Unauthorized tables cannot be queried.
-- [ ] Protected fields cannot be used as a filter/inference oracle.
-- [ ] Hidden rows do not leak IDs or counts.
-- [ ] Soft-deleted rows are not caller-selectable without the appropriate server-derived capability.
+- [x] Unauthorized tables cannot be queried.
+- [x] Protected fields cannot be used as a filter/inference oracle.
+- [x] Hidden rows do not leak IDs or counts.
+- [x] Soft-deleted rows are not caller-selectable without the appropriate server-derived capability.
+
+Evidence:
+
+- Implementation: table, explicit-filter, order, primary-key, and parameter authorization preflight before target Prisma access in `src/core/db3/server/db3QueryCore.ts`; field-authorized quick/custom predicate construction, table/ownership query scopes, soft-delete enforcement, visibility defense-in-depth, and row-first sanitization in `src/core/db3/shared/db3core.ts`; field authorization metadata on every parameterized DB3 query contract; fresh database-actor public data for query/count/sanitization; public table authorization aligned for the intentionally anonymous frontpage gallery feed.
+- Verification: `yarn test:auth` and `yarn test` (33 passed, including pre-database table/field rejection, protected parameter/filter/order cases, hidden-row IDs/counts, primary-key regression, and soft-delete/admin capability cases); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ### BA-A003 — Persist only authorized mutation fields
 

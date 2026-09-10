@@ -32,9 +32,9 @@ export interface ChangeTableParams {
 export const xChange = new db3.xTable({
     tableName: "Change",
     queryParameters: {
-        tableNames: { kind: "stringArray", nullable: true },
-        userIds: { kind: "integerArray", nullable: true },
-        recordId: { kind: "integer", nullable: true },
+        tableNames: { kind: "stringArray", authorizeAs: "table", nullable: true },
+        userIds: { kind: "integerArray", authorizeAs: "userId", nullable: true },
+        recordId: { kind: "integer", authorizeAs: "recordId", nullable: true },
     },
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.ChangeDefaultArgs => {
         return {
