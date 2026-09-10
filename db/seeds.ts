@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { Prisma } from '@prisma/client';
-import { gPermissionOrdered } from '../shared/permissions';
+import { getPermissionDatabaseMetadata, gPermissionRegistry } from '../shared/permissions';
 import { SeedingState } from './seeding/base';
 import { SeedEvents_VeryRandom } from './seeding/events';
 import { SeedActivity } from './seeding/activitySeeding';
@@ -43,29 +43,6 @@ const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreate
   // Return the updated array
   return updatedItems;
 };
-
-
-const UpdateTable = async <Ttable extends { update: (inp: { data: TuncheckedUpdateInput, where: any }) => any }, TuncheckedUpdateInput>(tableName: string, matchField: string, table: Ttable, items: TuncheckedUpdateInput[]) => {
-  for (let i = 0; i < items.length; ++i) {
-    const item = items[i]!;
-    const ret = await table.update({
-      data: item,
-      where: {
-        [matchField]: item[matchField],
-      }
-    });
-
-    if (ret.name) {
-      console.log(`updated '${tableName}': { name:'${ret.name}', id: '${ret.id}'}`);
-    } else if (ret.text) {
-      console.log(`updated '${tableName}': { text:'${ret.text}', id: '${ret.id}'}`);
-    } else {
-      console.log(`updated '${tableName}': { id: '${ret.id}'}`);
-    }
-  }
-};
-
-
 
 
 /*
@@ -594,57 +571,14 @@ const main = async () => {
     ]
   );
 
-  //const codePermissions = PermissionOrdered;Object.values(Permission);
-  for (let i = 0; i < gPermissionOrdered.length; ++i) {
-    const codePermission = gPermissionOrdered[i]!;
+  for (const definition of gPermissionRegistry) {
     await gState.prisma.permission.create({
       data: {
-        name: codePermission,
-        description: `auto-inserted by server`,
-        sortOrder: i * 10,
-        isVisibility: codePermission.startsWith("visibility_")
+        name: definition.key,
+        ...getPermissionDatabaseMetadata(definition),
       },
     });
   }
-
-  await UpdateTable("permission", "name", gState.prisma.permission, [
-    {
-      "name": "visibility_editors",
-      "description": `Restricted visibility: This is visible only to site editors`,
-      //"sortOrder": 1300,
-      //"isVisibility": true,
-      "color": "orange",
-      "iconName": "Lock",
-      "significance": "Visibility_Editors",
-    },
-    {
-      "name": "visibility_members",
-      "description": `Semi-public visibility: this is visible to all members.`,
-      // "sortOrder": 1200,
-      // "isVisibility": true,
-      "color": "gold",
-      "iconName": "Security",
-      "significance": "Visibility_Members",
-    },
-    {
-      "name": "visibility_logged_in_users",
-      "description": `Semi-public visibility: This is visible to all logged-in users`,
-      // "sortOrder": 1100,
-      // "isVisibility": true,
-      "color": "blue",
-      "iconName": "Person",
-      "significance": "Visibility_LoggedInUsers",
-    },
-    {
-      "name": "visibility_public",
-      "description": "Public visibility: Everyone can see this.",
-      // "sortOrder": 1000,
-      // "isVisibility": true,
-      "color": "green",
-      "iconName": "Public",
-      "significance": "Visibility_Public",
-    },
-  ]);
 
   const rolePermissionAssignments =
     [
@@ -1184,4 +1118,3 @@ main()
     await gState.prisma.$disconnect()
     process.exit(1)
   })
-

@@ -1,5 +1,5 @@
 import { AuthorizationError } from "blitz";
-import { Permission } from "shared/permissions";
+import { gProtectedPermissions, Permission } from "shared/permissions";
 
 export type UserManagementAction =
     | "assignRole"
@@ -41,12 +41,6 @@ export interface UserManagementCapabilities {
     canResetPassword: boolean;
 }
 
-export const gProtectedUserPermissions = new Set<Permission>([
-    Permission.sysadmin,
-    Permission.impersonate_user,
-    Permission.never_grant,
-]);
-
 const roleHasPermission = (role: UserManagementRole | undefined, permission: Permission): boolean => (
     role?.permissions?.some(entry => entry.permission?.name === permission) || false
 );
@@ -54,7 +48,7 @@ const roleHasPermission = (role: UserManagementRole | undefined, permission: Per
 export const isProtectedUserRole = (role: UserManagementRole | undefined): boolean => (
     role?.permissions?.some(entry => {
         const permissionName = entry.permission?.name;
-        return !!permissionName && gProtectedUserPermissions.has(permissionName as Permission);
+        return !!permissionName && gProtectedPermissions.has(permissionName as Permission);
     }) || false
 );
 

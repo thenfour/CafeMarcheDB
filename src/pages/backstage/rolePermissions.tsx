@@ -5,7 +5,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import { FormControlLabel, Tooltip } from "@mui/material";
 import React from "react";
-import { Permission } from "shared/permissions";
+import { gPermissionOrdered, Permission } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatrix";
@@ -43,7 +43,7 @@ const MainContent = () => {
         ],
     });
 
-    const codePermissions = Object.keys(Permission);
+    const codePermissions = gPermissionOrdered;
 
     return <>
         <SettingMarkdown setting="rolePermissionsMatrixPage_markdown"></SettingMarkdown>

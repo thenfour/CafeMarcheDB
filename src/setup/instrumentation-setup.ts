@@ -1,70 +1,46 @@
-import { Permission } from "@/shared/permissions";
+import { getPermissionDatabaseMetadata, gPermissionRegistry } from "@/shared/permissions";
 import db from "db"
-import { SeedTable, UpdateTable } from "./setupUtils";
+import { SeedTable } from "./setupUtils";
 import { Setting } from "@/shared/settingKeys";
 import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 
 // Ensure all permissions in code are present in the database
 async function SyncPermissionsTable() {
     console.log(`Synchronizing permissions table...`);
-    const dbPermissions = await db.permission.findMany({
-        include: { roles: { include: { role: true } } }
-    });
-    for (const codePermission of Object.values(Permission)) {
-        const exists = dbPermissions.find(dbp => dbp.name === codePermission);
-        console.log(`Permission ${codePermission} ${exists ? "already exists" : "DOESN'T EXIST"} on database`);
-        if (!exists) {
-            const newPerm = await db.permission.create({
+    const dbPermissions = await db.permission.findMany();
+    for (const definition of gPermissionRegistry) {
+        const existingPermission = dbPermissions.find(dbp => dbp.name === definition.key);
+        const canonicalData = getPermissionDatabaseMetadata(definition);
+
+        if (existingPermission) {
+            const metadataIsCurrent =
+                existingPermission.description === canonicalData.description &&
+                existingPermission.sortOrder === canonicalData.sortOrder &&
+                existingPermission.isVisibility === canonicalData.isVisibility &&
+                (!definition.presentation || (
+                    existingPermission.color === definition.presentation.color &&
+                    existingPermission.iconName === definition.presentation.iconName &&
+                    existingPermission.significance === definition.presentation.significance
+                ));
+            if (metadataIsCurrent) {
+                console.log(`Permission ${definition.key} and its canonical metadata already exist.`);
+                continue;
+            }
+            await db.permission.update({
+                where: { id: existingPermission.id },
+                data: canonicalData,
+            });
+            console.log(` -> UPDATED canonical metadata for Permission ${definition.key}.`);
+        } else {
+            await db.permission.create({
                 data: {
-                    name: codePermission,
-                    description: `auto-inserted by server`,
+                    name: definition.key,
+                    ...canonicalData,
                 },
             });
-            console.log(` -> INSERTED Permission ${codePermission}.`);
+            console.log(` -> INSERTED Permission ${definition.key}.`);
         }
     }
-
-    // ensure default visibility permissions exist
-    await UpdateTable("permission", "name", db.permission, [
-        {
-            "name": "visibility_editors",
-            "description": `Restricted visibility: This is visible only to site editors`,
-            "sortOrder": 1300,
-            "isVisibility": true,
-            "color": "orange",
-            "iconName": "Lock",
-            "significance": "Visibility_Editors",
-        },
-        {
-            "name": "visibility_members",
-            "description": `Semi-public visibility: this is visible to all members.`,
-            "sortOrder": 1200,
-            "isVisibility": true,
-            "color": "gold",
-            "iconName": "Security",
-            "significance": "Visibility_Members",
-        },
-        {
-            "name": "visibility_logged_in_users",
-            "description": `Semi-public visibility: This is visible to all logged-in users`,
-            "sortOrder": 1100,
-            "isVisibility": true,
-            "color": "blue",
-            "iconName": "Person",
-            "significance": "Visibility_LoggedInUsers",
-        },
-        {
-            "name": "visibility_public",
-            "description": "Public visibility: Everyone can see this.",
-            "sortOrder": 1000,
-            "isVisibility": true,
-            "color": "green",
-            "iconName": "Public",
-            "significance": "Visibility_Public",
-        },
-    ]);
-
-
 }
 
 // ensure default roles are populated
@@ -147,6 +123,7 @@ async function EnsureRolePermissionMatrix() {
         return;
     }
 
+    // use the role permission matrix page, copy as json and paste below to manage this.
     const rolePermissionAssignments =
         [
             ["Editors", "access_file_landing_page"],
@@ -854,4 +831,3 @@ async function EnsureBrandingDefaults() {
 
     await SeedTable("setting", db.setting, toCreate);
 }
-

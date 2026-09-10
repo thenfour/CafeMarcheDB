@@ -5,10 +5,7 @@ import db from "db"
 import { Permission } from "shared/permissions"
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
 import { ForgotPassword } from "../schemas"
-import {
-  requireCanManageUser,
-  UserManagementAuthorizationError,
-} from "../server/userManagementPolicy"
+import { requireCanManageUser } from "../server/userManagementPolicy"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 

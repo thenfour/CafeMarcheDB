@@ -3,11 +3,11 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, and BA-U001 complete; BA-U002 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001, and BA-M001 complete; BA-U002 next
 
 ## Goal
 
-Introduce a **Band Admin** role above Moderator and below Sysadmin. A Band Admin must be able to run the band's site, including ordinary user administration and domain configuration, without gaining access to server administration, security-policy administration, protected accounts, secrets, or developer tooling.
+Enable a database-defined **Band Admin** role whose permissions let a band run its site, including ordinary user administration and domain configuration, without granting server administration, security-policy administration, protected-account access, secrets, or developer tooling. Application code authorizes permissions and the exceptional `User.isSysAdmin` flag; it does not identify or rank roles.
 
 This document is the working source of truth for the hardening and rollout. Keep it updated as decisions are made and work is completed.
 
@@ -66,7 +66,7 @@ These are recommended defaults. Product decisions that still require confirmatio
 | --------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Events, songs, files, instruments, wiki | Full domain administration                                                 | Server/debug internals                                                 |
 | Workflows                               | Not available; remove the unused feature before rollout                    | Not available after removal                                            |
-| Users                                   | Create, edit, deactivate, and reset ordinary users; assign permitted roles | Protected accounts and `isSysAdmin`                                    |
+| Users                                   | Create, edit, and deactivate ordinary users; assign permitted roles        | Password-reset URLs, protected accounts, and `isSysAdmin`               |
 | Roles and permissions                   | Assign predefined non-protected roles                                      | Role CRUD, Permission CRUD, and the permission matrix                  |
 | Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus       | Hosting mode, raw settings, and bulk configuration                     |
 | Reports                                 | Event and feature reports                                                  | Server diagnostics                                                     |
@@ -102,7 +102,6 @@ Prefer a small, action-oriented split rather than a permission for every button:
 - Keep `manage_users` for ordinary profile, tag, and instrument management.
 - Narrow `admin_users` to ordinary account lifecycle operations.
 - Add `assign_user_roles` for constrained role assignment.
-- Add `reset_user_passwords` for constrained password-reset initiation.
 - Add `manage_site_branding`, or retain `content_admin` only after settings are governed by a server-side key allowlist.
 - Keep audit-log access sysadmin-only; no Band Admin audit permission is required.
 - Keep `impersonate_user`, `sysadmin`, security-topology mutation, and protected-account administration sysadmin-only.
@@ -117,10 +116,10 @@ Record each decision before implementing the affected capability.
   - Decision: The site is single-tenant. Multi-tenancy is planned for the future, and current code may contain hints of that future design.
   - Constraint: Do not treat this Band Admin design as sufficient for a future shared-database, multi-tenant deployment. That will require organization-scoped memberships and row-level tenant enforcement.
 
-- [x] **BA-D002 — Peer administration:** Decide whether a Band Admin may appoint, edit, deactivate, or reset another Band Admin.
+- [x] **BA-D002 — Peer administration:** Decide whether delegated administrators may appoint, edit, or deactivate peers.
 
-  - Decision: Band Admin may appoint, edit, or revoke another Band Admin through the constrained role-assignment flow.
-  - Constraint: An operation that would leave no active Band Admin must display a prominent warning and require explicit confirmation.
+  - Decision: A non-Sysadmin with the required user-management and role-assignment permissions may appoint, edit, or revoke a peer through the constrained role-assignment flow.
+  - Constraint: An operation that would leave no active non-Sysadmin holder of a continuity-sensitive permission must display a prominent warning and require explicit confirmation.
   - Constraint: Band Admin cannot administer a Sysadmin or another protected principal.
 
 - [x] **BA-D003 — Impersonation:** Decide whether Band Admin needs any impersonation ability.
@@ -131,9 +130,9 @@ Record each decision before implementing the affected capability.
 - [x] **BA-D004 — Custom roles:** Decide whether Band Admin may create custom roles or change grants.
 
   - Decision: Band Admin cannot create roles, change grants, or view role-permission assignments.
-  - Decision: Band Admin may assign predefined non-protected roles, including elevating a user to Band Admin or revoking Band Admin from another user.
-  - Constraint: Band Admin cannot assign, revoke, or demote Sysadmin/protected roles.
-  - Constraint: Removing the last active Band Admin requires a prominent warning and explicit confirmation.
+  - Decision: A delegated administrator may assign predefined roles whose permission composition is within their delegation envelope, including a peer-equivalent role.
+  - Constraint: A delegated administrator cannot assign a role containing a protected or non-delegable permission, or administer a user whose current role is outside their delegation envelope.
+  - Constraint: Removing the last active non-Sysadmin holder of a continuity-sensitive permission requires a prominent warning and explicit confirmation.
 
 - [x] **BA-D005 — User removal:** Choose deactivation versus hard deletion for ordinary user administration.
 
@@ -171,7 +170,7 @@ Record each decision before implementing the affected capability.
 | P0: Generic DB3 authorization       | Complete    | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
 | P0: Protected accounts and signup   | In progress | No untrusted path can obtain or delegate sysadmin authority                                               |
 | P0: Secrets and object-level gaps   | Not started | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
-| P1: Permission and role model       | Not started | Delegation policy and protected role/permission metadata are authoritative                                |
+| P1: Permission and role model       | In progress | Delegation policy and protected role/permission metadata are authoritative                                |
 | P1: Sessions and revocation         | Not started | Grants and revocations are reflected reliably and promptly                                                |
 | P1: Provisioning and migration      | Not started | Existing and fresh databases converge without destroying customization                                    |
 | P1: Site configuration split        | Not started | Band-owned settings are allowlisted; platform settings remain protected                                   |
@@ -486,12 +485,16 @@ Evidence:
 
 ### BA-U002 — Split ordinary user administration from system administration
 
-- [ ] Move `User.isSysAdmin` to an unambiguous sysadmin-only mutation path.
-- [ ] Remove unrestricted role editing from the generic user editor.
-- [ ] Keep Permission, Role, RolePermission, default/public role flags, and protected metadata sysadmin-only.
-- [ ] Add a constrained role-assignment endpoint.
-- [ ] Return only server-authorized assignable roles.
-- [ ] Split ordinary profile editing, role assignment, reset, deletion/deactivation, and impersonation in both server and UI.
+- [ ] Add `assign_user_roles` as a site-scoped, delegable, continuity-sensitive permission.
+- [ ] Make `User.role`, `User.isSysAdmin`, and account deactivation immutable through the generic User editor.
+- [ ] Move `User.isSysAdmin` to an unambiguous actual-Sysadmin-only mutation path.
+- [ ] Add dedicated role-assignment and deactivation endpoints that re-read actor, target, and role state inside the mutation.
+- [ ] Authorize role assignment by permission composition: the actor must hold `assign_user_roles`; every permission in both the target's current role and desired role must be delegable and held by the actor; protected principals remain out of scope. Actual Sysadmin bypasses this delegation envelope.
+- [ ] Compute assignable roles on the server and return only the safe role projection needed by the UI, without exposing the role-permission matrix.
+- [ ] Before a confirmed role change or deactivation, simulate the resulting active-user state for every affected continuity-sensitive permission. If no active non-Sysadmin holder remains, require an explicit acknowledgement that the server independently verifies.
+- [ ] Keep Permission, Role, RolePermission, default/public role flags, and permission registry metadata actual-Sysadmin-only.
+- [ ] Split ordinary profile editing, role assignment, deactivation, password reset, `isSysAdmin`, and impersonation into action-specific controls on the canonical user page.
+- [ ] Make the legacy raw Admin Users DataGrid actual-Sysadmin-only; keep it as a technical maintenance surface rather than the delegated daily-use UI.
 
 References:
 
@@ -606,12 +609,12 @@ Phase completion evidence:
 
 ### BA-M001 — Canonical permission registry
 
-- [ ] Replace the split enum/order/default-grant knowledge with one authoritative registry or generated views of it.
-- [ ] Record for each permission: stable key, category, scope, description, sort order, whether it is protected, and whether it is delegable.
-- [ ] Make omissions from the display/provisioning order impossible or test-detectable.
-- [ ] Confirm the intended owner of every remaining permission after the five workflow permissions are removed.
+- [x] Replace the split enum/order/default-grant knowledge with one authoritative registry and generated views of it.
+- [x] Record for each permission: stable key, category, scope, description, sort order, whether it is protected, whether it is delegable, whether it is granted publicly, and whether it is continuity-sensitive.
+- [x] Make omissions from the runtime constants, display/provisioning order, public baseline, and protected-permission policy impossible or test-detectable.
+- [x] Classify the intended scope and feature owner of every current permission. Workflow permissions remain explicitly marked as temporary until BA-WF004 removes them from the registry.
 
-Current drift: `gPermissionOrdered` omits nine enum permissions:
+Resolved drift: the former `gPermissionOrdered` omitted nine enum permissions:
 
 - `view_events_reports`
 - `pin_song_recordings`
@@ -625,38 +628,40 @@ Current drift: `gPermissionOrdered` omits nine enum permissions:
 
 References:
 
-- [Permission enum and order](../shared/permissions.ts#L3)
+- [Canonical permission registry](../shared/permissions.ts)
 - [Legacy Prisma seed](../db/seeds.ts#L597)
 - [Startup permission synchronization](../src/setup/instrumentation-setup.ts#L7)
 
-### BA-M002 — Stable built-in role metadata
+Evidence:
 
-- [ ] Give built-in roles stable identities independent of display names.
-- [ ] Add an explicit security/delegation level or equivalent server-owned policy.
-- [ ] Mark system/protected roles explicitly.
-- [ ] Do not use `sortOrder` as an authorization rank.
-- [ ] Evaluate a per-user authorization/session version for immediate revocation.
+- Implementation: one code-owned registry now generates the `Permission.foo` compatibility constants, complete display/provisioning order, public grant baseline, protected-permission set, continuity-sensitive set, and canonical database metadata. Startup synchronization and fresh seeding consume the same generated metadata, and protected-principal checks consume the generated protected set.
+- Verification: registry tests prove unique stable keys and sort orders, complete generated views, metadata invariants, generated database metadata, and the current public/protected/continuity classifications; `yarn test:auth` and `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
-Possible built-in order:
+### BA-M002 — Database-owned role model
 
-| Stable role   | Display order | Classification           |
-| ------------- | ------------: | ------------------------ |
-| Public        |             0 | Public                   |
-| Limited Users |            10 | Authenticated, untrusted |
-| Normal Users  |            40 | Member                   |
-| Editors       |            60 | Content operations       |
-| Moderators    |            80 | Elevated operations      |
-| Band Admin    |            90 | Full band administration |
-| Admin         |           100 | Platform/sysadmin        |
+- [ ] Keep roles as arbitrary database-defined permission bundles; do not give application code knowledge of role IDs, names, tiers, or significance.
+- [ ] Derive role protection and assignability from its current permission composition rather than stored rank or role-specific policy.
+- [ ] Treat `Role.sortOrder` strictly as presentation metadata.
+- [ ] Keep `isPublicRole` and `isRoleForNewUsers` as functional database flags administered only by actual Sysadmin.
+- [ ] Treat roles installed by seeds or migrations as deployment templates, not runtime identities; deployed instances may customize or replace them.
+- [ ] Evaluate a per-user authorization/session version under BA-R002 for immediate revocation; do not attach it to a role rank.
+
+Acceptance criteria:
+
+- [ ] Authorization and delegation behavior is unchanged if roles are renamed or reordered.
+- [ ] A tenant may define a safer Band Admin-like role by assigning a smaller permission set without requiring a code change.
+- [ ] No runtime authorization branch identifies a built-in role.
 
 ### BA-M003 — Delegation rules
 
-- [ ] Define protected/system permissions.
-- [ ] Define which roles Band Admin may assign.
-- [ ] Define same-tier administration behavior from BA-D002.
-- [ ] Prevent assignment of a role containing authority above the actor's delegation ceiling.
+- [x] Define protected/system permissions and delegability in the canonical permission registry.
+- [ ] Require `assign_user_roles` for delegated role assignment.
+- [ ] Allow assignment only when every permission in both the target's current role and desired role is delegable and present in the actor's effective permission set.
+- [ ] Derive protected principals and protected roles from `User.isSysAdmin` and current permission composition; do not store or infer a role rank.
 - [ ] Keep raw Role, Permission, and RolePermission administration sysadmin-only initially.
-- [ ] Permit assignment to and revocation of Band Admin while warning and requiring confirmation if the change would leave no active Band Admin.
+- [ ] Simulate the post-operation state and require explicit acknowledgement if it would leave no active non-Sysadmin holder of a continuity-sensitive permission.
+- [ ] Recompute all delegation and continuity decisions at the mutation boundary; server-returned role choices and warnings are UX aids only.
 
 Phase completion evidence:
 
@@ -857,12 +862,12 @@ Phase completion evidence:
 - [ ] Public, Limited, Normal, Editor, and Moderator behavior remains unchanged except for intentional security fixes.
 - [ ] Band Admin can administer events, songs, files, instruments, wiki, homepage, branding, and approved reports.
 - [ ] No user can access a workflow UI or invoke a workflow RPC because the feature has been removed.
-- [ ] Band Admin can create/edit/deactivate/reset ordinary users according to policy.
-- [ ] Band Admin can promote another user to Band Admin and revoke Band Admin from another user.
-- [ ] Removing the last active Band Admin produces the required warning and explicit confirmation.
+- [ ] Band Admin can create, edit, and deactivate ordinary users according to policy; password-reset URL generation remains actual-Sysadmin-only.
+- [ ] A non-Sysadmin holding `assign_user_roles` can assign and revoke a peer-equivalent role when both roles are within the actor's permission envelope.
+- [ ] Removing the last active non-Sysadmin holder of a continuity-sensitive permission produces the required warning and explicit confirmation.
 - [ ] Band Admin can assign only server-approved roles.
 - [ ] Band Admin cannot set `isSysAdmin`.
-- [ ] Band Admin cannot assign Admin or another role containing protected permissions.
+- [ ] Band Admin cannot assign any role containing protected, non-delegable, or unheld permissions.
 - [ ] Band Admin cannot edit Permission, Role, or RolePermission topology.
 - [ ] Band Admin cannot target a protected user through edit, reset, deletion, or impersonation.
 - [ ] Band Admin can only soft-delete/deactivate users; hard deletion remains unavailable.
@@ -923,6 +928,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                | All product decisions resolved                                                                  | —         |
 | 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                              | —         |
 | 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                                                                            | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —         |
+| 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views     | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`      | see gh issue #668 |
 
 ## Deferred ideas
 

@@ -1,7 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Tooltip } from "@mui/material";
 import React, { Suspense } from 'react';
-import { Permission } from "shared/permissions";
+import { gPermissionOrdered } from "shared/permissions";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -11,7 +11,7 @@ import { useDashboardContext } from "@/src/core/components/dashboardContext/Dash
 const Inner = () => {
     const dashboardContext = useDashboardContext();
 
-    const codePermissions = Object.keys(Permission);
+    const codePermissions = gPermissionOrdered;
 
     const PermissionClientSchema = new DB3Client.xTableClientSpec({
         table: db3.xPermission,

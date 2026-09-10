@@ -1,160 +1,465 @@
+export const PermissionCategories = [
+  "access",
+  "site-content",
+  "visibility",
+  "events",
+  "songs",
+  "files",
+  "instruments",
+  "users",
+  "custom-links",
+  "wiki",
+  "workflows",
+  "menu",
+  "setlists",
+  "reports",
+  "practice-tools",
+  "system",
+] as const
 
+export type PermissionCategory = (typeof PermissionCategories)[number]
 
-export enum Permission {
+export const PermissionScopes = ["public", "account", "site", "platform"] as const
 
-    always_grant = "always_grant", // opposite of never_grant. even though public, visibility_public, and always_grant seem to offer the same thing, they have theoretically different functions.
-    public = "public", // in cases where the user has no User record, therefore no Role, and no other permissions. should not be assigned to any user roles for this reason.
+export type PermissionScope = (typeof PermissionScopes)[number]
 
-    // basic permission to access the logged-in version of the site.
-    // having a user identity grants you this.
-    // require this for features which have no restriction on use, like viewing your profile, resetting your own password, or viewing the backstage front page.
-    login = "login",
+export type PermissionPresentation = Readonly<{
+  color: string
+  iconName: string
+  significance: string
+}>
 
-    // ability to view site things like users and basic stuff. this allows one level of trust after anonymously creating an account.
-    // this shall be used for visibility of things like tags / instruments
-    basic_trust = "basic_trust",
+export type PermissionDefinition = Readonly<{
+  key: string
+  category: PermissionCategory
+  scope: PermissionScope
+  description: string
+  sortOrder: number
+  isProtected: boolean
+  // A delegable permission may safely be carried by a preconfigured role
+  // assigned by a non-sysadmin. This does not authorize editing role grants.
+  isDelegable: boolean
+  isVisibility: boolean
+  isGrantedToPublic: boolean
+  // used for admin_users for the purpose of detecting when an action needs
+  // continuity check - like removing yourself as the last band admin.
+  isContinuitySensitive: boolean
+  presentation?: PermissionPresentation
+}>
 
-    // require this for site behvaiors:  managing roles and permissions,
-    // do NOT use this for lower-level functions like managing tags, statuses, types, attributes; these should have their own permission like admin_events
-    sysadmin = "sysadmin",
-    never_grant = "never_grant", // no roles should have this permission; it's the opposite of public.
+type PermissionOptions = Partial<
+  Pick<
+    PermissionDefinition,
+    | "isProtected"
+    | "isDelegable"
+    | "isVisibility"
+    | "isGrantedToPublic"
+    | "isContinuitySensitive"
+    | "presentation"
+  >
+>
 
-    // ***********************************************
+const definePermission = <TKey extends string>(
+  key: TKey,
+  category: PermissionCategory,
+  scope: PermissionScope,
+  description: string,
+  sortOrder: number,
+  options: PermissionOptions = {}
+) =>
+({
+  key,
+  category,
+  scope,
+  description,
+  sortOrder,
+  isProtected: options.isProtected ?? false,
+  isDelegable: options.isDelegable ?? true,
+  isVisibility: options.isVisibility ?? false,
+  isGrantedToPublic: options.isGrantedToPublic ?? false,
+  isContinuitySensitive: options.isContinuitySensitive ?? false,
+  presentation: options.presentation,
+} as const satisfies PermissionDefinition)
 
-    // for changing site content at the site level (site chrome, style, etc)
-    // basically sysadmin but non-functional sitewide changes
-    content_admin = "content_admin",
+const publicGrant = { isGrantedToPublic: true } as const
+const protectedPermission = { isProtected: true, isDelegable: false } as const
 
-    // specific permission for this feature.
-    impersonate_user = "impersonate_user",
+const visibilityPresentation = (
+  color: string,
+  iconName: string,
+  significance: string
+): PermissionOptions => ({
+  isVisibility: true,
+  presentation: { color, iconName, significance },
+})
 
-    // for user-created objects like events / files, they have the ability to specify a permission that dictates who can
-    // see the object. visibility permissions should be marked as such in the permissions table.
-    // it's actually important that these are named "visibility_*" because of how the db is seeded
-    visibility_editors = "visibility_editors",
-    visibility_members = "visibility_members",
-    visibility_logged_in_users = "visibility_logged_in_users",
-    visibility_public = "visibility_public",// this is the only permission which is special-case in that EVERYONE will be authorized for it, no exceptions. so there are special cases for it like if you have no user object or no session.
+// This registry is the authority for every permission known to application code.
+// Runtime constants, ordering, public grants, and security classifications below
+// are generated from it so a permission cannot be added to only one view.
+const permissionRegistry = [
+  definePermission(
+    "always_grant",
+    "access",
+    "public",
+    "Authorization sentinel granted to every visitor.",
+    0,
+    publicGrant
+  ),
+  definePermission(
+    "public",
+    "access",
+    "public",
+    "Functionality available without a user account.",
+    10,
+    publicGrant
+  ),
+  definePermission(
+    "login",
+    "access",
+    "account",
+    "Functionality available to any authenticated user.",
+    20
+  ),
+  definePermission(
+    "basic_trust",
+    "access",
+    "account",
+    "Ordinary member data available after an account has been trusted.",
+    30
+  ),
 
-    // ability to edit the homepage content
-    edit_public_homepage = "edit_public_homepage",
+  definePermission(
+    "content_admin",
+    "site-content",
+    "site",
+    "Manage site-wide presentation and non-platform content.",
+    100
+  ),
+  definePermission(
+    "edit_public_homepage",
+    "site-content",
+    "site",
+    "Edit public homepage content and gallery presentation.",
+    110
+  ),
 
-    // ******************** event permissions.
-    admin_events = "admin_events",// require this for managing event attributes like type, status, tags
+  definePermission(
+    "visibility_public",
+    "visibility",
+    "public",
+    "Public visibility: everyone can see the object.",
+    200,
+    {
+      ...visibilityPresentation("green", "Public", "Visibility_Public"),
+      ...publicGrant,
+    }
+  ),
+  definePermission(
+    "visibility_logged_in_users",
+    "visibility",
+    "account",
+    "Visibility restricted to authenticated users.",
+    210,
+    visibilityPresentation("blue", "Person", "Visibility_LoggedInUsers")
+  ),
+  definePermission(
+    "visibility_members",
+    "visibility",
+    "site",
+    "Visibility restricted to trusted site members.",
+    220,
+    visibilityPresentation("gold", "Security", "Visibility_Members")
+  ),
+  definePermission(
+    "visibility_editors",
+    "visibility",
+    "site",
+    "Visibility restricted to site editors.",
+    230,
+    visibilityPresentation("orange", "Lock", "Visibility_Editors")
+  ),
 
-    manage_events = "manage_events",// require this for editing events: descriptions, creating / editing / deleting events
-    view_events = "view_events", // careful: events get public visibility but not everything in events is public.
-    view_events_nonpublic = "view_events_nonpublic", // for things like description or attendance which is not public despite the event being public vis
-    view_events_reports = "view_events_reports",
-    respond_to_events = "respond_to_events",
-    change_others_event_responses = "change_others_event_responses",
+  definePermission(
+    "admin_events",
+    "events",
+    "site",
+    "Manage event types, statuses, tags, and other event configuration.",
+    300
+  ),
+  definePermission("manage_events", "events", "site", "Create, edit, and remove events.", 310),
+  definePermission(
+    "view_events",
+    "events",
+    "public",
+    "View public event information.",
+    320,
+    publicGrant
+  ),
+  definePermission(
+    "view_events_nonpublic",
+    "events",
+    "site",
+    "View non-public event details such as attendance and internal descriptions.",
+    330
+  ),
+  definePermission("view_events_reports", "events", "site", "View event reports.", 340),
+  definePermission(
+    "respond_to_events",
+    "events",
+    "site",
+    "Respond to event attendance requests.",
+    350
+  ),
+  definePermission(
+    "change_others_event_responses",
+    "events",
+    "site",
+    "Change another user's event response.",
+    360
+  ),
 
-    // ******************** song permissions.
-    admin_songs = "admin_songs",
-    manage_songs = "manage_songs",
-    view_songs = "view_songs",
-    pin_song_recordings = "pin_song_recordings",
+  definePermission(
+    "admin_songs",
+    "songs",
+    "site",
+    "Manage song tags, credit types, and other song configuration.",
+    400
+  ),
+  definePermission("manage_songs", "songs", "site", "Create, edit, and remove songs.", 410),
+  definePermission("view_songs", "songs", "site", "View songs.", 420),
+  definePermission("pin_song_recordings", "songs", "site", "Pin recordings to songs.", 430),
 
-    // ******************** file permissions.
-    admin_files = "admin_files",
-    manage_files = "manage_files", // should be granted widely
-    upload_files = "upload_files",
-    view_files = "view_files",
-    access_file_landing_page = "access_file_landing_page",
+  definePermission(
+    "admin_files",
+    "files",
+    "site",
+    "Manage file tags and other file configuration.",
+    500
+  ),
+  definePermission("manage_files", "files", "site", "Edit and remove files.", 510),
+  definePermission("upload_files", "files", "site", "Upload files.", 520),
+  definePermission(
+    "view_files",
+    "files",
+    "public",
+    "View public files and homepage media.",
+    530,
+    publicGrant
+  ),
+  definePermission(
+    "access_file_landing_page",
+    "files",
+    "site",
+    "Access the file landing page.",
+    540
+  ),
 
-    // ******************** instrument permissions.
-    admin_instruments = "admin_instruments",
-    manage_instruments = "manage_instruments",
+  definePermission(
+    "admin_instruments",
+    "instruments",
+    "site",
+    "Manage instrument definitions and functional groups.",
+    600
+  ),
+  definePermission(
+    "manage_instruments",
+    "instruments",
+    "site",
+    "Manage ordinary instrument data.",
+    610
+  ),
 
-    // ******************** user permissions.
-    admin_users = "admin_users", // creating / deleting / editing users in general.
-    manage_users = "manage_users",
-    search_users = "search_users",
-    view_users_basic_info = "view_users_basic_info", // user landing page
+  definePermission(
+    "admin_users",
+    "users",
+    "site",
+    "Perform ordinary user account lifecycle administration.",
+    700,
+    {
+      isContinuitySensitive: true,
+    }
+  ),
+  definePermission(
+    "manage_users",
+    "users",
+    "site",
+    "Manage ordinary user profile, tag, and instrument data.",
+    710
+  ),
+  definePermission("search_users", "users", "site", "Search the user directory.", 720),
+  definePermission(
+    "view_users_basic_info",
+    "users",
+    "site",
+    "View the user landing page and basic member information.",
+    730
+  ),
 
-    // ******************** custom links
-    // VISITING custom links is always permitted.
-    view_custom_links = "view_custom_links",
-    manage_custom_links = "manage_custom_links",
+  definePermission("view_custom_links", "custom-links", "site", "View custom links.", 800),
+  definePermission(
+    "manage_custom_links",
+    "custom-links",
+    "site",
+    "Create, edit, and remove custom links.",
+    810
+  ),
 
-    // ******************** wiki
-    view_wiki_pages = "view_wiki_pages",
-    edit_wiki_pages = "edit_wiki_pages",
-    admin_wiki_pages = "admin_wiki_pages", // for things like forcibly unlocking a page, manipulating revisions , etc
-    search_wiki_pages = "search_wiki_pages",
-    view_wiki_page_revisions = "view_wiki_page_revisions", // for viewing the history of a wiki page
+  definePermission("view_wiki_pages", "wiki", "site", "View wiki pages.", 900),
+  definePermission("edit_wiki_pages", "wiki", "site", "Create and edit wiki pages.", 910),
+  definePermission(
+    "admin_wiki_pages",
+    "wiki",
+    "site",
+    "Perform wiki administration such as unlocking pages and managing revisions.",
+    920
+  ),
+  definePermission("search_wiki_pages", "wiki", "site", "Search wiki pages.", 930),
+  definePermission(
+    "view_wiki_page_revisions",
+    "wiki",
+    "site",
+    "View wiki page revision history.",
+    940
+  ),
 
-    // ******************** workflow
-    view_workflow_instances = "view_workflow_instances", // you can view the workflows tab
-    edit_workflow_instances = "edit_workflow_instances", // you can control things like assignees & due dates
-    view_workflow_defs = "view_workflow_defs", // can you view workflow definitions / graphs?
-    edit_workflow_defs = "edit_workflow_defs", // can you create or edit workflow definitions / graphs?
-    admin_workflow_defs = "admin_workflow_defs", // technical admin operations
+  // Workflows remain registered only until the separately approved removal slice.
+  definePermission(
+    "view_workflow_instances",
+    "workflows",
+    "site",
+    "View workflow instances and the workflow tab.",
+    1000
+  ),
+  definePermission(
+    "edit_workflow_instances",
+    "workflows",
+    "site",
+    "Manage workflow instance assignees and due dates.",
+    1010
+  ),
+  definePermission(
+    "view_workflow_defs",
+    "workflows",
+    "site",
+    "View workflow definitions and graphs.",
+    1020
+  ),
+  definePermission(
+    "edit_workflow_defs",
+    "workflows",
+    "site",
+    "Create and edit workflow definitions and graphs.",
+    1030
+  ),
+  definePermission(
+    "admin_workflow_defs",
+    "workflows",
+    "site",
+    "Perform technical workflow administration.",
+    1040
+  ),
 
-    // ******************** menu customization
-    customize_menu = "customize_menu",
+  definePermission("customize_menu", "menu", "site", "Customize site navigation menus.", 1100),
+  definePermission(
+    "setlist_planner_access",
+    "setlists",
+    "site",
+    "Access the setlist planner.",
+    1200
+  ),
+  definePermission("view_feature_reports", "reports", "site", "View feature-usage reports.", 1300),
+  // BA-D008 makes this public in a later route/data-alignment slice. Keeping
+  // the current grant unchanged here avoids widening access before that audit.
+  definePermission(
+    "practice_tools_use",
+    "practice-tools",
+    "public",
+    "Use public practice tools.",
+    1400
+  ),
 
-    // ********************
-    setlist_planner_access = "setlist_planner_access",
+  definePermission(
+    "impersonate_user",
+    "system",
+    "platform",
+    "Impersonate another user for technical support and debugging.",
+    9000,
+    protectedPermission
+  ),
+  definePermission(
+    "sysadmin",
+    "system",
+    "platform",
+    "Bypass ordinary permission checks and administer the platform.",
+    9010,
+    protectedPermission
+  ),
+  definePermission(
+    "never_grant",
+    "system",
+    "platform",
+    "Authorization sentinel that must never be granted to a role.",
+    9020,
+    protectedPermission
+  ),
+] as const satisfies readonly PermissionDefinition[]
 
-    view_feature_reports = "view_feature_reports",
+export type Permission = (typeof permissionRegistry)[number]["key"]
 
-    practice_tools_use = "practice_tools_use",
-};
+type PermissionConstants = Readonly<{ [K in Permission]: K }>
 
-export const gPermissionOrdered: (keyof typeof Permission)[] = [
-    Permission.always_grant,
-    Permission.public,
-    Permission.login,
-    Permission.basic_trust,
-    Permission.sysadmin,
-    Permission.never_grant,
-    Permission.content_admin,
-    Permission.impersonate_user,
-    Permission.visibility_editors,
-    Permission.visibility_members,
-    Permission.visibility_logged_in_users,
-    Permission.visibility_public,
-    Permission.edit_public_homepage,
-    Permission.admin_events,
-    Permission.manage_events,
-    Permission.view_events,
-    Permission.view_events_nonpublic,
-    Permission.respond_to_events,
-    Permission.change_others_event_responses,
-    Permission.admin_songs,
-    Permission.manage_songs,
-    Permission.view_songs,
-    Permission.admin_files,
-    Permission.manage_files,
-    Permission.view_files,
-    Permission.upload_files,
-    Permission.admin_instruments,
-    Permission.manage_instruments,
-    Permission.admin_users,
-    Permission.manage_users,
-    Permission.search_users,
-    Permission.view_custom_links,
-    Permission.manage_custom_links,
-    Permission.view_wiki_pages,
-    Permission.edit_wiki_pages,
-    Permission.customize_menu,
+// Preserve Permission.foo call sites while deriving every value from the registry.
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- intentional value/type API
+export const Permission = Object.freeze(
+  Object.fromEntries(permissionRegistry.map((definition) => [definition.key, definition.key]))
+) as PermissionConstants
 
-    Permission.view_workflow_instances,
-    Permission.edit_workflow_instances,
-    Permission.view_workflow_defs,
-    Permission.edit_workflow_defs,
-    Permission.admin_workflow_defs,
+export const gPermissionRegistry: readonly PermissionDefinition[] = permissionRegistry
 
-    Permission.setlist_planner_access,
-];
+export const gPermissionOrdered: Permission[] = permissionRegistry.map(
+  (definition) => definition.key
+)
 
-// these are granted automatically to public.
-export const gPublicPermissions: Permission[] = [
-    Permission.always_grant,
-    Permission.view_files, // in order for homepage to show photos
-    Permission.view_events,// events are visible to public because of homepage
-    Permission.public,
-    Permission.visibility_public,
-];
+export const gPublicPermissions: Permission[] = permissionRegistry
+  .filter((definition) => definition.isGrantedToPublic)
+  .map((definition) => definition.key)
 
+export const gProtectedPermissions: ReadonlySet<Permission> = new Set(
+  permissionRegistry
+    .filter((definition) => definition.isProtected)
+    .map((definition) => definition.key)
+)
+
+export const gContinuitySensitivePermissions: ReadonlySet<Permission> = new Set(
+  permissionRegistry
+    .filter((definition) => definition.isContinuitySensitive)
+    .map((definition) => definition.key)
+)
+
+const permissionDefinitionByKey = new Map<Permission, PermissionDefinition>(
+  permissionRegistry.map((definition) => [definition.key, definition])
+)
+
+export const isPermission = (value: string): value is Permission =>
+  permissionDefinitionByKey.has(value as Permission)
+
+export const getPermissionDefinition = (permission: Permission): PermissionDefinition =>
+  permissionDefinitionByKey.get(permission)!
+
+export type PermissionDatabaseMetadata = Readonly<{
+  description: string
+  sortOrder: number
+  isVisibility: boolean
+  color?: string
+  iconName?: string
+  significance?: string
+}>
+
+export const getPermissionDatabaseMetadata = (
+  definition: PermissionDefinition
+): PermissionDatabaseMetadata => ({
+  description: definition.description,
+  sortOrder: definition.sortOrder,
+  isVisibility: definition.isVisibility,
+  ...(definition.presentation || {}),
+})
