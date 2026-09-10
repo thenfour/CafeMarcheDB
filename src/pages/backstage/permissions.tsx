@@ -1,7 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Tooltip } from "@mui/material";
 import React, { Suspense } from 'react';
-import { gPermissionOrdered } from "shared/permissions";
+import { gPermissionOrdered, Permission } from "shared/permissions";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -46,7 +46,7 @@ const Inner = () => {
 const PermissionsListPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Permissions">
+        <DashboardLayout title="Permissions" basePermission={Permission.sysadmin}>
             <Suspense>
                 <Inner />
             </Suspense>

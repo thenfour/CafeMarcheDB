@@ -23,7 +23,6 @@ export abstract class DashboardContextDataBase {
     dynMenuLinks: TableAccessor<db3.DashboardDynMenuLink>;
     permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     role: TableAccessor<Prisma.RoleGetPayload<{}>>;
-    rolePermission: TableAccessor<Prisma.RolePermissionGetPayload<{}>>;
 
     instrument: TableAccessor<EnrichedInstrument<Prisma.InstrumentGetPayload<{ include: { instrumentTags: true } }>>>;
     instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;

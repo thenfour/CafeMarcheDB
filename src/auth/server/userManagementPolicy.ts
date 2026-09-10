@@ -1,12 +1,21 @@
 import { AuthorizationError } from "blitz";
-import { gProtectedPermissions, Permission } from "shared/permissions";
+import {
+    getPermissionDefinition,
+    gContinuitySensitivePermissions,
+    gPermissionOrdered,
+    gProtectedPermissions,
+    gPublicPermissions,
+    isPermission,
+    Permission,
+} from "shared/permissions";
 
 export type UserManagementAction =
     | "assignRole"
     | "deactivate"
     | "edit"
     | "impersonate"
-    | "resetPassword";
+    | "resetPassword"
+    | "setSysAdmin";
 
 type PermissionEntry = {
     permission?: {
@@ -18,9 +27,13 @@ export type UserManagementRole = {
     permissions?: readonly PermissionEntry[];
 } | null;
 
+
+
+// user metadata relevant for management decisions
 export type UserManagementPrincipal = {
     id: number;
     isSysAdmin: boolean;
+    isDeleted?: boolean;
     role?: UserManagementRole;
 };
 
@@ -39,11 +52,39 @@ export interface UserManagementCapabilities {
     canEdit: boolean;
     canImpersonate: boolean;
     canResetPassword: boolean;
+    canSetSysAdmin: boolean;
 }
 
-const roleHasPermission = (role: UserManagementRole | undefined, permission: Permission): boolean => (
+export const roleHasPermission = (role: UserManagementRole | undefined, permission: Permission): boolean => (
     role?.permissions?.some(entry => entry.permission?.name === permission) || false
 );
+
+const getActorPermissionNames = (actor: UserManagementPrincipal): ReadonlySet<string> => new Set([
+    ...gPublicPermissions,
+    ...(actor.role?.permissions
+        ?.map(entry => entry.permission?.name)
+        .filter((name): name is string => !!name) || []),
+]);
+
+// determines if the given role falls within the
+// actor's delegable permission envelope.
+// for example if the actor is a band admin
+// - if role is outside the delegable envelope, like a sysadmin role, the answer is: no.
+// - if role is within, like a regular member role, the answer is: yes.
+export const isRoleWithinDelegationEnvelope = (
+    actor: UserManagementPrincipal,
+    role: UserManagementRole | undefined,
+): boolean => {
+    if (actor.isSysAdmin) return true;
+
+    const actorPermissions = getActorPermissionNames(actor);
+    return role?.permissions?.every(entry => {
+        const permissionName = entry.permission?.name;
+        if (!permissionName || !isPermission(permissionName)) return false;
+        return getPermissionDefinition(permissionName).isDelegable
+            && actorPermissions.has(permissionName);
+    }) ?? true;
+};
 
 export const isProtectedUserRole = (role: UserManagementRole | undefined): boolean => (
     role?.permissions?.some(entry => {
@@ -64,6 +105,12 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     const actorIsSysadmin = actor.isSysAdmin === true;
+
+    if (target.isDeleted === true) return false;
+
+    if (action === "setSysAdmin") {
+        return actorIsSysadmin;
+    }
 
     // The current administrator-mediated reset URL is an account-takeover
     // credential and remains an actual-Sysadmin-only operation.
@@ -89,7 +136,13 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     if (actorIsSysadmin) return true;
 
     if (action === "assignRole") {
-        if (desiredRole !== undefined && isProtectedUserRole(desiredRole)) return false;
+        if (!roleHasPermission(actor.role, Permission.assign_user_roles)) return false;
+        if (!isRoleWithinDelegationEnvelope(actor, target.role)) return false;
+        if (desiredRole !== undefined && !isRoleWithinDelegationEnvelope(actor, desiredRole)) return false;
+        return true;
+    }
+
+    if (action === "deactivate") {
         return roleHasPermission(actor.role, Permission.admin_users);
     }
 
@@ -107,7 +160,49 @@ export const getUserManagementCapabilities = (
     canEdit: canManageUser({ actor, target, action: "edit" }),
     canImpersonate: canManageUser({ actor, target, action: "impersonate" }),
     canResetPassword: canManageUser({ actor, target, action: "resetPassword" }),
+    canSetSysAdmin: canManageUser({ actor, target, action: "setSysAdmin" }),
 });
+
+export const getContinuityWarningsForUserResult = (
+    target: UserManagementPrincipal,
+    resultingRole: UserManagementRole,
+    activeNonSysadminUsers: readonly UserManagementPrincipal[],
+): Permission[] => {
+    if (target.isDeleted === true || target.isSysAdmin) return [];
+
+    return gPermissionOrdered.filter(permission => {
+        if (!gContinuitySensitivePermissions.has(permission)) return false;
+        if (!roleHasPermission(target.role, permission)) return false;
+        if (roleHasPermission(resultingRole, permission)) return false;
+
+        return !activeNonSysadminUsers.some(user => (
+            user.id !== target.id
+            && user.isDeleted !== true
+            && !user.isSysAdmin
+            && roleHasPermission(user.role, permission)
+        ));
+    });
+};
+
+// would prefer to use a structured reply, but this is sent to client, not just a
+// in-thread exception, where an error is appropriate.
+export const kContinuityAcknowledgementErrorPrefix = "CONTINUITY_ACKNOWLEDGEMENT_REQUIRED:";
+
+export class UserManagementContinuityError extends Error {
+    constructor(public readonly permissions: readonly Permission[]) {
+        super(`${kContinuityAcknowledgementErrorPrefix}${permissions.join(",")}`);
+        this.name = "UserManagementContinuityError";
+    }
+}
+
+export const requireContinuityAcknowledgement = (
+    permissions: readonly Permission[],
+    acknowledged: boolean,
+): void => {
+    if (permissions.length > 0 && !acknowledged) {
+        throw new UserManagementContinuityError(permissions);
+    }
+};
 
 export class UserManagementAuthorizationError extends AuthorizationError {
     constructor(action: UserManagementAction) {

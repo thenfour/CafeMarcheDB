@@ -195,6 +195,19 @@ export const PermissionArgs = Prisma.validator<Prisma.PermissionArgs>()({
 export type PermissionPayloadMinimum = Prisma.PermissionGetPayload<{}>;
 export type PermissionPayload = Prisma.PermissionGetPayload<typeof PermissionArgs>;
 
+export const PermissionForVisibilityArgs = Prisma.validator<Prisma.PermissionArgs>()({
+    select: {
+        id: true,
+        name: true,
+        isVisibility: true,
+        description: true,
+        sortOrder: true,
+        significance: true,
+        color: true,
+        iconName: true,
+    },
+});
+
 export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
     { name: 'asc' },
@@ -427,6 +440,35 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
 });
 
 export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
+
+// Generic user queries must not expose role grants. Server authorization code
+// uses UserArgs/UserWithRolesArgs when it needs the permission composition.
+export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
+    select: {
+        id: true,
+        name: true,
+        isSysAdmin: true,
+        isDeleted: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        roleId: true,
+        cssClass: true,
+        accessToken: true,
+        role: true,
+        instruments: UserInstrumentArgs,
+        tags: {
+            include: {
+                userTag: true,
+            },
+            orderBy: {
+                userTag: {
+                    sortOrder: 'asc'
+                }
+            }
+        },
+    },
+});
 
 export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
     select: {

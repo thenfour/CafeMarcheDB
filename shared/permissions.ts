@@ -280,6 +280,16 @@ const permissionRegistry = [
     }
   ),
   definePermission(
+    "assign_user_roles",
+    "users",
+    "site",
+    "Assign preconfigured roles within the actor's delegable permission envelope.",
+    705,
+    {
+      isContinuitySensitive: true,
+    }
+  ),
+  definePermission(
     "manage_users",
     "users",
     "site",
@@ -386,6 +396,10 @@ const permissionRegistry = [
     9000,
     protectedPermission
   ),
+
+  // note that this is currently ambiguous with User.isSysAdmin.
+  // effectively we treat them with the same access level, but User.isSysAdmin
+  // is the authority, not the role-permission matrix.
   definePermission(
     "sysadmin",
     "system",

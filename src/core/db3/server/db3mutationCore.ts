@@ -73,6 +73,16 @@ const requireRolePermissionTopologyAuthorization = (
     }
 };
 
+const requireActualSysadminTableAuthorization = (
+    table: db3.xTable,
+    publicData: ReturnType<typeof getMutationPublicData>,
+    fieldNames: string[],
+): void => {
+    if (table.requiresActualSysadminForMutation && !publicData.isSysAdmin) {
+        throw new DB3MutationAuthorizationError(table.tableName, fieldNames);
+    }
+};
+
 const requireDeleteOperationAuthorization = (
     table: db3.xTable,
     deleteType: "softWhenPossible" | "hard",
@@ -87,20 +97,6 @@ const requireDeleteOperationAuthorization = (
         return "hard";
     }
     throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
-};
-
-const findUserManagementDesiredRole = async (desiredRoleId: number | null) => {
-    if (desiredRoleId == null) {
-        return null;
-    }
-    const desiredRole = await db.role.findFirst({
-        ...db3.RoleArgs,
-        where: { id: desiredRoleId },
-    });
-    if (!desiredRole) {
-        throw new Error(`Role ${desiredRoleId} was not found.`);
-    }
-    return desiredRole;
 };
 
 // returns null if not authorized.
@@ -437,6 +433,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
+        requireActualSysadminTableAuthorization(table, publicData, [table.pkMember]);
         requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, [table.pkMember]);
         const deleteOperation = requireDeleteOperationAuthorization(table, deleteType);
 
@@ -456,14 +453,6 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
             : table.authorizeRowForDeleteHard({ model: oldValues, publicData, clientIntention });
         if (!rowIsAuthorized) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
-        }
-
-        if (table.tableName === db3.xUser.tableName) {
-            requireCanManageUser({
-                actor: clientIntention.currentUser || null,
-                target: oldValues,
-                action: "deactivate",
-            });
         }
 
         if (deleteOperation === "soft") {
@@ -534,6 +523,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
+        requireActualSysadminTableAuthorization(table, publicData, Object.keys(fields));
         requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
@@ -582,24 +572,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                     [column.member],
                 );
             }
-        }
-
-        // specific handling of user role assignment auth policy
-        if (table.tableName === db3.xUser.tableName
-            && Object.prototype.hasOwnProperty.call(authorizedLocalFields, "roleId")) {
-            const desiredRole = await findUserManagementDesiredRole(
-                authorizedLocalFields.roleId as number | null,
-            );
-            requireCanManageUser({
-                actor: clientIntention.currentUser || null,
-                target: {
-                    id: 0,
-                    isSysAdmin: authorizedLocalFields.isSysAdmin === true,
-                    role: null,
-                },
-                action: "assignRole",
-                desiredRole,
-            });
         }
 
         if (Object.keys(proposedModel).length > 0) {
@@ -670,6 +642,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
+        requireActualSysadminTableAuthorization(table, publicData, Object.keys(fields));
         requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
@@ -735,21 +708,6 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         if (table.tableName === db3.xUser.tableName && Object.keys(proposedModel).length > 0) {
             const actor = clientIntention.currentUser || null;
             requireCanManageUser({ actor, target: fullOldObj, action: "edit" });
-
-            if (authorizedLocalFields.isDeleted === true) {
-                requireCanManageUser({ actor, target: fullOldObj, action: "deactivate" });
-            }
-
-            if (Object.prototype.hasOwnProperty.call(authorizedLocalFields, "roleId")) {
-                const desiredRoleId = authorizedLocalFields.roleId as number | null;
-                const desiredRole = await findUserManagementDesiredRole(desiredRoleId);
-                requireCanManageUser({
-                    actor,
-                    target: fullOldObj,
-                    action: "assignRole",
-                    desiredRole,
-                });
-            }
         }
 
         if (Object.keys(authorizedLocalFields).length > 0) {

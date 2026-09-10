@@ -26,6 +26,9 @@ const authorizeQueryBeforeDatabaseAccess = (
     if (input.clientIntention.intention === "admin" && !publicData.isSysAdmin) {
         throw new DB3QueryAuthorizationError();
     }
+    if (table.requiresActualSysadmin && !publicData.isSysAdmin) {
+        throw new DB3QueryAuthorizationError();
+    }
     if (!table.authorizeTableForView(publicData)) throw new DB3QueryAuthorizationError();
 
     const authorizeField = (columnName: string) => {

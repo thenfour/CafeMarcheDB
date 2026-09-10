@@ -213,6 +213,7 @@ export const gMenuSections: MenuSection[] = [
         groups: [
             {
                 links: [
+                    { type: "link", path: "/backstage/adminUsers", linkCaption: "Users grid", renderIcon: () => <PersonIcon />, permission: Permission.sysadmin },
                     { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
                     { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
                     { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },

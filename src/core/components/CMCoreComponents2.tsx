@@ -39,7 +39,11 @@ export const DialogActionsCM = (props: React.PropsWithChildren<{ className?: str
 };
 
 
-
+export const CMLinkButton = (props: { href: string; children: React.ReactNode }) => {
+    return <Button component="a" href={props.href}>
+        {props.children}
+    </Button>;
+};
 
 
 export function GoogleIconSmall() {

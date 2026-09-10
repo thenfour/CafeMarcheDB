@@ -60,7 +60,10 @@ describe("canonical permission registry", () => {
       Permission.sysadmin,
       Permission.never_grant,
     ])
-    expect([...gContinuitySensitivePermissions]).toEqual([Permission.admin_users])
+    expect([...gContinuitySensitivePermissions]).toEqual([
+      Permission.admin_users,
+      Permission.assign_user_roles,
+    ])
   })
 
   it("generates canonical database metadata", () => {
@@ -73,5 +76,17 @@ describe("canonical permission registry", () => {
         iconName: "Public",
         significance: "Visibility_Public",
       })
+  })
+
+  it("defines delegated role assignment as a site continuity capability", () => {
+    expect(getPermissionDefinition(Permission.assign_user_roles)).toEqual(
+      expect.objectContaining({
+        category: "users",
+        scope: "site",
+        isDelegable: true,
+        isProtected: false,
+        isContinuitySensitive: true,
+      }),
+    )
   })
 })

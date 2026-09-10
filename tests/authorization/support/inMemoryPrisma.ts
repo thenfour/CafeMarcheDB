@@ -127,8 +127,11 @@ const database = new AuthorizationTestDatabase()
 // uses delegate names (`user`). Resolve either form lazily so new tables can be
 // tested without growing a handwritten database mock.
 export const authorizationTestDb = new Proxy(database, {
-  get(target, property) {
+  get(target, property, receiver) {
     if (typeof property !== "string") return Reflect.get(target, property, target)
+    if (property === "$transaction") {
+      return async (callback: (transaction: typeof receiver) => Promise<unknown>) => callback(receiver)
+    }
     if (property in target) {
       const value = Reflect.get(target, property, target)
       return typeof value === "function" ? value.bind(target) : value

@@ -493,6 +493,17 @@ export interface TableDesc {
 
     tableAuthMap: DB3AuthTablePermissionMap;
 
+    // Some platform-control tables require the concrete User.isSysAdmin flag;
+    // a same-named role permission is intentionally insufficient.
+    // this is needed because user.isSysAdmin is the authority for sysadmins;
+    // the sysadmin role permission mapping kinda means the same thing but is not
+    // currently defined as authoritative.
+    // TODO: use the normal permission-role route instead of special cases.
+    // that would likely mean synthesizing a role instead of including it in the db;
+    // that's an architectural change that could be done later.
+    requiresActualSysadmin?: boolean;
+    requiresActualSysadminForMutation?: boolean;
+
     // Required so every table declares its generic-delete behavior alongside
     // its schema. This prevents a central table-name registry from drifting.
     deletePolicy: DB3DeletePolicy;
@@ -522,6 +533,8 @@ export class xTable /* implements TableDesc*/ {
     activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
 
     tableAuthMap: DB3AuthTablePermissionMap;
+    requiresActualSysadmin: boolean;
+    requiresActualSysadminForMutation: boolean;
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
@@ -532,6 +545,9 @@ export class xTable /* implements TableDesc*/ {
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
+        this.requiresActualSysadmin = args.requiresActualSysadmin ?? false;
+        this.requiresActualSysadminForMutation = args.requiresActualSysadminForMutation
+            ?? this.requiresActualSysadmin;
 
         if (this.getParameterizedWhereClause && !this.queryParameters) {
             throw new Error(`Table ${args.tableUniqueName || args.tableName} has parameterized filtering without a runtime parameter contract.`);

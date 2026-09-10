@@ -125,14 +125,6 @@ export class DashboardContextData extends DashboardContextDataBase {
         return !!(this.session?.showAdminControls && this.session.isSysAdmin);
     }
 
-    getPermissionsForRole(roleId) {
-        return this.rolePermission.filter(rp => rp.roleId === roleId).map(rp => this.permission.getById(rp.permissionId));
-    }
-
-    getRolesForPermission(permissionId) {
-        return this.rolePermission.filter(rp => rp.permissionId === permissionId).map(rp => this.role.getById(rp.roleId));
-    }
-
     getCancelledStatuses() {
         return this.eventStatus
             .filter(s => s.significance === db3.EventStatusSignificance.Cancelled);
@@ -224,7 +216,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
     valueRef.current.role = new TableAccessor(dashboardData.role);
-    valueRef.current.rolePermission = new TableAccessor(dashboardData.rolePermission);
     valueRef.current.eventType = new TableAccessor(dashboardData.eventType);
     valueRef.current.eventStatus = new TableAccessor(dashboardData.eventStatus);
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);

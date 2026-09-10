@@ -1,14 +1,29 @@
 
 import { AdminResetPasswordButton } from "@/src/core/components/user/AdminResetPasswordButton";
 import { ImpersonateUserButton } from "@/src/core/components/user/ImpersonateUserButton";
+import { Button } from "@mui/material";
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { CMLink } from "@/src/core/components/CMLink";
+import { API } from "@/src/core/db3/clientAPI";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { CMLinkButton } from "@/src/core/components/CMCoreComponents2";
 
-const UserListContent = () => {
+const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
+    // This grid may inspect security state, but generic DB3 mutation must not
+    // echo those fields back during an otherwise ordinary insert or update.
+    column.editable = false;
+    column.renderForNewDialog = undefined;
+    column.ApplyClientToPostClient = () => { };
+    return column;
+};
+
+const UserListContent: React.FC<{}> = () => {
+    const dashboardContext = useDashboardContext();
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xUser,
@@ -20,18 +35,21 @@ const UserListContent = () => {
             new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "cssClass", cellWidth: 150 }),
             new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
-            new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
+            makeDisplayOnlyColumn(new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" })),
             //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
             new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, }),
+            makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, })),
         ],
     });
 
     const extraActions = (args: DB3EditGridExtraActionsArgs) => {
+        const userPayload = args.row as db3.UserPayload;
+        const profileUrl = dashboardContext.routingApi.getURIForUser(userPayload);
         return <div>
-            <ImpersonateUserButton userId={(args.row as db3.UserPayload).id} />
-            <AdminResetPasswordButton user={args.row as db3.UserPayload} />
+            <ImpersonateUserButton userId={userPayload.id} />
+            <AdminResetPasswordButton user={userPayload} />
+            <CMLinkButton href={profileUrl}>Visit Profile</CMLinkButton>
         </div>;
     }
 
@@ -40,7 +58,7 @@ const UserListContent = () => {
 
 const UserListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Users" basePermission={Permission.admin_users}>
+        <DashboardLayout title="Users" basePermission={Permission.sysadmin}>
             <UserListContent />
         </DashboardLayout>
     );

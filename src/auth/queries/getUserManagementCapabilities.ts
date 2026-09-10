@@ -4,7 +4,14 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { z } from "zod";
-import { getUserManagementCapabilities } from "../server/userManagementPolicy";
+import {
+    getContinuityWarningsForUserResult,
+    getUserManagementCapabilities,
+} from "../server/userManagementPolicy";
+import {
+    findActiveNonSysadminUsers,
+    getAssignableRoles,
+} from "../server/userManagementState";
 
 const GetUserManagementCapabilitiesInput = z.object({
     userId: z.number().int().positive(),
@@ -12,7 +19,7 @@ const GetUserManagementCapabilitiesInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(GetUserManagementCapabilitiesInput),
-    resolver.authorize(Permission.admin_users),
+    resolver.authorize(Permission.view_users_basic_info),
     async ({ userId }, ctx) => {
         const [actor, target] = await Promise.all([
             db.user.findFirst({
@@ -26,6 +33,25 @@ export default resolver.pipe(
         ]);
 
         if (!target) throw new NotFoundError();
-        return getUserManagementCapabilities(actor, target);
+        const capabilities = getUserManagementCapabilities(actor, target);
+        const activeNonSysadminUsers = capabilities.canAssignRole || capabilities.canDeactivate
+            ? await findActiveNonSysadminUsers(db)
+            : [];
+
+        return {
+            ...capabilities,
+            assignableRoles: await getAssignableRoles(
+                db,
+                actor,
+                target,
+                activeNonSysadminUsers,
+            ),
+            unassignedRoleContinuityWarnings: capabilities.canAssignRole
+                ? getContinuityWarningsForUserResult(target, null, activeNonSysadminUsers)
+                : [],
+            deactivationContinuityWarnings: capabilities.canDeactivate
+                ? getContinuityWarningsForUserResult(target, null, activeNonSysadminUsers)
+                : [],
+        };
     },
 );

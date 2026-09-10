@@ -63,6 +63,8 @@ const personaPermissions: Record<Exclude<AuthorizationPersona, "public">, Permis
     Permission.manage_users,
     Permission.content_admin,
     Permission.admin_users,
+    Permission.assign_user_roles,
+    Permission.view_users_basic_info,
   ],
   sysadmin: [Permission.login, Permission.sysadmin],
 }

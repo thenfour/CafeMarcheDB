@@ -9,7 +9,7 @@ import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
 import { BoolField, ForeignSingleField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
+import { PermissionArgs, PermissionForVisibilityArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 
 // for basic user fields.
 // everyone can view
@@ -41,10 +41,10 @@ export const xUserAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
     PreInsert: Permission.admin_users,
 } as const;
 
-// `isSysAdmin` is a superuser bypass, not a role-managed permission. Its read
-// visibility remains unchanged, but no role permission can authorize a write.
-const authorizeUserIsSysAdmin = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
-    if (args.rowMode !== "view") return args.publicData.isSysAdmin === true;
+// Account lifecycle, role membership, and the superuser flag use dedicated
+// mutations. Generic User tables may display them but never change them.
+const authorizeUserSecurityFieldViewOnly = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
+    if (args.rowMode !== "view") return false;
     if (args.publicData.isSysAdmin) return true;
     return (args.publicData.permissions || gPublicPermissions).includes(Permission.basic_trust);
 };
@@ -67,20 +67,28 @@ export const xUserTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 } as const;
 
 export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.sysadmin,
+    View: Permission.sysadmin,
+    EditOwn: Permission.sysadmin,
+    Edit: Permission.sysadmin,
+    Insert: Permission.sysadmin,
+} as const;
+
+const xVisibilityPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.basic_trust,
     View: Permission.basic_trust,
-    EditOwn: Permission.admin_users,
-    Edit: Permission.admin_users,
-    Insert: Permission.admin_users,
+    EditOwn: Permission.sysadmin,
+    Edit: Permission.sysadmin,
+    Insert: Permission.sysadmin,
 } as const;
 
 
 export const xUserMinimum = new db3.xTable({
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
-        return UserArgs;
+        return UserMinimumArgs;
     },
     tableName: "User",
-    deletePolicy: "softOnly",
+    deletePolicy: "disabled", // deletion is performed through a dedicated mutation.
     queryParameters: {
         userId: { kind: "integer", authorizeAs: "id" },
     },
@@ -121,7 +129,7 @@ export const xUserMinimum = new db3.xTable({
     columns: [
         MakePKfield(),
         MakeCreatedAtField(),
-        MakeIsDeletedField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeIsDeletedField({ _customAuth: authorizeUserSecurityFieldViewOnly }),
 
         new GenericStringField({
             columnName: "name",
@@ -145,7 +153,7 @@ export const xUserMinimum = new db3.xTable({
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            _customAuth: authorizeUserIsSysAdmin,
+            _customAuth: authorizeUserSecurityFieldViewOnly,
             allowNull: false,
         }),
         new GenericStringField({
@@ -175,6 +183,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
     },
     tableName: "Permission",
     deletePolicy: "disabled",
+    requiresActualSysadmin: true,
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
@@ -225,6 +234,10 @@ export const xPermission = new db3.xTable(xPermissionBaseArgs);
 export const xPermissionForVisibility = new db3.xTable({
     ...xPermissionBaseArgs,
     tableUniqueName: "xPermissionForVisibility",
+    tableAuthMap: xVisibilityPermissionTableAuthMap,
+    requiresActualSysadmin: false,
+    requiresActualSysadminForMutation: true,
+    getSelectionArgs: () => PermissionForVisibilityArgs,
     queryParameters: {},
     getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.PermissionWhereInput[] => {
         return [
@@ -253,6 +266,7 @@ export const xPermissionForVisibility = new db3.xTable({
 export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
     deletePolicy: "disabled",
+    requiresActualSysadmin: true,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionDefaultArgs => {
         return RolePermissionArgs;
     },
@@ -293,6 +307,7 @@ export const xRole = new db3.xTable({
     },
     tableName: "Role",
     deletePolicy: "disabled",
+    requiresActualSysadmin: true,
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
@@ -572,10 +587,10 @@ export interface UserTablParams {
 
 const userBaseArgs: db3.TableDesc = {
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
-        return UserArgs;
+        return UserSafeArgs;
     },
     tableName: "User",
-    deletePolicy: "softOnly",
+    deletePolicy: "disabled",
     queryParameters: {
         userId: { kind: "integer", authorizeAs: "id" },
         userIds: { kind: "integerArray", authorizeAs: "id" },
@@ -605,7 +620,7 @@ const userBaseArgs: db3.TableDesc = {
     },
     columns: [
         MakePKfield(),
-        MakeIsDeletedField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeIsDeletedField({ _customAuth: authorizeUserSecurityFieldViewOnly }),
         MakeCreatedAtField(),
         new GenericStringField({
             columnName: "name",
@@ -635,15 +650,15 @@ const userBaseArgs: db3.TableDesc = {
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            _customAuth: authorizeUserIsSysAdmin,
+            _customAuth: authorizeUserSecurityFieldViewOnly,
             allowNull: false,
         }),
         new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
             columnName: "role",
-            allowNull: false,
+            allowNull: true,
             fkidMember: "roleId",
             foreignTableID: "Role",
-            authMap: xUserAuthMap_R_EAdmins,
+            _customAuth: authorizeUserSecurityFieldViewOnly,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 OR: [
                     { name: { contains: query } },

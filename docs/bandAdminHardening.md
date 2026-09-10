@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001, and BA-M001 complete; BA-U002 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001, BA-U002, and BA-M001 complete; BA-U003 next
 
 ## Goal
 
@@ -485,22 +485,28 @@ Evidence:
 
 ### BA-U002 — Split ordinary user administration from system administration
 
-- [ ] Add `assign_user_roles` as a site-scoped, delegable, continuity-sensitive permission.
-- [ ] Make `User.role`, `User.isSysAdmin`, and account deactivation immutable through the generic User editor.
-- [ ] Move `User.isSysAdmin` to an unambiguous actual-Sysadmin-only mutation path.
-- [ ] Add dedicated role-assignment and deactivation endpoints that re-read actor, target, and role state inside the mutation.
-- [ ] Authorize role assignment by permission composition: the actor must hold `assign_user_roles`; every permission in both the target's current role and desired role must be delegable and held by the actor; protected principals remain out of scope. Actual Sysadmin bypasses this delegation envelope.
-- [ ] Compute assignable roles on the server and return only the safe role projection needed by the UI, without exposing the role-permission matrix.
-- [ ] Before a confirmed role change or deactivation, simulate the resulting active-user state for every affected continuity-sensitive permission. If no active non-Sysadmin holder remains, require an explicit acknowledgement that the server independently verifies.
-- [ ] Keep Permission, Role, RolePermission, default/public role flags, and permission registry metadata actual-Sysadmin-only.
-- [ ] Split ordinary profile editing, role assignment, deactivation, password reset, `isSysAdmin`, and impersonation into action-specific controls on the canonical user page.
-- [ ] Make the legacy raw Admin Users DataGrid actual-Sysadmin-only; keep it as a technical maintenance surface rather than the delegated daily-use UI.
+- [x] Add `assign_user_roles` as a site-scoped, delegable, continuity-sensitive permission.
+- [x] Make `User.role`, `User.isSysAdmin`, and account deactivation immutable through the generic User editor.
+- [x] Move `User.isSysAdmin` to an unambiguous actual-Sysadmin-only mutation path.
+- [x] Add dedicated role-assignment and deactivation endpoints that re-read actor, target, and role state inside the mutation.
+- [x] Authorize role assignment by permission composition: the actor must hold `assign_user_roles`; every permission in both the target's current role and desired role must be delegable and held by the actor; protected principals remain out of scope. Actual Sysadmin bypasses this delegation envelope.
+- [x] Compute assignable roles on the server and return only the safe role projection needed by the UI, without exposing the role-permission matrix.
+- [x] Before a confirmed role change or deactivation, simulate the resulting active-user state for every affected continuity-sensitive permission. If no active non-Sysadmin holder remains, require an explicit acknowledgement that the server independently verifies.
+- [x] Keep Permission, Role, RolePermission, default/public role flags, and permission registry metadata actual-Sysadmin-only.
+- [x] Split ordinary profile editing, role assignment, deactivation, password reset, `isSysAdmin`, and impersonation into action-specific controls on the canonical user page.
+- [x] Make the legacy raw Admin Users DataGrid actual-Sysadmin-only; keep it as a technical maintenance surface rather than the delegated daily-use UI.
 
 References:
 
 - [User/role/permission authorization maps](../src/core/db3/shared/schema/user.ts#L35)
 - [User admin panel](../src/core/components/user/UserAdminPanel.tsx#L28)
 - [Legacy raw user grid](../src/pages/backstage/adminUsers.tsx#L13)
+
+Evidence:
+
+- Implementation: added the code-owned `assign_user_roles` capability; replaced generic role, deactivation, and `isSysAdmin` writes with dedicated serializable-transaction mutations; enforced fresh actor/target/role reads, permission-composition delegation, protected-target ceilings, safe assignable-role projections, last-active-non-Sysadmin continuity simulation, explicit acknowledgement, session revocation, and narrow activity records. Raw role topology now carries an actual-Sysadmin table policy and full-topology queries independently verify the persisted `isSysAdmin` flag. The ordinary dashboard no longer distributes `RolePermission`, ordinary User queries no longer include role grants, the canonical user page has action-specific controls, and the legacy raw user grid is Sysadmin-only.
+- Verification: `yarn test:auth` and `yarn test` (100 passed, including peer-equivalent role assignment, current/desired permission envelopes, protected/non-delegable/unheld/unknown rejection, continuity acknowledgement, alternate-holder behavior, session revocation, dedicated `isSysAdmin`, generic-path immutability, unprivileged maintenance-grid user creation, safe role projection, and actual-Sysadmin topology access); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ### BA-U003 — Harden password reset
 
@@ -929,6 +935,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                              | —         |
 | 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                                                                            | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —         |
 | 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views     | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`      | see gh issue #668 |
+| 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
 
 ## Deferred ideas
 
