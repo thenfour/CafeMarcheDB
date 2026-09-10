@@ -1033,3 +1033,294 @@ describe("BA-A004 association authorization", () => {
     )
   })
 })
+
+describe("BA-A005 delete authorization", () => {
+  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+  const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
+  const limited = createAuthorizationTestUser("limited", { id: 3 })
+  const ordinaryUser = createAuthorizationTarget("ordinary", { id: 10 })
+  const protectedRoleUser = createAuthorizationTarget("protectedRole", { id: 11 })
+  const isSysAdminUser = createAuthorizationTarget("isSysAdmin", { id: 12 })
+  const eventAdmin = createAuthorizationTestUser("bandAdmin", {
+    id: 4,
+    permissions: [
+      Permission.login,
+      Permission.basic_trust,
+      Permission.manage_events,
+      Permission.admin_events,
+    ],
+  })
+
+  const eventTag = {
+    id: 100,
+    text: "Delete test tag",
+    description: "",
+    color: null,
+    significance: null,
+    sortOrder: 0,
+    visibleOnFrontpage: false,
+  }
+  const eventType = {
+    id: 101,
+    text: "Delete test type",
+    description: "",
+    color: null,
+    significance: null,
+    sortOrder: 0,
+    iconName: null,
+    isDeleted: false,
+  }
+
+  beforeEach(() => {
+    authorizationTestDb.reset({
+      user: [
+        sysadmin,
+        bandAdmin,
+        limited,
+        eventAdmin,
+        ordinaryUser,
+        protectedRoleUser,
+        isSysAdminUser,
+      ],
+      eventTag: [eventTag],
+      eventType: [eventType],
+      change: [],
+    })
+    vi.restoreAllMocks()
+  })
+
+  it("has an explicit delete policy for every registered DB3 table", () => {
+    const registeredTables = [...new Set(Object.values(db3.gAllTables))]
+
+    expect(registeredTables.filter((table) => !table.deletePolicy).map((table) => table.tableID)).toEqual([])
+    expect(
+      registeredTables
+        .filter((table) => table.deletePolicy === "softOnly")
+        .filter((table) => !table.SqlSpecialColumns.isDeleted)
+        .map((table) => table.tableID),
+    ).toEqual([])
+    expect(
+      registeredTables
+        .filter((table) => table.deletePolicy === "hard")
+        .filter((table) => !!table.SqlSpecialColumns.isDeleted)
+        .map((table) => table.tableID),
+    ).toEqual([])
+  })
+
+  it.each([
+    ["soft", "EventType", eventType.id, "softWhenPossible"],
+    ["hard", "EventTag", eventTag.id, "hard"],
+  ] as const)("does not let login alone perform a %s delete", async (_kind, tableName, id, deleteType) => {
+    const { ctx } = createAuthorizationPersona("limited", { id: limited.id })
+    const delegate = authorizationTestDb.getDelegate(tableName)
+    const update = vi.spyOn(delegate, "update")
+    const deleteMany = vi.spyOn(delegate, "deleteMany")
+
+    await expect(
+      invokeResolver(db3Mutation, forgeDb3Delete(tableName, id, deleteType), ctx),
+    ).rejects.toThrow(`Not authorized to mutate ${tableName} fields`)
+
+    expect(update).not.toHaveBeenCalled()
+    expect(deleteMany).not.toHaveBeenCalled()
+  })
+
+  it("soft-deletes a soft-delete table for an authorized actor", async () => {
+    const { ctx } = createAuthorizationPersona("bandAdmin", {
+      id: eventAdmin.id,
+      permissions: [
+        Permission.login,
+        Permission.basic_trust,
+        Permission.manage_events,
+        Permission.admin_events,
+      ],
+    })
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Delete("EventType", eventType.id, "softWhenPossible"),
+      ctx,
+    )
+
+    expect(authorizationTestDb.snapshot("eventType")).toEqual([
+      expect.objectContaining({ id: eventType.id, isDeleted: true }),
+    ])
+  })
+
+  it("rejects hard deletion when a table supports soft deletion", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const delegate = authorizationTestDb.getDelegate("eventType")
+    const update = vi.spyOn(delegate, "update")
+    const deleteMany = vi.spyOn(delegate, "deleteMany")
+
+    await expect(
+      invokeResolver(db3Mutation, forgeDb3Delete("EventType", eventType.id, "hard"), ctx),
+    ).rejects.toThrow("Not authorized to mutate EventType fields")
+
+    expect(update).not.toHaveBeenCalled()
+    expect(deleteMany).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("eventType")).toEqual([eventType])
+  })
+
+  it("hard-deletes an allowlisted domain table for an authorized actor", async () => {
+    const { ctx } = createAuthorizationPersona("bandAdmin", {
+      id: eventAdmin.id,
+      permissions: [
+        Permission.login,
+        Permission.basic_trust,
+        Permission.manage_events,
+        Permission.admin_events,
+      ],
+    })
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Delete("EventTag", eventTag.id, "softWhenPossible"),
+      ctx,
+    )
+
+    expect(authorizationTestDb.snapshot("eventTag")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "EventTag", recordId: eventTag.id, action: "delete" }),
+      ]),
+    )
+  })
+
+  it("authorizes a hard delete against the persisted target row", async () => {
+    const normal = createAuthorizationTestUser("normal", { id: 20 })
+    const otherUser = createAuthorizationTestUser("normal", { id: 21 })
+    const ownInstrument = { id: 300, userId: normal.id, instrumentId: 500 }
+    const otherInstrument = { id: 301, userId: otherUser.id, instrumentId: 500 }
+    authorizationTestDb.reset({
+      user: [normal, otherUser],
+      userInstrument: [ownInstrument, otherInstrument],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Delete("UserInstrument", otherInstrument.id, "hard"),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate UserInstrument fields")
+    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([
+      ownInstrument,
+      otherInstrument,
+    ])
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Delete("UserInstrument", ownInstrument.id, "hard"),
+      ctx,
+    )
+    expect(authorizationTestDb.snapshot("userInstrument")).toEqual([otherInstrument])
+  })
+
+  it("lets Band Admin deactivate an ordinary user", async () => {
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Delete("User", ordinaryUser.id, "softWhenPossible"),
+      ctx,
+    )
+
+    expect(authorizationTestDb.snapshot("user")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: ordinaryUser.id, isDeleted: true }),
+      ]),
+    )
+  })
+
+  it.each([
+    ["a user in a protected role", protectedRoleUser],
+    ["a user with the isSysAdmin flag", isSysAdminUser],
+  ])("does not let Band Admin deactivate %s", async (_description, target) => {
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+    const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Delete("User", target.id, "softWhenPossible"),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate User fields")
+
+    expect(update).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("user")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: target.id, isDeleted: false }),
+      ]),
+    )
+  })
+
+  it("keeps user hard deletion out of the generic endpoint", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const deleteMany = vi.spyOn(authorizationTestDb.getDelegate("user"), "deleteMany")
+
+    await expect(
+      invokeResolver(db3Mutation, forgeDb3Delete("User", ordinaryUser.id, "hard"), ctx),
+    ).rejects.toThrow("Not authorized to mutate User fields")
+
+    expect(deleteMany).not.toHaveBeenCalled()
+  })
+
+  it("cannot trigger Role or Permission cascade and SetNull effects through generic delete", async () => {
+    const role = {
+      id: 200,
+      name: "Protected role",
+      description: "",
+      isRoleForNewUsers: false,
+      isPublicRole: false,
+      sortOrder: 0,
+      color: null,
+      significance: null,
+    }
+    const permission = {
+      id: 201,
+      name: Permission.sysadmin,
+      description: "",
+      isVisibility: false,
+      sortOrder: 0,
+      significance: null,
+      color: null,
+      iconName: null,
+    }
+    const rolePermission = {
+      id: 202,
+      roleId: role.id,
+      permissionId: permission.id,
+    }
+    const assignedUser = { ...ordinaryUser, id: 203, roleId: role.id }
+    const visibilityConsumer = { id: 204, visiblePermissionId: permission.id }
+    authorizationTestDb.reset({
+      user: [sysadmin, assignedUser],
+      role: [role],
+      permission: [permission],
+      rolePermission: [rolePermission],
+      event: [visibilityConsumer],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+
+    await expect(
+      invokeResolver(db3Mutation, forgeDb3Delete("Role", role.id, "hard"), ctx),
+    ).rejects.toThrow("Not authorized to mutate Role fields")
+    await expect(
+      invokeResolver(db3Mutation, forgeDb3Delete("Permission", permission.id, "hard"), ctx),
+    ).rejects.toThrow("Not authorized to mutate Permission fields")
+
+    expect(authorizationTestDb.snapshot("role")).toEqual([role])
+    expect(authorizationTestDb.snapshot("permission")).toEqual([permission])
+    expect(authorizationTestDb.snapshot("rolePermission")).toEqual([rolePermission])
+    expect(authorizationTestDb.snapshot("user")).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: assignedUser.id, roleId: role.id })]),
+    )
+    expect(authorizationTestDb.snapshot("event")).toEqual([
+      expect.objectContaining({ id: visibilityConsumer.id, visiblePermissionId: permission.id }),
+    ])
+  })
+})

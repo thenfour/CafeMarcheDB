@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001 and BA-A001 through BA-A004 complete; BA-A005 next
+- Implementation status: BA-T001 and BA-A001 through BA-A005 complete; BA-U001 next
 
 ## Goal
 
@@ -15,7 +15,7 @@ This document is the working source of truth for the hardening and rollout. Keep
 
 The goal is complete only when all of the following are true:
 
-- [ ] Generic database query and mutation paths enforce table, row, field, association, filter, and delete authorization on the server.
+- [x] Generic database query and mutation paths enforce table, row, field, association, filter, and delete authorization on the server.
 - [ ] No non-sysadmin path can set `User.isSysAdmin`, grant a protected permission, assign a protected role, or take over a protected account.
 - [ ] Band Admin can perform the agreed domain, site-configuration, and ordinary user-management operations.
 - [ ] Band Admin cannot access server diagnostics, raw environment/configuration, security topology, unrestricted impersonation, raw sensitive logs, or developer/debug surfaces.
@@ -168,7 +168,7 @@ Record each decision before implementing the affected capability.
 | Workstream                          | Status      | Exit condition                                                                                            |
 | ----------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
 | P0: Remove workflow feature         | Not started | Workflow UI, services, permissions, data model, and database objects no longer exist                      |
-| P0: Generic DB3 authorization       | Not started | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
+| P0: Generic DB3 authorization       | Complete    | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
 | P0: Protected accounts and signup   | Not started | No untrusted path can obtain or delegate sysadmin authority                                               |
 | P0: Secrets and object-level gaps   | Not started | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
 | P1: Permission and role model       | Not started | Delegation policy and protected role/permission metadata are authoritative                                |
@@ -419,24 +419,32 @@ Evidence:
 
 ### BA-A005 — Authorize deletes
 
-- [ ] Enforce table, row, target, and operation authorization before soft or hard delete.
-- [ ] Restrict hard delete to an explicit allowlist or dedicated operations.
-- [ ] Protect built-in roles and permissions from deletion.
-- [ ] Review cascading effects before allowing Role or Permission deletion.
+- [x] Enforce table, row, target, and operation authorization before soft or hard delete.
+- [x] Restrict hard delete to an explicit allowlist or dedicated operations.
+- [x] Protect built-in roles and permissions from deletion.
+- [x] Review cascading effects before allowing Role or Permission deletion.
 
-Reference: [hard-delete path](../src/core/db3/server/db3mutationCore.ts#L397)
+Policy:
+
+- Every `xTable` declares its generic-delete policy alongside the rest of its schema. The required `TableDesc` field, constructor invariants, and authorization tests enforce complete coverage and agreement with each table's soft-delete schema.
+- Tables with an `isDeleted` column are soft-delete-only through generic DB3. Hard-only domain and association tables are individually allowlisted and still require authorization against the persisted target row. The generic data grid requests `softWhenPossible` so the server chooses the permitted operation.
+- `Role`, `Permission`, `RolePermission`, `Change`, `Setting`, and the pending-removal workflow tables cannot be deleted through generic DB3. `User` hard deletion is also excluded and requires a separately scoped Sysadmin maintenance operation.
+- Deleting a Role would cascade its RolePermission rows and set assigned users' `roleId` to null. Deleting a Permission would cascade its RolePermission rows and set visibility references to null across domain records. Generic deletion remains disabled for both; any future dedicated operation must present and validate those consequences.
+- A non-Sysadmin cannot soft-delete a user whose `isSysAdmin` flag is set or whose role contains `sysadmin`, `impersonate_user`, or `never_grant`. BA-U001 will consolidate this delete-specific guard with the shared protected-principal policy used by all user-management operations.
+
+References: [delete-policy table contract](../src/core/db3/shared/db3core.ts#L478), [delete implementation](../src/core/db3/server/db3mutationCore.ts#L440)
 
 Acceptance criteria:
 
-- [ ] Login alone cannot delete registered DB3 records.
-- [ ] Protected roles, permissions, and users cannot be deleted by Band Admin.
-- [ ] Delete tests cover cascade and `SetNull` behavior.
+- [x] Login alone cannot delete registered DB3 records.
+- [x] Protected roles, permissions, and users cannot be deleted by Band Admin.
+- [x] Delete tests cover cascade and `SetNull` behavior.
 
 Phase completion evidence:
 
-- Implementation:
-- Verification:
-- Commit/PR:
+- Implementation: required delete-policy metadata and schema consistency invariants on `xTable` in `src/core/db3/shared/db3core.ts`, with the policy declared beside every DB3 table schema; soft-only and explicit hard-delete operation enforcement, persisted-row authorization, protected-user target checks, and disabled generic identity/security/audit/workflow deletion in `src/core/db3/server/db3mutationCore.ts`; generic DB3 grids now request `softWhenPossible` in `src/core/db3/components/db3DataGrid.tsx`.
+- Verification: `yarn test:auth` and `yarn test` (65 passed, including complete policy coverage, soft/hard operation boundaries, login-only rejection, persisted owner-row scope, protected-user targets, user hard-delete rejection, authorized controls, and preservation of RolePermission cascade plus User/visibility `SetNull` dependents); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ## Phase 2 — Protect identities, role delegation, and signup
 
@@ -815,12 +823,12 @@ Phase completion evidence:
 
 ### Generic adversarial cases
 
-- [ ] Anonymous DB3 query cannot enumerate protected tables or use protected fields as predicates.
-- [ ] Logged-in caller cannot select admin intention or deleted rows.
-- [ ] Mixed allowed/forbidden update rejects or strips forbidden fields according to the documented mutation policy.
-- [ ] Association-only updates enforce authorization.
-- [ ] Hard and soft deletes enforce authorization.
-- [ ] Unknown fields, table IDs, operations, and filter operators are rejected.
+- [x] Anonymous DB3 query cannot enumerate protected tables or use protected fields as predicates.
+- [x] Logged-in caller cannot select admin intention or deleted rows.
+- [x] Mixed allowed/forbidden update rejects or strips forbidden fields according to the documented mutation policy.
+- [x] Association-only updates enforce authorization.
+- [x] Hard and soft deletes enforce authorization.
+- [x] Unknown fields, table IDs, operations, and filter operators are rejected.
 
 ### Role/persona cases
 

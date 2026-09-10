@@ -80,6 +80,7 @@ export const xUserMinimum = new db3.xTable({
         return UserArgs;
     },
     tableName: "User",
+    deletePolicy: "softOnly",
     queryParameters: {
         userId: { kind: "integer", authorizeAs: "id" },
     },
@@ -173,6 +174,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
         return PermissionArgs;
     },
     tableName: "Permission",
+    deletePolicy: "disabled",
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
@@ -250,6 +252,7 @@ export const xPermissionForVisibility = new db3.xTable({
 // this schema is required for tags selection dlg.
 export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
+    deletePolicy: "disabled",
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionDefaultArgs => {
         return RolePermissionArgs;
     },
@@ -289,6 +292,7 @@ export const xRole = new db3.xTable({
         return RoleArgs;
     },
     tableName: "Role",
+    deletePolicy: "disabled",
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
@@ -359,6 +363,7 @@ export const xRole = new db3.xTable({
 
 export const xUserInstrument = new db3.xTable({
     tableName: "UserInstrument",
+    deletePolicy: "hard",
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInstrumentDefaultArgs => {
         return UserInstrumentArgs;
@@ -418,6 +423,7 @@ const userTagBaseArgs: db3.TableDesc =
         return UserTagArgs;
     },
     tableName: "UserTag",
+    deletePolicy: "hard",
     queryParameters: {
         userTagId: { kind: "integer", authorizeAs: "id" },
         ids: { kind: "integerArray", authorizeAs: "id" },
@@ -525,6 +531,7 @@ export const xUserTagForEventSearch = new db3.xTable({
 
 export const xUserTagAssignment = new db3.xTable({
     tableName: "UserTagAssignment",
+    deletePolicy: "hard",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagAssignmentDefaultArgs => {
@@ -568,6 +575,7 @@ const userBaseArgs: db3.TableDesc = {
         return UserArgs;
     },
     tableName: "User",
+    deletePolicy: "softOnly",
     queryParameters: {
         userId: { kind: "integer", authorizeAs: "id" },
         userIds: { kind: "integerArray", authorizeAs: "id" },

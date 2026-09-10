@@ -493,9 +493,15 @@ export interface TableDesc {
 
     tableAuthMap: DB3AuthTablePermissionMap;
 
+    // Required so every table declares its generic-delete behavior alongside
+    // its schema. This prevents a central table-name registry from drifting.
+    deletePolicy: DB3DeletePolicy;
+
     // this allows tables to supplement search results with extra "customdata".
     SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 };
+
+export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
 export class xTable /* implements TableDesc*/ {
@@ -505,6 +511,7 @@ export class xTable /* implements TableDesc*/ {
 
     getSelectionArgs: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel;
 
+    deletePolicy: DB3DeletePolicy;
     pkMember: string;
     rowNameMember?: string;
     rowDescriptionMember?: string;
@@ -555,6 +562,21 @@ export class xTable /* implements TableDesc*/ {
         for (const functionName of Object.values(SqlSpecialColumnFunction)) {
             this.SqlSpecialColumns[functionName] = findFieldWithFunction(functionName);
         }
+
+        assert(
+            this.deletePolicy === "disabled"
+            || this.deletePolicy === "hard"
+            || this.deletePolicy === "softOnly",
+            `Table ${this.tableID} does not declare a valid delete policy.`,
+        );
+        assert(
+            this.deletePolicy !== "softOnly" || !!this.SqlSpecialColumns.isDeleted,
+            `Table ${this.tableID} is soft-delete-only but has no isDeleted field.`,
+        );
+        assert(
+            this.deletePolicy !== "hard" || !this.SqlSpecialColumns.isDeleted,
+            `Table ${this.tableID} allows hard deletion despite having an isDeleted field.`,
+        );
 
         args.columns.forEach(field => {
             field.connectToTable(this);

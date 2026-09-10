@@ -38,6 +38,7 @@ export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
 export const xSetting = new xTable({
     getSelectionArgs: (clientIntention) => ({}),
     tableName: "Setting",
+    deletePolicy: "disabled",
     tableAuthMap: xSettingsTableAuthMap,
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({

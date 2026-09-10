@@ -52,6 +52,7 @@ export const xWikiPage = new db3.xTable({
         return WikiPageArgs;
     },
     tableName: "WikiPage",
+    deletePolicy: "hard",
     naturalOrderBy: WikiPageNaturalOrderBy,
     getRowInfo: (row: WikiPagePayload) => ({
         pk: row.id,
@@ -180,6 +181,7 @@ export const xWikiPageRevision = new db3.xTable({
         return WikiPageRevisionArgs;
     },
     tableName: "WikiPageRevision",
+    deletePolicy: "hard",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
     getRowInfo: (row: WikiPageRevisionPayload) => ({
         pk: row.id,

@@ -72,6 +72,47 @@ const requireRolePermissionTopologyAuthorization = (
     }
 };
 
+const gProtectedUserPermissions = new Set<Permission>([
+    Permission.sysadmin,
+    Permission.impersonate_user,
+    Permission.never_grant,
+]);
+
+// checks if the user is protected from deletion
+// "protected" means special authorization needed beyond the rolepermission matrix
+const isProtectedUserDeleteTarget = (table: db3.xTable, model: TAnyModel): boolean => {
+    if (table.tableName !== db3.xUser.tableName) {
+        return false;
+    }
+    // this is the user table; require extra checks...
+    if (model.isSysAdmin === true) {
+        return true; // delete target is a sysadmin; protected.
+    }
+    const rolePermissions = model.role?.permissions;
+    if (!Array.isArray(rolePermissions)) {
+        return false;
+    }
+    return rolePermissions.some((rolePermission: TAnyModel) =>
+        gProtectedUserPermissions.has(rolePermission.permission?.name),
+    );
+};
+
+const requireDeleteOperationAuthorization = (
+    table: db3.xTable,
+    deleteType: "softWhenPossible" | "hard",
+): "soft" | "hard" => {
+    const policy = table.deletePolicy;
+    const canSoftDelete = !!table.SqlSpecialColumns.isDeleted;
+
+    if (deleteType === "softWhenPossible" && canSoftDelete && policy === "softOnly") {
+        return "soft";
+    }
+    if (!canSoftDelete && policy === "hard") {
+        return "hard";
+    }
+    throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
+};
+
 // returns null if not authorized.
 export const getAuthenticatedCtx = (unauthenticatedCtx: Ctx, perm: Permission): AuthenticatedCtx | null => {
     try {
@@ -403,21 +444,39 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         const dbTableClient = db[table.tableName]; // the prisma interface
         const publicData = getMutationPublicData(clientIntention);
 
-        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, [table.pkMember]);
-
-        // TODO: delete row authorization
-
-        if (table.SqlSpecialColumns.isDeleted && deleteType === "softWhenPossible") {
-            // perform a soft delete.
-            await updateImpl(table, id, {
-                [table.SqlSpecialColumns.isDeleted.member]: true,
-            }, ctx, clientIntention);
-            return true;
+        if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+            throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
+        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, [table.pkMember]);
+        const deleteOperation = requireDeleteOperationAuthorization(table, deleteType);
 
-        const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: id } });
+        const selectionArgs = table.tableName === db3.xUser.tableName
+            ? UserWithRolesArgs // require roles in order to do protected auth checks
+            : table.getSelectionArgs(clientIntention, { items: [] });
+        const oldValues = await dbTableClient.findFirst({
+            ...selectionArgs,
+            where: { [table.pkMember]: id },
+        });
         if (!oldValues) {
             throw new Error(`can't delete unknown '${table.tableName}' with pk '${id}'`);
+        }
+
+        const rowIsAuthorized = deleteOperation === "soft"
+            ? table.authorizeRowForDeletePreferSoft({ model: oldValues, publicData, clientIntention })
+            : table.authorizeRowForDeleteHard({ model: oldValues, publicData, clientIntention });
+        if (!rowIsAuthorized) {
+            throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
+        }
+
+        if (!publicData.isSysAdmin && isProtectedUserDeleteTarget(table, oldValues)) {
+            throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
+        }
+
+        if (deleteOperation === "soft") {
+            await updateImpl(table, id, {
+                [table.SqlSpecialColumns.isDeleted!.member]: true,
+            }, ctx, clientIntention);
+            return true;
         }
 
         // delete any associations for this item first.
@@ -444,7 +503,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         //     eventIdToRecalc = id;
         // }
 
-        const choice = await dbTableClient.deleteMany({ where: { [table.pkMember]: id } });
+        await dbTableClient.deleteMany({ where: { [table.pkMember]: id } });
 
         await CallMutateEventHooks({
             tableNameOrSpecialMutationKey: table.tableName,

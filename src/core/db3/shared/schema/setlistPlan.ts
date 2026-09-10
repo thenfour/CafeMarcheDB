@@ -59,6 +59,7 @@ export const xSetlistPlanGroup = new db3.xTable({
         return SetlistPlanGroupArgs;
     },
     tableName: "SetlistPlanGroup",
+    deletePolicy: "hard",
     naturalOrderBy: SetlistPlanGroupNaturalOrderBy,
     getRowInfo: (row: SetlistPlanGroupPayload) => ({
         pk: row.id,
@@ -102,6 +103,7 @@ export const xSetlistPlan = new db3.xTable({
         return {};
     },
     tableName: "SetlistPlan",
+    deletePolicy: "softOnly",
     naturalOrderBy: SetlistPlanNaturalOrderBy,
     getRowInfo: (row: SetlistPlanPayload) => ({
         pk: row.id,

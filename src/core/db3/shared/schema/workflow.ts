@@ -56,6 +56,7 @@ export const WorkflowDefNaturalOrderBy: Prisma.WorkflowDefOrderByWithRelationInp
 
 export const xWorkflowDefArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
     tableName: "WorkflowDef", // case matters :(
+    deletePolicy: "disabled",
     queryParameters: {},
     tableAuthMap: xTableAuthMap,
     naturalOrderBy: WorkflowDefNaturalOrderBy,
@@ -120,6 +121,7 @@ export type WorkflowInstance_Verbose = Prisma.WorkflowInstanceGetPayload<typeof 
 
 export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
     tableName: "WorkflowInstance", // case matters :(
+    deletePolicy: "disabled",
     queryParameters: {},
     tableAuthMap: xTableAuthMap,
     //naturalOrderBy: WorkflowDefNaturalOrderBy,

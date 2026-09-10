@@ -85,6 +85,7 @@ export const xFileTag = new db3.xTable({
         return FileTagArgs;
     },
     tableName: "FileTag",
+    deletePolicy: "hard",
     naturalOrderBy: FileTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_AdminObjects,
     createInsertModelFromString: (input: string): Prisma.FileTagCreateInput => {
@@ -117,6 +118,7 @@ export const xFileTag = new db3.xTable({
 
 export const xFileTagAssignment = new db3.xTable({
     tableName: "FileTagAssignment",
+    deletePolicy: "hard",
     naturalOrderBy: FileTagAssignmentNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagAssignmentDefaultArgs => {
@@ -168,6 +170,7 @@ export const xFileTagAssignment = new db3.xTable({
 
 export const xFileUserTag = new db3.xTable({
     tableName: "FileUserTag",
+    deletePolicy: "hard",
     naturalOrderBy: FileUserTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileUserTagDefaultArgs => {
@@ -214,6 +217,7 @@ export const xFileUserTag = new db3.xTable({
 
 export const xFileSongTag = new db3.xTable({
     tableName: "FileSongTag",
+    deletePolicy: "hard",
     naturalOrderBy: FileSongTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileSongTagDefaultArgs => {
@@ -255,6 +259,7 @@ export const xFileSongTag = new db3.xTable({
 
 export const xFileEventTag = new db3.xTable({
     tableName: "FileEventTag",
+    deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileEventTagNaturalOrderBy,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileEventTagDefaultArgs => {
@@ -306,6 +311,7 @@ export const xFileEventTag = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 export const xFileInstrumentTag = new db3.xTable({
     tableName: "FileInstrumentTag",
+    deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileInstrumentTagNaturalOrderBy,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInstrumentTagDefaultArgs => {
@@ -365,6 +371,7 @@ export interface xFileFilterParams {
 
 const xFileBaseArgs = {
     tableName: "File",
+    deletePolicy: "softOnly" as const,
     queryParameters: {
         fileId: { kind: "integer", authorizeAs: "id" },
         fileTagIds: { kind: "integerArray", authorizeAs: "tags" },
@@ -636,6 +643,7 @@ export const xFrontpageAuthMap_Basic: db3.DB3AuthContextPermissionMap = {
 //   }
 export const xFrontpageGalleryItem = new db3.xTable({
     tableName: "FrontpageGalleryItem",
+    deletePolicy: "softOnly",
     queryParameters: {},
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemDefaultArgs => {
         return FrontpageGalleryItemArgs;
@@ -697,6 +705,7 @@ export const xFrontpageGalleryItem = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 export const xFileWikiPageTag = new db3.xTable({
     tableName: "FileWikiPageTag",
+    deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileWikiPageTagNaturalOrderBy,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileWikiPageTagDefaultArgs => {

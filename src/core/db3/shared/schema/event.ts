@@ -139,6 +139,7 @@ export const xEventType = new db3.xTable({
         return EventTypeArgs;
     },
     tableName: "EventType",
+    deletePolicy: "softOnly",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
@@ -178,6 +179,7 @@ export const xEventStatus = new db3.xTable({
         return EventStatusArgs;
     },
     tableName: "EventStatus",
+    deletePolicy: "softOnly",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventStatusNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
@@ -213,6 +215,7 @@ export const xEventStatus = new db3.xTable({
 
 export const xEventTag = new db3.xTable({
     tableName: "EventTag",
+    deletePolicy: "hard",
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagDefaultArgs => {
         return EventTagArgs;
     },
@@ -252,6 +255,7 @@ export const xEventTag = new db3.xTable({
 
 export const xEventTagAssignment = new db3.xTable({
     tableName: "EventTagAssignment",
+    deletePolicy: "hard",
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentDefaultArgs => {
@@ -286,6 +290,7 @@ export const xEventTagAssignment = new db3.xTable({
 
 export const xEventCustomField = new db3.xTable({
     tableName: "EventCustomField",
+    deletePolicy: "hard",
     naturalOrderBy: EventCustomFieldNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldDefaultArgs => {
@@ -328,6 +333,7 @@ export const xEventCustomField = new db3.xTable({
 
 export const xEventCustomFieldValue = new db3.xTable({
     tableName: "EventCustomFieldValue",
+    deletePolicy: "hard",
     naturalOrderBy: EventCustomFieldValueNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldValueDefaultArgs => {
@@ -416,6 +422,7 @@ export const EventAPI = {
 
 export const xEventArgs_Base: db3.TableDesc = {
     tableName: "Event", // case matters :(
+    deletePolicy: "softOnly",
     queryParameters: EventQueryParameters,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
         return EventArgs;
@@ -782,6 +789,7 @@ export const xEventSearch = new db3.xTable(xEventArgs_Search);
 
 export const xEventSegment = new db3.xTable({
     tableName: "EventSegment",
+    deletePolicy: "hard",
     queryParameters: {
         eventId: { kind: "integer", authorizeAs: "eventId" },
     },
@@ -862,6 +870,7 @@ export const xEventAttendance = new db3.xTable({
         return EventAttendanceArgs;
     },
     tableName: "EventAttendance",
+    deletePolicy: "softOnly",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({
@@ -901,6 +910,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
         return EventSegmentUserResponseArgs;
     },
     tableName: "EventSegmentUserResponse",
+    deletePolicy: "hard",
     queryParameters: {
         eventSegmentId: { kind: "integer", authorizeAs: "eventSegmentId" },
     },
@@ -961,6 +971,7 @@ export const xEventUserResponse = new db3.xTable({
         return EventUserResponseArgs;
     },
     tableName: "EventUserResponse",
+    deletePolicy: "hard",
     queryParameters: {
         eventId: { kind: "integer", authorizeAs: "eventId" },
     },
@@ -1027,6 +1038,7 @@ export const xEventSongList = new db3.xTable({
         return EventSongListArgs;
     },
     tableName: "EventSongList",
+    deletePolicy: "hard",
     queryParameters: {
         eventId: { kind: "integer", authorizeAs: "eventId" },
     },
@@ -1088,6 +1100,7 @@ export const xEventSongListSong = new db3.xTable({
         return EventSongListSongArgs;
     },
     tableName: "EventSongListSong",
+    deletePolicy: "hard",
     queryParameters: {
         eventSongListId: { kind: "integer", authorizeAs: "eventSongListId" },
     },
@@ -1138,6 +1151,7 @@ export const xEventSongListDivider = new db3.xTable({
         return EventSongListDividerArgs;
     },
     tableName: "EventSongListDivider",
+    deletePolicy: "hard",
     queryParameters: {
         eventSongListId: { kind: "integer", authorizeAs: "eventSongListId" },
     },

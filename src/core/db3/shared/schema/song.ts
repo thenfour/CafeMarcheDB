@@ -63,6 +63,7 @@ export const xSongTag = new db3.xTable({
         return SongTagArgs;
     },
     tableName: "SongTag",
+    deletePolicy: "hard",
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
     naturalOrderBy: SongTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
@@ -124,6 +125,7 @@ export const xSongTag = new db3.xTable({
 
 export const xSongTagAssociation = new db3.xTable({
     tableName: "SongTagAssociation",
+    deletePolicy: "hard",
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationDefaultArgs => {
         return SongTagAssociationArgs;
     },
@@ -160,6 +162,7 @@ export interface SongTableParams {
 ////////////////////////////////////////////////////////////////
 const xSongArgs_Base: db3.TableDesc = {
     tableName: "Song",
+    deletePolicy: "softOnly",
     queryParameters: {
         songId: { kind: "integer", authorizeAs: "id" },
         songIds: { kind: "integerArray", authorizeAs: "id" },
@@ -295,6 +298,7 @@ export const xSongCreditType = new db3.xTable({
     },
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
     tableName: "SongCreditType",
+    deletePolicy: "hard",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
         return {
@@ -348,6 +352,7 @@ export const xSongCredit = new db3.xTable({
         return SongCreditArgs;
     },
     tableName: "SongCredit",
+    deletePolicy: "hard",
     queryParameters: {
         songId: { kind: "integer", authorizeAs: "songId" },
     },

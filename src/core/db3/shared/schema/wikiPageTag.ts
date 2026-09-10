@@ -38,6 +38,7 @@ export const xWikiPageTag = new xTable({
         return WikiPageTagArgs;
     },
     tableName: "WikiPageTag",
+    deletePolicy: "hard",
     tableAuthMap: xTableAuthMap,
     naturalOrderBy: WikiPageTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.WikiPageTagCreateInput => {
@@ -70,6 +71,7 @@ export const xWikiPageTag = new xTable({
 //////////////////////////////////////////////////////////////
 export const xWikiPageTagAssignment = new xTable({
     tableName: "WikiPageTagAssignment",
+    deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
     tableAuthMap: xTableAuthMap,
     getSelectionArgs: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagAssignmentDefaultArgs => {

@@ -40,6 +40,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
         return InstrumentFunctionalGroupArgs;
     },
     tableName: "InstrumentFunctionalGroup",
+    deletePolicy: "hard",
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
     getRowInfo: (row: InstrumentFunctionalGroupPayload) => ({
@@ -85,6 +86,7 @@ export const xInstrumentTag = new db3.xTable({
         return InstrumentTagArgs;
     },
     tableName: "InstrumentTag",
+    deletePolicy: "hard",
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
@@ -143,6 +145,7 @@ export const xInstrumentTag = new db3.xTable({
 // this is mostly only in order to define the tags field in xInstruments.
 export const xInstrumentTagAssociation = new db3.xTable({
     tableName: "InstrumentTagAssociation",
+    deletePolicy: "hard",
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationDefaultArgs => {
         return InstrumentTagAssociationArgs;
     },
@@ -178,6 +181,7 @@ export const xInstrument = new db3.xTable({
         return InstrumentArgs;
     },
     tableName: "Instrument",
+    deletePolicy: "hard",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({
         pk: row.id,

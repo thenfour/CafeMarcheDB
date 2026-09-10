@@ -45,6 +45,7 @@ export const xMenuLink = new db3.xTable({
         return MenuLinkArgs;
     },
     tableName: "MenuLink",
+    deletePolicy: "hard",
     naturalOrderBy: MenuLinkNaturalOrderBy,
     getRowInfo: (row: MenuLinkPayload) => ({
         pk: row.id,

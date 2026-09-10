@@ -222,7 +222,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             return null;
         }
         const handleYes = () => {
-            tableClient.doDeleteMutation(deleteRowId, 'hard').then(() => {
+            tableClient.doDeleteMutation(deleteRowId, 'softWhenPossible').then(() => {
                 showSnackbar({ children: "deleted successful", severity: 'success' });
                 setDeleteRowId(null);
                 tableClient.refetch();

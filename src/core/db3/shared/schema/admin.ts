@@ -31,6 +31,7 @@ export interface ChangeTableParams {
 
 export const xChange = new db3.xTable({
     tableName: "Change",
+    deletePolicy: "disabled",
     queryParameters: {
         tableNames: { kind: "stringArray", authorizeAs: "table", nullable: true },
         userIds: { kind: "integerArray", authorizeAs: "userId", nullable: true },
