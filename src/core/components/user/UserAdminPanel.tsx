@@ -123,7 +123,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
                     api.close();
                 });
             }}
-            //dialogDescription="Account role and lifecycle are managed by separate controls."
+            dialogDescription={null}
             renderButtonChildren={() => "Edit profile"}
         />}
 

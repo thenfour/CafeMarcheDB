@@ -1,3 +1,4 @@
+import { hash256 } from "@blitzjs/auth"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("db", async () => {
@@ -17,6 +18,7 @@ import forgotPassword from "src/auth/mutations/forgotPassword"
 import impersonateUser from "src/auth/mutations/impersonateUser"
 import assignUserRole from "src/auth/mutations/assignUserRole"
 import deactivateUser from "src/auth/mutations/deactivateUser"
+import resetPassword from "src/auth/mutations/resetPassword"
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin"
 import getAllRoles from "src/auth/queries/getAllRoles"
 import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities"
@@ -954,7 +956,7 @@ describe("BA-U001 protected-principal policy", () => {
 
     await expect(
       invokeResolver(forgotPassword, { email: target.email }, ctx),
-    ).rejects.toThrow("Not authorized to resetPassword this user")
+    ).rejects.toThrow("Unauthorized test persona; required: sysadmin")
 
     expect(tokenDelete).not.toHaveBeenCalled()
     expect(tokenCreate).not.toHaveBeenCalled()
@@ -1405,6 +1407,139 @@ describe("BA-U002 delegated user administration", () => {
       ctx,
     )).rejects.toThrow("Not authorized to mutate Permission fields")
     expect(update).not.toHaveBeenCalled()
+  })
+})
+
+describe("BA-U003 password-reset hardening", () => {
+  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+  const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
+  const target = {
+    ...createAuthorizationTarget("ordinary", { id: 10 }),
+    hashedPassword: "previous-password-hash",
+    accessToken: "existing-access-token",
+  }
+
+  beforeEach(() => {
+    authorizationTestDb.reset({
+      user: [sysadmin, bandAdmin, target],
+      token: [],
+      session: [],
+      change: [],
+    })
+    vi.restoreAllMocks()
+  })
+
+  it("rejects Band Admin before target lookup or token generation", async () => {
+    const userFind = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
+    const tokenCreate = vi.spyOn(authorizationTestDb.getDelegate("token"), "create")
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+
+    await expect(invokeResolver(
+      forgotPassword,
+      { email: "unknown-user@test.invalid" },
+      ctx,
+    )).rejects.toThrow("Unauthorized test persona; required: sysadmin")
+
+    expect(userFind).not.toHaveBeenCalled()
+    expect(tokenCreate).not.toHaveBeenCalled()
+  })
+
+  it("does not treat a role-carried sysadmin permission as actual Sysadmin", async () => {
+    const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
+      id: 20,
+      isSysAdmin: false,
+      permissions: [Permission.login, Permission.sysadmin],
+    })
+    authorizationTestDb.reset({ user: [roleGrantedSysadmin, target], token: [] })
+    const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
+    const tokenCreate = vi.spyOn(authorizationTestDb.getDelegate("token"), "create")
+    const { ctx } = createAuthorizationPersona("normal", {
+      id: roleGrantedSysadmin.id,
+      permissions: [Permission.login, Permission.sysadmin],
+    })
+
+    await expect(invokeResolver(
+      forgotPassword,
+      { email: target.email },
+      ctx,
+    )).rejects.toThrow("This operation requires an actual Sysadmin account")
+
+    expect(targetLookup).toHaveBeenCalledTimes(1)
+    expect(targetLookup).toHaveBeenCalledWith({
+      select: { isSysAdmin: true },
+      where: { id: roleGrantedSysadmin.id },
+    })
+    expect(tokenCreate).not.toHaveBeenCalled()
+  })
+
+  it("lets an actual Sysadmin issue a hashed, single-user reset token", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const previousBaseUrl = process.env.CMDB_BASE_URL
+    process.env.CMDB_BASE_URL = "https://reset.test.invalid"
+
+    try {
+      const resetUrl = await invokeResolver(forgotPassword, { email: target.email }, ctx)
+      const rawToken = new URL(resetUrl).searchParams.get("token")
+      const storedTokens = authorizationTestDb.snapshot("token")
+
+      expect(rawToken).toBeTruthy()
+      expect(storedTokens).toHaveLength(1)
+      expect(storedTokens[0]).toEqual(expect.objectContaining({
+        type: "RESET_PASSWORD",
+        hashedToken: hash256(rawToken!),
+        sentTo: target.email,
+      }))
+      expect(storedTokens[0]!.hashedToken).not.toBe(rawToken)
+      expect(authorizationTestDb.snapshot("change")).toEqual([])
+    } finally {
+      if (previousBaseUrl === undefined) {
+        delete process.env.CMDB_BASE_URL
+      } else {
+        process.env.CMDB_BASE_URL = previousBaseUrl
+      }
+    }
+  })
+
+  it("records password completion without credentials in the activity log", async () => {
+    const rawToken = "single-use-reset-token"
+    const newPassword = "new-password-value"
+    authorizationTestDb.reset({
+      user: [target],
+      token: [{
+        id: 1,
+        hashedToken: hash256(rawToken),
+        type: "RESET_PASSWORD",
+        expiresAt: new Date("2099-01-01T00:00:00.000Z"),
+        sentTo: target.email,
+        userId: target.id,
+      }],
+      session: [{ id: 1, userId: target.id }],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("public")
+
+    await invokeResolver(resetPassword, {
+      token: rawToken,
+      password: newPassword,
+      passwordConfirmation: newPassword,
+    }, ctx)
+
+    const changes = authorizationTestDb.snapshot("change")
+    expect(changes).toHaveLength(1)
+    expect(changes[0]).toEqual(expect.objectContaining({
+      table: "User",
+      context: "resetPasswordMutation",
+      oldValues: "{}",
+      newValues: JSON.stringify({ passwordReset: true }),
+    }))
+
+    const serializedAudit = JSON.stringify(changes)
+    expect(serializedAudit).not.toContain(rawToken)
+    expect(serializedAudit).not.toContain(newPassword)
+    expect(serializedAudit).not.toContain(target.hashedPassword)
+    expect(serializedAudit).not.toContain(target.accessToken)
+    expect(authorizationTestDb.snapshot("token")).toEqual([])
+    expect(authorizationTestDb.snapshot("session")).toEqual([])
   })
 })
 

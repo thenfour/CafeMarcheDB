@@ -1,4 +1,5 @@
 
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
 import { Button, Dialog, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -11,7 +12,8 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
     const [resetURL, setResetURL] = React.useState<string | null>(null);
     const [showCopied, setShowCopied] = React.useState<boolean>(false);
-    const [forgotPasswordMutation, { isSuccess }] = useMutation(forgotPassword);
+    const [forgotPasswordMutation] = useMutation(forgotPassword);
+    const session = useAuthenticatedSession();
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
@@ -27,10 +29,11 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
 
 
     const onCopy = async () => {
-        console.log(resetURL);
         await navigator.clipboard.writeText(resetURL || "");
         setShowCopied(true);
     };
+
+    if (!session.isSysAdmin) return null;
 
 
     return <>

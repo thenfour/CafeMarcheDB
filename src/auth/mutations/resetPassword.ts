@@ -38,8 +38,6 @@ export default resolver.pipe(
 
     const userId = savedToken.userId;
 
-    const oldValues = await db.user.findFirst({ where: { id: userId } });
-
     // 5. Since token is valid, now we can update the user's password
     const hashedPassword = await SecurePassword.hash(password.trim())
     const user = await db.user.update({
@@ -50,11 +48,12 @@ export default resolver.pipe(
     await RegisterChange({
       action: ChangeAction.update,
       changeContext: CreateChangeContext("resetPasswordMutation"),
-      table: "user",
+      table: "User",
       pkid: userId,
-      oldValues,
-      newValues: user,
+      oldValues: {},
+      newValues: { passwordReset: true },
       ctx,
+      options: { dontCalculateChanges: true },
     });
 
 

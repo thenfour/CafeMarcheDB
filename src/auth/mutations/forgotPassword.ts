@@ -3,30 +3,31 @@ import { generateToken, hash256 } from "@blitzjs/auth"
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { Permission } from "shared/permissions"
-import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
 import { ForgotPassword } from "../schemas"
+import { requireActualSysadmin } from "../server/actualSysadmin"
 import { requireCanManageUser } from "../server/userManagementPolicy"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 
 export default resolver.pipe(
   resolver.zod(ForgotPassword),
-  resolver.authorize(Permission.manage_users),
+  resolver.authorize(Permission.sysadmin),
   async ({ email }, ctx) => {
-    // Use fresh database state in addition to the session authorization above,
-    // so a stale grant cannot expose an account-takeover credential.
-    const [actor, user] = await Promise.all([
-      db.user.findFirst({
-        ...UserWithRolesArgs,
-        where: { id: ctx.session.userId },
-      }),
-      db.user.findFirst({
-        ...UserWithRolesArgs,
-        where: { email: email.toLowerCase() },
-      }),
-    ])
+    // Permission.sysadmin can exist in a role. This emergency operation instead
+    // requires the freshly-read User.isSysAdmin flag before target lookup or
+    // reset-token generation.
+    await requireActualSysadmin(db, ctx.session.userId)
+
+    const user = await db.user.findFirst({
+      select: { id: true, email: true, isDeleted: true, isSysAdmin: true },
+      where: { email: email.toLowerCase() },
+    })
     if (user) {
-      requireCanManageUser({ actor, target: user, action: "resetPassword" })
+      requireCanManageUser({
+        actor: { id: ctx.session.userId, isSysAdmin: true },
+        target: user,
+        action: "resetPassword",
+      })
     }
 
     // 2. Generate the token and expiration date.

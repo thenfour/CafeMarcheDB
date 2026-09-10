@@ -149,6 +149,7 @@ export function createAuthorizationTestContext(
         throw new Error(`Unauthorized test persona; required: ${required.join(", ")}`)
       }
     },
+    $create: async () => undefined,
   }
 
   return { session } as unknown as Ctx | AuthenticatedCtx

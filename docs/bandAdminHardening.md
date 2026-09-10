@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001, BA-U002, and BA-M001 complete; BA-U003 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U003, and BA-M001 complete; BA-U004 next
 
 ## Goal
 
@@ -510,13 +510,19 @@ Evidence:
 
 ### BA-U003 — Harden password reset
 
-- [ ] Make password-reset URL generation explicitly Sysadmin-only; `manage_users`, `admin_users`, and Band Admin must not authorize it.
-- [ ] Remove the reset action from every non-Sysadmin user-management surface.
-- [ ] Add a server-boundary test proving Band Admin cannot invoke the mutation or receive a reset URL for any target.
-- [ ] Preserve the existing mechanism as a last-resort Sysadmin operation until a separately scoped hardened recovery flow is designed.
-- [ ] Keep credential-bearing values out of activity logs even though the emergency operation is Sysadmin-only.
+- [x] Make password-reset URL generation explicitly Sysadmin-only; `manage_users`, `admin_users`, and Band Admin must not authorize it.
+- [x] Remove the reset action from every non-Sysadmin user-management surface.
+- [x] Add a server-boundary test proving Band Admin cannot invoke the mutation or receive a reset URL for any target.
+- [x] Preserve the existing mechanism as a last-resort Sysadmin operation until a separately scoped hardened recovery flow is designed.
+- [x] Keep credential-bearing values out of activity logs even though the emergency operation is Sysadmin-only.
 
-Reference: [forgotPassword mutation](../src/auth/mutations/forgotPassword.ts#L10)
+References: [forgotPassword mutation](../src/auth/mutations/forgotPassword.ts#L10), [reset completion mutation](../src/auth/mutations/resetPassword.ts#L14), [Sysadmin reset control](../src/core/components/user/AdminResetPasswordButton.tsx#L10)
+
+Evidence:
+
+- Implementation: the administrator-mediated reset mutation now requires both the `sysadmin` resolver gate and a fresh persisted `User.isSysAdmin` check before target lookup or token generation, so `manage_users`, `admin_users`, Band Admin, stale sessions, and role-carried `sysadmin` grants cannot reach the bearer credential. The reset control independently hides itself from non-Sysadmins, the raw reset URL is no longer written to the browser console, and password-reset completion records only non-secret event metadata instead of serializing full User rows. The existing manual-link mechanism and 48-hour lifetime remain unchanged pending a separately scoped recovery redesign.
+- Verification: `yarn test:auth` and `yarn test` (104 passed, including rejection before lookup/token creation, role-carried `sysadmin` rejection, actual-Sysadmin issuance with hashed token storage, and credential-free reset activity records); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ### BA-U004 — Constrain impersonation
 
@@ -936,6 +942,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                                                                            | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —         |
 | 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views     | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`      | see gh issue #668 |
 | 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
+| 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                      | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
 
 ## Deferred ideas
 

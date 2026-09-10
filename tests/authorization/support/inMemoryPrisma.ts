@@ -92,6 +92,13 @@ export class InMemoryDelegate {
     this.rows = retained
     return { count }
   }
+
+  async delete(args: { where: Record<string, unknown> }) {
+    const index = this.rows.findIndex((row) => matchesWhere(row, args.where))
+    if (index < 0) throw new Error("In-memory row was not found")
+    const [deleted] = this.rows.splice(index, 1)
+    return clone(deleted!)
+  }
 }
 
 class AuthorizationTestDatabase {
