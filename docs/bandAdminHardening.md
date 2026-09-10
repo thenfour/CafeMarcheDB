@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U005, and BA-M001 complete; BA-U006 and BA-S001 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, and BA-M001 complete; BA-S001 next
 
 ## Goal
 
@@ -18,7 +18,7 @@ This document is the working source of truth for the hardening and rollout. Keep
 The goal is complete only when all of the following are true:
 
 - [x] Generic database query and mutation paths enforce table, row, field, association, filter, and delete authorization on the server.
-- [ ] No non-sysadmin path can set `User.isSysAdmin`, grant a protected permission, assign a protected role, or take over a protected account.
+- [x] No non-sysadmin path can set `User.isSysAdmin`, grant a protected permission, assign a protected role, or take over a protected account.
 - [ ] A representative database-defined, non-sysadmin role can perform the permitted domain, site-configuration, ordinary-user editing/deactivation, and constrained role-assignment operations.
 - [ ] Band Admin cannot access server diagnostics, raw environment/configuration, security topology, unrestricted impersonation, raw sensitive logs, or developer/debug surfaces.
 - [ ] Permission grants and revocations take effect reliably for existing sessions.
@@ -196,7 +196,7 @@ Record each decision before implementing the affected capability.
 | ----------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
 | P0: Contain workflow feature        | Not started | Normal UI/server entry points and effective grants are removed; negative access tests pass                |
 | P0: Generic DB3 authorization       | Complete    | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
-| P0: Protected accounts and signup   | In progress | No untrusted path can obtain or delegate sysadmin authority                                               |
+| P0: Protected accounts and signup   | Complete    | No untrusted path can obtain or delegate sysadmin authority                                               |
 | P0: Secrets and object-level gaps   | Not started | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
 | P1: Permission and role model       | In progress | Delegation policy and protected role/permission metadata are authoritative                                |
 | P1: Sessions and revocation         | Not started | Grants and revocations are reflected reliably and promptly                                                |
@@ -616,25 +616,33 @@ Phase completion evidence:
 
 ### BA-U006 — Protect login identifiers and provider bindings
 
-- [ ] Disable non-Sysadmin generic/delegated User creation. Preserve the explicit self-signup flow and, if still needed, an actual-Sysadmin maintenance path.
-- [ ] Remove `User.email`, `User.googleId`, `User.hashedPassword`, calendar-feed credentials, `User.isSysAdmin`, and server-owned identifiers from generic/delegated mutation fields.
-- [ ] Keep ordinary email editing unavailable until a verified self-service email-change flow exists.
-- [ ] If operational email correction is required, provide a dedicated actual-Sysadmin-only mutation with fresh authorization checks, narrow credential-free audit metadata, and session invalidation.
-- [ ] Keep Google link/unlink separate from email correction and ordinary profile editing.
-- [ ] Require a provider-verified email before an existing account can be linked by email in the Google callback.
-- [ ] Add regression tests for crafted delegated User creation, Band Admin email takeover, direct writes to every server-owned authentication field, unverified provider email, and session invalidation after Sysadmin correction.
+- [x] Disable non-Sysadmin generic/delegated User creation. Preserve the explicit self-signup flow and, if still needed, an actual-Sysadmin maintenance path.
+- [x] Remove `User.email`, `User.googleId`, `User.hashedPassword`, calendar-feed credentials, `User.isSysAdmin`, and server-owned identifiers from generic/delegated mutation fields.
+- [x] Keep ordinary email editing unavailable until a verified self-service email-change flow exists.
+- [x] If operational email correction is required, provide a dedicated actual-Sysadmin-only mutation with fresh authorization checks, narrow credential-free audit metadata, and session invalidation.
+- [x] Keep Google link/unlink separate from email correction and ordinary profile editing.
+- [x] Require a provider-verified email before an existing account can be linked by email in the Google callback.
+- [x] Add regression tests for crafted delegated User creation, Band Admin email takeover, direct writes to every server-owned authentication field, unverified provider email, and session invalidation after Sysadmin correction.
 
 Acceptance criteria:
 
-- [ ] Band Admin cannot change which password or Google identity authenticates any account.
-- [ ] Band Admin cannot create accounts through generic DB3 or a hidden maintenance surface.
-- [ ] Actual-Sysadmin email correction is explicit, auditable, and cannot silently transfer or remove the existing Google binding.
-- [ ] No generic table or ordinary user endpoint can write authentication-owned fields.
+- [x] Band Admin cannot change which password or Google identity authenticates any account.
+- [x] Band Admin cannot create accounts through generic DB3 or a hidden maintenance surface.
+- [x] Actual-Sysadmin email correction is explicit, auditable, and cannot silently transfer or remove the existing Google binding.
+- [x] No generic table or ordinary user endpoint can write authentication-owned fields.
 
 References:
 
 - [User DB3 schema](../src/core/db3/shared/schema/user.ts)
 - [Google authentication callback](../src/pages/api/auth/[...auth].ts)
+- [Actual-Sysadmin email correction](../src/auth/mutations/correctUserEmail.ts)
+- [Verified Google profile email](../src/auth/server/googleProfile.ts)
+
+Evidence:
+
+- Implementation: generic User insertion now requires the actual `User.isSysAdmin` bypass while explicit self-signup remains unchanged. Login email is view-only after creation, and `googleId`, `hashedPassword`, `accessToken`, and `uid` are denied by both registered generic User schemas. A dedicated actual-Sysadmin email-correction mutation verifies fresh database authority before target lookup, normalizes the address, preserves Google binding, revokes target sessions, and records only a redacted change marker. The canonical user panel exposes that operation only from server-computed actual-Sysadmin capability data. Google signup/linking now fails closed unless `passport-google-oauth20` supplies a provider-verified, valid email, and email fallback can claim only an active account without an existing Google binding.
+- Verification: `yarn test` (161 passed, including delegated creation, all authentication-owned fields for Band Admin and generic Sysadmin paths, actual-Sysadmin email correction, role-carried `sysadmin` rejection before target lookup, deactivated targets, session revocation, audit redaction, and verified/unverified Google profiles); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR:
 
 ## Phase 3 — Remove sensitive-data and object-level authorization gaps
 
@@ -1044,6 +1052,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | BA-U004   | Restricted impersonation to actual Sysadmins, constrained protected targets, preserved original-actor attribution, and removed sensitive mutation results                                  | `yarn test:auth`; `yarn test` (114 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 | 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                           | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 | 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                         | —                 |
+| 2026-09-10 | BA-U006   | Closed delegated User creation and generic authentication-field writes; added redacted actual-Sysadmin email correction with session revocation; required verified, conflict-safe Google email linking | `yarn test` (161 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                 | —                 |
 
 ## Deferred ideas
 

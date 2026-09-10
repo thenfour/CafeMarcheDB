@@ -6,6 +6,7 @@ import db from "db";
 import { nanoid } from 'nanoid';
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { createSignupUser } from "src/auth/server/createSignupUser";
+import { getGoogleEmailLinkCandidateWhere, getVerifiedGoogleProfileEmail } from "src/auth/server/googleProfile";
 import { api } from "src/blitz-server";
 import { recordAction } from "src/core/db3/server/recordActionServer";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
@@ -32,7 +33,6 @@ export default api(
             // 3. create new.
 
             try {
-              const email = profile.emails[0].value.toLowerCase();
               const googleId = profile.id;
               const displayName = profile.displayName;
 
@@ -47,15 +47,18 @@ export default api(
               });
 
               if (!user) {
+                // An established subject-ID binding is sufficient on its own.
+                // Email is identity evidence only for first-time linking or
+                // signup, where the provider-verified claim is mandatory.
+                const email = getVerifiedGoogleProfileEmail(profile);
+                if (!email) {
+                  done(null, false);
+                  return;
+                }
 
                 user = await db.user.findFirst({
                   ...UserWithRolesArgs,
-                  where: {
-                    AND: [
-                      { email },
-                      { isDeleted: false }
-                    ]
-                  },
+                  where: getGoogleEmailLinkCandidateWhere(email),
                 });
 
                 if (user) {

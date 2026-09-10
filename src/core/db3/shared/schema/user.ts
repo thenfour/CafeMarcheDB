@@ -49,6 +49,19 @@ const authorizeUserSecurityFieldViewOnly = (args: db3.DB3AuthorizeAndSanitizeInp
     return (args.publicData.permissions || gPublicPermissions).includes(Permission.basic_trust);
 };
 
+// Email is a login identifier, not an ordinary profile field. An actual
+// Sysadmin may supply it when creating a maintenance account, but corrections
+// to an existing account use the dedicated correctUserEmail mutation.
+const authorizeUserLoginEmail = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
+    if (args.rowMode === "new") return args.publicData.isSysAdmin === true;
+    return authorizeUserSecurityFieldViewOnly(args);
+};
+
+// These fields are owned by dedicated authentication/calendar flows. Keep
+// them known to request validation so crafted writes fail as unauthorized
+// rather than falling through as unknown fields.
+const denyGenericUserAuthenticationField = (): boolean => false;
+
 type BuiltInRoleFlag = "isRoleForNewUsers" | "isPublicRole";
 
 // Built-in role designations are reassigned through one dedicated transaction.
@@ -67,6 +80,14 @@ export const xUserTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
     EditOwn: Permission.basic_trust,
     Edit: Permission.manage_users,
     Insert: Permission.manage_users,
+} as const;
+
+const xUserTableAuthMap_R_EManagers_ActualSysadminInsert: db3.DB3AuthTablePermissionMap = {
+    ...xUserTableAuthMap_R_EManagers,
+    // User creation is self-signup or actual-Sysadmin maintenance. Because
+    // actual Sysadmins bypass table permission checks, never_grant closes this
+    // generic insert path to every delegated role, including Band Admin.
+    Insert: Permission.never_grant,
 } as const;
 
 export const xUserTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
@@ -109,7 +130,7 @@ export const xUserMinimum = new db3.xTable({
         name: row.name,
         ownerUserId: row.id,
     }),
-    tableAuthMap: xUserTableAuthMap_R_EManagers,
+    tableAuthMap: xUserTableAuthMap_R_EManagers_ActualSysadminInsert,
 
     // note: self-sign-up is not part of this; it doesn't use db3 auth.
     // 
@@ -117,10 +138,9 @@ export const xUserMinimum = new db3.xTable({
     // 			-----------------------------------------------------------------------------------------------------------------
     // id             |  basic_trust    basic_trust     #               #                 #             |   xUserAuthMap_R_EOwn_EManagers                                  
     // name           |  basic_trust    basic_trust     basic_trust     manage_users      basic_trust   |   xUserAuthMap_R_EOwn_EManagers
-    // email          |  basic_trust    basic_trust     basic_trust     manage_users      basic_trust   |   xUserAuthMap_R_EOwn_EManagers
+    // email          |  basic_trust    basic_trust     #               #                 sysadmin      |   dedicated correction after insert
     // phone          |  basic_trust    basic_trust     basic_trust     manage_users      basic_trust   |   xUserAuthMap_R_EOwn_EManagers
-    // hashedPassword |  basic_trust    basic_trust     basic_trust     manage_users      basic_trust   |   xUserAuthMap_R_EOwn_EManagers
-    // googleId       |  basic_trust    basic_trust     basic_trust     manage_users      basic_trust   |   xUserAuthMap_R_EOwn_EManagers
+    // auth fields    |  #              #               #               #                 #             |   dedicated auth/calendar flows only
 
     // isDeleted      |  basic_trust    basic_trust     manage_users    manage_users*     basic_trust*  |   xUserAuthMap_Manage
     // createdAt      |  basic_trust    basic_trust     user_admin      user_admin*       basic_trust*  |   xUserAuthMap_Admin
@@ -153,7 +173,7 @@ export const xUserMinimum = new db3.xTable({
             columnName: "email",
             allowNull: false,
             format: "email",
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            _customAuth: authorizeUserLoginEmail,
         }),
         new GenericStringField({
             columnName: "phone",
@@ -167,21 +187,10 @@ export const xUserMinimum = new db3.xTable({
             _customAuth: authorizeUserSecurityFieldViewOnly,
             allowNull: false,
         }),
-        new GenericStringField({
-            columnName: "hashedPassword",
-            allowNull: true,
-            format: "plain",
-            authMap: xUserAuthMap_R_EOwn_EManagers,
-        }),
-        new GenericStringField({
-            columnName: "googleId",
-            format: "plain",
-            allowNull: true,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
-        }),
-        new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "uid", authMap: xUserAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "googleId", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "accessToken", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "uid", _customAuth: denyGenericUserAuthenticationField }),
     ]
 });
 
@@ -606,7 +615,7 @@ const userBaseArgs: db3.TableDesc = {
         userId: { kind: "integer", authorizeAs: "id" },
         userIds: { kind: "integerArray", authorizeAs: "id" },
     },
-    tableAuthMap: xUserTableAuthMap_R_EManagers,
+    tableAuthMap: xUserTableAuthMap_R_EManagers_ActualSysadminInsert,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
         pk: row.id,
@@ -644,7 +653,7 @@ const userBaseArgs: db3.TableDesc = {
             columnName: "email",
             allowNull: false,
             format: "email",
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            _customAuth: authorizeUserLoginEmail,
         }),
         new GenericStringField({
             columnName: "phone",
@@ -715,10 +724,10 @@ const userBaseArgs: db3.TableDesc = {
             },
         }), // column: tags
 
-        new GhostField({ memberName: "googleId", authMap: xUserAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "uid", authMap: xUserAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "googleId", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "accessToken", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "uid", _customAuth: denyGenericUserAuthenticationField }),
     ]
 };
 

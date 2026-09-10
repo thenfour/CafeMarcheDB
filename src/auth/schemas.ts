@@ -16,8 +16,9 @@ export const DeleteByIdSchema = z.object({
 export const UserNameSchema = z.string().min(1);
 export const UserEmailSchema = z
   .string()
+  .trim()
   .email()
-  .transform((str) => str.toLowerCase().trim());
+  .transform((str) => str.toLowerCase());
 
 export const password = z
   .string()

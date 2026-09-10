@@ -11,6 +11,7 @@ import {
 
 export type UserManagementAction =
     | "assignRole"
+    | "correctEmail"
     | "deactivate"
     | "edit"
     | "impersonate"
@@ -48,6 +49,7 @@ export interface CanManageUserArgs {
 
 export interface UserManagementCapabilities {
     canAssignRole: boolean;
+    canCorrectEmail: boolean;
     canDeactivate: boolean;
     canEdit: boolean;
     canImpersonate: boolean;
@@ -112,6 +114,13 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
         return actorIsSysadmin;
     }
 
+    // Login email changes are an account-identity operation, not ordinary
+    // profile editing. Keep them on the dedicated actual-Sysadmin path until
+    // there is a verified self-service email-change flow.
+    if (action === "correctEmail") {
+        return actorIsSysadmin;
+    }
+
     // The current administrator-mediated reset URL is an account-takeover
     // credential and remains an actual-Sysadmin-only operation.
     //
@@ -156,6 +165,7 @@ export const getUserManagementCapabilities = (
     target: UserManagementPrincipal,
 ): UserManagementCapabilities => ({
     canAssignRole: canManageUser({ actor, target, action: "assignRole" }),
+    canCorrectEmail: canManageUser({ actor, target, action: "correctEmail" }),
     canDeactivate: canManageUser({ actor, target, action: "deactivate" }),
     canEdit: canManageUser({ actor, target, action: "edit" }),
     canImpersonate: canManageUser({ actor, target, action: "impersonate" }),

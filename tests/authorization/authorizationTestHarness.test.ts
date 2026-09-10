@@ -700,7 +700,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
         }),
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to mutate User fields: isSysAdmin")
+    ).rejects.toThrow("Not authorized to mutate User fields")
 
     expect(create).not.toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("change")).toEqual([])
@@ -727,8 +727,8 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
-  it("persists an authorized insert from the sanitized model", async () => {
-    const { ctx } = createAuthorizationPersona("moderator", { id: moderator.id })
+  it("allows an actual Sysadmin maintenance insert from the sanitized model", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     const result = await invokeResolver(
       db3Mutation,
@@ -941,7 +941,7 @@ describe("BA-U001 protected-principal policy", () => {
         }),
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to mutate User fields: roleId")
+    ).rejects.toThrow("Not authorized to mutate User fields")
 
     expect(create).not.toHaveBeenCalled()
   })
@@ -1002,6 +1002,7 @@ describe("BA-U001 protected-principal policy", () => {
     )
     expect(bandAdminOrdinaryCapabilities).toEqual(expect.objectContaining({
       canAssignRole: true,
+      canCorrectEmail: false,
       canDeactivate: true,
       canEdit: true,
       canImpersonate: false,
@@ -1028,6 +1029,7 @@ describe("BA-U001 protected-principal policy", () => {
     )
     expect(bandAdminProtectedCapabilities).toEqual(expect.objectContaining({
       canAssignRole: false,
+      canCorrectEmail: false,
       canDeactivate: false,
       canEdit: false,
       canImpersonate: false,
@@ -1043,6 +1045,7 @@ describe("BA-U001 protected-principal policy", () => {
     )
     expect(sysadminCapabilities).toEqual(expect.objectContaining({
       canAssignRole: true,
+      canCorrectEmail: true,
       canDeactivate: true,
       canEdit: true,
       canImpersonate: true,
@@ -1904,10 +1907,10 @@ describe("BA-A004 association authorization", () => {
     )
   })
 
-  it("authorizes and awaits associations supplied during insert", async () => {
-    const { ctx } = createAuthorizationPersona("moderator", { id: 20 })
-    const moderator = createAuthorizationTestUser("moderator", { id: 20 })
-    authorizationTestDb.reset({ user: [moderator], userInstrument: [], change: [] })
+  it("authorizes and awaits associations supplied during an actual-Sysadmin insert", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: 20 })
+    const sysadminUser = createAuthorizationTestUser("sysadmin", { id: 20 })
+    authorizationTestDb.reset({ user: [sysadminUser], userInstrument: [], change: [] })
 
     const result = await invokeResolver(
       db3Mutation,

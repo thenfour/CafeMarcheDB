@@ -9,11 +9,13 @@ import {
     InputLabel,
     MenuItem,
     Select,
+    TextField,
     Tooltip,
 } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import assignUserRole from "src/auth/mutations/assignUserRole";
+import correctUserEmail from "src/auth/mutations/correctUserEmail";
 import deactivateUser from "src/auth/mutations/deactivateUser";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
 import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
@@ -51,12 +53,15 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
     const router = useRouter();
     const confirm = useConfirm();
     const [showRoleDialog, setShowRoleDialog] = React.useState(false);
+    const [showEmailDialog, setShowEmailDialog] = React.useState(false);
+    const [correctedEmail, setCorrectedEmail] = React.useState(props.user.email);
     const [selectedRoleId, setSelectedRoleId] = React.useState<number | null>(props.user.roleId);
     const [capabilities, { refetch: refetchCapabilities }] = useQuery(
         getUserManagementCapabilities,
         { userId: props.user.id },
     );
     const [assignUserRoleMutation] = useMutation(assignUserRole);
+    const [correctUserEmailMutation] = useMutation(correctUserEmail);
     const [deactivateUserMutation] = useMutation(deactivateUser);
     const [setUserSysAdminMutation] = useMutation(setUserSysAdmin);
 
@@ -174,6 +179,46 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
                                 console.error(error);
                                 snackbar.showError("Unable to update role; see console");
                             }
+                        }}>Save</Button>
+                    </DialogActionsCM>
+                </DialogContent>
+            </Dialog>
+        </>}
+
+        {capabilities.canCorrectEmail && <>
+            <Button onClick={() => {
+                setCorrectedEmail(props.user.email);
+                setShowEmailDialog(true);
+            }}>
+                Correct login email
+            </Button>
+            <Dialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
+                <DialogTitle>Correct login email for {props.user.name}</DialogTitle>
+                <DialogContent dividers>
+                    <p>
+                        This changes the account&apos;s login identifier and revokes its active sessions.
+                        It does not change any linked Google identity.
+                    </p>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        label="Login email"
+                        margin="normal"
+                        onChange={event => setCorrectedEmail(event.target.value)}
+                        type="email"
+                        value={correctedEmail}
+                    />
+                    <DialogActionsCM>
+                        <Button onClick={() => setShowEmailDialog(false)}>Cancel</Button>
+                        <Button disabled={!correctedEmail.trim()} onClick={async () => {
+                            await snackbar.invokeAsync(async () => {
+                                await correctUserEmailMutation({
+                                    userId: props.user.id,
+                                    email: correctedEmail,
+                                });
+                                setShowEmailDialog(false);
+                                await refetch();
+                            }, "Login email corrected");
                         }}>Save</Button>
                     </DialogActionsCM>
                 </DialogContent>
