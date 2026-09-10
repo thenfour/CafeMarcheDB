@@ -25,7 +25,6 @@ export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "f
 export interface MutatorInputBase {
     tableID: string;
     tableName: string;
-    clientIntention: xTableClientUsageContext;
 };
 
 interface MutatorDelete extends MutatorInputBase {
@@ -48,30 +47,32 @@ interface MutatorUpdate extends MutatorInputBase {
 export type MutatorInput = MutatorDelete | MutatorInsert | MutatorUpdate;
 
 ////////////////////////////////////////////////////////////////
-export interface PaginatedQueryInput {
+export interface QueryInputBase {
     tableID: string;
     tableName: string;
-    skip: number | undefined;
-    take: number | undefined;
     orderBy: TAnyModel | undefined;
-
     filter: CMDBTableFilterModel;
-    clientIntention: xTableClientUsageContext;
     cmdbQueryContext: string;
     delayMS?: number | undefined; // for testing purposes you may want to add an artificial delay to receiving results
 };
 
 ////////////////////////////////////////////////////////////////
-export interface QueryInput {
-    tableID: string;
-    tableName: string;
-    orderBy: TAnyModel | undefined;
+export interface QueryRequestInput extends QueryInputBase {
     take?: number | undefined;
+};
 
-    filter: CMDBTableFilterModel;
+export interface QueryInput extends QueryRequestInput {
     clientIntention: xTableClientUsageContext;
-    cmdbQueryContext: string;
-    delayMS?: number | undefined; // for testing purposes you may want to add an artificial delay to receiving results
+};
+
+////////////////////////////////////////////////////////////////
+export interface PaginatedQueryRequestInput extends QueryInputBase {
+    skip: number;
+    take: number;
+};
+
+export interface PaginatedQueryInput extends PaginatedQueryRequestInput {
+    clientIntention: xTableClientUsageContext;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -453,6 +454,15 @@ export interface CalculateWhereClauseArgs {
     skipVisibilityCheck?: boolean;
 };
 
+export type DB3QueryParameterKind = "boolean" | "date" | "integer" | "integerArray" | "string" | "stringArray";
+
+export interface DB3QueryParameterSpec {
+    kind: DB3QueryParameterKind;
+    nullable?: boolean;
+    required?: boolean;
+};
+
+export type DB3QueryParameterMap = Record<string, DB3QueryParameterSpec>;
 
 export interface TableDesc {
     tableName: string;
@@ -465,6 +475,7 @@ export interface TableDesc {
     doesItemExactlyMatchText?: (row: TAnyModel, filterText: string) => boolean,
     naturalOrderBy?: TAnyModel;
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+    queryParameters?: DB3QueryParameterMap; // runtime contract for untrusted generic DB3 requests
 
     // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.
     activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
@@ -488,6 +499,7 @@ export class xTable /* implements TableDesc*/ {
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+    queryParameters?: DB3QueryParameterMap;
 
     activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
 
@@ -502,6 +514,10 @@ export class xTable /* implements TableDesc*/ {
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
+
+        if (this.getParameterizedWhereClause && !this.queryParameters) {
+            throw new Error(`Table ${args.tableUniqueName || args.tableName} has parameterized filtering without a runtime parameter contract.`);
+        }
 
         // does default behavior of case-insensitive, trimmed compare.
         const itemExactlyMatches_defaultImpl = (value: TAnyModel, filterText: string): boolean => {

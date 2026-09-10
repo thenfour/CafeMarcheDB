@@ -350,11 +350,10 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!] != null) {
             const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!]);
 
-            const queryInput: db3.QueryInput = {
+            const queryInput: db3.QueryRequestInput = {
                 tableID: this.typedSchemaColumn.getForeignTableSchema().tableID,
                 tableName: this.typedSchemaColumn.getForeignTableSchema().tableName,
                 orderBy: undefined,
-                clientIntention: this.foreignClientIntention,
                 filter: {
                     items: [{
                         field: this.typedSchemaColumn.getForeignTableSchema().pkMember,
@@ -489,7 +488,6 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
             tableID: args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
             tableName: args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
             orderBy: undefined,
-            clientIntention: args.clientIntention,
             filter: { items: [], quickFilterValues: SplitQuickFilter(args.filterText) },
             cmdbQueryContext: "ForeignSingleFieldRenderContext",
         }, gQueryOptions.default);
@@ -504,7 +502,6 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
             return await this.mutateFn({
                 tableID: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
                 tableName: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
-                clientIntention: this.args.clientIntention,
                 mutationType: "insert",
                 insertModel,
             }) as TForeign;

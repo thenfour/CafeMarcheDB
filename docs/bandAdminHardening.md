@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001 complete; BA-A001 next
+- Implementation status: BA-T001 and BA-A001 complete; BA-A002 next
 
 ## Goal
 
@@ -319,9 +319,15 @@ This is a release blocker. The permission model is not trustworthy until these p
 
 ### BA-A001 — Runtime-validate generic DB3 requests
 
-- [ ] Validate table IDs, mutation kinds, query operators, parameters, filters, ordering, and field names.
-- [ ] Reject unknown values rather than passing them to Prisma.
-- [ ] Derive trusted server intention from the endpoint and actor; do not trust caller-provided `clientIntention` or admin intention.
+- [x] Validate table IDs, mutation kinds, query operators, parameters, filters, ordering, and field names.
+- [x] Reject unknown values rather than passing them to Prisma.
+- [x] Derive trusted server intention from the endpoint and actor; do not trust caller-provided `clientIntention` or admin intention.
+
+Evidence:
+
+- Implementation: strict query, paginated-query, filter, order, and mutation schemas in `src/core/db3/server/db3RequestValidation.ts`; registered runtime parameter contracts on parameterized DB3 tables; request-only transport types with `clientIntention` removed from clients; database-actor-derived intention in query and mutation cores; internal intention/current-user context removed from query responses.
+- Verification: `yarn test:auth` and `yarn test` (22 passed, including malformed request and server-derived intention cases); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 References:
 

@@ -637,7 +637,6 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
             tableID: args.spec.typedSchemaColumn.getForeignTableShema().tableID,
             tableName: args.spec.typedSchemaColumn.getForeignTableShema().tableName,
             orderBy: undefined,
-            clientIntention: args.clientIntention,
             filter: {
                 items: [],
                 tableParams: {},
@@ -658,7 +657,6 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
             const foreignObject = await this.mutateFn({
                 tableID: foreignTableSpec.tableID,
                 tableName: foreignTableSpec.tableName,
-                clientIntention: this.args.clientIntention,
                 mutationType: "insert",
                 insertModel,
             }) as TAnyModel;

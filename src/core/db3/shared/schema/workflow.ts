@@ -56,6 +56,7 @@ export const WorkflowDefNaturalOrderBy: Prisma.WorkflowDefOrderByWithRelationInp
 
 export const xWorkflowDefArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
     tableName: "WorkflowDef", // case matters :(
+    queryParameters: {},
     tableAuthMap: xTableAuthMap,
     naturalOrderBy: WorkflowDefNaturalOrderBy,
     getRowInfo: (row: WorkflowDef_Minimum) => ({
@@ -119,6 +120,7 @@ export type WorkflowInstance_Verbose = Prisma.WorkflowInstanceGetPayload<typeof 
 
 export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
     tableName: "WorkflowInstance", // case matters :(
+    queryParameters: {},
     tableAuthMap: xTableAuthMap,
     //naturalOrderBy: WorkflowDefNaturalOrderBy,
     getRowInfo: (row: Prisma.WorkflowInstanceGetPayload<{}>) => ({

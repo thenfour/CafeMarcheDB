@@ -72,6 +72,9 @@ export const xUserMinimum = new db3.xTable({
         return UserArgs;
     },
     tableName: "User",
+    queryParameters: {
+        userId: { kind: "integer" },
+    },
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayloadMinimum) => ({
         pk: row.id,
@@ -212,6 +215,7 @@ export const xPermission = new db3.xTable(xPermissionBaseArgs);
 export const xPermissionForVisibility = new db3.xTable({
     ...xPermissionBaseArgs,
     tableUniqueName: "xPermissionForVisibility",
+    queryParameters: {},
     getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.PermissionWhereInput[] => {
         return [
             {
@@ -406,6 +410,10 @@ const userTagBaseArgs: db3.TableDesc =
         return UserTagArgs;
     },
     tableName: "UserTag",
+    queryParameters: {
+        userTagId: { kind: "integer" },
+        ids: { kind: "integerArray" },
+    },
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserTagNaturalOrderBy,
     getParameterizedWhereClause: (params: UserTagTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.UserTagWhereInput[] | false) => {
@@ -552,6 +560,10 @@ const userBaseArgs: db3.TableDesc = {
         return UserArgs;
     },
     tableName: "User",
+    queryParameters: {
+        userId: { kind: "integer" },
+        userIds: { kind: "integerArray" },
+    },
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({

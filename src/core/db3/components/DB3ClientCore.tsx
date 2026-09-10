@@ -272,7 +272,10 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 
         if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
             console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.Query)); // don't do both. why would you do both types of queries.??
-            const paginatedQueryInput: db3.PaginatedQueryInput = {
+            if (skip === undefined || take === undefined) {
+                throw new Error("Paginated DB3 queries require a pagination model.");
+            }
+            const paginatedQueryInput: db3.PaginatedQueryRequestInput = {
                 tableID: this.args.tableSpec.args.table.tableID,
                 tableName: this.args.tableSpec.args.table.tableName,
                 orderBy,
@@ -280,7 +283,6 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 take,
                 filter,
                 cmdbQueryContext: `xTableRenderClient/paginated for ${args.tableSpec.args.table.tableName}`,
-                clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
             };
 
             const queryResult = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
@@ -311,13 +313,12 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
             console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)); // don't do both. why would you do both types of queries.??
             console.assert(skip === 0 || skip === undefined);
 
-            const queryInput: db3.QueryInput = {
+            const queryInput: db3.QueryRequestInput = {
                 tableID: this.args.tableSpec.args.table.tableID,
                 tableName: this.args.tableSpec.args.table.tableName,
                 orderBy,
                 take,
                 filter,
-                clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
                 cmdbQueryContext: `xTableRenderClient/query for ${args.tableSpec.args.table.tableName}`,
             };
 
@@ -406,7 +407,6 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         const ret = await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            clientIntention: this.args.clientIntention,
             mutationType: "update",
             updateId: row[this.schema.pkMember],
             updateModel: dbModel,
@@ -425,7 +425,6 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         return await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            clientIntention: this.args.clientIntention,
             mutationType: "insert",
             insertModel: dbModel,
         });
@@ -435,7 +434,6 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         return await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            clientIntention: this.args.clientIntention,
             mutationType: "delete",
             deleteType,
             deleteId: pk,
@@ -469,14 +467,13 @@ export interface FetchAsyncResult<T> {
 
 // allows fetching without suspense interaction
 export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T> {
-    const queryInput: db3.QueryInput = {
+    const queryInput: db3.QueryRequestInput = {
         tableID: args.schema.tableID,
         tableName: args.schema.tableName,
         orderBy: CalculateOrderBy(args.sortModel),
         take: args.take,
         filter: args.filterModel || { items: [] },
         delayMS: args.delayMS,
-        clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
         cmdbQueryContext: `fetchAsync for ${args.schema.tableName} / ${args.schema.tableID}`,
     };
 

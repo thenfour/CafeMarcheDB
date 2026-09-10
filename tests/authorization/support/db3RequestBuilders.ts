@@ -1,20 +1,14 @@
-import type { MutatorInput, QueryInput, xTableClientUsageContext } from "@db3/shared/db3core"
-
-const forgedIntention = (): xTableClientUsageContext => ({
-  intention: "admin",
-  mode: "primary",
-})
+import type { MutatorInput, QueryRequestInput } from "@db3/shared/db3core"
 
 export function forgeDb3Query(
   tableID: string,
-  overrides: Partial<QueryInput> = {},
-): QueryInput {
+  overrides: Partial<QueryRequestInput> = {},
+): QueryRequestInput {
   return {
     tableID,
     tableName: tableID,
     orderBy: undefined,
     filter: { items: [] },
-    clientIntention: forgedIntention(),
     cmdbQueryContext: "authorization-test-forged-query",
     ...overrides,
   }
@@ -32,7 +26,6 @@ export function forgeDb3Update(
     mutationType: "update",
     updateId,
     updateModel,
-    clientIntention: forgedIntention(),
     ...overrides,
   } as MutatorInput
 }

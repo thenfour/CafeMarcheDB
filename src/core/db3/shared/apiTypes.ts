@@ -12,7 +12,7 @@ export type TransactionalPrismaClient = any;
 export interface CMDBTableFilterItem { // from MUI GridFilterItem
     id?: number | string;
     field: string;
-    value?: any;
+    value: any;
     operator: "equals";
 }
 

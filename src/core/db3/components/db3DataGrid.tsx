@@ -126,7 +126,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         clientIntention,
         tableSpec,
         filterModel: {
-            items: filterModel.items.map(i => {
+            items: filterModel.items.filter(i => i.value !== undefined).map(i => {
                 console.assert(i.operator === "equals");
                 const ret: CMDBTableFilterItem = {
                     field: i.field,

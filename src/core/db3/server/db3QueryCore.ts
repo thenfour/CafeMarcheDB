@@ -8,6 +8,7 @@ import * as mutationCore from "../server/db3mutationCore";
 import { TransactionalPrismaClient } from "../shared/apiTypes";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { TAnyModel } from "@/shared/rootroot";
+import { deriveDB3ClientIntention } from "./db3RequestValidation";
 
 export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient) => {
     try {
@@ -76,7 +77,6 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
             items: sanitizedItems,
             where,
             selectionArgs,
-            clientIntention,
             executionTimeMillis: Date.now() - startTimestamp,
             resultId: randomUUID(),
         };
@@ -92,23 +92,27 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
 
 
 
-export const DB3QueryCore = async (input: db3.QueryInput, ctx: AuthenticatedCtx) => {
+export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: AuthenticatedCtx) => {
     const currentUser = await mutationCore.getCurrentUserCore(ctx);
+    const input: db3.QueryInput = {
+        ...request,
+        clientIntention: deriveDB3ClientIntention("query", currentUser),
+    };
     return await DB3QueryCore2(input, currentUser);
 };
 
 
 
-export const DB3PaginatedQueryCore = async (input: db3.PaginatedQueryInput, ctx: AuthenticatedCtx) => {
+export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestInput, ctx: AuthenticatedCtx) => {
     const startTimestamp = Date.now();
+    const currentUser = await mutationCore.getCurrentUserCore(ctx);
+    const input: db3.PaginatedQueryInput = {
+        ...request,
+        clientIntention: deriveDB3ClientIntention("paginatedQuery", currentUser),
+    };
     const table = db3.GetTableById(input.tableID);
     const contextDesc = `paginatedQuery:${table.tableName}`;
-    const currentUser = await mutationCore.getCurrentUserCore(ctx);
     const clientIntention = input.clientIntention;
-    if (!input.clientIntention) {
-        throw new Error(`client intention is required; context: ${input.cmdbQueryContext}.`);
-    }
-    clientIntention.currentUser = currentUser;
 
     const dbTableClient = db[table.tableName]; // the prisma interface
     const orderBy = input.orderBy || table.naturalOrderBy;
@@ -162,7 +166,6 @@ export const DB3PaginatedQueryCore = async (input: db3.PaginatedQueryInput, ctx:
 
         where,
         selectionArgs,
-        clientIntention,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };

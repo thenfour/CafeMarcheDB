@@ -371,6 +371,18 @@ export interface EventTableParams {
     userIdForResponses?: number; // when searching for multiple events, include this to limit returned responses to this user. prevents huge bloat.
 };
 
+const EventQueryParameters = {
+    eventId: { kind: "integer" },
+    eventIds: { kind: "integerArray" },
+    eventUids: { kind: "stringArray" },
+    eventTypeIds: { kind: "integerArray" },
+    eventStatusIds: { kind: "integerArray" },
+    minDate: { kind: "date" },
+    forFrontPageAgenda: { kind: "boolean" },
+    refreshSerial: { kind: "integer" },
+    userIdForResponses: { kind: "integer" },
+} satisfies db3.DB3QueryParameterMap;
+
 export type UserTagWithAssignmentPayload = Prisma.UserTagGetPayload<{
     select: {
         id: true,
@@ -404,6 +416,7 @@ export const EventAPI = {
 
 export const xEventArgs_Base: db3.TableDesc = {
     tableName: "Event", // case matters :(
+    queryParameters: EventQueryParameters,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
         return EventArgs;
     },
@@ -745,6 +758,10 @@ export type EventSearch_EventSegmentUserResponse = Prisma.EventSegmentUserRespon
 const xEventArgs_Search: db3.TableDesc = {
     ...xEventArgs_Base,
     tableUniqueName: "xEventArgs_Search",
+    queryParameters: {
+        ...EventQueryParameters,
+        userIdForResponses: { kind: "integer", required: true },
+    },
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
         const tableParams = filterModel.tableParams as EventTableParams;
         assert(tableParams.userIdForResponses, "when searching for events you must provide a userid to limit responses");
@@ -765,6 +782,9 @@ export const xEventSearch = new db3.xTable(xEventArgs_Search);
 
 export const xEventSegment = new db3.xTable({
     tableName: "EventSegment",
+    queryParameters: {
+        eventId: { kind: "integer" },
+    },
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentDefaultArgs => {
         return EventSegmentArgs;
     },
@@ -881,6 +901,9 @@ export const xEventSegmentUserResponse = new db3.xTable({
         return EventSegmentUserResponseArgs;
     },
     tableName: "EventSegmentUserResponse",
+    queryParameters: {
+        eventSegmentId: { kind: "integer" },
+    },
     tableAuthMap: xEventTableAuthMap_UserResponse,
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
@@ -938,6 +961,9 @@ export const xEventUserResponse = new db3.xTable({
         return EventUserResponseArgs;
     },
     tableName: "EventUserResponse",
+    queryParameters: {
+        eventId: { kind: "integer" },
+    },
     naturalOrderBy: EventUserResponseNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_UserResponse,
     getRowInfo: (row: EventUserResponsePayload) => ({
@@ -1001,6 +1027,9 @@ export const xEventSongList = new db3.xTable({
         return EventSongListArgs;
     },
     tableName: "EventSongList",
+    queryParameters: {
+        eventId: { kind: "integer" },
+    },
     naturalOrderBy: EventSongListNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListPayload) => ({
@@ -1059,6 +1088,9 @@ export const xEventSongListSong = new db3.xTable({
         return EventSongListSongArgs;
     },
     tableName: "EventSongListSong",
+    queryParameters: {
+        eventSongListId: { kind: "integer" },
+    },
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListSongPayload) => ({
@@ -1106,6 +1138,9 @@ export const xEventSongListDivider = new db3.xTable({
         return EventSongListDividerArgs;
     },
     tableName: "EventSongListDivider",
+    queryParameters: {
+        eventSongListId: { kind: "integer" },
+    },
     naturalOrderBy: EventSongListSongNaturalOrderBy, // yea i can borrow this.
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListDividerPayload) => ({

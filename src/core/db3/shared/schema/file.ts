@@ -365,6 +365,10 @@ export interface xFileFilterParams {
 
 const xFileBaseArgs = {
     tableName: "File",
+    queryParameters: {
+        fileId: { kind: "integer" },
+        fileTagIds: { kind: "integerArray" },
+    } satisfies db3.DB3QueryParameterMap,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileDefaultArgs => {
         return FileArgs;
     },
@@ -632,6 +636,7 @@ export const xFrontpageAuthMap_Basic: db3.DB3AuthContextPermissionMap = {
 //   }
 export const xFrontpageGalleryItem = new db3.xTable({
     tableName: "FrontpageGalleryItem",
+    queryParameters: {},
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemDefaultArgs => {
         return FrontpageGalleryItemArgs;
     },

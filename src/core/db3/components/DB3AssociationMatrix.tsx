@@ -62,7 +62,7 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
     };
 
     const convertedFilter: CMDBTableFilterModel = {
-        items: filterModel.items.map((i): CMDBTableFilterItem => ({
+        items: filterModel.items.filter(i => i.value !== undefined).map((i): CMDBTableFilterItem => ({
             field: i.field,
             operator: i.operator as any,
             id: i.id,
