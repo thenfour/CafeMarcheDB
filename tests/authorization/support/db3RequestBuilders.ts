@@ -29,3 +29,17 @@ export function forgeDb3Update(
     ...overrides,
   } as MutatorInput
 }
+
+export function forgeDb3Insert(
+  tableID: string,
+  insertModel: Record<string, unknown>,
+  overrides: Partial<MutatorInput> = {},
+): MutatorInput {
+  return {
+    tableID,
+    tableName: tableID,
+    mutationType: "insert",
+    insertModel,
+    ...overrides,
+  } as MutatorInput
+}

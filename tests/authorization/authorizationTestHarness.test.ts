@@ -28,7 +28,7 @@ import {
   type AuthorizationPersona,
   type AuthorizationTargetKind,
 } from "./support/authorizationFixtures"
-import { forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders"
+import { forgeDb3Insert, forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
@@ -588,5 +588,180 @@ describe("BA-A002 generic DB3 query authorization", () => {
     expect(result.items).toEqual([
       expect.objectContaining({ id: 30, name: "Visible event" }),
     ])
+  })
+})
+
+describe("BA-A003 generic DB3 mutation authorization", () => {
+  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+  const moderator = createAuthorizationTestUser("moderator", { id: 2 })
+  const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 3 })
+  const target = createAuthorizationTestUser("normal", {
+    id: 10,
+    name: "Before mutation",
+    isSysAdmin: false,
+  })
+
+  beforeEach(() => {
+    authorizationTestDb.reset({
+      user: [sysadmin, moderator, bandAdmin, target],
+      change: [],
+    })
+    vi.restoreAllMocks()
+  })
+
+  it("atomically rejects a mixed allowed and forbidden update", async () => {
+    const userDelegate = authorizationTestDb.getDelegate("user")
+    const update = vi.spyOn(userDelegate, "update")
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Update("User", target.id, {
+          id: target.id,
+          name: "Must not be persisted",
+          isSysAdmin: true,
+        }),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate User fields: isSysAdmin")
+
+    expect(update).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("user")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: target.id,
+          name: "Before mutation",
+          isSysAdmin: false,
+        }),
+      ]),
+    )
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it.each(["limited", "normal", "editor", "moderator", "bandAdmin"] as const)(
+    "rejects an isSysAdmin update from a %s actor",
+    async (persona) => {
+      const actor = createAuthorizationTestUser(persona, { id: 20 })
+      authorizationTestDb.reset({ user: [actor, target], change: [] })
+      const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
+      const { ctx } = createAuthorizationPersona(persona, { id: actor.id })
+
+      await expect(
+        invokeResolver(
+          db3Mutation,
+          forgeDb3Update("User", target.id, { id: target.id, isSysAdmin: true }),
+          ctx,
+        ),
+      ).rejects.toThrow("Not authorized to mutate User fields")
+
+      expect(update).not.toHaveBeenCalled()
+      expect(authorizationTestDb.snapshot("user")).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: target.id, isSysAdmin: false }),
+        ]),
+      )
+    },
+  )
+
+  it("rejects a protected field on insert before Prisma create", async () => {
+    const userDelegate = authorizationTestDb.getDelegate("user")
+    const create = vi.spyOn(userDelegate, "create")
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Insert("User", {
+          name: "Crafted sysadmin",
+          email: "crafted@test.invalid",
+          isSysAdmin: true,
+        }),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate User fields: isSysAdmin")
+
+    expect(create).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it("enforces table authorization before insert", async () => {
+    const create = vi.spyOn(authorizationTestDb.getDelegate("user"), "create")
+    const limited = createAuthorizationTestUser("limited", { id: 20 })
+    authorizationTestDb.reset({ user: [limited, target], change: [] })
+    const { ctx } = createAuthorizationPersona("limited", { id: limited.id })
+
+    await expect(
+      invokeResolver(
+        db3Mutation,
+        forgeDb3Insert("User", {
+          name: "Unauthorized insert",
+          email: "unauthorized@test.invalid",
+        }),
+        ctx,
+      ),
+    ).rejects.toThrow("Not authorized to mutate User fields")
+
+    expect(create).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it("persists an authorized insert from the sanitized model", async () => {
+    const { ctx } = createAuthorizationPersona("moderator", { id: moderator.id })
+
+    const result = await invokeResolver(
+      db3Mutation,
+      forgeDb3Insert("User", {
+        name: "Authorized insert",
+        email: "authorized@test.invalid",
+      }),
+      ctx,
+    )
+
+    expect(result).toEqual(expect.objectContaining({
+      name: "Authorized insert",
+      email: "authorized@test.invalid",
+    }))
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "User", action: "insert" }),
+      ]),
+    )
+  })
+
+  it("persists an authorized update from the sanitized model", async () => {
+    const { ctx } = createAuthorizationPersona("moderator", { id: moderator.id })
+
+    const result = await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("User", target.id, {
+        id: target.id,
+        name: "Authorized mutation",
+      }),
+      ctx,
+    )
+
+    expect(result).toEqual(expect.objectContaining({
+      id: target.id,
+      name: "Authorized mutation",
+      isSysAdmin: false,
+    }))
+    expect(authorizationTestDb.snapshot("change")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ table: "User", recordId: target.id, action: "update" }),
+      ]),
+    )
+  })
+
+  it("allows only a sysadmin actor to supply isSysAdmin", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+
+    const result = await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("User", target.id, { id: target.id, isSysAdmin: true }),
+      ctx,
+    )
+
+    expect(result).toEqual(expect.objectContaining({ id: target.id, isSysAdmin: true }))
   })
 })

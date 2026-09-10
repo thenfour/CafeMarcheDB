@@ -2,7 +2,7 @@
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
-import { Permission } from "shared/permissions";
+import { Permission, gPublicPermissions } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
@@ -40,6 +40,14 @@ export const xUserAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
     PreMutate: Permission.admin_users,
     PreInsert: Permission.admin_users,
 } as const;
+
+// `isSysAdmin` is a superuser bypass, not a role-managed permission. Its read
+// visibility remains unchanged, but no role permission can authorize a write.
+const authorizeUserIsSysAdmin = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
+    if (args.rowMode !== "view") return args.publicData.isSysAdmin === true;
+    if (args.publicData.isSysAdmin) return true;
+    return (args.publicData.permissions || gPublicPermissions).includes(Permission.basic_trust);
+};
 
 
 export const xUserTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
@@ -136,7 +144,7 @@ export const xUserMinimum = new db3.xTable({
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            authMap: xUserAuthMap_R_EAdmins,
+            _customAuth: authorizeUserIsSysAdmin,
             allowNull: false,
         }),
         new GenericStringField({
@@ -619,7 +627,7 @@ const userBaseArgs: db3.TableDesc = {
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            authMap: xUserAuthMap_R_EAdmins,
+            _customAuth: authorizeUserIsSysAdmin,
             allowNull: false,
         }),
         new ForeignSingleField<Prisma.RoleGetPayload<{}>>({

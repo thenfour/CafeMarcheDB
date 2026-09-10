@@ -244,6 +244,10 @@ export interface ValidateAndParseArgs<FieldDataType> {
 export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
     contextDesc: string,
     model: T | null,
+    // For updates, field authorization is applied to `model` (the proposed
+    // values) while row ownership and table authorization are derived from
+    // the persisted row.
+    existingModel?: T | null,
     rowMode: DB3RowMode,
     publicData: EmptyPublicData | Partial<PublicDataType>,
     clientIntention: xTableClientUsageContext,
@@ -607,8 +611,11 @@ export class xTable /* implements TableDesc*/ {
     // - pre-mutate owner/creator
 
     authorizeAndSanitize = (args: DB3AuthorizeAndSanitizeInput<TAnyModel>): DB3AuthorizeAndSanitizeResult<TAnyModel> => {
-        const rowInfo = args.model ? this.getRowInfo(args.model) : null;
-        const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, args.fallbackOwnerId);
+        const authorizationModel = args.rowMode === "update" && args.existingModel !== undefined
+            ? args.existingModel
+            : args.model;
+        const rowInfo = authorizationModel ? this.getRowInfo(authorizationModel) : null;
+        const ownerUserId = this.getOwnerUserId(authorizationModel, rowInfo?.ownerUserId, args.fallbackOwnerId);
         const isOwner = ownerUserId != null
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
@@ -637,7 +644,22 @@ export class xTable /* implements TableDesc*/ {
         };
 
         const fieldInput: DB3AuthorizeAndSanitizeFieldInput<TAnyModel> = { ...args, authContext, isOwner };
-        const rowIsAuthorizedForView = args.rowMode !== "view" || this.authorizeRowForView(args);
+        let rowIsAuthorized: boolean;
+        switch (args.rowMode) {
+            case "new":
+                rowIsAuthorized = this.authorizeRowBeforeInsert(args);
+                break;
+            case "update":
+                rowIsAuthorized = this.authorizeRowForEdit({
+                    clientIntention: args.clientIntention,
+                    model: authorizationModel,
+                    publicData: args.publicData,
+                });
+                break;
+            case "view":
+                rowIsAuthorized = this.authorizeRowForView(args);
+                break;
+        }
 
         if (args.model) {
             Object.entries(args.model).forEach(e => {
@@ -649,7 +671,7 @@ export class xTable /* implements TableDesc*/ {
                     ret.unknownModel[e[0]] = e[1];
                     return;
                 }
-                if (!rowIsAuthorizedForView) {
+                if (!rowIsAuthorized) {
                     ret.unauthorizedColumnCount++;
                     ret.unauthorizedModel[e[0]] = e[1];
                     return;
@@ -676,9 +698,7 @@ export class xTable /* implements TableDesc*/ {
             });
         }
 
-        ret.rowIsAuthorized = args.rowMode === "view"
-            ? rowIsAuthorizedForView
-            : ret.authorizedColumnCount > 0;
+        ret.rowIsAuthorized = rowIsAuthorized;
         return ret;
     };
 

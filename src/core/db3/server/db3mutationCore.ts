@@ -1,6 +1,6 @@
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
-import { AuthenticatedCtx, Ctx, assert } from "blitz";
+import { AuthenticatedCtx, AuthorizationError, Ctx, assert } from "blitz";
 import db, { Prisma } from "db";
 import * as mime from 'mime';
 import * as mm from 'music-metadata';
@@ -28,6 +28,37 @@ var fs = require('fs');
 const util = require('util');
 //const rename = util.promisify(fs.rename);
 const stat = util.promisify(fs.stat);
+
+export class DB3MutationAuthorizationError extends AuthorizationError {
+    constructor(tableName: string, fieldNames: string[]) {
+        super();
+        this.message = `Not authorized to mutate ${tableName} fields: ${fieldNames.join(", ")}.`;
+        this.name = "DB3MutationAuthorizationError";
+    }
+}
+
+const getMutationPublicData = (clientIntention: db3.xTableClientUsageContext) => (
+    CreatePublicData({
+        user: clientIntention.intention === "public"
+            ? null
+            : clientIntention.currentUser || null,
+    })
+);
+
+const requireAuthorizedMutationFields = (
+    table: db3.xTable,
+    authResult: db3.DB3AuthorizeAndSanitizeResult<TAnyModel>,
+): TAnyModel => {
+    if (!authResult.rowIsAuthorized
+        || authResult.unauthorizedColumnCount > 0
+        || authResult.unknownColumnCount > 0) {
+        throw new DB3MutationAuthorizationError(table.tableName, [
+            ...Object.keys(authResult.unauthorizedModel),
+            ...Object.keys(authResult.unknownModel),
+        ]);
+    }
+    return { ...authResult.authorizedModel };
+};
 
 // returns null if not authorized.
 export const getAuthenticatedCtx = (unauthenticatedCtx: Ctx, perm: Permission): AuthenticatedCtx | null => {
@@ -390,6 +421,11 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         const contextDesc = `insert:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
+        const publicData = getMutationPublicData(clientIntention);
+
+        if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+            throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
+        }
 
         // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
         // so those values will continue to be ID.
@@ -413,29 +449,23 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 clientIntention,
                 contextDesc,
                 model: localFields,
-                publicData: ctx.session.$publicData,
+                publicData,
                 rowMode: "new",
                 fallbackOwnerId: null,
             });
-
-            if (!authResult.rowIsAuthorized) {
-                throw new Error(`unauthorized (row); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))} on table ${table.tableName}`);
-            }
-            if (authResult.authorizedColumnCount < 1) {
-                throw new Error(`unauthorized (0 columns); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
-            }
+            const authorizedLocalFields = requireAuthorizedMutationFields(table, authResult);
 
             // createdBy and updatedBy.
             if (table.SqlSpecialColumns.createdByUser) {
-                localFields[table.SqlSpecialColumns.createdByUser.fkidMember!] = ctx.session.userId;
+                authorizedLocalFields[table.SqlSpecialColumns.createdByUser.fkidMember!] = publicData.userId;
             }
             if (table.SqlSpecialColumns.updatedByUser) {
-                localFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = ctx.session.userId;
+                authorizedLocalFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = publicData.userId;
             }
             // createdAt and updatedAt are done automatically by prisma.
 
             obj = await dbTableClient.create({
-                data: localFields,
+                data: authorizedLocalFields,
             });
 
             await RegisterChange({
@@ -443,7 +473,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 changeContext,
                 table: table.tableName,
                 pkid: obj[table.pkMember],
-                newValues: localFields,
+                newValues: authorizedLocalFields,
                 ctx,
             });
         }
@@ -484,6 +514,11 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
+        const publicData = getMutationPublicData(clientIntention);
+
+        if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+            throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
+        }
 
         // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
         const clientModelForValidation: TAnyModel = table.getClientModel(fields, "update", clientIntention);
@@ -499,39 +534,36 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         // at this point `fields` should not be used.
 
         const fullOldObj = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
-        const oldRowInfo = table.getRowInfo(fullOldObj);
-        const oldValues = getIntersectingFields(localFields, fullOldObj); // only care about values which will actually change.
-        let obj = oldValues;
+        if (!fullOldObj) throw new Error(`${table.tableName} ${pkid} was not found.`);
+        let obj: TAnyModel = getIntersectingFields(localFields, fullOldObj);
         let didChangesOccur = false;
 
         if (Object.keys(localFields).length > 0) {
             const authResult = table.authorizeAndSanitize({
                 clientIntention,
                 contextDesc,
-                // we should pass oldValues here to make sure you are authorized to change from the old data. e.g.
-                // if you are changing the ownerUserID from someone else to yourself. We should definitely check the old value.
-                model: oldValues,//localFields,
-                publicData: ctx.session.$publicData,
+                // Authorize the proposed values while deriving ownership and
+                // row-level access from the persisted row. This prevents an
+                // ownership change from authorizing itself.
+                model: localFields,
+                existingModel: fullOldObj,
+                publicData,
                 rowMode: "update",
-                fallbackOwnerId: oldRowInfo.ownerUserId,
+                fallbackOwnerId: null,
             });
-
-            if (!authResult.rowIsAuthorized) {
-                throw new Error(`unauthorized (row); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))} on table ${table.tableName}`);
-            }
-            if (authResult.authorizedColumnCount < 1) {
-                throw new Error(`unauthorized (0 columns); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
-            }
+            const authorizedLocalFields = requireAuthorizedMutationFields(table, authResult);
+            const oldValues = getIntersectingFields(authorizedLocalFields, fullOldObj);
+            obj = oldValues;
 
             // updatedBy.
             if (table.SqlSpecialColumns.updatedByUser) {
-                localFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = ctx.session.userId;
+                authorizedLocalFields[table.SqlSpecialColumns.updatedByUser.fkidMember!] = publicData.userId;
             }
             // updatedAt are done automatically by prisma.
 
             obj = await dbTableClient.update({
                 where: { [table.pkMember]: pkid },
-                data: localFields,
+                data: authorizedLocalFields,
             });
 
             const d = ObjectDiff(oldValues, obj);

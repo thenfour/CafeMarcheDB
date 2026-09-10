@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001, and BA-A002 complete; BA-A003 next
+- Implementation status: BA-T001 and BA-A001 through BA-A003 complete; BA-A004 next
 
 ## Goal
 
@@ -359,10 +359,16 @@ Evidence:
 
 ### BA-A003 — Persist only authorized mutation fields
 
-- [ ] Authorize the proposed new values as well as the existing row context.
-- [ ] Reject the whole mutation when a forbidden or unknown field is supplied, or persist only the explicitly sanitized model according to a documented policy.
-- [ ] Never write the original unsanitized `localFields` after authorization.
-- [ ] Apply equivalent rules to insert and update.
+- [x] Authorize the proposed new values as well as the existing row context.
+- [x] Reject the whole mutation when a forbidden or unknown field is supplied, or persist only the explicitly sanitized model according to a documented policy.
+- [x] Never write the original unsanitized `localFields` after authorization.
+- [x] Apply equivalent rules to insert and update.
+
+Policy:
+
+- Generic DB3 insert and update mutations are atomic with respect to local fields: if row authorization fails or any proposed local field is forbidden or unknown, the whole mutation is rejected with HTTP 403 before Prisma create/update and before activity logging. No partial local-field update is permitted.
+- On update, the persisted row supplies the ownership and row-authorization context, while field authorization receives the proposed model. Only the resulting authorized model, plus server-owned audit fields, may reach Prisma.
+- The update primary key remains validated routing metadata and is not copied into Prisma update data. Association fields remain outside this policy until BA-A004.
 
 References:
 
@@ -372,9 +378,15 @@ References:
 
 Acceptance criteria:
 
-- [ ] A mixed `{ id, allowedField, forbiddenField }` update cannot persist the forbidden field.
-- [ ] A crafted `{ id, isSysAdmin: true }` user update is rejected for every non-sysadmin actor.
-- [ ] A crafted insert cannot supply protected fields.
+- [x] A mixed `{ id, allowedField, forbiddenField }` update cannot persist the forbidden field.
+- [x] A crafted `{ id, isSysAdmin: true }` user update is rejected for every non-sysadmin actor.
+- [x] A crafted insert cannot supply protected fields.
+
+Evidence:
+
+- Implementation: proposed-field sanitization combined with persisted-row ownership/table authorization in `src/core/db3/shared/db3core.ts`; atomic authorization failure and sanitized-only Prisma create/update payloads in `src/core/db3/server/db3mutationCore.ts`; `User.isSysAdmin` mutation authorization restricted to the explicit `isSysAdmin` bypass in both User schemas.
+- Verification: `yarn test:auth` and `yarn test` (44 passed, including mixed-field atomicity, every non-sysadmin persona, protected and table-denied inserts, authorized insert/update, and sysadmin control cases); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ### BA-A004 — Authorize associations
 
