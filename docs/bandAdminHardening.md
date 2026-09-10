@@ -3,11 +3,13 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U005, and BA-M001 complete; BA-S001 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U005, and BA-M001 complete; BA-U006 and BA-S001 next
 
 ## Goal
 
-Enable a database-defined **Band Admin** role whose permissions let a band run its site, including ordinary user administration and domain configuration, without granting server administration, security-policy administration, protected-account access, secrets, or developer tooling. Application code authorizes permissions and the exceptional `User.isSysAdmin` flag; it does not identify or rank roles.
+Enable the platform to safely support a database-defined **Band Admin** role whose permissions let a band run its site, including ordinary user administration and domain configuration, without granting server administration, security-policy administration, protected-account access, secrets, or developer tooling. Application code authorizes permissions and the exceptional `User.isSysAdmin` flag; it does not identify or rank roles.
+
+This effort establishes the secure authorization platform and composable capabilities. Choosing the production Band Admin grant set, creating that role, and assigning it to users are a later rollout activity. Seeded roles are default recommendations and bootstrap conveniences, not canonical runtime identities or immutable policy.
 
 This document is the working source of truth for the hardening and rollout. Keep it updated as decisions are made and work is completed.
 
@@ -17,16 +19,15 @@ The goal is complete only when all of the following are true:
 
 - [x] Generic database query and mutation paths enforce table, row, field, association, filter, and delete authorization on the server.
 - [ ] No non-sysadmin path can set `User.isSysAdmin`, grant a protected permission, assign a protected role, or take over a protected account.
-- [ ] Band Admin can perform the agreed domain, site-configuration, and ordinary user-management operations.
+- [ ] A representative database-defined, non-sysadmin role can perform the permitted domain, site-configuration, ordinary-user editing/deactivation, and constrained role-assignment operations.
 - [ ] Band Admin cannot access server diagnostics, raw environment/configuration, security topology, unrestricted impersonation, raw sensitive logs, or developer/debug surfaces.
 - [ ] Permission grants and revocations take effect reliably for existing sessions.
-- [ ] Existing installations receive Band Admin through an idempotent migration without overwriting customized grants.
-- [ ] Fresh database initialization and existing-database migration produce equivalent built-in roles and grants.
+- [ ] An actual Sysadmin can safely compose an arbitrary non-protected role through the RolePermission matrix without application code depending on its name or seeded identity.
 - [ ] Menu visibility, page access, and server authorization agree.
-- [ ] Positive and adversarial authorization tests cover every role tier.
+- [ ] Positive and adversarial authorization tests cover every relevant capability and representative persona.
 - [ ] The configured deployment has been reviewed against the single-tenant assumption.
-- [ ] The unused workflow feature has been completely removed from UI, server code, permissions, initialization, and database schema.
-- [ ] Final rollout verification has been recorded in the progress log.
+- [ ] The unused workflow feature is inaccessible from normal UI and server paths, has no effective grants, and is covered by negative authorization tests.
+- [ ] Final platform-hardening verification has been recorded in the progress log.
 
 ## Status conventions
 
@@ -48,7 +49,7 @@ Snapshot date: 2026-09-10
 - The local Admin role has 49 permissions. It lacks `never_grant` and `practice_tools_use`; its user still receives universal access through `isSysAdmin`.
 - At audit time the repository had no `*.test.*` or `*.spec.*` files. BA-T001 introduced the initial authorization suite.
 - The data model is single-tenant per database: users, roles, and content have no band/site ownership key. Multi-tenancy is a planned feature.
-- The workflow feature is not used by any tenant and will be removed as a prerequisite instead of being hardened for Band Admin.
+- The workflow feature is not used by any tenant. It will be contained before Band Admin platform readiness and physically removed in a later cleanup.
 
 Primary references:
 
@@ -60,25 +61,27 @@ Primary references:
 
 ## Recommended target boundary
 
-These are recommended defaults. Product decisions that still require confirmation are listed separately below.
+This is the agreed platform boundary. The exact production role composition remains deferred to rollout.
 
 | Area                                    | Band Admin                                                           | Sysadmin only                                                          |
 | --------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Events, songs, files, instruments, wiki | Full domain administration                                           | Server/debug internals                                                 |
-| Workflows                               | Not available; remove the unused feature before rollout              | Not available after removal                                            |
-| Users                                   | Create, edit, and deactivate ordinary users; assign permitted roles  | Password-reset URLs, protected accounts, and `isSysAdmin`              |
+| Workflows                               | Not available                                                        | Disabled/contained until later physical removal                        |
+| Users                                   | Edit and deactivate ordinary users; assign permitted roles           | User creation, login email/provider identity, password-reset URLs, protected accounts, and `isSysAdmin` |
 | Roles and permissions                   | Assign predefined non-protected roles                                | Role CRUD, Permission CRUD, and the permission matrix                  |
 | Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus | Hosting mode, raw settings, and bulk configuration                     |
 | Reports                                 | Event and feature reports                                            | Server diagnostics                                                     |
-| Audit                                   | Optional redacted band audit                                         | Raw change records and credential-bearing history                      |
+| Audit                                   | No audit-log access initially                                        | Raw change records; credential-bearing values must never be recorded   |
 | Support                                 | No impersonation initially                                           | Unrestricted impersonation                                             |
 | Technical tooling                       | None                                                                 | Environment, DB/filesystem diagnostics, debug, gallery, and test tools |
 
-### Proposed initial Band Admin bundle
+### Deferred Band Admin rollout approach
 
-Band Admin should receive all explicit Moderator grants plus the current Admin-only domain grants, after the hardening tasks in this document are complete.
+The exact Band Admin grant set is intentionally not a completion requirement for this effort. After the platform is hardened, an actual Sysadmin will manually create the role and configure it through the RolePermission matrix.
 
-Current Admin-over-Moderator grants:
+Use the then-current Moderator grants as the starting snapshot and add permissions one by one as operational needs are demonstrated. Because roles do not inherit, subsequent Moderator changes will not implicitly change Band Admin. The resulting explicit matrix must be reviewed and tested before assignment.
+
+The following current Admin-over-Moderator grants are audit context, not a predetermined Band Admin manifest:
 
 - `admin_events`
 - `admin_files`
@@ -91,18 +94,17 @@ Current Admin-over-Moderator grants:
 - `impersonate_user` — exclude
 - `sysadmin` — exclude
 
-Because roles do not inherit, the final Band Admin grant set must explicitly include every intended Moderator permission as well.
-
-The inherited Moderator set must first have all workflow permissions removed. Band Admin must not receive `view_workflow_instances`, `edit_workflow_instances`, `view_workflow_defs`, `edit_workflow_defs`, or `admin_workflow_defs`; those permissions will be deleted with the feature.
+Before Moderator is used as the rollout starting point, its effective grants must contain no usable workflow capability. Band Admin must not receive `view_workflow_instances`, `edit_workflow_instances`, `view_workflow_defs`, `edit_workflow_defs`, or `admin_workflow_defs` while those permissions await later deletion.
 
 ### Proposed permission split
 
 Prefer a small, action-oriented split rather than a permission for every button:
 
 - Keep `manage_users` for ordinary profile, tag, and instrument management.
-- Narrow `admin_users` to ordinary account lifecycle operations.
+- Narrow `admin_users` to editing and deactivating existing ordinary accounts. Band Admin does not create users; users enter through self-signup.
 - Add `assign_user_roles` for constrained role assignment.
-- Add `manage_site_branding`, or retain `content_admin` only after settings are governed by a server-side key allowlist.
+- Add `manage_site_branding` for the band-owned subset of the Brand page. Keep hosting mode and platform settings actual-Sysadmin-only.
+- Authorize site-copy and other settings through similarly scoped capabilities and a server-side key allowlist; do not use broad `content_admin` as authority for arbitrary settings.
 - Keep audit-log access sysadmin-only; no Band Admin audit permission is required.
 - Keep `impersonate_user`, `sysadmin`, security-topology mutation, and protected-account administration sysadmin-only.
 - Make Practice Tools genuinely public by removing its authorization gate or placing `practice_tools_use` in the public permission baseline; do not treat it as a Band Admin grant.
@@ -140,7 +142,7 @@ Record each decision before implementing the affected capability.
 
 - [x] **BA-D006 — Password reset delivery:** Decide whether administrators receive a reset URL or merely trigger delivery to the user.
 
-  - Constraint: The site cannot currently send reset email, so an administrator-mediated recovery mechanism is required for password-enabled users.
+  - Context: Band Admin does not create users; self-signup is the normal account-entry path. The site cannot currently send reset email, so the existing Sysadmin-mediated mechanism remains available only for exceptional password recovery.
   - Security assessment: The current URL is a bearer credential valid for 48 hours. Anyone who obtains it can choose the target's password, revoke their existing sessions, and become logged in as that user. Showing it to an administrator therefore grants temporary account-takeover/impersonation power, even when the feature is labelled password reset.
   - Exposure paths include the administrator's clipboard and browser history, chat history used to send the URL, screenshots, console output, application/proxy logs, and accidental forwarding.
   - Decision: Band Admin cannot generate or receive password-reset URLs. Restrict the current mechanism to Sysadmin as a last-resort emergency operation and otherwise leave its behavior unchanged during this effort.
@@ -158,30 +160,79 @@ Record each decision before implementing the affected capability.
   - Implementation note: Remove the redundant gate/permission or include it in the public permission baseline and verify that the route itself does not require login.
 
 - [x] **BA-D009 — Workflows:** Decide whether to harden or retain the unused workflow feature.
-  - Decision: Remove the workflow feature completely as a prerequisite for Band Admin rollout.
-  - Scope: Remove the UI, server/shared implementation, DB3 registrations, five permissions and their grants, settings/setup metadata, Event/User relations, ten Prisma models, and deployed database objects.
-  - Constraint: Verify all deployment data and backups before applying the destructive schema migration.
+  - Decision: Do not expose workflows to Band Admin. Before platform readiness, remove normal navigation and entry points, disable or unregister callable server/DB3 paths, remove effective grants, and add negative tests.
+  - Deferred cleanup: Physically remove the UI, server/shared implementation, permissions, settings/setup metadata, Event/User relations, ten Prisma models, and deployed database objects after this effort.
+  - Constraint: Verify all deployment data and backups before the later destructive schema migration.
+
+- [x] **BA-D010 — Band Admin provisioning:** Decide whether this effort defines and installs the exact Band Admin grant set.
+
+  - Decision: No. This effort provides the safe role, permission, delegation, and settings platform; exact role composition and production assignment happen afterward.
+  - Rollout procedure: An actual Sysadmin manually creates Band Admin and edits its grants through the RolePermission matrix, starting with a snapshot of the then-current Moderator grants and adding permissions one by one as needed.
+  - Constraint: Seeded roles are default recommendations, not runtime identities. Application authorization must not recognize a Band Admin role by name, ID, order, significance, or seed origin.
+
+- [x] **BA-D011 — User creation and authentication identity:** Decide whether Band Admin creates accounts or edits login identifiers.
+
+  - Decision: Band Admin does not create users. Users enter through self-signup; Band Admin may edit allowed ordinary profile fields, deactivate ordinary accounts, and assign permitted roles.
+  - Decision: Login email is immutable through generic and delegated administration. Only an actual Sysadmin may correct it through a dedicated, audited operation until a verified self-service email-change flow exists.
+  - Constraint: `googleId`, `hashedPassword`, calendar-feed credentials, `isSysAdmin`, and server-owned identifiers are not ordinary profile fields and must be immutable through generic user mutation.
+  - Constraint: Changing email must invalidate active sessions and must not silently relink or unlink a Google identity. Provider binding changes require a separate explicit recovery operation.
+  - Constraint: Google email-based linking must require a provider-verified email; consider an authenticated explicit account-linking flow as a later defense-in-depth improvement.
+
+- [x] **BA-D012 — Uploaded-file accessibility:** Decide whether the direct file route intentionally makes all uploads public.
+
+  - Finding: No documentation was found establishing a universal public-upload policy. Range-request streaming explains the delivery implementation but does not require bypassing authorization. A gallery comment indicates that public parent content may historically have governed access to its referenced image.
+  - Decision: Direct file URLs enforce the file's own visibility. Public gallery, branding, and similar workflows must explicitly make their referenced file public, or use a parent-specific endpoint that verifies the public reference.
+  - Constraint: `storedLeafName` unguessability is not authorization. If a universal public-by-link policy is later chosen, document it explicitly and reconcile or remove the contradictory per-file visibility model.
+
+- [x] **BA-D013 — Calendar feed authentication:** Decide how personalized unauthenticated iCal subscriptions are secured.
+
+  - Decision: The unguessable subscription URL is a bearer credential because calendar clients do not have an interactive session. It may be shown and copied by its owner; merely hiding it is not the security boundary.
+  - Required controls: Scope the token only to the owner's calendar feed, keep it out of generic user payloads and other-user administration, provide owner-controlled rotation/revocation, reject unknown non-public tokens, require an active user, and prevent raw token values from entering application/proxy logs, audit records, filenames, or unrelated responses.
+  - Constraint: Deactivation must revoke or disable feed access. Token hashing at rest is a desirable defense-in-depth follow-up if the product accepts show-once/rotate semantics or another safe recovery design.
 
 ## Workstream summary
 
 | Workstream                          | Status      | Exit condition                                                                                            |
 | ----------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| P0: Remove workflow feature         | Not started | Workflow UI, services, permissions, data model, and database objects no longer exist                      |
+| P0: Contain workflow feature        | Not started | Normal UI/server entry points and effective grants are removed; negative access tests pass                |
 | P0: Generic DB3 authorization       | Complete    | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
 | P0: Protected accounts and signup   | In progress | No untrusted path can obtain or delegate sysadmin authority                                               |
 | P0: Secrets and object-level gaps   | Not started | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
 | P1: Permission and role model       | In progress | Delegation policy and protected role/permission metadata are authoritative                                |
 | P1: Sessions and revocation         | Not started | Grants and revocations are reflected reliably and promptly                                                |
-| P1: Provisioning and migration      | Not started | Existing and fresh databases converge without destroying customization                                    |
+| Deferred: Band Admin rollout        | Deferred    | An actual Sysadmin manually composes, tests, and assigns the production role after hardening               |
 | P1: Site configuration split        | Not started | Band-owned settings are allowlisted; platform settings remain protected                                   |
 | P1: UI/page/server alignment        | Not started | Shared capability metadata drives navigation and page access                                              |
 | P1: Test suite                      | In progress | Persona and adversarial matrices pass                                                                     |
-| P2: Optional delegated capabilities | Not started | Approved audit, peer-admin, or limited support functions are safely available                             |
-| Rollout                             | Not started | Production verification and rollback evidence are recorded                                                |
+| P2: Optional delegated capabilities | Not started | Any later redacted audit or limited support capability is separately designed and authorized              |
+| Deferred: Production rollout        | Deferred    | The manually composed role passes production smoke tests and is assigned                                  |
 
-## Prerequisite — Remove the unused workflow feature
+Priority meaning:
 
-Decision: No tenant uses workflows. Complete removal is a prerequisite for Band Admin rollout; do not spend effort hardening or exposing this feature.
+- **P0** findings block production readiness because they expose authority, credentials, protected objects, or an unused callable feature.
+- **P1** findings block reliable Band Admin platform support because they govern composition, revocation, settings boundaries, and UI/server agreement.
+- **P2** work is optional and should not delay readiness unless a product decision brings that capability into scope.
+- **Deferred** work begins after the secure platform is ready and includes exact role composition, assignment, and destructive workflow cleanup.
+
+## Production-readiness requirement — Contain the unused workflow feature
+
+Decision: No tenant uses workflows, and Band Admin must have no access to them. Containment is required for platform readiness; physical deletion and destructive schema migration are deferred.
+
+### BA-WF000 — Contain workflow access
+
+- [ ] Remove workflow navigation and other normal UI entry points.
+- [ ] Disable or unregister workflow RPC, resolver, and generic DB3 entry points so UI bypass cannot reach the feature.
+- [ ] Remove workflow grants from active/default role matrices and prevent the five workflow permissions from being delegated.
+- [ ] Add negative tests proving anonymous and non-Sysadmin callers cannot reach workflow data or mutations.
+- [ ] Mark remaining workflow code, permissions, and schema as deprecated pending physical removal.
+
+Acceptance criteria:
+
+- [ ] No normal UI exposes workflow functionality.
+- [ ] Crafted server requests cannot invoke workflow operations through retained routes or generic DB3.
+- [ ] No active non-Sysadmin role receives an effective workflow grant.
+
+## Deferred cleanup — Physically remove the workflow feature
 
 The initial inventory found 44 non-migration files referencing workflow concepts, five workflow permissions, event foreign keys, user relations, and ten dedicated Prisma models. Removal must cover the complete vertical slice rather than only hiding its page.
 
@@ -459,7 +510,7 @@ Policy:
 - The central policy is an additional restrictive layer. Existing resolver, table, row, and field authorization remains mandatory and may be stricter; the policy cannot grant a Moderator or another role a capability it did not already have.
 - `sysadmin`, `impersonate_user`, and `never_grant` are protected permissions. A user with one of those permissions through their role, or with `isSysAdmin` set, is a protected principal.
 - Only the `User.isSysAdmin` flag is treated as the actual Sysadmin bypass. A protected role is not sufficient to perform actual-Sysadmin-only reset or impersonation operations.
-- Band Admin may edit or deactivate an ordinary user and assign a predefined role that contains no protected permission. The same ceiling applies when assigning a role during user creation, including attempts to promote oneself.
+- Band Admin may edit or deactivate an existing ordinary user and assign a predefined role that contains no protected permission. User creation is not delegated; self-signup is the ordinary account-entry path.
 - Password-reset URL generation and impersonation are actual-Sysadmin-only. Impersonation additionally rejects self-impersonation and every protected target as defense in depth.
 - Mutation and UI capability decisions load the actor, target, and selected role with their permission relations from current database state. UI controls consume a server capability query; mutations independently enforce the same policy.
 
@@ -563,31 +614,68 @@ Phase completion evidence:
 - Verification: `yarn test:auth` and `yarn test` (139 passed, including forged signup fields, legacy `ADMIN_EMAIL`, missing/duplicate built-in role lookups, unauthenticated/deleted/stale-email rejection, eligibility non-disclosure, wrong/reused credentials, hashed claim storage, promotion, session invalidation/refresh, generic designation-forgery rejection, zero/duplicate reassignment repair, actual-Sysadmin enforcement, no-op behavior, and grouped credential-free audits); `yarn tsc --noEmit`; focused ESLint; `yarn build`; Prisma schema validation and client generation with a disposable build URL and output because a running Prisma Studio process owns the normal Windows engine DLL.
 - Commit/PR: see gh issue #668
 
+### BA-U006 — Protect login identifiers and provider bindings
+
+- [ ] Disable non-Sysadmin generic/delegated User creation. Preserve the explicit self-signup flow and, if still needed, an actual-Sysadmin maintenance path.
+- [ ] Remove `User.email`, `User.googleId`, `User.hashedPassword`, calendar-feed credentials, `User.isSysAdmin`, and server-owned identifiers from generic/delegated mutation fields.
+- [ ] Keep ordinary email editing unavailable until a verified self-service email-change flow exists.
+- [ ] If operational email correction is required, provide a dedicated actual-Sysadmin-only mutation with fresh authorization checks, narrow credential-free audit metadata, and session invalidation.
+- [ ] Keep Google link/unlink separate from email correction and ordinary profile editing.
+- [ ] Require a provider-verified email before an existing account can be linked by email in the Google callback.
+- [ ] Add regression tests for crafted delegated User creation, Band Admin email takeover, direct writes to every server-owned authentication field, unverified provider email, and session invalidation after Sysadmin correction.
+
+Acceptance criteria:
+
+- [ ] Band Admin cannot change which password or Google identity authenticates any account.
+- [ ] Band Admin cannot create accounts through generic DB3 or a hidden maintenance surface.
+- [ ] Actual-Sysadmin email correction is explicit, auditable, and cannot silently transfer or remove the existing Google binding.
+- [ ] No generic table or ordinary user endpoint can write authentication-owned fields.
+
+References:
+
+- [User DB3 schema](../src/core/db3/shared/schema/user.ts)
+- [Google authentication callback](../src/pages/api/auth/[...auth].ts)
+
 ## Phase 3 — Remove sensitive-data and object-level authorization gaps
 
-### BA-S001 — Credentials and audit redaction
+### BA-S001 — Calendar-feed credentials and audit redaction
 
-- [ ] Remove `User.accessToken` from ordinary user selections and generic tables.
+- [ ] Replace the broadly named/general-purpose `User.accessToken` contract with a calendar-feed-specific credential, or strictly constrain the existing field during a staged migration.
+- [ ] Remove the token from ordinary user selections, generic tables, dashboard/session payloads, and every other-user administration response.
+- [ ] Provide a self-only operation for the owner to create/copy and rotate or revoke their calendar subscription URL.
+- [ ] Require token lookup to resolve an active, non-deleted user and disable or revoke feed access when that account is deactivated.
+- [ ] Reject unknown non-public tokens rather than treating them as the public feed.
+- [ ] Remove raw calendar tokens from request/activity logs, proxy logging where configurable, response filenames, and unnecessary calendar fields; apply appropriate private/no-store response headers.
 - [ ] Never write password hashes, access tokens, reset tokens, or comparable credentials into activity logs.
 - [ ] Add central structured redaction before serializing before/after records.
 - [ ] Assess whether previously exposed tokens require rotation or historical log cleanup.
+- [ ] Assess hashing calendar tokens at rest and document the chosen display/recovery semantics.
 - [ ] Keep raw audit logs sysadmin-only until redaction is complete.
 
 References:
 
 - [User selection arguments](../src/core/db3/shared/schema/prismArgs.ts#L393)
+- [Calendar feed token lookup](../src/core/db3/server/ical.ts#L166)
+- [Calendar feed endpoint and telemetry](../src/pages/api/ical/user/[accessToken]/upcoming.ts#L17)
+- [Calendar subscription UI](../src/core/components/dashboard/Dashboard2.tsx#L118)
 - [Activity logging](../shared/activityLog.ts#L46)
 - [Password-change logging path](../src/auth/mutations/changePassword.ts#L31)
 
 ### BA-S002 — File visibility and image operations
 
 - [ ] Enforce file visibility on direct download rather than using `skipVisibilityCheck` without an equivalent guard.
+- [ ] Preserve streaming and range-request support after the authorization decision; large-file delivery is not a reason to skip visibility checks.
+- [ ] Make gallery, branding, and other intentionally public asset workflows set public file visibility explicitly, or authorize through a route that verifies the public parent reference.
+- [ ] Inventory existing publicly referenced assets and safely align their visibility or route semantics before enforcing the direct-download check.
+- [ ] Do not treat an unguessable `storedLeafName` as a capability or authorization boundary.
 - [ ] Enforce visibility and mutation authority before image forking.
 - [ ] Restore explicit authorization for gallery image updates.
 
 References:
 
 - [File download route](../src/pages/api/files/download/[...leafName_slug].ts#L13)
+- [File visibility policy](../src/core/db3/shared/schema/file.ts#L38)
+- [Gallery parent-visibility rationale](../src/pages/backstage/frontpagegallery.tsx#L552)
 - [Image fork core](../src/core/db3/server/db3mutationCore.ts#L1018)
 - [Gallery image mutation](../src/core/db3/mutations/updateGalleryItemImage.ts#L10)
 
@@ -722,49 +810,40 @@ Phase completion evidence:
 - Verification:
 - Commit/PR:
 
-## Phase 6 — Provision and migrate Band Admin
+## Deferred rollout — Compose and assign Band Admin
 
-### BA-P001 — Consolidate provisioning authorities
+This phase starts only after the platform-hardening completion definition is satisfied. It does not block completion of the current effort.
 
-- [ ] Define one canonical built-in role/grant manifest or mechanically generate both initialization paths.
-- [ ] Eliminate drift between `db/seeds.ts` and startup provisioning.
-- [ ] Ensure every enum permission receives intentional metadata and grants.
+### BA-P001 — Manually compose the initial role
 
-References:
+- [ ] Export and archive the production role/permission matrix.
+- [ ] Have an actual Sysadmin create a database-defined Band Admin role through the normal role-management surface.
+- [ ] Copy the then-current Moderator permission set as an explicit starting snapshot; do not create runtime role inheritance.
+- [ ] Remove any workflow grant still present in that snapshot.
+- [ ] Add newly needed band-operation permissions one by one through the RolePermission matrix.
+- [ ] Record the resulting explicit matrix as rollout evidence, not as a code-owned definition of the role.
 
-- [Startup default roles](../src/setup/instrumentation-setup.ts#L70)
-- [Startup default matrix](../src/setup/instrumentation-setup.ts#L139)
-- [Prisma seed roles](../db/seeds.ts#L538)
+### BA-P002 — Validate and assign the role
 
-### BA-P002 — Existing-database migration
+- [ ] Assign the candidate role to a non-Sysadmin test account first.
+- [ ] Run positive band-operation and negative protected/platform-operation smoke tests.
+- [ ] Verify role grant and revocation behavior in existing sessions.
+- [ ] Review the final matrix before assigning the role to production users.
+- [ ] Do not assign existing users automatically.
 
-- [ ] Export and review the actual role matrix for every target deployment before migration.
-- [ ] Insert newly required Permission rows before looking them up.
-- [ ] Insert Band Admin using a stable key.
-- [ ] Insert its exact RolePermission rows idempotently.
-- [ ] Preserve customized roles and grants.
-- [ ] Do not assign existing users automatically unless explicitly approved.
-- [ ] Provide a rollback for the new role/grants without deleting user data.
+### BA-P003 — Optional future seed/template support
 
-### BA-P003 — Fresh-database parity
+- [ ] Only if later requested, decide whether fresh installations should receive a recommended Band Admin template.
+- [ ] Treat every seeded role and grant set as a mutable default recommendation.
+- [ ] Never overwrite customized deployed roles or grants during startup or upgrade.
+- [ ] Keep application authorization independent of seeded role names, IDs, ordering, and origin.
 
-- [ ] Update fresh initialization.
-- [ ] Verify empty-database startup and Prisma seed produce the same built-in roles, permissions, metadata, and grants.
-- [ ] Verify repeat execution is idempotent.
+Rollout acceptance criteria:
 
-Acceptance criteria:
-
-- [ ] Existing deployments receive Band Admin even when Role and RolePermission tables are nonempty.
-- [ ] Existing customized grants remain unchanged.
-- [ ] Fresh and migrated databases match the canonical manifest.
-- [ ] Band Admin never receives `sysadmin`, `impersonate_user`, `never_grant`, or another protected permission.
-- [ ] No built-in role or permission matrix contains a removed workflow permission.
-
-Phase completion evidence:
-
-- Implementation:
-- Verification:
-- Commit/PR:
+- [ ] The manually composed role contains no protected, non-delegable, workflow, or otherwise unintended permission.
+- [ ] Existing customized roles and grants remain unchanged.
+- [ ] Renaming or reordering the role does not change authorization behavior.
+- [ ] Production assignment occurs only after the test account passes the recorded smoke-test matrix.
 
 ## Phase 7 — Split band-owned and platform-owned settings
 
@@ -772,6 +851,7 @@ Phase completion evidence:
 
 - [ ] Classify each setting as public, band-content, band-configuration, or platform/system.
 - [ ] Authorize updates using a server-side key registry/allowlist.
+- [ ] Map each band-owned setting class to a narrow action-oriented permission such as `manage_site_branding` or `manage_site_content`.
 - [ ] Prevent arbitrary names or IDs from bypassing the classification.
 - [ ] Keep raw settings and bulk import/export sysadmin-only.
 - [ ] Review public arbitrary-key reads before future settings can contain secrets.
@@ -785,8 +865,10 @@ References:
 
 ### BA-C002 — Split Brand page
 
-- [ ] Give Band Admin access to site title, logo, favicon, theme, and calendar identity.
+- [ ] Add `manage_site_branding` and use it for the band-owned Brand-page subset: site title, logo, favicon, theme, and calendar identity.
 - [ ] Move `Dashboard_HostingMode` to a sysadmin-only surface.
+- [ ] Let the Brand page render only the sections authorized by the actor's distinct capabilities instead of retaining one broad page-wide permission.
+- [ ] Enforce the setting-key split in server mutations; hiding platform fields in the page is not sufficient.
 - [ ] Make cache invalidation an internal side effect of an authorized brand change, not a separate sysadmin-only step.
 
 References:
@@ -881,9 +963,11 @@ Phase completion evidence:
 ### Role/persona cases
 
 - [ ] Public, Limited, Normal, Editor, and Moderator behavior remains unchanged except for intentional security fixes.
-- [ ] Band Admin can administer events, songs, files, instruments, wiki, homepage, branding, and approved reports.
-- [ ] No user can access a workflow UI or invoke a workflow RPC because the feature has been removed.
-- [ ] Band Admin can create, edit, and deactivate ordinary users according to policy; password-reset URL generation remains actual-Sysadmin-only.
+- [ ] A representative database-defined delegated-admin test role can administer each intended domain capability independently, without application code recognizing the role identity.
+- [ ] No normal user can access a workflow UI or invoke a workflow RPC while the retained feature awaits physical removal.
+- [ ] Band Admin cannot create users; self-signup remains the ordinary account-entry path.
+- [ ] Band Admin can edit allowed profile fields and deactivate ordinary users according to policy; password-reset URL generation remains actual-Sysadmin-only.
+- [ ] Band Admin cannot edit login email, provider binding, password hash, calendar token, `isSysAdmin`, or server-owned identity fields.
 - [ ] A non-Sysadmin holding `assign_user_roles` can assign and revoke a peer-equivalent role when both roles are within the actor's permission envelope.
 - [ ] Removing the last active non-Sysadmin holder of a continuity-sensitive permission produces the required warning and explicit confirmation.
 - [ ] Band Admin can assign only server-approved roles.
@@ -893,11 +977,14 @@ Phase completion evidence:
 - [ ] Band Admin cannot target a protected user through edit, reset, deletion, or impersonation.
 - [ ] Band Admin can only soft-delete/deactivate users; hard deletion remains unavailable.
 - [ ] Band Admin cannot view raw audit logs.
+- [ ] A user can retrieve and rotate only their own calendar subscription URL; Band Admin cannot retrieve another user's token.
+- [ ] Unknown tokens and tokens belonging to deactivated users cannot retrieve a personalized calendar.
+- [ ] Direct file downloads enforce visibility while authorized large/range downloads continue to stream.
 - [ ] Band Admin cannot access Server Health, raw Settings, Hosting Mode, raw audit logs, or debug/test surfaces.
 - [ ] Anonymous users can access Practice Tools.
 - [ ] Sysadmin retains full intended access.
 
-### Session and provisioning cases
+### Session and role-composition cases
 
 - [ ] Equal-count role changes refresh correctly.
 - [ ] Removing a role clears cached grants.
@@ -905,8 +992,8 @@ Phase completion evidence:
 - [ ] Role-permission revocation affects active sessions.
 - [ ] Deleted/deactivated users lose access.
 - [ ] Public signup rejects or ignores `roleId`.
-- [ ] Migration is idempotent and preserves customized grants.
-- [ ] Fresh startup and Prisma seed produce the same matrix.
+- [ ] Actual-Sysadmin RolePermission changes can compose an arbitrary safe role without role-name or seeded-role dependencies.
+- [ ] Seeded roles remain mutable defaults and startup does not overwrite customized grants.
 
 ### UI consistency cases
 
@@ -914,7 +1001,7 @@ Phase completion evidence:
 - [ ] Navigation visibility and page access agree.
 - [ ] Direct URL navigation cannot reveal an unauthorized page.
 - [ ] Server calls remain protected when UI checks are bypassed.
-- [ ] Band Admin user-role selectors show only assignable roles.
+- [ ] Delegated-admin user-role selectors show only assignable roles.
 
 Phase completion evidence:
 
@@ -923,14 +1010,16 @@ Phase completion evidence:
 - Security review:
 - Commit/PR:
 
-## Rollout checklist
+## Post-hardening Band Admin rollout checklist
 
-- [ ] All product decisions above are resolved.
-- [ ] The workflow-removal prerequisite is complete and its destructive migration has been verified.
+This checklist is intentionally deferred and does not define completion of the current platform-hardening effort.
+
+- [x] All product decisions above are resolved.
+- [ ] Workflow containment is complete; physical deletion may remain deferred.
 - [ ] P0 findings are fixed and adversarial tests pass before the role is assigned to anyone.
 - [ ] Current production role and permission matrices are exported and archived.
-- [ ] Migration has been tested against a production-shaped database copy.
-- [ ] A rollback plan has been exercised.
+- [ ] An actual Sysadmin manually creates Band Admin through the role and RolePermission pages.
+- [ ] The role starts from a snapshot of the current Moderator grants, then receives only individually approved additions.
 - [ ] Band Admin is initially assigned to a test account.
 - [ ] Positive band-operation smoke test passes.
 - [ ] Negative protected/system-operation smoke test passes.
@@ -948,12 +1037,13 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                                                  | Static audit; configured local DB inspected read-only                                           | —                 |
 | 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                                        | All product decisions resolved                                                                  | —                 |
 | 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs                         | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                              | —                 |
-| 2026-09-10 | Scope     | Made complete removal of the unused workflow feature a Band Admin rollout prerequisite                                                                                                    | Removal inventory covers UI, server, permissions, settings, schema, migration, and verification | —                 |
+| 2026-09-10 | Scope     | Inventoried complete removal of the unused workflow vertical slice; later policy narrows the readiness requirement to containment and defers destructive cleanup                           | Inventory covers UI, server, permissions, settings, schema, migration, and verification         | —                 |
 | 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views                            | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`    | see gh issue #668 |
 | 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 | 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                                                | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 | 2026-09-10 | BA-U004   | Restricted impersonation to actual Sysadmins, constrained protected targets, preserved original-actor attribution, and removed sensitive mutation results                                  | `yarn test:auth`; `yarn test` (114 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 | 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                           | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
+| 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                         | —                 |
 
 ## Deferred ideas
 
@@ -962,6 +1052,9 @@ These are not required for the initial Band Admin rollout unless a product decis
 - Custom role authoring by Band Admin with a server-owned grantable-permission subset.
 - Target-limited impersonation for non-protected users.
 - A redacted, band-facing audit log, if the current Sysadmin-only decision is revisited.
+- Verified self-service email changes and explicit authenticated Google account linking.
+- Complete physical removal of the contained workflow feature, including its schema and deployed database objects.
+- Optional recommended Band Admin seed/template support; production authorization must remain independent of it.
 - Multi-band tenancy within one database.
 - Consolidating the two superuser mechanisms (`User.isSysAdmin` and `Permission.sysadmin`) into one model.
 
