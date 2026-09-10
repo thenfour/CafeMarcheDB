@@ -1,25 +1,34 @@
 // src/auth/mutations/stopImpersonating.ts
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
+import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { CreatePublicData } from "types";
+import { registerImpersonationAudit } from "../server/impersonationAudit";
 
 export default resolver.pipe(
-    //resolver.authorize("impersonateUser", Permission.impersonate_user),
     async (_, ctx) => {
-        const userId = ctx.session.$publicData.impersonatingFromUserId
-        if (!userId) {
+        const originalActorUserId = ctx.session.$publicData.impersonatingFromUserId
+        const targetUserId = ctx.session.userId;
+        if (!originalActorUserId || !targetUserId) {
             throw new Error("Not impersonating anyone");
         }
 
         const user = await db.user.findFirst({
-            where: { id: userId },
-            include: { role: { include: { permissions: { include: { permission: true } } } } }
+            ...UserWithRolesArgs,
+            where: { id: originalActorUserId },
         })
-        if (!user) throw new Error("Could not find user id " + userId)
+        if (!user) throw new Error("Could not find user id " + originalActorUserId)
+
+        await registerImpersonationAudit({
+            ctx,
+            event: "stop",
+            originalActorUserId,
+            targetUserId,
+        })
 
         await ctx.session.$create(CreatePublicData({ user }));
 
-        return user
+        return { userId: user.id }
     }
 );
 

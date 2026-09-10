@@ -1,4 +1,5 @@
 
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
@@ -8,6 +9,7 @@ import impersonateUser from "src/auth/mutations/impersonateUser";
 export const ImpersonateUserButton = ({ userId }: { userId: number }) => {
     const router = useRouter();
     const [impersonateUserMutation] = useMutation(impersonateUser);
+    const session = useAuthenticatedSession();
 
     const handleImpersonateClick = () => {
         impersonateUserMutation({ userId })
@@ -19,6 +21,8 @@ export const ImpersonateUserButton = ({ userId }: { userId: number }) => {
                 console.error(e);
             });
     };
+
+    if (!session.isSysAdmin) return null;
 
     return (
         <Button onClick={handleImpersonateClick}>

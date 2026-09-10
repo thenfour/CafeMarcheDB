@@ -16,6 +16,7 @@ import db3Query from "@db3/queries/db3queries"
 import * as db3 from "@db3/db3"
 import forgotPassword from "src/auth/mutations/forgotPassword"
 import impersonateUser from "src/auth/mutations/impersonateUser"
+import stopImpersonating from "src/auth/mutations/stopImpersonating"
 import assignUserRole from "src/auth/mutations/assignUserRole"
 import deactivateUser from "src/auth/mutations/deactivateUser"
 import resetPassword from "src/auth/mutations/resetPassword"
@@ -1540,6 +1541,162 @@ describe("BA-U003 password-reset hardening", () => {
     expect(serializedAudit).not.toContain(target.accessToken)
     expect(authorizationTestDb.snapshot("token")).toEqual([])
     expect(authorizationTestDb.snapshot("session")).toEqual([])
+  })
+})
+
+describe("BA-U004 impersonation hardening", () => {
+  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
+  const target = createAuthorizationTarget("ordinary", {
+    id: 10,
+    accessToken: "target-access-token-must-not-be-returned",
+  })
+
+  beforeEach(() => {
+    authorizationTestDb.reset({
+      user: [sysadmin, target],
+      change: [],
+    })
+    vi.restoreAllMocks()
+  })
+
+  it("starts an ordinary-user session and audits the original Sysadmin actor", async () => {
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const createSession = vi.spyOn(ctx.session, "$create")
+
+    const result = await invokeResolver(impersonateUser, { userId: target.id }, ctx)
+
+    expect(result).toEqual({ userId: target.id })
+    expect(createSession).toHaveBeenCalledTimes(1)
+    expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
+      userId: target.id,
+      impersonatingFromUserId: sysadmin.id,
+      isSysAdmin: false,
+    }))
+
+    const changes = authorizationTestDb.snapshot("change")
+    expect(changes).toHaveLength(1)
+    expect(changes[0]).toEqual(expect.objectContaining({
+      table: "User",
+      recordId: target.id,
+      action: "update",
+      context: "impersonateUserMutation",
+      userId: sysadmin.id,
+      oldValues: JSON.stringify({ impersonatedByUserId: null }),
+      newValues: JSON.stringify({ impersonatedByUserId: sysadmin.id }),
+    }))
+    expect(JSON.stringify({ result, changes })).not.toContain(target.accessToken)
+  })
+
+  it("does not treat a role-carried impersonation grant as actual Sysadmin", async () => {
+    const roleGrantedImpersonator = createAuthorizationTestUser("normal", {
+      id: 20,
+      isSysAdmin: false,
+      permissions: [Permission.login, Permission.impersonate_user],
+    })
+    authorizationTestDb.reset({ user: [roleGrantedImpersonator, target], change: [] })
+    const userFind = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
+    const { ctx } = createAuthorizationPersona("normal", {
+      id: roleGrantedImpersonator.id,
+      isSysAdmin: false,
+      permissions: [Permission.login, Permission.impersonate_user],
+    })
+    const createSession = vi.spyOn(ctx.session, "$create")
+
+    await expect(
+      invokeResolver(impersonateUser, { userId: target.id }, ctx),
+    ).rejects.toThrow("This operation requires an actual Sysadmin account")
+
+    expect(userFind).toHaveBeenCalledTimes(1)
+    expect(userFind).toHaveBeenCalledWith({
+      select: { isSysAdmin: true },
+      where: { id: roleGrantedImpersonator.id },
+    })
+    expect(createSession).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it.each([
+    Permission.sysadmin,
+    Permission.impersonate_user,
+    Permission.never_grant,
+  ])("rejects a target whose role carries protected permission %s", async (permission) => {
+    const protectedTarget = createAuthorizationTestUser("normal", {
+      id: 30,
+      permissions: [Permission.login, permission],
+    })
+    authorizationTestDb.reset({ user: [sysadmin, protectedTarget], change: [] })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const createSession = vi.spyOn(ctx.session, "$create")
+
+    await expect(
+      invokeResolver(impersonateUser, { userId: protectedTarget.id }, ctx),
+    ).rejects.toThrow("Not authorized to impersonate this user")
+
+    expect(createSession).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it.each([
+    ["an actual Sysadmin", createAuthorizationTarget("isSysAdmin", { id: 40 })],
+    ["the current actor", sysadmin],
+    ["a deleted user", createAuthorizationTarget("ordinary", { id: 41, isDeleted: true })],
+  ])("rejects %s as an impersonation target", async (_description, protectedTarget) => {
+    authorizationTestDb.reset({ user: [sysadmin, protectedTarget], change: [] })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+    const createSession = vi.spyOn(ctx.session, "$create")
+
+    await expect(
+      invokeResolver(impersonateUser, { userId: protectedTarget.id }, ctx),
+    ).rejects.toThrow("Not authorized to impersonate this user")
+
+    expect(createSession).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it("restores the original actor and attributes the stop event to that actor", async () => {
+    const originalActor = {
+      ...sysadmin,
+      accessToken: "original-actor-access-token-must-not-be-returned",
+    }
+    authorizationTestDb.reset({ user: [originalActor, target], change: [] })
+    const { ctx } = createAuthorizationPersona("normal", { id: target.id })
+    ctx.session.$publicData.impersonatingFromUserId = originalActor.id
+    const createSession = vi.spyOn(ctx.session, "$create")
+
+    const result = await invokeResolver(stopImpersonating, undefined, ctx)
+
+    expect(result).toEqual({ userId: originalActor.id })
+    expect(createSession).toHaveBeenCalledTimes(1)
+    expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
+      userId: originalActor.id,
+      impersonatingFromUserId: undefined,
+      isSysAdmin: true,
+    }))
+
+    const changes = authorizationTestDb.snapshot("change")
+    expect(changes).toHaveLength(1)
+    expect(changes[0]).toEqual(expect.objectContaining({
+      table: "User",
+      recordId: target.id,
+      action: "update",
+      context: "stopImpersonatingMutation",
+      userId: originalActor.id,
+      oldValues: JSON.stringify({ impersonatedByUserId: originalActor.id }),
+      newValues: JSON.stringify({ impersonatedByUserId: null }),
+    }))
+    expect(JSON.stringify({ result, changes })).not.toContain(originalActor.accessToken)
+  })
+
+  it("does not create a session or audit event when no impersonation is active", async () => {
+    const { ctx } = createAuthorizationPersona("normal", { id: target.id })
+    const createSession = vi.spyOn(ctx.session, "$create")
+
+    await expect(
+      invokeResolver(stopImpersonating, undefined, ctx),
+    ).rejects.toThrow("Not impersonating anyone")
+
+    expect(createSession).not.toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 })
 

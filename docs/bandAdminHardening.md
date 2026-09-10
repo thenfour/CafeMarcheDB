@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U003, and BA-M001 complete; BA-U004 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U004, and BA-M001 complete; BA-U005 next
 
 ## Goal
 
@@ -526,12 +526,18 @@ Evidence:
 
 ### BA-U004 — Constrain impersonation
 
-- [ ] Keep current `impersonate_user` sysadmin-only for the initial rollout.
-- [ ] Prevent impersonation of protected principals through defense-in-depth target checks.
-- [ ] Preserve and audit the original actor identity through the impersonated session.
-- [ ] If limited impersonation is approved later, implement a separate capability rather than weakening the existing one.
+- [x] Keep current `impersonate_user` sysadmin-only for the initial rollout.
+- [x] Prevent impersonation of protected principals through defense-in-depth target checks.
+- [x] Preserve and audit the original actor identity through the impersonated session.
+- [x] If limited impersonation is approved later, implement a separate capability rather than weakening the existing one.
 
 Reference: [impersonation mutation](../src/auth/mutations/impersonateUser.ts#L12)
+
+Evidence:
+
+- Implementation: impersonation now keeps the `impersonate_user` resolver gate and additionally verifies the caller's freshly read `User.isSysAdmin` flag before target lookup. The existing centralized user-management policy rejects self, deleted, actual-Sysadmin, and protected-role targets. Starting a session stores the original actor ID, and both start and stop transitions write credential-free activity records explicitly attributed to that original actor. The impersonation control independently hides itself from non-Sysadmins, and both mutations return only the resulting user ID rather than a selected User row. A future limited-impersonation design remains a separate capability rather than a relaxation of this endpoint.
+- Verification: `yarn test:auth` and `yarn test` (114 passed, including role-carried grant rejection before target lookup, every protected permission, actual-Sysadmin/self/deleted targets, session identity transitions, original-actor audit attribution, and credential-free RPC/audit results); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ### BA-U005 — Harden public signup and built-in role invariants
 

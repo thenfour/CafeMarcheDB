@@ -39,6 +39,10 @@ export type RegisterChangeArgs = {
     oldValues?: any,
     newValues?: any,
     ctx: Ctx,
+    // Normally the actor comes from the current session. Session-transition
+    // operations can supply the original actor explicitly so attribution is
+    // not lost when the session identity changes.
+    actorUserId?: number | null,
     options?: RegisterChangeOptions,
     db?: TransactionalPrismaClient,
 }
@@ -86,7 +90,9 @@ export async function RegisterChange(args: RegisterChangeArgs) {
                 table: args.table,
                 recordId: args.pkid,
                 action: args.action,
-                userId: args.ctx?.session?.userId || null,
+                userId: args.actorUserId === undefined
+                    ? args.ctx?.session?.userId || null
+                    : args.actorUserId,
                 oldValues: JSON.stringify(oldValues),
                 newValues: JSON.stringify(newValues),
             }
