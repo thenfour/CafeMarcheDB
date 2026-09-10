@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001 and BA-A001 through BA-A005 complete; BA-U001 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, and BA-U001 complete; BA-U002 next
 
 ## Goal
 
@@ -169,7 +169,7 @@ Record each decision before implementing the affected capability.
 | ----------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
 | P0: Remove workflow feature         | Not started | Workflow UI, services, permissions, data model, and database objects no longer exist                      |
 | P0: Generic DB3 authorization       | Complete    | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
-| P0: Protected accounts and signup   | Not started | No untrusted path can obtain or delegate sysadmin authority                                               |
+| P0: Protected accounts and signup   | In progress | No untrusted path can obtain or delegate sysadmin authority                                               |
 | P0: Secrets and object-level gaps   | Not started | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
 | P1: Permission and role model       | Not started | Delegation policy and protected role/permission metadata are authoritative                                |
 | P1: Sessions and revocation         | Not started | Grants and revocations are reflected reliably and promptly                                                |
@@ -430,7 +430,7 @@ Policy:
 - Tables with an `isDeleted` column are soft-delete-only through generic DB3. Hard-only domain and association tables are individually allowlisted and still require authorization against the persisted target row. The generic data grid requests `softWhenPossible` so the server chooses the permitted operation.
 - `Role`, `Permission`, `RolePermission`, `Change`, `Setting`, and the pending-removal workflow tables cannot be deleted through generic DB3. `User` hard deletion is also excluded and requires a separately scoped Sysadmin maintenance operation.
 - Deleting a Role would cascade its RolePermission rows and set assigned users' `roleId` to null. Deleting a Permission would cascade its RolePermission rows and set visibility references to null across domain records. Generic deletion remains disabled for both; any future dedicated operation must present and validate those consequences.
-- A non-Sysadmin cannot soft-delete a user whose `isSysAdmin` flag is set or whose role contains `sysadmin`, `impersonate_user`, or `never_grant`. BA-U001 will consolidate this delete-specific guard with the shared protected-principal policy used by all user-management operations.
+- A non-Sysadmin cannot soft-delete a user whose `isSysAdmin` flag is set or whose role contains `sysadmin`, `impersonate_user`, or `never_grant`. BA-U001 consolidated this delete-specific guard with the shared protected-principal policy used by all user-management operations.
 
 References: [delete-policy table contract](../src/core/db3/shared/db3core.ts#L478), [delete implementation](../src/core/db3/server/db3mutationCore.ts#L440)
 
@@ -450,17 +450,39 @@ Phase completion evidence:
 
 ### BA-U001 — Central protected-principal policy
 
-- [ ] Add one server-side policy equivalent to `canManageUser(actor, target, action, desiredRole)`.
-- [ ] Treat a user as protected when `isSysAdmin` is true or their role contains a protected/system permission.
-- [ ] Apply the policy to edit, deactivate/delete, reset, impersonate, and role-assignment operations.
-- [ ] Ensure the UI consumes server-provided decisions but is not the enforcement boundary.
+- [x] Add one server-side policy equivalent to `canManageUser(actor, target, action, desiredRole)`.
+- [x] Treat a user as protected when `isSysAdmin` is true or their role contains a protected/system permission.
+- [x] Apply the policy to edit, deactivate/delete, reset, impersonate, and role-assignment operations.
+- [x] Ensure the UI consumes server-provided decisions but is not the enforcement boundary.
+
+Policy:
+
+- The central policy is an additional restrictive layer. Existing resolver, table, row, and field authorization remains mandatory and may be stricter; the policy cannot grant a Moderator or another role a capability it did not already have.
+- `sysadmin`, `impersonate_user`, and `never_grant` are protected permissions. A user with one of those permissions through their role, or with `isSysAdmin` set, is a protected principal.
+- Only the `User.isSysAdmin` flag is treated as the actual Sysadmin bypass. A protected role is not sufficient to perform actual-Sysadmin-only reset or impersonation operations.
+- Band Admin may edit or deactivate an ordinary user and assign a predefined role that contains no protected permission. The same ceiling applies when assigning a role during user creation, including attempts to promote oneself.
+- Password-reset URL generation and impersonation are actual-Sysadmin-only. Impersonation additionally rejects self-impersonation and every protected target as defense in depth.
+- Mutation and UI capability decisions load the actor, target, and selected role with their permission relations from current database state. UI controls consume a server capability query; mutations independently enforce the same policy.
 
 Acceptance criteria:
 
-- [ ] Band Admin can manage an ordinary user according to the agreed policy.
-- [ ] Band Admin cannot modify, delete, reset, impersonate, or demote a Sysadmin.
-- [ ] Band Admin cannot promote themselves or another user beyond the permitted ceiling.
-- [ ] Moderator behavior does not gain new authority.
+- [x] Band Admin can manage an ordinary user according to the agreed policy.
+- [x] Band Admin cannot modify, delete, reset, impersonate, or demote a Sysadmin.
+- [x] Band Admin cannot promote themselves or another user beyond the permitted ceiling.
+- [x] Moderator behavior does not gain new authority.
+
+References:
+
+- [Central user-management policy](../src/auth/server/userManagementPolicy.ts)
+- [Server-provided UI capability query](../src/auth/queries/getUserManagementCapabilities.ts)
+- [Generic user mutation enforcement](../src/core/db3/server/db3mutationCore.ts)
+- [User administration controls](../src/core/components/user/UserAdminPanel.tsx)
+
+Evidence:
+
+- Implementation: one action-oriented protected-principal policy for edit, deactivation, role assignment, reset, and impersonation; fresh actor, target, and desired-role reads at server boundaries; role-ceiling enforcement on both insert and update; reset restricted to the actual Sysadmin flag; protected-target and self-target impersonation rejection; and server-computed capabilities controlling the user administration panel without replacing mutation enforcement.
+- Verification: `yarn test:auth` and `yarn test` (82 passed, including all protected permissions, ordinary-user positive controls, protected-role and `isSysAdmin` targets, self/other/create promotion ceilings, reset and impersonation boundaries, server capability decisions, and unchanged Moderator authority); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR: see gh issue #668
 
 ### BA-U002 — Split ordinary user administration from system administration
 

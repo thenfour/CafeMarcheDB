@@ -1,7 +1,9 @@
 import { Permission } from "@/shared/permissions";
 import { Routes } from "@blitzjs/next";
+import { useQuery } from "@blitzjs/rpc";
 import { Button, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
+import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "../../db3/components/IconMap";
 import { useConfirm } from "../ConfirmationDialog";
@@ -20,22 +22,28 @@ interface UserAdminPanelProps {
 };
 
 export const UserAdminPanel = (props: UserAdminPanelProps) => {
-    const snackbar = useSnackbar();
-    const router = useRouter();
-    const confirm = useConfirm();
     const dashboardContext = useDashboardContext();
 
     if (!dashboardContext.isAuthorized(Permission.admin_users)) {
         return null;
     }
 
+    return <AuthorizedUserAdminPanel {...props} />;
+}
+
+const AuthorizedUserAdminPanel = (props: UserAdminPanelProps) => {
+    const snackbar = useSnackbar();
+    const router = useRouter();
+    const confirm = useConfirm();
+    const [capabilities] = useQuery(getUserManagementCapabilities, { userId: props.user.id });
+
     return (
         <div style={{}}>
-            <AdminResetPasswordButton
+            {capabilities.canResetPassword && <AdminResetPasswordButton
                 user={props.user}
-            />
-            <ImpersonateUserButton userId={props.user.id} />
-            <Tooltip title="Delete this user (soft).">
+            />}
+            {capabilities.canImpersonate && <ImpersonateUserButton userId={props.user.id} />}
+            {capabilities.canDeactivate && <Tooltip title="Delete this user (soft).">
                 <Button onClick={async () => {
                     if (await confirm({
                         description: `Are you sure you want to (soft) delete user ${props.user.name}, id ${props.user.id}?`,
@@ -48,8 +56,8 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
                     }
 
                 }} startIcon={gIconMap.Delete()}>Delete</Button>
-            </Tooltip>
-            <EditFieldsDialogButton
+            </Tooltip>}
+            {(capabilities.canEdit || capabilities.canAssignRole) && <EditFieldsDialogButton
                 readonly={props.readonly}
                 dialogTitle="Edit User Fields"
                 tableSpec={props.tableClient.tableSpec}
@@ -66,7 +74,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
                 }}
                 dialogDescription={""}
                 renderButtonChildren={() => "Edit User Fields"}
-            />
+            />}
         </div>
     );
 }

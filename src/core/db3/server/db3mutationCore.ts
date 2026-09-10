@@ -22,6 +22,7 @@ import { getFileCustomData } from "../shared/fileAPI";
 import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from "../shared/fileTypes";
 import { TAnyModel } from "@/shared/rootroot";
 import { CreatePublicData } from "types";
+import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
 
 var path = require('path');
 var fs = require('fs');
@@ -72,31 +73,6 @@ const requireRolePermissionTopologyAuthorization = (
     }
 };
 
-const gProtectedUserPermissions = new Set<Permission>([
-    Permission.sysadmin,
-    Permission.impersonate_user,
-    Permission.never_grant,
-]);
-
-// checks if the user is protected from deletion
-// "protected" means special authorization needed beyond the rolepermission matrix
-const isProtectedUserDeleteTarget = (table: db3.xTable, model: TAnyModel): boolean => {
-    if (table.tableName !== db3.xUser.tableName) {
-        return false;
-    }
-    // this is the user table; require extra checks...
-    if (model.isSysAdmin === true) {
-        return true; // delete target is a sysadmin; protected.
-    }
-    const rolePermissions = model.role?.permissions;
-    if (!Array.isArray(rolePermissions)) {
-        return false;
-    }
-    return rolePermissions.some((rolePermission: TAnyModel) =>
-        gProtectedUserPermissions.has(rolePermission.permission?.name),
-    );
-};
-
 const requireDeleteOperationAuthorization = (
     table: db3.xTable,
     deleteType: "softWhenPossible" | "hard",
@@ -111,6 +87,20 @@ const requireDeleteOperationAuthorization = (
         return "hard";
     }
     throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
+};
+
+const findUserManagementDesiredRole = async (desiredRoleId: number | null) => {
+    if (desiredRoleId == null) {
+        return null;
+    }
+    const desiredRole = await db.role.findFirst({
+        ...db3.RoleArgs,
+        where: { id: desiredRoleId },
+    });
+    if (!desiredRole) {
+        throw new Error(`Role ${desiredRoleId} was not found.`);
+    }
+    return desiredRole;
 };
 
 // returns null if not authorized.
@@ -468,8 +458,12 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
 
-        if (!publicData.isSysAdmin && isProtectedUserDeleteTarget(table, oldValues)) {
-            throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
+        if (table.tableName === db3.xUser.tableName) {
+            requireCanManageUser({
+                actor: clientIntention.currentUser || null,
+                target: oldValues,
+                action: "deactivate",
+            });
         }
 
         if (deleteOperation === "soft") {
@@ -590,6 +584,24 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             }
         }
 
+        // specific handling of user role assignment auth policy
+        if (table.tableName === db3.xUser.tableName
+            && Object.prototype.hasOwnProperty.call(authorizedLocalFields, "roleId")) {
+            const desiredRole = await findUserManagementDesiredRole(
+                authorizedLocalFields.roleId as number | null,
+            );
+            requireCanManageUser({
+                actor: clientIntention.currentUser || null,
+                target: {
+                    id: 0,
+                    isSysAdmin: authorizedLocalFields.isSysAdmin === true,
+                    role: null,
+                },
+                action: "assignRole",
+                desiredRole,
+            });
+        }
+
         if (Object.keys(proposedModel).length > 0) {
             // createdBy and updatedBy.
             if (table.SqlSpecialColumns.createdByUser) {
@@ -677,7 +689,13 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         };
         // at this point `fields` should not be used.
 
-        const fullOldObj = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
+        const selectionArgs = table.tableName === db3.xUser.tableName
+            ? UserWithRolesArgs
+            : {};
+        const fullOldObj = await dbTableClient.findFirst({
+            ...selectionArgs,
+            where: { [table.pkMember]: pkid },
+        });
         if (!fullOldObj) throw new Error(`${table.tableName} ${pkid} was not found.`);
         let authorizedLocalFields: TAnyModel = {};
         let authorizedAssociationFields: TAnyModel = {};
@@ -710,6 +728,27 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                     publicData,
                     [column.member],
                 );
+            }
+        }
+
+        // enforce policies for user table updates
+        if (table.tableName === db3.xUser.tableName && Object.keys(proposedModel).length > 0) {
+            const actor = clientIntention.currentUser || null;
+            requireCanManageUser({ actor, target: fullOldObj, action: "edit" });
+
+            if (authorizedLocalFields.isDeleted === true) {
+                requireCanManageUser({ actor, target: fullOldObj, action: "deactivate" });
+            }
+
+            if (Object.prototype.hasOwnProperty.call(authorizedLocalFields, "roleId")) {
+                const desiredRoleId = authorizedLocalFields.roleId as number | null;
+                const desiredRole = await findUserManagementDesiredRole(desiredRoleId);
+                requireCanManageUser({
+                    actor,
+                    target: fullOldObj,
+                    action: "assignRole",
+                    desiredRole,
+                });
             }
         }
 

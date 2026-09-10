@@ -2,8 +2,10 @@
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { Permission } from "shared/permissions"
+import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
 import { CreatePublicData } from "types"
 import * as z from "zod"
+import { requireCanManageUser } from "../server/userManagementPolicy"
 
 export const ImpersonateUserInput = z.object({
     userId: z.number(),
@@ -13,16 +15,19 @@ export default resolver.pipe(
     resolver.zod(ImpersonateUserInput),
     resolver.authorize(Permission.impersonate_user),
     async ({ userId }, ctx) => {
-        const user = await db.user.findFirst({
-            where: { id: userId },
-            include: { role: { include: { permissions: { include: { permission: true } } } } }
-        })
+        // fresh db state = safer.
+        const [actor, user] = await Promise.all([
+            db.user.findFirst({
+                ...UserWithRolesArgs,
+                where: { id: ctx.session.userId },
+            }),
+            db.user.findFirst({
+                ...UserWithRolesArgs,
+                where: { id: userId },
+            }),
+        ])
         if (!user) throw new Error("Could not find user id " + userId)
-        if (userId === ctx.session.$publicData.userId) {
-            // nothing to do. maybe trying to impersonate as yourself?
-            // get out.
-            return user;
-        }
+        requireCanManageUser({ actor, target: user, action: "impersonate" })
 
         await ctx.session.$create(CreatePublicData({
             user,
