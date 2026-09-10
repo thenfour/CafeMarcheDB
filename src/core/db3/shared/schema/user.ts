@@ -49,6 +49,17 @@ const authorizeUserSecurityFieldViewOnly = (args: db3.DB3AuthorizeAndSanitizeInp
     return (args.publicData.permissions || gPublicPermissions).includes(Permission.basic_trust);
 };
 
+type BuiltInRoleFlag = "isRoleForNewUsers" | "isPublicRole";
+
+// Built-in role designations are reassigned through one dedicated transaction.
+// Generic creation may only create an ordinary, unassigned role.
+const authorizeBuiltInRoleFlag = (flag: BuiltInRoleFlag) => (
+    args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>,
+): boolean => {
+    if (args.rowMode === "view") return true;
+    return args.rowMode === "new" && args.model?.[flag] === false;
+};
+
 
 export const xUserTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.basic_trust,
@@ -337,13 +348,13 @@ export const xRole = new db3.xTable({
         new BoolField({
             columnName: "isRoleForNewUsers",
             defaultValue: false,
-            authMap: xUserAuthMap_R_EAdmins,
+            _customAuth: authorizeBuiltInRoleFlag("isRoleForNewUsers"),
             allowNull: false,
         }),
         new BoolField({
             columnName: "isPublicRole",
             defaultValue: false,
-            authMap: xUserAuthMap_R_EAdmins,
+            _customAuth: authorizeBuiltInRoleFlag("isPublicRole"),
             allowNull: false,
         }),
         MakeSortOrderField({ authMap: xUserAuthMap_R_EAdmins }),

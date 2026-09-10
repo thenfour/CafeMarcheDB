@@ -142,6 +142,9 @@ export const authorizationTestDb = new Proxy(database, {
     if (property === "$queryRaw") {
       return async (query: { strings?: readonly string[]; values?: unknown[] }) => {
         const statement = query.strings?.join("?") ?? ""
+        if (/FROM\s+`?Role`?\s+ORDER\s+BY\s+id\s+FOR\s+UPDATE/i.test(statement)) {
+          return target.getDelegate("role").snapshot().map((role) => ({ id: role.id }))
+        }
         if (!/FROM\s+AdminBootstrapClaim/i.test(statement)) {
           throw new Error(`Unsupported authorization-test raw query: ${statement}`)
         }

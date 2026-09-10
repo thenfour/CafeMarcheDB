@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U004, and BA-M001 complete; BA-U005 in progress
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U005, and BA-M001 complete; BA-S001 next
 
 ## Goal
 
@@ -544,7 +544,7 @@ Evidence:
 - [x] Remove `roleId` from public signup input.
 - [x] Construct permitted user-create data explicitly rather than spreading caller input.
 - [x] Replace ordinary-signup `ADMIN_EMAIL` promotion with a dedicated deployment/bootstrap path.
-- [ ] Enforce exactly one default-new-user role and one public role. (Consumers now fail closed on zero or multiple matches; mutation-time atomic reassignment remains.)
+- [x] Enforce exactly one default-new-user role and one public role.
 - [x] Make default/public role flags sysadmin-only.
 - [x] Protect built-in roles from deletion.
 
@@ -553,11 +553,14 @@ References:
 - [Signup schema](../src/auth/schemas.ts#L31)
 - [Signup mutation](../src/auth/mutations/signup.ts#L13)
 - [Public-role lookup](../src/core/db3/shared/db3core.ts#L879)
+- [Built-in role designation contract](../src/auth/roleDesignations.ts)
+- [Built-in role reassignment](../src/auth/mutations/setRoleDesignation.ts)
+- [Sysadmin role-management page](../src/pages/backstage/roles.tsx)
 
 Phase completion evidence:
 
-- Implementation: ordinary signup accepts only name, normalized email, and password, constructs an explicit non-Sysadmin create payload, and requires exactly one default-new-user role. Google signup supplies its provider ID only through a server-owned helper. The legacy `ADMIN_EMAIL` promotion is removed. An unlinked authenticated recovery page is visible only to the active user matching `CMDB_ADMIN_BOOTSTRAP_EMAIL`; its mutation rechecks the database identity and a minimum-32-character `CMDB_ADMIN_BOOTSTRAP_SECRET`, atomically records a unique SHA-256 token hash, grants `User.isSysAdmin`, invalidates old sessions, refreshes the current session, and writes a credential-free audit record. Public-role consumers now require exactly one matching role. Existing Role table policy restricts its flags to actual Sysadmins and disables generic deletion. Atomic mutation-time reassignment of the two role designations remains before BA-U005 is complete.
-- Verification: `yarn test:auth` and `yarn test` (127 passed, including forged signup fields, legacy `ADMIN_EMAIL`, missing/duplicate built-in role lookups, unauthenticated/deleted/stale-email rejection, eligibility non-disclosure, wrong/reused credentials, hashed claim storage, promotion, session invalidation/refresh, and credential-free audit); `yarn tsc --noEmit`; focused ESLint; `yarn build`; Prisma schema validation and client generation with a disposable build URL and output because a running Prisma Studio process owns the normal Windows engine DLL.
+- Implementation: ordinary signup accepts only name, normalized email, and password, constructs an explicit non-Sysadmin create payload, and requires exactly one default-new-user role. Google signup supplies its provider ID only through a server-owned helper. The legacy `ADMIN_EMAIL` promotion is removed. An unlinked authenticated recovery page is visible only to the active user matching `CMDB_ADMIN_BOOTSTRAP_EMAIL`; its mutation rechecks the database identity and a minimum-32-character `CMDB_ADMIN_BOOTSTRAP_SECRET`, atomically records a unique SHA-256 token hash, grants `User.isSysAdmin`, invalidates old sessions, refreshes the current session, and writes a credential-free audit record. Public-role consumers require exactly one matching role. Generic Role mutation can create only unassigned roles and cannot update either built-in designation; generic deletion remains disabled. A dedicated actual-Sysadmin mutation serializes reassignment under a Role-table lock, repairs zero or duplicate assignments, verifies that exactly one role remains assigned, and audits every changed flag under one operation. The Sysadmin role page exposes the two semantic assignments without encoding role names or rankings.
+- Verification: `yarn test:auth` and `yarn test` (139 passed, including forged signup fields, legacy `ADMIN_EMAIL`, missing/duplicate built-in role lookups, unauthenticated/deleted/stale-email rejection, eligibility non-disclosure, wrong/reused credentials, hashed claim storage, promotion, session invalidation/refresh, generic designation-forgery rejection, zero/duplicate reassignment repair, actual-Sysadmin enforcement, no-op behavior, and grouped credential-free audits); `yarn tsc --noEmit`; focused ESLint; `yarn build`; Prisma schema validation and client generation with a disposable build URL and output because a running Prisma Studio process owns the normal Windows engine DLL.
 - Commit/PR: see gh issue #668
 
 ## Phase 3 — Remove sensitive-data and object-level authorization gaps
@@ -949,6 +952,8 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views                            | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`    | see gh issue #668 |
 | 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 | 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                                                | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
+| 2026-09-10 | BA-U004   | Restricted impersonation to actual Sysadmins, constrained protected targets, preserved original-actor attribution, and removed sensitive mutation results                                  | `yarn test:auth`; `yarn test` (114 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
+| 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                           | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
 
 ## Deferred ideas
 
