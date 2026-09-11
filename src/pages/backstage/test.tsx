@@ -5,6 +5,8 @@ import MenuIcon from '@mui/icons-material/Menu';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { Permission } from "shared/permissions";
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const GridTestPage: BlitzPage = (props) => {
@@ -287,3 +289,5 @@ const SidebarContent = () => (
 );
 
 export default GridTestPage;
+
+export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);

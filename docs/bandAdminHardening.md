@@ -738,24 +738,47 @@ Evidence:
 
 ### BA-S004 — Wiki authorization maps
 
-- [ ] Replace logged-in write permissions on wiki/tag administration with the intended wiki capabilities.
+- [x] Replace logged-in write permissions on wiki/tag administration with the intended wiki capabilities.
 
 References:
 
 - [Wiki DB3 schema](../src/core/db3/shared/schema/wiki.ts#L13)
 - [Wiki tag schema](../src/core/db3/shared/schema/wikiPageTag.ts#L19)
+- [Wiki authorization regressions](../tests/authorization/wikiMetadataTelemetryHardening.test.ts)
+
+Evidence:
+
+- Wiki-page reads require `view_wiki_pages`; ordinary page fields and page-tag assignments require `edit_wiki_pages` to mutate. Internal revision-pointer and lock metadata require `admin_wiki_pages` at the generic DB3 field boundary, while the dedicated editor/lock mutations retain their existing capability-specific behavior.
+- Wiki tag-vocabulary creation and mutation and generic revision administration require `admin_wiki_pages`. Revision reads use `view_wiki_page_revisions`, and login/visibility grants alone no longer authorize any of these writes.
 
 ### BA-S005 — Metadata, telemetry, and test routes
 
-- [ ] Add appropriate authorization/visibility handling to server-rendered entity metadata loaders.
-- [ ] Authenticate telemetry identity rather than trusting a supplied user ID.
-- [ ] Remove production test routes or gate them with an explicit sysadmin/developer capability.
-- [ ] Ensure production pages never rely only on menu hiding.
+- [x] Add appropriate authorization/visibility handling to server-rendered entity metadata loaders.
+- [x] Authenticate telemetry identity rather than trusting a supplied user ID.
+- [x] Remove production test routes or gate them with an explicit sysadmin/developer capability.
+- [x] Ensure production pages never rely only on menu hiding.
+
+References:
+
+- [Shared server-page authorization](../src/auth/server/serverPageAuthorization.ts)
+- [Event metadata loader](../src/pages/backstage/event/[...id_slug_tab].tsx)
+- [File metadata loader](../src/pages/backstage/file/[...id_slug_tab].tsx)
+- [Song metadata loader](../src/pages/backstage/song/[...id_slug_tab].tsx)
+- [User metadata loader](../src/pages/backstage/user/[...id_slug_tab].tsx)
+- [Telemetry endpoint](../src/pages/api/telemetry.ts)
+- [Metadata and telemetry regressions](../tests/authorization/wikiMetadataTelemetryHardening.test.ts)
+
+Evidence:
+
+- Event, File, Song, and User SSR title loaders now use one fresh-actor boundary that requires the page capability and derives the Prisma predicate from the entity's DB3 table policy. Soft deletion, visibility, and ownership therefore match the subsequent client query; malformed, missing, and unauthorized identifiers all produce a 404 without exposing entity titles or existence.
+- The client telemetry endpoint now runs through the Blitz API wrapper, validates the event schema, and overwrites any supplied `userId` with the fresh authenticated database actor. The client no longer transmits a user ID and uses a keepalive request so it can supply Blitz's required anti-CSRF header; anonymous telemetry remains anonymous.
+- All five routes under `/backstage/test*` and `/test/test` require the `sysadmin` capability from the fresh database actor in server-side props. The previously public quick-search test and unguarded layout/select demos are no longer reachable by ordinary users.
+- A complete backstage-page inventory found two production pages whose route body was not guarded by the same permission used for menu visibility. `/backstage/customLinks` now declares `view_custom_links` at `DashboardLayout`, and `/backstage/colorEditor2` declares `sysadmin`; the backstage home remains the intentional authenticated landing page, and the wiki detail route already authenticates in SSR.
 
 Phase completion evidence:
 
-- Implementation:
-- Verification:
+- Implementation: Wiki DB3 maps now distinguish page editing, page-tag assignment, tag/revision administration, and internal lock metadata. Shared server-page authorization protects metadata loaders and diagnostic routes, while telemetry identity is derived only at the server boundary.
+- Verification: 12 focused BA-S004/BA-S005 regressions; `yarn test:auth` and `yarn test` pass (219 tests); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
 - Commit/PR:
 
 ## Phase 4 — Define the durable role and permission model

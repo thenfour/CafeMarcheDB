@@ -250,15 +250,14 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
 };
 
 /**
- * Beacon-based drop-in replacement for recordFeature (client-side only), as a hook.
- * Usage: const recordFeatureBeacon = useClientTelemetryEvent();
- *        recordFeatureBeacon({ feature, context, ...associations })
+ * Keepalive-based drop-in replacement for recordFeature (client-side only), as a hook.
+ * Usage: const recordClientTelemetry = useClientTelemetryEvent();
+ *        recordClientTelemetry({ feature, context, ...associations })
  * thisComponentContext - normally we like to use <AppContextMarker>, but if you want to use this hook in the
  * same component as <AppContextMarker>, you can pass the context manually because otherwise it won't be available yet in the tree.
  */
 
 export function useClientTelemetryEvent(thisComponentContext?: string) {
-    const [currentUser] = useCurrentUser();
     const appCtx = useAppContext();
     return async ({ feature, context, ...associations }: ClientActivityParams) => {
         const url = "/api/telemetry";
@@ -282,21 +281,16 @@ export function useClientTelemetryEvent(thisComponentContext?: string) {
         // see blitz docs for manually invoking APIs / https://blitzjs.com/docs/session-management#manual-api-requests
         const antiCSRFToken = getAntiCSRFToken();
 
-        const payload = JSON.stringify({ event, antiCSRFToken, userId: currentUser?.id });
+        const payload = JSON.stringify({ event });
         const contentType = "application/json";
+        const headers: Record<string, string> = { "Content-Type": contentType };
+        if (antiCSRFToken) headers["anti-csrf"] = antiCSRFToken;
 
-        if (typeof window !== "undefined" && typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-            try {
-                const blob = new Blob([payload], { type: contentType, });
-                navigator.sendBeacon(url, blob);
-                return;
-            } catch (e) {
-                // Fallback to fetch below
-            }
-        }
+        // keepalive retains unload-time delivery while allowing the auth
+        // middleware's required anti-CSRF header, which sendBeacon cannot set.
         await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": contentType },
+            headers,
             body: payload,
             keepalive: true,
         });

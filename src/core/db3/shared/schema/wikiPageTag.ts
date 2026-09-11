@@ -16,20 +16,36 @@ export enum WikiPageTagSignificance {
     Project = "Project",
 };
 
-const authMap: DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.visibility_logged_in_users,
-    PostQuery: Permission.visibility_logged_in_users,
-    PreMutateAsOwner: Permission.visibility_logged_in_users,
-    PreMutate: Permission.visibility_logged_in_users,
-    PreInsert: Permission.visibility_logged_in_users,
+const wikiPageTagAuthMap: DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_wiki_pages,
+    PostQuery: Permission.view_wiki_pages,
+    PreMutateAsOwner: Permission.admin_wiki_pages,
+    PreMutate: Permission.admin_wiki_pages,
+    PreInsert: Permission.admin_wiki_pages,
 } as const;
 
-const xTableAuthMap: DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.visibility_logged_in_users,
-    View: Permission.visibility_logged_in_users,
-    EditOwn: Permission.visibility_logged_in_users,
-    Edit: Permission.visibility_logged_in_users,
-    Insert: Permission.visibility_logged_in_users,
+const wikiPageTagTableAuthMap: DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_wiki_pages,
+    View: Permission.view_wiki_pages,
+    EditOwn: Permission.admin_wiki_pages,
+    Edit: Permission.admin_wiki_pages,
+    Insert: Permission.admin_wiki_pages,
+} as const;
+
+const wikiPageTagAssignmentAuthMap: DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_wiki_pages,
+    PostQuery: Permission.view_wiki_pages,
+    PreMutateAsOwner: Permission.edit_wiki_pages,
+    PreMutate: Permission.edit_wiki_pages,
+    PreInsert: Permission.edit_wiki_pages,
+} as const;
+
+const wikiPageTagAssignmentTableAuthMap: DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_wiki_pages,
+    View: Permission.view_wiki_pages,
+    EditOwn: Permission.edit_wiki_pages,
+    Edit: Permission.edit_wiki_pages,
+    Insert: Permission.edit_wiki_pages,
 } as const;
 
 //////////////////////////////////////////////////////////////
@@ -39,7 +55,7 @@ export const xWikiPageTag = new xTable({
     },
     tableName: "WikiPageTag",
     deletePolicy: "hard",
-    tableAuthMap: xTableAuthMap,
+    tableAuthMap: wikiPageTagTableAuthMap,
     naturalOrderBy: WikiPageTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.WikiPageTagCreateInput => {
         return {
@@ -59,12 +75,12 @@ export const xWikiPageTag = new xTable({
     }),
     columns: [
         MakePKfield(),
-        MakeTitleField("text", { authMap }),
-        MakeDescriptionField({ authMap }),
-        MakeColorField({ authMap }),
-        MakeSortOrderField({ authMap }),
-        MakeSignificanceField("significance", WikiPageTagSignificance, { authMap }),
-        new GhostField({ memberName: "wikiPages", authMap }),
+        MakeTitleField("text", { authMap: wikiPageTagAuthMap }),
+        MakeDescriptionField({ authMap: wikiPageTagAuthMap }),
+        MakeColorField({ authMap: wikiPageTagAuthMap }),
+        MakeSortOrderField({ authMap: wikiPageTagAuthMap }),
+        MakeSignificanceField("significance", WikiPageTagSignificance, { authMap: wikiPageTagAuthMap }),
+        new GhostField({ memberName: "wikiPages", authMap: wikiPageTagAuthMap }),
     ]
 });
 
@@ -73,7 +89,7 @@ export const xWikiPageTagAssignment = new xTable({
     tableName: "WikiPageTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
-    tableAuthMap: xTableAuthMap,
+    tableAuthMap: wikiPageTagAssignmentTableAuthMap,
     getSelectionArgs: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagAssignmentDefaultArgs => {
         return WikiPageTagAssignmentArgs;
     },
@@ -93,7 +109,7 @@ export const xWikiPageTagAssignment = new xTable({
             fkidMember: "tagId",
             allowNull: false,
             foreignTableID: "WikiPageTag",
-            authMap,
+            authMap: wikiPageTagAssignmentAuthMap,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]

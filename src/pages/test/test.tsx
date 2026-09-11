@@ -3,6 +3,8 @@ import { NoSsr } from "@mui/material";
 import Head from "next/head";
 import * as React from 'react';
 import { CMTextInputBase } from "src/core/components/CMTextField";
+import { Permission } from "shared/permissions";
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 const MainContent = () => {
     const [text, setText] = React.useState("# here i am");
@@ -38,4 +40,6 @@ const Test1PublicIndex: BlitzPage = () => {
 }
 
 export default Test1PublicIndex;
+
+export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);
 

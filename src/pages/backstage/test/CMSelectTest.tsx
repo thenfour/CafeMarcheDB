@@ -11,6 +11,8 @@ import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { ColorPick } from "@/src/core/components/color/ColorPick";
+import { Permission } from "shared/permissions";
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 type Dataset = "numbers";
 
@@ -399,7 +401,7 @@ const MinimalUserSelect = () => {
 
 const CMSelectTestPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="theme editor">
+        <DashboardLayout title="theme editor" basePermission={Permission.sysadmin}>
 
             <SingleSelectTest />
             <SingleSelectNullableTest />
@@ -418,4 +420,6 @@ const CMSelectTestPage: BlitzPage = () => {
 }
 
 export default CMSelectTestPage;
+
+export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);
 

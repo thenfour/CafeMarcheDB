@@ -13,6 +13,8 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 import { enrichSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
+import { gSSP } from "@/src/blitz-server";
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();
@@ -86,10 +88,10 @@ interface PageProps {
     songId: number | null,
 };
 
-export const getServerSideProps = async ({ params }) => {
-    const [id__, slug, tab] = params.id_slug_tab as string[];
+export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
+    const [id__] = params!.id_slug_tab as string[];
     const id = CoerceToNumberOrNull(id__);
-    if (!id) throw new Error(`no id`);
+    if (!id) return { notFound: true };
 
     // id: required always. even though we have "slugs", we require the ID to avoid conflicts.
     // slug: ignored.
@@ -100,28 +102,23 @@ export const getServerSideProps = async ({ params }) => {
     // /backstage/song/2/slug/info   => ["2", "slug", "info"]
     // /backstage/song/2/whateveridontcare/info
 
-    const ret: { props: PageProps } = {
-        props: {
-            title: "Song",
-            songId: null,
-        }
-    };
-    const song = await db.song.findFirst({
-        select: {
-            id: true,
-            name: true,
-        },
-        where: {
-            id,
-        }
+    const song = await loadAuthorizedPageEntity({
+        ctx,
+        permission: Permission.view_songs,
+        table: db3.xSong,
+        id,
+        load: where => db.song.findFirst({
+            select: {
+                id: true,
+                name: true,
+            },
+            where,
+        }),
     });
-    if (song) {
-        ret.props.title = `${song.name}`;
-        ret.props.songId = song.id;
-    }
+    if (!song) return { notFound: true };
 
-    return ret;
-}
+    return { props: { title: song.name, songId: song.id } };
+});
 
 const SongDetailPage: BlitzPage = (x: PageProps) => {
     return (

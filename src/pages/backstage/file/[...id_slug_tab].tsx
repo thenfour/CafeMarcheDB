@@ -27,6 +27,8 @@ import { FileTableClientColumns } from "src/core/components/file/FileComponentsB
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { gSSP } from "@/src/blitz-server";
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
 import { FileTagChip } from "@/src/core/components/file/FileChip";
 import { SongChip } from "@/src/core/components/song/SongChip";
 import { WikiPageChip } from "@/src/core/components/wiki/WikiPageChip";
@@ -286,35 +288,28 @@ interface PageProps {
     fileId: number | null;
 }
 
-export const getServerSideProps = async ({ params }) => {
-    const [id__, slug, tab] = params.id_slug_tab as string[];
+export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
+    const [id__] = params!.id_slug_tab as string[];
     const id = CoerceToNumberOrNull(id__);
-    if (!id) throw new Error(`no id`);
+    if (!id) return { notFound: true };
 
-    const ret: { props: PageProps } = {
-        props: {
-            title: "File",
-            fileId: null,
-        }
-    };
-
-    const file = await db.file.findFirst({
-        select: {
-            id: true,
-            fileLeafName: true,
-        },
-        where: {
-            id,
-        }
+    const file = await loadAuthorizedPageEntity({
+        ctx,
+        permission: Permission.access_file_landing_page,
+        table: db3.xFile,
+        id,
+        load: where => db.file.findFirst({
+            select: {
+                id: true,
+                fileLeafName: true,
+            },
+            where,
+        }),
     });
+    if (!file) return { notFound: true };
 
-    if (file) {
-        ret.props.title = `${file.fileLeafName}`;
-        ret.props.fileId = file.id;
-    }
-
-    return ret;
-};
+    return { props: { title: file.fileLeafName, fileId: file.id } };
+});
 
 const FileDetailPage: BlitzPage = (x: PageProps) => {
     return (

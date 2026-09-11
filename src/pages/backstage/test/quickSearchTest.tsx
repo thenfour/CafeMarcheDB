@@ -7,6 +7,7 @@ import { AdminInspectObject, NameValuePair } from "src/core/components/CMCoreCom
 import { CMTextField } from "src/core/components/CMTextField";
 import { AssociationValueLink, fetchObjectQuery } from "@/src/core/components/ItemAssociation";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 const TestMatchStrength = () => {
     const [sourceText, setSourceText] = React.useState<string>("some text to search in");
@@ -79,10 +80,12 @@ const MainContent = () => {
 
 const QuickSearchTestPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="QuickSearchTestPage" basePermission={Permission.public}>
+        <DashboardLayout title="QuickSearchTestPage" basePermission={Permission.sysadmin}>
             <MainContent />
         </DashboardLayout>
     )
 }
 
 export default QuickSearchTestPage;
+
+export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);

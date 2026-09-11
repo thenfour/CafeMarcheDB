@@ -10,20 +10,44 @@ import { GenericStringField, MakeTitleField } from "../genericStringField";
 import { WikiPageTagAssignmentPayload } from "./prismArgs";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
-const xAuthMap: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.visibility_logged_in_users,
-    PostQuery: Permission.visibility_logged_in_users,
-    PreMutateAsOwner: Permission.visibility_logged_in_users,
-    PreMutate: Permission.visibility_logged_in_users,
-    PreInsert: Permission.visibility_logged_in_users,
+const wikiPageAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_wiki_pages,
+    PostQuery: Permission.view_wiki_pages,
+    PreMutateAsOwner: Permission.edit_wiki_pages,
+    PreMutate: Permission.edit_wiki_pages,
+    PreInsert: Permission.edit_wiki_pages,
 } as const;
 
-const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.visibility_logged_in_users,
-    View: Permission.visibility_logged_in_users,
-    EditOwn: Permission.visibility_logged_in_users,
-    Edit: Permission.visibility_logged_in_users,
-    Insert: Permission.visibility_logged_in_users,
+const wikiPageTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_wiki_pages,
+    View: Permission.view_wiki_pages,
+    EditOwn: Permission.edit_wiki_pages,
+    Edit: Permission.edit_wiki_pages,
+    Insert: Permission.edit_wiki_pages,
+} as const;
+
+const wikiPageAdministrationAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_wiki_pages,
+    PostQuery: Permission.view_wiki_pages,
+    PreMutateAsOwner: Permission.admin_wiki_pages,
+    PreMutate: Permission.admin_wiki_pages,
+    PreInsert: Permission.admin_wiki_pages,
+} as const;
+
+const wikiPageRevisionAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_wiki_page_revisions,
+    PostQuery: Permission.view_wiki_page_revisions,
+    PreMutateAsOwner: Permission.admin_wiki_pages,
+    PreMutate: Permission.admin_wiki_pages,
+    PreInsert: Permission.admin_wiki_pages,
+} as const;
+
+const wikiPageRevisionTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_wiki_page_revisions,
+    View: Permission.view_wiki_page_revisions,
+    EditOwn: Permission.admin_wiki_pages,
+    Edit: Permission.admin_wiki_pages,
+    Insert: Permission.admin_wiki_pages,
 } as const;
 
 
@@ -61,25 +85,25 @@ export const xWikiPage = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.visiblePermission?.color || null),
         ownerUserId: null,
     }),
-    tableAuthMap: xTableAuthMap,
+    tableAuthMap: wikiPageTableAuthMap,
     columns: [
         MakePKfield(),
         MakeCreatedByField(),
         MakeCreatedAtField(),
-        MakeVisiblePermissionField({ authMap: xAuthMap, }),
+        MakeVisiblePermissionField({ authMap: wikiPageAuthMap, }),
         new GenericStringField({
             columnName: "slug",
             allowNull: false,
             format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xAuthMap,
+            authMap: wikiPageAuthMap,
         }),
         new GenericStringField({
             columnName: "namespace",
             allowNull: true,
             format: "plain",
             allowDiscreteCriteria: true,
-            authMap: xAuthMap,
+            authMap: wikiPageAuthMap,
         }),
         new TagsField<WikiPageTagAssignmentPayload>({
             columnName: "tags",
@@ -89,7 +113,7 @@ export const xWikiPage = new db3.xTable({
             associationLocalObjectMember: "wikiPage",
             associationTableID: "WikiPageTagAssignment",
             foreignTableID: "WikiPageTag",
-            authMap: xAuthMap,
+            authMap: wikiPageAuthMap,
             getQuickFilterWhereClause: (query: string): Prisma.WikiPageWhereInput => ({
                 tags: {
                     some: {
@@ -102,34 +126,34 @@ export const xWikiPage = new db3.xTable({
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
         new GhostField({
-            authMap: xAuthMap,
+            authMap: wikiPageAdministrationAuthMap,
             memberName: "currentRevisionId",
         }),
         new GhostField({
-            authMap: xAuthMap,
+            authMap: wikiPageAdministrationAuthMap,
             memberName: "lockedByUserId",
         }),
         new GhostField({
-            authMap: xAuthMap,
+            authMap: wikiPageAdministrationAuthMap,
             memberName: "lockAcquiredAt",
         }),
         new GhostField({
-            authMap: xAuthMap,
+            authMap: wikiPageAdministrationAuthMap,
             memberName: "lockExpiresAt",
         }),
         new GhostField({
-            authMap: xAuthMap,
+            authMap: wikiPageAdministrationAuthMap,
             memberName: "lastEditPingAt",
         }),
         new GhostField({
-            authMap: xAuthMap,
+            authMap: wikiPageAdministrationAuthMap,
             memberName: "lockId",
         }),
 
         // Virtual field for searching wiki page content; hackhack
         (() => {
             const contentSearchField = new GhostField({
-                authMap: xAuthMap,
+                authMap: wikiPageAdministrationAuthMap,
                 memberName: "contentSearch",
             });
 
@@ -190,17 +214,17 @@ export const xWikiPageRevision = new db3.xTable({
         color: null,
         ownerUserId: null,
     }),
-    tableAuthMap: xTableAuthMap,
+    tableAuthMap: wikiPageRevisionTableAuthMap,
     columns: [
         MakePKfield(),
-        MakeTitleField("name", { authMap: xAuthMap, }),
+        MakeTitleField("name", { authMap: wikiPageRevisionAuthMap, }),
         MakeCreatedByField(),
         MakeCreatedAtField(),
         new GenericStringField({
             columnName: "content",
             allowNull: false,
             format: "markdown",
-            authMap: xAuthMap,
+            authMap: wikiPageRevisionAuthMap,
         }),
 
         new ForeignSingleField<Prisma.WikiPageGetPayload<{}>>({
@@ -209,7 +233,7 @@ export const xWikiPageRevision = new db3.xTable({
             allowNull: false,
             foreignTableID: "WikiPage",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xAuthMap,
+            authMap: wikiPageRevisionAuthMap,
         }),
     ]
 });

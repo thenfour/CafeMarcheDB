@@ -12,6 +12,8 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { gSSP } from "@/src/blitz-server";
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
 
 const MyComponent = ({ userId }: { userId: number | null }) => {
     const params = useParams();
@@ -75,10 +77,10 @@ interface PageProps {
     userId: number | null,
 };
 
-export const getServerSideProps = async ({ params }) => {
-    const [id__, slug, tab] = params.id_slug_tab as string[];
+export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
+    const [id__] = params!.id_slug_tab as string[];
     const id = CoerceToNumberOrNull(id__);
-    if (!id) throw new Error(`no id`);
+    if (!id) return { notFound: true };
 
     // id: required always. even though we have "slugs", we require the ID to avoid conflicts.
     // slug: ignored.
@@ -89,28 +91,23 @@ export const getServerSideProps = async ({ params }) => {
     // /backstage/song/2/slug/info   => ["2", "slug", "info"]
     // /backstage/song/2/whateveridontcare/info
 
-    const ret: { props: PageProps } = {
-        props: {
-            title: "User",
-            userId: null,
-        }
-    };
-    const user = await db.user.findFirst({
-        select: {
-            id: true,
-            name: true,
-        },
-        where: {
-            id,
-        }
+    const user = await loadAuthorizedPageEntity({
+        ctx,
+        permission: Permission.view_users_basic_info,
+        table: db3.xUser,
+        id,
+        load: where => db.user.findFirst({
+            select: {
+                id: true,
+                name: true,
+            },
+            where,
+        }),
     });
-    if (user) {
-        ret.props.title = `${user.name}`;
-        ret.props.userId = user.id;
-    }
+    if (!user) return { notFound: true };
 
-    return ret;
-}
+    return { props: { title: user.name, userId: user.id } };
+});
 
 const UserDetailPage: BlitzPage = (x: PageProps) => {
     return (

@@ -1,6 +1,5 @@
 import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
-import { GetServerSideProps } from 'next';
 import React, { Suspense } from 'react';
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
@@ -16,6 +15,8 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEventTypes";
+import { gSSP } from "@/src/blitz-server";
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
@@ -106,33 +107,32 @@ interface PageProps {
     eventId: number | null,
 };
 
-export const getServerSideProps: GetServerSideProps = async ({ params, req }) => {
-    const [id__, slug, tab] = params!.id_slug_tab as string[];
+export const getServerSideProps = gSSP<PageProps>(async ({ params, req, ctx }) => {
+    const [id__] = params!.id_slug_tab as string[];
     const id = CoerceToNumberOrNull(id__);
-    if (!id) throw new Error(`no id`);
+    if (!id) return { notFound: true };
 
-    const ret: { props: PageProps } = {
-        props: {
-            title: "Event",
-            eventId: null,
-        }
-    };
-    const event = await db.event.findFirst({
-        select: {
-            id: true,
-            name: true,
-            startsAt: true,
-            segments: {
-                select: {
-                    startsAt: true,
-                    statusId: true,
+    const event = await loadAuthorizedPageEntity({
+        ctx,
+        permission: Permission.view_events_nonpublic,
+        table: db3.xEvent,
+        id,
+        load: where => db.event.findFirst({
+            select: {
+                id: true,
+                name: true,
+                startsAt: true,
+                segments: {
+                    select: {
+                        startsAt: true,
+                        statusId: true,
+                    }
                 }
-            }
-        },
-        where: {
-            id,
-        }
+            },
+            where,
+        }),
     });
+    if (!event) return { notFound: true };
 
     const statuses = await db.eventStatus.findMany();
     const cancelledStatusIds = db3.getCancelledStatusIds(statuses);
@@ -141,30 +141,25 @@ export const getServerSideProps: GetServerSideProps = async ({ params, req }) =>
         return cancelledStatusIds.includes(statusId);
     }
 
-    if (event) {
-        // Format the date using the user's locale
-        const acceptLanguage = req.headers['accept-language'] || 'en-US'; // Default to 'en-US' if not specified
-        const locale = acceptLanguage.split(',')[0]; // Get the first preferred language
-        const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+    // Format the date using the user's locale
+    const acceptLanguage = req.headers['accept-language'] || 'en-US'; // Default to 'en-US' if not specified
+    const locale = acceptLanguage.split(',')[0]; // Get the first preferred language
+    const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
 
-        // skip cancelled segments
-        const validSegmentsSorted = toSorted(
-            event.segments
-                .filter(s => !isCancelled(s.statusId)),
-            (a, b) => db3.compareEventSegments(a, b, cancelledStatusIds));
-        if (!validSegmentsSorted.length) {
-            ret.props.title = `${event.name}`;
-        } else {
-            const seg = validSegmentsSorted[0]!;
-            let formattedDate = seg.startsAt ? seg.startsAt.toLocaleDateString(locale, options) : "TBD";
-            ret.props.title = `${event.name} | ${formattedDate}`;
-        }
-
-        ret.props.eventId = event.id;
+    // skip cancelled segments
+    const validSegmentsSorted = toSorted(
+        event.segments
+            .filter(s => !isCancelled(s.statusId)),
+        (a, b) => db3.compareEventSegments(a, b, cancelledStatusIds));
+    let title = event.name;
+    if (validSegmentsSorted.length) {
+        const seg = validSegmentsSorted[0]!;
+        const formattedDate = seg.startsAt ? seg.startsAt.toLocaleDateString(locale, options) : "TBD";
+        title = `${event.name} | ${formattedDate}`;
     }
 
-    return ret;
-}
+    return { props: { title, eventId: event.id } };
+});
 
 
 

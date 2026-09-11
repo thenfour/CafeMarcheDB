@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, gMillisecondsPerHour } from "shared/time";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 interface TestResult {
     pass: boolean,
@@ -480,4 +481,6 @@ const TestsPage: BlitzPage = () => {
 }
 
 export default TestsPage;
+
+export const getServerSideProps = makeServerSidePermissionGuard(Permission.sysadmin);
 
