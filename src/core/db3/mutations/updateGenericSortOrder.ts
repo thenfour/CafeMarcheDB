@@ -10,9 +10,10 @@ import { deriveDB3ClientIntention, DB3RequestValidationError } from "../server/d
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateGenericSortOrderArgs, ZupdateGenericSortOrderArgs } from "../shared/apiTypes";
 
-// This mutation intentionally renumbers the affected group. Tables must opt in
-// and declare their grouping boundary because the operation can update many
-// rows even though the caller names only the moving and destination records.
+// Tables must opt in and declare their grouping boundary. The caller also
+// supplies the complete row-ID scope represented by its reorderable UI. Only
+// those rows are loaded or changed; hidden, paginated, tenant-separated, or
+// otherwise unrelated rows keep their existing sort positions.
 export default resolver.pipe(
     resolver.authorize(Permission.login),
     resolver.zod(ZupdateGenericSortOrderArgs),
@@ -32,7 +33,7 @@ export default resolver.pipe(
 
         const policy = table.sortOrderPolicy;
         const sortOrderColumn = table.SqlSpecialColumns.sortOrder;
-        if (!policy || !sortOrderColumn) {
+        if (!policy || policy.scope !== "explicitRowIds" || !sortOrderColumn) {
             throw new mutationCore.DB3MutationAuthorizationError(table.tableName, ["sortOrder"]);
         }
 
@@ -68,12 +69,37 @@ export default resolver.pipe(
             if (table.SqlSpecialColumns.isDeleted) {
                 whereClause[table.SqlSpecialColumns.isDeleted.member] = false;
             }
+            whereClause[table.pkMember] = { in: args.scopeRowIds };
 
             const items = await dbTableClient.findMany({
                 ...table.getSelectionArgs(clientIntention, { items: [] }),
                 where: whereClause,
                 orderBy: { [sortOrderColumn.member]: "asc" },
             }) as unknown as Array<Record<string, any>>;
+
+            // A missing row can mean a stale ID, another group, or a deleted
+            // record. Keep those cases indistinguishable and never broaden the
+            // query to discover what exists outside the caller's scope.
+            if (items.length !== args.scopeRowIds.length) {
+                throw new mutationCore.DB3MutationAuthorizationError(
+                    table.tableName,
+                    [sortOrderColumn.member],
+                );
+            }
+
+            // Explicit scope is not an authorization grant. Every supplied row
+            // must be visible to the fresh database actor before it may
+            // participate in the operation.
+            if (items.some(item => !table.authorizeRowForView({
+                clientIntention,
+                model: item,
+                publicData,
+            }))) {
+                throw new mutationCore.DB3MutationAuthorizationError(
+                    table.tableName,
+                    [sortOrderColumn.member],
+                );
+            }
 
             const indexToMove = items.findIndex(item => item[table.pkMember] === args.movingItemId);
             const destinationIndex = items.findIndex(item => item[table.pkMember] === args.newPositionItemId);
@@ -87,10 +113,20 @@ export default resolver.pipe(
             }
 
             const reorderedItems = moveItemInArray(items, indexToMove, destinationIndex);
+            // Reuse this scope's existing numeric slots. This preserves gaps
+            // occupied by out-of-scope rows instead of renumbering through
+            // hidden or paginated data.
+            const sortOrderSlots = items
+                .map(item => item[sortOrderColumn.member] as number)
+                .sort((a, b) => a - b);
             const changes = reorderedItems.flatMap((item, index) => (
-                item[sortOrderColumn.member] === index
+                item[sortOrderColumn.member] === sortOrderSlots[index]
                     ? []
-                    : [{ item, oldSortOrder: item[sortOrderColumn.member] as number, newSortOrder: index }]
+                    : [{
+                        item,
+                        oldSortOrder: item[sortOrderColumn.member] as number,
+                        newSortOrder: sortOrderSlots[index]!,
+                    }]
             ));
 
             // Preflight every row before the first write. A bulk reorder is

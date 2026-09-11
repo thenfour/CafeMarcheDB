@@ -294,6 +294,7 @@ export const MenuLinkList = () => {
             tableName: db3.xMenuLink.tableName,
             movingItemId: movingItem.id,
             newPositionItemId: newPositionItem.id,
+            scopeRowIds: items.map(item => item.id),
         }).then(() => {
             showSnackbar({ severity: "success", children: "reorder successful" });
             dashboardContext.refetchDashboardData();

@@ -645,6 +645,7 @@ const MainContent = () => {
             tableName: db3.xFrontpageGalleryItem.tableName,
             movingItemId: movingItem.id,
             newPositionItemId: newPositionItem.id,
+            scopeRowIds: items.map(item => item.id),
         }).then(() => {
             showSnackbar({ severity: "success", children: "song list reorder successful" });
             client.refetch();

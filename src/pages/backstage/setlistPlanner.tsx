@@ -553,6 +553,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
                 tableName: db3.xSetlistPlan.tableName,
                 movingItemId: movingItem.id,
                 newPositionItemId: newPositionItem.id,
+                scopeRowIds: plansInGroup.map(item => item.id),
                 groupByColumn: "groupId",
                 groupValue: group?.id ?? null,
             });

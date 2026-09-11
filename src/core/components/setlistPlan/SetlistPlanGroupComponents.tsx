@@ -151,6 +151,7 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
                 tableName: client.schema.tableName,
                 movingItemId: movingItem.id,
                 newPositionItemId: newPositionItem.id,
+                scopeRowIds: items.map(item => item.id),
             });
             client.refetch();
         });

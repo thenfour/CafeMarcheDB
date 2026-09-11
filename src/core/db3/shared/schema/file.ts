@@ -644,7 +644,7 @@ export const xFrontpageAuthMap_Basic: db3.DB3AuthContextPermissionMap = {
 export const xFrontpageGalleryItem = new db3.xTable({
     tableName: "FrontpageGalleryItem",
     deletePolicy: "softOnly",
-    sortOrderPolicy: { groupingColumn: null },
+    sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
     queryParameters: {},
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemDefaultArgs => {
         return FrontpageGalleryItemArgs;

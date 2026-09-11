@@ -37,7 +37,7 @@ const rowScopedSortAuthMap: db3.DB3AuthContextPermissionMap = {
 const rowScopedSortTable = new db3.xTable({
   tableName: "AuthorizationSortFixture",
   deletePolicy: "hard",
-  sortOrderPolicy: { groupingColumn: null },
+  sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
   tableAuthMap: {
     ViewOwn: Permission.view_events,
     View: Permission.view_events,
@@ -60,6 +60,12 @@ const rowScopedSortTable = new db3.xTable({
 const publicVisibility = {
   id: 700,
   name: Permission.visibility_public,
+  roles: [],
+}
+
+const membersVisibility = {
+  id: 701,
+  name: Permission.visibility_members,
   roles: [],
 }
 
@@ -99,6 +105,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       tableName: db3.xRole.tableName,
       movingItemId: 1,
       newPositionItemId: 2,
+      scopeRowIds: [1, 2],
     }, ctx)).rejects.toThrow("does not match")
 
     expect(userLookup).not.toHaveBeenCalled()
@@ -122,6 +129,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       tableName: db3.xUserTag.tableName,
       movingItemId: 1,
       newPositionItemId: 2,
+      scopeRowIds: [1, 2],
     }, ctx)).rejects.toThrow("Not authorized to mutate UserTag fields: sortOrder")
 
     expect(authorizationTestDb.snapshot("userTag")).toEqual([
@@ -155,6 +163,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       tableName: db3.xMenuLink.tableName,
       movingItemId: 1,
       newPositionItemId: 2,
+      scopeRowIds: [1, 2],
     }, ctx)).rejects.toThrow("Not authorized to mutate MenuLink fields: sortOrder")
 
     expect(targetLookup).not.toHaveBeenCalled()
@@ -182,7 +191,95 @@ describe("BA-S003 generic sort-order authorization", () => {
       tableName: rowScopedSortTable.tableName,
       movingItemId: 1,
       newPositionItemId: 2,
+      scopeRowIds: [1, 2],
     }, ctx)).rejects.toThrow("Not authorized to mutate AuthorizationSortFixture")
+
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it("reorders only the caller-supplied scope and preserves out-of-scope slots", async () => {
+    const permissions = [Permission.login, Permission.customize_menu]
+    const actor = createAuthorizationTestUser("normal", { id: 5, permissions })
+    authorizationTestDb.reset({
+      user: [actor],
+      menuLink: [
+        { id: 1, caption: "A", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { id: 2, caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
+        { id: 3, caption: "B", sortOrder: 2, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { id: 4, caption: "C", sortOrder: 3, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+      ],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+    const targetLookup = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "findMany")
+
+    await invokeResolver(updateGenericSortOrder, {
+      tableID: db3.xMenuLink.tableID,
+      tableName: db3.xMenuLink.tableName,
+      movingItemId: 4,
+      newPositionItemId: 1,
+      scopeRowIds: [1, 3, 4],
+    }, ctx)
+
+    expect(targetLookup).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: { in: [1, 3, 4] } }),
+    }))
+    expect(authorizationTestDb.snapshot("menuLink")).toEqual([
+      expect.objectContaining({ id: 1, sortOrder: 2 }),
+      expect.objectContaining({ id: 2, sortOrder: 1 }),
+      expect.objectContaining({ id: 3, sortOrder: 3 }),
+      expect.objectContaining({ id: 4, sortOrder: 0 }),
+    ])
+  })
+
+  it("rejects a hidden row supplied as part of the explicit scope", async () => {
+    const permissions = [Permission.login, Permission.customize_menu]
+    const actor = createAuthorizationTestUser("normal", { id: 6, permissions })
+    authorizationTestDb.reset({
+      user: [actor],
+      menuLink: [
+        { id: 1, caption: "Visible", sortOrder: 0, createdByUserId: actor.id, visiblePermissionId: publicVisibility.id, visiblePermission: publicVisibility },
+        { id: 2, caption: "Hidden", sortOrder: 1, createdByUserId: actor.id, visiblePermissionId: membersVisibility.id, visiblePermission: membersVisibility },
+      ],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+    const update = vi.spyOn(authorizationTestDb.getDelegate("menuLink"), "update")
+
+    await expect(invokeResolver(updateGenericSortOrder, {
+      tableID: db3.xMenuLink.tableID,
+      tableName: db3.xMenuLink.tableName,
+      movingItemId: 1,
+      newPositionItemId: 2,
+      scopeRowIds: [1, 2],
+    }, ctx)).rejects.toThrow("Not authorized to mutate MenuLink fields: sortOrder")
+
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it("rejects a scope row outside the declared ordering group", async () => {
+    const permissions = [Permission.login, Permission.manage_events, Permission.view_events_nonpublic]
+    const actor = createAuthorizationTestUser("normal", { id: 7, permissions })
+    authorizationTestDb.reset({
+      user: [actor],
+      eventSongList: [
+        { id: 1, eventId: 100, name: "A", description: "", sortOrder: 0 },
+        { id: 2, eventId: 200, name: "Other group", description: "", sortOrder: 1 },
+      ],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+    const update = vi.spyOn(authorizationTestDb.getDelegate("eventSongList"), "update")
+
+    await expect(invokeResolver(updateGenericSortOrder, {
+      tableID: db3.xEventSongList.tableID,
+      tableName: db3.xEventSongList.tableName,
+      movingItemId: 1,
+      newPositionItemId: 2,
+      scopeRowIds: [1, 2],
+      groupByColumn: "eventId",
+      groupValue: 100,
+    }, ctx)).rejects.toThrow("Not authorized to mutate EventSongList fields: sortOrder")
 
     expect(update).not.toHaveBeenCalled()
   })
@@ -210,6 +307,7 @@ describe("BA-S003 generic sort-order authorization", () => {
       tableName: db3.xEventSongList.tableName,
       movingItemId: 1,
       newPositionItemId: 2,
+      scopeRowIds: [1, 2],
       groupByColumn: "eventId",
       groupValue: 100,
     }, ctx)

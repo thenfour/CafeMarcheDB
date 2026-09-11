@@ -256,6 +256,7 @@ export const ZupdateGenericSortOrderArgs = z.object({
     tableName: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
     movingItemId: ZPositiveRecordId, // pk of the item being moved
     newPositionItemId: ZPositiveRecordId, // pk of the item this should replace.
+    scopeRowIds: z.array(ZPositiveRecordId).min(1).max(1000),
     groupByColumn: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/).optional(),
     groupValue: z.union([z.string(), z.number().finite(), z.boolean(), z.null()]).optional(),
 }).strict().superRefine((args, ctx) => {
@@ -265,6 +266,30 @@ export const ZupdateGenericSortOrderArgs = z.object({
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: "groupByColumn and groupValue must be supplied together",
+        });
+    }
+
+    if (new Set(args.scopeRowIds).size !== args.scopeRowIds.length) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["scopeRowIds"],
+            message: "scopeRowIds must not contain duplicates",
+        });
+    }
+
+    if (!args.scopeRowIds.includes(args.movingItemId)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["movingItemId"],
+            message: "movingItemId must be included in scopeRowIds",
+        });
+    }
+
+    if (!args.scopeRowIds.includes(args.newPositionItemId)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["newPositionItemId"],
+            message: "newPositionItemId must be included in scopeRowIds",
         });
     }
 });

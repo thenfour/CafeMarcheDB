@@ -1052,7 +1052,7 @@ export const xEventSongList = new db3.xTable({
     },
     tableName: "EventSongList",
     deletePolicy: "hard",
-    sortOrderPolicy: { groupingColumn: "eventId" },
+    sortOrderPolicy: { groupingColumn: "eventId", scope: "explicitRowIds" },
     queryParameters: {
         eventId: { kind: "integer", authorizeAs: "eventId" },
     },

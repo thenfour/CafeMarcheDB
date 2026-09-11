@@ -493,11 +493,13 @@ export interface TableDesc {
 
     tableAuthMap: DB3AuthTablePermissionMap;
 
-    // Opts this table into the bulk reorder mutation. The schema owns whether
-    // reordering is supported and, when applicable, the exact column that
-    // defines an independent ordering group.
+    // Opts this table into the scoped reorder mutation. The caller must name
+    // every row in the currently rendered reorder scope; rows outside that
+    // explicit scope never participate. The schema owns the exact column that
+    // defines an independent ordering group, when applicable.
     sortOrderPolicy?: {
         groupingColumn: string | null;
+        scope: "explicitRowIds";
     };
 
     // Some platform-control tables require the concrete User.isSysAdmin flag;
@@ -542,6 +544,7 @@ export class xTable /* implements TableDesc*/ {
     tableAuthMap: DB3AuthTablePermissionMap;
     sortOrderPolicy?: {
         groupingColumn: string | null;
+        scope: "explicitRowIds";
     };
     requiresActualSysadmin: boolean;
     requiresActualSysadminForMutation: boolean;

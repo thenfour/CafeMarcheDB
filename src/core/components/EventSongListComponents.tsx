@@ -1835,6 +1835,7 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
             tableName: db3.xEventSongList.tableName,
             movingItemId,
             newPositionItemId,
+            scopeRowIds: event.songLists.map(item => item.id),
             groupByColumn: "eventId",
             groupValue: event.id,
         }).then(() => {
