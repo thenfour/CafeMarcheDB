@@ -43,8 +43,21 @@ export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.respond_to_events,
-    PreMutate: Permission.manage_events,
-    PreInsert: Permission.respond_to_events,
+    PreMutate: Permission.change_others_event_responses,
+    // Generic inserts accept an arbitrary userId, so only the explicit
+    // cross-user capability may use that path. Self-service insertion goes
+    // through updateUserEventAttendanceMutation, which binds the actor itself.
+    PreInsert: Permission.change_others_event_responses,
+};
+
+export const xEventAuthMap_UserResponseRelation: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_events_nonpublic,
+    PostQuery: Permission.view_events_nonpublic,
+    // An owner must not be able to authorize changing the user or parent event
+    // merely because the persisted response currently belongs to them.
+    PreMutateAsOwner: Permission.change_others_event_responses,
+    PreMutate: Permission.change_others_event_responses,
+    PreInsert: Permission.change_others_event_responses,
 };
 
 export const xEventAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
@@ -104,8 +117,8 @@ export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_events,
     View: Permission.view_events,
     EditOwn: Permission.respond_to_events,
-    Edit: Permission.manage_events,
-    Insert: Permission.respond_to_events, // you can add a response for yourself, but not on behalf of other users. but yea for the moment this is just a limitation.
+    Edit: Permission.change_others_event_responses,
+    Insert: Permission.change_others_event_responses,
 };
 
 
@@ -942,7 +955,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
             allowNull: false,
             foreignTableID: "EventSegment",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xEventAuthMap_UserResponse,
+            authMap: xEventAuthMap_UserResponseRelation,
         }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
@@ -951,7 +964,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
             foreignTableID: "User",
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xEventAuthMap_UserResponse,
+            authMap: xEventAuthMap_UserResponseRelation,
         }),
         new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
             columnName: "attendance",
@@ -1001,7 +1014,7 @@ export const xEventUserResponse = new db3.xTable({
             authMap: xEventAuthMap_UserResponse,
         }),
         new BoolField({ columnName: "isInvited", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: true }),
-        MakeIntegerField("eventId", { authMap: xEventAuthMap_UserResponse, }),
+        MakeIntegerField("eventId", { authMap: xEventAuthMap_UserResponseRelation, }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
             fkidMember: "userId",
@@ -1009,7 +1022,7 @@ export const xEventUserResponse = new db3.xTable({
             foreignTableID: "User",
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xEventAuthMap_R_EOwn_EManagers,
+            authMap: xEventAuthMap_UserResponseRelation,
         }),
         new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
             columnName: "instrument",
@@ -1039,6 +1052,7 @@ export const xEventSongList = new db3.xTable({
     },
     tableName: "EventSongList",
     deletePolicy: "hard",
+    sortOrderPolicy: { groupingColumn: "eventId" },
     queryParameters: {
         eventId: { kind: "integer", authorizeAs: "eventId" },
     },

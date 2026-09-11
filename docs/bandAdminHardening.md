@@ -714,16 +714,27 @@ Evidence:
 
 ### BA-S003 — Direct mutation gaps
 
-- [ ] Authorize generic sort-order updates by table, affected rows, and operation.
-- [ ] Authorize event song-list deletion with the appropriate event/song-list capability.
-- [ ] Enforce self-versus-other attendance rules and wire `change_others_event_responses` server-side.
-- [ ] Review every login-only or public mutation for object-level authorization.
+- [x] Authorize generic sort-order updates by table, affected rows, and operation.
+- [x] Authorize event song-list deletion with the appropriate event/song-list capability.
+- [x] Enforce self-versus-other attendance rules and wire `change_others_event_responses` server-side.
+- [x] Review every login-only or public mutation for object-level authorization.
 
 References:
 
 - [Generic sort-order mutation](../src/core/db3/mutations/updateGenericSortOrder.ts#L17)
 - [Event song-list deletion](../src/core/db3/mutations/deleteEventSongList.ts#L11)
 - [Attendance mutation](../src/core/db3/mutations/updateUserEventAttendanceMutation.ts#L9)
+- [Attendance and reorder authorization regressions](../tests/authorization/directMutationHardening.test.ts)
+
+Evidence:
+
+- Generic bulk reordering is deny-by-default. A table must opt in through schema-owned `sortOrderPolicy` metadata and declare either global ordering or one exact grouping column. Requests must use the canonical table ID/name and declared group, fresh database grants must cover the table, and every row whose sort value would change is preauthorized against its persisted owner and sort-order field before the first write. The renumbering and aggregate audit entry execute in one serializable transaction. The five existing UI consumers are explicitly enabled; event song lists are now scoped by `eventId`, and ungrouped setlist plans explicitly use `groupId: null` rather than accidentally reordering all plans.
+- Event song-list deletion now rechecks fresh `manage_events` authority before target access, authorizes the persisted song-list row, and performs child deletion, parent deletion, event hooks, and one aggregate audit record in a serializable transaction.
+- Attendance writes require `respond_to_events` when the target user is the actor and `change_others_event_responses` when it is someone else. Invitation state remains separately protected by `manage_events`. The mutation validates IDs, rejects segments outside the declared event, verifies event visibility and target existence before writing, and commits segment/event responses plus audit entries atomically. The other-user editor omits invitation state when the actor lacks event-management authority, allowing the two grants to remain independently composable.
+- The generic Event response schemas now use `change_others_event_responses` for non-owner mutation and for inserts that accept an arbitrary `userId`; owner and parent relation fields cannot self-authorize reassignment. Self-service response insertion remains available only through the actor-binding attendance mutation.
+- Review of all login-gated mutations found the remaining paths object-scoped: generic DB3 and event/song/profile helpers delegate to persisted-row and field authorization; calendar subscription, password, and bootstrap operations bind to the session actor or verified bootstrap identity; and Sysadmin-state changes use the protected-principal policy. No resolver explicitly grants a data mutation to the public permission. The unauthenticated RPC telemetry mutation overwrites any supplied `userId` with the authenticated database actor or anonymous identity; the separate beacon API that still accepts caller-supplied identity remains assigned to BA-S005. The no-op workflow stub performs no write, while all functional workflow entry points and generic workflow access remain explicitly assigned to BA-WF000 containment rather than being treated as resolved here.
+- Verification: 17 focused BA-S003 tests cover table identity and opt-in, fresh grants, per-affected-row preflight, grouping isolation, song-list deletion and cascade auditing, self and delegated attendance, independent invitation authority, stale grants, malformed/cross-event segments, and generic-DB3 attendance bypasses. `yarn test:auth` and `yarn test` pass (204 tests); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR:
 
 ### BA-S004 — Wiki authorization maps
 

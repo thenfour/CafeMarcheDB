@@ -1,100 +1,148 @@
-// updateGenericSortOrder
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, assert } from "blitz";
-import db from "db";
-import { Permission } from "shared/permissions";
-import * as db3 from "../db3";
-import { TupdateGenericSortOrderArgs, ZupdateGenericSortOrderArgs } from "../shared/apiTypes";
-import { moveItemInArray } from "shared/arrayUtils";
+import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { moveItemInArray } from "shared/arrayUtils";
+import { Permission } from "shared/permissions";
+import { CreatePublicData } from "types";
+import * as db3 from "../db3";
+import { deriveDB3ClientIntention, DB3RequestValidationError } from "../server/db3RequestValidation";
+import * as mutationCore from "../server/db3mutationCore";
+import { TupdateGenericSortOrderArgs, ZupdateGenericSortOrderArgs } from "../shared/apiTypes";
 
-// todo: find a better algorithm. for potentially large tables,
-// this is not efficient. instead consider keeping gaps between items giving room
-// to move single items without updating neighbors.
-
-// ASSUMES that the table's sort order column is called "sortOrder"
-// ASSUMES that the table is not that big; we will update many sort orders here.
+// This mutation intentionally renumbers the affected group. Tables must opt in
+// and declare their grouping boundary because the operation can update many
+// rows even though the caller names only the moving and destination records.
 export default resolver.pipe(
     resolver.authorize(Permission.login),
     resolver.zod(ZupdateGenericSortOrderArgs),
     async (args: TupdateGenericSortOrderArgs, ctx: AuthenticatedCtx) => {
-
-        if (args.movingItemId === args.newPositionItemId) {
-            //moving an item to the same place 
-            return args;
+        let table: db3.xTable;
+        try {
+            table = db3.GetTableById(args.tableID);
+        } catch {
+            throw new DB3RequestValidationError(`unknown table ID '${args.tableID}'`);
         }
 
-        const table = db3.GetTableById(args.tableID);
-        const dbTableClient = db[table.tableName] as typeof db.frontpageGalleryItem; // the prisma interface. for convenience of intellisense cast to something known.
+        if (table.tableID !== args.tableID || table.tableName !== args.tableName) {
+            throw new DB3RequestValidationError(
+                `table name '${args.tableName}' does not match table ID '${args.tableID}'`,
+            );
+        }
 
-        // check permissions of sort order column.
+        const policy = table.sortOrderPolicy;
         const sortOrderColumn = table.SqlSpecialColumns.sortOrder;
-        if (!sortOrderColumn) {
-            throw new Error(`table ${table.tableName} does not have a sort order column`);
+        if (!policy || !sortOrderColumn) {
+            throw new mutationCore.DB3MutationAuthorizationError(table.tableName, ["sortOrder"]);
         }
 
-        // column.authorize ...
-        //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)
-        //const currentUser = await mutationCore.getCurrentUserCore(ctx);
-
-        let whereClause: any = {};
-        if (args.groupByColumn && args.groupValue !== undefined) {
-            whereClause[args.groupByColumn] = args.groupValue;
+        const requestGroupingColumn = args.groupByColumn ?? null;
+        if (requestGroupingColumn !== policy.groupingColumn) {
+            throw new DB3RequestValidationError(
+                policy.groupingColumn === null
+                    ? `table '${table.tableID}' does not accept a reorder grouping column`
+                    : `table '${table.tableID}' must be reordered within '${policy.groupingColumn}'`,
+            );
         }
 
-        const items = await dbTableClient.findMany({
-            where: whereClause,
-            select: {
-                id: true,
-                sortOrder: true,
-            },
-            orderBy: {
-                sortOrder: "asc",
-            },
-        });
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        if (!currentUser) {
+            throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [sortOrderColumn.member]);
+        }
 
-        assert(items.length > 1, "can't move items when there's only 1");
+        const clientIntention = deriveDB3ClientIntention("mutation", currentUser);
+        const publicData = CreatePublicData({ user: currentUser });
+        const hasTableMutationCapability = publicData.isSysAdmin
+            || publicData.permissions.includes(table.tableAuthMap.Edit)
+            || publicData.permissions.includes(table.tableAuthMap.EditOwn);
+        if (!hasTableMutationCapability || (table.requiresActualSysadminForMutation && !publicData.isSysAdmin)) {
+            throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [sortOrderColumn.member]);
+        }
 
-        const indexToMove = items.findIndex(i => i.id === args.movingItemId);
-        const destIndex = items.findIndex(i => i.id === args.newPositionItemId);
-        assert(indexToMove !== -1 && destIndex !== -1, `specified items weren't found movingItemId:${args.movingItemId}, newPositionItemId:${args.newPositionItemId}`);
+        await db.$transaction(async transactionalDb => {
+            const dbTableClient = transactionalDb[table.tableName] as any;
+            const whereClause: Record<string, unknown> = {};
+            if (policy.groupingColumn !== null) {
+                whereClause[policy.groupingColumn] = args.groupValue;
+            }
+            if (table.SqlSpecialColumns.isDeleted) {
+                whereClause[table.SqlSpecialColumns.isDeleted.member] = false;
+            }
 
-        const newItems = moveItemInArray(items, indexToMove, destIndex);
+            const items = await dbTableClient.findMany({
+                ...table.getSelectionArgs(clientIntention, { items: [] }),
+                where: whereClause,
+                orderBy: { [sortOrderColumn.member]: "asc" },
+            }) as unknown as Array<Record<string, any>>;
 
-        // items are now in order. correct their sort orders so they're in order.
-        // in order to not have to update ALL rows all the time, just check if things are in order. if they're not, correct that item only and continue.
-        // it's safe to assume sorted array index === sort order. it's tempting to try and retain weird sort orders like if you make manual adjustments or something,
-        // but it just gets more complex than it's worth.
-        //let prevSortOrder = newItems[0]!.sortOrder;
-        let oldValues: { id: number, sortOrder: number }[] = [];
-        let newValues: { id: number, sortOrder: number }[] = [];
+            const indexToMove = items.findIndex(item => item[table.pkMember] === args.movingItemId);
+            const destinationIndex = items.findIndex(item => item[table.pkMember] === args.newPositionItemId);
+            assert(
+                indexToMove !== -1 && destinationIndex !== -1,
+                `specified items were not found in the same reorder group; movingItemId:${args.movingItemId}, newPositionItemId:${args.newPositionItemId}`,
+            );
 
-        for (let i = 0; i < newItems.length; ++i) {
-            const item = newItems[i]!;
-            if (item.sortOrder === i) continue;
-            oldValues.push({ id: item.id, sortOrder: item.sortOrder });
-            newValues.push({ id: item.id, sortOrder: i });
+            if (indexToMove !== destinationIndex) {
+                assert(items.length > 1, "can't move items when there's only 1");
+            }
 
-            await dbTableClient.update({
-                data: { sortOrder: i },
-                where: { id: item.id },
+            const reorderedItems = moveItemInArray(items, indexToMove, destinationIndex);
+            const changes = reorderedItems.flatMap((item, index) => (
+                item[sortOrderColumn.member] === index
+                    ? []
+                    : [{ item, oldSortOrder: item[sortOrderColumn.member] as number, newSortOrder: index }]
+            ));
+
+            // Preflight every row before the first write. A bulk reorder is
+            // rejected atomically if any shifted row or its sort-order field is
+            // outside the actor's authorization envelope.
+            changes.forEach(change => {
+                const authorization = table.authorizeAndSanitize({
+                    clientIntention,
+                    contextDesc: `updateSortOrder:${table.tableName}:preflight`,
+                    model: { [sortOrderColumn.member]: change.newSortOrder },
+                    existingModel: change.item,
+                    publicData,
+                    rowMode: "update",
+                    fallbackOwnerId: null,
+                });
+                if (!authorization.rowIsAuthorized
+                    || authorization.unauthorizedColumnCount > 0
+                    || authorization.unknownColumnCount > 0) {
+                    throw new mutationCore.DB3MutationAuthorizationError(
+                        table.tableName,
+                        [sortOrderColumn.member],
+                    );
+                }
             });
-        }
 
-        const contextDesc = `updateSortOrder:${table.tableName}`;
-        const changeContext = CreateChangeContext(contextDesc);
+            for (const change of changes) {
+                await dbTableClient.update({
+                    data: { [sortOrderColumn.member]: change.newSortOrder },
+                    where: { [table.pkMember]: change.item[table.pkMember] },
+                });
+            }
 
-        await RegisterChange({
-            action: ChangeAction.update,
-            changeContext,
-            table: args.tableName,
-            pkid: 0,
-            oldValues,
-            newValues,
-            ctx,
-        });
+            if (changes.length > 0) {
+                await RegisterChange({
+                    action: ChangeAction.update,
+                    changeContext: CreateChangeContext(`updateSortOrder:${table.tableName}`),
+                    table: table.tableName,
+                    pkid: 0,
+                    oldValues: changes.map(change => ({
+                        [table.pkMember]: change.item[table.pkMember],
+                        [sortOrderColumn.member]: change.oldSortOrder,
+                    })),
+                    newValues: changes.map(change => ({
+                        [table.pkMember]: change.item[table.pkMember],
+                        [sortOrderColumn.member]: change.newSortOrder,
+                    })),
+                    ctx,
+                    db: transactionalDb,
+                });
+            }
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
         return args;
-    }
+    },
 );
-

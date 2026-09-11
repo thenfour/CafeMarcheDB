@@ -554,7 +554,7 @@ const SetlistPlanOverviewGroup = ({ plansInGroup, group, onSelect, className, re
                 movingItemId: movingItem.id,
                 newPositionItemId: newPositionItem.id,
                 groupByColumn: "groupId",
-                groupValue: group?.id,
+                groupValue: group?.id ?? null,
             });
             refetch();
         });

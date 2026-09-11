@@ -1835,6 +1835,8 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
             tableName: db3.xEventSongList.tableName,
             movingItemId,
             newPositionItemId,
+            groupByColumn: "eventId",
+            groupValue: event.id,
         }).then(() => {
             showSnackbar({ severity: "success", children: "song list reorder successful" });
             refetch();

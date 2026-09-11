@@ -493,6 +493,13 @@ export interface TableDesc {
 
     tableAuthMap: DB3AuthTablePermissionMap;
 
+    // Opts this table into the bulk reorder mutation. The schema owns whether
+    // reordering is supported and, when applicable, the exact column that
+    // defines an independent ordering group.
+    sortOrderPolicy?: {
+        groupingColumn: string | null;
+    };
+
     // Some platform-control tables require the concrete User.isSysAdmin flag;
     // a same-named role permission is intentionally insufficient.
     // this is needed because user.isSysAdmin is the authority for sysadmins;
@@ -533,6 +540,9 @@ export class xTable /* implements TableDesc*/ {
     activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
 
     tableAuthMap: DB3AuthTablePermissionMap;
+    sortOrderPolicy?: {
+        groupingColumn: string | null;
+    };
     requiresActualSysadmin: boolean;
     requiresActualSysadminForMutation: boolean;
 
@@ -597,6 +607,19 @@ export class xTable /* implements TableDesc*/ {
         args.columns.forEach(field => {
             field.connectToTable(this);
         });
+
+        if (this.sortOrderPolicy) {
+            assert(
+                !!this.SqlSpecialColumns.sortOrder,
+                `Table ${this.tableID} enables generic reordering without a sort-order field.`,
+            );
+            if (this.sortOrderPolicy.groupingColumn !== null) {
+                assert(
+                    !!this.getColumnForAuthorization(this.sortOrderPolicy.groupingColumn),
+                    `Table ${this.tableID} groups generic reordering by unknown field ${this.sortOrderPolicy.groupingColumn}.`,
+                );
+            }
+        }
 
         Object.entries(this.queryParameters || {}).forEach(([parameterName, spec]) => {
             if (spec.authorizeAs === null) return;

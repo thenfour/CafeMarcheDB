@@ -1,3 +1,6 @@
+// todo: permissions that we can consider adding:
+// - invite users to events (currently this operation is under manage_events)
+
 export const PermissionCategories = [
   "access",
   "site-content",

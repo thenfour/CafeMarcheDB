@@ -498,7 +498,6 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         mutationToken.invoke({
             userId: props.user.id,
             eventId: props.event.id,
-            isInvited: eventResponseValue.isInvited,
             comment: eventResponseValue.userComment,
             instrumentId: eventResponseValue.instrumentId,
             segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => {
@@ -507,6 +506,10 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                     attendanceId: att?.id || null
                 }];
             })),
+            // inviting another user requires manage-events permission
+            ...(dashboardContext.isAuthorized(Permission.manage_events)
+                ? { isInvited: eventResponseValue.isInvited }
+                : {}),
         }).then(() => {
             showSnackbar({ children: "update successful", severity: 'success' });
             props.onOK();

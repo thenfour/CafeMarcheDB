@@ -30,7 +30,7 @@ export interface CMDBTableFilterModel {
 
 export interface TupdateUserEventAttendanceMutationArgs {
     userId: number;
-    eventId?: number; // if not specified, comment & instrumentId are ignored.
+    eventId: number;
     comment?: string | null; // for event
     instrumentId?: number | null; // for event
     isInvited?: boolean | null; // for event
@@ -43,6 +43,47 @@ export interface TupdateUserEventAttendanceMutationArgs {
     }>;
 
 };
+
+const ZPositiveRecordId = z.number().int().positive();
+
+export const ZupdateUserEventAttendanceMutationArgs = z.object({
+    userId: ZPositiveRecordId,
+    eventId: ZPositiveRecordId,
+    comment: z.string().nullable().optional(),
+    instrumentId: ZPositiveRecordId.nullable().optional(),
+    isInvited: z.boolean().nullable().optional(),
+    segmentResponses: z.record(z.object({
+        attendanceId: ZPositiveRecordId.nullable(),
+    }).strict()).superRefine((responses, ctx) => {
+        const segmentIds = Object.keys(responses);
+        if (segmentIds.length > 1000) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "At most 1000 segment responses may be updated at once",
+            });
+        }
+        segmentIds.forEach(segmentId => {
+            const parsed = Number(segmentId);
+            if (!/^\d+$/.test(segmentId) || !Number.isSafeInteger(parsed) || parsed <= 0) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Invalid event segment ID '${segmentId}'`,
+                });
+            }
+        });
+    }).optional(),
+}).strict().superRefine((args, ctx) => {
+    const hasSegmentResponse = Object.keys(args.segmentResponses || {}).length > 0;
+    if (args.comment === undefined
+        && args.instrumentId === undefined
+        && args.isInvited === undefined
+        && !hasSegmentResponse) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "At least one attendance or invitation field is required",
+        });
+    }
+}) as z.ZodType<TupdateUserEventAttendanceMutationArgs>;
 
 // export interface TupdateUserEventInvitationMutationArgs {
 //     userId: number;
@@ -211,12 +252,21 @@ export interface TinsertOrUpdateEventSongListArgs {
 };
 
 export const ZupdateGenericSortOrderArgs = z.object({
-    tableID: z.string(),
-    tableName: z.string(),
-    movingItemId: z.number(), // pk of the item being moved
-    newPositionItemId: z.number(), // pk of the item this should replace.
-    groupByColumn: z.string().optional(),  // e.g., "setlistId", "categoryId", etc.
-    groupValue: z.any().optional(),
+    tableID: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
+    tableName: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
+    movingItemId: ZPositiveRecordId, // pk of the item being moved
+    newPositionItemId: ZPositiveRecordId, // pk of the item this should replace.
+    groupByColumn: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/).optional(),
+    groupValue: z.union([z.string(), z.number().finite(), z.boolean(), z.null()]).optional(),
+}).strict().superRefine((args, ctx) => {
+    const hasGroupingColumn = args.groupByColumn !== undefined;
+    const hasGroupValue = args.groupValue !== undefined;
+    if (hasGroupingColumn !== hasGroupValue) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "groupByColumn and groupValue must be supplied together",
+        });
+    }
 });
 
 export type TupdateGenericSortOrderArgs = z.infer<typeof ZupdateGenericSortOrderArgs>;

@@ -1,74 +1,112 @@
-// deleteEventSongList
+// hard deletion
+
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db from "db";
+import db, { Prisma } from "db";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
+import { CreatePublicData } from "types";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TGeneralDeleteArgs, TGeneralDeleteArgsSchema, TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import {
+    TGeneralDeleteArgs,
+    TGeneralDeleteArgsSchema,
+    TinsertOrUpdateEventSongListArgs,
+} from "../shared/apiTypes";
 
-// entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
     resolver.zod(TGeneralDeleteArgsSchema),
     async (args: TGeneralDeleteArgs, ctx: AuthenticatedCtx) => {
-
-        // TODO
-        //CMDBAuthorizeOrThrow("deleteEventComment", Permission.comm)
-
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        const publicData = CreatePublicData({ user: currentUser });
+        if (!currentUser
+            || (!publicData.isSysAdmin && !publicData.permissions.includes(Permission.manage_events))) {
+            throw new mutationCore.DB3MutationAuthorizationError(
+                db3.xEventSongList.tableName,
+                [db3.xEventSongList.pkMember],
+            );
+        }
+
         const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
+            intention: currentUser.isSysAdmin ? "admin" : "user",
             mode: "primary",
             currentUser,
         };
 
-        const changeContext = CreateChangeContext(`deleteEventSongList`);
+        await db.$transaction(async transactionalDb => {
+            const oldSongList = await transactionalDb.eventSongList.findFirst({
+                where: { id: args.id },
+            });
+            if (!oldSongList) return;
 
-        // old values.
-        const oldSongList = await db.eventSongList.findFirst({ where: { id: args.id } });
-        if (!oldSongList) return args;
+            if (!db3.xEventSongList.authorizeRowForDeleteHard({
+                model: oldSongList,
+                publicData,
+                clientIntention,
+            })) {
+                throw new mutationCore.DB3MutationAuthorizationError(
+                    db3.xEventSongList.tableName,
+                    [db3.xEventSongList.pkMember],
+                );
+            }
 
-        const oldSongs = await db.eventSongListSong.findMany({ where: { eventSongListId: args.id } });
-        const oldDividers = await db.eventSongListDivider.findMany({ where: { eventSongListId: args.id } });
+            const [oldSongs, oldDividers] = await Promise.all([
+                transactionalDb.eventSongListSong.findMany({
+                    where: { eventSongListId: args.id },
+                }),
+                transactionalDb.eventSongListDivider.findMany({
+                    where: { eventSongListId: args.id },
+                }),
+            ]);
 
-        const oldValues: TinsertOrUpdateEventSongListArgs = {
-            ...oldSongList,
-            songs: oldSongs.map(x => ({
-                id: x.id,
-                songId: x.songId,
-                sortOrder: x.sortOrder,
-                subtitle: x.subtitle || "",
-            })),
-            dividers: oldDividers.map(x => ({
-                id: x.id,
-                sortOrder: x.sortOrder,
-                color: x.color,
-                isInterruption: x.isInterruption,
-                subtitleIfSong: x.subtitleIfSong,
-                isSong: x.isSong,
-                lengthSeconds: x.lengthSeconds,
-                textStyle: x.textStyle,
-                subtitle: x.subtitle || "",
-            })),
-        };
+            const oldValues: TinsertOrUpdateEventSongListArgs = {
+                ...oldSongList,
+                songs: oldSongs.map(song => ({
+                    id: song.id,
+                    songId: song.songId,
+                    sortOrder: song.sortOrder,
+                    subtitle: song.subtitle || "",
+                })),
+                dividers: oldDividers.map(divider => ({
+                    id: divider.id,
+                    sortOrder: divider.sortOrder,
+                    color: divider.color,
+                    isInterruption: divider.isInterruption,
+                    subtitleIfSong: divider.subtitleIfSong,
+                    isSong: divider.isSong,
+                    lengthSeconds: divider.lengthSeconds,
+                    textStyle: divider.textStyle,
+                    subtitle: divider.subtitle || "",
+                })),
+            };
 
-        // avoid spamming the change log with deletions of individual songs and dividers
-        await db.eventSongListSong.deleteMany({ where: { eventSongListId: args.id } });
-        await db.eventSongListDivider.deleteMany({ where: { eventSongListId: args.id } });
-        await db.eventSongList.delete({ where: { id: args.id } });
+            // avoid spamming the change log with deletions of individual songs and dividers
+            await transactionalDb.eventSongListSong.deleteMany({
+                where: { eventSongListId: args.id },
+            });
+            await transactionalDb.eventSongListDivider.deleteMany({
+                where: { eventSongListId: args.id },
+            });
+            await transactionalDb.eventSongList.delete({ where: { id: args.id } });
 
-        await RegisterChange({
-            action: ChangeAction.delete,
-            changeContext,
-            ctx,
-            pkid: args.id,
-            table: 'eventSongList',
-            oldValues,
-        });
+            await mutationCore.CallMutateEventHooks({
+                tableNameOrSpecialMutationKey: db3.xEventSongList.tableName,
+                model: oldSongList,
+                db: transactionalDb,
+            });
+
+            await RegisterChange({
+                action: ChangeAction.delete,
+                changeContext: CreateChangeContext("deleteEventSongList"),
+                ctx,
+                pkid: args.id,
+                table: db3.xEventSongList.tableName,
+                oldValues,
+                db: transactionalDb,
+            });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
         return args;
-    }
+    },
 );
-
