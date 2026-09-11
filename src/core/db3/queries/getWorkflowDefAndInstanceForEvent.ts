@@ -8,6 +8,7 @@ import { z } from "zod";
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 
 
 // Zod schema for GetSearchResultsInput
@@ -29,7 +30,13 @@ export default resolver.pipe(
             const currentUser = (await getCurrentUserCore(ctx))!;
             const clientIntention: db3.xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
 
-            const event = await db.event.findFirst({ where: { id: args.eventId } });
+            const event = await db.event.findFirst({
+                where: await GetAuthorizedTableReadWhere({
+                    table: db3.xEvent,
+                    currentUser,
+                    where: { id: args.eventId },
+                }),
+            });
             if (!event) throw new Error(`event not found`);
 
             const ret: TResult = {

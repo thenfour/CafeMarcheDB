@@ -13,11 +13,29 @@ function matchesScalar(actual: unknown, expected: unknown): boolean {
     if ("equals" in expression) return actual === expression.equals
     if ("in" in expression) return (expression.in as unknown[]).includes(actual)
     if ("not" in expression) return !matchesScalar(actual, expression.not)
+    if ("contains" in expression) {
+      return typeof actual === "string" && actual.includes(String(expression.contains))
+    }
+    if ("gte" in expression) return actual != null && (actual as any) >= (expression.gte as any)
+    if ("gt" in expression) return actual != null && (actual as any) > (expression.gt as any)
+    if ("lte" in expression) return actual != null && (actual as any) <= (expression.lte as any)
+    if ("lt" in expression) return actual != null && (actual as any) < (expression.lt as any)
+    if ("some" in expression) {
+      return Array.isArray(actual)
+        && actual.some(item => matchesWhere(item as TestRow, expression.some as Record<string, unknown>))
+    }
+    if ("is" in expression) {
+      return actual != null
+        && matchesWhere(actual as TestRow, expression.is as Record<string, unknown>)
+    }
+    if (actual && typeof actual === "object") {
+      return matchesWhere(actual as TestRow, expression)
+    }
   }
   return actual === expected
 }
 
-function matchesWhere(row: TestRow, where: Record<string, unknown> | undefined): boolean {
+export function matchesWhere(row: TestRow, where: Record<string, unknown> | undefined): boolean {
   if (!where || Object.keys(where).length === 0) return true
 
   return Object.entries(where).every(([field, expected]) => {
@@ -51,6 +69,10 @@ export class InMemoryDelegate {
   async findFirst(args: { where?: Record<string, unknown> } = {}) {
     const row = this.rows.find((candidate) => matchesWhere(candidate, args.where))
     return row ? clone(row) : null
+  }
+
+  async findUnique(args: { where?: Record<string, unknown> } = {}) {
+    return this.findFirst(args)
   }
 
   async findMany(args: { where?: Record<string, unknown>; take?: number } = {}) {

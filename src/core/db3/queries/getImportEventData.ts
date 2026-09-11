@@ -6,6 +6,8 @@ import { Permission } from "shared/permissions";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { gMillisecondsPerDay } from "shared/time";
 import * as db3 from "../db3";
+import { getCurrentUserCore } from "../server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { TGetImportEventDataArgs, TGetImportEventDataRet } from "../shared/apiTypes";
 import { GetDefaultVisibilityPermission } from "../shared/db3Helpers";
 
@@ -180,6 +182,8 @@ const extractFirstNonEmptyLine = (text: string): string | null => {
 export default resolver.pipe(
     resolver.authorize(Permission.admin_events),
     async (args: TGetImportEventDataArgs, ctx: AuthenticatedCtx): Promise<TGetImportEventDataRet> => {
+        const currentUser = await getCurrentUserCore(ctx);
+        if (!currentUser) throw new Error("Current user was not found.");
         // start with defaults.
         const ret: TGetImportEventDataRet = {
             log: [],
@@ -215,6 +219,7 @@ export default resolver.pipe(
             ret.event.statusId = (await db.eventStatus.findFirst({
                 where: {
                     significance: db3.EventStatusSignificance.FinalConfirmation,
+                    isDeleted: false,
                 }
             }))!.id;
 
@@ -236,7 +241,8 @@ export default resolver.pipe(
             if (concertPattern.test(eventTxt)) {
                 ret.event.typeId = (await db.eventType.findFirst({
                     where: {
-                        significance: db3.EventTypeSignificance.Concert
+                        significance: db3.EventTypeSignificance.Concert,
+                        isDeleted: false,
                     }
                 }))!.id;//eventType.find(t => t.significance === db3.EventTypeSignificance.Concert)!);
             }
@@ -244,7 +250,8 @@ export default resolver.pipe(
             if (rehearsalPattern.test(eventTxt)) {
                 ret.event.typeId = (await db.eventType.findFirst({
                     where: {
-                        significance: db3.EventTypeSignificance.Rehearsal
+                        significance: db3.EventTypeSignificance.Rehearsal,
+                        isDeleted: false,
                     }
                 }))!.id;
             }
@@ -261,17 +268,20 @@ export default resolver.pipe(
             // extract responses
             const carl = (await db.user.findFirst({
                 where: {
-                    name: { contains: "carl" }
+                    name: { contains: "carl" },
+                    isDeleted: false,
                 }
             }));
             const peter = (await db.user.findFirst({
                 where: {
-                    name: { contains: "peter" }
+                    name: { contains: "peter" },
+                    isDeleted: false,
                 }
             }));
             const guido = (await db.user.findFirst({
                 where: {
-                    name: { contains: "guido" }
+                    name: { contains: "guido" },
+                    isDeleted: false,
                 }
             }));
             ret.log.push(`carl: ${carl?.id}`);
@@ -281,6 +291,7 @@ export default resolver.pipe(
             const yesId = (await db.eventAttendance.findFirst({
                 where: {
                     strength: 100,
+                    isDeleted: false,
                 }
             }))!.id;
             ret.log.push(`yesId: ${yesId}`);
@@ -288,6 +299,7 @@ export default resolver.pipe(
             const noId = (await db.eventAttendance.findFirst({
                 where: {
                     strength: 0,
+                    isDeleted: false,
                 }
             }))!.id;
 
@@ -317,7 +329,12 @@ export default resolver.pipe(
                 });
             }
 
-            const allSongs = await db.song.findMany();
+            const allSongs = await db.song.findMany({
+                where: await GetAuthorizedTableReadWhere({
+                    table: db3.xSong,
+                    currentUser,
+                }),
+            });
 
             // songs. each line searches songs
             const lines = eventTxt.split("\n");

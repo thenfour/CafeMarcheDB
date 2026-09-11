@@ -1471,7 +1471,7 @@ describe("BA-U003 password-reset hardening", () => {
     expect(targetLookup).toHaveBeenCalledTimes(1)
     expect(targetLookup).toHaveBeenCalledWith({
       select: { isSysAdmin: true },
-      where: { id: roleGrantedSysadmin.id },
+      where: { id: roleGrantedSysadmin.id, isDeleted: false },
     })
     expect(tokenCreate).not.toHaveBeenCalled()
   })
@@ -1612,7 +1612,7 @@ describe("BA-U004 impersonation hardening", () => {
     expect(userFind).toHaveBeenCalledTimes(1)
     expect(userFind).toHaveBeenCalledWith({
       select: { isSysAdmin: true },
-      where: { id: roleGrantedImpersonator.id },
+      where: { id: roleGrantedImpersonator.id, isDeleted: false },
     })
     expect(createSession).not.toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("change")).toEqual([])

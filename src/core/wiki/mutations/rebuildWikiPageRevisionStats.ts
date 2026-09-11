@@ -9,6 +9,9 @@ import { calculateDiff } from "../shared/wikiUtils";
 
 async function core(dbt) {
 
+    // Intentional read-policy bypass: this is a whole-table maintenance job.
+    // Hidden pages must have correct derived revision statistics too, and no
+    // page content is returned to the caller.
     const pages = await (dbt as PrismaClient).wikiPage.findMany({
         include: {
             revisions: true,

@@ -4,6 +4,9 @@ import db, { Prisma } from "db";
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
+import { getCurrentUserCore } from "../server/db3mutationCore";
+import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { xEvent } from "../shared/schema/event";
 
 type UserEventAttendanceQueryResult_EventSegment = Prisma.EventSegmentGetPayload<{
     select: {
@@ -48,19 +51,21 @@ export default resolver.pipe(
     resolver.zod(ZGetUserEventAttendanceArgrs),
     async (args, ctx: AuthenticatedCtx): Promise<UserEventAttendanceQueryResult> => {
         try {
+            const currentUser = await getCurrentUserCore(ctx);
+            if (!currentUser) throw new Error("Current user was not found.");
+            const eventPolicyWhere = await GetAuthorizedTableReadWhere({
+                table: xEvent,
+                currentUser,
+            });
 
             // Find the earliest event that this user responded to:
             const earliestUserEvent = await db.event.findFirst({
-                where: {
-                    isDeleted: false,
-                    // TODO: visibility permission.
+                where: ComposePrismaWhere(eventPolicyWhere, {
                     responses: {
-                        some: { userId: args.userId }
+                        some: { userId: args.userId },
                     },
-                    NOT: {
-                        startsAt: null
-                    }
-                },
+                    NOT: { startsAt: null },
+                }),
                 orderBy: { startsAt: "asc" },
                 select: { startsAt: true },
                 take: 1,
@@ -69,6 +74,7 @@ export default resolver.pipe(
             // Find the earliest event that this user responded to:
             const earliestUserEventSegment = await db.eventSegment.findFirst({
                 where: {
+                    event: eventPolicyWhere,
                     responses: {
                         some: { userId: args.userId }
                     },
@@ -104,13 +110,9 @@ export default resolver.pipe(
                         where: { userId: args.userId }
                     },
                 },
-                where: {
-                    AND: [
-                        { isDeleted: false },
-                        // TODO: visibility permission.
-                        { startsAt: { gte: earliestDateFilter } }
-                    ]
-                },
+                where: ComposePrismaWhere(eventPolicyWhere, {
+                    startsAt: { gte: earliestDateFilter },
+                }),
                 take: args.take || 100,
                 orderBy: [
                     { startsAt: "desc" }, // take the most recent / latest events first so the list is not stagnant

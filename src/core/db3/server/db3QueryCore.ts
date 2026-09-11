@@ -85,7 +85,7 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
             publicData,
         });
 
-        const selectionArgs = table.CalculateSelectionArgs(clientIntention, input.filter);
+        const selectionArgs = await table.CalculateSelectionArgs(clientIntention, input.filter);
 
         const items = await dbTableClient.findMany({
             where,
@@ -163,7 +163,7 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
         publicData,
     });
 
-    const selectionArgs = table.CalculateSelectionArgs(clientIntention, input.filter);
+    const selectionArgs = await table.CalculateSelectionArgs(clientIntention, input.filter);
 
     const {
         items,

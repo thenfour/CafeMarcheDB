@@ -8,19 +8,24 @@ import { BigintToNumber } from "shared/utils";
 import { api } from "src/blitz-server";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { GetUserAttendanceArgs, GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
+import { xEvent } from "src/core/db3/shared/schema/event";
+import { ComposePrismaWhere, GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 
 
 
 
-async function getUserAttendanceCore({ userId, eventId }: GetUserAttendanceArgs): Promise<GetUserAttendanceRet> {
+async function getUserAttendanceCore(
+    { userId, eventId }: GetUserAttendanceArgs,
+    eventPolicyWhere: Record<string, unknown>,
+): Promise<GetUserAttendanceRet> {
     // validation.
 
-    const user = await db.user.findUnique({
-        where: { id: userId },
+    const user = await db.user.findFirst({
+        where: { id: userId, isDeleted: false },
     });
     if (!user) throw new Error("User not found");
-    const event = await db.event.findUnique({
-        where: { id: eventId },
+    const event = await db.event.findFirst({
+        where: ComposePrismaWhere(eventPolicyWhere, { id: eventId }),
     });
     if (!event) throw new Error("Event not found");
     const eventResponse = await db.eventUserResponse.findFirst({
@@ -79,9 +84,13 @@ export default api(async (req, res, origCtx: Ctx) => {
             const ctx: AuthenticatedCtx = origCtx as any; // authorize ensures this.
             const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
             if (!currentUser) throw new Error(`not authorized`);
+            const eventPolicyWhere = await GetAuthorizedTableReadWhere({
+                table: xEvent,
+                currentUser,
+            });
 
             const inp = ParseQueryInput(req.query);
-            const slugs = await getUserAttendanceCore(inp);
+            const slugs = await getUserAttendanceCore(inp, eventPolicyWhere);
             res.status(200).json(slugs);
         } catch (error) {
             console.error("Failed to fetch slugs", error);

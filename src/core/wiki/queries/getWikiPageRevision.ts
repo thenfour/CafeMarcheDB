@@ -5,26 +5,28 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
-import { GetUserVisibilityWhereExpression } from "src/core/db3/shared/db3Helpers";
+import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
+import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 import { TGetWikiPageRevisionArgs, ZTGetWikiPageRevisionArgs } from "src/core/wiki/shared/wikiUtils";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_wiki_pages),
+    resolver.authorize(Permission.view_wiki_page_revisions),
     resolver.zod(ZTGetWikiPageRevisionArgs),
     async (args: TGetWikiPageRevisionArgs, ctx: AuthenticatedCtx) => {
         if (!args.revisionId) {
             return null;
         }
-        const currentUser = (await getCurrentUserCore(ctx))!;
-        const visibilityPermission = GetUserVisibilityWhereExpression({
-            id: currentUser.id,
-            roleId: currentUser.roleId,
+        const currentUser = await getCurrentUserCore(ctx);
+        if (!currentUser) throw new Error("Current user was not found.");
+        const wikiPageWhere = await GetAuthorizedTableReadWhere({
+            table: xWikiPage,
+            currentUser,
         });
 
-        const page = await db.wikiPageRevision.findUnique({
+        const page = await db.wikiPageRevision.findFirst({
             where: {
                 id: args.revisionId,
-                ...visibilityPermission,
+                wikiPage: wikiPageWhere,
             },
             include: {
                 wikiPage: true,

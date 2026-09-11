@@ -64,6 +64,9 @@ order by
 
             const uploadsDirInfo = process.env.FILE_UPLOAD_PATH ? (await GetDirectoryInfo(process.env.FILE_UPLOAD_PATH)) : [];
             const fileNames = uploadsDirInfo.map(f => f.fileName);
+            // Intentional read-policy bypass: filesystem reconciliation must
+            // report deleted and hidden File rows. This endpoint is restricted
+            // to the protected sysadmin capability.
             const fileRows = await db.file.findMany({
                 where: {
                     storedLeafName: { in: fileNames }

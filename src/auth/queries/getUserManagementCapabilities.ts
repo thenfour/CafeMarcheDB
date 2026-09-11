@@ -24,7 +24,7 @@ export default resolver.pipe(
         const [actor, target] = await Promise.all([
             db.user.findFirst({
                 ...UserWithRolesArgs,
-                where: { id: ctx.session.userId },
+                where: { id: ctx.session.userId, isDeleted: false },
             }),
             db.user.findFirst({
                 ...UserWithRolesArgs,

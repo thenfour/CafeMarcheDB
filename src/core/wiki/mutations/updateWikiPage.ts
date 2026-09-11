@@ -10,6 +10,8 @@ import * as mutationCore from "src/core/db3/server/db3mutationCore";
 import { getDefaultVisibilityPermission } from "src/core/db3/server/serverPermissionUtils";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { calculateDiff, GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayload, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
+import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
+import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 
 const ConsolidatedUpdate = async (args: TUpdateWikiPageArgs, existingRevisionToConsolidate: Prisma.WikiPageRevisionGetPayload<{}>, currentPage: WikiPageApiPayload, currentUserId: number, dbt: TransactionalPrismaClient): Promise<WikiPageApiRevisionPayload> => {
 
@@ -189,8 +191,12 @@ export default resolver.pipe(
         const changeContext = CreateChangeContext("updateWikiPage");
 
         return await db.$transaction(async (dbt) => {
-            const wikiPage = await dbt.wikiPage.findUnique({
-                where: { slug: args.canonicalWikiPath },
+            const wikiPage = await dbt.wikiPage.findFirst({
+                where: await GetAuthorizedTableReadWhere({
+                    table: xWikiPage,
+                    currentUser,
+                    where: { slug: args.canonicalWikiPath },
+                }),
                 ...WikiPageApiPayloadArgs,
             });
             let result: GetWikiPageUpdatabilityResult;

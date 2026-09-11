@@ -3,6 +3,9 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
+import { getCurrentUserCore } from "../server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { xSong } from "../shared/schema/song";
 
 interface TArgs {
     id: number;
@@ -13,9 +16,15 @@ export default resolver.pipe(
     resolver.authorize(Permission.view_songs),
     async (args: TArgs, ctx: AuthenticatedCtx): Promise<GetFilteredSongsRet> => {
         try {
-            const qr = await db.song.findUnique({
+            const currentUser = await getCurrentUserCore(ctx);
+            if (!currentUser) throw new Error("Current user was not found.");
+            const qr = await db.song.findFirst({
                 select: GetFilteredSongsItemSongSelect,
-                where: { id: args.id },
+                where: await GetAuthorizedTableReadWhere({
+                    table: xSong,
+                    currentUser,
+                    where: { id: args.id },
+                }),
             });
             if (!qr) return { matchingItem: null };
 

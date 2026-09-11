@@ -18,7 +18,7 @@ export const requireActualSysadmin = async (
     const actor = userId
         ? await db.user.findFirst({
             select: { isSysAdmin: true },
-            where: { id: userId },
+            where: { id: userId, isDeleted: false },
         })
         : null;
     if (actor?.isSysAdmin !== true) {

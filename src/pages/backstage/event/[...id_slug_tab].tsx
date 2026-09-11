@@ -134,6 +134,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, req, ctx }) =
     });
     if (!event) return { notFound: true };
 
+    // persisted status is valid even if it's isDeleted=true.
     const statuses = await db.eventStatus.findMany();
     const cancelledStatusIds = db3.getCancelledStatusIds(statuses);
     const isCancelled = (statusId: number | null) => {

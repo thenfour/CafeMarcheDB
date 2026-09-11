@@ -21,6 +21,9 @@ export default resolver.pipe(
                     id: true,
                     text: true,
                     userAssignments: {
+                        where: {
+                            user: { isDeleted: false },
+                        },
                         select: {
                             userId: true,
                         }

@@ -192,6 +192,8 @@ export const xEventStatus = new db3.xTable({
         return EventStatusArgs;
     },
     tableName: "EventStatus",
+    // persisted status is valid even if it's isDeleted=true.
+    // soft delete really means "don't show in option lists"
     deletePolicy: "softOnly",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventStatusNaturalOrderBy,
@@ -883,6 +885,8 @@ export const xEventAttendance = new db3.xTable({
         return EventAttendanceArgs;
     },
     tableName: "EventAttendance",
+    // NB: historical records are preserved and presented, even if soft deleted.
+    // soft delete really means "don't show in option lists for new things"
     deletePolicy: "softOnly",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventAttendanceNaturalOrderBy,

@@ -2,7 +2,7 @@ import type { Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import { gSSP } from "src/blitz-server";
 import type { xTable } from "src/core/db3/shared/db3core";
-import { deriveDB3ClientIntention } from "src/core/db3/server/db3RequestValidation";
+import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { CMAuthorize, CreatePublicData } from "types";
 import type { TAnyModel } from "@/shared/rootroot";
@@ -52,22 +52,10 @@ export async function loadAuthorizedPageEntity<T>({
     }
     if (!table.authorizeTableForView(publicData)) return null;
 
-    const clientIntention = deriveDB3ClientIntention("query", currentUser);
-    if (!table.authorizeColumnForView({
-        model: null,
-        publicData,
-        clientIntention,
-        columnName: table.pkMember,
-    })) return null;
-
-    const where = await table.CalculateWhereClause({
-        clientIntention,
-        publicData,
-        filterModel: {
-            items: [],
-            pks: [id],
-            tableParams: {},
-        },
+    const where = await GetAuthorizedTableReadWhere({
+        table,
+        currentUser,
+        where: { [table.pkMember]: id },
     });
-    return load(where || {});
+    return load(where);
 }

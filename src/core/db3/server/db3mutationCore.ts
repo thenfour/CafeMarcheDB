@@ -121,6 +121,7 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
             ...UserWithRolesArgs,
             where: {
                 id: ctx.session.userId,
+                isDeleted: false,
             }
         });
 
@@ -1053,7 +1054,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
         skipVisibilityCheck: args.skipVisibilityCheck,
     });
 
-    const selectionArgs = args.schema.CalculateSelectionArgs(clientIntention, filterModel);
+    const selectionArgs = await args.schema.CalculateSelectionArgs(clientIntention, filterModel);
 
     const items = await db[args.schema.tableName].findMany({
         where,
@@ -1105,7 +1106,7 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
         skipVisibilityCheck,
     });
 
-    const selectionArgs = args.schema.CalculateSelectionArgs(clientIntention, filterModel);
+    const selectionArgs = await args.schema.CalculateSelectionArgs(clientIntention, filterModel);
 
     let item = await db[args.schema.tableName].findFirst({
         where,

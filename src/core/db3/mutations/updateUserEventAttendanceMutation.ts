@@ -61,7 +61,7 @@ export default resolver.pipe(
                     include: { visiblePermission: { include: { roles: true } } },
                 }),
                 transactionalDb.user.findFirst({
-                    where: { id: args.userId },
+                    where: { id: args.userId, isDeleted: false },
                     select: { id: true },
                 }),
                 segmentIds.length === 0

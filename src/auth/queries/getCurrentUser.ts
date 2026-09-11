@@ -9,7 +9,7 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
   }
 
   const user = await db.user.findFirst({
-    where: { id: session.userId },
+    where: { id: session.userId, isDeleted: false },
     ...db3.UserArgs
   });
 

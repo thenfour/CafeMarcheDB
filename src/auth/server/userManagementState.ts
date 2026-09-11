@@ -32,6 +32,17 @@ export const findUserManagementPrincipal = (
     });
 };
 
+export const findActiveUserManagementPrincipal = (
+    db: TransactionalPrismaClient,
+    userId: number | null | undefined,
+) => {
+    if (!userId) return Promise.resolve(null);
+    return db.user.findFirst({
+        ...UserWithRolesArgs,
+        where: { id: userId, isDeleted: false },
+    });
+};
+
 export const findUserManagementRole = async (
     db: TransactionalPrismaClient,
     roleId: number | null,

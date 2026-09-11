@@ -193,6 +193,8 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         icalSettings: settings,
     });
 
+    // These reference rows interpret existing event data; soft deletion makes
+    // an option unavailable for future selection but does not erase its meaning.
     const eventAttendances = await db.eventAttendance.findMany();
 
     const cancelledStatusIds = (await db.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);

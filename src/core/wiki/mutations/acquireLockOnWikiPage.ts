@@ -8,6 +8,8 @@ import { GetDateSecondsFromNow } from "shared/time";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import { GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, TAcquireLockOnWikiPageArgs, WikiPageApiPayload, WikiPageApiPayloadArgs, wikiParseCanonicalWikiPath, ZTAcquireLockOnWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { GetDefaultVisibilityPermission } from "../../db3/shared/db3Helpers";
+import { GetAuthorizedTableReadWhere } from "../../db3/server/db3ReadPolicy";
+import { xWikiPage } from "../../db3/shared/schema/wiki";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -20,8 +22,12 @@ export default resolver.pipe(
         return await db.$transaction(async (dbt) => {
 
             // get latest page & check if we can acquire lock.
-            let currentPage: WikiPageApiPayload | null = await dbt.wikiPage.findUnique({
-                where: { slug: args.canonicalWikiPath },
+            let currentPage: WikiPageApiPayload | null = await dbt.wikiPage.findFirst({
+                where: await GetAuthorizedTableReadWhere({
+                    table: xWikiPage,
+                    currentUser,
+                    where: { slug: args.canonicalWikiPath },
+                }),
                 ...WikiPageApiPayloadArgs,
             });
 

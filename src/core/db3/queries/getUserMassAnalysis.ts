@@ -11,7 +11,9 @@ export default resolver.pipe(
     async (args, ctx: AuthenticatedCtx): Promise<UserMassAnalysisResult> => {
         const userId = args.userId;
 
-        // Get basic user info with role
+        // Intentional read-policy bypass: this administrative dependency report
+        // must include inactive targets and all referenced records, including
+        // hidden or soft-deleted content, so lifecycle decisions are complete.
         const user = await db.user.findUnique({
             where: { id: userId },
             include: {
@@ -25,7 +27,7 @@ export default resolver.pipe(
             throw new Error(`User with id ${userId} not found`);
         }
 
-        // Get content counts in parallel
+        // These are existence counts only; domain rows are never returned.
         const [
             createdSongs,
             createdEvents,

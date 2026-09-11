@@ -13,9 +13,10 @@ export default resolver.pipe(
         userId: z.number(),
     })),
     async (args, ctx: AuthenticatedCtx): Promise<UserWithInstrumentsPayload> => {
-        const ret = await db.user.findUnique({
+        const ret = await db.user.findFirst({
             where: {
                 id: args.userId,
+                isDeleted: false,
             },
             ...UserWithInstrumentsArgs
         });

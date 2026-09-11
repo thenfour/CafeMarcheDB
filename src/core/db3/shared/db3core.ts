@@ -3,7 +3,7 @@ import { assert } from "blitz";
 import { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
 import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
-import { SqlCombineAndExpression } from "shared/mysqlUtils";
+import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { Permission, gPublicPermissions } from "shared/permissions";
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import type { PublicDataType } from "types";
@@ -13,7 +13,7 @@ import {
     SearchCustomDataHookId,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
-import { GetPublicRole, GetPublicVisibilityWhereExpression, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "./db3Helpers";
+import { GetPublicRole, GetVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 
@@ -390,7 +390,7 @@ export abstract class FieldBase<FieldDataType> {
     abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => void; // apply the value from db to client.
 
     // for foreign "includes", we need to apply a WHERE clause which excludes soft deletes, irrelevant things, & records the user doesn't have access to.
-    abstract ApplyIncludeFiltering: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void;
+    abstract ApplyIncludeFiltering: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void | Promise<void>;
 };
 
 // export enum xTableClientUsageCustomContextType {
@@ -650,13 +650,18 @@ export class xTable /* implements TableDesc*/ {
     SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string) {
         const AND: string[] = [];
         if (this.SqlSpecialColumns.isDeleted) {
-            AND.push(`(${tableAlias}.isDeleted = false)`);
+            AND.push(`(${tableAlias}.${this.SqlSpecialColumns.isDeleted.member} = false)`);
         }
-        if (this.SqlSpecialColumns.ownerUser) {
-            AND.push(`
-            (${tableAlias}.visiblePermissionId IN (${currentUser.role?.permissions.map(p => p.permissionId)}))
-            OR (${tableAlias}.visiblePermissionId is NULL AND ${tableAlias}.${this.SqlSpecialColumns.ownerUser.fkidMember} = ${currentUser.id})
-            `);
+        if (this.SqlSpecialColumns.visiblePermission) {
+            const ownerColumn = this.SqlSpecialColumns.ownerUser;
+            assert(!!ownerColumn, `Table ${this.tableID} requires an owner for private visibility.`);
+            const permissionColumn = this.SqlSpecialColumns.visiblePermission.fkidMember!;
+            const permissionIds = currentUser.role?.permissions.map(p => p.permissionId) || [];
+            const permissionIdList = permissionIds.length > 0 ? permissionIds.join(",") : "NULL";
+            AND.push(SqlCombineOrExpression([
+                `(${tableAlias}.${permissionColumn} IN (${permissionIdList}))`,
+                `(${tableAlias}.${permissionColumn} is NULL AND ${tableAlias}.${ownerColumn.fkidMember || ownerColumn.member} = ${currentUser.id})`,
+            ]));
         }
         return SqlCombineAndExpression(AND);
     }
@@ -1006,7 +1011,7 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    CalculateSelectionArgs = (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel): TAnyModel | undefined => {
+    CalculateSelectionArgs = async (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel): Promise<TAnyModel | undefined> => {
         // create a deep copy so our modifications don't spill into other stuff.
         const selectionArgs = JSON.parse(JSON.stringify(this.getSelectionArgs(clientIntention, filterModel)));
 
@@ -1022,17 +1027,15 @@ export class xTable /* implements TableDesc*/ {
             if (Object.entries(include).length === 0) return undefined;
         }
 
-        this.ApplyIncludeFiltering(include, clientIntention);
+        await this.ApplyIncludeFiltering(include, clientIntention);
 
         return selectionArgs;
     };
 
     // takes an "include" Prisma clause, and adds a WHERE clause to it to exclude objects that should be hidden.
     // really it just delegates down to columns.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext): void => {
-        this.columns.forEach(col => {
-            col.ApplyIncludeFiltering(include, clientIntention);
-        });
+    ApplyIncludeFiltering = async (include: TAnyModel, clientIntention: xTableClientUsageContext): Promise<void> => {
+        await Promise.all(this.columns.map(col => col.ApplyIncludeFiltering(include, clientIntention)));
     };
 
     CalculateWhereClause = async ({ filterModel, clientIntention, publicData, skipVisibilityCheck }: CalculateWhereClauseArgs) => {
@@ -1108,51 +1111,32 @@ export class xTable /* implements TableDesc*/ {
         const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);
         and.push(...overallWhere);
 
+        const canUseAdminQuery = clientIntention.intention === "admin" && publicData.isSysAdmin;
+
         // add soft delete clause.
         if (this.SqlSpecialColumns.isDeleted) {
-            const canUseAdminQuery = clientIntention.intention === "admin" && publicData.isSysAdmin;
             if (!canUseAdminQuery) {
                 and.push({ [this.SqlSpecialColumns.isDeleted.member]: false });
             }
         }
 
         // and visibility
-        if (this.SqlSpecialColumns.visiblePermission && !skipVisibilityCheck) {
+        if (this.SqlSpecialColumns.visiblePermission && !skipVisibilityCheck && !canUseAdminQuery) {
+            let permissionIds: number[];
             if (clientIntention.intention === "public") {
                 const publicRole = await GetPublicRole();
-                const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
-                    // current user has access to the specified visibile permission
-                    [this.SqlSpecialColumns.visiblePermission.fkidMember!]: { in: publicRole.permissions.map(p => p.permissionId) }
-                };
-                and.push(spec);
+                permissionIds = publicRole.permissions.map(p => p.permissionId);
             } else {
                 assert(!!clientIntention.currentUser, "current user is required in this line.");
-                let spec: Prisma.EventWhereInput = {};
-
-                if (this.SqlSpecialColumns.ownerUser) {
-                    spec = { // EventWhereInput for practical type checking.
-                        OR: [
-                            {
-                                // current user has access to the specified visibile permission
-                                [this.SqlSpecialColumns.visiblePermission.fkidMember!]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) }
-                            },
-                            {
-                                // private visibility and you are the creator
-                                AND: [
-                                    { [this.SqlSpecialColumns.visiblePermission.fkidMember!]: null },
-                                    { [this.SqlSpecialColumns.ownerUser.fkidMember!]: clientIntention.currentUser!.id }
-                                ]
-                            }
-                        ]
-                    };
-
-                } else {
-                    // current user has access to the specified visibile permission
-                    spec = { [this.SqlSpecialColumns.visiblePermission.fkidMember!]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) } };
-                }
-
-                and.push(spec);
+                permissionIds = clientIntention.currentUser.role?.permissions.map(p => p.permissionId) || [];
             }
+
+            and.push(GetVisibilityWhereExpression({
+                permissionIds,
+                visiblePermissionIdColumnName: this.SqlSpecialColumns.visiblePermission.fkidMember,
+                ownerUserId: clientIntention.currentUser?.id,
+                ownerUserIdColumnName: this.SqlSpecialColumns.ownerUser?.fkidMember || this.SqlSpecialColumns.ownerUser?.member,
+            }));
         }
 
         const ret = (and.length > 0) ? { AND: and } : undefined;
@@ -1314,58 +1298,6 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
 
     // now we should do children. for all members, apply its table filtering. see the example hierarchy:
     if (include[memberName].include) {
-        foreignTable.ApplyIncludeFiltering(include[memberName].include, newClientIntention);
-    }
-};
-
-// TODO: see db3Helpers and unify with GetSoftDeleteWhereExpression
-export const ApplySoftDeleteWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, isDeletedColumnName?: string) => {
-    if (clientIntention.intention === "user") {
-        ret.push(GetSoftDeleteWhereExpression(isDeletedColumnName));
-    }
-}
-
-////////////////////////////////////////////////////////////////
-// apply conditions for visibility. usually columns visiblePermissionId + createdByUserId.
-// NOT applying a clause means always visible.
-
-// TODO: See db3Helpers and GetUserVisibilityWhereExpression; best to unify this.
-export const ApplyVisibilityWhereClause = async (ret: Array<any>, clientIntention: xTableClientUsageContext, createdByUserIDColumnName: string) => {
-    // for admin grids, always show admins the items. they see the IsDeleted / visibility columns there.
-    if (clientIntention.intention === "admin") {
-        if (clientIntention.currentUser!.isSysAdmin) return; // sys admins 
-
-        // non-sysadmins just should never see admin content.
-        throw new Error(`unauthorized access to admin content`);
-    }
-
-    // don't do this, because it would just be confusing. leave that kind of omnicience to admin-specific functions.
-    // make user-looking functions operate as close to user as possible.
-    //if (clientIntention.currentUser!.isSysAdmin) return; // sys admins can always see everything.
-
-    if (clientIntention.intention === "public" || !clientIntention.currentUser?.roleId) {
-        ret.push(GetPublicVisibilityWhereExpression());
-    } else {
-        // intention is user
-        assert(clientIntention.intention === "user", "checking we're handling all cases");
-        assert(!!clientIntention.currentUser, "current user is required in this line.");
-
-        ret.push(await GetUserVisibilityWhereExpression(clientIntention.currentUser, createdByUserIDColumnName));
-    }
-};
-
-
-////////////////////////////////////////////////////////////////
-export const ApplyVisibilityWhereClauseIndirectly = async (ret: Array<any>, clientIntention: xTableClientUsageContext, foreignMemberName: string, createdByUserIDColumnName: string) => {
-    const foreignFilter = [];
-    await ApplyVisibilityWhereClause(foreignFilter, clientIntention, createdByUserIDColumnName);
-    if (foreignFilter.length) {
-        // a where clause was constructed. now form it into an indirect one.
-        const x: Prisma.EventSongListSongWhereInput = {
-            [foreignMemberName]: {
-                AND: foreignFilter,
-            }
-        };
-        ret.push(x);
+        await foreignTable.ApplyIncludeFiltering(include[memberName].include, newClientIntention);
     }
 };

@@ -14,12 +14,13 @@ export default resolver.pipe(
         userId: z.number(),
     })),
     async (args, ctx: AuthenticatedCtx) => {
-        const ret = await db.user.findUnique({
+        const ret = await db.user.findFirst({
             select: {
                 googleId: true,
             },
             where: {
                 id: args.userId,
+                isDeleted: false,
             },
         });
 

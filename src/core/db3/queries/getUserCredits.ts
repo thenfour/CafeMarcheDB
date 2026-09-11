@@ -3,6 +3,9 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
+import { getCurrentUserCore } from "../server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { xSong } from "../shared/schema/song";
 
 // type UserGetCreditsQueryResult = {
 //     songs: UserGetCreditsQueryResult_Song[];
@@ -16,10 +19,17 @@ export default resolver.pipe(
     resolver.zod(ZGetUserEventAttendanceArgrs),
     async (args, ctx: AuthenticatedCtx) => {
         try {
+            const currentUser = await getCurrentUserCore(ctx);
+            if (!currentUser) throw new Error("Current user was not found.");
+            const songWhere = await GetAuthorizedTableReadWhere({
+                table: xSong,
+                currentUser,
+            });
 
             const songCredits = await db.songCredit.findMany({
                 where: {
                     userId: args.userId,
+                    song: songWhere,
                 },
             });
 

@@ -15,7 +15,7 @@ export default resolver.pipe(
 
         const user = await db.user.findFirst({
             ...UserWithRolesArgs,
-            where: { id: originalActorUserId },
+            where: { id: originalActorUserId, isDeleted: false },
         })
         if (!user) throw new Error("Could not find user id " + originalActorUserId)
 

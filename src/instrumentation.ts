@@ -34,7 +34,8 @@ const readGitVersionInfo = (): GitVersionInfo => {
 
 async function CorrectUserUids() {
     // ensure users have uids populated
-    // Fetch users with null uids
+    // Intentional read-policy bypass: startup data repair covers active and
+    // soft-deleted users and has no request actor.
     const usersWithoutUid = await db.user.findMany({
         where: {
             uid: null,

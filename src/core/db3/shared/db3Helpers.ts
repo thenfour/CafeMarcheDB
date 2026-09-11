@@ -19,6 +19,44 @@ export const GetSoftDeleteWhereExpression = (isDeletedColumnName?: string | unde
     return { [isDeletedColumnName || "isDeleted"]: false };
 };
 
+interface GetVisibilityWhereExpressionArgs {
+    permissionIds: readonly number[];
+    visiblePermissionIdColumnName?: string | undefined | null;
+    ownerUserId?: number | undefined | null;
+    ownerUserIdColumnName?: string | undefined | null;
+}
+
+/**
+ * Builds the canonical Prisma visibility predicate. A null visibility value is
+ * private and is visible only to its owner; all other rows require the
+ * corresponding permission ID.
+ */
+export const GetVisibilityWhereExpression = ({
+    permissionIds,
+    visiblePermissionIdColumnName,
+    ownerUserId,
+    ownerUserIdColumnName,
+}: GetVisibilityWhereExpressionArgs) => {
+    const visibilityColumn = visiblePermissionIdColumnName || "visiblePermissionId";
+    const permissionWhere = {
+        [visibilityColumn]: { in: [...permissionIds] },
+    };
+
+    if (ownerUserId == null || !ownerUserIdColumnName) return permissionWhere;
+
+    return {
+        OR: [
+            permissionWhere,
+            {
+                AND: [
+                    { [visibilityColumn]: null },
+                    { [ownerUserIdColumnName]: ownerUserId },
+                ],
+            },
+        ],
+    };
+};
+
 export const GetPublicRole = async () => {
     const publicRoles = await db.role.findMany({
         where: {
@@ -36,10 +74,9 @@ export const GetPublicRole = async () => {
 
 // EventWhereInput for practical type checking.
 export const GetPublicVisibilityWhereExpression2 = ({ publicRole }: { publicRole: Prisma.RoleGetPayload<{ include: { permissions: true } }> }) => {
-    const spec = {
-        // current user has access to the specified visibile permission
-        visiblePermissionId: { in: publicRole.permissions.map(p => p.permissionId) }
-    };
+    const spec = GetVisibilityWhereExpression({
+        permissionIds: publicRole.permissions.map(p => p.permissionId),
+    });
     const t: Prisma.EventWhereInput = spec; // check type.
     return spec;
 };
@@ -55,52 +92,11 @@ export const GetUserVisibilityWhereExpression2 = ({ user, userRole, createdByUse
     if (!userRole || !user) {
         return GetPublicVisibilityWhereExpression2({ publicRole });
     }
-    if (!createdByUserIDColumnName) {
-        const r = {
-            visiblePermissionId: { in: userRole.permissions.map(p => p.permissionId) }
-        };
-        const tr: Prisma.EventWhereInput = r; // check type.
-        return r;
-    }
-    const ret = {
-        OR: [
-            {
-                // current user has access to the specified visibile permission
-                visiblePermissionId: { in: userRole.permissions.map(p => p.permissionId) }
-            },
-            {
-                // private visibility and you are the creator
-                AND: [
-                    { visiblePermissionId: null },
-                    { [createdByUserIDColumnName]: user.id }
-                ]
-            }
-        ]
-    };
+    const ret = GetVisibilityWhereExpression({
+        permissionIds: userRole.permissions.map(p => p.permissionId),
+        ownerUserId: user.id,
+        ownerUserIdColumnName: createdByUserIDColumnName,
+    });
     const retCheck: Prisma.EventWhereInput = ret; // check type.
     return ret;
-};
-
-
-// EventWhereInput for practical type checking.
-export const GetPublicVisibilityWhereExpression = async (): Promise<Prisma.EventWhereInput> => {
-    return GetPublicVisibilityWhereExpression2({ publicRole: await GetPublicRole() });
-};
-
-
-export const GetUserVisibilityWhereExpression = async (user: { id: number, roleId: number | null } | null, createdByUserIDColumnName?: string | undefined | null) => {
-    if (!user || !user.roleId) {
-        return await GetPublicVisibilityWhereExpression();
-    }
-    const userRole = await db.role.findUnique({
-        where: {
-            id: user.roleId,
-        },
-        include: {
-            permissions: true,
-        }
-    });
-    assert(!!userRole, "role not found in db");
-
-    return GetUserVisibilityWhereExpression2({ user, createdByUserIDColumnName, publicRole: await GetPublicRole(), userRole });
 };

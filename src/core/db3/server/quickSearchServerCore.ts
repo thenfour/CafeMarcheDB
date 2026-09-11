@@ -52,7 +52,12 @@ const SongQuickSearchPlugin: QuickSearchPlugin = {
             where: {
                 AND: [
                     GetSoftDeleteWhereExpression(),
-                    GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
+                    GetUserVisibilityWhereExpression2({
+                        user,
+                        userRole: user.role,
+                        publicRole,
+                        createdByUserIDColumnName: "createdByUserId",
+                    }),
                     {
                         OR: [
                             ...MakeWhereCondition(songFields, query).OR,
@@ -149,7 +154,12 @@ const EventQuickSearchPlugin: QuickSearchPlugin = {
             where: {
                 AND: [
                     GetSoftDeleteWhereExpression(),
-                    GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
+                    GetUserVisibilityWhereExpression2({
+                        user,
+                        userRole: user.role,
+                        publicRole,
+                        createdByUserIDColumnName: "createdByUserId",
+                    }),
                     {
                         OR: [
                             ...MakeWhereCondition(eventFields, query).OR,
@@ -310,7 +320,12 @@ const WikiPageQuickSearchPlugin: QuickSearchPlugin = {
                             { namespace: null },
                         ]
                     },
-                    GetUserVisibilityWhereExpression2({ user, userRole: user.role, publicRole }),
+                    GetUserVisibilityWhereExpression2({
+                        user,
+                        userRole: user.role,
+                        publicRole,
+                        createdByUserIDColumnName: "createdByUserId",
+                    }),
                     {
                         OR: [
                             ...MakeWhereCondition(wikiPageFields, query).OR,

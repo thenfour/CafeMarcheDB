@@ -15,6 +15,9 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async (input: TInput, ctx: AuthenticatedCtx) => {
         try {
+            // Intentional read-policy bypass: audit history must resolve rows
+            // that are now hidden or soft-deleted. This endpoint is restricted
+            // to the protected sysadmin capability.
             if (typeof (input.tableName) !== "string") throw new Error(`argument error`);
             if (typeof (input.pk) !== "number") throw new Error(`argument error`);
 

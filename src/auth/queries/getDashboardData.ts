@@ -27,7 +27,8 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
     // get current permissions.
     const u = await db.user.findFirst({
         where: {
-            id: publicData.userId
+            id: publicData.userId,
+            isDeleted: false,
         },
         include: {
             role: {
@@ -164,6 +165,9 @@ export default resolver.pipe(
                 orderBy: undefined,
             }, currentUser);
 
+            // Existing events retain the meaning of a status after that status
+            // is retired, so relevance calculations use every referenced row.
+            // Only active statuses are exposed as the client-side option list.
             const eventStatus = await db.eventStatus.findMany();
 
             const relevantEventsCall = getTopRelevantEvents(currentUser, eventStatus, db as any /* Excessive stack depth comparing types 'PrismaClient<PrismaClientOptions, unknown, InternalArgs> & EnhancedPrismaClientAddedMethods' and 'TransactionalPrismaClient' */);
@@ -172,10 +176,10 @@ export default resolver.pipe(
                 db.userTag.findMany(),
                 db.permission.findMany(),
                 db.role.findMany(),
-                db.eventType.findMany(),
+                db.eventType.findMany({ where: { isDeleted: false } }),
                 //db.eventStatus.findMany(),
                 db.eventTag.findMany(),
-                db.eventAttendance.findMany(),
+                db.eventAttendance.findMany({ where: { isDeleted: false } }),
                 db.fileTag.findMany(),
                 db.instrument.findMany({ include: { instrumentTags: true } }),
                 db.instrumentTag.findMany(),
@@ -215,7 +219,7 @@ export default resolver.pipe(
                 permission,
                 role,
                 eventType,
-                eventStatus,
+                eventStatus: eventStatus.filter(status => !status.isDeleted),
                 eventTag,
                 eventAttendance,
                 fileTag,

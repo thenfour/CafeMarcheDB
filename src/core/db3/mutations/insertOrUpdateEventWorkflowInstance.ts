@@ -6,6 +6,7 @@ import { Permission } from "shared/permissions";
 import { MutationArgsToWorkflowInstance, TWorkflowChange, TWorkflowInstanceMutationResult } from "shared/workflowEngine";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { gWorkflowMutex } from "../server/eventWorkflow";
 import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
@@ -176,6 +177,7 @@ export default resolver.pipe(
         return gWorkflowMutex.runExclusive(async () => {
 
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
+            if (!currentUser) throw new Error("Current user was not found.");
             const clientIntention: db3.xTableClientUsageContext = {
                 intention: "user",
                 mode: "primary",
@@ -194,7 +196,15 @@ export default resolver.pipe(
                 };
 
                 //const incomingInstanceid = args.instance.id;
-                const eventWithWfInstanceId = await db.event.findFirst({ where: { id: args.eventId }, select: { workflowInstanceId: true } });
+                const eventWithWfInstanceId = await transactionalDb.event.findFirst({
+                    where: await GetAuthorizedTableReadWhere({
+                        table: db3.xEvent,
+                        currentUser,
+                        where: { id: args.eventId },
+                    }),
+                    select: { workflowInstanceId: true },
+                });
+                if (!eventWithWfInstanceId) throw new Error("Event was not found.");
 
                 //console.log(`BEGIN UPDATING INSTANCE FROM ${incomingInstanceid} => ${eventWithWfInstanceId?.workflowInstanceId || "<none>"}`);
 

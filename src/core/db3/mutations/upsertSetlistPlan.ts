@@ -3,6 +3,8 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as mutationCore from "../server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { xSetlistPlan } from "../shared/schema/setlistPlan";
 import { DeserializeSetlistPlan, SetlistPlan, ZSetlistPlan } from "../shared/setlistPlanTypes";
 
 export default resolver.pipe(
@@ -16,10 +18,14 @@ export default resolver.pipe(
         }
 
         const existing = await db.setlistPlan.findFirst({
-            where: {
-                id: args.id,
-            },
+            where: await GetAuthorizedTableReadWhere({
+                table: xSetlistPlan,
+                currentUser,
+                where: { id: args.id },
+            }),
         });
+
+        if (args.id > 0 && !existing) throw new Error("Setlist plan was not found.");
 
         let newObj: Prisma.SetlistPlanGetPayload<{}>;
 

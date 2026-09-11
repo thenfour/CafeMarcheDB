@@ -4,7 +4,8 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression } from "../shared/db3Helpers";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { xSetlistPlan } from "../shared/schema/setlistPlan";
 import { DeserializeSetlistPlan } from "../shared/setlistPlanTypes";
 
 const ZArgs = z.object({
@@ -17,13 +18,14 @@ export default resolver.pipe(
     async (args, ctx: AuthenticatedCtx) => {
         try {
             const user = await getCurrentUserCore(ctx);
+            if (!user) throw new Error("Current user was not found.");
 
             const results = await db.setlistPlan.findMany({
-                where: {
-                    createdByUserId: args.userId,
-                    ...GetSoftDeleteWhereExpression(),
-                    ...GetUserVisibilityWhereExpression(user),
-                },
+                where: await GetAuthorizedTableReadWhere({
+                    table: xSetlistPlan,
+                    currentUser: user,
+                    where: { createdByUserId: args.userId },
+                }),
             });
             return results.map(DeserializeSetlistPlan);
         } catch (e) {

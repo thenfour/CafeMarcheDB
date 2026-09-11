@@ -194,7 +194,7 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
     expect(findFirst).toHaveBeenCalledTimes(1)
     expect(findFirst).toHaveBeenCalledWith({
       select: { isSysAdmin: true },
-      where: { id: roleGrantedSysadmin.id },
+      where: { id: roleGrantedSysadmin.id, isDeleted: false },
     })
     expect(update).not.toHaveBeenCalled()
   })

@@ -16,7 +16,7 @@ export default resolver.pipe(
   resolver.authorize(Permission.login),
   async ({ currentPassword, newPassword }, ctx) => {
 
-    const user = await db.user.findFirst({ where: { id: ctx.session.userId } })
+    const user = await db.user.findFirst({ where: { id: ctx.session.userId, isDeleted: false } })
     if (!user) throw new NotFoundError()
 
     // try {

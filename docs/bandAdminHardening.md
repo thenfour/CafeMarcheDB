@@ -3,7 +3,7 @@
 - Last updated: 2026-09-11
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001, BA-S002, and BA-M001 complete; BA-S003 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001 through BA-S006, and BA-M001 complete; BA-WF000 next
 
 ## Goal
 
@@ -781,6 +781,34 @@ Phase completion evidence:
 - Verification: 12 focused BA-S004/BA-S005 regressions; `yarn test:auth` and `yarn test` pass (219 tests); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
 - Commit/PR:
 
+### BA-S006 — Schema-wide read-policy enforcement
+
+- [x] Verify every DB3 schema with soft deletion excludes deleted rows from ordinary reads.
+- [x] Verify every DB3 schema with row visibility enforces granted visibility, private ownership, and denial for unrelated users.
+- [x] Prove soft-delete, visibility, ownership, primary-key, search, and other business predicates compose with logical `AND` semantics in Prisma and raw SQL paths.
+- [x] Require Prisma models using `isDeleted` or `visiblePermissionId` to have matching registered DB3 policy metadata.
+- [x] Review direct Prisma reads of DB3-managed models and migrate user-facing reads to the shared policy boundary.
+- [x] Identify whole-table maintenance, audit-history, and lifecycle dependency reads that intentionally bypass ordinary row visibility.
+
+References:
+
+- [Canonical visibility predicate](../src/core/db3/shared/db3Helpers.ts)
+- [DB3 schema policy composition](../src/core/db3/shared/db3core.ts)
+- [Direct-read policy boundary](../src/core/db3/server/db3ReadPolicy.ts)
+- [Schema-wide policy regressions](../tests/authorization/readPolicySchema.test.ts)
+- [Direct-read endpoint regressions](../tests/authorization/directReadPolicyHardening.test.ts)
+
+Evidence:
+
+- Schema coverage is derived from Prisma's model metadata and the runtime DB3 registry rather than from a hand-maintained table list. Every registered descriptor for a protected Prisma model must declare the matching soft-delete and visibility columns; visibility-enabled descriptors must also declare the owner used for private rows.
+- One synchronous visibility builder now supplies the DB3 query path and specialized search queries. Ordinary reads consistently combine soft deletion, permission visibility, and private ownership, while only an actual Sysadmin using server-derived admin intention bypasses those row policies.
+- Raw SQL search/report policy fragments now group the visibility-permission/private-owner `OR` before combining it with adjacent predicates. This prevents the owner branch from escaping a search, tenant, ID, or other surrounding scope.
+- Relation include filtering is now fully awaited, including nested relations, so protected child rows cannot race query execution. A regression verifies that Song includes apply both soft-delete and visibility policy to related File rows.
+- User-facing direct reads of Song, Event, File, WikiPage, SetlistPlan, and protected reference data now use the shared DB3 policy scope or an equivalent parent relation scope. This includes wiki pages, revisions, and contributions; song ID, credit, and pinned-recording lookup; event attendance and workflow event lookup; event import references; user-tag assignments; and setlist-plan reads and updates. Active-user lookup is enforced at authentication and delegated-administration actor boundaries.
+- The reviewed exceptions are explicit: startup UID repair covers all lifecycle states; Sysadmin health and audit-history tools reconcile or resolve hidden/deleted records; user lifecycle dependency analysis counts all references without returning domain rows; wiki revision-stat rebuilding is a whole-table maintenance operation that returns no page content; and internal event interpretation retains retired status/attendance meanings while excluding those rows from selectable UI dictionaries.
+- Verification: 72 focused BA-S006 regressions; `yarn test:auth` and `yarn test` pass (291 tests); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
+- Commit/PR:
+
 ## Phase 4 — Define the durable role and permission model
 
 ### BA-M001 — Canonical permission registry
@@ -1113,6 +1141,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                       | —                 |
 | 2026-09-10 | BA-U006   | Closed delegated User creation and generic authentication-field writes; added redacted actual-Sysadmin email correction with session revocation; required verified, conflict-safe Google email linking               | `yarn test` (161 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                   | —                 |
 | 2026-09-11 | BA-S002   | Enforced direct File visibility; added public-asset alignment migration, storage-name containment, and pre-filesystem image-fork/gallery authorization                                                               | `yarn test:auth`; `yarn test` (187 passed); `yarn tsc --noEmit`; focused ESLint; `yarn prisma validate`; `yarn build` | —                 |
+| 2026-09-11 | BA-S006   | Added schema-wide soft-delete/visibility composition tests, one direct-read policy boundary, raw-SQL grouping, awaited relation scopes, and a protected-model call-site audit                                          | `yarn test:auth`; `yarn test` (291 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | —                 |
 
 ## Deferred ideas
 

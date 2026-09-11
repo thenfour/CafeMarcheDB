@@ -9,7 +9,7 @@ import {
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { requireCanManageUser } from "../server/userManagementPolicy";
-import { findUserManagementPrincipal } from "../server/userManagementState";
+import { findActiveUserManagementPrincipal, findUserManagementPrincipal } from "../server/userManagementState";
 
 export const SetUserSysAdminInput = z.object({
     userId: z.number().int().positive(),
@@ -22,7 +22,7 @@ export default resolver.pipe(
     async ({ userId, isSysAdmin }, ctx) => db.$transaction(
         async tx => {
             const [actor, target] = await Promise.all([
-                findUserManagementPrincipal(tx, ctx.session.userId),
+                findActiveUserManagementPrincipal(tx, ctx.session.userId),
                 findUserManagementPrincipal(tx, userId),
             ]);
 

@@ -13,6 +13,7 @@ import {
     requireContinuityAcknowledgement,
 } from "../server/userManagementPolicy";
 import {
+    findActiveUserManagementPrincipal,
     findUserManagementPrincipal,
     getUserManagementContinuityWarnings,
 } from "../server/userManagementState";
@@ -28,7 +29,7 @@ export default resolver.pipe(
     async ({ userId, acknowledgeContinuityRisk }, ctx) => db.$transaction(
         async tx => {
             const [actor, target] = await Promise.all([
-                findUserManagementPrincipal(tx, ctx.session.userId),
+                findActiveUserManagementPrincipal(tx, ctx.session.userId),
                 findUserManagementPrincipal(tx, userId),
             ]);
 
