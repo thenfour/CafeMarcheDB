@@ -1,31 +1,30 @@
-// bulk update settings by name
-
 import { resolver } from "@blitzjs/rpc";
+import type { AuthenticatedCtx } from "blitz";
+import db, { Prisma } from "db";
+import { CreateChangeContext } from "shared/activityLog";
 import { Permission } from "shared/permissions";
-import { z } from "zod";
+import { clearBrandCache } from "src/server/brand";
 import { UpdateBulkSettingsSchema } from "../schemas";
-import { SetSetting } from "shared/settings";
-
-type InputType = z.infer<typeof UpdateBulkSettingsSchema>;
+import { requireActualSysadmin } from "../server/actualSysadmin";
+import { writeSettingValue } from "../server/settingWrite";
 
 export default resolver.pipe(
     resolver.zod(UpdateBulkSettingsSchema),
     resolver.authorize(Permission.sysadmin),
-    async (items: InputType, ctx) => {
-        try {
-            for (let i = 0; i < items.length; ++i) {
-                const item = items[i];
-                try {
-                    await SetSetting({ ctx, setting: item!.name, value: item!.value });
-                } catch (e) {
-                    console.error(`Exception while updating setting '${item?.name}'`);
-                    console.error(e);
-                }
+    async (items, ctx: AuthenticatedCtx) => {
+        await db.$transaction(async tx => {
+            await requireActualSysadmin(tx, ctx.session.userId);
+            const changeContext = CreateChangeContext("updateBulkSettings");
+            for (const item of items) {
+                await writeSettingValue({
+                    db: tx,
+                    ctx,
+                    changeContext,
+                    name: item.name,
+                    value: item.value,
+                });
             }
-        } catch (e) {
-            console.error(`Exception while bulkUpdateSettings`);
-            console.error(e);
-            throw (e);
-        }
-    }
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        clearBrandCache();
+    },
 );

@@ -1,6 +1,9 @@
-module.exports = {
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig({
     extends: ["./node_modules/@blitzjs/next/eslint"],
     plugins: ["unused-imports"],
+    globalIgnores: ["node_modules", "dist", "uploads"],
     rules: {
         "react-hooks/rules-of-hooks": "off",
         "react-hooks/exhaustive-deps": "off",
@@ -11,4 +14,4 @@ module.exports = {
         "import/no-cycle": "error",
         "unused-imports/no-unused-imports": "error",
     },
-}
+});

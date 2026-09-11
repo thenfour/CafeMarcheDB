@@ -270,7 +270,12 @@ const ImportEventsPageContent = () => {
                 <textarea className="configTxt" value={configTxt} onChange={(e) => setConfigTxt(e.target.value)} />
                 <textarea className="eventTxt" value={eventTxt} onChange={(e) => setEventTxt(e.target.value)} />
                 <ul className="history">
-                    {eventSaveLog.map((e, i) => <li key={i}><a href={dashboardContext.routingApi.getURIForEvent(e.event)} target="_blank" rel="noreferrer">{e.event.id} / {e.segment.startsAt?.toDateString()} / {e.event.name}</a></li>)}
+                    {eventSaveLog.map((e, i) =>
+                        <li key={i}>
+                            <a href={dashboardContext.routingApi.getURIForEvent(e.event)} target="_blank" rel="noreferrer">
+                                {e.event.id} / {e.segment.startsAt?.toDateString()} / {e.event.name}
+                            </a>
+                        </li>)}
                 </ul>
             </div>
             <div>
@@ -289,7 +294,7 @@ const ImportEventsPageContent = () => {
 
 const ImportEventsPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Import Events" basePermission={Permission.admin_events}>
+        <DashboardLayout title="Import Events" basePermission={Permission.sysadmin}>
             <ImportEventsPageContent />
         </DashboardLayout>
     )

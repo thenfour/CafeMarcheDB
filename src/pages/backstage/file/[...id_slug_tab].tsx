@@ -1,7 +1,7 @@
 import { formatFileSize } from "@/shared/rootroot";
 import { CMChipContainer } from "@/src/core/components/CMChip";
 import { InstrumentChip } from "@/src/core/components/CMCoreComponents";
-import { AdminInspectObject, InspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
+import { AdminInspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
 import { CMLink } from "@/src/core/components/CMLink";
 import { DateValue } from "@/src/core/components/DateTime/DateTimeComponents";
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from "@/src/core/components/EditFieldsDialog";
@@ -136,7 +136,9 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                 data={{
                     'Created At': file.fileCreatedAt ? <DateValue value={file.fileCreatedAt} /> : undefined,
                     'Uploaded At': <><DateValue value={file.uploadedAt} /> {file.uploadedByUser && <>by <UserChip value={file.uploadedByUser} /></>}</>,
-                    'Stored Leaf Name': <Pre>{file.storedLeafName}</Pre>,
+                    ...(dashboardContext.isShowingAdminControls ? {
+                        'Stored Leaf Name': <Pre>{file.storedLeafName}</Pre>,
+                    } : {}),
                     'External URI': file.externalURI ? <a href={file.externalURI} target="_blank" rel="noopener noreferrer">{file.externalURI}</a> : '',
                     "Audio controls": isAudio ? (
                         <AudioPlayerFileControls file={file} />
@@ -183,19 +185,19 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                             ))}
                         </CMChipContainer>) : "",
                     "Frontpage gallery usage": file.frontpageGalleryItems && file.frontpageGalleryItems.length || "",
-                    "Parent File": <>{file.parentFileId ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage({ id: file.parentFileId })}>{file.parentFileId}</CMLink> : ''}</>,
+                    "Parent File": <>{file.parentFile ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage(file.parentFile)}>{file.parentFile.fileLeafName}</CMLink> : ''}</>,
                     "Child files": <CMChipContainer>
                         {file.childFiles && file.childFiles.length > 0 && (
                             file.childFiles.map((childFile, index) => (
-                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(childFile)}>{childFile.id}</CMLink>
+                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(childFile)}>{childFile.fileLeafName}</CMLink>
                             ))
                         )}
                     </CMChipContainer>,
-                    "Preview File": file.previewFileId ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage({ id: file.previewFileId })}>{file.previewFileId}</CMLink> : '',
+                    "Preview File": file.previewFile ? <CMLink href={dashboardContext.routingApi.getURIForFileLandingPage(file.previewFile)}>{file.previewFile.fileLeafName}</CMLink> : '',
                     "Preview for": <CMChipContainer>
                         {file.previewForFile && file.previewForFile.length > 0 && (
                             file.previewForFile.map((previewForFile, index) => (
-                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(previewForFile)}>{previewForFile.id}</CMLink>
+                                <CMLink key={index} href={dashboardContext.routingApi.getURIForFileLandingPage(previewForFile)}>{previewForFile.fileLeafName}</CMLink>
                             ))
                         )}
                     </CMChipContainer>,
@@ -205,7 +207,9 @@ const FileDetail = ({ file, readonly, tableClient }: FileDetailProps) => {
                                 <SongChip key={index} value={pinnedSong} />
                             ))
                         )}</CMChipContainer>,
-                    "Custom Data": file.customData ? <InspectObject src={file.customData} label="Custom data" /> : '',
+                    ...(dashboardContext.isShowingAdminControls && file.customData ? {
+                        "Custom Data": <AdminInspectObject src={file.customData} label="Custom data" />,
+                    } : {}),
                     "Actions": (
                         <div>
                             <FileExternalLink file={file} />

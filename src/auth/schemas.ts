@@ -135,12 +135,6 @@ export const CreateSettingSchema = z.object({
   value: z.string(),
 });
 
-export const UpdateSettingByIdSchema = z.object({
-  id: z.number(),
-  name: SettingNameSchema,
-  value: SettingValueSchema,
-});
-
 export const UpdateBulkSettingsSchema = z.array(UpdateSettingSchema);
 
 

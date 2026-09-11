@@ -4,7 +4,7 @@ import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { useContext } from "react";
 import { getHashedColor } from "shared/utils";
 import { CMChip, CMChipContainer } from "../CMChip";
-import { CMSmallButton, NameValuePair } from "../CMCoreComponents2";
+import { AdminContainer, CMSmallButton, NameValuePair } from "../CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "../CMTextField";
 import { ChipSelector, EnumChipSelector } from "../ChipSelector";
 
@@ -192,7 +192,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
 
         <NameValuePair
             name={<>
-                Step / node #{props.nodeDef.id}
+                Step / node <AdminContainer>#{props.nodeDef.id}</AdminContainer>
                 <CMSmallButton onClick={async () => {
                     if (await confirm({ title: "Delete this node?" })) {
                         ctx.chainDefMutations([
@@ -635,10 +635,9 @@ export const WorkflowGroupEditor = (props: WorkflowGroupEditorProps) => {
 
     return <div className="CMWorkflowNodeEditorContainer WorkflowGroupEditor">
         <h2>Group</h2>
-        <NameValuePair
-            name={"id"}
-            value={props.groupDef.id}
-        />
+        <AdminContainer>
+            <NameValuePair name={"id"} value={props.groupDef.id} />
+        </AdminContainer>
         <NameValuePair
             name={"Label"}
             value={<CMTextField

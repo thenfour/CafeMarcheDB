@@ -9,6 +9,7 @@ import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace } from "shared/utils";
 import { GetPublicRole, GetSoftDeleteWhereExpression, GetUserVisibilityWhereExpression2 } from "src/core/db3/shared/db3Helpers";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
+import { principalHasPermission } from "@/src/auth/server/permissionAuthorization";
 
 // per type; this is not the amount to return to users. after this, relevance prunes to the top N results.
 // this just sets a practical limit.
@@ -25,11 +26,9 @@ interface QuickSearchPlugin {
 };
 
 const IsAuthorized = (user: UserWithRolesPayload, permission: Permission): boolean => {
-    if (!user || !user.role) {
-        return false; // no user, no permissions.
-    }
-    return user.role.permissions.some(p => p.permission.name === permission);
+    return principalHasPermission(user, permission);
 };
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 const SongQuickSearchPlugin: QuickSearchPlugin = {

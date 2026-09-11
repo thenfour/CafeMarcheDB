@@ -135,8 +135,15 @@ const permissionRegistry = [
     "content_admin",
     "site-content",
     "site",
-    "Manage site-wide presentation and non-platform content.",
+    "Manage general site content.",
     100
+  ),
+  definePermission(
+    "manage_site_branding",
+    "site-content",
+    "site",
+    "Manage the site title, imagery, theme, et al.",
+    105
   ),
   definePermission(
     "edit_public_homepage",

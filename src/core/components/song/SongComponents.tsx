@@ -17,7 +17,7 @@ import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3N
 import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
-import { InspectObject, NameValuePair } from '../CMCoreComponents2';
+import { AdminInspectObject, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { MetronomeButton } from '../Metronome';
@@ -442,7 +442,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                             name={"songId"}
                             value={song.id}
                         />
-                        <InspectObject src={song} />
+                        <AdminInspectObject src={song} />
                     </>
                 }
 

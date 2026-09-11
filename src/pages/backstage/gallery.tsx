@@ -11,7 +11,7 @@ import { IsNullOrWhitespace, getEnumValues, isInternalUrl, parseMimeType } from 
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { InspectObject, KeyValueDisplay, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { AdminInspectObject, KeyValueDisplay, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
@@ -323,7 +323,7 @@ const ClientInfoTester = () => {
 
     return <NameValuePair name="Client info" value={
         <>
-            <InspectObject src={info} />
+            <AdminInspectObject src={info} />
             <KeyValueTable data={info || {}} />
         </>
     } />

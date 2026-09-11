@@ -10,6 +10,7 @@ import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { SettingKey } from "shared/settingKeys";
 import { DateTimeRange } from "shared/time";
+import { shouldShowAdminControls } from "shared/adminControls";
 import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
@@ -183,7 +184,7 @@ class OtherAPI {
 
     useIsShowingAdminControls() {
         const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-        return sess.isSysAdmin && sess.showAdminControls;
+        return shouldShowAdminControls(sess);
     };
 };
 

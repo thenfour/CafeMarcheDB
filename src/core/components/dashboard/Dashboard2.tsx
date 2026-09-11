@@ -1,4 +1,5 @@
 import { Setting } from "@/shared/settingKeys";
+import { shouldShowAdminControls } from "@/shared/adminControls";
 import { IsNullOrWhitespace } from "@/shared/utils";
 import { useSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
@@ -39,7 +40,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 
 const drawerWidth = 260;
 
-const formatVersionLabel = (versionInfo?: ServerStartInfo): string => {
+const formatVersionLabel = (versionInfo?: ServerStartInfo | null): string => {
     if (!versionInfo) return "";
     const tagLabel = versionInfo.versionTag;
     const commitCount = versionInfo.versionCommitsSinceTag;
@@ -56,7 +57,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
     //const [currentUser] = useCurrentUser();
     const sess = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
-    const isShowingAdminControls = !!sess.showAdminControls;
+    const isShowingAdminControls = shouldShowAdminControls(sess);
     const dashboardContext = useDashboardContext();
     const currentUser = dashboardContext.currentUser;
     const recordFeature = useFeatureRecorder();
@@ -459,7 +460,7 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     return (
-        <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
+        <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} cmdb_env_${process.env.NODE_ENV}`}>
             <DashboardContextProvider>
                 <AppContextMarker name="bs">
                     <ConfirmProvider>

@@ -28,14 +28,15 @@ export abstract class DashboardContextDataBase {
     instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;
 
     currentUser: db3.UserPayload | null;
-    serverStartupState: ServerStartInfo;
+    serverBaseUri: string;
+    serverStartupState: ServerStartInfo | null; // null if not available (non-admins)
 
     getAbsoluteUri = (relativePath: string): string => {
         // if relativePath is already absolute, return it as-is.
         if (isAbsoluteUri(relativePath)) {
             return relativePath;
         }
-        return concatenateUrlParts(this.serverStartupState.baseUri, relativePath);
+        return concatenateUrlParts(this.serverBaseUri, relativePath);
     };
 
     routingApi = {

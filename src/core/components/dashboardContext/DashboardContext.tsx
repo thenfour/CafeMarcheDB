@@ -1,4 +1,5 @@
 import { partition } from '@/shared/arrayUtils';
+import { shouldShowAdminControls } from '@/shared/adminControls';
 import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import { Prisma } from "db";
@@ -122,7 +123,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     };
 
     get isShowingAdminControls() {
-        return !!(this.session?.showAdminControls && this.session.isSysAdmin);
+        return shouldShowAdminControls(this.session);
     }
 
     getCancelledStatuses() {
@@ -194,6 +195,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.session = sess;
 
     React.useEffect(() => {
+        if (!sess.isSysAdmin) return;
         async function handleKeyPress(event) {
             if (event.altKey && event.key === '9') {
                 await setShowingAdminControlsMutation({ toggle: true });
@@ -207,7 +209,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         return () => {
             window.removeEventListener('keydown', handleKeyPress);
         };
-    }, []);
+    }, [sess.isSysAdmin, setShowingAdminControlsMutation]);
 
     const [dashboardData, { refetch }] = useQuery(getDashboardData, {});
     valueRef.current.refetchDashboardData = refetch;
@@ -226,10 +228,12 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
     valueRef.current.eventCustomField = new TableAccessor(dashboardData.eventCustomField);
+    valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
     valueRef.current.brand = brand;
 
+    // establish singleton for use by non-react code
     getCmdbWindow().cmdbDashboardContext = valueRef.current;
 
     // do enrichment after fundamentals are set up.

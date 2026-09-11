@@ -3,7 +3,7 @@
 - Last updated: 2026-09-11
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001 through BA-S006, and BA-M001 complete; BA-WF000 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001 through BA-S006, BA-M001, and BA-C001 through BA-C003 complete; Phase 8 next
 
 ## Goal
 
@@ -234,114 +234,6 @@ Acceptance criteria:
 - [ ] No normal UI exposes workflow functionality.
 - [ ] Crafted server requests cannot invoke workflow operations through retained routes or generic DB3.
 - [ ] No active non-Sysadmin role receives an effective workflow grant.
-
-## Deferred cleanup — Physically remove the workflow feature
-
-The initial inventory found 44 non-migration files referencing workflow concepts, five workflow permissions, event foreign keys, user relations, and ten dedicated Prisma models. Removal must cover the complete vertical slice rather than only hiding its page.
-
-### BA-WF001 — Verify and preserve deployment state before destructive migration
-
-- [ ] Query every target deployment for counts in all workflow tables and for Events linked by `workflowDefId` or `workflowInstanceId`.
-- [ ] Confirm the product assertion that no tenant uses the feature.
-- [ ] Take or verify a recoverable database backup before dropping workflow data/schema.
-- [ ] Record the verified counts and backup reference in this document.
-- [ ] Define the migration rollback boundary before applying destructive DDL.
-
-Acceptance criteria:
-
-- [ ] Every target deployment has zero meaningful workflow data, or any exceptional data has an explicitly approved disposition.
-- [ ] A tested recovery path exists before destructive migration.
-
-### BA-WF002 — Remove workflow UI and styling
-
-- [ ] Remove the `/backstage/workflows` page and navigation entry.
-- [ ] Remove workflow editors, event workflow panels, user workflow components, and DB3 workflow bindings.
-- [ ] Remove workflow sections/tabs from event and user surfaces.
-- [ ] Remove workflow references from admin logs, event import/edit grids, gallery/demo surfaces, and other page composition.
-- [ ] Remove `public/style/workflow.css` and its `_app.tsx` import.
-
-Primary inventory:
-
-- [Workflow page](../src/pages/backstage/workflows.tsx)
-- [Workflow components](../src/core/components/workflow)
-- [Workflow stylesheet](../public/style/workflow.css)
-- [Global stylesheet import](../src/pages/_app.tsx#L36)
-
-### BA-WF003 — Remove workflow server and shared code
-
-- [ ] Remove workflow query and mutation resolvers.
-- [ ] Remove workflow evaluation/server services.
-- [ ] Remove the shared workflow engine.
-- [ ] Remove workflow DB3 table registrations, table schemas, selection arguments, payload types, and API types.
-- [ ] Remove workflow branches from event insert/update paths and user mass analysis.
-- [ ] Remove workflow-specific generic mutation support.
-
-Primary inventory:
-
-- [Workflow RPC mutations](../src/core/db3/mutations)
-- [Workflow query](../src/core/db3/queries/getWorkflowDefAndInstanceForEvent.ts)
-- [Workflow server services](../src/core/db3/server/eventWorkflow.ts)
-- [Workflow DB3 schema](../src/core/db3/shared/schema/workflow.ts)
-- [Shared workflow engine](../shared/workflowEngine.ts)
-
-### BA-WF004 — Remove workflow permissions, settings, and provisioning
-
-- [ ] Remove `view_workflow_instances`.
-- [ ] Remove `edit_workflow_instances`.
-- [ ] Remove `view_workflow_defs`.
-- [ ] Remove `edit_workflow_defs`.
-- [ ] Remove `admin_workflow_defs`.
-- [ ] Remove all workflow grants from startup provisioning and Prisma seeds.
-- [ ] Remove `Workflow_SelectAssigneesDialogDescription` and `Event.workflowDef.SelectStyle` setup/setting metadata.
-- [ ] Migrate/delete the corresponding Permission and RolePermission records safely.
-
-References:
-
-- [Workflow permissions](../shared/permissions.ts#L87)
-- [Startup grants and settings](../src/setup/instrumentation-setup.ts#L157)
-- [Seed grants](../db/seeds.ts#L651)
-- [Workflow setting key](../shared/settingKeys.ts#L92)
-
-### BA-WF005 — Remove workflow database schema
-
-- [ ] Remove `Event.workflowInstanceId` and `Event.workflowDefId`, their relations, and indexes.
-- [ ] Remove workflow relations from `User`.
-- [ ] Remove all ten workflow models:
-  - `WorkflowDef`
-  - `WorkflowDefGroup`
-  - `WorkflowDefNode`
-  - `WorkflowDefNodeDefaultAssignee`
-  - `WorkflowDefNodeDependency`
-  - `WorkflowInstance`
-  - `WorkflowInstanceLogItem`
-  - `WorkflowInstanceNode`
-  - `WorkflowInstanceNodeLastAssignee`
-  - `WorkflowInstanceNodeAssignee`
-- [ ] Create a migration that drops foreign keys, columns, indexes, and tables in dependency-safe order.
-- [ ] Regenerate the Prisma client and remove resulting dead imports/types.
-- [ ] Review `db/truncatedb.sql` and other database maintenance scripts.
-
-References:
-
-- [Event workflow relations](../db/schema.prisma#L578)
-- [Workflow models](../db/schema.prisma#L1193)
-
-### BA-WF006 — Verify complete removal
-
-- [ ] Repository search finds no functional workflow references, apart from historical migrations or an intentional migration note.
-- [ ] Typecheck and production build pass.
-- [ ] Database migration succeeds on empty and production-shaped database copies.
-- [ ] Migration rollback/recovery procedure is exercised.
-- [ ] Event create, edit, import, details, and user analytics operate without workflow fields.
-- [ ] Built-in permission registries and role matrices contain no workflow permissions.
-
-Prerequisite completion evidence:
-
-- Deployment data audit:
-- Implementation:
-- Migration verification:
-- Build/typecheck:
-- Commit/PR:
 
 ## Phase 0 — Establish security test infrastructure
 
@@ -842,30 +734,34 @@ Evidence:
 - Verification: registry tests prove unique stable keys and sort orders, complete generated views, metadata invariants, generated database metadata, and the current public/protected/continuity classifications; `yarn test:auth` and `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
 - Commit/PR: see gh issue #668
 
-### BA-M002 — Database-owned role model
+### BA-M002 — Database-owned role model (deferred)
 
-- [ ] Keep roles as arbitrary database-defined permission bundles; do not give application code knowledge of role IDs, names, tiers, or significance.
-- [ ] Derive role protection and assignability from its current permission composition rather than stored rank or role-specific policy.
-- [ ] Treat `Role.sortOrder` strictly as presentation metadata.
-- [ ] Keep `isPublicRole` and `isRoleForNewUsers` as functional database flags administered only by actual Sysadmin.
-- [ ] Treat roles installed by seeds or migrations as deployment templates, not runtime identities; deployed instances may customize or replace them.
-- [ ] Evaluate a per-user authorization/session version under BA-R002 for immediate revocation; do not attach it to a role rank.
+(this is already true but could use audit/assertions)
+
+- [-] Keep roles as arbitrary database-defined permission bundles; do not give application code knowledge of role IDs, names, tiers, or significance.
+- [-] Derive role protection and assignability from its current permission composition rather than stored rank or role-specific policy.
+- [-] Treat `Role.sortOrder` strictly as presentation metadata.
+- [-] Keep `isPublicRole` and `isRoleForNewUsers` as functional database flags administered only by actual Sysadmin.
+- [-] Treat roles installed by seeds or migrations as deployment templates, not runtime identities; deployed instances may customize or replace them.
+- [-] Evaluate a per-user authorization/session version under BA-R002 for immediate revocation; do not attach it to a role rank.
 
 Acceptance criteria:
 
-- [ ] Authorization and delegation behavior is unchanged if roles are renamed or reordered.
-- [ ] A tenant may define a safer Band Admin-like role by assigning a smaller permission set without requiring a code change.
-- [ ] No runtime authorization branch identifies a built-in role.
+- [-] Authorization and delegation behavior is unchanged if roles are renamed or reordered.
+- [-] A tenant may define a safer Band Admin-like role by assigning a smaller permission set without requiring a code change.
+- [-] No runtime authorization branch identifies a built-in role.
 
-### BA-M003 — Delegation rules
+### BA-M003 — Delegation rules (deferred)
+
+(this is already true but could use additional audit/assertions)
 
 - [x] Define protected/system permissions and delegability in the canonical permission registry.
-- [ ] Require `assign_user_roles` for delegated role assignment.
-- [ ] Allow assignment only when every permission in both the target's current role and desired role is delegable and present in the actor's effective permission set.
-- [ ] Derive protected principals and protected roles from `User.isSysAdmin` and current permission composition; do not store or infer a role rank.
-- [ ] Keep raw Role, Permission, and RolePermission administration sysadmin-only initially.
-- [ ] Simulate the post-operation state and require explicit acknowledgement if it would leave no active non-Sysadmin holder of a continuity-sensitive permission.
-- [ ] Recompute all delegation and continuity decisions at the mutation boundary; server-returned role choices and warnings are UX aids only.
+- [-] Require `assign_user_roles` for delegated role assignment.
+- [-] Allow assignment only when every permission in both the target's current role and desired role is delegable and present in the actor's effective permission set.
+- [-] Derive protected principals and protected roles from `User.isSysAdmin` and current permission composition; do not store or infer a role rank.
+- [-] Keep raw Role, Permission, and RolePermission administration sysadmin-only initially.
+- [-] Simulate the post-operation state and require explicit acknowledgement if it would leave no active non-Sysadmin holder of a continuity-sensitive permission.
+- [-] Recompute all delegation and continuity decisions at the mutation boundary; server-returned role choices and warnings are UX aids only.
 
 Phase completion evidence:
 
@@ -907,86 +803,91 @@ Phase completion evidence:
 
 ## Deferred rollout — Compose and assign Band Admin
 
-This phase starts only after the platform-hardening completion definition is satisfied. It does not block completion of the current effort.
+This phase starts only after
+
+- platform-hardening completion definition is satisfied
+- permission splitting is sufficient
 
 ### BA-P001 — Manually compose the initial role
 
-- [ ] Export and archive the production role/permission matrix.
-- [ ] Have an actual Sysadmin create a database-defined Band Admin role through the normal role-management surface.
-- [ ] Copy the then-current Moderator permission set as an explicit starting snapshot; do not create runtime role inheritance.
-- [ ] Remove any workflow grant still present in that snapshot.
-- [ ] Add newly needed band-operation permissions one by one through the RolePermission matrix.
-- [ ] Record the resulting explicit matrix as rollout evidence, not as a code-owned definition of the role.
+- [-] Export and archive the production role/permission matrix.
+- [-] Have an actual Sysadmin create a database-defined Band Admin role through the normal role-management surface.
+- [-] Copy the then-current Moderator permission set as an explicit starting snapshot; do not create runtime role inheritance.
+- [-] Remove any workflow grant still present in that snapshot.
+- [-] Add newly needed band-operation permissions one by one through the RolePermission matrix.
+- [-] Record the resulting explicit matrix as rollout evidence, not as a code-owned definition of the role.
 
 ### BA-P002 — Validate and assign the role
 
-- [ ] Assign the candidate role to a non-Sysadmin test account first.
-- [ ] Run positive band-operation and negative protected/platform-operation smoke tests.
-- [ ] Verify role grant and revocation behavior in existing sessions.
-- [ ] Review the final matrix before assigning the role to production users.
-- [ ] Do not assign existing users automatically.
+- [-] Assign the candidate role to a non-Sysadmin test account first.
+- [-] Run positive band-operation and negative protected/platform-operation smoke tests.
+- [-] Verify role grant and revocation behavior in existing sessions.
+- [-] Review the final matrix before assigning the role to production users.
+- [-] Do not assign existing users automatically.
 
 ### BA-P003 — Optional future seed/template support
 
-- [ ] Only if later requested, decide whether fresh installations should receive a recommended Band Admin template.
-- [ ] Treat every seeded role and grant set as a mutable default recommendation.
-- [ ] Never overwrite customized deployed roles or grants during startup or upgrade.
-- [ ] Keep application authorization independent of seeded role names, IDs, ordering, and origin.
+- [-] Only if later requested, decide whether fresh installations should receive a recommended Band Admin template.
+- [-] Treat every seeded role and grant set as a mutable default recommendation.
+- [-] Never overwrite customized deployed roles or grants during startup or upgrade.
+- [-] Keep application authorization independent of seeded role names, IDs, ordering, and origin.
 
 Rollout acceptance criteria:
 
-- [ ] The manually composed role contains no protected, non-delegable, workflow, or otherwise unintended permission.
-- [ ] Existing customized roles and grants remain unchanged.
-- [ ] Renaming or reordering the role does not change authorization behavior.
-- [ ] Production assignment occurs only after the test account passes the recorded smoke-test matrix.
+- [-] The manually composed role contains no protected, non-delegable, workflow, or otherwise unintended permission.
+- [-] Existing customized roles and grants remain unchanged.
+- [-] Renaming or reordering the role does not change authorization behavior.
+- [-] Production assignment occurs only after the test account passes the recorded smoke-test matrix.
 
 ## Phase 7 — Split band-owned and platform-owned settings
 
-### BA-C001 — Typed setting authorization
+### BA-C001 — Setting authorization
 
-- [ ] Classify each setting as public, band-content, band-configuration, or platform/system.
-- [ ] Authorize updates using a server-side key registry/allowlist.
-- [ ] Map each band-owned setting class to a narrow action-oriented permission such as `manage_site_branding` or `manage_site_content`.
-- [ ] Prevent arbitrary names or IDs from bypassing the classification.
-- [ ] Keep raw settings and bulk import/export sysadmin-only.
-- [ ] Review public arbitrary-key reads before future settings can contain secrets.
+Settings are not to be split up / categorized. A future enhancement for localization
+and customization will address that.
+
+Initially, settings will be visible publicly and editable only by sysadmins.
+
+- [x] Keep individual setting-key reads public for rendering site configuration.
+- [x] Restrict generic setting mutation by name, ID, or bulk update to actual Sysadmins.
+- [x] Restrict the raw Settings DB3 table and its page to actual Sysadmins.
+- [x] Revalidate actual-Sysadmin authority from the database rather than trusting a stale session grant.
 
 References:
 
 - [Setting keys](../shared/settingKeys.ts#L4)
 - [Setting update by name](../src/auth/mutations/updateSetting.ts#L11)
-- [Setting update by ID](../src/auth/mutations/updateSettingById.ts#L10)
 - [Raw settings page](../src/pages/backstage/settings.tsx#L17)
+- [Setting Markdown editor](../src/core/components/SettingMarkdown.tsx#L77)
 
 ### BA-C002 — Split Brand page
 
-- [ ] Add `manage_site_branding` and use it for the band-owned Brand-page subset: site title, logo, favicon, theme, and calendar identity.
-- [ ] Move `Dashboard_HostingMode` to a sysadmin-only surface.
-- [ ] Let the Brand page render only the sections authorized by the actor's distinct capabilities instead of retaining one broad page-wide permission.
-- [ ] Enforce the setting-key split in server mutations; hiding platform fields in the page is not sufficient.
-- [ ] Make cache invalidation an internal side effect of an authorized brand change, not a separate sysadmin-only step.
+- [x] Add `manage_site_branding` and use it for the band-owned Brand-page subset: site title, logo, favicon, theme, and calendar identity.
+- [x] Move `Dashboard_HostingMode` to a sysadmin-only surface.
+- [x] Let the Brand page render only the sections authorized by the actor's distinct capabilities instead of retaining one broad page-wide permission.
+- [x] Enforce the setting-key split in server mutations; hiding platform fields in the page is not sufficient.
+- [x] Make cache invalidation an internal side effect of an authorized brand change, not a separate sysadmin-only step.
 
 References:
 
 - [Brand fields and page gate](../src/pages/backstage/brand.tsx#L86)
-- [Brand cache mutation](../src/auth/mutations/clearBrandCache.ts#L10)
+- [Branding contract](../shared/siteBranding.ts)
+- [Authorized branding mutation](../src/auth/mutations/updateSiteBrandingSettings.ts)
 
-### BA-C003 — Separate content editing from debug controls
+### BA-C003 — Hide technical info from non-sysadmins
 
-- [ ] Allow authorized site-copy editing without enabling sysadmin debug mode.
-- [ ] Keep raw objects, filter specifications, IDs, server versions, and technical diagnostics sysadmin-only.
+- [x] Keep raw objects, filter specifications, internal IDs, server versions, and technical diagnostics sysadmin-only.
 
 References:
 
-- [Setting Markdown editor](../src/core/components/SettingMarkdown.tsx#L77)
 - [Admin-control derivation](../src/core/components/dashboardContext/DashboardContext.tsx#L124)
 - [Admin/debug components](../src/core/components/CMCoreComponents2.tsx#L489)
 
 Phase completion evidence:
 
-- Implementation:
-- Verification:
-- Commit/PR:
+- Implementation: Added a typed, code-owned branding aggregate and delegated permission; reserved generic settings and platform configuration for database-confirmed actual Sysadmins; made brand-cache invalidation transactional; and centralized actual-Sysadmin gating for client technical-data renderers.
+- Verification: `yarn test` (303 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`; `git diff --check`.
+- Commit/PR: see gh issue #668
 
 ## Phase 8 — Align UI, page, and server capabilities
 
@@ -1127,21 +1028,22 @@ This checklist is intentionally deferred and does not define completion of the c
 
 Add one row for each completed or materially changed work item.
 
-| Date       | Work item | Change                                                                                                                                                                                                               | Verification                                                                                  | Commit/PR         |
-| ---------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------- |
-| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                                                                             | Static audit; configured local DB inspected read-only                                         | —                 |
-| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                                                                   | All product decisions resolved                                                                | —                 |
-| 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs                                                    | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                            | —                 |
-| 2026-09-10 | Scope     | Inventoried complete removal of the unused workflow vertical slice; later policy narrows the readiness requirement to containment and defers destructive cleanup                                                     | Inventory covers UI, server, permissions, settings, schema, migration, and verification       | —                 |
-| 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views                                                       | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`  | see gh issue #668 |
-| 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries                            | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
-| 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                                                                           | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
-| 2026-09-10 | BA-U004   | Restricted impersonation to actual Sysadmins, constrained protected targets, preserved original-actor attribution, and removed sensitive mutation results                                                            | `yarn test:auth`; `yarn test` (114 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
-| 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                                                    | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
-| 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                       | —                 |
-| 2026-09-10 | BA-U006   | Closed delegated User creation and generic authentication-field writes; added redacted actual-Sysadmin email correction with session revocation; required verified, conflict-safe Google email linking               | `yarn test` (161 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                   | —                 |
+| Date       | Work item | Change                                                                                                                                                                                                               | Verification                                                                                                          | Commit/PR         |
+| ---------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                                                                             | Static audit; configured local DB inspected read-only                                                                 | —                 |
+| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                                                                   | All product decisions resolved                                                                                        | —                 |
+| 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs                                                    | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                                                    | —                 |
+| 2026-09-10 | Scope     | Inventoried complete removal of the unused workflow vertical slice; later policy narrows the readiness requirement to containment and defers destructive cleanup                                                     | Inventory covers UI, server, permissions, settings, schema, migration, and verification                               | —                 |
+| 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views                                                       | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                          | see gh issue #668 |
+| 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries                            | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                         | see gh issue #668 |
+| 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                                                                           | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                         | see gh issue #668 |
+| 2026-09-10 | BA-U004   | Restricted impersonation to actual Sysadmins, constrained protected targets, preserved original-actor attribution, and removed sensitive mutation results                                                            | `yarn test:auth`; `yarn test` (114 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                         | see gh issue #668 |
+| 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                                                    | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                         | see gh issue #668 |
+| 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                                               | —                 |
+| 2026-09-10 | BA-U006   | Closed delegated User creation and generic authentication-field writes; added redacted actual-Sysadmin email correction with session revocation; required verified, conflict-safe Google email linking               | `yarn test` (161 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                                           | —                 |
 | 2026-09-11 | BA-S002   | Enforced direct File visibility; added public-asset alignment migration, storage-name containment, and pre-filesystem image-fork/gallery authorization                                                               | `yarn test:auth`; `yarn test` (187 passed); `yarn tsc --noEmit`; focused ESLint; `yarn prisma validate`; `yarn build` | —                 |
-| 2026-09-11 | BA-S006   | Added schema-wide soft-delete/visibility composition tests, one direct-read policy boundary, raw-SQL grouping, awaited relation scopes, and a protected-model call-site audit                                          | `yarn test:auth`; `yarn test` (291 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | —                 |
+| 2026-09-11 | BA-S006   | Added schema-wide soft-delete/visibility composition tests, one direct-read policy boundary, raw-SQL grouping, awaited relation scopes, and a protected-model call-site audit                                        | `yarn test:auth`; `yarn test` (291 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                         | —                 |
+| 2026-09-11 | Phase 7   | Split delegated branding from platform settings, restricted raw settings to actual Sysadmins, made cache invalidation internal, and hid technical data behind actual-Sysadmin admin controls                         | `yarn test` (303 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`; `git diff --check`                       | see gh issue #668 |
 
 ## Deferred ideas
 

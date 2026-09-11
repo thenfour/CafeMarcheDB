@@ -7,7 +7,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { formatFileSize } from "shared/rootroot";
 import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS } from "shared/time";
-import { InspectObject, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
+import { AdminInspectObject, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { ActivityLogUserChip } from "src/core/db3/DB3Client";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
@@ -147,16 +147,17 @@ enum TabId {
 
 const MainContent = () => {
     const dashboardContext = useDashboardContext();
+    const serverStartupState = dashboardContext.serverStartupState;
     const [tabId, setTabId] = React.useState<TabId>(TabId.Database);
     const [serverHealthResults, serverHealthQueryResult] = useQuery(getServerHealth, {});
     //console.log(serverHealthResults.env);
     return <div>
-        <InspectObject src={serverHealthResults} />
-        <KeyValueDisplay className="serverStartInfo" data={{
-            ...dashboardContext.serverStartupState,
-            uptime: formatMillisecondsToDHMS(dashboardContext.serverStartupState.uptimeMS),
+        <AdminInspectObject src={serverHealthResults} />
+        {serverStartupState && <KeyValueDisplay className="serverStartInfo" data={{
+            ...serverStartupState,
+            uptime: formatMillisecondsToDHMS(serverStartupState.uptimeMS),
             uptimeMS: undefined,
-        }} />
+        }} />}
         <CMTabPanel
             handleTabChange={(e, n) => setTabId(n as any)}
             selectedTabId={tabId}

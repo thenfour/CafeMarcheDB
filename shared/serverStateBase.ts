@@ -10,6 +10,11 @@ export interface ServerStartInfo {
     baseUri: string,
 };
 
+export interface ClientServerState {
+    baseUri: string;
+    diagnostics: ServerStartInfo | null;
+}
+
 export const getServerStartState = (): ServerStartInfo => {
     const startedAt = new Date(Number.parseInt(process.env.CMDB_START_TIME || ""));
     const commitsSinceTag = Number.parseInt(process.env.CMDB_VERSION_COMMITS_SINCE_TAG || "0", 10);
@@ -22,5 +27,14 @@ export const getServerStartState = (): ServerStartInfo => {
         versionCommitsSinceTag: Number.isFinite(commitsSinceTag) ? commitsSinceTag : 0,
         versionIsDirty: (process.env.CMDB_VERSION_IS_DIRTY || "false") === "true",
         baseUri: process.env.CMDB_BASE_URL!,
+    };
+};
+
+export const getClientServerState = (isActualSysadmin: boolean): ClientServerState => {
+    const serverState = getServerStartState();
+    return {
+        // The public origin is routing data, not a server diagnostic.
+        baseUri: serverState.baseUri,
+        diagnostics: isActualSysadmin ? serverState : null,
     };
 };

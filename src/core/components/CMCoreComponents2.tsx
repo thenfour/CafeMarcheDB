@@ -6,6 +6,7 @@ import React from "react";
 
 import { useRouter } from "next/router";
 import { arraysContainSameValues } from "shared/arrayUtils";
+import { shouldShowAdminControls } from "shared/adminControls";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace, lerp } from "shared/utils";
 import { UrlObject } from "url";
@@ -129,7 +130,7 @@ export const AnimatedCircularProgress: React.FC<AnimatedCircularProgressProps> =
 // local versions of clientAPI fns
 export function useIsShowingAdminControls() {
     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-    return sess.isSysAdmin && sess.showAdminControls;
+    return shouldShowAdminControls(sess);
 };
 
 
@@ -142,17 +143,6 @@ const formatUrl = (url: UrlObject): string => {
     const searchParams = new URLSearchParams(query as Record<string, string>).toString();
     return `${pathname}${searchParams ? `?${searchParams}` : ''}${hash ? `#${hash}` : ''}`;
 };
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const DebugCollapsibleText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {
-    const [open, setOpen] = React.useState<boolean>(false);
-    return <div>
-        <Button onClick={() => setOpen(!open)}>{caption || "expand>"}</Button>
-        {open && (text !== undefined) && <pre>{text}</pre>}
-        {open && (obj !== undefined) && <pre>{JSON.stringify(obj, undefined, 2)}</pre>}
-    </div>;
-};
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {
@@ -492,14 +482,14 @@ export const DotMenu = (props: React.PropsWithChildren<{ setCloseMenuProc: (proc
 
 export const AdminContainer = (props: React.PropsWithChildren<{}>) => {
     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-    const show = sess.isSysAdmin && sess.showAdminControls;
+    const show = shouldShowAdminControls(sess);
     if (!show) return null;
     return <>{props.children}</>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const InspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
+const InspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
     return <div className='debugInspectorOpen' onClick={() => {
         if (props.label || props.tooltip) {
             console.log(`Dumping object: ${props.label || props.tooltip}`);
@@ -511,7 +501,7 @@ export const InspectObject = (props: { src: any, tooltip?: string, label?: strin
 
 export const AdminInspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-    const show = sess.isSysAdmin && sess.showAdminControls;
+    const show = shouldShowAdminControls(sess);
     if (!show) return null;
     return <InspectObject {...props} />;
 };

@@ -10,6 +10,7 @@ import {
     TupdateUserEventAttendanceMutationArgs,
     ZupdateUserEventAttendanceMutationArgs,
 } from "../shared/apiTypes";
+import { principalHasPermission, requireFreshPermission } from "@/src/auth/server/permissionAuthorization";
 
 export class EventAttendanceAuthorizationError extends AuthorizationError {
     constructor(permission: Permission) {
@@ -18,12 +19,6 @@ export class EventAttendanceAuthorizationError extends AuthorizationError {
         this.name = "EventAttendanceAuthorizationError";
     }
 }
-
-const requireFreshPermission = (publicData: PublicDataType, permission: Permission): void => {
-    if (!publicData.isSysAdmin && !publicData.permissions.includes(permission)) {
-        throw new EventAttendanceAuthorizationError(permission);
-    }
-};
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
@@ -38,13 +33,14 @@ export default resolver.pipe(
             || Object.keys(args.segmentResponses || {}).length > 0;
         if (hasResponseMutation) {
             const isSelf = currentUser.id === args.userId;
-            requireFreshPermission(
-                publicData,
-                isSelf ? Permission.respond_to_events : Permission.change_others_event_responses,
-            );
+            if (!principalHasPermission(currentUser, isSelf ? Permission.respond_to_events : Permission.change_others_event_responses)) {
+                throw new EventAttendanceAuthorizationError(isSelf ? Permission.respond_to_events : Permission.change_others_event_responses);
+            }
         }
         if (args.isInvited !== undefined) {
-            requireFreshPermission(publicData, Permission.manage_events);
+            if (!principalHasPermission(currentUser, Permission.manage_events)) {
+                throw new EventAttendanceAuthorizationError(Permission.manage_events);
+            }
         }
 
         const clientIntention: db3.xTableClientUsageContext = {

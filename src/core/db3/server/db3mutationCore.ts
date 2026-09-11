@@ -23,6 +23,7 @@ import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from 
 import { TAnyModel } from "@/shared/rootroot";
 import { CreatePublicData } from "types";
 import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
+import { clearBrandCache } from "@/src/server/brand";
 
 var path = require('path');
 var fs = require('fs');
@@ -239,6 +240,9 @@ export const CallMutateEventHooks = async (args: {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     let eventIdToUpdate: null | number | undefined = null;
     switch (args.tableNameOrSpecialMutationKey.toLowerCase()) {
+        case "setting":
+            clearBrandCache();
+            return;
         case "event":
             eventIdToUpdate = args.model.id;
             await RecalcEventDateRangeAndIncrementRevision({

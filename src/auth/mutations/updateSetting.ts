@@ -1,85 +1,30 @@
 import { resolver } from "@blitzjs/rpc";
+import type { AuthenticatedCtx } from "blitz";
 import db from "db";
+import { CreateChangeContext } from "shared/activityLog";
 import { Permission } from "shared/permissions";
+import { clearBrandCache } from "src/server/brand";
 import { UpdateSettingSchema } from "../schemas";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { requireActualSysadmin } from "../server/actualSysadmin";
+import { writeSettingValue } from "../server/settingWrite";
 
-// set a setting by name.
-// args is { name, value }
-
-
+// Generic setting administration is a platform operation. Delegated feature
+// settings use narrow, typed mutations such as updateSiteBrandingSettings.
 export default resolver.pipe(
     resolver.zod(UpdateSettingSchema),
-    resolver.authorize(Permission.content_admin),
-    async (args, ctx) => {
-        try {
-            const oldValues = await db.setting.findFirst({ where: { name: args.name } });
-            const shouldBeDeleted = (args.value === null || args.value === undefined || args.value === "");
-
-            if (oldValues) { // exists.
-                if (shouldBeDeleted) {
-                    // delete existing.
-                    await db.setting.delete({ where: { id: oldValues.id } });
-                    await RegisterChange({
-                        action: ChangeAction.delete,
-                        changeContext: CreateChangeContext("updateSetting:Delete"),
-                        table: "setting",
-                        pkid: oldValues.id,
-                        oldValues,
-                        ctx,
-                    });
-                    return null;
-                }
-
-                // update existing.
-                if (oldValues.value === args.value) {
-                    // nop.
-                    return oldValues;
-                }
-                const newValues = await db.setting.update({
-                    where: { name: args.name },
-                    data: {
-                        value: args.value || "",//
-                    }
-                });
-                await RegisterChange({
-                    action: ChangeAction.update,
-                    changeContext: CreateChangeContext("updateSetting:Update"),
-                    table: "setting",
-                    pkid: oldValues.id,
-                    oldValues,
-                    newValues,
-                    ctx,
-                });
-                return newValues;
-            }
-
-            if (shouldBeDeleted) {
-                // nop.
-                return null;
-            }
-
-            // insert.
-            const newValues = await db.setting.create({
-                data: {
-                    name: args.name,//
-                    value: args.value || "",//
-                }
-            });
-
-            await RegisterChange({
-                action: ChangeAction.insert,
-                changeContext: CreateChangeContext("updateSetting:insert"),
-                table: "setting",
-                pkid: newValues.id,
-                newValues,
+    resolver.authorize(Permission.sysadmin),
+    async (args, ctx: AuthenticatedCtx) => {
+        const result = await db.$transaction(async tx => {
+            await requireActualSysadmin(tx, ctx.session.userId);
+            return writeSettingValue({
+                db: tx,
                 ctx,
+                changeContext: CreateChangeContext("updateSetting"),
+                name: args.name,
+                value: args.value,
             });
-
-        } catch (e) {
-            console.error(`Exception while creating/updating setting ${JSON.stringify(args)}`);
-            console.error(e);
-            throw (e);
-        }
-    }
+        });
+        clearBrandCache();
+        return result;
+    },
 );

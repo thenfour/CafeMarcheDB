@@ -1,7 +1,9 @@
 import { resolver } from "@blitzjs/rpc";
+import type { AuthenticatedCtx } from "blitz";
 import { paginate } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import { requireActualSysadmin } from "../server/actualSysadmin";
 
 interface GetInput__
     extends Pick<
@@ -10,9 +12,10 @@ interface GetInput__
     > { }
 
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
-    async ({ where, orderBy, skip, take }: GetInput__, ctx) => {
+    resolver.authorize(Permission.sysadmin),
+    async ({ where, orderBy, skip, take }: GetInput__, ctx: AuthenticatedCtx) => {
         try {
+            await requireActualSysadmin(db, ctx.session.userId);
             const {
                 items,
                 hasMore,

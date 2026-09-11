@@ -5,7 +5,7 @@ import type { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import { Stopwatch } from "shared/rootroot";
-import { getServerStartState } from "shared/serverStateBase";
+import { getClientServerState } from "shared/serverStateBase";
 import { gEventRelevanceClass, EventStatusSignificance, gVisibleEventRelevanceClasses, xEvent, xMenuLink, type xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
@@ -214,6 +214,7 @@ export default resolver.pipe(
                 relevantEventIds,
             ] = results;
 
+            const clientServerState = getClientServerState(currentUser?.isSysAdmin === true);
             const ret = {
                 userTag,
                 permission,
@@ -232,7 +233,8 @@ export default resolver.pipe(
                 eventCustomField,
                 wikiPageTag,
                 sessionPermissionsChanged: rsp,
-                serverStartupState: getServerStartState(),
+                serverBaseUri: clientServerState.baseUri,
+                serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
             };
             if (process.env.NODE_ENV === "development") {

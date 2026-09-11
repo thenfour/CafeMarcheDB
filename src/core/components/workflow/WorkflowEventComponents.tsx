@@ -8,7 +8,7 @@ import { callAsync, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace } from
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
-import { AdminContainer, AdminInspectObject, InspectObject, NameValuePair } from "../CMCoreComponents2";
+import { AdminContainer, AdminInspectObject, NameValuePair } from "../CMCoreComponents2";
 import { CMTextField } from "../CMTextField";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
 
@@ -628,13 +628,13 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
 
     return <div className="WorkflowEditorForEvent">
         <AdminContainer>
-            <InspectObject src={workflowDef} label="FlowDef" />
+            <AdminInspectObject src={workflowDef} label="FlowDef" />
             +
-            <InspectObject src={model} label="Model" />
+            <AdminInspectObject src={model} label="Model" />
             +
-            <InspectObject src={workflowInstance} label="Instance" />
+            <AdminInspectObject src={workflowInstance} label="Instance" />
             =
-            <InspectObject src={evaluatedInstance} label="Evaluated" />
+            <AdminInspectObject src={evaluatedInstance} label="Evaluated" />
             {/* <input id="canViewInstances" type="checkbox" onChange={(e) => setCanViewInstances(e.target.checked)} checked={canViewInstances} />
             <label htmlFor="canViewInstances">Can view instances</label>
             <input id="canEditInstances" type="checkbox" onChange={(e) => setCanEditInstances(e.target.checked)} checked={canEditInstances} />

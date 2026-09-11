@@ -27,11 +27,10 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
-import { DialogActionsCM, InspectObject, KeyValueTable } from 'src/core/components/CMCoreComponents2';
+import { AdminInspectObject, DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
 import { AgeRelativeToNow } from '@components/DateTime/RelativeTimeComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
-import { API } from '../clientAPI';
 import * as db3 from '../db3';
 import type { CMDBTableFilterItem } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
@@ -106,7 +105,6 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = useDashboardContext();
     const readOnly = CoerceToBoolean(props.readOnly, false);
-    const isShowingAdminControls = API.other.useIsShowingAdminControls();
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
@@ -421,7 +419,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             </>,
         }} />
 
-        {isShowingAdminControls && <InspectObject label={"items"} src={tableClient.items} />}
+        <AdminInspectObject label={"items"} src={tableClient.items} />
 
         <DataGrid
             // basic config

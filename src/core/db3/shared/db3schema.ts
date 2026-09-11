@@ -13,19 +13,19 @@ import { GenericStringField } from "./genericStringField";
 
 
 export const xSettingsAuthMap: DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.basic_trust,
-    PostQuery: Permission.basic_trust,
-    PreMutateAsOwner: Permission.content_admin,
-    PreMutate: Permission.content_admin,
-    PreInsert: Permission.content_admin,
+    PostQueryAsOwner: Permission.sysadmin,
+    PostQuery: Permission.sysadmin,
+    PreMutateAsOwner: Permission.sysadmin,
+    PreMutate: Permission.sysadmin,
+    PreInsert: Permission.sysadmin,
 };
 
 export const xSettingsTableAuthMap: DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.basic_trust,
-    View: Permission.basic_trust,
-    EditOwn: Permission.content_admin,
-    Edit: Permission.content_admin,
-    Insert: Permission.content_admin,
+    ViewOwn: Permission.sysadmin,
+    View: Permission.sysadmin,
+    EditOwn: Permission.sysadmin,
+    Edit: Permission.sysadmin,
+    Insert: Permission.sysadmin,
 };
 
 
@@ -39,6 +39,7 @@ export const xSetting = new xTable({
     getSelectionArgs: (clientIntention) => ({}),
     tableName: "Setting",
     deletePolicy: "disabled",
+    requiresActualSysadmin: true,
     tableAuthMap: xSettingsTableAuthMap,
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({

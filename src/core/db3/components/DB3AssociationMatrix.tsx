@@ -195,13 +195,6 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
     };
 
     return (<div>
-        {/* <InspectObject src={rowWhere} tooltip="ROW WHERE" />
-        <InspectObject src={rowInclude} tooltip="ROW INCLUDE" />
-        <InspectObject src={columnWhere} tooltip="COLUMN WHERE" />
-        <InspectObject src={columnInclude} tooltip="COLUMN INCLUDE" />
-        <InspectObject src={dbColumns.items} tooltip="COLUMN RESULTS" />
-        <InspectObject src={dbColumns.remainingQueryResults} tooltip="COLUMN extra results" /> */}
-
         <div>
             <button onClick={handleClickCopy}>Copy</button>
         </div>

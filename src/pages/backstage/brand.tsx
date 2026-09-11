@@ -1,220 +1,307 @@
-import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
-import { Setting } from "@/shared/settingKeys";
-import clearBrandCache from "@/src/auth/mutations/clearBrandCache";
+import { DefaultDbBrandConfig, HostingMode } from "@/shared/brandConfigBase";
+import type { SiteBrandingSettings } from "@/shared/siteBranding";
 import updateSetting from "@/src/auth/mutations/updateSetting";
+import updateSiteBrandingSettings from "@/src/auth/mutations/updateSiteBrandingSettings";
 import getSetting from "@/src/auth/queries/getSetting";
+import getSiteBrandingSettings from "@/src/auth/queries/getSiteBrandingSettings";
+import { CMSinglePageSurfaceCard } from "@/src/core/components/CMCoreComponents";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { CMDBUploadFile } from "@/src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "@/src/core/components/file/FileDrop";
 import { SnackbarContext } from "@/src/core/components/SnackbarContext";
-import { UploadResponsePayload } from "@/src/core/db3/shared/fileTypes";
-import { BlitzPage } from "@blitzjs/next";
-import { invoke, useMutation } from "@blitzjs/rpc";
-import { Box, Button, Divider, TextField, Typography } from "@mui/material";
+import type { UploadResponsePayload } from "@/src/core/db3/shared/fileTypes";
+import { useSession } from "@blitzjs/auth";
+import type { BlitzPage } from "@blitzjs/next";
+import { useMutation, useQuery } from "@blitzjs/rpc";
+import { Box, Button, Divider, MenuItem, TextField, Typography } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
+import { Setting } from "shared/settingKeys";
 
-// Reusable upload control for a string setting that holds a file URL
-const UploadSettingControl = (props: {
-  settingKey: Setting;
-  value: string;
-  setValue: (v: string) => void;
-  instructions: string;
-  previewAlt: string;
-  previewStyle: React.CSSProperties;
-  containerClassName?: string;
-}) => {
-  const { showMessage } = React.useContext(SnackbarContext);
-  const [progress, setProgress] = React.useState<number | null>(null);
-
-  const handleFiles = (files: FileList) => {
-    if (!files || files.length < 1) return;
-    setProgress(0);
-    CMDBUploadFile({
-      files,
-      fields: { visiblePermission: Permission.visibility_public },
-      onProgress: (p01) => setProgress(p01),
-    }).then((resp: UploadResponsePayload) => {
-      setProgress(null);
-      if (!resp.isSuccess || resp.files.length < 1) {
-        showMessage({ severity: "error", children: resp.errorMessage || "Upload failed" });
-        return;
-      }
-      const file = resp.files[0]!;
-      const relativeUrl = `/api/files/download/${file.storedLeafName}`;
-      props.setValue(relativeUrl);
-      showMessage({ severity: "success", children: `Uploaded ${resp.files.length} file(s). URL set.` });
-    }).catch((e) => {
-      setProgress(null);
-      console.log(e);
-      showMessage({ severity: "error", children: `Error uploading: ${e}` });
-    });
-  };
-
-  const handleUrl = (url: string) => {
-    props.setValue(url);
-    showMessage({ severity: "success", children: `URL set from dropped/pasted URL.` });
-  };
-
-  return (
-    <Box mt={1}>
-      <Divider sx={{ mb: 1 }} />
-      <Typography variant="subtitle2" gutterBottom>{props.instructions}</Typography>
-      <FileDropWrapper
-        className={props.containerClassName || "brandSettingUploadArea"}
-        onFileSelect={handleFiles}
-        onURLUpload={handleUrl}
-        progress={progress}
-      >
-        <CollapsableUploadFileComponent onFileSelect={handleFiles} onURLUpload={handleUrl} progress={progress} />
-      </FileDropWrapper>
-
-      {props.value && (
-        <Box mt={1} display="flex" alignItems="center" gap={2}>
-          <img
-            src={props.value}
-            alt={props.previewAlt}
-            style={props.previewStyle}
-          />
-          <Button size="small" onClick={() => props.setValue("")}>Clear</Button>
-        </Box>
-      )}
-    </Box>
-  );
+type BrandingField = {
+    key: keyof SiteBrandingSettings;
+    label: string;
 };
 
-const fields = [
-  { key: Setting.Dashboard_HostingMode, label: "Hosting Mode" },
-  { key: Setting.Dashboard_SiteFaviconUrl, label: "Favicon URL" },
-
-  { key: Setting.Dashboard_SiteTitle, label: "Site Title" },
-  { key: Setting.Dashboard_SiteLogoUrl, label: "Site Logo URL" },
-  { key: Setting.Dashboard_SiteTitlePrefix, label: "Page title prefix" },
-
-  { key: Setting.Ical_CalendarName, label: "Calendar Name (My Band's Agenda)" },
-  { key: Setting.Ical_CalendarCompany, label: "Calendar Company (My Band)" },
-  { key: Setting.Ical_CalendarProduct, label: "Calendar Product (Backstage)" },
-  { key: Setting.Ical_CalendarEventPrefix, label: "Event Name Prefix (MB:)" },
-
-  { key: Setting.Dashboard_Theme_PrimaryMain, label: "Primary Main" },
-  { key: Setting.Dashboard_Theme_SecondaryMain, label: "Secondary Main" },
-  { key: Setting.Dashboard_Theme_BackgroundDefault, label: "Background Default" },
-  { key: Setting.Dashboard_Theme_BackgroundPaper, label: "Background Paper" },
-  { key: Setting.Dashboard_Theme_TextPrimary, label: "Text Primary (optional)" },
-  { key: Setting.Dashboard_Theme_ContrastText, label: "Contrast Text (primary/secondary)" },
+const identityFields: BrandingField[] = [
+    { key: "siteTitle", label: "Site Title" },
+    { key: "siteTitlePrefix", label: "Page title prefix" },
+    { key: "siteFaviconUrl", label: "Favicon URL" },
+    { key: "siteLogoUrl", label: "Site Logo URL" },
 ];
 
+const calendarFields: BrandingField[] = [
+    { key: "calendarName", label: "Calendar Name (My Band's Agenda)" },
+    { key: "calendarCompany", label: "Calendar Company (My Band)" },
+    { key: "calendarProduct", label: "Calendar Product (Backstage)" },
+    { key: "calendarEventPrefix", label: "Event Name Prefix (MB:)" },
+];
+
+const themeFields: BrandingField[] = [
+    { key: "themePrimaryMain", label: "Primary Main" },
+    { key: "themeSecondaryMain", label: "Secondary Main" },
+    { key: "themeBackgroundDefault", label: "Background Default" },
+    { key: "themeBackgroundPaper", label: "Background Paper" },
+    { key: "themeTextPrimary", label: "Text Primary (optional)" },
+    { key: "themeContrastText", label: "Contrast Text (primary/secondary)" },
+];
+
+const themeDefaults: Partial<Record<keyof SiteBrandingSettings, string>> = {
+    themePrimaryMain: DefaultDbBrandConfig.theme?.primaryMain,
+    themeSecondaryMain: DefaultDbBrandConfig.theme?.secondaryMain,
+    themeBackgroundDefault: DefaultDbBrandConfig.theme?.backgroundDefault,
+    themeBackgroundPaper: DefaultDbBrandConfig.theme?.backgroundPaper,
+    themeTextPrimary: DefaultDbBrandConfig.theme?.textPrimary,
+    themeContrastText: DefaultDbBrandConfig.theme?.contrastText,
+};
+
+const UploadSettingControl = (props: {
+    value: string;
+    setValue: (value: string) => void;
+    instructions: string;
+    previewAlt: string;
+    previewStyle: React.CSSProperties;
+    containerClassName: string;
+}) => {
+    const { showMessage } = React.useContext(SnackbarContext);
+    const [progress, setProgress] = React.useState<number | null>(null);
+
+    const handleFiles = (files: FileList) => {
+        if (files.length < 1) return;
+        setProgress(0);
+        CMDBUploadFile({
+            files,
+            fields: { visiblePermission: Permission.visibility_public },
+            onProgress: setProgress,
+        }).then((response: UploadResponsePayload) => {
+            setProgress(null);
+            if (!response.isSuccess || response.files.length < 1) {
+                showMessage({
+                    severity: "error",
+                    children: response.errorMessage || "Upload failed",
+                });
+                return;
+            }
+            props.setValue(`/api/files/download/${response.files[0]!.storedLeafName}`);
+            showMessage({
+                severity: "success",
+                children: `Uploaded ${response.files.length} file(s). URL set.`,
+            });
+        }).catch(error => {
+            setProgress(null);
+            console.error(error);
+            showMessage({ severity: "error", children: `Error uploading: ${error}` });
+        });
+    };
+
+    const handleUrl = (url: string) => {
+        props.setValue(url);
+        showMessage({ severity: "success", children: "URL set from dropped/pasted URL." });
+    };
+
+    return <Box mt={1}>
+        <Typography variant="subtitle2" gutterBottom>{props.instructions}</Typography>
+        <FileDropWrapper
+            className={props.containerClassName}
+            onFileSelect={handleFiles}
+            onURLUpload={handleUrl}
+            progress={progress}
+        >
+            <CollapsableUploadFileComponent
+                onFileSelect={handleFiles}
+                onURLUpload={handleUrl}
+                progress={progress}
+            />
+        </FileDropWrapper>
+        {props.value && <Box mt={1} display="flex" alignItems="center" gap={2}>
+            <img src={props.value} alt={props.previewAlt} style={props.previewStyle} />
+            <Button size="small" onClick={() => props.setValue("")}>Clear</Button>
+        </Box>}
+    </Box>;
+};
+
+const BrandingFields = (props: {
+    fields: BrandingField[];
+    values: SiteBrandingSettings;
+    canUpload: boolean;
+    onChange: (key: keyof SiteBrandingSettings, value: string) => void;
+}) => <>
+        {props.fields.map(field => {
+            const isThemeColor = field.key.startsWith("theme");
+            const current = props.values[field.key];
+            const defaultValue = themeDefaults[field.key] ?? "";
+            return <Box key={field.key}>
+                {isThemeColor
+                    ? <Box display="flex" alignItems="center" gap={1}>
+                        <TextField
+                            fullWidth
+                            type="color"
+                            label={field.label}
+                            value={current || "#000000"}
+                            onChange={event => props.onChange(field.key, event.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => props.onChange(field.key, defaultValue)}
+                            disabled={current === defaultValue}
+                        >Reset</Button>
+                    </Box>
+                    : <TextField
+                        fullWidth
+                        label={field.label}
+                        value={current}
+                        onChange={event => props.onChange(field.key, event.target.value)}
+                    />}
+
+                {props.canUpload && field.key === "siteFaviconUrl" && <UploadSettingControl
+                    value={props.values.siteFaviconUrl}
+                    setValue={value => props.onChange("siteFaviconUrl", value)}
+                    instructions="Upload a favicon (drag/drop/paste or click):"
+                    previewAlt="Favicon Preview"
+                    previewStyle={{
+                        height: 32,
+                        width: 32,
+                        objectFit: "contain",
+                        background: "#fff",
+                        padding: 2,
+                        borderRadius: 4,
+                    }}
+                    containerClassName="brandFaviconUploadArea"
+                />}
+
+                {props.canUpload && field.key === "siteLogoUrl" && <UploadSettingControl
+                    value={props.values.siteLogoUrl}
+                    setValue={value => props.onChange("siteLogoUrl", value)}
+                    instructions="Upload a logo (drag/drop/paste or click):"
+                    previewAlt="App Bar Logo Preview"
+                    previewStyle={{
+                        maxHeight: 48,
+                        maxWidth: 200,
+                        objectFit: "contain",
+                        background: "#fff",
+                        padding: 4,
+                        borderRadius: 4,
+                    }}
+                    containerClassName="brandLogoUploadArea"
+                />}
+            </Box>;
+        })}
+    </>;
+
 const BrandForm = () => {
-  const { showMessage } = React.useContext(SnackbarContext);
-  const [values, setValues] = React.useState<Record<string, string>>({});
-  const [updateSettingMutation] = useMutation(updateSetting);
-  const [clearBrandCacheMutation] = useMutation(clearBrandCache);
+    const dashboardContext = useDashboardContext();
+    const { showMessage } = React.useContext(SnackbarContext);
+    const [loadedSettings] = useQuery(getSiteBrandingSettings, {});
+    const [values, setValues] = React.useState<SiteBrandingSettings>(loadedSettings);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [updateBranding] = useMutation(updateSiteBrandingSettings);
 
-  // Load current values
-  React.useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      const entries = await Promise.all(
-        fields.map(async f => {
-          try {
-            const val = await invoke(getSetting, { name: f.key });
-            return [String(f.key), String(val ?? "")];
-          } catch { return [String(f.key), ""]; }
-        })
-      );
-      if (mounted) setValues(Object.fromEntries(entries));
-    })();
-    return () => { mounted = false; };
-  }, []);
+    React.useEffect(() => setValues(loadedSettings), [loadedSettings]);
 
-  const onChange = (k: string, v: string) => setValues(s => ({ ...s, [k]: v }));
+    const onChange = (key: keyof SiteBrandingSettings, value: string) => {
+        setValues(current => ({ ...current, [key]: value }));
+    };
 
-  const onSave = async () => {
-    for (const f of fields) {
-      await updateSettingMutation({ name: f.key, value: (values[f.key] ?? "") });
-    }
-    await clearBrandCacheMutation({});
-    showMessage({ severity: "success", children: "Brand settings saved. Cache cleared. Refresh to see changes." });
-  };
+    const onSave = async () => {
+        setIsSaving(true);
+        try {
+            const saved = await updateBranding(values);
+            setValues(saved);
+            showMessage({
+                severity: "success",
+                children: "Brand settings saved. Refresh to see application-wide changes.",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
-  return (
-    <Box display="flex" flexDirection="column" gap={2}>
-      <Typography variant="h6">Brand Settings</Typography>
-      {/* <Grid container spacing={2}> */}
-      {fields.map(f => (
-        // <Grid item xs={12} md={6} key={f.key} style={{ border: "1px solid #800" }}>
-        <div key={f.key}>
-          {/* Use native color picker for color-ish fields */}
-          {(/Primary|Secondary|Background|TextPrimary|ContrastText/i.test(f.key)) ? (() => {
-            const defaults: Record<string, string | undefined> = {
-              [String(Setting.Dashboard_Theme_PrimaryMain)]: DefaultDbBrandConfig.theme?.primaryMain,
-              [String(Setting.Dashboard_Theme_SecondaryMain)]: DefaultDbBrandConfig.theme?.secondaryMain,
-              [String(Setting.Dashboard_Theme_BackgroundDefault)]: DefaultDbBrandConfig.theme?.backgroundDefault,
-              [String(Setting.Dashboard_Theme_BackgroundPaper)]: DefaultDbBrandConfig.theme?.backgroundPaper,
-              [String(Setting.Dashboard_Theme_TextPrimary)]: DefaultDbBrandConfig.theme?.textPrimary,
-              [String(Setting.Dashboard_Theme_ContrastText)]: DefaultDbBrandConfig.theme?.contrastText,
-            };
-            const defVal = defaults[String(f.key)] ?? "";
-            const current = (values[f.key] ?? "").toString();
-            const onReset = () => onChange(f.key, defVal || "");
-            return (
-              <Box display="flex" alignItems="center" gap={1}>
-                <TextField
-                  fullWidth
-                  type="color"
-                  label={f.label}
-                  value={current || "#000000"}
-                  onChange={e => onChange(f.key, e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Button size="small" variant="outlined" onClick={onReset} disabled={current === (defVal || "")}>Reset</Button>
-              </Box>
-            );
-          })() : (
-            <TextField fullWidth label={f.label} value={values[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value)} />
-          )}
-
-          {/* Specialized upload UI for the Favicon field */}
-          {f.key === Setting.Dashboard_SiteFaviconUrl && (
-            <UploadSettingControl
-              settingKey={Setting.Dashboard_SiteFaviconUrl}
-              value={values[Setting.Dashboard_SiteFaviconUrl] ?? ""}
-              setValue={(v) => onChange(String(Setting.Dashboard_SiteFaviconUrl), v)}
-              instructions="Upload a favicon (drag/drop/paste or click):"
-              previewAlt="Favicon Preview"
-              previewStyle={{ height: 32, width: 32, objectFit: "contain", background: "#fff", padding: 2, borderRadius: 4 }}
-              containerClassName="brandFaviconUploadArea"
-            />
-          )}
-
-          {/* Specialized upload UI for the App Bar Logo field */}
-          {f.key === Setting.Dashboard_SiteLogoUrl && (
-            <UploadSettingControl
-              settingKey={Setting.Dashboard_SiteLogoUrl}
-              value={values[Setting.Dashboard_SiteLogoUrl] ?? ""}
-              setValue={(v) => onChange(String(Setting.Dashboard_SiteLogoUrl), v)}
-              instructions="Upload a logo (drag/drop/paste or click):"
-              previewAlt="App Bar Logo Preview"
-              previewStyle={{ maxHeight: 48, maxWidth: 200, objectFit: "contain", background: "#fff", padding: 4, borderRadius: 4 }}
-              containerClassName="brandLogoUploadArea"
-            />
-          )}
+    return <CMSinglePageSurfaceCard>
+        <div className="brandFormContainer header" style={{ backgroundColor: "#fff", color: "var(--text-secondary)" }}>
+            <h2 style={{ color: "var(--text-primary)" }}>Site identity</h2>
         </div>
-      ))}
-      {/* </Grid> */}
-      <Box>
-        <Button variant="contained" onClick={onSave}>Save</Button>
-      </Box>
-    </Box>
-  );
+        <div className="brandFormContainer content">
+            <BrandingFields
+                fields={identityFields}
+                values={values}
+                canUpload={dashboardContext.isAuthorized(Permission.upload_files)}
+                onChange={onChange}
+            />
+            <h2>Calendar identity</h2>
+            <BrandingFields fields={calendarFields} values={values} canUpload={false} onChange={onChange} />
+            <h2>Theme</h2>
+            <BrandingFields fields={themeFields} values={values} canUpload={false} onChange={onChange} />
+            <Box>
+                <Button variant="contained" disabled={isSaving} onClick={onSave}>Save branding</Button>
+            </Box>
+        </div>
+    </CMSinglePageSurfaceCard>;
 };
 
-const BrandPage: BlitzPage = () => {
-  return (
-    <DashboardLayout title="Brand" basePermission={Permission.sysadmin}>
-      <BrandForm />
-    </DashboardLayout>
-  );
+const PlatformBrandForm = () => {
+    const { showMessage } = React.useContext(SnackbarContext);
+    const [loadedHostingMode] = useQuery(getSetting, { name: Setting.Dashboard_HostingMode });
+    const [hostingMode, setHostingMode] = React.useState(
+        loadedHostingMode || HostingMode.GenericSingleTenant,
+    );
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [updateGenericSetting] = useMutation(updateSetting);
+
+    React.useEffect(() => {
+        setHostingMode(loadedHostingMode || HostingMode.GenericSingleTenant);
+    }, [loadedHostingMode]);
+
+    const onSave = async () => {
+        setIsSaving(true);
+        try {
+            await updateGenericSetting({
+                name: Setting.Dashboard_HostingMode,
+                value: hostingMode,
+            });
+            showMessage({ severity: "success", children: "Platform hosting mode saved." });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return <CMSinglePageSurfaceCard>
+        <div className="brandFormContainer header">
+            <h2>Platform</h2>
+        </div>
+        <div className="brandFormContainer content">
+            <TextField
+                select
+                fullWidth
+                label="Hosting Mode"
+                value={hostingMode}
+                onChange={event => setHostingMode(event.target.value)}
+            >
+                {Object.values(HostingMode).map(mode => <MenuItem key={mode} value={mode}>{mode}</MenuItem>)}
+            </TextField>
+            <Box>
+                <Button variant="contained" disabled={isSaving} onClick={onSave}>Save platform setting</Button>
+            </Box>
+        </div>
+    </CMSinglePageSurfaceCard>;
 };
+
+const BrandPageContent = () => {
+    const session = useSession();
+    const dashboardContext = useDashboardContext();
+    return <>
+        {dashboardContext.isAuthorized(Permission.manage_site_branding) && <BrandForm />}
+        {session.isSysAdmin && <PlatformBrandForm />}
+    </>;
+};
+
+const BrandPage: BlitzPage = () => <DashboardLayout
+    title="Brand"
+    basePermission={Permission.manage_site_branding}
+>
+    <BrandPageContent />
+</DashboardLayout>;
 
 export default BrandPage;
