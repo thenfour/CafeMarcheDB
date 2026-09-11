@@ -1,21 +1,22 @@
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
 import { Button, Dialog, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import * as React from 'react';
+import { Permission } from "shared/permissions";
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import { DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import { EnrichedVerboseUser } from "./UserListItem";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }) => {
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
     const [resetURL, setResetURL] = React.useState<string | null>(null);
     const [showCopied, setShowCopied] = React.useState<boolean>(false);
     const [forgotPasswordMutation] = useMutation(forgotPassword);
-    const session = useAuthenticatedSession();
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+    const dashboardContext = useDashboardContext();
 
     const handleConfirmClick = () => {
         forgotPasswordMutation({ email: user.email }).then((r) => {
@@ -33,8 +34,9 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
         setShowCopied(true);
     };
 
-    if (!session.isSysAdmin) return null;
-
+    if (!dashboardContext.isAuthorized(Permission.sysadmin)) {
+        return null;
+    }
 
     return <>
         <Button onClick={() => setShowConfirm(true)}>

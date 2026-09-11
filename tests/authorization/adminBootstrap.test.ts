@@ -116,7 +116,7 @@ describe("BA-U005 administrator bootstrap", () => {
       { id: 21, isPublicRole: true, permissions: [] },
     ]],
   ])("fails public-role lookup closed when the role is %s", async (_case, roles) => {
-    authorizationTestDb.reset({ role: roles })
+    authorizationTestDb.reset({ role: roles }, { includeAuthorizationRoles: false })
 
     await expect(GetPublicRole()).rejects.toThrow(/Expected exactly one public role/)
   })

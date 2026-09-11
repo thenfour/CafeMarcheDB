@@ -1,6 +1,8 @@
 import { AuthorizationError } from "blitz";
+import { includesPermission, Permission } from "@/shared/permissions";
 import type { TAnyModel } from "shared/rootroot";
-import { CreatePublicData } from "types";
+import db from "db";
+import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
 import type { xTable } from "../shared/db3core";
 import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { deriveDB3ClientIntention } from "./db3RequestValidation";
@@ -36,9 +38,12 @@ export async function GetAuthorizedTableReadWhere({
     where,
 }: GetAuthorizedTableReadWhereArgs): Promise<TAnyModel> {
     const clientIntention = deriveDB3ClientIntention("query", currentUser);
-    const publicData = CreatePublicData({ user: currentUser });
+    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
+    clientIntention.authorizationPermissions = publicData.permissions;
 
-    if (table.requiresActualSysadmin && !publicData.isSysAdmin) throw new AuthorizationError();
+    if (table.requiresSysadminPermission && !includesPermission(publicData.permissions, Permission.sysadmin)) {
+        throw new AuthorizationError();
+    }
     if (!table.authorizeTableForView(publicData)) throw new AuthorizationError();
 
     const policyWhere = await table.CalculateWhereClause({

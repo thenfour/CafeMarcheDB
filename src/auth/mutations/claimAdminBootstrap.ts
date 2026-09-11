@@ -8,7 +8,7 @@ import {
     UserWithRolesArgs,
     type UserWithRolesPayload,
 } from "src/core/db3/shared/schema/userPayloads";
-import { CreatePublicData } from "types";
+import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { z } from "zod";
 import {
     adminBootstrapSecretMatches,
@@ -102,7 +102,7 @@ export default resolver.pipe(
             throw error;
         }
 
-        await ctx.session.$create(CreatePublicData({ user: promotedUser }));
+        await ctx.session.$create(await createPublicDataFromDatabase(db, { user: promotedUser }));
         return { userId: promotedUser.id, isSysAdmin: true };
     },
 );

@@ -1,6 +1,9 @@
 import { z } from "zod";
 import * as db3 from "../db3";
 import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
+import type { TransactionalPrismaClient } from "../shared/apiTypes";
+import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
+import { includesPermission, Permission } from "@/shared/permissions";
 
 const MAX_FILTER_ITEMS = 100;
 const MAX_FILTER_VALUES = 1000;
@@ -228,5 +231,20 @@ export function deriveDB3ClientIntention(
         intention: currentUser.isSysAdmin ? "admin" : "user",
         mode: "primary",
         currentUser,
+    };
+}
+
+export async function populateDB3AuthorizationPermissions(
+    database: TransactionalPrismaClient,
+    context: db3.xTableClientUsageContext,
+): Promise<db3.xTableClientUsageContext> {
+    const permissions = await loadEffectivePermissions(database, context.currentUser);
+    return {
+        ...context,
+        intention: context.intention === "public"
+            ? "public"
+            : includesPermission(permissions.names, Permission.sysadmin) ? "admin" : "user",
+        authorizationPermissions: permissions.names,
+        authorizationPermissionIds: permissions.ids,
     };
 }

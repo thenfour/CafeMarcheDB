@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
+import { loadEffectivePermissions } from "src/auth/server/effectivePermissions"
 import {
   getPermissionDefinition,
   getPermissionDatabaseMetadata,
@@ -6,7 +7,6 @@ import {
   gPermissionOrdered,
   gPermissionRegistry,
   gProtectedPermissions,
-  gPublicPermissions,
   isPermission,
   Permission,
 } from "shared/permissions"
@@ -35,10 +35,6 @@ describe("canonical permission registry", () => {
       if (definition.isProtected) {
         expect(definition.isDelegable).toBe(false)
       }
-      if (definition.isGrantedToPublic) {
-        expect(definition.scope).toBe("public")
-        expect(definition.isProtected).toBe(false)
-      }
       if (definition.isVisibility) {
         expect(definition.presentation).toBeDefined()
       }
@@ -47,15 +43,7 @@ describe("canonical permission registry", () => {
     expect(isPermission("not_a_real_permission")).toBe(false)
   })
 
-  it("derives public, protected, and continuity policy from metadata", () => {
-    expect(gPublicPermissions).toEqual([
-      Permission.always_grant,
-      Permission.public,
-      Permission.visibility_public,
-      Permission.view_events,
-      Permission.view_files,
-      Permission.practice_tools_use,
-    ])
+  it("derives protected and continuity policy from metadata", () => {
     expect([...gProtectedPermissions]).toEqual([
       Permission.impersonate_user,
       Permission.sysadmin,
@@ -89,5 +77,28 @@ describe("canonical permission registry", () => {
         isContinuitySensitive: true,
       }),
     )
+  })
+
+  it("ignores unknown persisted permissions without granting or crashing", async () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    const database = {
+      role: {
+        findMany: async () => [{
+          isPublicRole: true,
+          isSysAdminRole: false,
+          permissions: [
+            { permissionId: 1, permission: { name: Permission.public } },
+            { permissionId: 2, permission: { name: "retired_permission" } },
+          ],
+        }],
+      },
+    }
+
+    await expect(loadEffectivePermissions(database as any, null)).resolves.toEqual({
+      ids: [1],
+      names: [Permission.public],
+    })
+    expect(warning).toHaveBeenCalledWith("Ignoring unknown persisted permissions: retired_permission")
+    warning.mockRestore()
   })
 })

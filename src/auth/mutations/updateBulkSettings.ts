@@ -5,7 +5,7 @@ import { CreateChangeContext } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { clearBrandCache } from "src/server/brand";
 import { UpdateBulkSettingsSchema } from "../schemas";
-import { requireActualSysadmin } from "../server/actualSysadmin";
+import { requireFreshPermission } from "../server/permissionAuthorization";
 import { writeSettingValue } from "../server/settingWrite";
 
 export default resolver.pipe(
@@ -13,7 +13,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async (items, ctx: AuthenticatedCtx) => {
         await db.$transaction(async tx => {
-            await requireActualSysadmin(tx, ctx.session.userId);
+            await requireFreshPermission(tx, ctx.session.userId, Permission.sysadmin);
             const changeContext = CreateChangeContext("updateBulkSettings");
             for (const item of items) {
                 await writeSettingValue({

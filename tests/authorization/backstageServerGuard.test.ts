@@ -36,24 +36,23 @@ describe("backstage server page guard", () => {
     it("allows a delegated route only with its declared capability", async () => {
         await expect(authorizeBackstagePageRequest(
             "/backstage/editEventTags",
-            createAuthorizationTestContext(eventAdmin),
+            eventAdmin.id,
         )).resolves.toBeUndefined();
 
         await expect(authorizeBackstagePageRequest(
             "/backstage/editSongTags",
-            createAuthorizationTestContext(eventAdmin),
+            eventAdmin.id,
         )).rejects.toThrow();
     });
 
     it("accepts the declared sysadmin permission regardless of how it is held", async () => {
         await expect(authorizeBackstagePageRequest(
             "/backstage/roles",
-            createAuthorizationTestContext(roleCarriedSysadmin),
+            roleCarriedSysadmin.id,
         )).resolves.toBeUndefined();
     });
 
     it("revalidates permission state from the database", async () => {
-        const staleContext = createAuthorizationTestContext(eventAdmin);
         authorizationTestDb.reset({
             user: [createAuthorizationTestUser("normal", {
                 id: eventAdmin.id,
@@ -63,21 +62,21 @@ describe("backstage server page guard", () => {
 
         await expect(authorizeBackstagePageRequest(
             "/backstage/editEventTags",
-            staleContext,
+            eventAdmin.id,
         )).rejects.toThrow(`Not authorized for ${Permission.admin_events}`);
     });
 
     it("allows anonymous access through the public permission baseline", async () => {
         await expect(authorizeBackstagePageRequest(
             "/backstage/practice-tools",
-            createAuthorizationTestContext(null),
+            undefined,
         )).resolves.toBeUndefined();
     });
 
-    it("keeps contained workflow routes unreachable even to actual Sysadmin", async () => {
+    it("keeps contained workflow routes unreachable even to Sysadmin", async () => {
         await expect(authorizeBackstagePageRequest(
             "/backstage/workflows",
-            createAuthorizationTestContext(actualSysadmin),
+            actualSysadmin.id,
         )).rejects.toThrow();
     });
 
@@ -92,7 +91,7 @@ describe("backstage server page guard", () => {
     it("fails closed for an unregistered backstage page", async () => {
         await expect(authorizeBackstagePageRequest(
             "/backstage/notRegistered",
-            createAuthorizationTestContext(actualSysadmin),
+            actualSysadmin.id,
         )).rejects.toThrow("missing route authorization metadata");
     });
 });

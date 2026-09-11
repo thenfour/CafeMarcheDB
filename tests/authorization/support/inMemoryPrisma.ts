@@ -2,8 +2,28 @@ type TestRow = {
   id: number
   [key: string]: unknown
 }
+import { Permission } from "shared/permissions"
 
 type Seed = Record<string, TestRow[]>
+
+const defaultAuthorizationRoles: TestRow[] = [
+  {
+    id: 900_001,
+    name: "Public",
+    isPublicRole: true,
+    isSysAdminRole: false,
+    permissions: ["always_grant", "public", "visibility_public", "view_events", "view_files", "practice_tools_use"]
+      .map((name, index) => ({ id: 910_000 + index, permissionId: 920_000 + index, permission: { id: 920_000 + index, name } })),
+  },
+  {
+    id: 900_002,
+    name: "Sysadmin",
+    isPublicRole: false,
+    isSysAdminRole: true,
+    permissions: Object.values(Permission).filter(name => name !== Permission.never_grant)
+      .map((name, index) => ({ id: 930_000 + index, permissionId: 940_000 + index, permission: { id: 940_000 + index, name } })),
+  },
+]
 
 const clone = <T>(value: T): T => structuredClone(value)
 
@@ -126,17 +146,25 @@ export class InMemoryDelegate {
 class AuthorizationTestDatabase {
   private delegates = new Map<string, InMemoryDelegate>()
 
-  reset(seed: Seed = {}) {
+  reset(seed: Seed = {}, options: { includeAuthorizationRoles?: boolean } = {}) {
     for (const delegate of this.delegates.values()) {
       delegate.reset([])
     }
     for (const [tableName, rows] of Object.entries(seed)) {
       this.getDelegate(tableName).reset(rows)
     }
+    const suppliedRoles = seed.role || []
+    const missingDefaults = options.includeAuthorizationRoles === false || seed.role !== undefined ? [] : defaultAuthorizationRoles.filter(defaultRole => !suppliedRoles.some(role => (
+      (defaultRole.isPublicRole && role.isPublicRole) || (defaultRole.isSysAdminRole && role.isSysAdminRole)
+    )))
+    this.getDelegate("role").reset([...suppliedRoles, ...missingDefaults])
   }
 
   snapshot(tableName: string) {
-    return this.getDelegate(tableName).snapshot()
+    const rows = this.getDelegate(tableName).snapshot()
+    return tableName.toLowerCase() === "role"
+      ? rows.filter(row => row.id < 900_000)
+      : rows
   }
 
   getDelegate(tableName: string) {

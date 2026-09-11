@@ -256,7 +256,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
             const isSysAdmin = !props.user.isSysAdmin;
             if (!await confirm({
                 title: isSysAdmin ? "Grant Sysadmin" : "Revoke Sysadmin",
-                description: `${isSysAdmin ? "Grant" : "Revoke"} actual Sysadmin status for ${props.user.name}?`,
+                description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${props.user.name}?`,
             })) return;
             await snackbar.invokeAsync(async () => {
                 await setUserSysAdminMutation({ userId: props.user.id, isSysAdmin });

@@ -1,5 +1,5 @@
 import type { AuthenticatedCtx, Ctx } from "blitz"
-import { Permission, gPublicPermissions } from "shared/permissions"
+import { Permission } from "shared/permissions"
 import type { PublicDataType } from "types"
 
 export type AuthorizationPersona =
@@ -66,8 +66,17 @@ const personaPermissions: Record<Exclude<AuthorizationPersona, "public">, Permis
     Permission.assign_user_roles,
     Permission.view_users_basic_info,
   ],
-  sysadmin: [Permission.login, Permission.sysadmin],
+  sysadmin: Object.values(Permission).filter(permission => permission !== Permission.never_grant),
 }
+
+export const testPublicRolePermissions: Permission[] = [
+  Permission.always_grant,
+  Permission.public,
+  Permission.visibility_public,
+  Permission.view_events,
+  Permission.view_files,
+  Permission.practice_tools_use,
+]
 
 export type AuthorizationUserOverrides = Partial<
   Omit<AuthorizationTestUser, "role" | "roleId" | "isSysAdmin">
@@ -118,7 +127,7 @@ export function createAuthorizationPublicData(
     userId: user?.id ?? 0,
     isSysAdmin: user?.isSysAdmin ?? false,
     permissions: [
-      ...gPublicPermissions,
+      ...testPublicRolePermissions,
       ...(user?.role?.permissions.map((entry) => entry.permission.name) ?? []),
     ],
     impersonatingFromUserId: null,
@@ -140,16 +149,18 @@ export function createAuthorizationTestContext(
     $publicData: publicData,
     $authorize: (...requiredPermissions: Array<Permission | Permission[]>) => {
       const required = requiredPermissions.flat()
-      const isAuthorized =
-        !!user &&
-        (publicData.isSysAdmin ||
-          required.every((permission) => publicData.permissions.includes(permission)))
+      const isAuthorized = required.every((permission) =>
+        publicData.permissions.includes(permission),
+      )
 
       if (!isAuthorized) {
         throw new Error(`Unauthorized test persona; required: ${required.join(", ")}`)
       }
     },
     $create: async () => undefined,
+    $setPublicData: async (updates: Partial<PublicDataType>) => {
+      Object.assign(publicData, updates)
+    },
   }
 
   return { session } as unknown as Ctx | AuthenticatedCtx

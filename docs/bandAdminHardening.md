@@ -940,7 +940,7 @@ Reference: [current static menu permissions](../src/core/components/dashboard/St
 - [x] Front-page gallery management uses `edit_public_homepage`.
 - [x] User Search navigation agrees with its `search_users` page capability.
 - [x] Menu Links requires `customize_menu`; Custom Links requires `view_custom_links`, with create/edit/delete controls and mutations continuing to require `manage_custom_links`. Do not force these distinct features onto one permission merely because their current page gates drifted.
-- [x] Make Practice Tools explicitly `public`, remove `practice_tools_use` from the page and data-query gates, and then remove the obsolete permission from the canonical registry/database synchronization path. Verify every query used during initial render as anonymous; a public shell around protected data is not sufficient.
+- [x] Make Practice Tools available by granting `practice_tools_use` to the designated Public role. Keep the page and its data query on that permission so administrators can revoke or replace public access through the database. Verify every query used during initial render as anonymous; a public shell around protected data is not sufficient.
 
 For each corrected route, test the same persona against menu visibility, the server page guard, and the first server data call. That three-point assertion is the useful definition of "aligned."
 
@@ -965,15 +965,15 @@ References:
 - [ ] Server Health requires a freshly checked `Permission.sysadmin` in its route, query, and UI.
 - [ ] Delete `env: process.env` from `GetServerHealthResult`. Return a newly constructed, typed diagnostics object containing only values the page actually renders and that are safe to disclose, such as runtime mode and presence booleans. Never return database URLs/passwords, auth secrets, provider secrets, mail credentials, filesystem roots, or arbitrary environment keys; do not implement this as a denylist or a redacted copy of `process.env`.
 - [ ] Do not return the raw database-statistics SQL text or absolute upload paths. Return typed results and relative/operator-safe labels only.
-- [ ] Raw Settings, bulk configuration, Roles, Permissions, and RolePermission topology require `actualSysadmin` consistently at page, RPC, and DB3 boundaries.
-- [ ] Developer inspectors, test tools, and component galleries require `actualSysadmin` and are absent from normal production navigation. Prefer build-time exclusion or removal for pages with no operational value; authorization is still required when they remain compiled.
+- [ ] Raw Settings, bulk configuration, Roles, Permissions, and RolePermission topology require a freshly checked `Permission.sysadmin` consistently at page, RPC, and DB3 boundaries.
+- [ ] Developer inspectors, test tools, and component galleries require `Permission.sysadmin` and are absent from normal production navigation. Prefer build-time exclusion or removal for pages with no operational value; authorization is still required when they remain compiled.
 - [ ] Add a response-shape regression test asserting that representative secret-like environment variables cannot appear anywhere in serialized Server Health output.
 
 Reference: [Server Health query](../src/core/db3/queries/getServerHealth.ts#L43)
 
 Phase completion evidence:
 
-- Implementation: BA-N001 through BA-N003 complete. Added the authoritative permission-only backstage route registry, centralized database-revalidated server page guard, route-key-based drawer entries, registry-derived client/layout behavior, corrected delegated navigation capabilities, public Practice Tools, `never_grant` workflow containment, Sysadmin platform/developer routes, and per-capability user activity tabs.
+- Implementation: BA-N001 through BA-N003 complete. Added the authoritative permission-only backstage route registry, centralized database-revalidated server page guard, route-key-based drawer entries, registry-derived client/layout behavior, corrected delegated navigation capabilities, Public-role-granted Practice Tools, `never_grant` workflow containment, Sysadmin platform/developer routes, and per-capability user activity tabs. Follow-up authorization cleanup removed code-owned public grants, made effective permissions the union of the designated Public role, assigned role, and (when `User.isSysAdmin`) designated Sysadmin role, and removed the separate actual-Sysadmin authorization path.
 - Verification: `yarn test` (318 passed); `yarn tsc --noEmit`; `yarn build`; `git diff --check`. Focused ESLint and the build's lint phase report the pre-existing `.eslintrc.js`/ESLint package-exports incompatibility; the production compilation and page-data build succeed.
 - Commit/PR:
 
@@ -996,7 +996,7 @@ Recommended verification for completion: focused registry/guard tests; persona-b
 - [ ] A representative database-defined delegated-admin test role can administer each intended domain capability independently, without application code recognizing the role identity.
 - [ ] No normal user can access a workflow UI or invoke a workflow RPC while the retained feature awaits physical removal.
 - [ ] Band Admin cannot create users; self-signup remains the ordinary account-entry path.
-- [ ] Band Admin can edit allowed profile fields and deactivate ordinary users according to policy; password-reset URL generation remains actual-Sysadmin-only.
+- [ ] Band Admin can edit allowed profile fields and deactivate ordinary users according to policy; password-reset URL generation remains `Permission.sysadmin`-only.
 - [ ] Band Admin cannot edit login email, provider binding, password hash, calendar token, `isSysAdmin`, or server-owned identity fields.
 - [ ] A non-Sysadmin holding `assign_user_roles` can assign and revoke a peer-equivalent role when both roles are within the actor's permission envelope.
 - [ ] Removing the last active non-Sysadmin holder of a continuity-sensitive permission produces the required warning and explicit confirmation.
@@ -1022,7 +1022,7 @@ Recommended verification for completion: focused registry/guard tests; persona-b
 - [ ] Role-permission revocation affects active sessions.
 - [ ] Deleted/deactivated users lose access.
 - [ ] Public signup rejects or ignores `roleId`.
-- [ ] Actual-Sysadmin RolePermission changes can compose an arbitrary safe role without role-name or seeded-role dependencies.
+- [ ] Sysadmin-authorized RolePermission changes can compose an arbitrary safe role without role-name or seeded-role dependencies.
 - [ ] Seeded roles remain mutable defaults and startup does not overwrite customized grants.
 
 ### UI consistency cases
@@ -1048,7 +1048,7 @@ This checklist is intentionally deferred and does not define completion of the c
 - [ ] Workflow containment is complete; physical deletion may remain deferred.
 - [ ] P0 findings are fixed and adversarial tests pass before the role is assigned to anyone.
 - [ ] Current production role and permission matrices are exported and archived.
-- [ ] An actual Sysadmin manually creates Band Admin through the role and RolePermission pages.
+- [ ] A Sysadmin manually creates Band Admin through the role and RolePermission pages.
 - [ ] The role starts from a snapshot of the current Moderator grants, then receives only individually approved additions.
 - [ ] Band Admin is initially assigned to a test account.
 - [ ] Positive band-operation smoke test passes.
@@ -1079,6 +1079,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-11 | BA-S006   | Added schema-wide soft-delete/visibility composition tests, one direct-read policy boundary, raw-SQL grouping, awaited relation scopes, and a protected-model call-site audit                                        | `yarn test:auth`; `yarn test` (291 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                         | —                 |
 | 2026-09-11 | Phase 7   | Split delegated branding from platform settings, restricted raw settings to actual Sysadmins, made cache invalidation internal, and hid technical data behind actual-Sysadmin admin controls                         | `yarn test` (303 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`; `git diff --check`                       | see gh issue #668 |
 | 2026-09-11 | BA-N001–N003 | Added a complete permission-only backstage route registry and centralized database-revalidated global page guard; aligned drawer/domain capabilities; made Practice Tools public; contained workflow pages; protected platform/developer pages; and split user activity tabs | `yarn test` (318 passed); `yarn tsc --noEmit`; `yarn build`; `git diff --check`; ESLint blocked by existing config/package incompatibility | — |
+| 2026-09-11 | Auth model | Removed code-owned public grants and actual-Sysadmin bypasses; added designated Sysadmin-role assumption and centralized effective permission resolution for sessions, fresh checks, DB3 authorization, row visibility, and UI controls | `yarn test:auth` (321 passed); `yarn tsc --noEmit`; `git diff --check` | — |
 
 ## Deferred ideas
 

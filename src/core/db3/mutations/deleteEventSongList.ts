@@ -5,7 +5,7 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
-import { CreatePublicData } from "types";
+import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import {
@@ -19,9 +19,9 @@ export default resolver.pipe(
     resolver.zod(TGeneralDeleteArgsSchema),
     async (args: TGeneralDeleteArgs, ctx: AuthenticatedCtx) => {
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const publicData = CreatePublicData({ user: currentUser });
+        const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
         if (!currentUser
-            || (!publicData.isSysAdmin && !publicData.permissions.includes(Permission.manage_events))) {
+            || !publicData.permissions.includes(Permission.manage_events)) {
             throw new mutationCore.DB3MutationAuthorizationError(
                 db3.xEventSongList.tableName,
                 [db3.xEventSongList.pkMember],
@@ -29,7 +29,7 @@ export default resolver.pipe(
         }
 
         const clientIntention: db3.xTableClientUsageContext = {
-            intention: currentUser.isSysAdmin ? "admin" : "user",
+            intention: publicData.permissions.includes(Permission.sysadmin) ? "admin" : "user",
             mode: "primary",
             currentUser,
         };

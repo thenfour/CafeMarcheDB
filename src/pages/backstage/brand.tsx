@@ -14,7 +14,7 @@ import type { UploadResponsePayload } from "@/src/core/db3/shared/fileTypes";
 import { useSession } from "@blitzjs/auth";
 import type { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Box, Button, Divider, MenuItem, TextField, Typography } from "@mui/material";
+import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { Setting } from "shared/settingKeys";
@@ -293,7 +293,7 @@ const BrandPageContent = () => {
     const dashboardContext = useDashboardContext();
     return <>
         {dashboardContext.isAuthorized(Permission.manage_site_branding) && <BrandForm />}
-        {session.isSysAdmin && <PlatformBrandForm />}
+        {session.permissions?.includes(Permission.sysadmin) && <PlatformBrandForm />}
     </>;
 };
 

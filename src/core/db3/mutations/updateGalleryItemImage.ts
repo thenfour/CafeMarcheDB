@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { CreatePublicData } from "types";
+import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { ImageEditParams, UpdateGalleryItemImageParams } from "../shared/fileTypes";
@@ -41,7 +41,7 @@ export default resolver.pipe(
             contextDesc: "updateGalleryItemImage:preflight",
             model: galleryMutationFields,
             existingModel: galleryItem,
-            publicData: CreatePublicData({ user: currentUser }),
+            publicData: await createPublicDataFromDatabase(db, { user: currentUser }),
             rowMode: "update",
             fallbackOwnerId: null,
         });

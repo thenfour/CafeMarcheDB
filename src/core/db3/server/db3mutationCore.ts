@@ -24,6 +24,7 @@ import { TAnyModel } from "@/shared/rootroot";
 import { CreatePublicData } from "types";
 import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
 import { clearBrandCache } from "@/src/server/brand";
+import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
 
 var path = require('path');
 var fs = require('fs');
@@ -44,6 +45,7 @@ const getMutationPublicData = (clientIntention: db3.xTableClientUsageContext) =>
         user: clientIntention.intention === "public"
             ? null
             : clientIntention.currentUser || null,
+        permissions: clientIntention.authorizationPermissions || [],
     })
 );
 
@@ -69,17 +71,17 @@ const requireRolePermissionTopologyAuthorization = (
     fieldNames: string[],
 ): void => {
     const rolePermissionTableName = db3.xRolePermissionAssociation.tableName;
-    if (associationTableName.toLowerCase() === rolePermissionTableName.toLowerCase() && !publicData.isSysAdmin) {
+    if (associationTableName.toLowerCase() === rolePermissionTableName.toLowerCase() && !publicData.permissions.includes(Permission.sysadmin)) {
         throw new DB3MutationAuthorizationError(localTable.tableName, fieldNames);
     }
 };
 
-const requireActualSysadminTableAuthorization = (
+const requireSysadminTableAuthorization = (
     table: db3.xTable,
     publicData: ReturnType<typeof getMutationPublicData>,
     fieldNames: string[],
 ): void => {
-    if (table.requiresActualSysadminForMutation && !publicData.isSysAdmin) {
+    if (table.requiresSysadminPermissionForMutation && !publicData.permissions.includes(Permission.sysadmin)) {
         throw new DB3MutationAuthorizationError(table.tableName, fieldNames);
     }
 };
@@ -338,7 +340,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
     const publicData = getMutationPublicData(args.clientIntention);
     const rowMode = args.rowMode || "update";
 
-    if (args.clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+    if (args.clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
         throw new DB3MutationAuthorizationError(args.localTable.tableName, [args.column.member]);
     }
     requireRolePermissionTopologyAuthorization(
@@ -435,10 +437,10 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         const dbTableClient = db[table.tableName]; // the prisma interface
         const publicData = getMutationPublicData(clientIntention);
 
-        if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+        if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
-        requireActualSysadminTableAuthorization(table, publicData, [table.pkMember]);
+        requireSysadminTableAuthorization(table, publicData, [table.pkMember]);
         requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, [table.pkMember]);
         const deleteOperation = requireDeleteOperationAuthorization(table, deleteType);
 
@@ -525,10 +527,10 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         const dbTableClient = db[table.tableName]; // the prisma interface
         const publicData = getMutationPublicData(clientIntention);
 
-        if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+        if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
-        requireActualSysadminTableAuthorization(table, publicData, Object.keys(fields));
+        requireSysadminTableAuthorization(table, publicData, Object.keys(fields));
         requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
@@ -644,10 +646,10 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         const dbTableClient = db[table.tableName]; // the prisma interface
         const publicData = getMutationPublicData(clientIntention);
 
-        if (clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+        if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
-        requireActualSysadminTableAuthorization(table, publicData, Object.keys(fields));
+        requireSysadminTableAuthorization(table, publicData, Object.keys(fields));
         requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
@@ -1043,7 +1045,8 @@ export interface QueryImplArgs {
 
 export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
     const currentUser = await getCurrentUserCore(ctx);
-    const publicData = CreatePublicData({ user: clientIntention.intention === "public" ? null : currentUser });
+    const publicData = await createPublicDataFromDatabase(db, { user: clientIntention.intention === "public" ? null : currentUser });
+    clientIntention.authorizationPermissions = publicData.permissions;
     const contextDesc = `queryManyImpl:${args.schema.tableName}`;
     if (clientIntention.intention === "public") {
         clientIntention.currentUser = undefined;// for public intentions, no user should be used.
@@ -1095,7 +1098,8 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
     const contextDesc = `queryFirstImpl:${args.schema.tableName}`;
 
     const currentUser = await getCurrentUserCore(ctx);
-    const publicData = CreatePublicData({ user: clientIntention.intention === "public" ? null : currentUser });
+    const publicData = await createPublicDataFromDatabase(db, { user: clientIntention.intention === "public" ? null : currentUser });
+    clientIntention.authorizationPermissions = publicData.permissions;
     if (clientIntention.intention === "public") {
         clientIntention.currentUser = undefined;// for public intentions, no user should be used.
     }
@@ -1238,9 +1242,10 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
         throw new Error(`public cannot create files`);
     }
     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
-    const publicData = getMutationPublicData(clientIntention);
+    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
+    clientIntention.authorizationPermissions = publicData.permissions;
     const requiredInsertPermission = db3.xFile.tableAuthMap.Insert;
-    if (!publicData.isSysAdmin && !publicData.permissions.includes(requiredInsertPermission)) {
+    if (!publicData.permissions.includes(requiredInsertPermission)) {
         throw new DB3MutationAuthorizationError(db3.xFile.tableName, ["insert"]);
     }
 

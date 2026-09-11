@@ -176,18 +176,18 @@ describe("schema-wide DB3 read-policy contracts", () => {
   })
 
   it.each(policyTables.map(table => [table.tableID, table] as const))(
-    "%s bypasses row policies only for an actual Sysadmin using admin intention",
+    "%s bypasses row policies only with the Sysadmin permission and admin intention",
     async (_tableId, table) => {
       const sysadmin = createAuthorizationTestUser("sysadmin", { id: 601 })
       const publicData = createAuthorizationPublicData(sysadmin)
       const restrictedWhere = await table.CalculateWhereClause({
         filterModel: emptyFilter,
-        clientIntention: { intention: "user", mode: "primary", currentUser: sysadmin as any },
+        clientIntention: { intention: "user", mode: "primary", currentUser: sysadmin as any, authorizationPermissions: publicData.permissions },
         publicData,
       })
       const adminWhere = await table.CalculateWhereClause({
         filterModel: emptyFilter,
-        clientIntention: { intention: "admin", mode: "primary", currentUser: sysadmin as any },
+        clientIntention: { intention: "admin", mode: "primary", currentUser: sysadmin as any, authorizationPermissions: publicData.permissions },
         publicData,
       })
       const hiddenRow = makePolicyRow(table)
@@ -221,7 +221,7 @@ describe("read-policy composition boundaries", () => {
 
   it("awaits visibility filtering for protected relation includes", async () => {
     const selection = await db3.xSong_Verbose.CalculateSelectionArgs(
-      { intention: "user", mode: "primary", currentUser: actor as any },
+      { intention: "user", mode: "primary", currentUser: actor as any, authorizationPermissions: createAuthorizationPublicData(actor).permissions },
       emptyFilter,
     )
     const fileWhere = selection!.include.taggedFiles.where.file

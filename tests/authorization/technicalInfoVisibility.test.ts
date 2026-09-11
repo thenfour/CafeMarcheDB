@@ -13,11 +13,11 @@ describe("BA-C003 technical information visibility", () => {
     process.env.CMDB_GIT_REVISION = originalGitRevision
   })
 
-  it("requires both the actual Sysadmin flag and the explicit admin-control preference", () => {
+  it("requires both the Sysadmin permission and the explicit admin-control preference", () => {
     expect(shouldShowAdminControls(null)).toBe(false)
-    expect(shouldShowAdminControls({ isSysAdmin: false, showAdminControls: true })).toBe(false)
-    expect(shouldShowAdminControls({ isSysAdmin: true, showAdminControls: false })).toBe(false)
-    expect(shouldShowAdminControls({ isSysAdmin: true, showAdminControls: true })).toBe(true)
+    expect(shouldShowAdminControls({ permissions: [], showAdminControls: true })).toBe(false)
+    expect(shouldShowAdminControls({ permissions: ["sysadmin"], showAdminControls: false })).toBe(false)
+    expect(shouldShowAdminControls({ permissions: ["sysadmin"], showAdminControls: true })).toBe(true)
   })
 
   it("does not send server version diagnostics to non-Sysadmins", () => {

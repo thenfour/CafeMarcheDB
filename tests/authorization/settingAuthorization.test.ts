@@ -174,7 +174,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     )).rejects.toThrow()
   })
 
-  it("reserves generic and raw DB3 setting administration for actual Sysadmins", async () => {
+  it("accepts a freshly verified role-carried Sysadmin permission", async () => {
     const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
       id: 703,
       isSysAdmin: false,
@@ -194,24 +194,23 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       updateSetting,
       { name: "technical_setting", value: "forged" },
       ctx,
-    )).rejects.toThrow("requires an actual Sysadmin")
+    )).resolves.toEqual(expect.objectContaining({ value: "forged" }))
     await expect(invokeResolver(
       updateBulkSettings,
       [{ name: "technical_setting", value: "forged" }],
       ctx,
-    )).rejects.toThrow("requires an actual Sysadmin")
+    )).resolves.toBeUndefined()
     await expect(invokeResolver(
       getPaginatedSettings,
       { where: {}, orderBy: {}, skip: 0, take: 50 },
       ctx,
-    )).rejects.toThrow("requires an actual Sysadmin")
+    )).resolves.toEqual(expect.objectContaining({ items: expect.any(Array) }))
     await expect(invokeResolver(
       setShowingAdminControls,
       { showAdminControls: true },
       ctx,
-    )).rejects.toThrow("requires an actual Sysadmin")
-    await expect(invokeResolver(db3Query, forgeDb3Query("Setting"), ctx))
-      .rejects.toThrow("Not authorized to perform this DB3 query")
+    )).resolves.toBeUndefined()
+    await expect(invokeResolver(db3Query, forgeDb3Query("Setting"), ctx)).resolves.toBeDefined()
     await expect(invokeResolver(
       db3Mutation,
       forgeDb3Update("Setting", 1, {
@@ -220,14 +219,14 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
         value: "forged",
       }),
       ctx,
-    )).rejects.toThrow("Not authorized to mutate Setting fields")
+    )).resolves.toBeDefined()
     expect(authorizationTestDb.snapshot("setting")).toEqual([
-      { id: 1, name: "technical_setting", value: "before" },
+      expect.objectContaining({ id: 1, name: "technical_setting", value: "forged" }),
     ])
-    expect(clearBrandCache).not.toHaveBeenCalled()
+    expect(clearBrandCache).toHaveBeenCalled()
   })
 
-  it("allows an actual Sysadmin to use generic setting administration", async () => {
+  it("allows a Sysadmin to use generic setting administration", async () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await invokeResolver(updateSetting, { name: "technical_setting", value: "after" }, ctx)
@@ -238,7 +237,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     expect(clearBrandCache).toHaveBeenCalledTimes(1)
   })
 
-  it("invalidates brand cache after an actual Sysadmin uses the raw DB3 setting grid", async () => {
+  it("invalidates brand cache after a Sysadmin uses the raw DB3 setting grid", async () => {
     authorizationTestDb.reset({
       user: [sysadmin],
       setting: [{ id: 1, name: Setting.Dashboard_SiteTitle, value: "Before" }],
@@ -262,9 +261,9 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     expect(clearBrandCache).toHaveBeenCalledTimes(1)
   })
 
-  it("marks the raw Setting DB3 schema as actual-Sysadmin-only", () => {
-    expect(db3.xSetting.requiresActualSysadmin).toBe(true)
-    expect(db3.xSetting.requiresActualSysadminForMutation).toBe(true)
+  it("marks the raw Setting DB3 schema as Sysadmin-permission-only", () => {
+    expect(db3.xSetting.requiresSysadminPermission).toBe(true)
+    expect(db3.xSetting.requiresSysadminPermissionForMutation).toBe(true)
     expect(db3.xSetting.tableAuthMap).toEqual({
       ViewOwn: Permission.sysadmin,
       View: Permission.sysadmin,

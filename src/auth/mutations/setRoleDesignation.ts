@@ -12,11 +12,12 @@ import {
     type RoleDesignationValue,
     SetRoleDesignationInput,
 } from "../roleDesignations";
-import { requireActualSysadmin } from "../server/actualSysadmin";
+import { requireFreshPermission } from "../server/permissionAuthorization";
 
-const designationFields: Record<RoleDesignationValue, "isRoleForNewUsers" | "isPublicRole"> = {
+const designationFields: Record<RoleDesignationValue, "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole"> = {
     [RoleDesignation.newUsers]: "isRoleForNewUsers",
     [RoleDesignation.public]: "isPublicRole",
+    [RoleDesignation.sysadmin]: "isSysAdminRole",
 };
 
 export default resolver.pipe(
@@ -24,7 +25,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async ({ designation, roleId }, ctx) => db.$transaction(
         async tx => {
-            await requireActualSysadmin(tx, ctx.session.userId);
+            await requireFreshPermission(tx, ctx.session.userId, Permission.sysadmin);
 
             // Lock every existing Role row before inspecting or changing either
             // singleton designation. Concurrent reassignments therefore serialize.
@@ -35,6 +36,7 @@ export default resolver.pipe(
                     id: true,
                     isRoleForNewUsers: true,
                     isPublicRole: true,
+                    isSysAdminRole: true,
                 },
                 orderBy: { id: "asc" },
             });

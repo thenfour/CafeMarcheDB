@@ -1,9 +1,10 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
+import db from "db";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { deriveDB3ClientIntention, validateDB3MutationRequest } from "../server/db3RequestValidation";
+import { deriveDB3ClientIntention, populateDB3AuthorizationPermissions, validateDB3MutationRequest } from "../server/db3RequestValidation";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -13,7 +14,10 @@ export default resolver.pipe(
         const table = db3.GetTableById(input.tableID);
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention = deriveDB3ClientIntention("mutation", currentUser);
+        const clientIntention = await populateDB3AuthorizationPermissions(
+            db,
+            deriveDB3ClientIntention("mutation", currentUser),
+        );
 
         if (input.mutationType === "delete") {
             // return boolean

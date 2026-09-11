@@ -59,6 +59,7 @@ async function EnsureDefaultRoles() {
                 "description": "not even logged in",
                 "isRoleForNewUsers": false,
                 "isPublicRole": true,
+                "isSysAdminRole": false,
                 "sortOrder": 0,
                 "color": "citron",
                 "significance": null
@@ -68,6 +69,7 @@ async function EnsureDefaultRoles() {
                 "description": "logged-in users with no rights",
                 "isRoleForNewUsers": true,
                 "isPublicRole": false,
+                "isSysAdminRole": false,
                 "sortOrder": 10,
                 "color": "green",
                 "significance": null
@@ -77,6 +79,7 @@ async function EnsureDefaultRoles() {
                 "description": "login with granted normal rights",
                 "isRoleForNewUsers": false,
                 "isPublicRole": false,
+                "isSysAdminRole": false,
                 "sortOrder": 40,
                 "color": "blue",
                 "significance": null
@@ -86,6 +89,7 @@ async function EnsureDefaultRoles() {
                 "description": "",
                 "isRoleForNewUsers": false,
                 "isPublicRole": false,
+                "isSysAdminRole": false,
                 "sortOrder": 60,
                 "color": "gold",
                 "significance": null
@@ -95,6 +99,7 @@ async function EnsureDefaultRoles() {
                 "description": "just below site admin",
                 "isRoleForNewUsers": false,
                 "isPublicRole": false,
+                "isSysAdminRole": false,
                 "sortOrder": 80,
                 "color": "purple",
                 "significance": null
@@ -104,6 +109,7 @@ async function EnsureDefaultRoles() {
                 "description": "technical admin",
                 "isRoleForNewUsers": false,
                 "isPublicRole": false,
+                "isSysAdminRole": true,
                 "sortOrder": 100,
                 "color": "black",
                 "significance": null
@@ -193,6 +199,7 @@ async function EnsureRolePermissionMatrix() {
             ["Moderators", "view_workflow_instances"],
             ["Admin", "view_workflow_instances"],
             ["Public", "public"],
+            ["Public", "practice_tools_use"],
             ["Limited Users", "public"],
             ["Normal Users", "public"],
             ["Editors", "public"],

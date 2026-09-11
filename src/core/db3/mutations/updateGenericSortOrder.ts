@@ -4,7 +4,7 @@ import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { CreatePublicData } from "types";
+import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
 import * as db3 from "../db3";
 import { deriveDB3ClientIntention, DB3RequestValidationError } from "../server/db3RequestValidation";
 import * as mutationCore from "../server/db3mutationCore";
@@ -69,11 +69,11 @@ export default resolver.pipe(
         }
 
         const clientIntention = deriveDB3ClientIntention("mutation", currentUser);
-        const publicData = CreatePublicData({ user: currentUser });
-        const hasTableMutationCapability = publicData.isSysAdmin
-            || publicData.permissions.includes(table.tableAuthMap.Edit)
+        const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
+        clientIntention.authorizationPermissions = publicData.permissions;
+        const hasTableMutationCapability = publicData.permissions.includes(table.tableAuthMap.Edit)
             || publicData.permissions.includes(table.tableAuthMap.EditOwn);
-        if (!hasTableMutationCapability || (table.requiresActualSysadminForMutation && !publicData.isSysAdmin)) {
+        if (!hasTableMutationCapability || (table.requiresSysadminPermissionForMutation && !publicData.permissions.includes(Permission.sysadmin))) {
             throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [sortOrderColumn.member]);
         }
 

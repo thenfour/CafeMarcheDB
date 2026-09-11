@@ -4,7 +4,7 @@ import { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
 import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChangesResult } from "shared/associationUtils";
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
-import { Permission, gPublicPermissions } from "shared/permissions";
+import { Permission } from "shared/permissions";
 import type { SortDirection, TAnyModel } from "shared/rootroot";
 import type { PublicDataType } from "types";
 import {
@@ -373,10 +373,9 @@ export abstract class FieldBase<FieldDataType> {
                     assert(false, `one of authMap or customAuth are required; field:${this.member}, contextDesc:${args.contextDesc}`);
             }
         }
-        if (args.publicData.isSysAdmin) return true;
         const requiredPermission = this.authMap[args.authContext];
         if (!args.publicData.permissions) {
-            return gPublicPermissions.some(p => p === requiredPermission);
+            return false;
         }
         return args.publicData.permissions.some(p => p === requiredPermission);
     }
@@ -425,6 +424,8 @@ export interface xTableClientUsageContext {
 
     // will be filled in by the table client so not necessary from client code.
     currentUser?: UserWithRolesPayload | null;
+    authorizationPermissions?: string[];
+    authorizationPermissionIds?: number[];
 
     // does your xTable need to act differently when it's being used to populate a dropdown for a related key of some field? use this to do whatever.
     //customContext?: xTableClientUsageCustomContextBase;
@@ -502,16 +503,9 @@ export interface TableDesc {
         scope: "explicitRowIds";
     };
 
-    // Some platform-control tables require the concrete User.isSysAdmin flag;
-    // a same-named role permission is intentionally insufficient.
-    // this is needed because user.isSysAdmin is the authority for sysadmins;
-    // the sysadmin role permission mapping kinda means the same thing but is not
-    // currently defined as authoritative.
-    // TODO: use the normal permission-role route instead of special cases.
-    // that would likely mean synthesizing a role instead of including it in the db;
-    // that's an architectural change that could be done later.
-    requiresActualSysadmin?: boolean;
-    requiresActualSysadminForMutation?: boolean;
+    // Platform-control tables require the effective Sysadmin permission.
+    requiresSysadminPermission?: boolean;
+    requiresSysadminPermissionForMutation?: boolean;
 
     // Required so every table declares its generic-delete behavior alongside
     // its schema. This prevents a central table-name registry from drifting.
@@ -546,8 +540,8 @@ export class xTable /* implements TableDesc*/ {
         groupingColumn: string | null;
         scope: "explicitRowIds";
     };
-    requiresActualSysadmin: boolean;
-    requiresActualSysadminForMutation: boolean;
+    requiresSysadminPermission: boolean;
+    requiresSysadminPermissionForMutation: boolean;
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
@@ -558,9 +552,9 @@ export class xTable /* implements TableDesc*/ {
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
-        this.requiresActualSysadmin = args.requiresActualSysadmin ?? false;
-        this.requiresActualSysadminForMutation = args.requiresActualSysadminForMutation
-            ?? this.requiresActualSysadmin;
+        this.requiresSysadminPermission = args.requiresSysadminPermission ?? false;
+        this.requiresSysadminPermissionForMutation = args.requiresSysadminPermissionForMutation
+            ?? this.requiresSysadminPermission;
 
         if (this.getParameterizedWhereClause && !this.queryParameters) {
             throw new Error(`Table ${args.tableUniqueName || args.tableName} has parameterized filtering without a runtime parameter contract.`);
@@ -834,7 +828,7 @@ export class xTable /* implements TableDesc*/ {
         const isOwner = ownerUserId != null
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
-        const canUseAdminVisibility = args.publicData.isSysAdmin && args.clientIntention.intention === "admin";
+        const canUseAdminVisibility = this.hasPermission(args.publicData, Permission.sysadmin) && args.clientIntention.intention === "admin";
 
         if (args.model && !canUseAdminVisibility) {
             const isDeletedColumn = this.SqlSpecialColumns.isDeleted;
@@ -858,13 +852,12 @@ export class xTable /* implements TableDesc*/ {
             }
         }
 
-        if (args.publicData.isSysAdmin) return true;
         const requiredPermission = isOwner ? this.tableAuthMap.ViewOwn : this.tableAuthMap.View;
         return this.hasPermission(args.publicData, requiredPermission);
     };
 
     private hasPermission = (publicData: EmptyPublicData | Partial<PublicDataType>, permission: Permission): boolean => {
-        return (publicData.permissions || gPublicPermissions).some(p => p === permission);
+        return (publicData.permissions || []).some(p => p === permission);
     };
 
     private getOwnerUserId = (
@@ -889,7 +882,7 @@ export class xTable /* implements TableDesc*/ {
     // Returns undefined when all rows are table-authorized, an ownership clause
     // for ViewOwn-only access, and null when the table cannot be queried at all.
     getRowAuthorizationWhereClause = (publicData: EmptyPublicData | Partial<PublicDataType>): TAnyModel | null | undefined => {
-        if (publicData.isSysAdmin || this.hasPermission(publicData, this.tableAuthMap.View)) return undefined;
+        if (this.hasPermission(publicData, this.tableAuthMap.View)) return undefined;
 
         const ownerColumn = this.SqlSpecialColumns.ownerUser;
         if ((publicData.userId || 0) > 0
@@ -930,10 +923,9 @@ export class xTable /* implements TableDesc*/ {
         const isOwner = ownerUserId != null
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
-        if (args.publicData.isSysAdmin) return true;
         const requiredPermission = isOwner ? this.tableAuthMap.EditOwn : this.tableAuthMap.Edit;
         if (!args.publicData.permissions) {
-            return gPublicPermissions.some(p => p === requiredPermission);
+            return false;
         }
         return args.publicData.permissions.some(p => p === requiredPermission);
     };
@@ -949,10 +941,9 @@ export class xTable /* implements TableDesc*/ {
     };
 
     authorizeRowBeforeInsert = <T extends TAnyModel,>(args: DB3AuthorizeForBeforeInsertArgs<T>) => {
-        if (args.publicData.isSysAdmin) return true;
         const requiredPermission = this.tableAuthMap.Insert;
         if (!args.publicData.permissions) {
-            return gPublicPermissions.some(p => p === requiredPermission);
+            return false;
         }
         return args.publicData.permissions.some(p => p === requiredPermission);
     };
@@ -1111,7 +1102,7 @@ export class xTable /* implements TableDesc*/ {
         const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);
         and.push(...overallWhere);
 
-        const canUseAdminQuery = clientIntention.intention === "admin" && publicData.isSysAdmin;
+        const canUseAdminQuery = clientIntention.intention === "admin" && this.hasPermission(publicData, Permission.sysadmin);
 
         // add soft delete clause.
         if (this.SqlSpecialColumns.isDeleted) {
@@ -1122,11 +1113,11 @@ export class xTable /* implements TableDesc*/ {
 
         // and visibility
         if (this.SqlSpecialColumns.visiblePermission && !skipVisibilityCheck && !canUseAdminQuery) {
-            let permissionIds: number[];
-            if (clientIntention.intention === "public") {
+            let permissionIds = clientIntention.authorizationPermissionIds;
+            if (!permissionIds && clientIntention.intention === "public") {
                 const publicRole = await GetPublicRole();
                 permissionIds = publicRole.permissions.map(p => p.permissionId);
-            } else {
+            } else if (!permissionIds) {
                 assert(!!clientIntention.currentUser, "current user is required in this line.");
                 permissionIds = clientIntention.currentUser.role?.permissions.map(p => p.permissionId) || [];
             }
@@ -1274,10 +1265,7 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
         publicData: {
             userId: newClientIntention.currentUser?.id || 0,
             isSysAdmin: newClientIntention.currentUser?.isSysAdmin || false,
-            permissions: [
-                ...gPublicPermissions,
-                ...(newClientIntention.currentUser?.role?.permissions.map(p => p.permission.name) || []),
-            ],
+            permissions: newClientIntention.authorizationPermissions || [],
         },
         filterModel: { // clobber the filter; we don't propagate any filter values through relations for this.
             items: [],

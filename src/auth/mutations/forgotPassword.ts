@@ -4,7 +4,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { Permission } from "shared/permissions"
 import { ForgotPassword } from "../schemas"
-import { requireActualSysadmin } from "../server/actualSysadmin"
+import { requireFreshPermission } from "../server/permissionAuthorization"
 import { requireCanManageUser } from "../server/userManagementPolicy"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
@@ -13,10 +13,8 @@ export default resolver.pipe(
   resolver.zod(ForgotPassword),
   resolver.authorize(Permission.sysadmin),
   async ({ email }, ctx) => {
-    // Permission.sysadmin can exist in a role. This emergency operation instead
-    // requires the freshly-read User.isSysAdmin flag before target lookup or
-    // reset-token generation.
-    await requireActualSysadmin(db, ctx.session.userId)
+    // Re-read effective grants before target lookup or token generation.
+    const actor = await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin)
 
     const user = await db.user.findFirst({
       select: { id: true, email: true, isDeleted: true, isSysAdmin: true },
@@ -24,7 +22,7 @@ export default resolver.pipe(
     })
     if (user) {
       requireCanManageUser({
-        actor: { id: ctx.session.userId, isSysAdmin: true },
+        actor: { ...actor, role: { permissions: actor.effectivePermissionNames.map(name => ({ permission: { name } })) } },
         target: user,
         action: "resetPassword",
       })

@@ -80,7 +80,7 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
             <MenuItem onClick={onClickStopImpersonating}>Stop impersonating</MenuItem>
         )}
 
-        {(!!sess.isSysAdmin) && <>
+        {dashboardContext.isAuthorized(Permission.sysadmin) && <>
 
             {versionLabel && (
                 <MenuItem component={Link} href='/backstage/serverHealth' onClick={closeMenu}>
@@ -298,7 +298,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
                 <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
-                {session.isSysAdmin && versionLabel && dashboardContext.serverStartupState && (
+                {dashboardContext.isAuthorized(Permission.sysadmin) && versionLabel && dashboardContext.serverStartupState && (
                     <Tooltip title={<>
                         <Typography variant="subtitle1">Server version</Typography>
                         {/* display version details breakdown and explanation */}

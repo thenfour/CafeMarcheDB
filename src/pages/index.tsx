@@ -21,6 +21,10 @@ const PublicIndex: BlitzPage<{ publicFeed: PublicFeedResponseSpec }> = (props) =
 export const getServerSideProps: GetServerSideProps<{ publicFeed: PublicFeedResponseSpec }> = async (ctx) => {
     const uri = ServerApi.getAbsoluteUri(`/api/public?lang=${ctx.locale || "en"}`);
     const res = await fetch(uri);
+    if (!res.ok) {
+        const responseBody = (await res.text()).slice(0, 1000);
+        throw new Error(`Public feed request failed (${res.status} ${res.statusText}): ${responseBody}`);
+    }
     const publicFeed: PublicFeedResponseSpec = await res.json();
     return {
         props: {

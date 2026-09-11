@@ -85,7 +85,20 @@ const imageParams: ForkImageParams = {
 const seedPublicRole = () => ({
   id: 900,
   isPublicRole: true,
-  permissions: [{ permissionId: publicPermissionId }],
+  permissions: [
+    Permission.always_grant,
+    Permission.public,
+    Permission.visibility_public,
+    Permission.view_events,
+    Permission.view_files,
+    Permission.practice_tools_use,
+  ].map((name, index) => ({
+    permissionId: name === Permission.visibility_public ? publicPermissionId : publicPermissionId + index + 1,
+    permission: {
+      id: name === Permission.visibility_public ? publicPermissionId : publicPermissionId + index + 1,
+      name,
+    },
+  })),
 })
 
 describe("BA-S002 direct and parent-authorized file delivery", () => {

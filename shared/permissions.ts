@@ -43,7 +43,6 @@ export type PermissionDefinition = Readonly<{
   // assigned by a non-sysadmin. This does not authorize editing role grants.
   isDelegable: boolean
   isVisibility: boolean
-  isGrantedToPublic: boolean
   // used for admin_users for the purpose of detecting when an action needs
   // continuity check - like removing yourself as the last band admin.
   isContinuitySensitive: boolean
@@ -56,7 +55,6 @@ type PermissionOptions = Partial<
     | "isProtected"
     | "isDelegable"
     | "isVisibility"
-    | "isGrantedToPublic"
     | "isContinuitySensitive"
     | "presentation"
   >
@@ -79,12 +77,10 @@ const definePermission = <TKey extends string>(
   isProtected: options.isProtected ?? false,
   isDelegable: options.isDelegable ?? true,
   isVisibility: options.isVisibility ?? false,
-  isGrantedToPublic: options.isGrantedToPublic ?? false,
   isContinuitySensitive: options.isContinuitySensitive ?? false,
   presentation: options.presentation,
 } as const satisfies PermissionDefinition)
 
-const publicGrant = { isGrantedToPublic: true } as const
 const protectedPermission = { isProtected: true, isDelegable: false } as const
 
 const visibilityPresentation = (
@@ -97,7 +93,7 @@ const visibilityPresentation = (
 })
 
 // This registry is the authority for every permission known to application code.
-// Runtime constants, ordering, public grants, and security classifications below
+// Runtime constants, ordering, and security classifications below
 // are generated from it so a permission cannot be added to only one view.
 const permissionRegistry = [
   definePermission(
@@ -105,16 +101,14 @@ const permissionRegistry = [
     "access",
     "public",
     "Authorization sentinel granted to every visitor.",
-    0,
-    publicGrant
+    0
   ),
   definePermission(
     "public",
     "access",
     "public",
     "Functionality available without a user account.",
-    10,
-    publicGrant
+    10
   ),
   definePermission(
     "login",
@@ -161,7 +155,6 @@ const permissionRegistry = [
     200,
     {
       ...visibilityPresentation("green", "Public", "Visibility_Public"),
-      ...publicGrant,
     }
   ),
   definePermission(
@@ -202,8 +195,7 @@ const permissionRegistry = [
     "events",
     "public",
     "View public event information.",
-    320,
-    publicGrant
+    320
   ),
   definePermission(
     "view_events_nonpublic",
@@ -253,8 +245,7 @@ const permissionRegistry = [
     "files",
     "public",
     "View public files and homepage media.",
-    530,
-    publicGrant
+    530
   ),
   definePermission(
     "access_file_landing_page",
@@ -393,8 +384,7 @@ const permissionRegistry = [
     "practice-tools",
     "public",
     "Use public practice tools.",
-    1400,
-    publicGrant
+    1400
   ),
   definePermission(
     "impersonate_user",
@@ -405,8 +395,9 @@ const permissionRegistry = [
     protectedPermission
   ),
 
-  // User.isSysAdmin is an independent universal bypass. This protected
-  // permission is the composable capability used by Sysadmin-only surfaces.
+  // The designated Sysadmin role carries this protected platform capability.
+  // User.isSysAdmin assumes that role; it is not an authorization bypass.
+  // this permission is used broadly to identify features accessible only to system administrators.
   definePermission(
     "sysadmin",
     "system",
@@ -440,10 +431,6 @@ export const gPermissionRegistry: readonly PermissionDefinition[] = permissionRe
 export const gPermissionOrdered: Permission[] = permissionRegistry.map(
   (definition) => definition.key
 )
-
-export const gPublicPermissions: Permission[] = permissionRegistry
-  .filter((definition) => definition.isGrantedToPublic)
-  .map((definition) => definition.key)
 
 export const gProtectedPermissions: ReadonlySet<Permission> = new Set(
   permissionRegistry
@@ -484,3 +471,8 @@ export const getPermissionDatabaseMetadata = (
   isVisibility: definition.isVisibility,
   ...(definition.presentation || {}),
 })
+
+// semantic helper is clearer than writing arr.includes(x) everywhere.
+export const includesPermission = (permNames: string[], permissionName: Permission): boolean => {
+  return permNames.includes(permissionName);
+};

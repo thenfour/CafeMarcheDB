@@ -4,7 +4,6 @@ import {
     gContinuitySensitivePermissions,
     gPermissionOrdered,
     gProtectedPermissions,
-    gPublicPermissions,
     isPermission,
     Permission,
 } from "shared/permissions";
@@ -62,7 +61,6 @@ export const roleHasPermission = (role: UserManagementRole | undefined, permissi
 );
 
 const getActorPermissionNames = (actor: UserManagementPrincipal): ReadonlySet<string> => new Set([
-    ...gPublicPermissions,
     ...(actor.role?.permissions
         ?.map(entry => entry.permission?.name)
         .filter((name): name is string => !!name) || []),
@@ -77,8 +75,6 @@ export const isRoleWithinDelegationEnvelope = (
     actor: UserManagementPrincipal,
     role: UserManagementRole | undefined,
 ): boolean => {
-    if (actor.isSysAdmin) return true;
-
     const actorPermissions = getActorPermissionNames(actor);
     return role?.permissions?.every(entry => {
         const permissionName = entry.permission?.name;
@@ -106,7 +102,7 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
         return false;
     }
 
-    const actorIsSysadmin = actor.isSysAdmin === true;
+    const actorIsSysadmin = roleHasPermission(actor.role, Permission.sysadmin);
 
     if (target.isDeleted === true) return false;
 
@@ -134,11 +130,13 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     const targetIsProtected = isProtectedUser(target);
 
     // Impersonation
-    // - reserved for an actual Sysadmin
+    // - reserved for the protected impersonation capability
     // - cannot target a protected principal, even as a defense-in-depth Sysadmin operation.
     // - cannot target oneself
     if (action === "impersonate") {
-        return actorIsSysadmin && !targetIsProtected && actor.id !== target.id;
+        return roleHasPermission(actor.role, Permission.impersonate_user)
+            && !targetIsProtected
+            && actor.id !== target.id;
     }
 
     if (targetIsProtected && !actorIsSysadmin) return false;

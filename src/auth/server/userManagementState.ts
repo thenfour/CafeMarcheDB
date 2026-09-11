@@ -11,6 +11,7 @@ import {
     type UserManagementPrincipal,
     type UserManagementRole,
 } from "./userManagementPolicy";
+import { loadEffectivePermissionNames } from "./effectivePermissions";
 
 export type UserManagementRoleWithPermissions = Prisma.RoleGetPayload<typeof RoleArgs>;
 
@@ -32,15 +33,23 @@ export const findUserManagementPrincipal = (
     });
 };
 
-export const findActiveUserManagementPrincipal = (
+export const findActiveUserManagementPrincipal = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
 ) => {
-    if (!userId) return Promise.resolve(null);
-    return db.user.findFirst({
+    if (!userId) return null;
+    const actor = await db.user.findFirst({
         ...UserWithRolesArgs,
         where: { id: userId, isDeleted: false },
     });
+    if (!actor) return null;
+    const permissions = await loadEffectivePermissionNames(db, actor);
+    return {
+        ...actor,
+        role: {
+            permissions: permissions.map(name => ({ permission: { name } })),
+        },
+    };
 };
 
 export const findUserManagementRole = async (

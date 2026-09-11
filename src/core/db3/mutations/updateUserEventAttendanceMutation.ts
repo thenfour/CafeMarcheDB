@@ -1,16 +1,16 @@
+import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
+import { principalHasPermission } from "@/src/auth/server/permissionAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, AuthorizationError, NotFoundError } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
-import { CreatePublicData, PublicDataType } from "types";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import {
     TupdateUserEventAttendanceMutationArgs,
     ZupdateUserEventAttendanceMutationArgs,
 } from "../shared/apiTypes";
-import { principalHasPermission, requireFreshPermission } from "@/src/auth/server/permissionAuthorization";
 
 export class EventAttendanceAuthorizationError extends AuthorizationError {
     constructor(permission: Permission) {
@@ -27,26 +27,27 @@ export default resolver.pipe(
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         if (!currentUser) throw new EventAttendanceAuthorizationError(Permission.login);
 
-        const publicData = CreatePublicData({ user: currentUser });
+        const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
         const hasResponseMutation = args.comment !== undefined
             || args.instrumentId !== undefined
             || Object.keys(args.segmentResponses || {}).length > 0;
         if (hasResponseMutation) {
             const isSelf = currentUser.id === args.userId;
-            if (!principalHasPermission(currentUser, isSelf ? Permission.respond_to_events : Permission.change_others_event_responses)) {
+            if (!principalHasPermission(publicData.permissions, isSelf ? Permission.respond_to_events : Permission.change_others_event_responses)) {
                 throw new EventAttendanceAuthorizationError(isSelf ? Permission.respond_to_events : Permission.change_others_event_responses);
             }
         }
         if (args.isInvited !== undefined) {
-            if (!principalHasPermission(currentUser, Permission.manage_events)) {
+            if (!principalHasPermission(publicData.permissions, Permission.manage_events)) {
                 throw new EventAttendanceAuthorizationError(Permission.manage_events);
             }
         }
 
         const clientIntention: db3.xTableClientUsageContext = {
-            intention: currentUser.isSysAdmin ? "admin" : "user",
+            intention: publicData.permissions.includes(Permission.sysadmin) ? "admin" : "user",
             mode: "primary",
             currentUser,
+            authorizationPermissions: publicData.permissions,
         };
         const segmentIds = Object.keys(args.segmentResponses || {}).map(Number);
         const changeContext = CreateChangeContext("updateUserEventAttendance");

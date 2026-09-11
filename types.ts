@@ -2,7 +2,7 @@ import { EmptyPublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth";
 import { Ctx } from "@blitzjs/next";
 import { AuthenticatedCtx, assert } from "blitz";
 import { Prisma } from "db";
-import { Permission, gPublicPermissions } from "shared/permissions";
+import { Permission } from "shared/permissions";
 import { UserWithRolesPayload } from "./src/core/db3/shared/schema/userPayloads";
 //import { UserWithRolesPayload } from "./src/core/db3/db3";
 //import { UserWithRolesPayload } from "src/core/db3/db3"; // circular dep
@@ -62,7 +62,7 @@ export type CMAuthorize2Args = {
 export function CMAuthorize2(args: CMAuthorize2Args) {
   assert(!!args.permission && args.permission.length, `CMAuthorize: Permission is invalid; Maybe a call was improperly made. args=${JSON.stringify(args)}`);
   assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
-  const ret = (!!args.userId) && (args.isSysAdmin || args.userPermissions.some(p => p === args.permission));
+  const ret = args.userPermissions.some(p => p === args.permission);
 
   return ret || false;
 };
@@ -114,6 +114,7 @@ export interface CreatePublicDataArgs {
   user?: UserWithRolesPayload | null; //Prisma.UserGetPayload<{ include: { role: { include: { permissions: { include: { permission: true } } } } } }>; // if no user, public profile.
   impersonatingFromUserId?: number;
   showAdminControls?: boolean; // client-side option
+  permissions: string[];
 }
 
 export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
@@ -122,7 +123,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     return {
       userId: 0, // numeric & falsy
       isSysAdmin: false,
-      permissions: [...gPublicPermissions],
+      permissions: [...new Set(args.permissions)],
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
       permissionsLastRefreshedAt: new Date().toISOString(),
@@ -133,7 +134,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
   return {
     userId: args.user.id,
     isSysAdmin: args.user.isSysAdmin,
-    permissions: [...gPublicPermissions, ...((args.user.role?.permissions)?.map(p => p.permission?.name) || [])],
+    permissions: [...new Set(args.permissions)],
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,
     permissionsLastRefreshedAt: new Date().toISOString(),

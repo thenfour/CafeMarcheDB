@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { Permission } from "shared/permissions"
 import * as z from "zod"
-import { requireActualSysadmin } from "../server/actualSysadmin"
+import { requireFreshPermission } from "../server/permissionAuthorization"
 
 export const SetShowingAdminControlsInput = z.object({
     showAdminControls: z.boolean().optional(),
@@ -14,7 +14,7 @@ export default resolver.pipe(
     resolver.zod(SetShowingAdminControlsInput),
     resolver.authorize(Permission.sysadmin),
     async (args, ctx) => {
-        await requireActualSysadmin(db, ctx.session.userId)
+        await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin)
         await ctx.session.$setPublicData({
             showAdminControls: args.toggle ? (!ctx.session.$publicData.showAdminControls) : args.showAdminControls,
         });

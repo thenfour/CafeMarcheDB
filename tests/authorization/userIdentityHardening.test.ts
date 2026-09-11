@@ -177,7 +177,7 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
     expect(update).not.toHaveBeenCalled()
   })
 
-  it("rejects a role-carried sysadmin grant before target lookup", async () => {
+  it("accepts a freshly verified role-carried Sysadmin permission", async () => {
     const findFirst = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
     const { ctx } = createAuthorizationPersona("normal", {
@@ -189,14 +189,10 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
     await expect(invokeResolver(correctUserEmail, {
       userId: target.id,
       email: "attacker@test.invalid",
-    }, ctx)).rejects.toThrow("This operation requires an actual Sysadmin account")
+    }, ctx)).resolves.toEqual({ userId: target.id, email: "attacker@test.invalid" })
 
-    expect(findFirst).toHaveBeenCalledTimes(1)
-    expect(findFirst).toHaveBeenCalledWith({
-      select: { isSysAdmin: true },
-      where: { id: roleGrantedSysadmin.id, isDeleted: false },
-    })
-    expect(update).not.toHaveBeenCalled()
+    expect(findFirst).toHaveBeenCalled()
+    expect(update).toHaveBeenCalled()
   })
 
   it("rejects correction of a deactivated account", async () => {

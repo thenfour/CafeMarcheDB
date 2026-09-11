@@ -2,7 +2,7 @@
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
-import { Permission, gPublicPermissions } from "shared/permissions";
+import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, PermissionSignificance } from "../apiTypes";
@@ -45,15 +45,14 @@ export const xUserAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
 // mutations. Generic User tables may display them but never change them.
 const authorizeUserSecurityFieldViewOnly = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
     if (args.rowMode !== "view") return false;
-    if (args.publicData.isSysAdmin) return true;
-    return (args.publicData.permissions || gPublicPermissions).includes(Permission.basic_trust);
+    return (args.publicData.permissions || []).includes(Permission.basic_trust);
 };
 
 // Email is a login identifier, not an ordinary profile field. An actual
 // Sysadmin may supply it when creating a maintenance account, but corrections
 // to an existing account use the dedicated correctUserEmail mutation.
 const authorizeUserLoginEmail = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
-    if (args.rowMode === "new") return args.publicData.isSysAdmin === true;
+    if (args.rowMode === "new") return (args.publicData.permissions || []).includes(Permission.sysadmin);
     return authorizeUserSecurityFieldViewOnly(args);
 };
 
@@ -62,7 +61,7 @@ const authorizeUserLoginEmail = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyMode
 // rather than falling through as unknown fields.
 const denyGenericUserAuthenticationField = (): boolean => false;
 
-type BuiltInRoleFlag = "isRoleForNewUsers" | "isPublicRole";
+type BuiltInRoleFlag = "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole";
 
 // Built-in role designations are reassigned through one dedicated transaction.
 // Generic creation may only create an ordinary, unassigned role.
@@ -82,12 +81,10 @@ export const xUserTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.manage_users,
 } as const;
 
-const xUserTableAuthMap_R_EManagers_ActualSysadminInsert: db3.DB3AuthTablePermissionMap = {
+const xUserTableAuthMap_R_EManagers_SysadminInsert: db3.DB3AuthTablePermissionMap = {
     ...xUserTableAuthMap_R_EManagers,
-    // User creation is self-signup or actual-Sysadmin maintenance. Because
-    // actual Sysadmins bypass table permission checks, never_grant closes this
-    // generic insert path to every delegated role, including Band Admin.
-    Insert: Permission.never_grant,
+    // User creation is self-signup or Sysadmin maintenance.
+    Insert: Permission.sysadmin,
 } as const;
 
 export const xUserTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
@@ -130,7 +127,7 @@ export const xUserMinimum = new db3.xTable({
         name: row.name,
         ownerUserId: row.id,
     }),
-    tableAuthMap: xUserTableAuthMap_R_EManagers_ActualSysadminInsert,
+    tableAuthMap: xUserTableAuthMap_R_EManagers_SysadminInsert,
 
     // note: self-sign-up is not part of this; it doesn't use db3 auth.
     // 
@@ -204,7 +201,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
     },
     tableName: "Permission",
     deletePolicy: "disabled",
-    requiresActualSysadmin: true,
+    requiresSysadminPermission: true,
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
@@ -256,8 +253,8 @@ export const xPermissionForVisibility = new db3.xTable({
     ...xPermissionBaseArgs,
     tableUniqueName: "xPermissionForVisibility",
     tableAuthMap: xVisibilityPermissionTableAuthMap,
-    requiresActualSysadmin: false,
-    requiresActualSysadminForMutation: true,
+    requiresSysadminPermission: false,
+    requiresSysadminPermissionForMutation: true,
     getSelectionArgs: () => PermissionForVisibilityArgs,
     queryParameters: {},
     getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.PermissionWhereInput[] => {
@@ -287,7 +284,7 @@ export const xPermissionForVisibility = new db3.xTable({
 export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
     deletePolicy: "disabled",
-    requiresActualSysadmin: true,
+    requiresSysadminPermission: true,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionDefaultArgs => {
         return RolePermissionArgs;
     },
@@ -328,7 +325,7 @@ export const xRole = new db3.xTable({
     },
     tableName: "Role",
     deletePolicy: "disabled",
-    requiresActualSysadmin: true,
+    requiresSysadminPermission: true,
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
@@ -365,6 +362,12 @@ export const xRole = new db3.xTable({
             columnName: "isPublicRole",
             defaultValue: false,
             _customAuth: authorizeBuiltInRoleFlag("isPublicRole"),
+            allowNull: false,
+        }),
+        new BoolField({
+            columnName: "isSysAdminRole",
+            defaultValue: false,
+            _customAuth: authorizeBuiltInRoleFlag("isSysAdminRole"),
             allowNull: false,
         }),
         MakeSortOrderField({ authMap: xUserAuthMap_R_EAdmins }),
@@ -616,7 +619,7 @@ const userBaseArgs: db3.TableDesc = {
         userId: { kind: "integer", authorizeAs: "id" },
         userIds: { kind: "integerArray", authorizeAs: "id" },
     },
-    tableAuthMap: xUserTableAuthMap_R_EManagers_ActualSysadminInsert,
+    tableAuthMap: xUserTableAuthMap_R_EManagers_SysadminInsert,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
         pk: row.id,

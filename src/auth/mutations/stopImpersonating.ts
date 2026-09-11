@@ -2,7 +2,7 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
-import { CreatePublicData } from "types";
+import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { registerImpersonationAudit } from "../server/impersonationAudit";
 
 export default resolver.pipe(
@@ -26,7 +26,7 @@ export default resolver.pipe(
             targetUserId,
         })
 
-        await ctx.session.$create(CreatePublicData({ user }));
+        await ctx.session.$create(await createPublicDataFromDatabase(db, { user }));
 
         return { userId: user.id }
     }

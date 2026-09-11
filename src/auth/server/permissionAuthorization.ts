@@ -1,7 +1,8 @@
 import { AuthorizationError } from "blitz";
-import { gPublicPermissions, Permission } from "shared/permissions";
+import { Permission } from "shared/permissions";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
+import { loadEffectivePermissionNames } from "./effectivePermissions";
 
 class FreshPermissionAuthorizationError extends AuthorizationError {
     constructor(permission: Permission) {
@@ -12,16 +13,11 @@ class FreshPermissionAuthorizationError extends AuthorizationError {
 }
 
 export const principalHasPermission = (
-    actor: UserWithRolesPayload | null,
+    permissionNames: readonly string[],
     permission: Permission,
 ): boolean => {
     if (permission === Permission.never_grant) return false;
-    if (gPublicPermissions.includes(permission)) return true;
-    return !!actor && (
-        actor.isSysAdmin
-        || actor.role?.permissions.some(entry => entry.permission.name === permission)
-        || false
-    );
+    return permissionNames.includes(permission);
 };
 
 export const loadFreshPrincipal = async (
@@ -40,7 +36,8 @@ export const requireFreshAuthorization = async (
     permission: Permission,
 ): Promise<UserWithRolesPayload | null> => {
     const actor = await loadFreshPrincipal(db, userId);
-    if (!principalHasPermission(actor, permission)) {
+    const permissionNames = await loadEffectivePermissionNames(db, actor);
+    if (!principalHasPermission(permissionNames, permission)) {
         throw new FreshPermissionAuthorizationError(permission);
     }
     return actor;
@@ -53,10 +50,13 @@ export const requireFreshPermission = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
     permission: Permission,
-): Promise<UserWithRolesPayload> => {
+): Promise<UserWithRolesPayload & { effectivePermissionNames: string[] }> => {
     const actor = await requireFreshAuthorization(db, userId, permission);
     if (!actor) {
         throw new FreshPermissionAuthorizationError(permission);
     }
-    return actor;
+    return {
+        ...actor,
+        effectivePermissionNames: await loadEffectivePermissionNames(db, actor),
+    };
 };

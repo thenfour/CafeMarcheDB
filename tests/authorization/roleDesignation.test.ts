@@ -23,7 +23,7 @@ import { forgeDb3Insert, forgeDb3Update } from "./support/db3RequestBuilders"
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
-type RoleFlag = "isRoleForNewUsers" | "isPublicRole"
+type RoleFlag = "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole"
 
 const makeRole = (id: number, overrides: Partial<Record<RoleFlag, boolean>> = {}) => ({
   id,
@@ -31,6 +31,7 @@ const makeRole = (id: number, overrides: Partial<Record<RoleFlag, boolean>> = {}
   description: "",
   isRoleForNewUsers: false,
   isPublicRole: false,
+  isSysAdminRole: false,
   sortOrder: id,
   color: null,
   significance: null,
@@ -44,6 +45,7 @@ const assignments: Array<{
 }> = [
   { designation: RoleDesignation.newUsers, flag: "isRoleForNewUsers" },
   { designation: RoleDesignation.public, flag: "isPublicRole" },
+  { designation: RoleDesignation.sysadmin, flag: "isSysAdminRole" },
 ]
 
 describe("BA-U005 built-in role designations", () => {
@@ -138,7 +140,7 @@ describe("BA-U005 built-in role designations", () => {
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
-  it("requires the persisted actual-Sysadmin flag before inspecting roles", async () => {
+  it("accepts a freshly verified Sysadmin permission without requiring the user flag", async () => {
     const roleCarriedSysadmin = createAuthorizationTestUser("sysadmin", {
       id: 2,
       isSysAdmin: false,
@@ -157,9 +159,9 @@ describe("BA-U005 built-in role designations", () => {
     await expect(invokeResolver(setRoleDesignation, {
       designation: RoleDesignation.public,
       roleId: 10,
-    }, ctx)).rejects.toThrow("requires an actual Sysadmin")
+    }, ctx)).resolves.toEqual({ designation: RoleDesignation.public, roleId: 10 })
 
-    expect(findRoles).not.toHaveBeenCalled()
+    expect(findRoles).toHaveBeenCalled()
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 

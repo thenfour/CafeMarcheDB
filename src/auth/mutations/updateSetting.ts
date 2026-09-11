@@ -5,7 +5,7 @@ import { CreateChangeContext } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { clearBrandCache } from "src/server/brand";
 import { UpdateSettingSchema } from "../schemas";
-import { requireActualSysadmin } from "../server/actualSysadmin";
+import { requireFreshPermission } from "../server/permissionAuthorization";
 import { writeSettingValue } from "../server/settingWrite";
 
 // Generic setting administration is a platform operation. Delegated feature
@@ -15,7 +15,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async (args, ctx: AuthenticatedCtx) => {
         const result = await db.$transaction(async tx => {
-            await requireActualSysadmin(tx, ctx.session.userId);
+            await requireFreshPermission(tx, ctx.session.userId, Permission.sysadmin);
             return writeSettingValue({
                 db: tx,
                 ctx,

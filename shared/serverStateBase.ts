@@ -30,11 +30,11 @@ export const getServerStartState = (): ServerStartInfo => {
     };
 };
 
-export const getClientServerState = (isActualSysadmin: boolean): ClientServerState => {
+export const getClientServerState = (hasSysadminPermission: boolean): ClientServerState => {
     const serverState = getServerStartState();
     return {
         // The public origin is routing data, not a server diagnostic.
         baseUri: serverState.baseUri,
-        diagnostics: isActualSysadmin ? serverState : null,
+        diagnostics: hasSysadminPermission ? serverState : null,
     };
 };

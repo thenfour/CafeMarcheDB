@@ -16,7 +16,6 @@ import getUserCredits from "@db3/queries/getUserCredits"
 import getUserTagWithAssignments from "@db3/queries/getUserTagWithAssignments"
 import getUserWikiContributions from "@db3/queries/getUserWikiContributions"
 import { getCurrentUserCore } from "@db3/server/db3mutationCore"
-import { requireActualSysadmin } from "src/auth/server/actualSysadmin"
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision"
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions"
 import { Permission } from "shared/permissions"
@@ -57,20 +56,6 @@ describe("direct DB3-managed reads use the canonical row scope", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
 
     await expect(getCurrentUserCore(ctx)).resolves.toBeNull()
-  })
-
-  it("does not accept a soft-deleted actual Sysadmin", async () => {
-    const deletedSysadmin = createAuthorizationTestUser("sysadmin", {
-      id: 802,
-      isDeleted: true,
-    })
-    authorizationTestDb.reset({ user: [deletedSysadmin] })
-    await expect(requireActualSysadmin(
-      authorizationTestDb as any,
-      deletedSysadmin.id,
-    )).rejects.toThrow(
-      "This operation requires an actual Sysadmin account",
-    )
   })
 
   it("requires revision-history permission for direct revision and contribution reads", async () => {

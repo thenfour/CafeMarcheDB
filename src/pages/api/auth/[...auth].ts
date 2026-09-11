@@ -10,7 +10,7 @@ import { getGoogleEmailLinkCandidateWhere, getVerifiedGoogleProfileEmail } from 
 import { api } from "src/blitz-server";
 import { recordAction } from "src/core/db3/server/recordActionServer";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
-import { CreatePublicData } from "types";
+import { createPublicDataFromDatabase } from "src/auth/server/effectivePermissions";
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
@@ -94,7 +94,7 @@ export default api(
               // list permissions:
               // user.role.permissions.map(p => p.permission.name);
 
-              done(null, { publicData: CreatePublicData({ user }) });
+              done(null, { publicData: await createPublicDataFromDatabase(db, { user }) });
             } catch (err) {
               done(null, false);
             }

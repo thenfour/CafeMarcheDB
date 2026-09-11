@@ -3,12 +3,14 @@ const { randomUUID } = require("crypto") as typeof import("crypto");
 import db from "db";
 import { sleep } from "shared/utils";
 import { CreatePublicData } from "types";
+import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TransactionalPrismaClient } from "../shared/apiTypes";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { TAnyModel } from "@/shared/rootroot";
 import { deriveDB3ClientIntention } from "./db3RequestValidation";
+import { includesPermission, Permission } from "@/shared/permissions";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -23,10 +25,10 @@ const authorizeQueryBeforeDatabaseAccess = (
     input: db3.QueryInput | db3.PaginatedQueryInput,
     publicData: ReturnType<typeof CreatePublicData>,
 ): void => {
-    if (input.clientIntention.intention === "admin" && !publicData.isSysAdmin) {
+    if (input.clientIntention.intention === "admin" && !includesPermission(publicData.permissions, Permission.sysadmin)) {
         throw new DB3QueryAuthorizationError();
     }
-    if (table.requiresActualSysadmin && !publicData.isSysAdmin) {
+    if (table.requiresSysadminPermission && !includesPermission(publicData.permissions, Permission.sysadmin)) {
         throw new DB3QueryAuthorizationError();
     }
     if (!table.authorizeTableForView(publicData)) throw new DB3QueryAuthorizationError();
@@ -72,10 +74,16 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
         }
 
         const authorizationUser = clientIntention.intention === "public" ? null : currentUser;
-        const publicData = CreatePublicData({ user: authorizationUser });
+        const transactionalDb: TransactionalPrismaClient = (__transactionalDb as any) || (db as any);
+        const effectivePermissions = await loadEffectivePermissions(transactionalDb, authorizationUser);
+        const publicData = CreatePublicData({ user: authorizationUser, permissions: effectivePermissions.names });
+        if (clientIntention.intention !== "public" && includesPermission(effectivePermissions.names, Permission.sysadmin)) {
+            clientIntention.intention = "admin";
+        }
+        clientIntention.authorizationPermissions = effectivePermissions.names;
+        clientIntention.authorizationPermissionIds = effectivePermissions.ids;
         authorizeQueryBeforeDatabaseAccess(table, input, publicData);
 
-        const transactionalDb: TransactionalPrismaClient = (__transactionalDb as any) || (db as any); // have to do this way to avoid excessive stack depth by vs code
         const dbTableClient = (transactionalDb || db)[table.tableName]; // the prisma interface
         const orderBy = input.orderBy || table.naturalOrderBy;
 
@@ -150,7 +158,13 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
     const table = db3.GetTableById(input.tableID);
     const contextDesc = `paginatedQuery:${table.tableName}`;
     const clientIntention = input.clientIntention;
-    const publicData = CreatePublicData({ user: currentUser });
+    const effectivePermissions = await loadEffectivePermissions(db, currentUser);
+    const publicData = CreatePublicData({ user: currentUser, permissions: effectivePermissions.names });
+    if (clientIntention.intention !== "public" && includesPermission(effectivePermissions.names, Permission.sysadmin)) {
+        clientIntention.intention = "admin";
+    }
+    clientIntention.authorizationPermissions = effectivePermissions.names;
+    clientIntention.authorizationPermissionIds = effectivePermissions.ids;
 
     authorizeQueryBeforeDatabaseAccess(table, input, publicData);
 

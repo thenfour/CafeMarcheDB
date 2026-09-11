@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import { AuthenticationError } from "blitz"
 import db from "db"
 import { Login } from "../schemas"
-import { CreatePublicData } from "types"
+import { createPublicDataFromDatabase } from "../server/effectivePermissions"
 
 export const authenticateUser = async (rawEmail: string, rawPassword: string) => {
   const { email, password } = Login.parse({ email: rawEmail, password: rawPassword })
@@ -31,7 +31,7 @@ export default resolver.pipe(
     // This throws an error if credentials are invalid
     const user = await authenticateUser(email, password)
 
-    await ctx.session.$create(CreatePublicData({ user }));
+    await ctx.session.$create(await createPublicDataFromDatabase(db, { user }));
 
     return user
   }

@@ -39,7 +39,7 @@ export const xSetting = new xTable({
     getSelectionArgs: (clientIntention) => ({}),
     tableName: "Setting",
     deletePolicy: "disabled",
-    requiresActualSysadmin: true,
+    requiresSysadminPermission: true,
     tableAuthMap: xSettingsTableAuthMap,
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({

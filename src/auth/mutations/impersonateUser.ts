@@ -3,9 +3,9 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { Permission } from "shared/permissions"
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads"
-import { CreatePublicData } from "types"
+import { createPublicDataFromDatabase } from "../server/effectivePermissions"
 import * as z from "zod"
-import { requireActualSysadmin } from "../server/actualSysadmin"
+import { requireFreshPermission } from "../server/permissionAuthorization"
 import { registerImpersonationAudit } from "../server/impersonationAudit"
 import { requireCanManageUser } from "../server/userManagementPolicy"
 
@@ -19,10 +19,9 @@ export default resolver.pipe(
     async ({ userId }, ctx) => {
         const originalActorUserId = ctx.session.userId;
 
-        // The permission remains useful as the endpoint-level capability, but
-        // the current operation additionally requires a fresh persisted
-        // User.isSysAdmin check. A role-carried grant is not sufficient.
-        await requireActualSysadmin(db, originalActorUserId)
+        // Re-read the actor and effective grants so revocation takes effect
+        // before this sensitive operation.
+        const actor = await requireFreshPermission(db, originalActorUserId, Permission.impersonate_user)
 
         const user = await db.user.findFirst({
             ...UserWithRolesArgs,
@@ -30,7 +29,7 @@ export default resolver.pipe(
         })
         if (!user) throw new Error("Could not find user id " + userId)
         requireCanManageUser({
-            actor: { id: originalActorUserId, isSysAdmin: true },
+            actor: { ...actor, role: { permissions: actor.effectivePermissionNames.map(name => ({ permission: { name } })) } },
             target: user,
             action: "impersonate",
         })
@@ -42,7 +41,7 @@ export default resolver.pipe(
             targetUserId: user.id,
         })
 
-        await ctx.session.$create(CreatePublicData({
+        await ctx.session.$create(await createPublicDataFromDatabase(db, {
             user,
             impersonatingFromUserId: originalActorUserId,
         }));

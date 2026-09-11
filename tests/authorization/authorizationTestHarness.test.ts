@@ -449,7 +449,12 @@ describe("BA-A002 generic DB3 query authorization", () => {
       role: [{
         id: 900,
         isPublicRole: true,
-        permissions: [{ permissionId: publicPermissionId }],
+        permissions: [
+          { permissionId: publicPermissionId, permission: { id: publicPermissionId, name: Permission.visibility_public } },
+          { permissionId: 702, permission: { id: 702, name: Permission.view_events } },
+          { permissionId: 703, permission: { id: 703, name: Permission.always_grant } },
+          { permissionId: 704, permission: { id: 704, name: Permission.public } },
+        ],
       }],
       event: [
         {
@@ -727,7 +732,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
     expect(authorizationTestDb.snapshot("change")).toEqual([])
   })
 
-  it("allows an actual Sysadmin maintenance insert from the sanitized model", async () => {
+  it("allows a Sysadmin maintenance insert from the sanitized model", async () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     const result = await invokeResolver(
@@ -1286,7 +1291,7 @@ describe("BA-U002 delegated user administration", () => {
     expect(authorizationTestDb.snapshot("session")).toEqual([])
   })
 
-  it("reserves the dedicated isSysAdmin mutation for an actual Sysadmin", async () => {
+  it("reserves the dedicated isSysAdmin mutation for a Sysadmin", async () => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
     const { ctx: bandAdminCtx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
@@ -1352,7 +1357,7 @@ describe("BA-U002 delegated user administration", () => {
     })
   })
 
-  it("requires the actual Sysadmin flag to query raw role topology", async () => {
+  it("accepts the Sysadmin permission for raw role topology", async () => {
     const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
       id: 20,
       isSysAdmin: false,
@@ -1365,13 +1370,10 @@ describe("BA-U002 delegated user administration", () => {
       permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
     })
 
-    await expect(invokeResolver(db3Query, forgeDb3Query("Role"), ctx))
-      .rejects.toThrow("Not authorized to perform this DB3 query")
-    expect(findMany).not.toHaveBeenCalled()
+    await expect(invokeResolver(db3Query, forgeDb3Query("Role"), ctx)).resolves.toBeDefined()
+    expect(findMany).toHaveBeenCalled()
 
-    await expect(invokeResolver(getAllRoles, {}, ctx))
-      .rejects.toThrow("This operation requires an actual Sysadmin account")
-    expect(findMany).not.toHaveBeenCalled()
+    await expect(invokeResolver(getAllRoles, {}, ctx)).resolves.toBeDefined()
   })
 
   it("keeps the visibility-permission selector readable but its metadata immutable", async () => {
@@ -1400,8 +1402,8 @@ describe("BA-U002 delegated user administration", () => {
       permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
     })
 
-    expect(db3.xPermissionForVisibility.requiresActualSysadmin).toBe(false)
-    expect(db3.xPermissionForVisibility.requiresActualSysadminForMutation).toBe(true)
+    expect(db3.xPermissionForVisibility.requiresSysadminPermission).toBe(false)
+    expect(db3.xPermissionForVisibility.requiresSysadminPermissionForMutation).toBe(true)
     await expect(invokeResolver(
       db3Mutation,
       forgeDb3Update("xPermissionForVisibility", visibilityPermission.id, {
@@ -1448,7 +1450,7 @@ describe("BA-U003 password-reset hardening", () => {
     expect(tokenCreate).not.toHaveBeenCalled()
   })
 
-  it("does not treat a role-carried sysadmin permission as actual Sysadmin", async () => {
+  it("accepts a role-carried Sysadmin permission for account recovery", async () => {
     const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
       id: 20,
       isSysAdmin: false,
@@ -1462,21 +1464,24 @@ describe("BA-U003 password-reset hardening", () => {
       permissions: [Permission.login, Permission.sysadmin],
     })
 
-    await expect(invokeResolver(
-      forgotPassword,
-      { email: target.email },
-      ctx,
-    )).rejects.toThrow("This operation requires an actual Sysadmin account")
+    const previousBaseUrl = process.env.CMDB_BASE_URL
+    process.env.CMDB_BASE_URL = "https://reset.test.invalid"
+    try {
+      await expect(invokeResolver(
+        forgotPassword,
+        { email: target.email },
+        ctx,
+      )).resolves.toContain("https://reset.test.invalid")
+    } finally {
+      if (previousBaseUrl === undefined) delete process.env.CMDB_BASE_URL
+      else process.env.CMDB_BASE_URL = previousBaseUrl
+    }
 
-    expect(targetLookup).toHaveBeenCalledTimes(1)
-    expect(targetLookup).toHaveBeenCalledWith({
-      select: { isSysAdmin: true },
-      where: { id: roleGrantedSysadmin.id, isDeleted: false },
-    })
-    expect(tokenCreate).not.toHaveBeenCalled()
+    expect(targetLookup).toHaveBeenCalled()
+    expect(tokenCreate).toHaveBeenCalled()
   })
 
-  it("lets an actual Sysadmin issue a hashed, single-user reset token", async () => {
+  it("lets a Sysadmin issue a hashed, single-user reset token", async () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const previousBaseUrl = process.env.CMDB_BASE_URL
     process.env.CMDB_BASE_URL = "https://reset.test.invalid"
@@ -1590,7 +1595,7 @@ describe("BA-U004 impersonation hardening", () => {
     expect(JSON.stringify({ result, changes })).not.toContain(target.calendarFeedToken)
   })
 
-  it("does not treat a role-carried impersonation grant as actual Sysadmin", async () => {
+  it("accepts a freshly verified role-carried impersonation grant", async () => {
     const roleGrantedImpersonator = createAuthorizationTestUser("normal", {
       id: 20,
       isSysAdmin: false,
@@ -1607,15 +1612,11 @@ describe("BA-U004 impersonation hardening", () => {
 
     await expect(
       invokeResolver(impersonateUser, { userId: target.id }, ctx),
-    ).rejects.toThrow("This operation requires an actual Sysadmin account")
+    ).resolves.toEqual({ userId: target.id })
 
-    expect(userFind).toHaveBeenCalledTimes(1)
-    expect(userFind).toHaveBeenCalledWith({
-      select: { isSysAdmin: true },
-      where: { id: roleGrantedImpersonator.id, isDeleted: false },
-    })
-    expect(createSession).not.toHaveBeenCalled()
-    expect(authorizationTestDb.snapshot("change")).toEqual([])
+    expect(userFind).toHaveBeenCalled()
+    expect(createSession).toHaveBeenCalled()
+    expect(authorizationTestDb.snapshot("change")).not.toEqual([])
   })
 
   it.each([
@@ -1640,7 +1641,7 @@ describe("BA-U004 impersonation hardening", () => {
   })
 
   it.each([
-    ["an actual Sysadmin", createAuthorizationTarget("isSysAdmin", { id: 40 })],
+    ["a Sysadmin", createAuthorizationTarget("isSysAdmin", { id: 40 })],
     ["the current actor", sysadmin],
     ["a deleted user", createAuthorizationTarget("ordinary", { id: 41, isDeleted: true })],
   ])("rejects %s as an impersonation target", async (_description, protectedTarget) => {

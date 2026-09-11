@@ -24,7 +24,7 @@ const BuiltInRoleAssignments = () => {
 
     const assignments: Array<{
         designation: RoleDesignationValue;
-        flag: "isRoleForNewUsers" | "isPublicRole";
+        flag: "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole";
         label: string;
     }> = [
         {
@@ -36,6 +36,11 @@ const BuiltInRoleAssignments = () => {
             designation: RoleDesignation.public,
             flag: "isPublicRole",
             label: "Public role",
+        },
+        {
+            designation: RoleDesignation.sysadmin,
+            flag: "isSysAdminRole",
+            label: "Sysadmin role",
         },
     ];
 

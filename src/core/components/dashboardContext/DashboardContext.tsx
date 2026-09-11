@@ -4,7 +4,7 @@ import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import { Prisma } from "db";
 import React from 'react';
-import { gPublicPermissions, Permission } from 'shared/permissions';
+import { Permission } from 'shared/permissions';
 import { TableAccessor } from 'shared/rootroot';
 import { useThrottle } from 'shared/useGeneral';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
@@ -39,6 +39,7 @@ export class DashboardContextData extends DashboardContextDataBase {
 
     session: ClientSession | null;
     refetchDashboardData: (() => void) = () => { };
+    effectivePermissions: string[] = [];
 
     constructor() {
         super();
@@ -46,9 +47,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     }
 
     isAuthorized(p: Permission | string) {
-        if (!this.currentUser || !this.session) return gPublicPermissions.some(pp => pp === p);
-        if (this.session.isSysAdmin) return true;
-        return !!(this.session.permissions?.some(pp => pp === p));
+        return this.effectivePermissions.includes(p);
     }
 
     // isAuthorizedPermissionId(pid: number | null) {
@@ -195,7 +194,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.session = sess;
 
     React.useEffect(() => {
-        if (!sess.isSysAdmin) return;
+        if (!sess.permissions?.includes(Permission.sysadmin)) return;
         async function handleKeyPress(event) {
             if (event.altKey && event.key === '9') {
                 await setShowingAdminControlsMutation({ toggle: true });
@@ -209,10 +208,11 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         return () => {
             window.removeEventListener('keydown', handleKeyPress);
         };
-    }, [sess.isSysAdmin, setShowingAdminControlsMutation]);
+    }, [sess.permissions, setShowingAdminControlsMutation]);
 
     const [dashboardData, { refetch }] = useQuery(getDashboardData, {});
     valueRef.current.refetchDashboardData = refetch;
+    valueRef.current.effectivePermissions = dashboardData.effectivePermissions;
     valueRef.current.userClientIntention = { intention: currentUser ? "user" : 'public', mode: 'primary', currentUser }
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag);
     valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);

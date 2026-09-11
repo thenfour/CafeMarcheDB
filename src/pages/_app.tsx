@@ -169,8 +169,10 @@ const originalGetInitialProps = (BlitzedApp as any).getInitialProps as
 
   const req = appCtx.ctx?.req as any;
   if (req) {
+    const { getSession } = await import("@blitzjs/auth");
     const { authorizeBackstagePageRequest } = await import("@/src/auth/server/backstagePageRequestAuthorization");
-    await authorizeBackstagePageRequest(appCtx.ctx.pathname, appCtx.ctx);
+    const session = await getSession(req, appCtx.ctx.res);
+    await authorizeBackstagePageRequest(appCtx.ctx.pathname, session.userId);
   }
 
   try {

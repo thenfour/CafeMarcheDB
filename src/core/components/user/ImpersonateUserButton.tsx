@@ -1,15 +1,20 @@
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 import impersonateUser from "src/auth/mutations/impersonateUser";
+import { Permission } from "shared/permissions";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export const ImpersonateUserButton = ({ userId }: { userId: number }) => {
     const router = useRouter();
     const [impersonateUserMutation] = useMutation(impersonateUser);
-    const session = useAuthenticatedSession();
+    const dashboardContext = useDashboardContext();
+
+    if (!dashboardContext.isAuthorized(Permission.impersonate_user)) {
+        return null;
+    }
 
     const handleImpersonateClick = () => {
         impersonateUserMutation({ userId })
@@ -21,8 +26,6 @@ export const ImpersonateUserButton = ({ userId }: { userId: number }) => {
                 console.error(e);
             });
     };
-
-    if (!session.isSysAdmin) return null;
 
     return (
         <Button onClick={handleImpersonateClick}>

@@ -1,13 +1,13 @@
 // saveEventWorkflowModel
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import { Prisma } from "db";
+import db, { Prisma } from "db";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
 import { ObjectDiff, passthroughWithoutTransaction } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { deriveDB3ClientIntention } from "../server/db3RequestValidation";
+import { deriveDB3ClientIntention, populateDB3AuthorizationPermissions } from "../server/db3RequestValidation";
 import { gWorkflowMutex, MockEvent, ZSaveModelMutationInput } from "../server/eventWorkflow";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
@@ -16,7 +16,10 @@ export default resolver.pipe(
     resolver.authorize(Permission.edit_workflow_instances),
     async (args, ctx: AuthenticatedCtx) => {
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention = deriveDB3ClientIntention("mutation", currentUser);
+        const clientIntention = await populateDB3AuthorizationPermissions(
+            db,
+            deriveDB3ClientIntention("mutation", currentUser),
+        );
 
         return gWorkflowMutex.runExclusive(async () => {
 

@@ -1,9 +1,9 @@
 export type AdminControlSession = {
-    isSysAdmin?: boolean | null;
+    permissions?: string[] | null;
     showAdminControls?: boolean | null;
 };
 
-// Technical controls require both an explicit user preference and the
-// concrete User.isSysAdmin session flag. Role permissions are not accepted.
+// Technical controls require both the Sysadmin capability and an explicit
+// user preference.
 export const shouldShowAdminControls = (session: AdminControlSession | null | undefined): boolean =>
-    session?.isSysAdmin === true && session.showAdminControls === true;
+    session?.permissions?.includes("sysadmin") === true && session.showAdminControls === true;

@@ -1,7 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { requireActualSysadmin } from "../server/actualSysadmin";
+import { requireFreshPermission } from "../server/permissionAuthorization";
 
 
 interface QueryParams
@@ -15,7 +15,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async (params: QueryParams, ctx) => {
         try {
-            await requireActualSysadmin(db, ctx.session.userId);
+            await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin);
             const items = await db.permission.findMany({
                 ...params,
                 include: { roles: { include: { role: true } } }

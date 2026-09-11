@@ -9,7 +9,7 @@ import {
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { UserEmailSchema } from "../schemas";
-import { requireActualSysadmin } from "../server/actualSysadmin";
+import { requireFreshPermission } from "../server/permissionAuthorization";
 import { requireCanManageUser } from "../server/userManagementPolicy";
 
 export const CorrectUserEmailInput = z.object({
@@ -25,7 +25,7 @@ export default resolver.pipe(
             // A role-carried sysadmin grant is not sufficient. Verify the
             // persisted exceptional flag before revealing whether a target
             // account exists.
-            await requireActualSysadmin(tx, ctx.session.userId);
+            const actor = await requireFreshPermission(tx, ctx.session.userId, Permission.sysadmin);
 
             const target = await tx.user.findFirst({
                 select: {
@@ -39,7 +39,7 @@ export default resolver.pipe(
             if (!target) throw new NotFoundError();
 
             requireCanManageUser({
-                actor: { id: ctx.session.userId, isSysAdmin: true },
+                actor: { ...actor, role: { permissions: actor.effectivePermissionNames.map(name => ({ permission: { name } })) } },
                 target,
                 action: "correctEmail",
             });

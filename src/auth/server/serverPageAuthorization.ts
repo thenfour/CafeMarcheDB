@@ -4,12 +4,14 @@ import { gSSP } from "src/blitz-server";
 import type { xTable } from "src/core/db3/shared/db3core";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
-import { CMAuthorize, CreatePublicData } from "types";
+import { CMAuthorize } from "types";
+import db from "db";
+import { createPublicDataFromDatabase } from "./effectivePermissions";
 import type { TAnyModel } from "@/shared/rootroot";
 
 export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission): Promise<boolean> {
     const currentUser = await getCurrentUserCore(ctx);
-    const publicData = CreatePublicData({ user: currentUser });
+    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
     return CMAuthorize({
         reason: "server-rendered page",
         permission,
@@ -46,7 +48,7 @@ export async function loadAuthorizedPageEntity<T>({
     load,
 }: LoadAuthorizedPageEntityArgs<T>): Promise<T | null> {
     const currentUser = await getCurrentUserCore(ctx);
-    const publicData = CreatePublicData({ user: currentUser });
+    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
     if (!CMAuthorize({ reason: "server-rendered entity metadata", permission, publicData })) {
         return null;
     }

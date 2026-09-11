@@ -4,6 +4,8 @@ import { resolver } from "@blitzjs/rpc";
 import type { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { arraysContainSameValues } from "shared/arrayUtils";
+import { Permission } from "shared/permissions";
+import { loadEffectivePermissionNames } from "../server/effectivePermissions";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import { gEventRelevanceClass, EventStatusSignificance, gVisibleEventRelevanceClasses, xEvent, xMenuLink, type xTableClientUsageContext } from "src/core/db3/db3";
@@ -14,8 +16,6 @@ import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 
 async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
     const publicData = { ...ctx.session?.$publicData };
-    if (!publicData?.userId) return false;
-
     // only query if x seconds has elapsed since last fetch
     const now = new Date().getTime();
     const lastRefreshedAt = new Date(publicData.permissionsLastRefreshedAt || 0).getTime();
@@ -49,9 +49,8 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
     });
 
     // refresh session publicdata permissions
-    const newPerms = u?.role?.permissions.map(p => p.permission.name);
-    if (newPerms && publicData.permissions && (newPerms.length !== publicData.permissions?.length)) {
-        if (!arraysContainSameValues(publicData.permissions, newPerms)) {
+    const newPerms = await loadEffectivePermissionNames(db, u);
+    if (!arraysContainSameValues(publicData.permissions || [], newPerms)) {
             await ctx.session.$setPublicData({
                 showAdminControls: publicData.showAdminControls || false,
                 //userId: publicData.userId,
@@ -60,7 +59,6 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
                 permissions: newPerms,
             });
             return true;
-        }
     }
 
     return false;
@@ -154,6 +152,7 @@ export default resolver.pipe(
             const sw = new Stopwatch();
 
             const currentUser = await getCurrentUserCore(ctx);
+            const effectivePermissions = await loadEffectivePermissionNames(db, currentUser);
             const clientIntention: xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
 
             const menuItemsCall = DB3QueryCore2({
@@ -214,7 +213,7 @@ export default resolver.pipe(
                 relevantEventIds,
             ] = results;
 
-            const clientServerState = getClientServerState(currentUser?.isSysAdmin === true);
+            const clientServerState = getClientServerState(effectivePermissions.includes(Permission.sysadmin));
             const ret = {
                 userTag,
                 permission,
@@ -236,6 +235,7 @@ export default resolver.pipe(
                 serverBaseUri: clientServerState.baseUri,
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
+                effectivePermissions,
             };
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);

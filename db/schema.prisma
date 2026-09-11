@@ -42,6 +42,7 @@ model Role {
   name              String           @unique @db.VarChar(768)
   isRoleForNewUsers Boolean          @default(false)
   isPublicRole      Boolean          @default(false)
+  isSysAdminRole    Boolean          @default(false)
   description       String?          @db.MediumText
   sortOrder         Int              @default(0)
   color             String?          @db.VarChar(768)

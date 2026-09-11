@@ -3,7 +3,7 @@ import type { AuthenticatedCtx } from "blitz";
 import { paginate } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { requireActualSysadmin } from "../server/actualSysadmin";
+import { requireFreshPermission } from "../server/permissionAuthorization";
 
 interface GetInput__
     extends Pick<
@@ -15,7 +15,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async ({ where, orderBy, skip, take }: GetInput__, ctx: AuthenticatedCtx) => {
         try {
-            await requireActualSysadmin(db, ctx.session.userId);
+            await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin);
             const {
                 items,
                 hasMore,
