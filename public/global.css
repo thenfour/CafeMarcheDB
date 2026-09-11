@@ -388,6 +388,12 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   padding: 2px 15px;
 }
 
+.contentSection>.content.muiCompatible {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .contentSection .titleLine {
   display: flex;
   align-items: center;

@@ -223,7 +223,7 @@ const BrandForm = () => {
         <div className="brandFormContainer header" style={{ backgroundColor: "#fff", color: "var(--text-secondary)" }}>
             <h2 style={{ color: "var(--text-primary)" }}>Site identity</h2>
         </div>
-        <div className="brandFormContainer content">
+        <div className="brandFormContainer content muiCompatible">
             <BrandingFields
                 fields={identityFields}
                 values={values}
@@ -268,10 +268,10 @@ const PlatformBrandForm = () => {
     };
 
     return <CMSinglePageSurfaceCard>
-        <div className="brandFormContainer header">
+        <div className="brandFormContainer header" style={{ backgroundColor: "#fff", color: "var(--text-secondary)" }}>
             <h2>Platform</h2>
         </div>
-        <div className="brandFormContainer content">
+        <div className="brandFormContainer content muiCompatible">
             <TextField
                 select
                 fullWidth
