@@ -1,9 +1,9 @@
 # Band Admin Authorization Hardening
 
-- Last updated: 2026-09-10
+- Last updated: 2026-09-11
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001, and BA-M001 complete; BA-S002 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001, BA-S002, and BA-M001 complete; BA-S003 next
 
 ## Goal
 
@@ -684,21 +684,33 @@ Evidence:
 
 ### BA-S002 — File visibility and image operations
 
-- [ ] Enforce file visibility on direct download rather than using `skipVisibilityCheck` without an equivalent guard.
-- [ ] Preserve streaming and range-request support after the authorization decision; large-file delivery is not a reason to skip visibility checks.
-- [ ] Make gallery, branding, and other intentionally public asset workflows set public file visibility explicitly, or authorize through a route that verifies the public parent reference.
-- [ ] Inventory existing publicly referenced assets and safely align their visibility or route semantics before enforcing the direct-download check.
-- [ ] Do not treat an unguessable `storedLeafName` as a capability or authorization boundary.
-- [ ] Enforce visibility and mutation authority before image forking.
-- [ ] Restore explicit authorization for gallery image updates.
+- [x] Enforce file visibility on direct download rather than using `skipVisibilityCheck` without an equivalent guard.
+- [x] Preserve streaming and range-request support after the authorization decision; large-file delivery is not a reason to skip visibility checks.
+- [x] Make gallery, branding, and other intentionally public asset workflows set public file visibility explicitly, or authorize through a route that verifies the public parent reference.
+- [x] Inventory existing publicly referenced assets and safely align their visibility or route semantics before enforcing the direct-download check.
+- [x] Do not treat an unguessable `storedLeafName` as a capability or authorization boundary.
+- [x] Enforce visibility and mutation authority before image forking.
+- [x] Restore explicit authorization for gallery image updates.
 
 References:
 
-- [File download route](../src/pages/api/files/download/[...leafName_slug].ts#L13)
+- [File download route](../src/pages/api/files/download/[...leafName_slug].ts#L8)
+- [Authorized lookup and streaming](../src/core/db3/server/fileDownload.ts#L22)
 - [File visibility policy](../src/core/db3/shared/schema/file.ts#L38)
-- [Gallery parent-visibility rationale](../src/pages/backstage/frontpagegallery.tsx#L552)
-- [Image fork core](../src/core/db3/server/db3mutationCore.ts#L1018)
-- [Gallery image mutation](../src/core/db3/mutations/updateGalleryItemImage.ts#L10)
+- [Public-asset alignment migration](../db/migrations/20260911120000_align_public_asset_file_visibility/migration.sql)
+- [Image fork core](../src/core/db3/server/db3mutationCore.ts#L1226)
+- [Gallery image mutation](../src/core/db3/mutations/updateGalleryItemImage.ts#L14)
+- [Authorization regressions](../tests/authorization/fileVisibilityHardening.test.ts#L93)
+
+Evidence:
+
+- Direct downloads resolve the requested database record through the normal `File` soft-delete, visibility, ownership, and field-authorization policy. Missing and unauthorized identifiers both return 404. Storage paths are derived only after authorization and reject path-shaped stored names; `storedLeafName` is only an identifier.
+- Delivery still passes the original request into `send`, retaining conditional and byte-range streaming. A focused regression test carries a `Range` header through the authorized delivery boundary.
+- Public gallery and branding uploads explicitly request `visibility_public`, and public-feed gallery URLs use the same File-authorized direct route. A gallery reference cannot make a non-public File downloadable merely by knowing or assigning its ID.
+- Read-only inspection of the configured local database found two active gallery references with no gallery/file visibility mismatch. The configured logo references active public File 2406; the favicon does not reference a local uploaded File. Migration `20260911120000_align_public_asset_file_visibility` safely aligns active files already exposed by public gallery rows or local logo/favicon settings in other deployments.
+- Image forks now require `upload_files` at the resolver and core boundaries, recheck fresh database grants, resolve the source through File visibility, and preflight the complete File insert before filesystem work. Gallery image updates explicitly require `edit_public_homepage`, recheck that capability from the fresh database actor, and verify the active target before starting a fork.
+- Verification: 11 focused BA-S002 tests cover public, private-owner, non-public, and deleted direct files; range-capable streaming; storage-path containment; positive and negative resolver, source, target, and fresh-grant mutation boundaries. `yarn test:auth` and `yarn test` pass (187 tests); `yarn tsc --noEmit`; focused ESLint; Prisma schema validation with a disposable validation URL; `yarn build`.
+- Commit/PR:
 
 ### BA-S003 — Direct mutation gaps
 
@@ -1000,7 +1012,7 @@ Phase completion evidence:
 - [ ] Band Admin cannot view raw audit logs.
 - [ ] A user can retrieve and rotate only their own calendar subscription URL; Band Admin cannot retrieve another user's token.
 - [ ] Unknown tokens and tokens belonging to deactivated users cannot retrieve a personalized calendar.
-- [ ] Direct file downloads enforce visibility while authorized large/range downloads continue to stream.
+- [x] Direct file downloads enforce visibility while authorized large/range downloads continue to stream.
 - [ ] Band Admin cannot access Server Health, raw Settings, Hosting Mode, raw audit logs, or debug/test surfaces.
 - [ ] Anonymous users can access Practice Tools.
 - [ ] Sysadmin retains full intended access.
@@ -1066,6 +1078,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                                                    | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
 | 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                       | —                 |
 | 2026-09-10 | BA-U006   | Closed delegated User creation and generic authentication-field writes; added redacted actual-Sysadmin email correction with session revocation; required verified, conflict-safe Google email linking               | `yarn test` (161 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                   | —                 |
+| 2026-09-11 | BA-S002   | Enforced direct File visibility; added public-asset alignment migration, storage-name containment, and pre-filesystem image-fork/gallery authorization                                                               | `yarn test:auth`; `yarn test` (187 passed); `yarn tsc --noEmit`; focused ESLint; `yarn prisma validate`; `yarn build` | —                 |
 
 ## Deferred ideas
 

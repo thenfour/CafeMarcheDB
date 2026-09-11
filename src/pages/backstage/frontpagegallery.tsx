@@ -549,7 +549,6 @@ const GalleryItem = (props: GalleryItemProps) => {
             frontpageGalleryItemId: newrow.id,
         });
         props.client.doUpdateMutation(newrow).then(() => {
-            // the referenced file should also assume the visibility, however that's not necessary. when viewing a file via gallery item, the file is automatically shown if the gallery item is.
             showSnackbar({ severity: "success", children: `Visibility updated.` });
         }).catch(e => {
             console.log(e);

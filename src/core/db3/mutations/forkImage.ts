@@ -5,12 +5,8 @@ import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { ForkImageParams } from "../shared/fileTypes";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
+    resolver.authorize(Permission.upload_files),
     async (args: ForkImageParams, ctx: AuthenticatedCtx) => {
-
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        //const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
-
         const newFile = await mutationCore.ForkImageImpl(args, ctx);
         return newFile;
     },

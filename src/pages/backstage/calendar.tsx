@@ -2,10 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Alert,
-    Box,
     Button,
-    Divider,
-    Stack,
     TextField,
     Typography,
 } from "@mui/material";
@@ -18,7 +15,6 @@ import { useConfirm } from "src/core/components/ConfirmationDialog";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { Permission } from "shared/permissions";
-import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
 import AppleIcon from "@mui/icons-material/Apple";
 import GoogleIcon from "@mui/icons-material/Google";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";

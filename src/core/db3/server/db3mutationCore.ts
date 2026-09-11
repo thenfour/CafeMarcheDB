@@ -1143,7 +1143,18 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
 
 
 export const GetFileServerStoragePath = (storedLeafName: string) => {
-    return path.resolve(`${process.env.FILE_UPLOAD_PATH}`, storedLeafName);
+    const uploadPath = process.env.FILE_UPLOAD_PATH;
+    if (!uploadPath) {
+        throw new Error("FILE_UPLOAD_PATH is not configured.");
+    }
+    if (!storedLeafName
+        || storedLeafName !== path.basename(storedLeafName)
+        || storedLeafName.includes("/")
+        || storedLeafName.includes("\\")) {
+        throw new Error("Invalid stored file name.");
+    }
+
+    return path.resolve(uploadPath, storedLeafName);
 }
 
 
@@ -1213,16 +1224,36 @@ export const GetImageMetadata = async (img: sharp.Sharp): Promise<ImageMetadata>
 };
 
 export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedCtx) => {
+    // Image forking creates a new upload and writes to disk. Check mutation
+    // authority before looking up or opening the source file.
+    ctx.session.$authorize(Permission.upload_files);
+
     const currentUser = await getCurrentUserCore(ctx);
     if (!currentUser) {
         throw new Error(`public cannot create files`);
     }
     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+    const publicData = getMutationPublicData(clientIntention);
+    const requiredInsertPermission = db3.xFile.tableAuthMap.Insert;
+    if (!publicData.isSysAdmin && !publicData.permissions.includes(requiredInsertPermission)) {
+        throw new DB3MutationAuthorizationError(db3.xFile.tableName, ["insert"]);
+    }
 
-    // get the parent file record
-    const parentFile = await db.file.findFirst({
-        where: { id: params.parentFileId }
-    });  //await QueryFileByStoredLeaf({ clientIntention, storedLeafName: params.parentFileLeaf, ctx });
+    // Resolve the source through the normal File visibility policy. The
+    // storedLeafName is a storage identifier, never a bearer capability.
+    const { item: parentFile } = await queryFirstImpl<db3.FilePayload>({
+        clientIntention,
+        ctx,
+        schema: db3.xFile,
+        skipVisibilityCheck: false,
+        filterModel: {
+            items: [{
+                operator: "equals",
+                field: "id",
+                value: params.parentFileId,
+            }],
+        },
+    });
     if (!parentFile) {
         throw new Error(`parent file not found`);
     }
@@ -1244,6 +1275,17 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
         parentFileId: parentFile.id,
         lastModifiedDate: new Date(),
     });// as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
+
+    // Preflight the complete File insert before touching the filesystem. The
+    // normal insert path repeats this check immediately before persistence.
+    requireAuthorizedMutationFields(db3.xFile, db3.xFile.authorizeAndSanitize({
+        clientIntention,
+        contextDesc: "forkImage:insertFile",
+        model: newFile,
+        publicData,
+        rowMode: "new",
+        fallbackOwnerId: null,
+    }));
 
     // perform the adjustments on parent image + save on disk
     const parentFullPath = GetFileServerStoragePath(parentFile.storedLeafName);

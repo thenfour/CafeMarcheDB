@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { gQueryOptions, IsNullOrWhitespace } from "shared/utils";
+import { gQueryOptions } from "shared/utils";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
