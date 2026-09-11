@@ -11,6 +11,7 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { type RestPaginatedResult, type RestQueryResult, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import React from "react";
 //import * as db3 from "../db3";
@@ -27,6 +28,7 @@ import db3queries from "../queries/db3queries";
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { SettingKey } from "shared/settingKeys";
 import { TAnyModel } from "@/shared/rootroot";
+import type { PublicDataType } from "types";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,6 +189,40 @@ export const CalculateOrderBy = (sortModel?: GridSortModel) => {
 
 export type TMutateFn = (args: db3.MutatorInput) => Promise<unknown>;
 
+// Query models contain every field the caller may view, which can be a wider
+// set than the fields they may edit. Keep those read-only values out of normal
+// client mutations; the server remains the authority and still rejects forged
+// or unknown fields.
+export const omitUnauthorizedMutationFields = (args: {
+    schema: db3.xTable;
+    model: TAnyModel;
+    existingModel: TAnyModel;
+    mode: "new" | "update";
+    clientIntention: db3.xTableClientUsageContext;
+    publicData: Partial<PublicDataType>;
+}): TAnyModel => {
+    const authorization = args.schema.authorizeAndSanitize({
+        contextDesc: "DB3 client mutation preparation",
+        model: args.model,
+        existingModel: args.existingModel,
+        rowMode: args.mode,
+        publicData: args.publicData,
+        clientIntention: args.clientIntention,
+        fallbackOwnerId: null,
+    });
+
+    // Do not turn a row-level authorization failure into an apparently valid
+    // empty update. Preserve it so the server rejects the request explicitly.
+    if (!authorization.rowIsAuthorized) return args.model;
+
+    return {
+        ...authorization.authorizedModel,
+        // Unknown fields are preserved deliberately so schema drift and forged
+        // requests fail closed at the server instead of being silently ignored.
+        ...authorization.unknownModel,
+    };
+};
+
 export enum xTableClientCaps {
     None = 0,
     PaginatedQuery = 1,
@@ -227,6 +263,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
     };
 
     refetch: () => void;
+    publicData: Partial<PublicDataType>;
 
     get schema() {
         return this.tableSpec.args.table;
@@ -239,9 +276,10 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         return this.tableSpec.getColumn(name);
     }
 
-    constructor(args: xTableClientArgs) {
+    constructor(args: xTableClientArgs, publicData: Partial<PublicDataType>) {
         this.tableSpec = args.tableSpec;
         this.args = args;
+        this.publicData = publicData;
         this.queryResultInfo = {
             executionTimeMillis: 0,
             resultId: "",
@@ -357,7 +395,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         // }
     }; // ctor
 
-    prepareMutation = <T extends TAnyModel,>(row: T, mode: db3.DB3RowMode): any => {
+    prepareMutation = <T extends TAnyModel,>(row: T, mode: "new" | "update"): any => {
         const postClientModel = {}; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
         const dbModel = {};
 
@@ -375,7 +413,14 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         this.schema.columns.forEach(schemaCol => {
             schemaCol.ApplyClientToDb(postClientModel, dbModel, mode, this.args.clientIntention);
         });
-        return dbModel;
+        return omitUnauthorizedMutationFields({
+            schema: this.schema,
+            model: dbModel,
+            existingModel: row,
+            mode,
+            clientIntention: this.args.clientIntention,
+            publicData: this.publicData,
+        });
     };
 
     // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
@@ -444,7 +489,8 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 
 
 export const useTableRenderContext = <Trow extends TAnyModel,>(args: xTableClientArgs) => {
-    return new xTableRenderClient<Trow>(args);
+    const publicData = useAuthenticatedSession();
+    return new xTableRenderClient<Trow>(args, publicData);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
