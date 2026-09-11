@@ -54,6 +54,7 @@ describe("canonical permission registry", () => {
       Permission.visibility_public,
       Permission.view_events,
       Permission.view_files,
+      Permission.practice_tools_use,
     ])
     expect([...gProtectedPermissions]).toEqual([
       Permission.impersonate_user,

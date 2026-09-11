@@ -388,16 +388,14 @@ const permissionRegistry = [
     1200
   ),
   definePermission("view_feature_reports", "reports", "site", "View feature-usage reports.", 1300),
-  // BA-D008 makes this public in a later route/data-alignment slice. Keeping
-  // the current grant unchanged here avoids widening access before that audit.
   definePermission(
     "practice_tools_use",
     "practice-tools",
     "public",
     "Use public practice tools.",
-    1400
+    1400,
+    publicGrant
   ),
-
   definePermission(
     "impersonate_user",
     "system",
@@ -407,9 +405,8 @@ const permissionRegistry = [
     protectedPermission
   ),
 
-  // note that this is currently ambiguous with User.isSysAdmin.
-  // effectively we treat them with the same access level, but User.isSysAdmin
-  // is the authority, not the role-permission matrix.
+  // User.isSysAdmin is an independent universal bypass. This protected
+  // permission is the composable capability used by Sysadmin-only surfaces.
   definePermission(
     "sysadmin",
     "system",

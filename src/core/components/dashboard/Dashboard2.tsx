@@ -37,6 +37,7 @@ import {
 import { NavRealm } from "./StaticMenuItems";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { findBackstageRouteByPattern } from "@/src/auth/shared/backstageRoutes";
 
 const drawerWidth = 260;
 
@@ -336,10 +337,16 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
 const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission; }>) => {
     const dashboardContext = useDashboardContext();
+    const router = useRouter();
     const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
 
-    if (basePermission && !dashboardContext.isAuthorized(basePermission)) {
+    const registeredRoute = findBackstageRouteByPattern(router.pathname);
+    const isPageAuthorized = registeredRoute
+        ? dashboardContext.isAuthorized(registeredRoute.permission)
+        : !basePermission || dashboardContext.isAuthorized(basePermission);
+
+    if (!isPageAuthorized) {
         // are you even logged in?
         if (!dashboardContext.session?.userId) {
             // just redirect to login.

@@ -1,14 +1,15 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
-import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { UserMassAnalysisResult } from "../shared/getUserMassAnalysisTypes";
+import { requireFreshPermission } from "@/src/auth/server/permissionAuthorization";
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.manage_users),
     resolver.zod(z.object({ userId: z.number() })),
     async (args, ctx: AuthenticatedCtx): Promise<UserMassAnalysisResult> => {
+        await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin);
         const userId = args.userId;
 
         // Intentional read-policy bypass: this administrative dependency report

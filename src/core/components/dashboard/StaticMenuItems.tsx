@@ -15,8 +15,8 @@ import SecurityIcon from '@mui/icons-material/Security';
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { gIconMap } from "../../db3/components/IconMap";
+import { BackstageRouteKey, getBackstageRoute } from "@/src/auth/shared/backstageRoutes";
 
-// NavRealm enum - used for navigation context
 export enum NavRealm {
     backstageHome = "",
     events = "events",
@@ -29,7 +29,6 @@ export enum NavRealm {
     MenuLinks = "MenuLinks",
 }
 
-// New hierarchical menu schema types
 export interface MenuLink {
     type: "link";
     permission: Permission;
@@ -40,7 +39,22 @@ export interface MenuLink {
     realm?: NavRealm;
     renderIcon: () => React.ReactNode;
     enabledForGenericSingleTenant?: boolean; // default true
+    routeKey?: BackstageRouteKey;
 }
+
+type BackstageMenuPresentation = Omit<MenuLink, "type" | "permission" | "linkCaption" | "path" | "routeKey">;
+
+const backstageLink = (routeKey: BackstageRouteKey, presentation: BackstageMenuPresentation): MenuLink => {
+    const route = getBackstageRoute(routeKey);
+    return {
+        type: "link",
+        routeKey,
+        path: route.pattern,
+        linkCaption: route.caption,
+        permission: route.permission,
+        ...presentation,
+    };
+};
 
 // groups are separated by dividers
 export interface MenuGroup {
@@ -65,12 +79,12 @@ export const gMenuSections: MenuSection[] = [
         groups: [
             {
                 links: [
-                    { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.login },
-                    { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.view_events_nonpublic },
-                    { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
-                    { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
-                    { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
-                    { type: "link", path: "/backstage/calendar", linkCaption: "Calendar subscription", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.login },
+                    backstageLink("home", { renderIcon: () => <HomeIcon /> }),
+                    backstageLink("events", { realm: NavRealm.events, renderIcon: () => <CalendarMonthOutlinedIcon /> }),
+                    backstageLink("songs", { realm: NavRealm.songs, renderIcon: () => <MusicNoteOutlinedIcon /> }),
+                    backstageLink("setlistPlanner", { renderIcon: () => <AudioFileOutlined /> }),
+                    backstageLink("profile", { renderIcon: () => <PersonIcon /> }),
+                    backstageLink("calendar", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
                 ]
             }
         ]
@@ -80,11 +94,11 @@ export const gMenuSections: MenuSection[] = [
         groups: [
             {
                 links: [
-                    { type: "link", path: "/backstage/files", realm: NavRealm.files, linkCaption: "File search", renderIcon: () => gIconMap.AttachFile(), permission: Permission.access_file_landing_page },
-                    { type: "link", path: "/backstage/wikiPages", realm: NavRealm.wikiPages, linkCaption: "Wiki search", renderIcon: () => gIconMap.Article(), permission: Permission.search_wiki_pages },
-                    { type: "link", path: "/backstage/users", realm: NavRealm.users, linkCaption: "User search", renderIcon: gIconMap.Person, permission: Permission.admin_users },
-                    { type: "link", path: "/backstage/stats", linkCaption: "Event Stats", renderIcon: gIconMap.Equalizer, permission: Permission.view_events_reports },
-                    { type: "link", path: "/backstage/featureReports", linkCaption: "Feature Usage", renderIcon: () => <PieChart />, permission: Permission.view_feature_reports },
+                    backstageLink("files", { realm: NavRealm.files, renderIcon: () => gIconMap.AttachFile() }),
+                    backstageLink("wikiPages", { realm: NavRealm.wikiPages, renderIcon: () => gIconMap.Article() }),
+                    backstageLink("users", { realm: NavRealm.users, renderIcon: gIconMap.Person }),
+                    backstageLink("stats", { renderIcon: gIconMap.Equalizer }),
+                    backstageLink("featureReports", { renderIcon: () => <PieChart /> }),
                 ]
             }
         ]
@@ -96,8 +110,8 @@ export const gMenuSections: MenuSection[] = [
             {
                 links: [
                     { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public, enabledForGenericSingleTenant: false },
-                    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Photo Gallery", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage, enabledForGenericSingleTenant: false },
-                    { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage, enabledForGenericSingleTenant: false },
+                    backstageLink("frontpagegallery", { renderIcon: () => gIconMap.Image(), enabledForGenericSingleTenant: false }),
+                    backstageLink("frontpageEvents", { renderIcon: () => <CalendarMonthOutlinedIcon />, enabledForGenericSingleTenant: false }),
                 ]
             }
         ]
@@ -108,59 +122,51 @@ export const gMenuSections: MenuSection[] = [
         groups: [
             {
                 links: [
-                    { type: "link", path: "/backstage/menuLinks", linkCaption: "Menu Links", renderIcon: () => <FeaturedPlayList />, permission: Permission.customize_menu },
-                    { type: "link", path: "/backstage/customLinks", linkCaption: "Custom URLs", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
-                    { type: "link", path: "/backstage/brand", linkCaption: "Brand", renderIcon: () => <SettingsIcon />, permission: Permission.manage_site_branding },
+                    backstageLink("menuLinks", { renderIcon: () => <FeaturedPlayList /> }),
+                    backstageLink("customLinks", { renderIcon: gIconMap.Link }),
+                    backstageLink("brand", { renderIcon: () => <SettingsIcon /> }),
                 ]
             },
             {
                 links: [
 
-                    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Event Attendance Options", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editEventCustomFields", linkCaption: "Event Custom Fields", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+                    backstageLink("editEventTags", { renderIcon: () => gIconMap.Tag() }),
+                    backstageLink("editEventTypes", { renderIcon: () => <SettingsIcon /> }),
+                    backstageLink("editEventStatuses", { renderIcon: () => <SettingsIcon /> }),
+                    backstageLink("editEventAttendances", { renderIcon: () => <SettingsIcon /> }),
                 ]
             },
             {
                 links: [
 
-                    { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Song Credit Types", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                    backstageLink("editSongTags", { renderIcon: () => gIconMap.Tag() }),
+                    backstageLink("editSongCreditTypes", { renderIcon: () => <MusicNoteIcon /> }),
                 ]
             },
             {
                 links: [
-                    { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.Tag, permission: Permission.sysadmin },
+                    backstageLink("editFileTags", { renderIcon: gIconMap.Tag }),
                 ]
             },
             {
                 links: [
-                    { type: "link", path: "/backstage/editWikiPageTags", linkCaption: "Wiki Page Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
+                    backstageLink("editWikiPageTags", { renderIcon: () => gIconMap.Tag() }),
                 ]
             },
             {
                 links: [
-                    { type: "link", path: "/backstage/editUserTags", linkCaption: "User Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.admin_users },
+                    backstageLink("editUserTags", { renderIcon: () => gIconMap.Tag() }),
                 ]
             },
             {
                 links: [
-                    { type: "link", path: "/backstage/instrumentTags", linkCaption: "Instrument Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
+                    backstageLink("instrumentTags", { renderIcon: () => gIconMap.Tag() }),
                 ]
             },
             {
                 links: [
+                    backstageLink("settings", { renderIcon: () => <SettingsIcon /> }),
 
-
-                    { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-
-                ]
-            },
-            {
-                links: [
-                    { type: "link", path: "/backstage/workflows", linkCaption: "Workflows", renderIcon: gIconMap.AccountTree, permission: Permission.view_workflow_defs },
                 ]
             },
         ]
@@ -171,12 +177,12 @@ export const gMenuSections: MenuSection[] = [
         groups: [
             {
                 links: [
-                    { type: "link", path: "/backstage/eventImport", linkCaption: "Import events", renderIcon: gIconMap.CalendarMonth, permission: Permission.admin_events },
-                    //{ type: "link", path: "/backstage/adminLogs", linkCaption: "Logs", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/calendarPreview", linkCaption: "iCal Preview", renderIcon: () => gIconMap.CalendarMonth(), permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <Palette />, permission: Permission.sysadmin },
+                    backstageLink("eventImport", { renderIcon: gIconMap.CalendarMonth }),
+                    // backstageLink("adminLogs", { renderIcon: () => <SettingsIcon /> }),
+                    backstageLink("serverHealth", { renderIcon: () => <SettingsIcon /> }),
+                    backstageLink("calendarPreview", { renderIcon: () => gIconMap.CalendarMonth() }),
+                    backstageLink("gallery", { renderIcon: () => <CollectionsIcon /> }),
+                    backstageLink("colorEditor", { renderIcon: () => <Palette /> }),
                 ]
             },
         ]
@@ -188,9 +194,9 @@ export const gMenuSections: MenuSection[] = [
             {
                 className: "admin users",
                 links: [
-                    { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
-                    { type: "link", path: "/backstage/permissions", linkCaption: "Permissions", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
-                    { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
+                    backstageLink("roles", { renderIcon: () => <SecurityIcon /> }),
+                    backstageLink("permissions", { renderIcon: () => <SecurityIcon /> }),
+                    backstageLink("rolePermissions", { renderIcon: () => <SecurityIcon /> }),
                 ]
             },
         ]
@@ -202,8 +208,8 @@ export const gMenuSections: MenuSection[] = [
             {
                 className: "admin instruments",
                 links: [
-                    { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+                    backstageLink("instruments", { renderIcon: () => <MusicNoteIcon /> }),
+                    backstageLink("instrumentFunctionalGroups", { renderIcon: () => <MusicNoteIcon /> }),
                 ]
             },
         ]
@@ -214,14 +220,14 @@ export const gMenuSections: MenuSection[] = [
         groups: [
             {
                 links: [
-                    { type: "link", path: "/backstage/adminUsers", linkCaption: "Users grid", renderIcon: () => <PersonIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editEventSegments", linkCaption: "Event Segments", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
-                    { type: "link", path: "/backstage/editFrontpageGalleryItems", linkCaption: "Front page gallery", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
+                    backstageLink("adminUsers", { renderIcon: () => <PersonIcon /> }),
+                    backstageLink("editSongs", { renderIcon: () => <MusicNoteIcon /> }),
+                    backstageLink("editSongCredits", { renderIcon: () => <MusicNoteIcon /> }),
+                    backstageLink("userInstruments", { renderIcon: () => <MusicNoteIcon /> }),
+                    backstageLink("editEvents", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
+                    backstageLink("editEventSegments", { renderIcon: () => <CalendarMonthOutlinedIcon /> }),
+                    backstageLink("editFiles", { renderIcon: gIconMap.AttachFile }),
+                    backstageLink("editFrontpageGalleryItems", { renderIcon: gIconMap.AttachFile }),
                 ]
             },
         ]

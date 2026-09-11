@@ -108,51 +108,53 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 }} />
             }
 
-            {dashboardContext.isAuthorized(Permission.sysadmin) &&
-                <CMTabPanel
-                    selectedTabId={selectedTab}
-                    handleTabChange={(e, newId) => handleTabChange(newId as string)}
+            <CMTabPanel
+                selectedTabId={selectedTab}
+                handleTabChange={(e, newId) => handleTabChange(newId as string)}
+            >
+                <CMTab
+                    enabled={dashboardContext.isAuthorized(Permission.view_events_nonpublic)}
+                    thisTabId={UserDetailTabSlug.attendance}
+                    summaryTitle={"Attendance"}
+                    summaryIcon={gIconMap.Check()}
                 >
-                    <CMTab
-                        thisTabId={UserDetailTabSlug.attendance}
-                        summaryTitle={"Attendance"}
-                        summaryIcon={gIconMap.Check()}
-                    >
-                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                            <UserAttendanceTabContent user={user} />
-                        </Suspense>
-                    </CMTab>
-                    <CMTab
-                        thisTabId={UserDetailTabSlug.credits}
-                        summaryTitle={"Credits"}
-                        summaryIcon={gIconMap.Comment()}
-                    >
-                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                            <SongsProvider>
-                                <UserCreditsTabContent user={user} />
-                            </SongsProvider>
-                        </Suspense>
-                    </CMTab>
-                    <CMTab
-                        thisTabId={UserDetailTabSlug.wiki}
-                        summaryTitle={"Wiki Contributions"}
-                        summaryIcon={gIconMap.Article()}
-                    >
-                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                            <UserWikiContributionsTabContent user={user} />
-                        </Suspense>
-                    </CMTab>
-                    <CMTab
-                        thisTabId={UserDetailTabSlug.massAnalysis}
-                        summaryTitle={"Mass Analysis"}
-                        summaryIcon={gIconMap.Info()}
-                    >
-                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                            <UserMassAnalysisTabContent user={user} />
-                        </Suspense>
-                    </CMTab>
-                </CMTabPanel>
-            }
+                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                        <UserAttendanceTabContent user={user} />
+                    </Suspense>
+                </CMTab>
+                <CMTab
+                    enabled={dashboardContext.isAuthorized(Permission.manage_users)}
+                    thisTabId={UserDetailTabSlug.credits}
+                    summaryTitle={"Credits"}
+                    summaryIcon={gIconMap.Comment()}
+                >
+                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                        <SongsProvider>
+                            <UserCreditsTabContent user={user} />
+                        </SongsProvider>
+                    </Suspense>
+                </CMTab>
+                <CMTab
+                    enabled={dashboardContext.isAuthorized(Permission.view_wiki_page_revisions)}
+                    thisTabId={UserDetailTabSlug.wiki}
+                    summaryTitle={"Wiki Contributions"}
+                    summaryIcon={gIconMap.Article()}
+                >
+                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                        <UserWikiContributionsTabContent user={user} />
+                    </Suspense>
+                </CMTab>
+                <CMTab
+                    enabled={dashboardContext.isAuthorized(Permission.sysadmin)}
+                    thisTabId={UserDetailTabSlug.massAnalysis}
+                    summaryTitle={"Mass Analysis"}
+                    summaryIcon={gIconMap.Info()}
+                >
+                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                        <UserMassAnalysisTabContent user={user} />
+                    </Suspense>
+                </CMTab>
+            </CMTabPanel>
         </div>
     </div>;
 };

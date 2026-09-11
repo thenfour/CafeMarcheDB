@@ -167,8 +167,13 @@ const originalGetInitialProps = (BlitzedApp as any).getInitialProps as
     appProps = await NextApp.getInitialProps(appCtx);
   }
 
+  const req = appCtx.ctx?.req as any;
+  if (req) {
+    const { authorizeBackstagePageRequest } = await import("@/src/auth/server/backstagePageRequestAuthorization");
+    await authorizeBackstagePageRequest(appCtx.ctx.pathname, appCtx.ctx);
+  }
+
   try {
-    const req = appCtx.ctx?.req as any;
     if (req) {
       // Only import and call server code on the server
       const { loadDbBrandConfig } = await import("@/src/server/brand");

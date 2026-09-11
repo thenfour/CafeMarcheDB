@@ -1,4 +1,3 @@
-import { Permission } from "@/shared/permissions";
 import { AppContextMarker } from "@/src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "@/src/core/components/CMCoreComponents";
 import { CMLink } from "@/src/core/components/CMLink";
@@ -7,8 +6,8 @@ import { useDashboardContext } from "@/src/core/components/dashboardContext/Dash
 import { MetronomePanel } from "@/src/core/components/Metronome";
 //import { TunerCard } from "@/src/core/components/tuner/TunerCard";
 import { BlitzPage } from "@blitzjs/next";
-import { Breadcrumbs } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
+import { Breadcrumbs } from "@mui/material";
 
 
 ////////////////////////////////////////////////////////////////
@@ -34,7 +33,7 @@ export const PracticeToolsBreadcrumbs = () => {
 
 const PracticeToolsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Practice tools" basePermission={Permission.practice_tools_use}>
+        <DashboardLayout title="Practice tools">
             <AppContextMarker name="practice tools page">
                 <PracticeToolsBreadcrumbs />
                 <CMSinglePageSurfaceCard style={{ display: "flex", flexDirection: "column", alignItems: "center" }} >

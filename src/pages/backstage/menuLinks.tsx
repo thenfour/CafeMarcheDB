@@ -16,7 +16,7 @@ const MyContent = () => {
 const MenuLinksPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Menu Links" basePermission={Permission.view_custom_links}>
+        <DashboardLayout title="Menu Links" basePermission={Permission.customize_menu}>
             <Suspense fallback="Loading...">
                 <MyContent />
             </Suspense>

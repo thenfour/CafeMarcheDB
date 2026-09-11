@@ -3,7 +3,7 @@
 - Last updated: 2026-09-11
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001 through BA-S006, BA-M001, and BA-C001 through BA-C003 complete; Phase 8 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001 through BA-S006, BA-M001, BA-C001 through BA-C003, and BA-N001 through BA-N003 complete; BA-N004 next
 
 ## Goal
 
@@ -891,36 +891,67 @@ Phase completion evidence:
 
 ## Phase 8 — Align UI, page, and server capabilities
 
+### Recommended implementation shape
+
+Use one pure-TypeScript route registry as the authority for access to pages under `/backstage`. Keep React icons and menu grouping in a presentation-only structure that references registry entries by stable route key; the authorization registry must remain importable from page, server, and test code without importing React or MUI.
+
+Each registry entry contains:
+
+- a stable key and canonical route pattern, including explicit patterns for dynamic routes
+- a caption
+- exactly one `Permission`
+
+Public pages use a permission from the canonical public baseline, Sysadmin pages use `Permission.sysadmin`, and deliberately contained pages use `Permission.never_grant`. Avoid a parallel access-policy type or general `allOf`/`anyOf` expressions: a page has one comprehensible entry capability, while controls and server operations within it may require narrower or stronger capabilities.
+
+Recommended consumers and enforcement order:
+
+1. `StaticMenuItems.tsx` supplies route keys, grouping, icons, and ordering but obtains path, caption, and permission from the route registry. The drawer decides which registered routes it presents.
+2. The global server page guard resolves the registry entry and delegates to the centralized fresh-permission authorization facility. It does not contain separate public or Sysadmin branches.
+3. `DashboardLayout` consumes the same entry for the client-side loading/unauthorized experience, but is not the security boundary.
+4. RPC, DB3, and mutation authorization remains independent and authoritative. Registry access never implies authority to perform every operation rendered by a page.
+
+Implement this as a mechanical alignment slice, not a new routing framework. Pages with entity-specific server loading continue to perform row-level checks in addition to the route check.
+
 ### BA-N001 — Shared backstage route-capability registry
 
-- [ ] Centralize path, caption, navigation capability, page capability, and surface classification.
-- [ ] Have menus and page layouts consume the same metadata where practical.
-- [ ] Add a drift test for every registered backstage route.
-- [ ] Treat all client/page checks as UX only; keep server checks authoritative.
+- [x] Add a server-safe `backstageRouteRegistry` with stable route keys, canonical static/dynamic patterns, caption, and permission.
+- [x] Make the drawer reference route keys rather than repeat paths, captions, or permissions. Keep inclusion, icons, grouping, ordering, realms, and tenant-specific presentation outside the authorization registry.
+- [x] Add a registry-aware server-page guard that delegates its single permission check to centralized fresh-permission authorization.
+- [x] Have `DashboardLayout` derive the current route entry and use it instead of independently restating the effective `basePermission`; retain legacy props only as a fallback outside registered backstage routes.
+- [x] Register routes that do not appear in the drawer, including detail pages and test/developer pages, without adding presentation metadata to the registry.
+- [x] Add a filesystem-to-registry drift test that fails when a page under `src/pages/backstage` is unregistered, a registry pattern has no page, or two entries claim the same pattern. Normalize Next.js dynamic filenames such as `[...id_slug_tab]` before comparison.
+- [x] Add a drawer drift test proving that every requested route key exists and receives its path, caption, and permission from the registry.
+- [x] Add focused server-guard tests for anonymous public-baseline access, ordinary permitted/denied access, fresh revocation, `sysadmin`, `never_grant`, and missing route metadata.
+- [x] Treat all client/page checks as UX only; keep server checks authoritative.
+
+Do not try to infer a page's capability by parsing JSX in the drift test. The registry is the declared contract; the tests should verify completeness and exercise the shared guard.
 
 Reference: [current static menu permissions](../src/core/components/dashboard/StaticMenuItems.tsx#L68)
 
 ### BA-N002 — Correct known Band Admin navigation mismatches
 
-- [ ] Event tags, types, statuses, attendance options, and custom fields use `admin_events` rather than menu-only `sysadmin`.
-- [ ] Song tags and credit types use `admin_songs`.
-- [ ] File tags use `admin_files`.
-- [ ] Wiki tags use `admin_wiki_pages`.
-- [ ] Instrument tags, instruments, and functional groups use `admin_instruments`.
-- [ ] Raw operational event/song/file grids use their existing domain permissions.
-- [ ] Front-page gallery management uses `edit_public_homepage`.
-- [ ] User Search navigation agrees with its `search_users` page capability.
-- [ ] Menu Links and Custom Links use consistent capabilities.
-- [ ] Practice Tools and all required data are accessible to anonymous users; remove the redundant gate or add the permission to the public baseline.
+- [x] Event tags, types, statuses, and attendance options use `admin_events` in both registry and page.
+- [x] Do **not** grant Event Custom Fields through `admin_events` while that page remains coupled to workflow definitions. Give it `never_grant` and omit it from the drawer with the other workflow surfaces. Reconsider a separate event capability only after the feature is decoupled from workflows.
+- [x] Song tags and credit types use `admin_songs`.
+- [x] File tags use `admin_files`.
+- [x] Wiki tags use `admin_wiki_pages`.
+- [x] Instrument tags, instruments, and functional groups use `admin_instruments`.
+- [x] Raw operational event/song/file grids use their existing domain permissions (`admin_events`, `admin_songs`, and `admin_files`) in registry, page guard, and menu. Keep the legacy raw Users grid platform-only because its data shape is not the delegated user-management surface.
+- [x] Front-page gallery management uses `edit_public_homepage`.
+- [x] User Search navigation agrees with its `search_users` page capability.
+- [x] Menu Links requires `customize_menu`; Custom Links requires `view_custom_links`, with create/edit/delete controls and mutations continuing to require `manage_custom_links`. Do not force these distinct features onto one permission merely because their current page gates drifted.
+- [x] Make Practice Tools explicitly `public`, remove `practice_tools_use` from the page and data-query gates, and then remove the obsolete permission from the canonical registry/database synchronization path. Verify every query used during initial render as anonymous; a public shell around protected data is not sufficient.
+
+For each corrected route, test the same persona against menu visibility, the server page guard, and the first server data call. That three-point assertion is the useful definition of "aligned."
 
 ### BA-N003 — Close missing and incorrect page gates
 
-- [ ] Keep Roles and Permission Matrix sysadmin-only in both navigation and pages.
-- [ ] Add an explicit sysadmin gate to the Permission maintenance page.
-- [ ] Add an explicit approved capability to Color Editor.
-- [ ] Keep the legacy raw Admin Users grid sysadmin-only.
-- [ ] Remove or sysadmin-gate production component/test pages.
-- [ ] Split user activity tabs by their actual capability instead of wrapping the panel in `sysadmin`.
+- [x] Require `Permission.sysadmin` for Roles, Permissions, and Permission Matrix in the registry, server page guard, page layout, queries, and mutations.
+- [x] Require `Permission.sysadmin` for Color Editor. Delegated theme changes belong on the `manage_site_branding` Brand surface.
+- [x] Require `Permission.sysadmin` for the legacy raw Admin Users grid; delegated administration remains on User Search and the constrained user detail controls.
+- [x] Require `Permission.sysadmin` for component galleries, `/backstage/test` routes, calendar preview, and similar diagnostic pages. Drawer inclusion remains presentation owned and is not conditional on route classification metadata.
+- [x] Replace the single `Permission.sysadmin` wrapper around all user activity tabs with per-tab requirements: Attendance uses `view_events_nonpublic`, Credits uses `manage_users`, and Wiki Contributions uses `view_wiki_page_revisions`, matching their server queries. Keep Mass Analysis behind `Permission.sysadmin` and enforce that permission freshly in its query.
+- [x] When a requested tab is unauthorized, omit it from the enabled tab model and select the first authorized tab; do not issue the tab's query and hide the result afterward.
 
 References:
 
@@ -931,19 +962,22 @@ References:
 
 ### BA-N004 — Preserve platform-only surfaces
 
-- [ ] Server Health remains sysadmin-only.
-- [ ] Stop returning the complete `process.env` to browser clients; expose only explicitly safe diagnostic fields.
-- [ ] Raw settings and bulk configuration remain sysadmin-only.
-- [ ] Raw security topology remains sysadmin-only.
-- [ ] Developer inspectors, test tools, and component galleries remain sysadmin-only or are removed from production.
+- [ ] Server Health requires a freshly checked `Permission.sysadmin` in its route, query, and UI.
+- [ ] Delete `env: process.env` from `GetServerHealthResult`. Return a newly constructed, typed diagnostics object containing only values the page actually renders and that are safe to disclose, such as runtime mode and presence booleans. Never return database URLs/passwords, auth secrets, provider secrets, mail credentials, filesystem roots, or arbitrary environment keys; do not implement this as a denylist or a redacted copy of `process.env`.
+- [ ] Do not return the raw database-statistics SQL text or absolute upload paths. Return typed results and relative/operator-safe labels only.
+- [ ] Raw Settings, bulk configuration, Roles, Permissions, and RolePermission topology require `actualSysadmin` consistently at page, RPC, and DB3 boundaries.
+- [ ] Developer inspectors, test tools, and component galleries require `actualSysadmin` and are absent from normal production navigation. Prefer build-time exclusion or removal for pages with no operational value; authorization is still required when they remain compiled.
+- [ ] Add a response-shape regression test asserting that representative secret-like environment variables cannot appear anywhere in serialized Server Health output.
 
 Reference: [Server Health query](../src/core/db3/queries/getServerHealth.ts#L43)
 
 Phase completion evidence:
 
-- Implementation:
-- Verification:
+- Implementation: BA-N001 through BA-N003 complete. Added the authoritative permission-only backstage route registry, centralized database-revalidated server page guard, route-key-based drawer entries, registry-derived client/layout behavior, corrected delegated navigation capabilities, public Practice Tools, `never_grant` workflow containment, Sysadmin platform/developer routes, and per-capability user activity tabs.
+- Verification: `yarn test` (318 passed); `yarn tsc --noEmit`; `yarn build`; `git diff --check`. Focused ESLint and the build's lint phase report the pre-existing `.eslintrc.js`/ESLint package-exports incompatibility; the production compilation and page-data build succeed.
 - Commit/PR:
+
+Recommended verification for completion: focused registry/guard tests; persona-based menu/page/first-query tests for every changed route; a direct-URL test for each platform/developer/contained class; Server Health response-shape tests; full `yarn test`; `yarn tsc --noEmit`; focused ESLint; `yarn build`; and `git diff --check`.
 
 ## Phase 9 — Authorization acceptance matrix
 
@@ -1044,6 +1078,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-11 | BA-S002   | Enforced direct File visibility; added public-asset alignment migration, storage-name containment, and pre-filesystem image-fork/gallery authorization                                                               | `yarn test:auth`; `yarn test` (187 passed); `yarn tsc --noEmit`; focused ESLint; `yarn prisma validate`; `yarn build` | —                 |
 | 2026-09-11 | BA-S006   | Added schema-wide soft-delete/visibility composition tests, one direct-read policy boundary, raw-SQL grouping, awaited relation scopes, and a protected-model call-site audit                                        | `yarn test:auth`; `yarn test` (291 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                         | —                 |
 | 2026-09-11 | Phase 7   | Split delegated branding from platform settings, restricted raw settings to actual Sysadmins, made cache invalidation internal, and hid technical data behind actual-Sysadmin admin controls                         | `yarn test` (303 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`; `git diff --check`                       | see gh issue #668 |
+| 2026-09-11 | BA-N001–N003 | Added a complete permission-only backstage route registry and centralized database-revalidated global page guard; aligned drawer/domain capabilities; made Practice Tools public; contained workflow pages; protected platform/developer pages; and split user activity tabs | `yarn test` (318 passed); `yarn tsc --noEmit`; `yarn build`; `git diff --check`; ESLint blocked by existing config/package incompatibility | — |
 
 ## Deferred ideas
 
