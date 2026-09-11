@@ -41,7 +41,7 @@ export type AuthorizationTestUser = {
   createdAt: Date
   roleId: number | null
   cssClass: string | null
-  accessToken: string | null
+  calendarFeedToken: string | null
   role: TestRole | null
 }
 
@@ -94,7 +94,7 @@ export function createAuthorizationTestUser(
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     roleId,
     cssClass: overrides.cssClass ?? null,
-    accessToken: overrides.accessToken ?? null,
+    calendarFeedToken: overrides.calendarFeedToken ?? null,
     role: {
       id: roleId,
       name: persona,

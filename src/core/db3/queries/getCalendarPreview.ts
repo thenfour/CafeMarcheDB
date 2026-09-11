@@ -1,12 +1,12 @@
 
-import { ServerApi } from "@/src/server/serverApi";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
+import db from "db";
 import { ICalCalendar, ICalDateTimeValue } from "ical-generator";
 import { Permission } from "shared/permissions";
-import { getCurrentUserCore } from "../server/db3mutationCore";
 import { CalExportCore } from "../server/ical";
-import { GetICalRelativeURIForUserUpcomingEvents, ICalCalendarJSON } from "../shared/apiTypes";
+import { ICalCalendarJSON } from "../shared/apiTypes";
+import { UserForCalBackendArgs } from "../shared/schema/prismArgs";
 
 
 function ICalConvertToDate(value: ICalDateTimeValue): Date {
@@ -23,18 +23,23 @@ function ICalConvertToDate(value: ICalDateTimeValue): Date {
 
 
 export default resolver.pipe(
-    resolver.authorize(Permission.always_grant),
+    resolver.authorize(Permission.sysadmin),
     async (input: {}, ctx: AuthenticatedCtx): Promise<ICalCalendarJSON> => {
         try {
             const startTimestamp = Date.now();
 
-            const u = (await getCurrentUserCore(ctx))!;
-            const accessToken = u.accessToken || "";
+            const u = await db.user.findFirst({
+                ...UserForCalBackendArgs,
+                where: {
+                    id: ctx.session.userId,
+                    isDeleted: false,
+                },
+            });
+            if (!u) throw new Error("Active calendar preview user not found.");
 
             const cal: ICalCalendar = await CalExportCore({
                 type: "upcoming",
-                accessToken,
-                sourceURI: ServerApi.getAbsoluteUri(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: accessToken })),
+                currentUser: u,
             });
 
             const ret: ICalCalendarJSON = {

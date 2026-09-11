@@ -28,7 +28,7 @@ describe("BA-U006 generic User identity boundaries", () => {
     ...createAuthorizationTestUser("normal", {
       id: 10,
       email: "original@test.invalid",
-      accessToken: "calendar-secret",
+      calendarFeedToken: "calendar-secret",
     }),
     googleId: "google-subject-1",
     hashedPassword: "password-hash",
@@ -64,7 +64,8 @@ describe("BA-U006 generic User identity boundaries", () => {
     ["email", "attacker@test.invalid"],
     ["googleId", "attacker-google-subject"],
     ["hashedPassword", "attacker-password-hash"],
-    ["accessToken", "attacker-calendar-token"],
+    ["calendarFeedToken", "attacker-calendar-token"],
+    ["accessToken", "attacker-legacy-calendar-token"],
     ["uid", "attacker-server-uid"],
   ])("rejects delegated generic writes to authentication field %s", async (field, value) => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
@@ -83,7 +84,8 @@ describe("BA-U006 generic User identity boundaries", () => {
     ["email", "generic-sysadmin@test.invalid"],
     ["googleId", "generic-sysadmin-google-subject"],
     ["hashedPassword", "generic-sysadmin-password-hash"],
-    ["accessToken", "generic-sysadmin-calendar-token"],
+    ["calendarFeedToken", "generic-sysadmin-calendar-token"],
+    ["accessToken", "generic-sysadmin-legacy-calendar-token"],
     ["uid", "generic-sysadmin-server-uid"],
   ])("keeps authentication field %s out of generic Sysadmin updates", async (field, value) => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")

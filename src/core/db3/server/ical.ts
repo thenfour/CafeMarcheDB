@@ -29,7 +29,6 @@ async function GetICalSettings(): Promise<ICalSettings> {
 };
 
 interface CreateCalendarArgs {
-    sourceURL: string;
     icalSettings: ICalSettings;
 };
 
@@ -42,8 +41,6 @@ export const createCalendar = async (args: CreateCalendarArgs): Promise<ICalCale
             product: args.icalSettings.calendarProduct,
             language: "EN",
         },
-        source: args.sourceURL, // * cal.source('http://example.com/my/original_source.ical');
-        url: args.sourceURL, // * calendar.url('http://example.com/my/feed.ical'); // seems same as source
         //ttl: ,  seconds; let users decide.
         //scale: "", // ??? gregorian. calendar scale. don't use.
     });
@@ -148,8 +145,7 @@ export const addEventToCalendar = async (
 };
 
 export interface CalExportCoreArgs1 {
-    accessToken: string;
-    sourceURI: string;
+    currentUser: null | db3.UserForCalBackendPayload;
 };
 
 export interface CalExportCoreArgsSingleEvent extends CalExportCoreArgs1 {
@@ -163,17 +159,7 @@ export interface CalExportCoreArgsUpcoming extends CalExportCoreArgs1 {
 
 type CalExportCoreArgs = CalExportCoreArgsUpcoming | CalExportCoreArgsSingleEvent;
 
-export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCoreArgs): Promise<ICalCalendar> => {
-    let currentUser: null | db3.UserForCalBackendPayload = null;
-    if (accessToken.length > 10) {
-        currentUser = await db.user.findUnique({
-            where: {
-                accessToken,
-            },
-            ...db3.UserForCalBackendArgs,
-        });
-    }
-
+export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCoreArgs): Promise<ICalCalendar> => {
     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: currentUser ? "user" : "public", mode: 'primary' };
 
     const table = db3.xEventVerbose;
@@ -204,7 +190,6 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
     const settings = await GetICalSettings();
 
     const cal = await createCalendar({
-        sourceURL: args.sourceURI,
         icalSettings: settings,
     });
 

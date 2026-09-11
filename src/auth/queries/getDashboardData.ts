@@ -1,6 +1,5 @@
 import { BigintToNumber } from "@/shared/utils";
 import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
-import { generateToken, hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc";
 import type { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
@@ -47,24 +46,6 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
         GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
         GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     });
-
-    // ensure user has an access token.
-    if (u && !u.accessToken) {
-        // generateToken is secure but generates a string like 
-        // CcT0mEYj6_cck9Zf7yUmi_CmoyLv-fVB
-        // with underscores, mix of upper/lower, dashes...
-        // hash256 returns a cleaner string. 64 chars, all hexlike.
-        // combining them for the best of both worlds.
-        const tok = hash256(generateToken()).toLowerCase();
-        await db.user.update({
-            where: {
-                id: publicData.userId
-            },
-            data: {
-                accessToken: tok,
-            }
-        });
-    }
 
     // refresh session publicdata permissions
     const newPerms = u?.role?.permissions.map(p => p.permission.name);

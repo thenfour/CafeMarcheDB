@@ -1,0 +1,16 @@
+.calPageContent {}
+
+.calPageContent .topLevelSurfaceStack {}
+
+/*
+*/
+.calPageContent .topLevelSurface {
+    /* gap: 24px; */
+    display: flex;
+    flex-direction: column;
+}
+
+.calPageContent .topLevelSurface .header {
+    background-color: #fff;
+    color: var(--primary-color);
+}

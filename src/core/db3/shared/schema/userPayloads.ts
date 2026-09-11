@@ -12,7 +12,6 @@ export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
         createdAt: true,
         roleId: true,
         cssClass: true,
-        accessToken: true,
         role: {
             include: {
                 permissions: {

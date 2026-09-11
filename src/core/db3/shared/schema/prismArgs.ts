@@ -414,8 +414,7 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
         createdAt: true,
         roleId: true,
         cssClass: true,
-        accessToken: true,
-        // Explicitly exclude: hashedPassword, googleId, uid
+        // Explicitly exclude: hashedPassword, googleId, calendarFeedToken, uid
         role: {
             include: {
                 permissions: {
@@ -454,7 +453,6 @@ export const UserSafeArgs = Prisma.validator<Prisma.UserArgs>()({
         createdAt: true,
         roleId: true,
         cssClass: true,
-        accessToken: true,
         role: true,
         instruments: UserInstrumentArgs,
         tags: {
@@ -481,7 +479,7 @@ export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
         createdAt: true,
         roleId: true,
         cssClass: true,
-        // Explicitly exclude: hashedPassword, googleId, accessToken, uid
+        // Explicitly exclude: hashedPassword, googleId, calendarFeedToken, uid
     }
 });
 export type UserPayloadMinimum = Prisma.UserGetPayload<typeof UserMinimumArgs>;
@@ -498,8 +496,6 @@ export const UserForCalBackendArgs = Prisma.validator<Prisma.UserArgs>()({
         createdAt: true,
         roleId: true,
         cssClass: true,
-        accessToken: true,
-
         uid: true,
         role: {
             include: {

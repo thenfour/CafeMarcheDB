@@ -34,6 +34,7 @@ import '../../public/style/setlistPlan.css';
 import '../../public/style/songSearch.css';
 import '../../public/style/tabs.css';
 import '../../public/style/workflow.css';
+import '../../public/style/calendarPage.css';
 import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 
 // Client-side cache, shared for the whole session of the user in the browser.

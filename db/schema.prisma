@@ -181,8 +181,8 @@ model User {
   hashedPassword String?
   googleId       String?
   createdAt      DateTime @default(now())
-  accessToken    String?  @db.VarChar(768) // used like a github access token; a const string which is private and can be used to access resources on your behalf without a session.
-  uid            String?  @default(uuid()) // used for unique identification but is NOT secret like the accessToken.
+  calendarFeedToken String? @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
+  uid               String? @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
 
   roleId Int? // nullable for new users a role should be assigned by an admin. null = public
   role   Role? @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
@@ -223,7 +223,7 @@ model User {
 
   actions Action[]
 
-  @@unique([accessToken])
+  @@unique([calendarFeedToken], map: "User_accessToken_key")
   @@unique([uid])
   @@index([name])
   @@index([isDeleted])
@@ -663,7 +663,7 @@ model EventSegment {
 
   name        String  @db.VarChar(768)
   description String  @db.MediumText // short description, like 
-  uid         String? @default(uuid()) // used for unique identification but is NOT secret like the accessToken.
+  uid         String? @default(uuid()) // used for unique identification but is NOT secret like a calendar feed token.
 
   // segments have their own status as well, this is mostly used in the case where you're using an event like a doodle, and segments can be cancelled.
   statusId Int?

@@ -1420,7 +1420,7 @@ describe("BA-U003 password-reset hardening", () => {
   const target = {
     ...createAuthorizationTarget("ordinary", { id: 10 }),
     hashedPassword: "previous-password-hash",
-    accessToken: "existing-access-token",
+    calendarFeedToken: "existing-calendar-feed-token",
   }
 
   beforeEach(() => {
@@ -1541,7 +1541,7 @@ describe("BA-U003 password-reset hardening", () => {
     expect(serializedAudit).not.toContain(rawToken)
     expect(serializedAudit).not.toContain(newPassword)
     expect(serializedAudit).not.toContain(target.hashedPassword)
-    expect(serializedAudit).not.toContain(target.accessToken)
+    expect(serializedAudit).not.toContain(target.calendarFeedToken)
     expect(authorizationTestDb.snapshot("token")).toEqual([])
     expect(authorizationTestDb.snapshot("session")).toEqual([])
   })
@@ -1551,7 +1551,7 @@ describe("BA-U004 impersonation hardening", () => {
   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
   const target = createAuthorizationTarget("ordinary", {
     id: 10,
-    accessToken: "target-access-token-must-not-be-returned",
+    calendarFeedToken: "target-calendar-feed-token-must-not-be-returned",
   })
 
   beforeEach(() => {
@@ -1587,7 +1587,7 @@ describe("BA-U004 impersonation hardening", () => {
       oldValues: JSON.stringify({ impersonatedByUserId: null }),
       newValues: JSON.stringify({ impersonatedByUserId: sysadmin.id }),
     }))
-    expect(JSON.stringify({ result, changes })).not.toContain(target.accessToken)
+    expect(JSON.stringify({ result, changes })).not.toContain(target.calendarFeedToken)
   })
 
   it("does not treat a role-carried impersonation grant as actual Sysadmin", async () => {
@@ -1659,7 +1659,7 @@ describe("BA-U004 impersonation hardening", () => {
   it("restores the original actor and attributes the stop event to that actor", async () => {
     const originalActor = {
       ...sysadmin,
-      accessToken: "original-actor-access-token-must-not-be-returned",
+      calendarFeedToken: "original-actor-calendar-feed-token-must-not-be-returned",
     }
     authorizationTestDb.reset({ user: [originalActor, target], change: [] })
     const { ctx } = createAuthorizationPersona("normal", { id: target.id })
@@ -1687,7 +1687,7 @@ describe("BA-U004 impersonation hardening", () => {
       oldValues: JSON.stringify({ impersonatedByUserId: originalActor.id }),
       newValues: JSON.stringify({ impersonatedByUserId: null }),
     }))
-    expect(JSON.stringify({ result, changes })).not.toContain(originalActor.accessToken)
+    expect(JSON.stringify({ result, changes })).not.toContain(originalActor.calendarFeedToken)
   })
 
   it("does not create a session or audit event when no impersonation is active", async () => {

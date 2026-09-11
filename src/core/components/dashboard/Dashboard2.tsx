@@ -12,13 +12,11 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
-import { slugify } from "shared/rootroot";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { useBrand } from "../../../../shared/brandConfig";
 import { API } from "../../db3/clientAPI";
 import { gIconMap } from "../../db3/components/IconMap";
-import { GetICalRelativeURIForUserUpcomingEvents } from "../../db3/shared/apiTypes";
 import { QrHelpers } from "../../db3/shared/qrApi";
 import { AppContextMarker } from "../AppContext";
 import { AdminInspectObject } from "../CMCoreComponents2";
@@ -32,7 +30,6 @@ import { MessageBoxProvider } from "../MessageBoxContext";
 import { QrCodeButton } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SettingMarkdown } from "../SettingMarkdown";
-import { useSnackbar } from "../SnackbarContext";
 import {
     SideMenu
 } from "./MenuStructure";
@@ -63,8 +60,6 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
     const dashboardContext = useDashboardContext();
     const currentUser = dashboardContext.currentUser;
     const recordFeature = useFeatureRecorder();
-    const { showMessage: showSnackbar } = useSnackbar();
-
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
 
     const onClickStopImpersonating = async () => {
@@ -117,22 +112,9 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
 
         {currentUser &&
             <>
-                <MenuItem component={Link} href={`/backstage/wiki/${slugify("calendar-sync-help")}`} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                    <ListItemIcon>{gIconMap.Help()}</ListItemIcon>
-                    How to use calendar sync...
-                </MenuItem>
-                <MenuItem onClick={async () => {
-                    const uri = dashboardContext.getAbsoluteUri(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
-                    await navigator.clipboard.writeText(uri);
-                    closeMenu();
-                    showSnackbar({ children: "Link address copied", severity: 'success' });
-                }}>
-                    <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
-                    Copy Calendar Link Address
-                </MenuItem>
-                <MenuItem component={Link} href={GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken })} target="_blank" rel="noreferrer" onClick={closeMenu}>
+                <MenuItem component={Link} href="/backstage/calendar" onClick={closeMenu}>
                     <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
-                    Calendar feed (iCal format)
+                    Calendar subscription
                 </MenuItem>
                 <AppContextMarker name="appBarQrCode">
                     <QrCodeButton

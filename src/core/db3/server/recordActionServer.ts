@@ -61,6 +61,14 @@ function sanitizeFeature(feature: string): string {
     return truncated;
 }
 
+export const redactSensitiveActionUri = (uri: string | null | undefined): string | null => {
+    if (uri == null) return null;
+    return uri.replace(
+        /(\/api\/ical\/user\/)[^/?#]+(\/upcoming)/gi,
+        "$1[calendarFeedToken]$2",
+    );
+};
+
 /**
  * Sanitizes all input fields according to database schema constraints.
  * 
@@ -81,7 +89,7 @@ function sanitizeActionInputs(args: RecordActionArgs & { userId?: number | null,
         // Core fields
         userId: toSafeId(args.userId),
         isClient: Boolean(args.isClient),
-        uri: truncateString(args.uri, 192),
+        uri: truncateString(redactSensitiveActionUri(args.uri), 192),
         feature: sanitizeFeature(args.feature),
         context: truncateString(args.context, 256),
         queryText: truncateString(args.queryText, 64),

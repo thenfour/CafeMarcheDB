@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { gQueryOptions } from "shared/utils";
+import { gQueryOptions, IsNullOrWhitespace } from "shared/utils";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -72,6 +72,10 @@ const SettingMarkdownEditor = (props: SettingMarkdownEditorProps) => {
 
 interface SettingMarkdownProps {
     setting: SettingKey;
+    fallbackWhen?: "null" | "emptyString" | "nullOrEmptyString"; // default is "null".
+
+    // undefined means no fallback will be applied.
+    fallbackMarkdown?: string | null;
 };
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
@@ -82,6 +86,24 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const editable = dashboardContext.isAuthorized(Permission.sysadmin) && showAdminControls;
 
     let [initialValue, { refetch }] = useQuery(getSetting, { name: props.setting }, gQueryOptions.default);
+
+    const fallbackWhen = props.fallbackWhen || "null";
+    const fallbackMarkdown = props.fallbackMarkdown;
+    if (fallbackMarkdown !== undefined) {
+        if (fallbackWhen === "null") {
+            if (initialValue === null) {
+                initialValue = fallbackMarkdown || null;
+            }
+        } else if (fallbackWhen === "emptyString") {
+            if (initialValue && initialValue.trim() === "") {
+                initialValue = fallbackMarkdown || null;
+            }
+        } else if (fallbackWhen === "nullOrEmptyString") {
+            if (initialValue === null || (initialValue && initialValue.trim() === "")) {
+                initialValue = fallbackMarkdown || null;
+            }
+        }
+    }
 
     return <div className={`settingMarkdownContainer ${editable && "editable"}`}>
         {editable && !editing && <CMSmallButton variant="framed" onClick={() => setEditing(true)}>Edit {props.setting}</CMSmallButton>}

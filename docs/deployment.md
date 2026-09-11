@@ -127,6 +127,12 @@ Use unquoted `KEY=value` entries. For these target settings, existing process en
 
 Keep application settings, including `DATABASE_URL`, in the existing `.env.local` / service configuration. `DB_NAME` must identify the same database used by the application and migrations. `mysqldump` uses the server's existing MySQL credentials configuration. Private repositories also require working Git credentials for the source fetch; the asset API token does not automatically configure Git.
 
+### Calendar subscription request logging
+
+Personal calendar subscriptions authenticate with a bearer credential in the request path: `/api/ical/user/<credential>/upcoming`. The application records only the static redacted route and never includes the credential in its response filename or calendar metadata. An upstream web server, hosting proxy, CDN, or monitoring service can still record the original path before the application handles it.
+
+Before enabling personalized calendar feeds on a target, configure every upstream access log and request-capture integration to omit this route or replace the credential segment with `[calendarFeedToken]`. Do not enable full-request-URL tracing for this path. Verify the effective production logs with a disposable test subscription before rollout, then replace that test link. If the host cannot suppress or redact request paths, treat its access log as credential-bearing security data, restrict access and retention accordingly, and document that exception for the deployment.
+
 ### One-time Sysadmin recovery
 
 Ordinary signup never grants Sysadmin. To enable a one-time sysadmin recovery path,

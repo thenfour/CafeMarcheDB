@@ -70,6 +70,7 @@ export const gMenuSections: MenuSection[] = [
                     { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
                     { type: "link", path: "/backstage/setlistPlanner", linkCaption: "Setlist Planner", renderIcon: () => <AudioFileOutlined />, permission: Permission.setlist_planner_access },
                     { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
+                    { type: "link", path: "/backstage/calendar", linkCaption: "Calendar subscription", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.login },
                 ]
             }
         ]

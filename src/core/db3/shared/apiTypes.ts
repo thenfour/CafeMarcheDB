@@ -360,13 +360,13 @@ export function ParseICalEventUid(uid: string): { eventUid: string; userUid: str
     };
 }
 
-// export function GetICalRelativeURIForUserAndEvent(args: { userAccessToken: string | null, eventUid: string | null, userUid: string | null }) {
+// export function GetICalRelativeURIForUserAndEvent(args: { calendarFeedToken: string | null, eventUid: string | null, userUid: string | null }) {
 //     if (!args.eventUid) throw new Error("invalid event for ical");
-//     return `/api/ical/user/${args.userAccessToken || "public"}/event/${MakeICalEventUid(args.eventUid, args.userUid)}`;
+//     return `/api/ical/user/${args.calendarFeedToken || "public"}/event/${MakeICalEventUid(args.eventUid, args.userUid)}`;
 // }
 
-export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken: string | null }) {
-    return `/api/ical/user/${args.userAccessToken || "public"}/upcoming`;
+export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null }) {
+    return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming`;
 }
 
 interface AutoAssignInstrumentPartitionArgs {

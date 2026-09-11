@@ -3,7 +3,7 @@
 - Last updated: 2026-09-10
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
-- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, and BA-M001 complete; BA-S001 next
+- Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001, and BA-M001 complete; BA-S002 next
 
 ## Goal
 
@@ -63,17 +63,17 @@ Primary references:
 
 This is the agreed platform boundary. The exact production role composition remains deferred to rollout.
 
-| Area                                    | Band Admin                                                           | Sysadmin only                                                          |
-| --------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Events, songs, files, instruments, wiki | Full domain administration                                           | Server/debug internals                                                 |
-| Workflows                               | Not available                                                        | Disabled/contained until later physical removal                        |
+| Area                                    | Band Admin                                                           | Sysadmin only                                                                                           |
+| --------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Events, songs, files, instruments, wiki | Full domain administration                                           | Server/debug internals                                                                                  |
+| Workflows                               | Not available                                                        | Disabled/contained until later physical removal                                                         |
 | Users                                   | Edit and deactivate ordinary users; assign permitted roles           | User creation, login email/provider identity, password-reset URLs, protected accounts, and `isSysAdmin` |
-| Roles and permissions                   | Assign predefined non-protected roles                                | Role CRUD, Permission CRUD, and the permission matrix                  |
-| Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus | Hosting mode, raw settings, and bulk configuration                     |
-| Reports                                 | Event and feature reports                                            | Server diagnostics                                                     |
-| Audit                                   | No audit-log access initially                                        | Raw change records; credential-bearing values must never be recorded   |
-| Support                                 | No impersonation initially                                           | Unrestricted impersonation                                             |
-| Technical tooling                       | None                                                                 | Environment, DB/filesystem diagnostics, debug, gallery, and test tools |
+| Roles and permissions                   | Assign predefined non-protected roles                                | Role CRUD, Permission CRUD, and the permission matrix                                                   |
+| Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus | Hosting mode, raw settings, and bulk configuration                                                      |
+| Reports                                 | Event and feature reports                                            | Server diagnostics                                                                                      |
+| Audit                                   | No audit-log access initially                                        | Raw change records; credential-bearing values must never be recorded                                    |
+| Support                                 | No impersonation initially                                           | Unrestricted impersonation                                                                              |
+| Technical tooling                       | None                                                                 | Environment, DB/filesystem diagnostics, debug, gallery, and test tools                                  |
 
 ### Deferred Band Admin rollout approach
 
@@ -160,6 +160,7 @@ Record each decision before implementing the affected capability.
   - Implementation note: Remove the redundant gate/permission or include it in the public permission baseline and verify that the route itself does not require login.
 
 - [x] **BA-D009 — Workflows:** Decide whether to harden or retain the unused workflow feature.
+
   - Decision: Do not expose workflows to Band Admin. Before platform readiness, remove normal navigation and entry points, disable or unregister callable server/DB3 paths, remove effective grants, and add negative tests.
   - Deferred cleanup: Physically remove the UI, server/shared implementation, permissions, settings/setup metadata, Event/User relations, ten Prisma models, and deployed database objects after this effort.
   - Constraint: Verify all deployment data and backups before the later destructive schema migration.
@@ -187,8 +188,10 @@ Record each decision before implementing the affected capability.
 - [x] **BA-D013 — Calendar feed authentication:** Decide how personalized unauthenticated iCal subscriptions are secured.
 
   - Decision: The unguessable subscription URL is a bearer credential because calendar clients do not have an interactive session. It may be shown and copied by its owner; merely hiding it is not the security boundary.
-  - Required controls: Scope the token only to the owner's calendar feed, keep it out of generic user payloads and other-user administration, provide owner-controlled rotation/revocation, reject unknown non-public tokens, require an active user, and prevent raw token values from entering application/proxy logs, audit records, filenames, or unrelated responses.
-  - Constraint: Deactivation must revoke or disable feed access. Token hashing at rest is a desirable defense-in-depth follow-up if the product accepts show-once/rotate semantics or another safe recovery design.
+  - Required controls: Scope the token only to the owner's calendar feed, keep it out of generic user payloads and other-user administration, provide owner-controlled emergency replacement, reject unknown non-public tokens, require an active user, and prevent raw token values from entering application/proxy logs, audit records, filenames, or unrelated responses.
+  - UX decision: Users manage a calendar subscription, not a token. A dedicated self-service page explains subscription versus one-time import, provides application-specific instructions, copy and Apple/QR actions, and keeps replacement as a low-prominence recovery operation. No periodic rotation is required. See issue #643
+  - Compatibility decision: Preserve all existing subscription URLs. The calendar credential remains recoverable at rest so an owner can revisit and copy it; hashing would require show-once semantics or replacing every existing subscription and is deferred unless that product tradeoff changes.
+  - Constraint: Deactivation must immediately disable feed access. Previously exposed tokens do not require bulk rotation or historical cleanup for this effort.
 
 ## Workstream summary
 
@@ -197,10 +200,10 @@ Record each decision before implementing the affected capability.
 | P0: Contain workflow feature        | Not started | Normal UI/server entry points and effective grants are removed; negative access tests pass                |
 | P0: Generic DB3 authorization       | Complete    | Crafted query/mutation attempts cannot cross table, row, field, association, filter, or delete boundaries |
 | P0: Protected accounts and signup   | Complete    | No untrusted path can obtain or delegate sysadmin authority                                               |
-| P0: Secrets and object-level gaps   | Not started | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
+| P0: Secrets and object-level gaps   | In progress | Tokens/hashes are excluded or redacted and known direct endpoint gaps are closed                          |
 | P1: Permission and role model       | In progress | Delegation policy and protected role/permission metadata are authoritative                                |
 | P1: Sessions and revocation         | Not started | Grants and revocations are reflected reliably and promptly                                                |
-| Deferred: Band Admin rollout        | Deferred    | An actual Sysadmin manually composes, tests, and assigns the production role after hardening               |
+| Deferred: Band Admin rollout        | Deferred    | An actual Sysadmin manually composes, tests, and assigns the production role after hardening              |
 | P1: Site configuration split        | Not started | Band-owned settings are allowlisted; platform settings remain protected                                   |
 | P1: UI/page/server alignment        | Not started | Shared capability metadata drives navigation and page access                                              |
 | P1: Test suite                      | In progress | Persona and adversarial matrices pass                                                                     |
@@ -640,7 +643,7 @@ References:
 
 Evidence:
 
-- Implementation: generic User insertion now requires the actual `User.isSysAdmin` bypass while explicit self-signup remains unchanged. Login email is view-only after creation, and `googleId`, `hashedPassword`, `accessToken`, and `uid` are denied by both registered generic User schemas. A dedicated actual-Sysadmin email-correction mutation verifies fresh database authority before target lookup, normalizes the address, preserves Google binding, revokes target sessions, and records only a redacted change marker. The canonical user panel exposes that operation only from server-computed actual-Sysadmin capability data. Google signup/linking now fails closed unless `passport-google-oauth20` supplies a provider-verified, valid email, and email fallback can claim only an active account without an existing Google binding.
+- Implementation: generic User insertion now requires the actual `User.isSysAdmin` bypass while explicit self-signup remains unchanged. Login email is view-only after creation, and `googleId`, `hashedPassword`, `calendarFeedToken` (plus the rejected legacy `accessToken` input name), and `uid` are denied by both registered generic User schemas. A dedicated actual-Sysadmin email-correction mutation verifies fresh database authority before target lookup, normalizes the address, preserves Google binding, revokes target sessions, and records only a redacted change marker. The canonical user panel exposes that operation only from server-computed actual-Sysadmin capability data. Google signup/linking now fails closed unless `passport-google-oauth20` supplies a provider-verified, valid email, and email fallback can claim only an active account without an existing Google binding.
 - Verification: `yarn test` (161 passed, including delegated creation, all authentication-owned fields for Band Admin and generic Sysadmin paths, actual-Sysadmin email correction, role-carried `sysadmin` rejection before target lookup, deactivated targets, session revocation, audit redaction, and verified/unverified Google profiles); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
 - Commit/PR:
 
@@ -648,26 +651,36 @@ Evidence:
 
 ### BA-S001 — Calendar-feed credentials and audit redaction
 
-- [ ] Replace the broadly named/general-purpose `User.accessToken` contract with a calendar-feed-specific credential, or strictly constrain the existing field during a staged migration.
-- [ ] Remove the token from ordinary user selections, generic tables, dashboard/session payloads, and every other-user administration response.
-- [ ] Provide a self-only operation for the owner to create/copy and rotate or revoke their calendar subscription URL.
-- [ ] Require token lookup to resolve an active, non-deleted user and disable or revoke feed access when that account is deactivated.
-- [ ] Reject unknown non-public tokens rather than treating them as the public feed.
-- [ ] Remove raw calendar tokens from request/activity logs, proxy logging where configurable, response filenames, and unnecessary calendar fields; apply appropriate private/no-store response headers.
-- [ ] Never write password hashes, access tokens, reset tokens, or comparable credentials into activity logs.
-- [ ] Add central structured redaction before serializing before/after records.
-- [ ] Assess whether previously exposed tokens require rotation or historical log cleanup.
-- [ ] Assess hashing calendar tokens at rest and document the chosen display/recovery semantics.
-- [ ] Keep raw audit logs sysadmin-only until redaction is complete.
+- [x] Replace the broadly named/general-purpose `User.accessToken` contract with a calendar-feed-specific credential, or strictly constrain the existing field during a staged migration.
+- [x] Remove the token from ordinary user selections, generic tables, dashboard/session payloads, and every other-user administration response.
+- [x] Provide a self-only operation for the owner to create/copy and replace their calendar subscription URL when compromise is suspected.
+- [x] Require token lookup to resolve an active, non-deleted user and disable feed access when that account is deactivated.
+- [x] Reject unknown non-public tokens rather than treating them as the public feed.
+- [x] Remove raw calendar tokens from request/activity logs, response filenames, and unnecessary calendar fields; apply appropriate private/no-store response headers and document the reverse-proxy logging requirement.
+- [x] Never write password hashes, access tokens, reset tokens, or comparable credentials into activity logs.
+- [x] Add central structured redaction before serializing before/after records.
+- [x] Assess whether previously exposed tokens require rotation or historical log cleanup.
+- [x] Assess hashing calendar tokens at rest and document the chosen display/recovery semantics.
+- [x] Keep raw audit logs sysadmin-only until redaction is complete.
+- [x] Replace scattered technical calendar actions with a dedicated owner-facing subscription page and provider guidance.
 
 References:
 
 - [User selection arguments](../src/core/db3/shared/schema/prismArgs.ts#L393)
-- [Calendar feed token lookup](../src/core/db3/server/ical.ts#L166)
-- [Calendar feed endpoint and telemetry](../src/pages/api/ical/user/[accessToken]/upcoming.ts#L17)
-- [Calendar subscription UI](../src/core/components/dashboard/Dashboard2.tsx#L118)
+- [Calendar feed credential boundary](../src/auth/server/calendarFeedSubscription.ts)
+- [Calendar feed endpoint and telemetry](../src/pages/api/ical/user/[calendarFeedToken]/upcoming.ts)
+- [Calendar subscription UI](../src/pages/backstage/calendar.tsx)
 - [Activity logging](../shared/activityLog.ts#L46)
 - [Password-change logging path](../src/auth/mutations/changePassword.ts#L31)
+
+Evidence:
+
+- Implementation: the Prisma model now exposes `calendarFeedToken` while mapping it to the existing `accessToken` database column, preserving every deployed URL without a data migration. Shared User selectors and dashboard refresh no longer retrieve or create the credential. The dedicated `/backstage/calendar` page creates a missing credential on first use, explains subscriptions for Apple, Google, Outlook, and other clients, generates QR codes entirely in the browser, and offers confirmed emergency replacement. Both self-service operations reject impersonated sessions and accept no target user ID.
+- Endpoint hardening: only the literal `public` path selects the public feed. Personalized lookups require a well-formed existing credential belonging to an active, non-deleted user; unknown or deactivated credentials return 404. The response uses a credential-free filename, private/no-store headers, and no ICS `SOURCE` or calendar `URL`. Application telemetry uses a static redacted path, and deployment guidance requires upstream access logging to omit or redact the credential segment.
+- Audit hardening: all change records pass through recursive sensitive-field redaction immediately before JSON serialization. Passwords, password hashes, token and token-hash fields, secrets, and credentials are redacted while deliberate non-secret event markers remain available. Calendar creation and replacement audit only boolean lifecycle markers, never the credential.
+- Compatibility and lifecycle decisions: existing tokens remain valid; no bulk cleanup or periodic rotation is required. Replacement is reserved for suspected disclosure. Recoverable storage remains intentional because users can revisit and copy their subscription URL; hashing is deferred unless a future show-once or forced-replacement UX is accepted.
+- Verification: `yarn test:auth` and `yarn test` (176 passed, including 13 focused calendar-feed tests covering owner-only access, first-use creation, forged target input, impersonation, deactivation, replacement, public/unknown-token behavior, active-user lookup, ICS metadata, shared payload exclusion, recursive/persistence-time audit redaction, and telemetry-path redaction); `yarn tsc --noEmit`; focused ESLint; `yarn prisma validate` with a disposable build URL; `yarn build`.
+- Commit/PR:
 
 ### BA-S002 — File visibility and image operations
 
@@ -1040,19 +1053,19 @@ This checklist is intentionally deferred and does not define completion of the c
 
 Add one row for each completed or materially changed work item.
 
-| Date       | Work item | Change                                                                                                                                                                                    | Verification                                                                                    | Commit/PR         |
-| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------- |
-| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                                                  | Static audit; configured local DB inspected read-only                                           | —                 |
-| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                                        | All product decisions resolved                                                                  | —                 |
-| 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs                         | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                              | —                 |
-| 2026-09-10 | Scope     | Inventoried complete removal of the unused workflow vertical slice; later policy narrows the readiness requirement to containment and defers destructive cleanup                           | Inventory covers UI, server, permissions, settings, schema, migration, and verification         | —                 |
-| 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views                            | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`    | see gh issue #668 |
-| 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
-| 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                                                | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
-| 2026-09-10 | BA-U004   | Restricted impersonation to actual Sysadmins, constrained protected targets, preserved original-actor attribution, and removed sensitive mutation results                                  | `yarn test:auth`; `yarn test` (114 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
-| 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                           | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`   | see gh issue #668 |
-| 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                         | —                 |
-| 2026-09-10 | BA-U006   | Closed delegated User creation and generic authentication-field writes; added redacted actual-Sysadmin email correction with session revocation; required verified, conflict-safe Google email linking | `yarn test` (161 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                 | —                 |
+| Date       | Work item | Change                                                                                                                                                                                                               | Verification                                                                                  | Commit/PR         |
+| ---------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------- |
+| 2026-09-10 | Audit     | Initial hardening and Band Admin rollout plan documented                                                                                                                                                             | Static audit; configured local DB inspected read-only                                         | —                 |
+| 2026-09-10 | Decisions | Recorded tenant, peer administration, impersonation, custom role, soft-delete, password-reset, audit, and Practice Tools decisions                                                                                   | All product decisions resolved                                                                | —                 |
+| 2026-09-10 | BA-T001   | Added the isolated authorization test harness, seven persona builders, forged DB3 request builders, process-local persistence, and enforced non-empty Vitest runs                                                    | `yarn test:auth`; `yarn test`; `yarn tsc --noEmit`; focused ESLint                            | —                 |
+| 2026-09-10 | Scope     | Inventoried complete removal of the unused workflow vertical slice; later policy narrows the readiness requirement to containment and defers destructive cleanup                                                     | Inventory covers UI, server, permissions, settings, schema, migration, and verification       | —                 |
+| 2026-09-10 | BA-M001   | Replaced split permission declarations with one canonical registry and generated runtime, ordering, public, protected, continuity, and database metadata views                                                       | `yarn test:auth`; `yarn test` (86 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`  | see gh issue #668 |
+| 2026-09-10 | BA-U002   | Split profile, role, lifecycle, reset, superuser, and impersonation operations; added permission-envelope delegation, continuity acknowledgement, and actual-Sysadmin topology boundaries                            | `yarn test:auth`; `yarn test` (100 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
+| 2026-09-10 | BA-U003   | Restricted emergency password-reset URL generation to actual Sysadmins and removed credential-bearing reset audit payloads                                                                                           | `yarn test:auth`; `yarn test` (104 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
+| 2026-09-10 | BA-U004   | Restricted impersonation to actual Sysadmins, constrained protected targets, preserved original-actor attribution, and removed sensitive mutation results                                                            | `yarn test:auth`; `yarn test` (114 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
+| 2026-09-10 | BA-U005   | Hardened signup and one-time Sysadmin bootstrap, made built-in role lookup fail closed, and added atomic audited default/public role reassignment                                                                    | `yarn test:auth`; `yarn test` (139 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build` | see gh issue #668 |
+| 2026-09-10 | Decisions | Narrowed completion to safe platform support; deferred exact Band Admin composition/assignment and workflow deletion; resolved user creation, login identity, public-file, calendar-token, and settings-split policy | Document review against current code paths and agreed product direction                       | —                 |
+| 2026-09-10 | BA-U006   | Closed delegated User creation and generic authentication-field writes; added redacted actual-Sysadmin email correction with session revocation; required verified, conflict-safe Google email linking               | `yarn test` (161 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`                   | —                 |
 
 ## Deferred ideas
 

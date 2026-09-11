@@ -13,7 +13,7 @@ import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
-import { gNullValue, slugify } from 'shared/rootroot';
+import { gNullValue } from 'shared/rootroot';
 import { Timing } from 'shared/time';
 import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
@@ -22,7 +22,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../../db3/components/IconMap';
-import { GetICalRelativeURIForUserUpcomingEvents, SearchResultsRet } from '../../db3/shared/apiTypes';
+import { SearchResultsRet } from '../../db3/shared/apiTypes';
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
@@ -1154,8 +1154,6 @@ const EventDotMenu = ({ event, showVisibility, refetch }: { event: Prisma.EventG
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
 
-    const uriForGlobalCalendar = dashboardContext.currentUser && dashboardContext.getAbsoluteUri(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: dashboardContext.currentUser!.accessToken }));
-
     const closeMenu = () => {
         endMenuItemRef.current();
     };
@@ -1184,31 +1182,6 @@ const EventDotMenu = ({ event, showVisibility, refetch }: { event: Prisma.EventG
 
         <Divider />
 
-        {uriForGlobalCalendar &&
-            <MenuItem component={Link} href={`/backstage/wiki/${slugify("calendar-sync-help")}`} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                <ListItemIcon>{gIconMap.Help()}</ListItemIcon>
-                How to use calendar sync...
-            </MenuItem>
-        }
-
-        {uriForGlobalCalendar &&
-            <MenuItem onClick={async () => {
-                await navigator.clipboard.writeText(uriForGlobalCalendar);
-                closeMenu();
-                snackbar.showSuccess("Link address copied");
-            }}>
-                <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
-                Event calendar: Copy Calendar link
-            </MenuItem>
-        }
-        {uriForGlobalCalendar &&
-            <MenuItem component={Link} href={uriForGlobalCalendar} target='_blank' rel="noreferrer" onClick={closeMenu}>
-                <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
-                Event calendar: iCal import
-            </MenuItem>
-        }
-
-        <Divider />
         {dashboardContext.isAuthorized(Permission.manage_events) &&
             <RelevanceClassOverrideMenuItemGroup event={event} closeMenu={closeMenu} refetch={refetch} />
         }
