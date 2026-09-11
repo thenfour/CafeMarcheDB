@@ -10,6 +10,23 @@ import { deriveDB3ClientIntention, DB3RequestValidationError } from "../server/d
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateGenericSortOrderArgs, ZupdateGenericSortOrderArgs } from "../shared/apiTypes";
 
+export const createUsableSortOrderSlots = (items: Array<Record<string, any>>, sortOrderMember: string): number[] => {
+    const slots = items
+        .map(item => item[sortOrderMember] as number)
+        .sort((a, b) => a - b);
+
+    // Legacy/default data can contain duplicate sort orders. Merely permuting
+    // duplicate values makes a drag operation a successful no-op. Preserve
+    // healthy existing slots (including gaps), but make the sequence strictly
+    // increasing when a duplicate or descending value is encountered.
+    for (let i = 1; i < slots.length; ++i) {
+        if (slots[i]! <= slots[i - 1]!) {
+            slots[i] = slots[i - 1]! + 1;
+        }
+    }
+    return slots;
+};
+
 // Tables must opt in and declare their grouping boundary. The caller also
 // supplies the complete row-ID scope represented by its reorderable UI. Only
 // those rows are loaded or changed; hidden, paginated, tenant-separated, or
@@ -116,9 +133,7 @@ export default resolver.pipe(
             // Reuse this scope's existing numeric slots. This preserves gaps
             // occupied by out-of-scope rows instead of renumbering through
             // hidden or paginated data.
-            const sortOrderSlots = items
-                .map(item => item[sortOrderColumn.member] as number)
-                .sort((a, b) => a - b);
+            const sortOrderSlots = createUsableSortOrderSlots(items, sortOrderColumn.member);
             const changes = reorderedItems.flatMap((item, index) => (
                 item[sortOrderColumn.member] === sortOrderSlots[index]
                     ? []

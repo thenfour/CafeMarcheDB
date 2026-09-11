@@ -321,6 +321,42 @@ describe("BA-S003 generic sort-order authorization", () => {
       expect.objectContaining({ table: "EventSongList", action: "update" }),
     ])
   })
+
+  it("repairs duplicate setlist sort-order slots while reordering", async () => {
+    const permissions = [
+      Permission.login,
+      Permission.manage_events,
+      Permission.view_events_nonpublic,
+    ]
+    const actor = createAuthorizationTestUser("normal", { id: 5, permissions })
+    authorizationTestDb.reset({
+      user: [actor],
+      eventSongList: [
+        { id: 650, eventId: 647, name: "Setlist", description: "", sortOrder: 0 },
+        { id: 651, eventId: 647, name: "Set 2", description: "", sortOrder: 0 },
+      ],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+
+    await invokeResolver(updateGenericSortOrder, {
+      tableID: db3.xEventSongList.tableID,
+      tableName: db3.xEventSongList.tableName,
+      movingItemId: 650,
+      newPositionItemId: 651,
+      scopeRowIds: [650, 651],
+      groupByColumn: "eventId",
+      groupValue: 647,
+    }, ctx)
+
+    expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
+      expect.objectContaining({ id: 650, sortOrder: 1 }),
+      expect.objectContaining({ id: 651, sortOrder: 0 }),
+    ])
+    expect(authorizationTestDb.snapshot("change")).toEqual([
+      expect.objectContaining({ table: "EventSongList", action: "update" }),
+    ])
+  })
 })
 
 describe("BA-S003 event song-list deletion", () => {
