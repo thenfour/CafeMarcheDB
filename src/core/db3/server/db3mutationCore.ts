@@ -25,6 +25,7 @@ import { CreatePublicData } from "types";
 import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
 import { clearBrandCache } from "@/src/server/brand";
 import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
+import { invalidateSessionsForRolePermissionChanges } from "@/src/auth/server/sessionInvalidation";
 
 var path = require('path');
 var fs = require('fs');
@@ -237,11 +238,21 @@ type EventSegmentChangeHookModelType2 = z.infer<typeof ZEventSegmentChangeHookMo
 export const CallMutateEventHooks = async (args: {
     tableNameOrSpecialMutationKey: string,
     model: TAnyModel & { id: number },
+    oldModel?: TAnyModel & { id: number },
+    additionalModels?: Array<TAnyModel & { id: number }>,
     db?: TransactionalPrismaClient,
 }): Promise<void> => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     let eventIdToUpdate: null | number | undefined = null;
     switch (args.tableNameOrSpecialMutationKey.toLowerCase()) {
+        case "rolepermission": {
+            // changes to role-perm topology require invalidating sessions for affected roles
+            const roleIds = [args.model, args.oldModel, ...(args.additionalModels || [])]
+                .map(model => model?.roleId)
+                .filter((roleId): roleId is number => typeof roleId === "number");
+            await invalidateSessionsForRolePermissionChanges(transactionalDb, roleIds);
+            return;
+        }
         case "setting":
             clearBrandCache();
             return;
@@ -375,6 +386,9 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
     });
 
     const cp = ComputeChangePlan(currentAssociations.map(a => a[args.column.associationForeignIDMember]), args.desiredTagIds, (a, b) => a === b);
+    const changedAssociations = currentAssociations.filter(
+        association => cp.delete.includes(association[args.column.associationForeignIDMember]),
+    );
 
     // remove associations which exist but aren't in the new array
     await transactionalDb[associationTableName].deleteMany({
@@ -413,6 +427,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
         const newAssoc = await transactionalDb[associationTableName].create({
             data,
         });
+        changedAssociations.push(newAssoc);
 
         await RegisterChange({
             action: ChangeAction.insert,
@@ -425,16 +440,25 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
         });
     }
 
+    if (changedAssociations.length > 0) {
+        await CallMutateEventHooks({
+            tableNameOrSpecialMutationKey: associationTableName,
+            model: changedAssociations[0],
+            additionalModels: changedAssociations.slice(1),
+            db: transactionalDb,
+        });
+    }
+
     return cp.delete.length > 0 || cp.create.length > 0;
 };
 
 
 // DELETE ////////////////////////////////////////////////
-export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, deleteType: "softWhenPossible" | "hard"): Promise<boolean> => {
+export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
-        const dbTableClient = db[table.tableName]; // the prisma interface
+        const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
         const publicData = getMutationPublicData(clientIntention);
 
         if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
@@ -465,7 +489,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         if (deleteOperation === "soft") {
             await updateImpl(table, id, {
                 [table.SqlSpecialColumns.isDeleted!.member]: true,
-            }, ctx, clientIntention);
+            }, ctx, clientIntention, transactionalDb);
             return true;
         }
 
@@ -481,6 +505,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
                 localTable: table,
                 column: column as db3.TagsField<TAnyModel>,
                 desiredTagIds: [],
+                db: transactionalDb,
             });
         }
 
@@ -498,6 +523,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         await CallMutateEventHooks({
             tableNameOrSpecialMutationKey: table.tableName,
             model: oldValues,
+            db: transactionalDb,
         });
 
         // if (eventIdToRecalc !== null) {
@@ -511,6 +537,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
             pkid: id,
             oldValues: oldValues,
             ctx,
+            db: transactionalDb,
         });
         return true;
     } catch (e) {
@@ -520,11 +547,11 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 };
 
 // INSERT ////////////////////////////////////////////////
-export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<TReturnPayload> => {
+export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
-        const dbTableClient = db[table.tableName]; // the prisma interface
+        const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
         const publicData = getMutationPublicData(clientIntention);
 
         if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
@@ -602,6 +629,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 pkid: obj[table.pkMember],
                 newValues: authorizedLocalFields,
                 ctx,
+                db: transactionalDb,
             });
         }
         // now update any associations
@@ -618,12 +646,14 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 column: column as db3.TagsField<TAnyModel>,
                 desiredTagIds: authorizedAssociationFields[column.member],
                 rowMode: "new",
+                db: transactionalDb,
             });
         }
 
         await CallMutateEventHooks({
             tableNameOrSpecialMutationKey: table.tableName,
             model: { id: obj[table.pkMember], ...obj },
+            db: transactionalDb,
         });
 
         return obj as any;
@@ -639,11 +669,11 @@ interface UpdateImplResult<T> {
     newModel: T,
     didChangesOccur: boolean,
 };
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<UpdateImplResult<TAnyModel>> => {
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
-        const dbTableClient = db[table.tableName]; // the prisma interface
+        const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
         const publicData = getMutationPublicData(clientIntention);
 
         if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
@@ -743,6 +773,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                     oldValues,
                     newValues: obj,
                     ctx,
+                    db: transactionalDb,
                 });
             }
         }
@@ -760,6 +791,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                 localTable: table,
                 column: column as db3.TagsField<TAnyModel>,
                 desiredTagIds: authorizedAssociationFields[column.member],
+                db: transactionalDb,
             });
             didChangesOccur = didChangesOccur || didAssociationsChange;
         }
@@ -767,6 +799,8 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         await CallMutateEventHooks({
             tableNameOrSpecialMutationKey: table.tableName,
             model: { id: pkid, ...obj },
+            oldModel: fullOldObj,
+            db: transactionalDb,
         });
 
         return {

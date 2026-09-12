@@ -507,6 +507,11 @@ export interface TableDesc {
     requiresSysadminPermission?: boolean;
     requiresSysadminPermissionForMutation?: boolean;
 
+    // Wraps generic writes, audit rows, and mutation hooks in one transaction.
+    // kinda a special case, for role/permission association changes which need
+    // to invalidate sessions after mutation.
+    requiresTransactionalMutation?: boolean;
+
     // Required so every table declares its generic-delete behavior alongside
     // its schema. This prevents a central table-name registry from drifting.
     deletePolicy: DB3DeletePolicy;
@@ -542,6 +547,7 @@ export class xTable /* implements TableDesc*/ {
     };
     requiresSysadminPermission: boolean;
     requiresSysadminPermissionForMutation: boolean;
+    requiresTransactionalMutation: boolean;
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
@@ -555,6 +561,7 @@ export class xTable /* implements TableDesc*/ {
         this.requiresSysadminPermission = args.requiresSysadminPermission ?? false;
         this.requiresSysadminPermissionForMutation = args.requiresSysadminPermissionForMutation
             ?? this.requiresSysadminPermission;
+        this.requiresTransactionalMutation = args.requiresTransactionalMutation ?? false;
 
         if (this.getParameterizedWhereClause && !this.queryParameters) {
             throw new Error(`Table ${args.tableUniqueName || args.tableName} has parameterized filtering without a runtime parameter contract.`);

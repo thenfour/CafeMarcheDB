@@ -3,6 +3,7 @@ import db from "db"
 import { SeedTable } from "./setupUtils";
 import { Setting } from "@/shared/settingKeys";
 import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
+import { assertValidSysadminRole } from "@/src/auth/server/sessionInvalidation";
 
 // Ensure all permissions in code are present in the database
 async function SyncPermissionsTable() {
@@ -796,6 +797,7 @@ export async function instrumentationSetup() {
     await SyncPermissionsTable();
     await EnsureDefaultRoles();
     await EnsureRolePermissionMatrix();
+    await assertValidSysadminRole(db);
     await EnsureEventStatuses();
     await EnsureEventTypes();
     await EnsureEventAttendanceOptions();

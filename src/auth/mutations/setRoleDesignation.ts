@@ -37,11 +37,18 @@ export default resolver.pipe(
                     isRoleForNewUsers: true,
                     isPublicRole: true,
                     isSysAdminRole: true,
+                    permissions: {
+                        select: { permission: { select: { name: true } } },
+                    },
                 },
                 orderBy: { id: "asc" },
             });
             const selectedRole = roles.find(role => role.id === roleId);
             if (!selectedRole) throw new NotFoundError();
+            if (designation === RoleDesignation.sysadmin
+                && !selectedRole.permissions.some(entry => entry.permission.name === Permission.sysadmin)) {
+                throw new Error(`The designated Sysadmin role must grant ${Permission.sysadmin}.`);
+            }
 
             const field = designationFields[designation];
             const changeContext = CreateChangeContext("setRoleDesignation");
@@ -84,6 +91,14 @@ export default resolver.pipe(
             const assignmentCount = await tx.role.count({ where: { [field]: true } });
             if (assignmentCount !== 1) {
                 throw new Error(`Expected exactly one ${designation} role after reassignment.`);
+            }
+
+            // invalidate sessions to force refresh permissions
+            // for more complex scenarios.
+            if (designation === RoleDesignation.public) {
+                await tx.session.deleteMany({});
+            } else if (designation === RoleDesignation.sysadmin) {
+                await tx.session.deleteMany({ where: { user: { isSysAdmin: true } } });
             }
 
             return { designation, roleId };

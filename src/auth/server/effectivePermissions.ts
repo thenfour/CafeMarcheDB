@@ -1,7 +1,7 @@
 import { distinctValuesOfArray } from "@/shared/arrayUtils";
 import { isPermission, Permission } from "@/shared/permissions";
-import { PrismaClient } from "@prisma/client";
 import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
+import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { CreatePublicData, type CreatePublicDataArgs, type PublicDataType } from "types";
 
 type PermissionBearingPrincipal = Pick<UserWithRolesPayload, "id" | "isSysAdmin" | "role">;
@@ -13,7 +13,7 @@ export type EffectivePermissions = {
 
 // accepts a user with roles & permissions, and applies public & sysadmin inherited perms.
 export const loadEffectivePermissions = async (
-    db: PrismaClient,
+    db: TransactionalPrismaClient,
     user: PermissionBearingPrincipal | null | undefined,
 ): Promise<EffectivePermissions> => {
 
@@ -67,12 +67,12 @@ export const loadEffectivePermissions = async (
 };
 
 export const loadEffectivePermissionNames = async (
-    db: PrismaClient,
+    db: TransactionalPrismaClient,
     user: PermissionBearingPrincipal | null | undefined,
 ): Promise<string[]> => (await loadEffectivePermissions(db, user)).names;
 
 export const createPublicDataFromDatabase = async (
-    db: PrismaClient,
+    db: TransactionalPrismaClient,
     args: Omit<CreatePublicDataArgs, "permissions">,
 ): Promise<PublicDataType> => CreatePublicData({
     ...args,

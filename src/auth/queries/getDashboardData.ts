@@ -3,18 +3,17 @@ import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayl
 import { resolver } from "@blitzjs/rpc";
 import type { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
-import { arraysContainSameValues } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { loadEffectivePermissionNames } from "../server/effectivePermissions";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
-import { gEventRelevanceClass, EventStatusSignificance, gVisibleEventRelevanceClasses, xEvent, xMenuLink, type xTableClientUsageContext } from "src/core/db3/db3";
+import { EventStatusSignificance, gEventRelevanceClass, gVisibleEventRelevanceClasses, xEvent, xMenuLink, type xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { loadEffectivePermissionNames } from "../server/effectivePermissions";
 
-
-async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
+// exported for unit tests
+export async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
     const publicData = { ...ctx.session?.$publicData };
     // only query if x seconds has elapsed since last fetch
     const now = new Date().getTime();
@@ -42,26 +41,21 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
             }
         }
     });
+    if (!u) {
+        await ctx.session.$revoke();
+        return true;
+    }
+
+    const newPerms = await loadEffectivePermissionNames(db, u);
     await ctx.session.$setPublicData({
         permissionsLastRefreshedAt: new Date().toISOString(),
         GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
         GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
+        showAdminControls: u.isSysAdmin ? publicData.showAdminControls || false : false,
+        impersonatingFromUserId: publicData.impersonatingFromUserId,
+        isSysAdmin: u.isSysAdmin,
+        permissions: newPerms,
     });
-
-    // refresh session publicdata permissions
-    const newPerms = await loadEffectivePermissionNames(db, u);
-    if (!arraysContainSameValues(publicData.permissions || [], newPerms)) {
-            await ctx.session.$setPublicData({
-                showAdminControls: publicData.showAdminControls || false,
-                //userId: publicData.userId,
-                impersonatingFromUserId: publicData.impersonatingFromUserId,
-                isSysAdmin: u?.isSysAdmin || false,
-                permissions: newPerms,
-            });
-            return true;
-    }
-
-    return false;
 }
 
 
@@ -191,7 +185,7 @@ export default resolver.pipe(
                 relevantEventsCall,
             ]);
 
-            const rsp = await RefreshSessionPermissions(ctx);
+            await RefreshSessionPermissions(ctx);
 
             const [
                 userTag,
@@ -231,7 +225,6 @@ export default resolver.pipe(
                 dynMenuLinks: dynMenuLinks.items as Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>[],
                 eventCustomField,
                 wikiPageTag,
-                sessionPermissionsChanged: rsp,
                 serverBaseUri: clientServerState.baseUri,
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,

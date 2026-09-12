@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { Permission } from "shared/permissions"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -62,7 +63,12 @@ describe("BA-U005 built-in role designations", () => {
     const roles = [
       makeRole(10, { [flag]: true }),
       makeRole(11, { [flag]: true }),
-      makeRole(12),
+      {
+        ...makeRole(12),
+        permissions: designation === RoleDesignation.sysadmin
+          ? [{ permission: { name: Permission.sysadmin } }]
+          : [],
+      },
     ]
     authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [] })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
@@ -108,7 +114,12 @@ describe("BA-U005 built-in role designations", () => {
   it.each(assignments)("repairs a missing $designation assignment", async ({ designation, flag }) => {
     authorizationTestDb.reset({
       user: [sysadmin],
-      role: [makeRole(10), makeRole(11)],
+      role: [makeRole(10), {
+        ...makeRole(11),
+        permissions: designation === RoleDesignation.sysadmin
+          ? [{ permission: { name: Permission.sysadmin } }]
+          : [],
+      }],
       change: [],
     })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
@@ -177,6 +188,24 @@ describe("BA-U005 built-in role designations", () => {
 
     expect(authorizationTestDb.snapshot("role")).toEqual(roles)
     expect(authorizationTestDb.snapshot("change")).toEqual([])
+  })
+
+  it("rejects designating a Sysadmin role that cannot administer the platform", async () => {
+    const roles = [{
+      ...makeRole(10, { isSysAdminRole: true }),
+      permissions: [{ permission: { name: Permission.sysadmin } }],
+    }, { ...makeRole(11), permissions: [] }]
+    authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [] })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
+
+    await expect(invokeResolver(setRoleDesignation, {
+      designation: RoleDesignation.sysadmin,
+      roleId: 11,
+    }, ctx)).rejects.toThrow(`must grant ${Permission.sysadmin}`)
+
+    expect(authorizationTestDb.snapshot("role").filter(role => role.isSysAdminRole)).toEqual([
+      expect.objectContaining({ id: 10 }),
+    ])
   })
 
   it.each(assignments)("rejects generic updates to $flag, including from Sysadmin", async ({ flag }) => {

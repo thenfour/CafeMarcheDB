@@ -202,6 +202,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
     tableName: "Permission",
     deletePolicy: "disabled",
     requiresSysadminPermission: true,
+    requiresTransactionalMutation: true,
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
@@ -285,6 +286,7 @@ export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
     deletePolicy: "disabled",
     requiresSysadminPermission: true,
+    requiresTransactionalMutation: true,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionDefaultArgs => {
         return RolePermissionArgs;
     },
@@ -326,6 +328,7 @@ export const xRole = new db3.xTable({
     tableName: "Role",
     deletePolicy: "disabled",
     requiresSysadminPermission: true,
+    requiresTransactionalMutation: true,
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {

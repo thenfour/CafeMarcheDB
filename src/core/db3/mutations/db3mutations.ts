@@ -5,6 +5,7 @@ import db from "db";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { deriveDB3ClientIntention, populateDB3AuthorizationPermissions, validateDB3MutationRequest } from "../server/db3RequestValidation";
+import type { TransactionalPrismaClient } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -19,20 +20,25 @@ export default resolver.pipe(
             deriveDB3ClientIntention("mutation", currentUser),
         );
 
-        if (input.mutationType === "delete") {
-            // return boolean
-            return await mutationCore.deleteImpl(table, input.deleteId, ctx, clientIntention, input.deleteType);
-        }
-        if (input.mutationType === "insert") {
-            // return new object
-            return await mutationCore.insertImpl(table, input.insertModel, ctx, clientIntention);
-        }
-        if (input.mutationType === "update") {
-            // return new object
-            //debugger;
-            return (await mutationCore.updateImpl(table, input.updateId!, input.updateModel, ctx, clientIntention)).newModel;
-        }
-        return false;
+        const execute = async (transactionalDb: TransactionalPrismaClient = db as any) => {
+            if (input.mutationType === "delete") {
+                return await mutationCore.deleteImpl(table, input.deleteId, ctx, clientIntention, input.deleteType, transactionalDb);
+            }
+            if (input.mutationType === "insert") {
+                return await mutationCore.insertImpl(table, input.insertModel, ctx, clientIntention, transactionalDb);
+            }
+            return (await mutationCore.updateImpl(
+                table,
+                input.updateId!,
+                input.updateModel,
+                ctx,
+                clientIntention,
+                transactionalDb,
+            )).newModel;
+        };
+
+        return table.requiresTransactionalMutation
+            ? db.$transaction(tx => execute(tx))
+            : execute();
     }
 );
-
