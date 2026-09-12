@@ -163,6 +163,8 @@ export interface SongTableParams {
 const xSongArgs_Base: db3.TableDesc = {
     tableName: "Song",
     deletePolicy: "softOnly",
+    viewDeletedPermission: Permission.recover_songs,
+    restorePermission: Permission.recover_songs,
     queryParameters: {
         songId: { kind: "integer", authorizeAs: "id" },
         songIds: { kind: "integerArray", authorizeAs: "id" },

@@ -240,6 +240,7 @@ export interface xTableClientArgs {
     sortModel?: GridSortModel,
     filterModel?: CMDBTableFilterModel,
     paginationModel?: GridPaginationModel,
+    includeDeleted?: boolean,
 
     queryOptions?: any; // of gQueryOptions
 };
@@ -280,6 +281,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         this.tableSpec = args.tableSpec;
         this.args = args;
         this.publicData = publicData;
+        args.clientIntention.includeDeleted = args.includeDeleted === true;
         this.queryResultInfo = {
             executionTimeMillis: 0,
             resultId: "",
@@ -320,6 +322,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 skip,
                 take,
                 filter,
+                includeDeleted: args.includeDeleted,
                 cmdbQueryContext: `xTableRenderClient/paginated for ${args.tableSpec.args.table.tableName}`,
             };
 
@@ -357,6 +360,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 orderBy,
                 take,
                 filter,
+                includeDeleted: args.includeDeleted,
                 cmdbQueryContext: `xTableRenderClient/query for ${args.tableSpec.args.table.tableName}`,
             };
 
@@ -502,6 +506,7 @@ export interface FetchAsyncArgs<T> {
     take?: number | undefined;
     queryOptions?: any; // of gQueryOptions
     delayMS?: number;
+    includeDeleted?: boolean;
 };
 
 export interface FetchAsyncResult<T> {
@@ -519,6 +524,7 @@ export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T
         orderBy: CalculateOrderBy(args.sortModel),
         take: args.take,
         filter: args.filterModel || { items: [] },
+        includeDeleted: args.includeDeleted,
         delayMS: args.delayMS,
         cmdbQueryContext: `fetchAsync for ${args.schema.tableName} / ${args.schema.tableID}`,
     };

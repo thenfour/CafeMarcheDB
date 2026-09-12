@@ -119,7 +119,6 @@ async function EnsureDefaultRoles() {
     );
 };
 
-// ensure role perm matrix.
 async function EnsureRolePermissionMatrix() {
 
     // only proceed if the table is empty.
@@ -131,6 +130,7 @@ async function EnsureRolePermissionMatrix() {
     }
 
     // use the role permission matrix page, copy as json and paste below to manage this.
+    // todo: unify with seeds (currently this table is duplicated!)
     const rolePermissionAssignments =
         [
             ["Editors", "access_file_landing_page"],
@@ -217,8 +217,6 @@ async function EnsureRolePermissionMatrix() {
             ["Moderators", "basic_trust"],
             ["Admin", "basic_trust"],
             ["Admin", "sysadmin"],
-            ["Moderators", "content_admin"],
-            ["Admin", "content_admin"],
             ["Admin", "impersonate_user"],
             ["Editors", "visibility_editors"],
             ["Moderators", "visibility_editors"],
@@ -245,6 +243,7 @@ async function EnsureRolePermissionMatrix() {
             ["Editors", "manage_events"],
             ["Moderators", "manage_events"],
             ["Admin", "manage_events"],
+            ["Admin", "recover_events"],
             ["Public", "view_events"],
             ["Limited Users", "view_events"],
             ["Normal Users", "view_events"],
@@ -259,6 +258,7 @@ async function EnsureRolePermissionMatrix() {
             ["Editors", "manage_songs"],
             ["Moderators", "manage_songs"],
             ["Admin", "manage_songs"],
+            ["Admin", "recover_songs"],
             ["Normal Users", "view_songs"],
             ["Editors", "view_songs"],
             ["Moderators", "view_songs"],
@@ -267,6 +267,7 @@ async function EnsureRolePermissionMatrix() {
             ["Editors", "manage_files"],
             ["Moderators", "manage_files"],
             ["Admin", "manage_files"],
+            ["Admin", "recover_files"],
             ["Public", "view_files"],
             ["Limited Users", "view_files"],
             ["Normal Users", "view_files"],
@@ -278,9 +279,9 @@ async function EnsureRolePermissionMatrix() {
             ["Moderators", "upload_files"],
             ["Admin", "upload_files"],
             ["Admin", "admin_instruments"],
-            ["Moderators", "manage_instruments"],
-            ["Admin", "manage_instruments"],
-            ["Admin", "admin_users"],
+            ["Admin", "manage_user_taxonomy"],
+            ["Admin", "deactivate_users"],
+            ["Admin", "assign_user_roles"],
             ["Moderators", "manage_users"],
             ["Admin", "manage_users"]
         ]

@@ -32,13 +32,22 @@ export const xUserAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
     PreInsert: Permission.manage_users,
 } as const;
 
-// readable by everyone, editable by admins only (cannot edit own)
-export const xUserAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
+// User taxonomy and presentation metadata are separate from ordinary profile
+// management, while remaining readable anywhere basic user data is readable.
+export const xUserAuthMap_R_ETaxonomyManagers: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.basic_trust,
     PostQuery: Permission.basic_trust,
-    PreMutateAsOwner: Permission.admin_users,
-    PreMutate: Permission.admin_users,
-    PreInsert: Permission.admin_users,
+    PreMutateAsOwner: Permission.manage_user_taxonomy,
+    PreMutate: Permission.manage_user_taxonomy,
+    PreInsert: Permission.manage_user_taxonomy,
+} as const;
+
+const xUserAuthMap_R_ESysadmins: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.basic_trust,
+    PostQuery: Permission.basic_trust,
+    PreMutateAsOwner: Permission.sysadmin,
+    PreMutate: Permission.sysadmin,
+    PreInsert: Permission.sysadmin,
 } as const;
 
 // Account lifecycle, role membership, and the superuser flag use dedicated
@@ -87,12 +96,12 @@ const xUserTableAuthMap_R_EManagers_SysadminInsert: db3.DB3AuthTablePermissionMa
     Insert: Permission.sysadmin,
 } as const;
 
-export const xUserTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
+export const xUserTableAuthMap_R_ETaxonomyManagers: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.basic_trust,
     View: Permission.basic_trust,
-    EditOwn: Permission.basic_trust,
-    Edit: Permission.admin_users,
-    Insert: Permission.admin_users,
+    EditOwn: Permission.manage_user_taxonomy,
+    Edit: Permission.manage_user_taxonomy,
+    Insert: Permission.manage_user_taxonomy,
 } as const;
 
 export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
@@ -306,7 +315,7 @@ export const xRolePermissionAssociation = new db3.xTable({
             allowNull: false,
             foreignTableID: "Permission",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xUserAuthMap_R_EAdmins,
+            authMap: xUserAuthMap_R_ESysadmins,
         }),
         new ForeignSingleField<RolePayload>({
             columnName: "role",
@@ -314,7 +323,7 @@ export const xRolePermissionAssociation = new db3.xTable({
             allowNull: false,
             foreignTableID: "Role",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xUserAuthMap_R_EAdmins,
+            authMap: xUserAuthMap_R_ESysadmins,
         }),
     ]
 });
@@ -352,9 +361,9 @@ export const xRole = new db3.xTable({
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xUserAuthMap_R_EAdmins,
+            authMap: xUserAuthMap_R_ESysadmins,
         }),
-        MakeDescriptionField({ authMap: xUserAuthMap_R_EAdmins }),
+        MakeDescriptionField({ authMap: xUserAuthMap_R_ESysadmins }),
         new BoolField({
             columnName: "isRoleForNewUsers",
             defaultValue: false,
@@ -373,9 +382,9 @@ export const xRole = new db3.xTable({
             _customAuth: authorizeBuiltInRoleFlag("isSysAdminRole"),
             allowNull: false,
         }),
-        MakeSortOrderField({ authMap: xUserAuthMap_R_EAdmins }),
+        MakeSortOrderField({ authMap: xUserAuthMap_R_ESysadmins }),
         MakeColorField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeSignificanceField("significance", RoleSignificance, { authMap: xUserAuthMap_R_EAdmins }),
+        MakeSignificanceField("significance", RoleSignificance, { authMap: xUserAuthMap_R_ESysadmins }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",
             associationForeignIDMember: "permissionId",
@@ -384,7 +393,7 @@ export const xRole = new db3.xTable({
             associationLocalObjectMember: "role",
             associationTableID: "RolePermission",
             foreignTableID: "Permission",
-            authMap: xUserAuthMap_R_EAdmins,
+            authMap: xUserAuthMap_R_ESysadmins,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
@@ -470,7 +479,7 @@ const userTagBaseArgs: db3.TableDesc =
         userTagId: { kind: "integer", authorizeAs: "id" },
         ids: { kind: "integerArray", authorizeAs: "id" },
     },
-    tableAuthMap: xUserTableAuthMap_R_EManagers,
+    tableAuthMap: xUserTableAuthMap_R_ETaxonomyManagers,
     naturalOrderBy: UserTagNaturalOrderBy,
     getParameterizedWhereClause: (params: UserTagTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.UserTagWhereInput[] | false) => {
         const ret: Prisma.UserTagWhereInput[] = [];
@@ -507,18 +516,18 @@ const userTagBaseArgs: db3.TableDesc =
     }),
     columns: [
         MakePKfield(),
-        MakeTitleField("text", { authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeDescriptionField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeSortOrderField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeColorField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeTitleField("text", { authMap: xUserAuthMap_R_ETaxonomyManagers }),
+        MakeDescriptionField({ authMap: xUserAuthMap_R_ETaxonomyManagers }),
+        MakeSortOrderField({ authMap: xUserAuthMap_R_ETaxonomyManagers }),
+        MakeColorField({ authMap: xUserAuthMap_R_ETaxonomyManagers }),
         new GenericStringField({
             columnName: "cssClass",
             allowNull: true,
             format: "raw",
-            authMap: xUserAuthMap_R_EAdmins,
+            authMap: xUserAuthMap_R_ETaxonomyManagers,
         }),
-        MakeSignificanceField("significance", UserTagSignificance, { authMap: xUserAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "userAssignments", authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeSignificanceField("significance", UserTagSignificance, { authMap: xUserAuthMap_R_ETaxonomyManagers }),
+        new GhostField({ memberName: "userAssignments", authMap: xUserAuthMap_R_ETaxonomyManagers }),
     ]
 };
 
@@ -672,7 +681,7 @@ const userBaseArgs: db3.TableDesc = {
             columnName: "cssClass",
             allowNull: true,
             format: "raw",
-            authMap: xUserAuthMap_R_EAdmins,
+            authMap: xUserAuthMap_R_ETaxonomyManagers,
         }),
         new BoolField({
             columnName: "isSysAdmin",
@@ -758,6 +767,8 @@ export type CreatedByUserFieldArgs = {
     columnName?: string; // "instrumentType"
     fkidMember?: string; // "instrumentTypeId"
     specialFunction?: db3.SqlSpecialColumnFunction;
+    authMap?: db3.DB3AuthContextPermissionMap;
+    _customAuth?: (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
 };
 
 export class CreatedByUserField extends ForeignSingleField<UserPayload> {

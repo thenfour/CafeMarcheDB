@@ -615,6 +615,183 @@ describe("BA-A002 generic DB3 query authorization", () => {
       expect.objectContaining({ id: 30, name: "Visible event" }),
     ])
   })
+
+  it("lets recovery-capable Band Admins include deleted rows without bypassing privacy", async () => {
+    const permissions = [
+      Permission.login,
+      Permission.view_events,
+      Permission.manage_events,
+      Permission.recover_events,
+      Permission.visibility_public,
+    ]
+    const recoveryAdmin = createAuthorizationTestUser("bandAdmin", { id: 40, permissions })
+    const publicVisibilityId = recoveryAdmin.role!.permissions.find(
+      entry => entry.permission.name === Permission.visibility_public,
+    )!.permissionId
+    authorizationTestDb.reset({
+      user: [recoveryAdmin],
+      event: [
+        {
+          id: 41,
+          name: "Deleted band event",
+          isDeleted: true,
+          createdByUserId: 999,
+          visiblePermissionId: publicVisibilityId,
+          visiblePermission: { id: publicVisibilityId, name: Permission.visibility_public },
+        },
+        {
+          id: 42,
+          name: "Someone else's private event",
+          isDeleted: true,
+          createdByUserId: 999,
+          visiblePermissionId: null,
+          visiblePermission: null,
+        },
+        {
+          id: 43,
+          name: "Own private event",
+          isDeleted: true,
+          createdByUserId: recoveryAdmin.id,
+          visiblePermissionId: null,
+          visiblePermission: null,
+        },
+      ],
+    })
+    const { ctx } = createAuthorizationPersona("bandAdmin", {
+      id: recoveryAdmin.id,
+      permissions,
+    })
+
+    const result = await invokeResolver(db3PaginatedQuery, {
+      ...forgeDb3Query("Event"),
+      includeDeleted: true,
+      skip: 0,
+      take: 50,
+    }, ctx)
+
+    expect(result.count).toBe(2)
+    expect(result.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 41 }),
+      expect.objectContaining({ id: 43 }),
+    ]))
+    expect(JSON.stringify(result)).not.toContain("Someone else's private event")
+  })
+
+  it("rejects includeDeleted before querying when recovery permission is absent", async () => {
+    const permissions = [Permission.login, Permission.view_events, Permission.manage_events]
+    const ordinaryManager = createAuthorizationTestUser("moderator", { id: 44, permissions })
+    authorizationTestDb.reset({ user: [ordinaryManager], event: [] })
+    const { ctx } = createAuthorizationPersona("moderator", {
+      id: ordinaryManager.id,
+      permissions,
+    })
+    const eventDelegate = authorizationTestDb.getDelegate("event")
+    const findMany = vi.spyOn(eventDelegate, "findMany")
+    const count = vi.spyOn(eventDelegate, "count")
+
+    await expect(invokeResolver(db3PaginatedQuery, {
+      ...forgeDb3Query("Event"),
+      includeDeleted: true,
+      skip: 0,
+      take: 50,
+    }, ctx)).rejects.toThrow("Not authorized to perform this DB3 query")
+
+    expect(findMany).not.toHaveBeenCalled()
+    expect(count).not.toHaveBeenCalled()
+  })
+})
+
+describe("Band Admin soft-delete recovery", () => {
+  const recoveryPermissions = [
+    Permission.login,
+    Permission.basic_trust,
+    Permission.view_songs,
+    Permission.manage_songs,
+    Permission.recover_songs,
+    Permission.visibility_public,
+  ]
+  const recoveryAdmin = createAuthorizationTestUser("bandAdmin", {
+    id: 50,
+    permissions: recoveryPermissions,
+  })
+  const publicVisibilityId = recoveryAdmin.role!.permissions.find(
+    entry => entry.permission.name === Permission.visibility_public,
+  )!.permissionId
+  const deletedPublicSong = {
+    id: 51,
+    name: "Deleted public song",
+    aliases: "",
+    description: "",
+    isDeleted: true,
+    createdByUserId: 999,
+    visiblePermissionId: publicVisibilityId,
+    visiblePermission: { id: publicVisibilityId, name: Permission.visibility_public },
+  }
+  const deletedPrivateSong = {
+    ...deletedPublicSong,
+    id: 52,
+    name: "Deleted private song",
+    visiblePermissionId: null,
+    visiblePermission: null,
+  }
+
+  beforeEach(() => {
+    authorizationTestDb.reset({
+      user: [recoveryAdmin],
+      song: [deletedPublicSong, deletedPrivateSong],
+      change: [],
+    })
+    vi.restoreAllMocks()
+  })
+
+  it("restores an otherwise-visible row with the domain recovery permission", async () => {
+    const { ctx } = createAuthorizationPersona("bandAdmin", {
+      id: recoveryAdmin.id,
+      permissions: recoveryPermissions,
+    })
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("Song", deletedPublicSong.id, { isDeleted: false }),
+      ctx,
+    )
+
+    expect(authorizationTestDb.snapshot("song")).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: deletedPublicSong.id, isDeleted: false }),
+    ]))
+  })
+
+  it("does not let recovery authority cross another owner's private boundary", async () => {
+    const { ctx } = createAuthorizationPersona("bandAdmin", {
+      id: recoveryAdmin.id,
+      permissions: recoveryPermissions,
+    })
+    const update = vi.spyOn(authorizationTestDb.getDelegate("song"), "update")
+
+    await expect(invokeResolver(
+      db3Mutation,
+      forgeDb3Update("Song", deletedPrivateSong.id, { isDeleted: false }),
+      ctx,
+    )).rejects.toThrow("Not authorized to mutate Song fields")
+
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it("does not treat ordinary song management as recovery authority", async () => {
+    const permissions = recoveryPermissions.filter(permission => permission !== Permission.recover_songs)
+    const manager = createAuthorizationTestUser("moderator", { id: 53, permissions })
+    authorizationTestDb.reset({ user: [manager], song: [deletedPublicSong], change: [] })
+    const { ctx } = createAuthorizationPersona("moderator", { id: manager.id, permissions })
+    const update = vi.spyOn(authorizationTestDb.getDelegate("song"), "update")
+
+    await expect(invokeResolver(
+      db3Mutation,
+      forgeDb3Update("Song", deletedPublicSong.id, { isDeleted: false }),
+      ctx,
+    )).rejects.toThrow("Not authorized to mutate Song fields")
+
+    expect(update).not.toHaveBeenCalled()
+  })
 })
 
 describe("BA-A003 generic DB3 mutation authorization", () => {
@@ -1128,8 +1305,8 @@ describe("BA-U002 delegated user administration", () => {
     Permission.basic_trust,
     Permission.visibility_editors,
     Permission.manage_users,
-    Permission.content_admin,
-    Permission.admin_users,
+    Permission.manage_user_taxonomy,
+    Permission.deactivate_users,
     Permission.assign_user_roles,
   ])
   const ordinaryRole = makeRole(101, "Ordinary role", [
@@ -1236,14 +1413,14 @@ describe("BA-U002 delegated user administration", () => {
       selfInPeerRole,
       ordinaryRole,
       [selfInPeerRole, ordinaryUser],
-    )).toEqual([Permission.admin_users, Permission.assign_user_roles])
+    )).toEqual([Permission.deactivate_users, Permission.assign_user_roles])
 
     await expect(invokeResolver(assignUserRole, {
       userId: selfInPeerRole.id,
       roleId: ordinaryRole.id,
       acknowledgeContinuityRisk: false,
     }, ctx)).rejects.toThrow(
-      "CONTINUITY_ACKNOWLEDGEMENT_REQUIRED:admin_users,assign_user_roles",
+      "CONTINUITY_ACKNOWLEDGEMENT_REQUIRED:deactivate_users,assign_user_roles",
     )
     expect(authorizationTestDb.snapshot("change")).toEqual([])
 

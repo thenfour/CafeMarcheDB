@@ -150,7 +150,7 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     if (action === "deactivate") {
-        return roleHasPermission(actor.role, Permission.admin_users);
+        return roleHasPermission(actor.role, Permission.deactivate_users);
     }
 
     const isSelf = actor.id === target.id;

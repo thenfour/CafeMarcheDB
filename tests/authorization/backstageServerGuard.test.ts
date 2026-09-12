@@ -9,6 +9,7 @@ vi.mock("db", async () => {
 import { Permission } from "shared/permissions";
 import { authorizeBackstagePageRequest } from "src/auth/server/backstagePageRequestAuthorization";
 import getUserMassAnalysis from "src/core/db3/queries/getUserMassAnalysis";
+import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import {
     createAuthorizationTestContext,
@@ -78,6 +79,19 @@ describe("backstage server page guard", () => {
             "/backstage/workflows",
             actualSysadmin.id,
         )).rejects.toThrow();
+    });
+
+    it("keeps experimental event import behind sysadmin at the route and query", async () => {
+        await expect(authorizeBackstagePageRequest(
+            "/backstage/eventImport",
+            eventAdmin.id,
+        )).rejects.toThrow(`Not authorized for ${Permission.sysadmin}`);
+
+        await expect(invokeResolver(
+            getImportEventData,
+            {} as never,
+            createAuthorizationTestContext(eventAdmin),
+        )).rejects.toThrow(`required: ${Permission.sysadmin}`);
     });
 
     it("keeps user Mass Analysis behind the sysadmin permission", async () => {

@@ -38,6 +38,10 @@ describe("canonical permission registry", () => {
       if (definition.isVisibility) {
         expect(definition.presentation).toBeDefined()
       }
+      if (definition.scope === "platform") {
+        expect(definition.isProtected).toBe(true)
+        expect(definition.isDelegable).toBe(false)
+      }
     }
 
     expect(isPermission("not_a_real_permission")).toBe(false)
@@ -50,7 +54,7 @@ describe("canonical permission registry", () => {
       Permission.never_grant,
     ])
     expect([...gContinuitySensitivePermissions]).toEqual([
-      Permission.admin_users,
+      Permission.deactivate_users,
       Permission.assign_user_roles,
     ])
   })

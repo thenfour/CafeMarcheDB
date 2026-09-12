@@ -707,6 +707,20 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             where: { [table.pkMember]: pkid },
         });
         if (!fullOldObj) throw new Error(`${table.tableName} ${pkid} was not found.`);
+
+        const isDeletedColumn = table.SqlSpecialColumns.isDeleted;
+        if (isDeletedColumn && fullOldObj[isDeletedColumn.member] === true) {
+            // Any mutation of an archived row belongs to the recovery surface.
+            // In particular, ordinary edit rights must not make a guessed ID
+            // sufficient to alter or restore deleted content.
+            if (!table.authorizeRowForRestore({
+                model: fullOldObj,
+                publicData,
+                clientIntention,
+            })) {
+                throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
+            }
+        }
         let authorizedLocalFields: TAnyModel = {};
         let authorizedAssociationFields: TAnyModel = {};
         let obj: TAnyModel = {};
@@ -1275,7 +1289,11 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
     if (!currentUser) {
         throw new Error(`public cannot create files`);
     }
-    const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+    const clientIntention: db3.xTableClientUsageContext = {
+        currentUser,
+        intention: 'user',
+        mode: 'primary',
+    };
     const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
     clientIntention.authorizationPermissions = publicData.permissions;
     const requiredInsertPermission = db3.xFile.tableAuthMap.Insert;
@@ -1404,7 +1422,13 @@ export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }
     if (!currentUser) {
         throw new Error(`public cannot create files`);
     }
-    const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+    const clientIntention: db3.xTableClientUsageContext = {
+        currentUser,
+        intention: 'user',
+        mode: 'primary',
+    };
+    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
+    clientIntention.authorizationPermissions = publicData.permissions;
 
     // new filename will be same as old, with new extension and add a tag.
     const parsedPath = path.parse(parentFile.fileLeafName); // user-friendly name

@@ -49,6 +49,7 @@ const QueryBaseShape = {
     orderBy: OrderBySchema.optional(),
     filter: FilterModelSchema,
     cmdbQueryContext: z.string().min(1).max(MAX_QUERY_TEXT_LENGTH),
+    includeDeleted: z.boolean().optional(),
     delayMS: Delay.optional(),
 };
 

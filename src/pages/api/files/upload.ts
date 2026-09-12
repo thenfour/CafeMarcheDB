@@ -11,6 +11,7 @@ import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL } 
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
+import { populateDB3AuthorizationPermissions } from 'src/core/db3/server/db3RequestValidation';
 import { AutoAssignInstrumentPartition } from 'src/core/db3/shared/apiTypes';
 
 var path = require('path');
@@ -78,7 +79,11 @@ export default api(async (req, res, origCtx: Ctx) => {
                         }
                     }
 
-                    const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+                    const clientIntention = await populateDB3AuthorizationPermissions(db, {
+                        currentUser,
+                        intention: 'user',
+                        mode: 'primary',
+                    });
 
                     if (!files || Object.values(files).length < 1) {
                         if (args.externalURI) {

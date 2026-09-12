@@ -1,5 +1,6 @@
 import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, FileWikiPageTag, Prisma } from "db";
-import { Permission } from "shared/permissions";
+import { includesPermission, Permission } from "shared/permissions";
+import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
@@ -62,6 +63,23 @@ export const xFileAuthMap_FileObjects_AdminEdit: db3.DB3AuthContextPermissionMap
     PreMutateAsOwner: Permission.admin_files,
     PreMutate: Permission.admin_files,
     PreInsert: Permission.upload_files,
+};
+
+// some fields are server-owned -- like storage identity UUID / derived metadata
+// that, if user-edited, could break integrity.
+//
+// these fields on File are treated specially:
+// - readable along with the file itself
+// - only creatable by trusted server-side code
+// - never modified
+const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
+    if (args.rowMode === "view") {
+        return includesPermission(args.publicData.permissions || [], Permission.view_files);
+    }
+    if (args.rowMode === "new") {
+        return includesPermission(args.publicData.permissions || [], Permission.upload_files);
+    }
+    return false; // by default, server-owned fields are not authorized for mutation
 };
 
 
@@ -372,6 +390,8 @@ export interface xFileFilterParams {
 const xFileBaseArgs = {
     tableName: "File",
     deletePolicy: "softOnly" as const,
+    viewDeletedPermission: Permission.recover_files,
+    restorePermission: Permission.recover_files,
     queryParameters: {
         fileId: { kind: "integer", authorizeAs: "id" },
         fileTagIds: { kind: "integerArray", authorizeAs: "tags" },
@@ -403,7 +423,7 @@ const xFileBaseArgs = {
         new CreatedByUserField({
             columnName: "uploadedByUser",
             fkidMember: "uploadedByUserId",
-            //authMap: xFileAuthMap_FileObjects_AdminEdit,
+            _customAuth: authorizeFileServerOwnedField,
         }),
         MakeVisiblePermissionField({ authMap: xFileAuthMap_FileObjects }),
 
@@ -411,19 +431,19 @@ const xFileBaseArgs = {
             columnName: "sizeBytes",
             allowNull: true,
             allowSearchingThisField: false,
-            authMap: xFileAuthMap_FileObjects_AdminEdit,
+            _customAuth: authorizeFileServerOwnedField,
         }),
         new GenericStringField({
             columnName: "storedLeafName",
             allowNull: false,
             format: "raw",
-            authMap: xFileAuthMap_FileObjects_AdminEdit,
+            _customAuth: authorizeFileServerOwnedField,
         }),
         new GenericStringField({
             columnName: "mimeType",
             allowNull: true,
             format: "raw",
-            authMap: xFileAuthMap_FileObjects_AdminEdit,
+            _customAuth: authorizeFileServerOwnedField,
         }),
         new GenericStringField({
             columnName: "externalURI",
@@ -435,7 +455,7 @@ const xFileBaseArgs = {
             columnName: "customData",
             allowNull: true,
             format: "raw",
-            authMap: xFileAuthMap_FileObjects,
+            _customAuth: authorizeFileServerOwnedField,
         }),
         new DateTimeField({
             columnName: "fileCreatedAt",
@@ -644,6 +664,8 @@ export const xFrontpageAuthMap_Basic: db3.DB3AuthContextPermissionMap = {
 export const xFrontpageGalleryItem = new db3.xTable({
     tableName: "FrontpageGalleryItem",
     deletePolicy: "softOnly",
+    viewDeletedPermission: Permission.edit_public_homepage,
+    restorePermission: Permission.edit_public_homepage,
     sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
     queryParameters: {},
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemDefaultArgs => {

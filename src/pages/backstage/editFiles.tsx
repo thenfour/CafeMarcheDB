@@ -44,7 +44,7 @@ const MainContent = () => {
 
 const EditFilesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Files" basePermission={Permission.admin_files}>
+        <DashboardLayout title="Files">
             <MainContent />
         </DashboardLayout>
     )

@@ -335,17 +335,17 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     );
 }; // PrimarySearchAppBar
 
-const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission; }>) => {
+const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
     const dashboardContext = useDashboardContext();
     const router = useRouter();
     const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
 
     const registeredRoute = findBackstageRouteByPattern(router.pathname);
-    const isPageAuthorized = registeredRoute
-        ? dashboardContext.isAuthorized(registeredRoute.permission)
-        : !basePermission || dashboardContext.isAuthorized(basePermission);
-
+    if (!registeredRoute) {
+        throw new Error(`No route for path: ${router.pathname}`);
+    }
+    const isPageAuthorized = dashboardContext.isAuthorized(registeredRoute.permission);
     if (!isPageAuthorized) {
         // are you even logged in?
         if (!dashboardContext.session?.userId) {
@@ -458,7 +458,7 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
 }
 
 
-const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission }>) => {
+const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
     React.useEffect(() => {
         document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
     }, []);
@@ -473,7 +473,7 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
                     <ConfirmProvider>
                         <MessageBoxProvider>
                             <MediaPlayerProvider>
-                                <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
+                                <Dashboard3 navRealm={navRealm}>
                                     {children}
                                 </Dashboard3>
                             </MediaPlayerProvider>

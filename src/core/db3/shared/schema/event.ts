@@ -153,6 +153,8 @@ export const xEventType = new db3.xTable({
     },
     tableName: "EventType",
     deletePolicy: "softOnly",
+    viewDeletedPermission: Permission.recover_events,
+    restorePermission: Permission.recover_events,
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
@@ -195,6 +197,8 @@ export const xEventStatus = new db3.xTable({
     // persisted status is valid even if it's isDeleted=true.
     // soft delete really means "don't show in option lists"
     deletePolicy: "softOnly",
+    viewDeletedPermission: Permission.recover_events,
+    restorePermission: Permission.recover_events,
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventStatusNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
@@ -438,6 +442,8 @@ export const EventAPI = {
 export const xEventArgs_Base: db3.TableDesc = {
     tableName: "Event", // case matters :(
     deletePolicy: "softOnly",
+    viewDeletedPermission: Permission.recover_events,
+    restorePermission: Permission.recover_events,
     queryParameters: EventQueryParameters,
     getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
         return EventArgs;
@@ -888,6 +894,8 @@ export const xEventAttendance = new db3.xTable({
     // NB: historical records are preserved and presented, even if soft deleted.
     // soft delete really means "don't show in option lists for new things"
     deletePolicy: "softOnly",
+    viewDeletedPermission: Permission.recover_events,
+    restorePermission: Permission.recover_events,
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({

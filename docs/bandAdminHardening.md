@@ -1,6 +1,6 @@
 # Band Admin Authorization Hardening
 
-- Last updated: 2026-09-11
+- Last updated: 2026-09-12
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
 - Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001 through BA-S006, BA-M001, BA-C001 through BA-C003, and BA-N001 through BA-N003 complete; BA-N004 next
@@ -69,7 +69,7 @@ This is the agreed platform boundary. The exact production role composition rema
 | Workflows                               | Not available                                                        | Disabled/contained until later physical removal                                                         |
 | Users                                   | Edit and deactivate ordinary users; assign permitted roles           | User creation, login email/provider identity, password-reset URLs, protected accounts, and `isSysAdmin` |
 | Roles and permissions                   | Assign predefined non-protected roles                                | Role CRUD, Permission CRUD, and the permission matrix                                                   |
-| Site configuration                      | Brand, logo, favicon, theme, calendar identity, site copy, and menus | Hosting mode, raw settings, and bulk configuration                                                      |
+| Site configuration                      | Brand, logo, favicon, theme, calendar identity, and menus            | Hosting mode, raw settings, and bulk configuration; site-copy authorization is deferred                  |
 | Reports                                 | Event and feature reports                                            | Server diagnostics                                                                                      |
 | Audit                                   | No audit-log access initially                                        | Raw change records; credential-bearing values must never be recorded                                    |
 | Support                                 | No impersonation initially                                           | Unrestricted impersonation                                                                              |
@@ -87,7 +87,10 @@ The following current Admin-over-Moderator grants are audit context, not a prede
 - `admin_files`
 - `admin_instruments`
 - `admin_songs`
-- `admin_users` — include only after it has been narrowed and protected-target checks exist
+- `manage_user_taxonomy`
+- `deactivate_users`
+- `assign_user_roles`
+- `recover_events`, `recover_songs`, and `recover_files`
 - `setlist_planner_access`
 - `view_feature_reports`
 - `view_users_basic_info`
@@ -96,15 +99,20 @@ The following current Admin-over-Moderator grants are audit context, not a prede
 
 Before Moderator is used as the rollout starting point, its effective grants must contain no usable workflow capability. Band Admin must not receive `view_workflow_instances`, `edit_workflow_instances`, `view_workflow_defs`, `edit_workflow_defs`, or `admin_workflow_defs` while those permissions await later deletion.
 
-### Proposed permission split
+### Implemented permission split
 
 Prefer a small, action-oriented split rather than a permission for every button:
 
-- Keep `manage_users` for ordinary profile, tag, and instrument management.
-- Narrow `admin_users` to editing and deactivating existing ordinary accounts. Band Admin does not create users; users enter through self-signup.
-- Add `assign_user_roles` for constrained role assignment.
+- Keep `manage_users` for ordinary profile management and assignment of existing user tags and instruments.
+- Use `manage_user_taxonomy` for UserTag definitions and user/UserTag presentation metadata.
+- Use continuity-sensitive `deactivate_users` for account deactivation and session revocation. Band Admin does not create users; users enter through self-signup.
+- Keep continuity-sensitive `assign_user_roles` for constrained role assignment.
+- Use `recover_events`, `recover_songs`, and `recover_files` for opt-in deleted-row listing and restoration. Recovery never bypasses `visiblePermission`: another owner's private row remains absent from items and counts and cannot be restored by Band Admin.
+- Keep `manage_files` for routine metadata and assignment of existing tags; use `admin_files` for human-facing filename correction and FileTag definitions. Storage names, MIME type, byte size, derived custom data, and uploader identity/timestamps remain server-owned.
+- Retire `manage_instruments`; all instrument-definition management uses `admin_instruments`. Existing `manage_instruments` grants are removed rather than promoted.
 - Add `manage_site_branding` for the band-owned subset of the Brand page. Keep hosting mode and platform settings actual-Sysadmin-only.
-- Authorize site-copy and other settings through similarly scoped capabilities and a server-side key allowlist; do not use broad `content_admin` as authority for arbitrary settings.
+- Defer site-copy authorization pending localization, affordance/UX, and editing-constraint work. Retire unused `content_admin` rather than repurposing it.
+- Keep event import and iCal preview actual-Sysadmin-only because they are experimental/diagnostic surfaces.
 - Keep audit-log access sysadmin-only; no Band Admin audit permission is required.
 - Keep `impersonate_user`, `sysadmin`, security-topology mutation, and protected-account administration sysadmin-only.
 - Make Practice Tools genuinely public by removing its authorization gate or placing `practice_tools_use` in the public permission baseline; do not treat it as a Band Admin grant.
@@ -431,7 +439,7 @@ Evidence:
 
 ### BA-U002 — Split ordinary user administration from system administration
 
-- [x] Add `assign_user_roles` as a site-scoped, delegable, continuity-sensitive permission.
+- [x] Add `manage_user_taxonomy`, `deactivate_users`, and `assign_user_roles` as site-scoped, delegable capabilities; keep deactivation and role assignment continuity-sensitive.
 - [x] Make `User.role`, `User.isSysAdmin`, and account deactivation immutable through the generic User editor.
 - [x] Move `User.isSysAdmin` to an unambiguous actual-Sysadmin-only mutation path.
 - [x] Add dedicated role-assignment and deactivation endpoints that re-read actor, target, and role state inside the mutation.
@@ -450,13 +458,13 @@ References:
 
 Evidence:
 
-- Implementation: added the code-owned `assign_user_roles` capability; replaced generic role, deactivation, and `isSysAdmin` writes with dedicated serializable-transaction mutations; enforced fresh actor/target/role reads, permission-composition delegation, protected-target ceilings, safe assignable-role projections, last-active-non-Sysadmin continuity simulation, explicit acknowledgement, session revocation, and narrow activity records. Raw role topology now carries an actual-Sysadmin table policy and full-topology queries independently verify the persisted `isSysAdmin` flag. The ordinary dashboard no longer distributes `RolePermission`, ordinary User queries no longer include role grants, the canonical user page has action-specific controls, and the legacy raw user grid is Sysadmin-only.
+- Implementation: added the code-owned `manage_user_taxonomy`, `deactivate_users`, and `assign_user_roles` capabilities; replaced generic role, deactivation, and `isSysAdmin` writes with dedicated serializable-transaction mutations; enforced fresh actor/target/role reads, permission-composition delegation, protected-target ceilings, safe assignable-role projections, last-active-non-Sysadmin continuity simulation, explicit acknowledgement, session revocation, and narrow activity records. UserTag definitions and presentation metadata are separate from ordinary profile/tag-assignment management. Raw role topology now carries an actual-Sysadmin table policy and full-topology queries independently verify the persisted `isSysAdmin` flag. The ordinary dashboard no longer distributes `RolePermission`, ordinary User queries no longer include role grants, the canonical user page has action-specific controls, and the legacy raw user grid is Sysadmin-only.
 - Verification: `yarn test:auth` and `yarn test` (100 passed, including peer-equivalent role assignment, current/desired permission envelopes, protected/non-delegable/unheld/unknown rejection, continuity acknowledgement, alternate-holder behavior, session revocation, dedicated `isSysAdmin`, generic-path immutability, unprivileged maintenance-grid user creation, safe role projection, and actual-Sysadmin topology access); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
 - Commit/PR: see gh issue #668
 
 ### BA-U003 — Harden password reset
 
-- [x] Make password-reset URL generation explicitly Sysadmin-only; `manage_users`, `admin_users`, and Band Admin must not authorize it.
+- [x] Make password-reset URL generation explicitly Sysadmin-only; `manage_users`, the retired `admin_users`, and Band Admin must not authorize it.
 - [x] Remove the reset action from every non-Sysadmin user-management surface.
 - [x] Add a server-boundary test proving Band Admin cannot invoke the mutation or receive a reset URL for any target.
 - [x] Preserve the existing mechanism as a last-resort Sysadmin operation until a separately scoped hardened recovery flow is designed.
@@ -466,7 +474,7 @@ References: [forgotPassword mutation](../src/auth/mutations/forgotPassword.ts#L1
 
 Evidence:
 
-- Implementation: the administrator-mediated reset mutation now requires both the `sysadmin` resolver gate and a fresh persisted `User.isSysAdmin` check before target lookup or token generation, so `manage_users`, `admin_users`, Band Admin, stale sessions, and role-carried `sysadmin` grants cannot reach the bearer credential. The reset control independently hides itself from non-Sysadmins, the raw reset URL is no longer written to the browser console, and password-reset completion records only non-secret event metadata instead of serializing full User rows. The existing manual-link mechanism and 48-hour lifetime remain unchanged pending a separately scoped recovery redesign.
+- Implementation: the administrator-mediated reset mutation now requires both the `sysadmin` resolver gate and a fresh persisted `User.isSysAdmin` check before target lookup or token generation, so `manage_users`, the former `admin_users` capability, Band Admin, stale sessions, and role-carried `sysadmin` grants cannot reach the bearer credential. The reset control independently hides itself from non-Sysadmins, the raw reset URL is no longer written to the browser console, and password-reset completion records only non-secret event metadata instead of serializing full User rows. The existing manual-link mechanism and 48-hour lifetime remain unchanged pending a separately scoped recovery redesign.
 - Verification: `yarn test:auth` and `yarn test` (104 passed, including rejection before lookup/token creation, role-carried `sysadmin` rejection, actual-Sysadmin issuance with hashed token storage, and credential-free reset activity records); `yarn tsc --noEmit`; focused ESLint; `yarn build`.
 - Commit/PR: see gh issue #668
 
@@ -981,12 +989,24 @@ Phase completion evidence:
 
 Recommended verification for completion: focused registry/guard tests; persona-based menu/page/first-query tests for every changed route; a direct-URL test for each platform/developer/contained class; Server Health response-shape tests; full `yarn test`; `yarn tsc --noEmit`; focused ESLint; `yarn build`; and `git diff --check`.
 
+### Cross-cutting Band Admin permission split
+
+- [x] Retire `content_admin`, `admin_users`, and `manage_instruments` from application code and default grants.
+- [x] Split user taxonomy, deactivation, and constrained role assignment into independent capabilities.
+- [x] Add per-domain Event, Song, and File recovery capabilities with explicit deleted-row query opt-in, visibility-preserving counts/items, and restore checks.
+- [x] Separate FileTag/filename administration from routine file metadata and recovery; reject generic writes to server-owned file fields.
+- [x] Keep all instrument-definition management under `admin_instruments` without promoting retired `manage_instruments` grants.
+- [x] Keep event import and iCal preview Sysadmin-only; defer site-copy authorization.
+- [x] Migrate old `admin_users` holders to both replacement capabilities, grant new capabilities to designated Sysadmin roles, remove retired grants, and invalidate sessions for affected roles.
+
+Implementation: DB3 tables now declare `viewDeletedPermission` and `restorePermission`; `includeDeleted` is validated and authorized before database access. Delegated recovery continues to apply ordinary row visibility, including owner-only private rows, to both paginated results and counts. Restore and all other mutations of a deleted row require the table recovery permission, while the existing Sysadmin administrative intention retains its maintenance bypass. Raw DB3 grids opt into deleted rows only when the active actor holds the table recovery capability. File ingestion marks trusted server mutations explicitly; generic RPC callers cannot forge this context.
+
 ## Phase 9 — Authorization acceptance matrix
 
 ### Generic adversarial cases
 
 - [x] Anonymous DB3 query cannot enumerate protected tables or use protected fields as predicates.
-- [x] Logged-in caller cannot select admin intention or deleted rows.
+- [x] Logged-in caller cannot select admin intention or request deleted rows without the table's recovery capability.
 - [x] Mixed allowed/forbidden update rejects or strips forbidden fields according to the documented mutation policy.
 - [x] Association-only updates enforce authorization.
 - [x] Hard and soft deletes enforce authorization.
@@ -1083,6 +1103,7 @@ Add one row for each completed or materially changed work item.
 | 2026-09-11 | BA-N001–N003 | Added a complete permission-only backstage route registry and centralized database-revalidated global page guard; aligned drawer/domain capabilities; made Practice Tools public; contained workflow pages; protected platform/developer pages; and split user activity tabs | `yarn test` (318 passed); `yarn tsc --noEmit`; `yarn build`; `git diff --check`; ESLint blocked by existing config/package incompatibility | —                 |
 | 2026-09-11 | Auth model   | Removed code-owned public grants and actual-Sysadmin bypasses; added designated Sysadmin-role assumption and centralized effective permission resolution for sessions, fresh checks, DB3 authorization, row visibility, and UI controls                                      | `yarn test:auth` (321 passed); `yarn tsc --noEmit`; `git diff --check`                                                                     | —                 |
 | 2026-09-12 | Phase 5      | Corrected complete session refresh; added fail-closed Sysadmin-role startup validation and transactional session revocation for role, grant, Sysadmin, and lifecycle changes                                                                                                  | `yarn test:auth`; `yarn test` (331 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`; `git diff --check`                          | —                 |
+| 2026-09-12 | Permission split | Split user taxonomy/deactivation, domain recovery, file administration, and server-owned metadata; retired broad/unused permissions; unified instrument administration; and kept experimental tools Sysadmin-only                                                         | `yarn test:auth --reporter=dot --threads=false`; `yarn test --reporter=dot --threads=false` (340 passed); `yarn tsc --noEmit`; `yarn prisma validate`; `yarn build`; `git diff --check` | —                 |
 
 ## Deferred ideas
 

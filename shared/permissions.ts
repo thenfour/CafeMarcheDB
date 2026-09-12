@@ -1,26 +1,26 @@
 // todo: permissions that we can consider adding:
 // - invite users to events (currently this operation is under manage_events)
 
-export const PermissionCategories = [
-  "access",
-  "site-content",
-  "visibility",
-  "events",
-  "songs",
-  "files",
-  "instruments",
-  "users",
-  "custom-links",
-  "wiki",
-  "workflows",
-  "menu",
-  "setlists",
-  "reports",
-  "practice-tools",
-  "system",
-] as const
+// export const PermissionCategories = [
+//   "access",
+//   "site-content",
+//   "visibility",
+//   "events",
+//   "songs",
+//   "files",
+//   "instruments",
+//   "users",
+//   "custom-links",
+//   "wiki",
+//   "workflows",
+//   "menu",
+//   "setlists",
+//   "reports",
+//   "practice-tools",
+//   "system",
+// ] as const
 
-export type PermissionCategory = (typeof PermissionCategories)[number]
+//export type PermissionCategory = (typeof PermissionCategories)[number]
 
 export const PermissionScopes = ["public", "account", "site", "platform"] as const
 
@@ -34,17 +34,21 @@ export type PermissionPresentation = Readonly<{
 
 export type PermissionDefinition = Readonly<{
   key: string
-  category: PermissionCategory
+  //category: PermissionCategory
+
+  // todo: explain permission scope
   scope: PermissionScope
   description: string
   sortOrder: number
+
+  // todo: explain permission protection
   isProtected: boolean
   // A delegable permission may safely be carried by a preconfigured role
   // assigned by a non-sysadmin. This does not authorize editing role grants.
   isDelegable: boolean
   isVisibility: boolean
-  // used for admin_users for the purpose of detecting when an action needs
-  // continuity check - like removing yourself as the last band admin.
+  // Used for capabilities where removing the final non-Sysadmin holder could
+  // leave the band unable to perform an important administrative operation.
   isContinuitySensitive: boolean
   presentation?: PermissionPresentation
 }>
@@ -62,7 +66,7 @@ type PermissionOptions = Partial<
 
 const definePermission = <TKey extends string>(
   key: TKey,
-  category: PermissionCategory,
+  //category: PermissionCategory,
   scope: PermissionScope,
   description: string,
   sortOrder: number,
@@ -70,7 +74,7 @@ const definePermission = <TKey extends string>(
 ) =>
 ({
   key,
-  category,
+  //category,
   scope,
   description,
   sortOrder,
@@ -98,50 +102,43 @@ const visibilityPresentation = (
 const permissionRegistry = [
   definePermission(
     "always_grant",
-    "access",
+    //"access",
     "public",
     "Authorization sentinel granted to every visitor.",
     0
   ),
   definePermission(
     "public",
-    "access",
+    //"access",
     "public",
     "Functionality available without a user account.",
     10
   ),
   definePermission(
     "login",
-    "access",
+    //"access",
     "account",
     "Functionality available to any authenticated user.",
     20
   ),
   definePermission(
     "basic_trust",
-    "access",
+    //"access",
     "account",
     "Ordinary member data available after an account has been trusted.",
     30
   ),
 
   definePermission(
-    "content_admin",
-    "site-content",
-    "site",
-    "Manage general site content.",
-    100
-  ),
-  definePermission(
     "manage_site_branding",
-    "site-content",
+    //"site-content",
     "site",
     "Manage the site title, imagery, theme, et al.",
     105
   ),
   definePermission(
     "edit_public_homepage",
-    "site-content",
+    //"site-content",
     "site",
     "Edit public homepage content and gallery presentation.",
     110
@@ -149,7 +146,7 @@ const permissionRegistry = [
 
   definePermission(
     "visibility_public",
-    "visibility",
+    //"visibility",
     "public",
     "Public visibility: everyone can see the object.",
     200,
@@ -159,7 +156,7 @@ const permissionRegistry = [
   ),
   definePermission(
     "visibility_logged_in_users",
-    "visibility",
+    //"visibility",
     "account",
     "Visibility restricted to authenticated users.",
     210,
@@ -167,7 +164,7 @@ const permissionRegistry = [
   ),
   definePermission(
     "visibility_members",
-    "visibility",
+    //"visibility",
     "site",
     "Visibility restricted to trusted site members.",
     220,
@@ -175,7 +172,7 @@ const permissionRegistry = [
   ),
   definePermission(
     "visibility_editors",
-    "visibility",
+    //"visibility",
     "site",
     "Visibility restricted to site editors.",
     230,
@@ -184,37 +181,47 @@ const permissionRegistry = [
 
   definePermission(
     "admin_events",
-    "events",
+    //"events",
     "site",
     "Manage event types, statuses, tags, and other event configuration.",
     300
   ),
-  definePermission("manage_events", "events", "site", "Create, edit, and remove events.", 310),
+  definePermission("manage_events",
+    //"events", 
+    "site", "Create, edit, and remove events.", 310),
+  definePermission(
+    "recover_events",
+    //"events",
+    "site",
+    "View otherwise-visible deleted events and event configuration, and restore them.",
+    315
+  ),
   definePermission(
     "view_events",
-    "events",
+    //"events",
     "public",
     "View public event information.",
     320
   ),
   definePermission(
     "view_events_nonpublic",
-    "events",
+    //"events",
     "site",
     "View non-public event details such as attendance and internal descriptions.",
     330
   ),
-  definePermission("view_events_reports", "events", "site", "View event reports.", 340),
+  definePermission("view_events_reports", //"events",
+    "site", "View event reports.", 340),
   definePermission(
     "respond_to_events",
-    "events",
+    //"events",
     "site",
     "Respond to event attendance requests.",
     350
   ),
   definePermission(
     "change_others_event_responses",
-    "events",
+    //"events",
     "site",
     "Change another user's event response.",
     360
@@ -222,34 +229,53 @@ const permissionRegistry = [
 
   definePermission(
     "admin_songs",
-    "songs",
+    //"songs",
     "site",
     "Manage song tags, credit types, and other song configuration.",
     400
   ),
-  definePermission("manage_songs", "songs", "site", "Create, edit, and remove songs.", 410),
-  definePermission("view_songs", "songs", "site", "View songs.", 420),
-  definePermission("pin_song_recordings", "songs", "site", "Pin recordings to songs.", 430),
+  definePermission("manage_songs", //"songs",
+    "site", "Create, edit, and remove songs.", 410),
+  definePermission(
+    "recover_songs",
+    //"songs",
+    "site",
+    "View otherwise-visible deleted songs and restore them.",
+    415
+  ),
+  definePermission("view_songs", //"songs",
+    "site", "View songs.", 420),
+  definePermission("pin_song_recordings", //"songs",
+    "site", "Pin recordings to songs.", 430),
 
   definePermission(
     "admin_files",
-    "files",
+    //"files",
     "site",
-    "Manage file tags and other file configuration.",
+    "Manage file names, tags, and other file configuration.",
     500
   ),
-  definePermission("manage_files", "files", "site", "Edit and remove files.", 510),
-  definePermission("upload_files", "files", "site", "Upload files.", 520),
+  definePermission("manage_files", //"files",
+    "site", "Edit and remove files.", 510),
+  definePermission(
+    "recover_files",
+    //"files",
+    "site",
+    "View otherwise-visible deleted files and restore them.",
+    515
+  ),
+  definePermission("upload_files", //"files",
+    "site", "Upload files.", 520),
   definePermission(
     "view_files",
-    "files",
+    //"files",
     "public",
     "View public files and homepage media.",
     530
   ),
   definePermission(
     "access_file_landing_page",
-    "files",
+    //"files",
     "site",
     "Access the file landing page.",
     540
@@ -257,77 +283,81 @@ const permissionRegistry = [
 
   definePermission(
     "admin_instruments",
-    "instruments",
+    //"instruments",
     "site",
     "Manage instrument definitions and functional groups.",
     600
   ),
   definePermission(
-    "manage_instruments",
-    "instruments",
+    "manage_user_taxonomy",
+    //"users",
     "site",
-    "Manage ordinary instrument data.",
-    610
-  ),
-
-  definePermission(
-    "admin_users",
-    "users",
-    "site",
-    "Perform ordinary user account lifecycle administration.",
-    700,
-    {
-      isContinuitySensitive: true,
-    }
+    "Manage user tag definitions and user presentation metadata.",
+    700
   ),
   definePermission(
-    "assign_user_roles",
-    "users",
+    "deactivate_users",
+    //"users",
     "site",
-    "Assign preconfigured roles within the actor's delegable permission envelope.",
+    "Deactivate ordinary user accounts and revoke their sessions.",
     705,
     {
       isContinuitySensitive: true,
     }
   ),
   definePermission(
-    "manage_users",
-    "users",
+    "assign_user_roles",
+    //"users",
     "site",
-    "Manage ordinary user profile, tag, and instrument data.",
-    710
+    "Assign preconfigured roles within the actor's delegable permission envelope.",
+    710,
+    {
+      isContinuitySensitive: true,
+    }
   ),
-  definePermission("search_users", "users", "site", "Search the user directory.", 720),
+  definePermission(
+    "manage_users",
+    //"users",
+    "site",
+    "Manage ordinary user profile data and assign existing tags and instruments.",
+    720
+  ),
+  definePermission("search_users", //"users",
+    "site", "Search the user directory.", 730),
   definePermission(
     "view_users_basic_info",
-    "users",
+    //"users",
     "site",
     "View the user landing page and basic member information.",
-    730
+    740
   ),
 
-  definePermission("view_custom_links", "custom-links", "site", "View custom links.", 800),
+  definePermission("view_custom_links",// "custom-links",
+    "site", "View custom links.", 800),
   definePermission(
     "manage_custom_links",
-    "custom-links",
+    //"custom-links",
     "site",
     "Create, edit, and remove custom links.",
     810
   ),
 
-  definePermission("view_wiki_pages", "wiki", "site", "View wiki pages.", 900),
-  definePermission("edit_wiki_pages", "wiki", "site", "Create and edit wiki pages.", 910),
+  definePermission("view_wiki_pages",// "wiki",
+    "site", "View wiki pages.", 900),
+  definePermission("edit_wiki_pages",// "wiki",
+    "site", "Create and edit wiki pages.", 910),
   definePermission(
     "admin_wiki_pages",
-    "wiki",
+    //"wiki",
     "site",
     "Perform wiki administration such as unlocking pages and managing revisions.",
     920
   ),
-  definePermission("search_wiki_pages", "wiki", "site", "Search wiki pages.", 930),
+  definePermission("search_wiki_pages",// "wiki",
+    "site", "Search wiki pages.", 930),
   definePermission(
     "view_wiki_page_revisions",
-    "wiki",
+    //"wiki",
     "site",
     "View wiki page revision history.",
     940
@@ -336,59 +366,61 @@ const permissionRegistry = [
   // Workflows remain registered only until the separately approved removal slice.
   definePermission(
     "view_workflow_instances",
-    "workflows",
+    //"workflows",
     "site",
     "View workflow instances and the workflow tab.",
     1000
   ),
   definePermission(
     "edit_workflow_instances",
-    "workflows",
+    //"workflows",
     "site",
     "Manage workflow instance assignees and due dates.",
     1010
   ),
   definePermission(
     "view_workflow_defs",
-    "workflows",
+    //"workflows",
     "site",
     "View workflow definitions and graphs.",
     1020
   ),
   definePermission(
     "edit_workflow_defs",
-    "workflows",
+    //"workflows",
     "site",
     "Create and edit workflow definitions and graphs.",
     1030
   ),
   definePermission(
     "admin_workflow_defs",
-    "workflows",
+    //"workflows",
     "site",
     "Perform technical workflow administration.",
     1040
   ),
 
-  definePermission("customize_menu", "menu", "site", "Customize site navigation menus.", 1100),
+  definePermission("customize_menu", //"menu", 
+    "site", "Customize site navigation menus.", 1100),
   definePermission(
     "setlist_planner_access",
-    "setlists",
+    //"setlists",
     "site",
     "Access the setlist planner.",
     1200
   ),
-  definePermission("view_feature_reports", "reports", "site", "View feature-usage reports.", 1300),
+  definePermission("view_feature_reports", //"reports",
+    "site", "View feature-usage reports.", 1300),
   definePermission(
     "practice_tools_use",
-    "practice-tools",
+    //"practice-tools",
     "public",
     "Use public practice tools.",
     1400
   ),
   definePermission(
     "impersonate_user",
-    "system",
+    //"system",
     "platform",
     "Impersonate another user for technical support and debugging.",
     9000,
@@ -400,7 +432,7 @@ const permissionRegistry = [
   // this permission is used broadly to identify features accessible only to system administrators.
   definePermission(
     "sysadmin",
-    "system",
+    //"system",
     "platform",
     "Bypass ordinary permission checks and administer the platform.",
     9010,
@@ -408,7 +440,7 @@ const permissionRegistry = [
   ),
   definePermission(
     "never_grant",
-    "system",
+    //"system",
     "platform",
     "Authorization sentinel that must never be granted to a role.",
     9020,

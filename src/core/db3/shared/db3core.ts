@@ -53,6 +53,9 @@ export interface QueryInputBase {
     orderBy: TAnyModel | undefined;
     filter: CMDBTableFilterModel;
     cmdbQueryContext: string;
+    // Deleted rows are excluded unless the caller explicitly opts in and the
+    // table grants its recovery capability. Visibility is still enforced.
+    includeDeleted?: boolean;
     delayMS?: number | undefined; // for testing purposes you may want to add an artificial delay to receiving results
 };
 
@@ -427,6 +430,10 @@ export interface xTableClientUsageContext {
     authorizationPermissions?: string[];
     authorizationPermissionIds?: number[];
 
+    // Server-validated query option. This never bypasses visiblePermission;
+    // it only relaxes the normal isDeleted=false filter for recovery-capable tables.
+    includeDeleted?: boolean;
+
     // does your xTable need to act differently when it's being used to populate a dropdown for a related key of some field? use this to do whatever.
     //customContext?: xTableClientUsageCustomContextBase;
 
@@ -516,6 +523,10 @@ export interface TableDesc {
     // its schema. This prevents a central table-name registry from drifting.
     deletePolicy: DB3DeletePolicy;
 
+    // specify the permission required to view or restore soft-deleted content
+    viewDeletedPermission?: Permission;
+    restorePermission?: Permission;
+
     // this allows tables to supplement search results with extra "customdata".
     SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 };
@@ -531,6 +542,8 @@ export class xTable /* implements TableDesc*/ {
     getSelectionArgs: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel;
 
     deletePolicy: DB3DeletePolicy;
+    viewDeletedPermission?: Permission;
+    restorePermission?: Permission;
     pkMember: string;
     rowNameMember?: string;
     rowDescriptionMember?: string;
@@ -606,6 +619,14 @@ export class xTable /* implements TableDesc*/ {
         assert(
             this.deletePolicy !== "hard" || !this.SqlSpecialColumns.isDeleted,
             `Table ${this.tableID} allows hard deletion despite having an isDeleted field.`,
+        );
+        assert(
+            (!this.viewDeletedPermission && !this.restorePermission) || this.deletePolicy === "softOnly",
+            `Table ${this.tableID} declares recovery permissions without soft deletion.`,
+        );
+        assert(
+            (!!this.viewDeletedPermission) === (!!this.restorePermission),
+            `Table ${this.tableID} must declare both viewDeletedPermission and restorePermission.`,
         );
 
         args.columns.forEach(field => {
@@ -829,18 +850,21 @@ export class xTable /* implements TableDesc*/ {
         });
     };
 
-    authorizeRowForView = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+    private canUseSysadminBypass = (
+        publicData: EmptyPublicData | Partial<PublicDataType>,
+        clientIntention: xTableClientUsageContext,
+    ): boolean => this.hasPermission(publicData, Permission.sysadmin)
+        && clientIntention.intention === "admin";
+
+    private isRowVisibleToActor = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>): boolean => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, null);
         const isOwner = ownerUserId != null
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
-        const canUseAdminVisibility = this.hasPermission(args.publicData, Permission.sysadmin) && args.clientIntention.intention === "admin";
+        const canUseAdminVisibility = this.canUseSysadminBypass(args.publicData, args.clientIntention);
 
         if (args.model && !canUseAdminVisibility) {
-            const isDeletedColumn = this.SqlSpecialColumns.isDeleted;
-            if (isDeletedColumn && args.model[isDeletedColumn.member] === true) return false;
-
             const visiblePermissionColumn = this.SqlSpecialColumns.visiblePermission;
             if (visiblePermissionColumn) {
                 const visiblePermissionId = args.model[visiblePermissionColumn.fkidMember!];
@@ -858,6 +882,45 @@ export class xTable /* implements TableDesc*/ {
                 }
             }
         }
+
+        return true;
+    };
+
+    canViewDeletedRows = (
+        publicData: EmptyPublicData | Partial<PublicDataType>,
+        clientIntention: xTableClientUsageContext,
+    ): boolean => this.canUseSysadminBypass(publicData, clientIntention)
+        || (!!this.viewDeletedPermission && this.hasPermission(publicData, this.viewDeletedPermission));
+
+    authorizeIncludeDeleted = (
+        publicData: EmptyPublicData | Partial<PublicDataType>,
+        clientIntention: xTableClientUsageContext,
+    ): boolean => !clientIntention.includeDeleted
+        || (!!this.SqlSpecialColumns.isDeleted && this.canViewDeletedRows(publicData, clientIntention));
+
+    authorizeRowForRestore = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>): boolean => {
+        if (this.canUseSysadminBypass(args.publicData, args.clientIntention)) return true;
+        if (!this.restorePermission || !this.hasPermission(args.publicData, this.restorePermission)) return false;
+        return this.isRowVisibleToActor(args);
+    };
+
+    authorizeRowForView = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+        const rowInfo = args.model ? this.getRowInfo(args.model) : null;
+        const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, null);
+        const isOwner = ownerUserId != null
+            && ((args.publicData.userId || 0) > 0)
+            && (args.publicData.userId === ownerUserId);
+
+        if (args.model) {
+            const isDeletedColumn = this.SqlSpecialColumns.isDeleted;
+            if (isDeletedColumn && args.model[isDeletedColumn.member] === true) {
+                if (!this.canUseSysadminBypass(args.publicData, args.clientIntention)
+                    && (!args.clientIntention.includeDeleted || !this.canViewDeletedRows(args.publicData, args.clientIntention))) {
+                    return false;
+                }
+            }
+        }
+        if (!this.isRowVisibleToActor(args)) return false;
 
         const requiredPermission = isOwner ? this.tableAuthMap.ViewOwn : this.tableAuthMap.View;
         return this.hasPermission(args.publicData, requiredPermission);
@@ -1109,11 +1172,15 @@ export class xTable /* implements TableDesc*/ {
         const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);
         and.push(...overallWhere);
 
-        const canUseAdminQuery = clientIntention.intention === "admin" && this.hasPermission(publicData, Permission.sysadmin);
+        const canUseAdminQuery = this.canUseSysadminBypass(publicData, clientIntention);
+        const canIncludeDeleted = canUseAdminQuery || (
+            !!clientIntention.includeDeleted
+            && this.canViewDeletedRows(publicData, clientIntention)
+        );
 
         // add soft delete clause.
         if (this.SqlSpecialColumns.isDeleted) {
-            if (!canUseAdminQuery) {
+            if (!canIncludeDeleted) {
                 and.push({ [this.SqlSpecialColumns.isDeleted.member]: false });
             }
         }

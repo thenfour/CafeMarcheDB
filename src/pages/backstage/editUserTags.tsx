@@ -30,7 +30,7 @@ const MainContent = () => {
 
 const EditUserTagsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="User Tags" basePermission={Permission.admin_users}>
+        <DashboardLayout title="User Tags">
             <MainContent />
         </DashboardLayout>
     )

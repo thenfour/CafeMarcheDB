@@ -13,13 +13,12 @@ import { useBrand } from "shared/brandConfig";
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
     navRealm?: NavRealm;
-    basePermission?: Permission;
 }
 
-const DashboardLayout2 = ({ disableLoginRedirect, navRealm, basePermission, children }: React.PropsWithChildren<DashboaldLayout2Props>) => {
+const DashboardLayout2 = ({ disableLoginRedirect, navRealm, children }: React.PropsWithChildren<DashboaldLayout2Props>) => {
     const [currentUser] = useCurrentUser();
 
-    return <Dashboard2 navRealm={navRealm} basePermission={basePermission}>
+    return <Dashboard2 navRealm={navRealm}>
         {
             (!!currentUser || disableLoginRedirect) ? children : (<LoginSignup />)
         }
@@ -27,44 +26,50 @@ const DashboardLayout2 = ({ disableLoginRedirect, navRealm, basePermission, chil
         ;
 };
 
-const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode, disableLoginRedirect?: boolean, navRealm?: NavRealm, basePermission?: Permission }> = ({
+const DashboardLayout: BlitzLayout<{
+    title?: string;
+    children?: React.ReactNode,
+    disableLoginRedirect?: boolean,
+    navRealm?: NavRealm,
+    //basePermission?: Permission 
+}> = ({
     title,
     children,
     disableLoginRedirect,
     navRealm,
-    basePermission,
+    //basePermission,
 }) => {
 
-    const fallback =
-        <Backdrop open={true} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-            <CircularProgress color="inherit" />
-        </Backdrop>
-        ;
+        const fallback =
+            <Backdrop open={true} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+                <CircularProgress color="inherit" />
+            </Backdrop>
+            ;
 
-    const brand = useBrand();
-    const titleText = `${brand.siteTitlePrefix}${title}`;
+        const brand = useBrand();
+        const titleText = `${brand.siteTitlePrefix}${title}`;
 
-    return (
-        <>
-            <Head>
-                <title>{titleText}</title>
-                <meta charSet="utf-8" /> { /* needed for Draft.js */}
+        return (
+            <>
+                <Head>
+                    <title>{titleText}</title>
+                    <meta charSet="utf-8" /> { /* needed for Draft.js */}
 
-                {/* for mobile, this sets the initial zoom for the page, so
+                    {/* for mobile, this sets the initial zoom for the page, so
                 basically this should be the width of your page for mobile in project/local coords.
                 about 400px is comfortable, 500px would be fine for this site, but we're not ready
                 for that yet.
                 */}
-                <meta name="viewport" content="width=750" />
-                {/* favicon is set globally in _app to avoid flicker */}
-            </Head>
-            <Suspense fallback={fallback}>
-                <DashboardLayout2 disableLoginRedirect={CoerceToBoolean(disableLoginRedirect, false)} navRealm={navRealm} basePermission={basePermission}>
-                    {children}
-                </DashboardLayout2>
-            </Suspense>
-        </>
-    )
-};
+                    <meta name="viewport" content="width=750" />
+                    {/* favicon is set globally in _app to avoid flicker */}
+                </Head>
+                <Suspense fallback={fallback}>
+                    <DashboardLayout2 disableLoginRedirect={CoerceToBoolean(disableLoginRedirect, false)} navRealm={navRealm}>
+                        {children}
+                    </DashboardLayout2>
+                </Suspense>
+            </>
+        )
+    };
 
 export default DashboardLayout

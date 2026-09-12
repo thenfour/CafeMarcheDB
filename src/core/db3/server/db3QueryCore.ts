@@ -31,7 +31,12 @@ const authorizeQueryBeforeDatabaseAccess = (
     if (table.requiresSysadminPermission && !includesPermission(publicData.permissions, Permission.sysadmin)) {
         throw new DB3QueryAuthorizationError();
     }
-    if (!table.authorizeTableForView(publicData)) throw new DB3QueryAuthorizationError();
+    if (!table.authorizeTableForView(publicData)) {
+        throw new DB3QueryAuthorizationError();
+    }
+    if (!table.authorizeIncludeDeleted(publicData, input.clientIntention)) {
+        throw new DB3QueryAuthorizationError();
+    }
 
     const authorizeField = (columnName: string) => {
         if (!table.authorizeColumnForView({
@@ -82,6 +87,7 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
         }
         clientIntention.authorizationPermissions = effectivePermissions.names;
         clientIntention.authorizationPermissionIds = effectivePermissions.ids;
+        clientIntention.includeDeleted = input.includeDeleted === true;
         authorizeQueryBeforeDatabaseAccess(table, input, publicData);
 
         const dbTableClient = (transactionalDb || db)[table.tableName]; // the prisma interface
@@ -165,6 +171,7 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
     }
     clientIntention.authorizationPermissions = effectivePermissions.names;
     clientIntention.authorizationPermissionIds = effectivePermissions.ids;
+    clientIntention.includeDeleted = input.includeDeleted === true;
 
     authorizeQueryBeforeDatabaseAccess(table, input, publicData);
 
@@ -225,7 +232,6 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
         resultId: randomUUID(),
     };
 };
-
 
 
 

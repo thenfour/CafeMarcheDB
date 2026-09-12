@@ -180,7 +180,7 @@ const extractFirstNonEmptyLine = (text: string): string | null => {
 
 
 export default resolver.pipe(
-    resolver.authorize(Permission.admin_events),
+    resolver.authorize(Permission.sysadmin),
     async (args: TGetImportEventDataArgs, ctx: AuthenticatedCtx): Promise<TGetImportEventDataRet> => {
         const currentUser = await getCurrentUserCore(ctx);
         if (!currentUser) throw new Error("Current user was not found.");

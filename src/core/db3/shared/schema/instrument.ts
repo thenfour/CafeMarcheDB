@@ -14,22 +14,22 @@ import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGrou
 import { GenericStringField, MakeTitleField } from "../genericStringField";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
-// editable by anyone
-export const xInstrumentAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
+// Instrument management has one administrative surface and one capability.
+export const xInstrumentAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.basic_trust,
     PostQuery: Permission.basic_trust,
-    PreMutateAsOwner: Permission.manage_instruments,
-    PreMutate: Permission.manage_instruments,
-    PreInsert: Permission.manage_instruments,
+    PreMutateAsOwner: Permission.admin_instruments,
+    PreMutate: Permission.admin_instruments,
+    PreInsert: Permission.admin_instruments,
 };
 
 
 export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.basic_trust,
     View: Permission.basic_trust,
-    EditOwn: Permission.manage_instruments,
-    Edit: Permission.manage_instruments,
-    Insert: Permission.manage_instruments,
+    EditOwn: Permission.admin_instruments,
+    Edit: Permission.admin_instruments,
+    Insert: Permission.admin_instruments,
 } as const;
 
 
@@ -57,26 +57,26 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     }),
     columns: [
         MakePKfield(),
-        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers }),
+        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EAdmins }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         new ColorField({
             columnName: "color",
             allowNull: true,
             palette: gGeneralPaletteList,
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
             allowSearchingThisField: false,
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new GhostField({ memberName: "instruments", authMap: xInstrumentAuthMap_R_EManagers }),
+        new GhostField({ memberName: "instruments", authMap: xInstrumentAuthMap_R_EAdmins }),
     ]
 });
 
@@ -107,35 +107,35 @@ export const xInstrumentTag = new db3.xTable({
     }),
     columns: [
         MakePKfield(),
-        MakeTitleField("text", { authMap: xInstrumentAuthMap_R_EManagers }),
+        MakeTitleField("text", { authMap: xInstrumentAuthMap_R_EAdmins }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
             allowSearchingThisField: false,
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         new ColorField({
             columnName: "color",
             allowNull: true,
             palette: gGeneralPaletteList,
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         new ConstEnumStringField({
             columnName: "significance",
             allowNull: true,
             defaultValue: null,
             options: InstrumentTagSignificance,
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         new GhostField({
             memberName: "instruments",
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
     ]
 });
@@ -168,7 +168,7 @@ export const xInstrumentTagAssociation = new db3.xTable({
             fkidMember: "tagId",
             allowNull: false,
             foreignTableID: "InstrumentTag",
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -194,33 +194,33 @@ export const xInstrument = new db3.xTable({
     tableAuthMap: xInstrumentTableAuthMap,
     columns: [
         MakePKfield(),
-        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers, }),
+        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EAdmins, }),
         // new GenericStringField({
         //     columnName: "slug",
         //     allowNull: false,
         //     format: "plain",
-        //     authMap: xInstrumentAuthMap_R_EManagers,
+        //     authMap: xInstrumentAuthMap_R_EAdmins,
         // }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         new GenericStringField({
             columnName: "autoAssignFileLeafRegex",
             allowNull: false,
             format: "raw",
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
         }),
 
-        MakeSortOrderField({ authMap: xInstrumentAuthMap_R_EManagers }),
+        MakeSortOrderField({ authMap: xInstrumentAuthMap_R_EAdmins }),
         new ForeignSingleField<InstrumentFunctionalGroupPayload>({
             columnName: "functionalGroup",
             fkidMember: "functionalGroupId",
             foreignTableID: "InstrumentFunctionalGroup",
             allowNull: false,
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
@@ -235,7 +235,7 @@ export const xInstrument = new db3.xTable({
             associationLocalObjectMember: "instrument",
             associationTableID: "InstrumentTagAssociation",
             foreignTableID: "InstrumentTag",
-            authMap: xInstrumentAuthMap_R_EManagers,
+            authMap: xInstrumentAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 instrumentTags: {
                     some: {

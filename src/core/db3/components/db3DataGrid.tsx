@@ -27,6 +27,7 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
+import { Permission } from 'shared/permissions';
 import { AdminInspectObject, DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
 import { AgeRelativeToNow } from '@components/DateTime/RelativeTimeComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -99,6 +100,7 @@ export type DB3EditGridProps = {
     tableParams?: TAnyModel,
     readOnly?: boolean,
     defaultSortModel?: GridSortModel,
+    includeDeleted?: boolean,
 };
 
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
@@ -116,8 +118,18 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const [sortModel, setSortModel] = React.useState<GridSortModel>(props.defaultSortModel || []);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'admin', mode: 'primary' };
     const publicData = useAuthenticatedSession();
+    const recoveryPermission = tableSpec.args.table.viewDeletedPermission;
+    const canRecoverDeletedRows = !!tableSpec.args.table.SqlSpecialColumns.isDeleted
+        && (publicData.permissions || []).some(permission => (
+            permission === Permission.sysadmin || permission === recoveryPermission
+        ));
+    const includeDeleted = props.includeDeleted ?? canRecoverDeletedRows;
+    const clientIntention: db3.xTableClientUsageContext = {
+        intention: 'admin',
+        mode: 'primary',
+        includeDeleted,
+    };
 
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
@@ -138,6 +150,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         },
         sortModel,
         paginationModel,
+        includeDeleted,
     });
 
     const [rowModesModel, setRowModesModel] = React.useState({});

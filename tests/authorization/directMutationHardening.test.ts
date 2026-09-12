@@ -688,3 +688,134 @@ describe("BA-S003 event attendance ownership", () => {
     ])
   })
 })
+
+describe("Band Admin split mutation boundaries", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    authorizationTestDb.reset({ change: [] })
+  })
+
+  it("separates file renaming from server-owned storage metadata", async () => {
+    const permissions = [
+      Permission.login,
+      Permission.view_files,
+      Permission.manage_files,
+      Permission.admin_files,
+      Permission.visibility_public,
+    ]
+    const actor = createAuthorizationTestUser("bandAdmin", { id: 60, permissions })
+    const visibilityId = actor.role!.permissions.find(
+      entry => entry.permission.name === Permission.visibility_public,
+    )!.permissionId
+    const file = {
+      id: 61,
+      fileLeafName: "old-name.pdf",
+      storedLeafName: "server-storage-id.pdf",
+      description: "",
+      isDeleted: false,
+      uploadedAt: new Date("2026-01-01T00:00:00.000Z"),
+      uploadedByUserId: 999,
+      visiblePermissionId: visibilityId,
+      sizeBytes: 123,
+      mimeType: "application/pdf",
+      customData: null,
+    }
+    authorizationTestDb.reset({ user: [actor], file: [file], change: [] })
+    const { ctx } = createAuthorizationPersona("bandAdmin", { id: actor.id, permissions })
+
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("File", file.id, { fileLeafName: "corrected-name.pdf" }),
+      ctx,
+    )
+    expect(authorizationTestDb.snapshot("file")).toEqual([
+      expect.objectContaining({ fileLeafName: "corrected-name.pdf" }),
+    ])
+
+    for (const [field, value] of [
+      ["storedLeafName", "forged.pdf"],
+      ["sizeBytes", 999],
+      ["mimeType", "text/plain"],
+      ["customData", "forged"],
+      ["uploadedByUserId", actor.id],
+    ] as const) {
+      await expect(invokeResolver(
+        db3Mutation,
+        forgeDb3Update("File", file.id, { [field]: value }),
+        ctx,
+      )).rejects.toThrow("Not authorized to mutate File fields")
+    }
+  })
+
+  it("requires manage_user_taxonomy for tag definitions independently of manage_users", async () => {
+    const profilePermissions = [Permission.login, Permission.basic_trust, Permission.manage_users]
+    const profileManager = createAuthorizationTestUser("moderator", { id: 62, permissions: profilePermissions })
+    const taxonomyPermissions = [...profilePermissions, Permission.manage_user_taxonomy]
+    const taxonomyManager = createAuthorizationTestUser("bandAdmin", { id: 63, permissions: taxonomyPermissions })
+    const tag = { id: 64, text: "Brass", description: "", sortOrder: 0, color: null, significance: null }
+    authorizationTestDb.reset({ user: [profileManager, taxonomyManager], userTag: [tag], change: [] })
+
+    const { ctx: profileCtx } = createAuthorizationPersona("moderator", {
+      id: profileManager.id,
+      permissions: profilePermissions,
+    })
+    await expect(invokeResolver(
+      db3Mutation,
+      forgeDb3Update("UserTag", tag.id, { text: "Winds" }),
+      profileCtx,
+    )).rejects.toThrow("Not authorized to mutate UserTag fields")
+
+    const { ctx: taxonomyCtx } = createAuthorizationPersona("bandAdmin", {
+      id: taxonomyManager.id,
+      permissions: taxonomyPermissions,
+    })
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("UserTag", tag.id, { text: "Winds" }),
+      taxonomyCtx,
+    )
+    expect(authorizationTestDb.snapshot("userTag")).toEqual([
+      expect.objectContaining({ id: tag.id, text: "Winds" }),
+    ])
+  })
+
+  it("uses admin_instruments as the sole instrument-management capability", async () => {
+    const ordinaryPermissions = [Permission.login, Permission.basic_trust, Permission.manage_users]
+    const ordinaryManager = createAuthorizationTestUser("moderator", { id: 65, permissions: ordinaryPermissions })
+    const instrumentPermissions = [...ordinaryPermissions, Permission.admin_instruments]
+    const instrumentAdmin = createAuthorizationTestUser("bandAdmin", { id: 66, permissions: instrumentPermissions })
+    const instrument = {
+      id: 67,
+      name: "Trumpet",
+      description: "",
+      autoAssignFileLeafRegex: "tpt",
+      sortOrder: 0,
+      functionalGroupId: 1,
+      functionalGroup: null,
+    }
+    authorizationTestDb.reset({ user: [ordinaryManager, instrumentAdmin], instrument: [instrument], change: [] })
+
+    const { ctx: ordinaryCtx } = createAuthorizationPersona("moderator", {
+      id: ordinaryManager.id,
+      permissions: ordinaryPermissions,
+    })
+    await expect(invokeResolver(
+      db3Mutation,
+      forgeDb3Update("Instrument", instrument.id, { name: "Cornet" }),
+      ordinaryCtx,
+    )).rejects.toThrow("Not authorized to mutate Instrument fields")
+
+    const { ctx: adminCtx } = createAuthorizationPersona("bandAdmin", {
+      id: instrumentAdmin.id,
+      permissions: instrumentPermissions,
+    })
+    await invokeResolver(
+      db3Mutation,
+      forgeDb3Update("Instrument", instrument.id, { name: "Cornet" }),
+      adminCtx,
+    )
+    expect(authorizationTestDb.snapshot("instrument")).toEqual([
+      expect.objectContaining({ id: instrument.id, name: "Cornet" }),
+    ])
+  })
+})

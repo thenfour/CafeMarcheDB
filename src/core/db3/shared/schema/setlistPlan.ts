@@ -105,6 +105,8 @@ export const xSetlistPlan = new db3.xTable({
     },
     tableName: "SetlistPlan",
     deletePolicy: "softOnly",
+    viewDeletedPermission: Permission.setlist_planner_access,
+    restorePermission: Permission.setlist_planner_access,
     sortOrderPolicy: { groupingColumn: "groupId", scope: "explicitRowIds" },
     naturalOrderBy: SetlistPlanNaturalOrderBy,
     getRowInfo: (row: SetlistPlanPayload) => ({
