@@ -1,9 +1,9 @@
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/auth";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, gMillisecondsPerHour } from "shared/time";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 interface TestResult {
     pass: boolean,
@@ -474,7 +474,7 @@ const TestCalcRelativeTiming = () => {
 
 const TestsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="tests" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="tests">
             <TestCalcRelativeTiming />
         </DashboardLayout>
     )

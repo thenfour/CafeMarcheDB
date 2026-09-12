@@ -1,9 +1,8 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { MenuLinkList } from "@/src/core/components/dashboard/MenuLinkComponents";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
-import { Permission } from "shared/permissions";
-import { MenuLinkList } from "@/src/core/components/dashboard/MenuLinkComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MyContent = () => {
@@ -16,7 +15,7 @@ const MyContent = () => {
 const MenuLinksPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Menu Links" basePermission={Permission.customize_menu}>
+        <DashboardLayout title="Menu Links">
             <Suspense fallback="Loading...">
                 <MyContent />
             </Suspense>

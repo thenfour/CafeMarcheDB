@@ -1,3 +1,5 @@
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
+import { gSSP } from "@/src/blitz-server";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -7,13 +9,11 @@ import { enrichUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 import { BlitzPage, Routes, useParams } from "@blitzjs/next";
 import db from "db";
 import { useRouter } from "next/router";
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { gSSP } from "@/src/blitz-server";
-import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
 
 const MyComponent = ({ userId }: { userId: number | null }) => {
     const params = useParams();
@@ -111,7 +111,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
 
 const UserDetailPage: BlitzPage = (x: PageProps) => {
     return (
-        <DashboardLayout title={x.title} navRealm={NavRealm.users} basePermission={Permission.view_users_basic_info}>
+        <DashboardLayout title={x.title} navRealm={NavRealm.users}>
             <Suspense>
                 <MyComponent userId={x.userId}></MyComponent>
             </Suspense>

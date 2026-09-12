@@ -1,4 +1,6 @@
 import { formatFileSize } from "@/shared/rootroot";
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
+import { gSSP } from "@/src/blitz-server";
 import { CMChipContainer } from "@/src/core/components/CMChip";
 import { InstrumentChip } from "@/src/core/components/CMCoreComponents";
 import { AdminInspectObject, KeyValueTable, Pre } from "@/src/core/components/CMCoreComponents2";
@@ -9,32 +11,30 @@ import { SettingMarkdown } from "@/src/core/components/SettingMarkdown";
 import { useSnackbar } from "@/src/core/components/SnackbarContext";
 import { AudioPlayerFileControls, FileExternalLink } from "@/src/core/components/SongFileComponents";
 import { VisibilityValue } from "@/src/core/components/VisibilityControl";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 import { EventChip } from "@/src/core/components/event/EventChips";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { FileTagChip } from "@/src/core/components/file/FileChip";
 import { Markdown } from "@/src/core/components/markdown/Markdown";
+import { SongChip } from "@/src/core/components/song/SongChip";
 import { UserChip } from "@/src/core/components/user/userChip";
+import { WikiPageChip } from "@/src/core/components/wiki/WikiPageChip";
 import { gIconMap } from "@/src/core/db3/components/IconMap";
+import { EnrichedFile, enrichFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs } from "@mui/material";
 import db from "db";
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, parseMimeType } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FileTableClientColumns } from "src/core/components/file/FileComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { gSSP } from "@/src/blitz-server";
-import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
-import { FileTagChip } from "@/src/core/components/file/FileChip";
-import { SongChip } from "@/src/core/components/song/SongChip";
-import { WikiPageChip } from "@/src/core/components/wiki/WikiPageChip";
-import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
-import { EnrichedFile, enrichFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
-import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 
 ////////////////////////////////////////////////////////////////
 export interface FileBreadcrumbProps {
@@ -317,7 +317,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
 
 const FileDetailPage: BlitzPage = (x: PageProps) => {
     return (
-        <DashboardLayout title={x.title} navRealm={NavRealm.files} basePermission={Permission.access_file_landing_page}>
+        <DashboardLayout title={x.title} navRealm={NavRealm.files}>
             <AppContextMarker name="file page" fileId={x.fileId || undefined}>
                 <Suspense>
                     <MyComponent fileId={x.fileId} />

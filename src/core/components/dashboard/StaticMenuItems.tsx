@@ -23,6 +23,7 @@ export enum NavRealm {
     songs = "songs",
     files = "files",
     users = "users",
+    instruments = "instruments",
     wikiPages = "wikiPages",
     YourProfile = "YourProfile",
     CustomLinks = "CustomLinks",

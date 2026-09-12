@@ -1,22 +1,22 @@
 
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import { Alert, Button } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { MakeNewWorkflowDef, mapWorkflowDef, WorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine";
-import { CMSingleSelect } from "src/core/components/select/CMSelect";
-import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useSnackbar } from "src/core/components/SnackbarContext";
+import { CMSingleSelect } from "src/core/components/select/CMSelect";
+import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { WorkflowEditorForEvent } from "src/core/components/workflow/WorkflowEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import deleteWorkflowDefMutation from "src/core/db3/mutations/deleteWorkflowDefMutation";
 import insertOrUpdateWorkflowDefMutation from "src/core/db3/mutations/insertOrUpdateWorkflowDefMutation";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 type ModeOption = "empty" | "new" | "edit";
 
@@ -140,7 +140,7 @@ const WorkflowDefEditorMain = () => {
 const WorkflowConfigPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Workflow mgmt" basePermission={Permission.view_workflow_defs}>
+        <DashboardLayout title="Workflow mgmt">
             <React.Suspense>
                 <WorkflowDefEditorMain />
             </React.Suspense>

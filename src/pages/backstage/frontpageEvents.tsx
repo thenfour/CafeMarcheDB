@@ -3,8 +3,7 @@ import { useDashboardContext } from "@/src/core/components/dashboardContext/Dash
 import { sortEvents } from "@/src/core/db3/shared/apiTypes";
 import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 import { BlitzPage } from "@blitzjs/next";
-import React, { Suspense } from 'react';
-import { Permission } from "shared/permissions";
+import { Suspense } from 'react';
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
@@ -79,7 +78,7 @@ const MainContent = () => {
 
 const FrontpageAgendaPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Homepage Agenda" basePermission={Permission.edit_public_homepage}>
+        <DashboardLayout title="Homepage Agenda">
             <AppContextMarker name="FrontpageAgendaPage">
                 <MainContent />
             </AppContextMarker>

@@ -1,12 +1,12 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import { Tooltip } from "@mui/material";
-import React, { Suspense } from 'react';
-import { gPermissionOrdered, Permission } from "shared/permissions";
+import { Suspense } from 'react';
+import { gPermissionOrdered } from "shared/permissions";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 const Inner = () => {
     const dashboardContext = useDashboardContext();
@@ -46,7 +46,7 @@ const Inner = () => {
 const PermissionsListPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Permissions" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Permissions">
             <Suspense>
                 <Inner />
             </Suspense>

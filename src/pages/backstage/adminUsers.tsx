@@ -1,14 +1,13 @@
 
+import { CMLinkButton } from "@/src/core/components/CMCoreComponents2";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { AdminResetPasswordButton } from "@/src/core/components/user/AdminResetPasswordButton";
 import { ImpersonateUserButton } from "@/src/core/components/user/ImpersonateUserButton";
 import { BlitzPage } from "@blitzjs/next";
-import { Permission } from "shared/permissions";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { CMLinkButton } from "@/src/core/components/CMCoreComponents2";
 
 const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
     // This grid may inspect security state, but generic DB3 mutation must not
@@ -55,7 +54,7 @@ const UserListContent: React.FC<{}> = () => {
 
 const UserListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Users" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Users">
             <UserListContent />
         </DashboardLayout>
     );

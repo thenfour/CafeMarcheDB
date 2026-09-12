@@ -299,7 +299,6 @@ const BrandPageContent = () => {
 
 const BrandPage: BlitzPage = () => <DashboardLayout
     title="Brand"
-    basePermission={Permission.manage_site_branding}
 >
     <BrandPageContent />
 </DashboardLayout>;

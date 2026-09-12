@@ -1,10 +1,12 @@
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { WorkflowViewer } from "@/src/core/components/workflow/WorkflowEventComponents";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Prisma } from "db";
 import * as React from 'react';
 import { existsInArray, toggleValueInArray } from "shared/arrayUtils";
-import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsNullOrWhitespace, getHashedColor } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -14,9 +16,6 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { StandardVariationSpec } from "@/src/core/components/color/palette";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 type AdHocUser = Prisma.UserGetPayload<{
     select: {
@@ -195,7 +194,7 @@ const MainContent = () => {
 
 const AdminLogsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Admin Logs" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Admin Logs">
             <MainContent />
         </DashboardLayout>
     )

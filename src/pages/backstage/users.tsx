@@ -1,7 +1,9 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { UserOrderByColumnNames, UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "@/src/core/components/user/UserClientBaseTypes";
 import { UserListItem } from "@/src/core/components/user/UserListItem";
 import { BlitzPage } from "@blitzjs/next";
-import React, { Suspense } from "react";
-import { Permission } from "shared/permissions";
+import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -9,10 +11,7 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { EnrichedVerboseUser } from "./wikiPageHistory";
-import { UserOrderByColumnNames, UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "@/src/core/components/user/UserClientBaseTypes";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 // for serializing in compact querystring
@@ -258,7 +257,7 @@ const UserListOuter = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const UserSearchPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Users" basePermission={Permission.search_users}>
+        <DashboardLayout title="Users">
             <div className="eventsMainContent searchPage">
                 <Suspense>
                     <SettingMarkdown setting="usersearch_markdown"></SettingMarkdown>

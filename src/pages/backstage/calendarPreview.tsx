@@ -1,8 +1,9 @@
+import { CMTable } from "@/src/core/components/CMTable";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Button, FormControlLabel, Switch } from "@mui/material";
 import * as React from 'react';
-import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { EventDateField, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
@@ -12,8 +13,6 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import getCalendarPreview from "src/core/db3/queries/getCalendarPreview";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { CMTable } from "@/src/core/components/CMTable";
 
 const CopyText = ({ value, label }: { value: string, label?: string | undefined }) => {
 
@@ -121,7 +120,7 @@ const MainContent = () => {
 
 const CalendarPreviewPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="iCal Preview" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="iCal Preview">
             <MainContent />
         </DashboardLayout>
     )

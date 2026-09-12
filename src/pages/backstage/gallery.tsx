@@ -1,10 +1,17 @@
+import AbcNotationRenderer from "@/src/core/components/AbcNotationRenderer";
+import { AssociationSelect } from "@/src/core/components/ItemAssociation";
+import { QrTester } from "@/src/core/components/QrCode";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Divider } from "@mui/material";
 import { Prisma } from "db";
 import * as mime from 'mime';
 import React from "react";
-import { Permission } from "shared/permissions";
+import { arraysContainSameValues } from "shared/arrayUtils";
+import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { slugify, unslugify } from "shared/rootroot";
 import { Timing } from "shared/time";
 import { IsNullOrWhitespace, getEnumValues, isInternalUrl, parseMimeType } from "shared/utils";
@@ -14,24 +21,16 @@ import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { AdminInspectObject, KeyValueDisplay, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
-import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
+import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
 import { WorkflowViewer } from "src/core/components/workflow/WorkflowEventComponents";
-import { AssociationSelect } from "@/src/core/components/ItemAssociation";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/search/FilterControl";
-import { arraysContainSameValues } from "shared/arrayUtils";
-import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
-import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
-import AbcNotationRenderer from "@/src/core/components/AbcNotationRenderer";
-import { QrTester } from "@/src/core/components/QrCode";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 interface FilterSpec {
     qfText: string;
@@ -483,7 +482,7 @@ const MainContent = () => {
 
 const ComponentGalleryPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Component Gallery" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Component Gallery">
             <MainContent />
         </DashboardLayout>
     )

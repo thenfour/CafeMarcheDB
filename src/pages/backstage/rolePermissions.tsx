@@ -2,15 +2,15 @@
 // and that's pretty deep into the UX and logic.
 // here we need CELLS to act like DB rows.
 
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { FormControlLabel, Tooltip } from "@mui/material";
 import React from "react";
-import { gPermissionOrdered, Permission } from "shared/permissions";
+import { gPermissionOrdered } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatrix";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MainContent = () => {
@@ -68,7 +68,7 @@ const MainContent = () => {
 
 const RolePermissionsMatrixPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="RolePerm Matrix" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="RolePerm Matrix">
             <MainContent />
         </DashboardLayout>
     );

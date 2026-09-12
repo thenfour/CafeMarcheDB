@@ -1,3 +1,11 @@
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
+import { gSSP } from "@/src/blitz-server";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
+import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import React, { Suspense } from 'react';
@@ -7,16 +15,8 @@ import { CoerceToNumberOrNull } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/event/EventComponents";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
-import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
-import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
-import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEventTypes";
-import { gSSP } from "@/src/blitz-server";
-import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
@@ -166,7 +166,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, req, ctx }) =
 
 const EventDetailPage: BlitzPage = (props: PageProps) => {
     return (
-        <DashboardLayout title={props.title} navRealm={NavRealm.events} basePermission={Permission.view_events_nonpublic}>
+        <DashboardLayout title={props.title} navRealm={NavRealm.events}>
             <AppContextMarker name="event page" eventId={props.eventId || undefined}>
                 <Suspense>
                     <MyComponent eventId={props.eventId}></MyComponent>

@@ -1,10 +1,10 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CustomLinkList } from "src/core/components/CustomLinksComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 
@@ -25,7 +25,7 @@ const MyContent = () => {
 const CustomLinksPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Custom Links" basePermission={Permission.view_custom_links}>
+        <DashboardLayout title="Custom Links">
             <Suspense fallback="Loading...">
                 <MyContent />
             </Suspense>

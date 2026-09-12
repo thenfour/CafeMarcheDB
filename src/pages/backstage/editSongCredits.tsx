@@ -1,11 +1,10 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { Permission } from "shared/permissions";
 import { parseIntOrNull } from "shared/utils";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MainContent = () => {
@@ -34,7 +33,7 @@ const MainContent = () => {
 
 const EditSongCreditsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Song credits" basePermission={Permission.admin_songs}>
+        <DashboardLayout title="Song credits">
             <MainContent />
         </DashboardLayout>
     )

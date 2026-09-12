@@ -1,3 +1,6 @@
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
+import { AssociationValueLink, fetchObjectQuery } from "@/src/core/components/ItemAssociation";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import React from "react";
 import { Permission } from "shared/permissions";
@@ -5,9 +8,6 @@ import { ParseQuickFilter, QuickSearchItemMatch, QuickSearchItemTypeSets } from 
 import { calculateMatchStrength } from "shared/rootroot";
 import { AdminInspectObject, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextField } from "src/core/components/CMTextField";
-import { AssociationValueLink, fetchObjectQuery } from "@/src/core/components/ItemAssociation";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 const TestMatchStrength = () => {
     const [sourceText, setSourceText] = React.useState<string>("some text to search in");
@@ -80,7 +80,7 @@ const MainContent = () => {
 
 const QuickSearchTestPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="QuickSearchTestPage" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="QuickSearchTestPage">
             <MainContent />
         </DashboardLayout>
     )

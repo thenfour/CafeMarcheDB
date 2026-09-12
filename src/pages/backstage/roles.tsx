@@ -1,10 +1,10 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import React from "react";
-import { Permission } from "shared/permissions";
-import getAllRoles from "src/auth/queries/getAllRoles";
 import setRoleDesignation from "src/auth/mutations/setRoleDesignation";
+import getAllRoles from "src/auth/queries/getAllRoles";
 import {
     RoleDesignation,
     type RoleDesignationValue,
@@ -13,7 +13,6 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const BuiltInRoleAssignments = () => {
     const [roles, { refetch }] = useQuery(getAllRoles, {
@@ -27,22 +26,22 @@ const BuiltInRoleAssignments = () => {
         flag: "isRoleForNewUsers" | "isPublicRole" | "isSysAdminRole";
         label: string;
     }> = [
-        {
-            designation: RoleDesignation.newUsers,
-            flag: "isRoleForNewUsers",
-            label: "Role for new users",
-        },
-        {
-            designation: RoleDesignation.public,
-            flag: "isPublicRole",
-            label: "Public role",
-        },
-        {
-            designation: RoleDesignation.sysadmin,
-            flag: "isSysAdminRole",
-            label: "Sysadmin role",
-        },
-    ];
+            {
+                designation: RoleDesignation.newUsers,
+                flag: "isRoleForNewUsers",
+                label: "Role for new users",
+            },
+            {
+                designation: RoleDesignation.public,
+                flag: "isPublicRole",
+                label: "Public role",
+            },
+            {
+                designation: RoleDesignation.sysadmin,
+                flag: "isSysAdminRole",
+                label: "Sysadmin role",
+            },
+        ];
 
     const handleAssignment = async (designation: RoleDesignationValue, roleId: number) => {
         setError(null);
@@ -115,7 +114,7 @@ const MainContent = () => {
 
 const RolesListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="User Roles" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="User Roles">
             <MainContent />
         </DashboardLayout>
     );

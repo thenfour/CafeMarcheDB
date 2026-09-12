@@ -6,7 +6,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
-import { Permission } from "shared/permissions";
 import { DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
@@ -294,7 +293,7 @@ const ImportEventsPageContent = () => {
 
 const ImportEventsPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Import Events" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Import Events">
             <ImportEventsPageContent />
         </DashboardLayout>
     )

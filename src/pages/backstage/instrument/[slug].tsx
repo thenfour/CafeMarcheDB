@@ -1,9 +1,9 @@
 import { CMLink } from "@/src/core/components/CMLink";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Typography } from "@mui/material";
-import { Permission } from "shared/permissions";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const MyComponent = () => {
@@ -28,7 +28,7 @@ const MyComponent = () => {
 
 const InstrumentPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument" basePermission={Permission.basic_trust}>
+        <DashboardLayout title="Instrument" navRealm={NavRealm.instruments}>
             <MyComponent></MyComponent>
         </DashboardLayout>
     )

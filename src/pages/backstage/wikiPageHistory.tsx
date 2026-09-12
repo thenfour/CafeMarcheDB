@@ -1,4 +1,8 @@
 import { CMLink } from "@/src/core/components/CMLink";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { UserChip } from "@/src/core/components/user/userChip";
+import { EnrichedUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { Button, DialogContent, DialogTitle, Tooltip } from "@mui/material";
@@ -9,21 +13,17 @@ import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
-import { useMessageBox } from "src/core/components/MessageBoxContext";
 import { Markdown } from "src/core/components/markdown/Markdown";
+import { useMessageBox } from "src/core/components/MessageBoxContext";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { UserChip } from "@/src/core/components/user/userChip";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import deleteWikiRevision from "src/core/wiki/mutations/deleteWikiRevision";
 import rebuildWikiPageRevisionStats from "src/core/wiki/mutations/rebuildWikiPageRevisionStats";
 import getWikiPageRevision from "src/core/wiki/queries/getWikiPageRevision";
 import getWikiPageRevisions from "src/core/wiki/queries/getWikiPageRevisions";
 import { wikiParseCanonicalWikiPath } from "src/core/wiki/shared/wikiUtils";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { EnrichedUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 
 export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
 
@@ -240,7 +240,7 @@ const WikiRevisionHistoryPageContent = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const WikiPageHistoryPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Wiki revision history" basePermission={Permission.view_wiki_page_revisions}>
+        <DashboardLayout title="Wiki revision history">
             <WikiRevisionHistoryPageContent {...props} />
         </DashboardLayout>
     )

@@ -1,10 +1,13 @@
+import { ColorPick } from "@/src/core/components/color/ColorPick";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import { Button, ButtonGroup } from '@mui/material';
 import { nanoid } from 'nanoid';
 import React from 'react';
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { moveItemInArray } from "shared/arrayUtils";
-import { Permission } from "shared/permissions";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from 'src/core/components/CMCoreComponents';
 import { CMTextInputBase } from 'src/core/components/CMTextField';
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -14,10 +17,6 @@ import { gCharMap, gIconMap } from 'src/core/db3/components/IconMap';
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import { DB3EditObjectDialog } from 'src/core/db3/components/db3NewObjectDialog';
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { ColorPick } from "@/src/core/components/color/ColorPick";
-import { gGeneralPaletteList } from "@/src/core/components/color/palette";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 // export type EventCustomFieldOption = {
 //     label: string,
@@ -197,7 +196,7 @@ const MainContent = () => {
 
 const EditEventCustomFieldsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event Custom Fields" basePermission={Permission.admin_workflow_defs}>
+        <DashboardLayout title="Event Custom Fields">
             <MainContent />
         </DashboardLayout>
     )

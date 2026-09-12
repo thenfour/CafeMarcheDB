@@ -2,13 +2,12 @@ import type { BlitzLayout } from "@blitzjs/next";
 import { Backdrop, CircularProgress } from "@mui/material";
 import Head from "next/head";
 import React, { Suspense } from "react";
-import { Permission } from "shared/permissions";
+import { useBrand } from "shared/brandConfig";
 import { CoerceToBoolean } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { LoginSignup } from "../LoginSignupForm";
 import Dashboard2 from "./Dashboard2";
 import { NavRealm } from "./StaticMenuItems";
-import { useBrand } from "shared/brandConfig";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
@@ -31,13 +30,11 @@ const DashboardLayout: BlitzLayout<{
     children?: React.ReactNode,
     disableLoginRedirect?: boolean,
     navRealm?: NavRealm,
-    //basePermission?: Permission 
 }> = ({
     title,
     children,
     disableLoginRedirect,
     navRealm,
-    //basePermission,
 }) => {
 
         const fallback =

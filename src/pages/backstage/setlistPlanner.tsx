@@ -26,7 +26,6 @@ import { nanoid } from "nanoid";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { groupByMap, moveItemInArray, partition, toSorted } from "shared/arrayUtils";
-import { Permission } from "shared/permissions";
 import { getUniqueNegativeID } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
@@ -1574,7 +1573,7 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
 const SetlistPlannerPage: BlitzPage = (props) => {
     const [pageTitle, setPageTitle] = React.useState<string>("Setlist Planner");
     return (
-        <DashboardLayout title={pageTitle} basePermission={Permission.setlist_planner_access}>
+        <DashboardLayout title={pageTitle}>
             <AppContextMarker name="Setlist plan page">
                 <SongsProvider>
                     <SetlistPlannerPageContent onTitleChange={setPageTitle} />

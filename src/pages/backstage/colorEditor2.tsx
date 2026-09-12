@@ -5,7 +5,6 @@ import { ColorPaletteListComponent } from "@/src/core/components/color/ColorPale
 import { ColorPaletteEntry, ColorPaletteEntryVariation, gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { ParseColor, ParseTextPalette } from "@/src/core/components/color/TextPalette";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { Permission } from "shared/permissions";
 import { BlitzPage } from "@blitzjs/next";
 import { Button } from "@mui/material";
 import React from "react";
@@ -284,7 +283,7 @@ const MyComponent = () => {
 
 const ColorEdit2Page: BlitzPage = () => {
     return (
-        <DashboardLayout title="theme editor" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="theme editor">
             <MyComponent></MyComponent>
         </DashboardLayout>
     )

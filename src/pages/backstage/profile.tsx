@@ -1,7 +1,12 @@
+import { TAnyModel } from "@/shared/rootroot";
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { ProfilePageIdentityControl } from "@/src/core/components/user/UserIdentityIndicator";
 import { BlitzPage } from "@blitzjs/next";
 import { Typography } from "@mui/material";
 import React, { Suspense } from "react";
-import { Permission } from "shared/permissions";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -12,12 +17,6 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { ProfilePageIdentityControl } from "@/src/core/components/user/UserIdentityIndicator";
-import { StandardVariationSpec } from "@/src/core/components/color/palette";
-import { TAnyModel } from "@/shared/rootroot";
-import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
@@ -242,7 +241,7 @@ const MainContent = () => {
 
 const ProfilePage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Your profile" basePermission={Permission.basic_trust}>
+        <DashboardLayout title="Your profile">
             <AppContextMarker name="profile page">
                 <MainContent />
             </AppContextMarker>

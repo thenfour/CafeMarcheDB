@@ -4,7 +4,6 @@ import { useDashboardContext } from "@/src/core/components/dashboardContext/Dash
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
-import { Permission } from "shared/permissions";
 import { formatFileSize } from "shared/rootroot";
 import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS } from "shared/time";
 import { AdminInspectObject, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
@@ -190,7 +189,7 @@ const MainContent = () => {
 const ServerHealthPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Server health" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Server health">
             <MainContent />
         </DashboardLayout>
     )

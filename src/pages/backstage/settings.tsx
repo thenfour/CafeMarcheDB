@@ -1,8 +1,8 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React from "react";
-import { Permission } from "shared/permissions";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
 import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -11,7 +11,6 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 
 const SettingsControls = (props) => {
@@ -90,7 +89,7 @@ const SettingsContent = () => {
 
 const SettingsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Settings" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Settings">
             <SettingsContent />
         </DashboardLayout>
     )

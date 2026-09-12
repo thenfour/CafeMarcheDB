@@ -1,18 +1,18 @@
 // todo: when inserted in dialog, the parent needs to refetch
 
+import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
+import { ColorPick } from "@/src/core/components/color/ColorPick";
+import { gGeneralPaletteList } from "@/src/core/components/color/palette";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import React from "react";
+import { Permission } from "shared/permissions";
 import { sleep } from "shared/utils";
 import { CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/select/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { DB3MultiSelect, DB3SingleSelect } from "src/core/db3/components/db3Select";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { gGeneralPaletteList } from "@/src/core/components/color/palette";
-import { ColorPick } from "@/src/core/components/color/ColorPick";
-import { Permission } from "shared/permissions";
-import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
 
 type Dataset = "numbers";
 
@@ -401,7 +401,7 @@ const MinimalUserSelect = () => {
 
 const CMSelectTestPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="theme editor" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="theme editor">
 
             <SingleSelectTest />
             <SingleSelectNullableTest />

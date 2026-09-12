@@ -1,9 +1,11 @@
 import { AdminInspectObject } from "@/src/core/components/CMCoreComponents2";
+import { StandardVariationSpec } from "@/src/core/components/color/palette";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import React, { Suspense } from 'react';
 import { arraysContainSameValues } from "shared/arrayUtils";
-import { Permission } from "shared/permissions";
 import { getEnumValues } from "shared/utils";
 import { ActivityVis, ActivityVisBucket } from "src/core/components/ActivityVis";
 import { CMChip } from "src/core/components/CMChip";
@@ -13,9 +15,6 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { StandardVariationSpec } from "@/src/core/components/color/palette";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 
@@ -303,7 +302,7 @@ const MainContent = () => {
 
 const StatsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Global Stats" basePermission={Permission.view_events_reports}>
+        <DashboardLayout title="Global Stats">
             <MainContent />
         </DashboardLayout>
     )

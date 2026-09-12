@@ -2,13 +2,12 @@
 // simple text field should support nullable / not nullable
 
 import { BlitzPage } from "@blitzjs/next";
-import { Permission } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 //import * as db3client from "src/core/db3/components/db3Client";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const InstrumentTagListContent = () => {
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -31,7 +30,7 @@ const InstrumentTagListContent = () => {
 
 const InstrumentTagListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument Tags" basePermission={Permission.admin_instruments}>
+        <DashboardLayout title="Instrument Tags">
             <InstrumentTagListContent />
         </DashboardLayout>
     );

@@ -1,5 +1,11 @@
+import { useURLState } from "@/src/core/components/CMCoreComponents2";
+import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
+import AppleIcon from "@mui/icons-material/Apple";
+import GoogleIcon from "@mui/icons-material/Google";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import WindowIcon from "@mui/icons-material/Window";
 import {
     Alert,
     Button,
@@ -14,13 +20,6 @@ import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useSnackbar } from "src/core/components/SnackbarContext";
-import { Permission } from "shared/permissions";
-import AppleIcon from "@mui/icons-material/Apple";
-import GoogleIcon from "@mui/icons-material/Google";
-import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
-import WindowIcon from "@mui/icons-material/Window";
-import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
-import { useURLState } from "@/src/core/components/CMCoreComponents2";
 
 type TTabId = "apple" | "google" | "outlook" | "other";
 
@@ -201,7 +200,7 @@ const CalendarPageContent = () => {
 };
 
 const CalendarPage: BlitzPage = () => (
-    <DashboardLayout title="Calendar subscription" basePermission={Permission.login}>
+    <DashboardLayout title="Calendar subscription">
         <AppContextMarker name="calendar subscription page">
             <CalendarPageContent />
         </AppContextMarker>

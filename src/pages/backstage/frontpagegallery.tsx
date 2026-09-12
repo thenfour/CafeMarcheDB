@@ -4,37 +4,37 @@
 // control
 // all of which propagate up to a db controller
 
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
+import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImageParams } from "@/src/core/db3/shared/fileTypes";
+import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
+import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { BlitzPage } from "@blitzjs/next";
 import { Button, Tooltip } from "@mui/material";
 import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
+import { Size } from "recharts/types/util/types";
 import { Permission } from "shared/permissions";
 import { Coord2D, formatFileSize, MulSize } from "shared/rootroot";
 import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { KeyValueTable } from "src/core/components/CMCoreComponents2";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { CMDBUploadFile } from "src/core/components/file/CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/file/FileDrop";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { HomepageMain } from "@/src/core/components/frontpage/homepageComponents";
-import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
-import { AppContextMarker } from "src/core/components/AppContext";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
-import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImageParams } from "@/src/core/db3/shared/fileTypes";
-import { Size } from "recharts/types/util/types";
-import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
 
 
 
@@ -676,7 +676,7 @@ const MainContent = () => {
 
 const EditFrontpageGalleryPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Frontpage gallery" basePermission={Permission.edit_public_homepage}>
+        <DashboardLayout title="Frontpage gallery">
             <AppContextMarker name="FrontpageGalleryPage">
                 <MainContent />
             </AppContextMarker>

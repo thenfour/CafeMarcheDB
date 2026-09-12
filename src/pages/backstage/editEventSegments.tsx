@@ -1,6 +1,5 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import React from 'react';
-import { Permission } from "shared/permissions";
 import { parseIntOrNull } from "shared/utils";
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
@@ -8,7 +7,6 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 // if you pass an eventId querystring param,
 // it will act as the fixed value of the event column.
@@ -50,7 +48,7 @@ const MainContent = () => {
 
 const EditEventSegmentsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event Segments" basePermission={Permission.admin_events}>
+        <DashboardLayout title="Event Segments">
             <MainContent />
         </DashboardLayout>
     )

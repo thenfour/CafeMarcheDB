@@ -1,8 +1,10 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { SongOrderByColumnNames, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "@/src/core/components/song/SongClientBaseTypes";
 import { SongListItem } from "@/src/core/components/song/SongListItem";
+import { EnrichedVerboseSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
 import { BlitzPage } from "@blitzjs/next";
-import React, { Suspense } from "react";
-import { Permission } from "shared/permissions";
+import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
@@ -12,9 +14,6 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { songSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { EnrichedVerboseSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
 
 
 // for serializing in compact querystring
@@ -162,7 +161,7 @@ const SongListOuter = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SearchSongsPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Songs" basePermission={Permission.view_songs}>
+        <DashboardLayout title="Songs">
             <div className="eventsMainContent searchPage">
                 <AppContextMarker name="song search page">
                     <Suspense>

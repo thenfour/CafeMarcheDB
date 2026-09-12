@@ -1,13 +1,12 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import PageviewIcon from '@mui/icons-material/Pageview';
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
-import { Permission } from "shared/permissions";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 
 const InstrumentListContent = () => {
     const router = useRouter();
@@ -44,7 +43,7 @@ const InstrumentListContent = () => {
 
 const InstrumentListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument admin" basePermission={Permission.admin_instruments}>
+        <DashboardLayout title="Instrument admin">
             <InstrumentListContent />
         </DashboardLayout>
     );

@@ -1,8 +1,11 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { FileOrderByColumnNames, FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
 import { FileListItem } from "@/src/core/components/file/FileListItem";
+import { EnrichedFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
 import { BlitzPage } from "@blitzjs/next";
-import React, { Suspense } from "react";
-import { Permission } from "shared/permissions";
+import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
@@ -11,10 +14,6 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { fileSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
-import { EnrichedFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 // for serializing in compact querystring
 interface FilesFilterSpecStatic {
@@ -181,7 +180,7 @@ const FileListOuter = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const FilesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Files" basePermission={Permission.access_file_landing_page} navRealm={NavRealm.files}>
+        <DashboardLayout title="Files" navRealm={NavRealm.files}>
             <AppContextMarker name="Files search page">
                 <div className="eventsMainContent searchPage">
                     <Suspense>

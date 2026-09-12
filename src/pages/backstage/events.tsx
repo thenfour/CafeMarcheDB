@@ -1,20 +1,19 @@
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
+import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
+import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
+import { EnrichedSearchEventPayload } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 import { BlitzPage } from "@blitzjs/next";
-import React, { Suspense } from "react";
-import { Permission } from "shared/permissions";
+import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { EventListItem } from "src/core/components/event/EventComponents";
-import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { EnrichedSearchEventPayload } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -334,7 +333,7 @@ const EventListOuter = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SearchEventsPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Events" basePermission={Permission.view_events_nonpublic}>
+        <DashboardLayout title="Events">
             <AppContextMarker name="Event search page">
                 <div className="eventsMainContent searchPage">
                     <Suspense>

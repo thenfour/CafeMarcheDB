@@ -1,6 +1,13 @@
+import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
+import { gSSP } from "@/src/blitz-server";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
+import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
+import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { enrichSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, StringToEnumValue } from "shared/utils";
 import { AppContextMarker } from "src/core/components/AppContext";
@@ -8,13 +15,6 @@ import { NewSongButton } from "src/core/components/song/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/song/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
-import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
-import { enrichSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
-import { gSSP } from "@/src/blitz-server";
-import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();
@@ -122,7 +122,7 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
 
 const SongDetailPage: BlitzPage = (x: PageProps) => {
     return (
-        <DashboardLayout title={x.title} navRealm={NavRealm.songs} basePermission={Permission.view_songs}>
+        <DashboardLayout title={x.title} navRealm={NavRealm.songs}>
             <AppContextMarker name="song page" songId={x.songId || undefined}>
                 <Suspense>
                     <MyComponent songId={x.songId}></MyComponent>

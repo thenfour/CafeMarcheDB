@@ -5,7 +5,6 @@ import { EnrichedVerboseWikiPage, WikiPageOrderByColumnNames, WikiPageOrderByCol
 import { WikiPageListItem } from "@/src/core/components/wiki/WikiPageListItem";
 import { wikiParseCanonicalWikiPath } from "@/src/core/wiki/shared/wikiUtils";
 import { BlitzPage } from "@blitzjs/next";
-import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { FilterGroupDefinition, SearchPageContent, SearchPageContentConfig } from "src/core/components/search/SearchPageContent";
@@ -176,7 +175,7 @@ const WikiPageListOuter = () => {
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const WikiPagesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Wiki Pages" basePermission={Permission.search_wiki_pages} navRealm={NavRealm.wikiPages}>
+        <DashboardLayout title="Wiki Pages" navRealm={NavRealm.wikiPages}>
             <AppContextMarker name="Wiki pages search page">
                 <div className="eventsMainContent searchPage">
                     <WikiPageListOuter />

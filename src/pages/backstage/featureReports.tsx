@@ -1,4 +1,7 @@
 import { ActivityReportTimeBucketSize } from "@/shared/mysqlUtils";
+import { CMDateRangePicker } from "@/src/core/components/DateTime/DateTimeRangeControl";
+import { AgeRelativeToNow } from "@/src/core/components/DateTime/RelativeTimeComponents";
+import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { gClientFacetHandlers } from "@/src/core/components/featureReports/ClientFacetHandlers";
 import { FacetedBreakdown } from "@/src/core/components/featureReports/FacetedBreakdown";
 import { getColorForFeature } from "@/src/core/components/featureReports/FeatureReportBasics";
@@ -14,12 +17,9 @@ import { DateAdd, formatMillisecondsToDHMS, roundToNearest15Minutes } from "shar
 import { IsNullOrWhitespace } from "shared/utils";
 import { PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { AdminInspectObject, CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMTextInputBase } from "src/core/components/CMTextField";
 import { CMMultiSelect, CMSingleSelect } from "src/core/components/select/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
-import { CMTextInputBase } from "src/core/components/CMTextField";
-import { AgeRelativeToNow } from "@/src/core/components/DateTime/RelativeTimeComponents";
-import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { CMDateRangePicker } from "@/src/core/components/DateTime/DateTimeRangeControl";
 
 const GeneralFeatureStatsReport = () => {
     const [refetchTrigger, setRefetchTrigger] = React.useState(0);
@@ -309,7 +309,7 @@ const GeneralFeatureStatsReport = () => {
 
 const FeatureReportsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Feature reports" basePermission={Permission.view_feature_reports}>
+        <DashboardLayout title="Feature reports">
             <div className="contentSection fullWidth">
                 <GeneralFeatureStatsReport />
             </div>
