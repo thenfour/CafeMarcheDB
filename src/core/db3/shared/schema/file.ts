@@ -77,6 +77,9 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TA
         return includesPermission(args.publicData.permissions || [], Permission.view_files);
     }
     if (args.rowMode === "new") {
+        // for now, "trusted code" is assumed.
+        // this is safe because this function is called by the server before mutation occurs.
+        // unit test coverage verifies this
         return includesPermission(args.publicData.permissions || [], Permission.upload_files);
     }
     return false; // by default, server-owned fields are not authorized for mutation

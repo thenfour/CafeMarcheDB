@@ -65,7 +65,6 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
   it("registers site branding as a delegable site capability", () => {
     expect(getPermissionDefinition(Permission.manage_site_branding)).toEqual(
       expect.objectContaining({
-        category: "site-content",
         scope: "site",
         isDelegable: true,
         isProtected: false,

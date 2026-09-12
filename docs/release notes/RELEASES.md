@@ -81,6 +81,8 @@ Actions taken:
   - BA-N001 - Centralized site-wide route registry
   - BA-N002 - Navigation vs menu mismatches corrections
   - BA-N003 - More routing corrections and hardening
+- Preparation for Band Admin role
+  - splitting permissions that mixed sysadmin and band admin capabilities
 
 ## todo
 
@@ -116,6 +118,8 @@ node scripts/upgrade.mjs --version 3.0.1 --dry-run
 
 ### smoke test
 
+- create a band admin
+  - check all role assignments
 - create a new moderator
 - create an event
 - create a song
@@ -126,4 +130,10 @@ node scripts/upgrade.mjs --version 3.0.1 --dry-run
 - respond to an event
 - test calendar feed
 - test file upload and existing file visibility
-- create a band admin
+
+- add `recover_events` permission
+- add `recover_songs` permission
+- add `recover_files` permission
+- add `manage_user_taxonomy`
+- add `deactivate_users`
+- `manage_site_branding`
