@@ -1,6 +1,6 @@
-import { AppProps, ErrorBoundary, ErrorComponent, ErrorFallbackProps } from "@blitzjs/next";
+import { AppProps, ErrorBoundary, ErrorFallbackProps } from "@blitzjs/next";
 import { CacheProvider, EmotionCache } from "@emotion/react";
-import { CssBaseline } from "@mui/material";
+import { Box, CssBaseline, Typography } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -14,7 +14,7 @@ import { SnackbarProvider } from "src/core/components/SnackbarContext";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
 import Head from "next/head";
-import { BrandContext } from "@/shared/brandConfig";
+import { BrandContext, useBrand } from "@/shared/brandConfig";
 import '../../public/eventSongList.css';
 import '../../public/frontpage.css';
 import '../../public/global.css';
@@ -47,25 +47,65 @@ export interface MyAppProps extends AppProps {
 }
 
 
-function RootErrorFallback({ error }: ErrorFallbackProps) {
+export function getRootErrorPresentation(error: Error & Record<any, any>) {
   if (error instanceof AuthenticationError) {
-    return <div>Error: You are not authenticated</div>
-  } else if (error instanceof AuthorizationError) {
-    console.log(`${error.message || error.name}`);
-    return (
-      <ErrorComponent
-        statusCode={error.statusCode}
-        title="Sorry, you are not authorized to access this"
-      />
-    )
-  } else {
-    return (
-      <ErrorComponent
-        statusCode={(error as any)?.statusCode || 400}
-        title={error.message || error.name}
-      />
-    )
+    return { statusCode: error.statusCode || 401, title: "You are not authenticated" };
   }
+  if (error instanceof AuthorizationError) {
+    return {
+      statusCode: error.statusCode || 403,
+      title: "Sorry, you are not authorized to access this",
+    };
+  }
+  return {
+    statusCode: error?.statusCode || 400,
+    title: error.message || error.name || "An unexpected error occurred",
+  };
+}
+
+function RootErrorFallback({ error }: ErrorFallbackProps) {
+  const brand = useBrand();
+  const { statusCode, title } = getRootErrorPresentation(error);
+  const pageTitle = `${brand.siteTitlePrefix}${statusCode}: ${title}`;
+
+  return <>
+    <Head><title>{pageTitle}</title></Head>
+    <Box sx={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 3,
+      color: "text.primary",
+      backgroundColor: "background.default",
+    }}>
+      <Box sx={{ maxWidth: 720, textAlign: "center" }}>
+        {(brand.siteLogoUrl || brand.siteTitle) && <Box sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1.5,
+          marginBottom: 3,
+        }}>
+          {brand.siteLogoUrl && <img
+            src={brand.siteLogoUrl}
+            alt=""
+            style={{ display: "block", maxHeight: 48, maxWidth: 200 }}
+          />}
+          {brand.siteTitle && <Typography variant="h5">{brand.siteTitle}</Typography>}
+        </Box>}
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Typography variant="h5" component="h1" sx={{
+            paddingRight: 2.5,
+            marginRight: 2.5,
+            borderRight: "1px solid",
+            borderColor: "divider",
+          }}>{statusCode}</Typography>
+          <Typography variant="body1">{title}</Typography>
+        </Box>
+      </Box>
+    </Box>
+  </>;
 }
 
 // in order to emit css from the theme, this must be a CHILD of ThemeProvider.
@@ -110,13 +150,13 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
     document.documentElement.style.setProperty('--contrast-text', theme.palette.primary.contrastText);
   }, [theme.palette.primary.main, theme.palette.primary.contrastText, theme.palette.secondary.main, theme.palette.secondary.contrastText, theme.palette.background.default, theme.palette.background.paper, theme.palette.text.primary]);
 
-  return getLayout(
+  return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Head>
           <meta name="theme-color" content={theme.palette.primary.main} />
-          <link rel="icon" type="image/png" href={brand.siteFaviconUrl} />
+          {brand.siteFaviconUrl && <link key="site-favicon" rel="icon" href={brand.siteFaviconUrl} />}
           <style id="brand-css-vars">{`
             :root{
             --primary-color: ${theme.palette.primary.main};
@@ -129,9 +169,9 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
         </Head>
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>
-            {/* <DashboardContextProvider> */}
-            <Component {...pageProps} />
-            {/* </DashboardContextProvider> */}
+            <ErrorBoundary FallbackComponent={RootErrorFallback}>
+              {getLayout(<Component {...pageProps} />)}
+            </ErrorBoundary>
           </BrandContext.Provider>
         </SnackbarProvider>
       </ThemeProvider>
@@ -139,16 +179,14 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
   );
 }
 
-function MyApp({
+export function MyApp({
   Component,
   pageProps,
   emotionCache = clientSideEmotionCache
 }: MyAppProps) {
   return (
     <CacheProvider value={emotionCache}>
-      <ErrorBoundary FallbackComponent={RootErrorFallback}>
-        <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
-      </ErrorBoundary>
+      <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
     </CacheProvider>
   );
 }
@@ -175,17 +213,13 @@ const originalGetInitialProps = (BlitzedApp as any).getInitialProps as
     await authorizeBackstagePageRequest(appCtx.ctx.pathname, session.userId);
   }
 
-  try {
-    if (req) {
-      // Only import and call server code on the server
-      const { loadDbBrandConfig } = await import("@/src/server/brand");
-      const host = req?.headers?.host as string | undefined;
-      const brand = await loadDbBrandConfig(host);
-      appProps.pageProps = { ...(appProps.pageProps || {}), brand };
-    }
-  } catch (e) {
-    // Non-fatal; fall back to defaults
-    appProps.pageProps = { ...(appProps.pageProps || {}), brand: DefaultDbBrandConfig };
+  if (req) {
+    // A request with no valid or last-known-good brand must fail instead of
+    // rendering normal application content under the wrong site identity.
+    const { loadDbBrandConfig } = await import("@/src/server/brand");
+    const host = req?.headers?.host as string | undefined;
+    const brand = await loadDbBrandConfig(host);
+    appProps.pageProps = { ...(appProps.pageProps || {}), brand };
   }
 
   return appProps;

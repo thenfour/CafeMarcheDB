@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+    BrandAssetUrlSchema,
+    OptionalBrandColorSchema,
+    RequiredBrandColorSchema,
+} from "./brandingValidation";
 import { Setting } from "./settingKeys";
 
 // Branding is a single delegated configuration capability even though its
@@ -8,18 +13,18 @@ import { Setting } from "./settingKeys";
 export const SiteBrandingSettingsSchema = z.object({
     siteTitle: z.string(),
     siteTitlePrefix: z.string(),
-    siteFaviconUrl: z.string(),
-    siteLogoUrl: z.string(),
+    siteFaviconUrl: BrandAssetUrlSchema,
+    siteLogoUrl: BrandAssetUrlSchema,
     calendarName: z.string(),
     calendarCompany: z.string(),
     calendarProduct: z.string(),
     calendarEventPrefix: z.string(),
-    themePrimaryMain: z.string(),
-    themeSecondaryMain: z.string(),
-    themeBackgroundDefault: z.string(),
-    themeBackgroundPaper: z.string(),
-    themeTextPrimary: z.string(),
-    themeContrastText: z.string(),
+    themePrimaryMain: RequiredBrandColorSchema,
+    themeSecondaryMain: RequiredBrandColorSchema,
+    themeBackgroundDefault: RequiredBrandColorSchema,
+    themeBackgroundPaper: RequiredBrandColorSchema,
+    themeTextPrimary: OptionalBrandColorSchema,
+    themeContrastText: RequiredBrandColorSchema,
 }).strict();
 
 export type SiteBrandingSettings = z.infer<typeof SiteBrandingSettingsSchema>;

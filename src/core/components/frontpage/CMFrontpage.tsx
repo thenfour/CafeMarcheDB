@@ -83,7 +83,6 @@ export const CMPublicIndex = (props: { publicFeed: PublicFeedResponseSpec }) => 
         <Head>
             <title>{titleText}</title>
             <meta charSet="utf-8" />
-            <link rel="icon" type="image/png" href="/favicon.png" />
 
             <meta name="siteid" content="be" />
             <meta name="countryid" content="BE" />

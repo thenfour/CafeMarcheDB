@@ -27,6 +27,7 @@ import { clearBrandCache } from "src/server/brand"
 import { Permission, getPermissionDefinition } from "shared/permissions"
 import { Setting } from "shared/settingKeys"
 import {
+  type SiteBrandingSettings,
   siteBrandingSettingNames,
   siteBrandingSettingsFromValues,
 } from "shared/siteBranding"
@@ -50,7 +51,15 @@ const brandManager = createAuthorizationTestUser("normal", {
 })
 const sysadmin = createAuthorizationTestUser("sysadmin", { id: 702 })
 
-const emptyBranding = () => siteBrandingSettingsFromValues(new Map())
+const validBranding = (): SiteBrandingSettings => ({
+  ...siteBrandingSettingsFromValues(new Map()),
+  siteFaviconUrl: "/favicon.png",
+  themePrimaryMain: "#344873",
+  themeSecondaryMain: "#831012",
+  themeBackgroundDefault: "#fafafa",
+  themeBackgroundPaper: "#ffffff",
+  themeContrastText: "#ede331",
+})
 
 describe("BA-C001 and BA-C002 setting authorization", () => {
   beforeEach(() => {
@@ -98,7 +107,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       permissions: brandingPermissionSet,
     })
     const input = {
-      ...emptyBranding(),
+      ...validBranding(),
       siteTitle: "The Example Band",
       calendarName: "Example Band calendar",
       themePrimaryMain: "#123456",
@@ -123,11 +132,39 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       permissions: brandingPermissionSet,
     })
     const forgedInput = {
-      ...emptyBranding(),
+      ...validBranding(),
       [Setting.Dashboard_HostingMode]: "CafeMarche",
     }
 
     await expect(invokeResolver(updateSiteBrandingSettings, forgedInput as any, ctx)).rejects.toThrow()
+    expect(authorizationTestDb.snapshot("setting")).toEqual([])
+    expect(clearBrandCache).not.toHaveBeenCalled()
+  })
+
+  it("rejects unsafe asset URLs and colors which would break the application theme", async () => {
+    const { ctx } = createAuthorizationPersona("normal", {
+      id: brandManager.id,
+      permissions: brandingPermissionSet,
+    })
+
+    const invalidBranding = [
+      {
+        ...validBranding(),
+        siteFaviconUrl: "javascript:alert(1)",
+      },
+      {
+        ...validBranding(),
+        themePrimaryMain: "",
+      },
+    ]
+
+    for (const branding of invalidBranding) {
+      await expect(invokeResolver(
+        updateSiteBrandingSettings,
+        branding,
+        ctx,
+      )).rejects.toThrow()
+    }
     expect(authorizationTestDb.snapshot("setting")).toEqual([])
     expect(clearBrandCache).not.toHaveBeenCalled()
   })
@@ -145,7 +182,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
 
     await expect(invokeResolver(
       updateSiteBrandingSettings,
-      { ...emptyBranding(), siteTitle: "Forged" },
+      { ...validBranding(), siteTitle: "Forged" },
       ctx,
     )).rejects.toThrow("Not authorized for manage_site_branding")
     expect(authorizationTestDb.snapshot("setting")).toEqual([])

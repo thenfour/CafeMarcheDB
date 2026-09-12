@@ -32,6 +32,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #630 fixed: Setlist dialog "+break" and "+divider" were hard to click sometimes
   - #626 fixed: Song search results sometimes didn't show the footer when it was supposed to.
   - #638 Setlists now display faint value bars for BPM
+  - #673 fixed: Site branding could sometimes be bypassed (favicon / error boundaries)
 
 ## security hardening
 

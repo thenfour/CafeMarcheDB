@@ -1,4 +1,5 @@
-import { DbBrandConfig, HostingMode } from "@/shared/brandConfigBase";
+import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
+import { validateDbBrandConfig } from "@/shared/brandingValidation";
 import { Setting } from "@/shared/settingKeys";
 import db from "db";
 
@@ -18,52 +19,64 @@ export async function loadDbBrandConfig(hostHeader?: string | null): Promise<DbB
   const hit = cache.get(host);
   if (hit && hit.expiresAt > now) return hit.value;
 
-  // For now, global settings; future: scope by host realm if schema supports it
-  const names = [
-    Setting.Dashboard_HostingMode,
-    Setting.Dashboard_SiteTitle,
-    Setting.Dashboard_SiteTitlePrefix,
-    Setting.Dashboard_SiteFaviconUrl,
-    Setting.Dashboard_SiteLogoUrl,
-    Setting.Dashboard_Theme_PrimaryMain,
-    Setting.Dashboard_Theme_SecondaryMain,
-    Setting.Dashboard_Theme_BackgroundDefault,
-    Setting.Dashboard_Theme_BackgroundPaper,
-    Setting.Dashboard_Theme_TextPrimary,
-    Setting.Dashboard_Theme_ContrastText,
-  ];
+  try {
+    // For now, settings are global; the host key keeps this ready for a future
+    // realm-specific store and prevents one host's stale value serving another.
+    const names = [
+      Setting.Dashboard_HostingMode,
+      Setting.Dashboard_SiteTitle,
+      Setting.Dashboard_SiteTitlePrefix,
+      Setting.Dashboard_SiteFaviconUrl,
+      Setting.Dashboard_SiteLogoUrl,
+      Setting.Dashboard_Theme_PrimaryMain,
+      Setting.Dashboard_Theme_SecondaryMain,
+      Setting.Dashboard_Theme_BackgroundDefault,
+      Setting.Dashboard_Theme_BackgroundPaper,
+      Setting.Dashboard_Theme_TextPrimary,
+      Setting.Dashboard_Theme_ContrastText,
+    ];
 
-  const rows = await db.setting.findMany({ where: { name: { in: names } } });
-  const byName = new Map(rows.map(r => [r.name, r.value] as const));
+    const rows = await db.setting.findMany({ where: { name: { in: names } } });
+    const byName = new Map(rows.map(r => [r.name, r.value] as const));
+    const defaultTheme = DefaultDbBrandConfig.theme!;
 
-  const siteTitle = byName.get(Setting.Dashboard_SiteTitle) ?? "";
-  const siteTitlePrefix = byName.get(Setting.Dashboard_SiteTitlePrefix) ?? "";
-  const siteFaviconUrl = byName.get(Setting.Dashboard_SiteFaviconUrl) ?? "";
-  const siteLogoUrl = byName.get(Setting.Dashboard_SiteLogoUrl) ?? "";
+    const value = validateDbBrandConfig({
+      hostingMode: byName.get(Setting.Dashboard_HostingMode) ?? DefaultDbBrandConfig.hostingMode,
+      siteTitle: byName.get(Setting.Dashboard_SiteTitle) ?? DefaultDbBrandConfig.siteTitle,
+      siteTitlePrefix: byName.get(Setting.Dashboard_SiteTitlePrefix) ?? DefaultDbBrandConfig.siteTitlePrefix,
+      siteFaviconUrl: byName.get(Setting.Dashboard_SiteFaviconUrl) ?? DefaultDbBrandConfig.siteFaviconUrl,
+      siteLogoUrl: byName.get(Setting.Dashboard_SiteLogoUrl) ?? DefaultDbBrandConfig.siteLogoUrl,
+      theme: {
+        primaryMain: byName.get(Setting.Dashboard_Theme_PrimaryMain) ?? defaultTheme.primaryMain,
+        secondaryMain: byName.get(Setting.Dashboard_Theme_SecondaryMain) ?? defaultTheme.secondaryMain,
+        backgroundDefault: byName.get(Setting.Dashboard_Theme_BackgroundDefault) ?? defaultTheme.backgroundDefault,
+        backgroundPaper: byName.get(Setting.Dashboard_Theme_BackgroundPaper) ?? defaultTheme.backgroundPaper,
+        textPrimary: byName.get(Setting.Dashboard_Theme_TextPrimary) ?? defaultTheme.textPrimary,
+        contrastText: byName.get(Setting.Dashboard_Theme_ContrastText) ?? defaultTheme.contrastText,
+      },
+    });
 
-  const theme = {
-    primaryMain: byName.get(Setting.Dashboard_Theme_PrimaryMain) ?? "",
-    secondaryMain: byName.get(Setting.Dashboard_Theme_SecondaryMain) ?? "",
-    backgroundDefault: byName.get(Setting.Dashboard_Theme_BackgroundDefault) ?? "",
-    backgroundPaper: byName.get(Setting.Dashboard_Theme_BackgroundPaper) ?? "",
-    textPrimary: byName.get(Setting.Dashboard_Theme_TextPrimary) ?? "",
-    contrastText: byName.get(Setting.Dashboard_Theme_ContrastText) ?? "",
-  } as DbBrandConfig["theme"];
+    cache.set(host, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+    return value;
+  } catch (error) {
+    if (hit) {
+      console.error(`[branding] Failed to refresh brand for host ${JSON.stringify(host)}; serving the last known good value.`, error);
+      return hit.value;
+    }
 
-  const value: DbBrandConfig =
-  {
-    hostingMode: (byName.get(Setting.Dashboard_HostingMode) === "CafeMarche") ? HostingMode.CafeMarche : HostingMode.GenericSingleTenant,
-    siteTitle,
-    siteTitlePrefix,
-    siteFaviconUrl,
-    siteLogoUrl,
-    theme
-  };
-  cache.set(host, { value, expiresAt: now + CACHE_TTL_MS });
-  return value;
+    console.error(`[branding] Failed to load an initial brand for host ${JSON.stringify(host)}.`, error);
+    throw error;
+  }
 }
 
 export function clearBrandCache(hostHeader?: string | null) {
-  if (!hostHeader) { cache.clear(); return; }
-  cache.delete(normalizeHost(hostHeader));
+  // Expire rather than discard: the next request refreshes immediately, while
+  // retaining a known-good identity if that refresh encounters a transient
+  // database or configuration failure.
+  if (!hostHeader) {
+    cache.forEach(entry => { entry.expiresAt = 0; });
+    return;
+  }
+  const entry = cache.get(normalizeHost(hostHeader));
+  if (entry) entry.expiresAt = 0;
 }
