@@ -91,10 +91,6 @@ https://github.com/thenfour/CafeMarcheDB/milestone/28
 - #664 needs a unit test https://github.com/thenfour/CafeMarcheDB/issues/664
   - include new users that use an email used by a soft-deleted user.
 - #515 full screen mode for mobile should be treated better
-- band admin split perms:
-  - `admin_songs`
-  - `admin_files`
-  - `sysadmin`
 
 ## Migration notes
 
@@ -116,6 +112,13 @@ node scripts/upgrade.mjs --version 3.0.1 --dry-run
 
 ```
 
+- add `recover_events` permission
+- add `recover_songs` permission
+- add `recover_files` permission
+- add `manage_user_taxonomy`
+- add `deactivate_users`
+- `manage_site_branding`
+
 ### smoke test
 
 - create a band admin
@@ -130,10 +133,3 @@ node scripts/upgrade.mjs --version 3.0.1 --dry-run
 - respond to an event
 - test calendar feed
 - test file upload and existing file visibility
-
-- add `recover_events` permission
-- add `recover_songs` permission
-- add `recover_files` permission
-- add `manage_user_taxonomy`
-- add `deactivate_users`
-- `manage_site_branding`
