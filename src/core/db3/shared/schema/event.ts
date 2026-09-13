@@ -812,7 +812,7 @@ export const xEventSegment = new db3.xTable({
     tableName: "EventSegment",
     deletePolicy: "hard",
     queryParameters: {
-        eventId: { kind: "integer", authorizeAs: "eventId" },
+        eventId: { kind: "integer", authorizeAs: "eventId", nullable: true },
     },
     getSelectionArgs: (): Prisma.EventSegmentDefaultArgs => {
         return EventSegmentArgs;
@@ -878,6 +878,16 @@ export const xEventSegment = new db3.xTable({
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
 
+        // Prisma generates this stable identifier; expose it without allowing edits.
+        new GhostField({
+            memberName: "uid",
+            authMap: {
+                ...xEventAuthMap_R_EOwn_EManagers,
+                PreInsert: Permission.never_grant,
+                PreMutate: Permission.never_grant,
+                PreMutateAsOwner: Permission.never_grant,
+            },
+        }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });

@@ -95,7 +95,9 @@ export class DB3RequestValidationError extends Error {
 
 function parseRequest<T>(schema: z.ZodType<T>, input: unknown, pathPrefix?: string): T {
     const result = schema.safeParse(input);
-    if (result.success) return result.data;
+    if (result.success) {
+        return result.data;
+    }
 
     const issues = result.error.issues.map(issue => {
         const issuePath = issue.path.length ? issue.path.join(".") : "";
@@ -188,7 +190,9 @@ export function validateDB3QueryRequest(input: unknown): db3.QueryRequestInput {
 }
 
 export function validateDB3PaginatedQueryRequest(input: unknown): db3.PaginatedQueryRequestInput {
-    return validateQueryForTable(parseRequest(PaginatedQueryRequestSchema, input) as db3.PaginatedQueryRequestInput);
+    const parsed = parseRequest(PaginatedQueryRequestSchema, input);
+    const parsedAndTyped = parsed as db3.PaginatedQueryRequestInput;
+    return validateQueryForTable(parsedAndTyped);
 }
 
 export function validateDB3MutationRequest(input: unknown): db3.MutatorInput {
