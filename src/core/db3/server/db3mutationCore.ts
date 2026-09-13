@@ -21,10 +21,9 @@ import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { getFileCustomData } from "../shared/fileAPI";
 import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from "../shared/fileTypes";
 import { TAnyModel } from "@/shared/rootroot";
-import { CreatePublicData } from "types";
 import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
 import { clearBrandCache } from "@/src/server/brand";
-import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
+import { queryTable } from "./db3QueryCore";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { validateSettingValue } from "@/src/auth/server/settingWrite";
 
@@ -42,14 +41,10 @@ export class DB3MutationAuthorizationError extends AuthorizationError {
     }
 }
 
-const getMutationPublicData = (clientIntention: db3.xTableClientUsageContext) => (
-    CreatePublicData({
-        user: clientIntention.intention === "public"
-            ? null
-            : clientIntention.currentUser || null,
-        permissions: clientIntention.authorizationPermissions || [],
-    })
-);
+const getMutationPublicData = async (ctx: Ctx): Promise<db3.DB3Authorization> => {
+    const authorization = await getRequestAuthorization(ctx.session);
+    return db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+};
 
 const requireAuthorizedMutationFields = (
     table: db3.xTable,
@@ -64,28 +59,6 @@ const requireAuthorizedMutationFields = (
         ]);
     }
     return { ...authResult.authorizedModel };
-};
-
-const requireRolePermissionTopologyAuthorization = (
-    associationTableName: string,
-    localTable: db3.xTable,
-    publicData: ReturnType<typeof getMutationPublicData>,
-    fieldNames: string[],
-): void => {
-    const rolePermissionTableName = db3.xRolePermissionAssociation.tableName;
-    if (associationTableName.toLowerCase() === rolePermissionTableName.toLowerCase() && !publicData.permissions.includes(Permission.sysadmin)) {
-        throw new DB3MutationAuthorizationError(localTable.tableName, fieldNames);
-    }
-};
-
-const requireSysadminTableAuthorization = (
-    table: db3.xTable,
-    publicData: ReturnType<typeof getMutationPublicData>,
-    fieldNames: string[],
-): void => {
-    if (table.requiresSysadminPermissionForMutation && !publicData.permissions.includes(Permission.sysadmin)) {
-        throw new DB3MutationAuthorizationError(table.tableName, fieldNames);
-    }
 };
 
 const requireDeleteOperationAuthorization = (
@@ -306,7 +279,7 @@ export const CallMutateEventHooks = async (args: {
 export interface UpdateAssociationsArgs {
     ctx: AuthenticatedCtx;
     changeContext: ChangeContext;
-    clientIntention: db3.xTableClientUsageContext;
+
 
     localTable: db3.xTable;
     column: db3.TagsField<TAnyModel>;
@@ -324,18 +297,8 @@ export interface UpdateAssociationsArgs {
 export const UpdateAssociations = async ({ changeContext, ctx, ...args }: UpdateAssociationsArgs) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     const associationTableName = args.column.getAssociationTableShema().tableName;
-    const publicData = getMutationPublicData(args.clientIntention);
+    const publicData = await getMutationPublicData(ctx);
     const rowMode = args.rowMode || "update";
-
-    if (args.clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
-        throw new DB3MutationAuthorizationError(args.localTable.tableName, [args.column.member]);
-    }
-    requireRolePermissionTopologyAuthorization(
-        associationTableName,
-        args.localTable,
-        publicData,
-        [args.column.member],
-    );
 
     let localModel = args.localModel;
     if (rowMode === "update" && !localModel) {
@@ -348,7 +311,6 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
     }
 
     requireAuthorizedMutationFields(args.localTable, args.localTable.authorizeAndSanitize({
-        clientIntention: args.clientIntention,
         contextDesc: `association:${args.localTable.tableName}.${args.column.member}`,
         model: { [args.column.member]: args.desiredTagIds },
         existingModel: rowMode === "update" ? localModel : undefined,
@@ -430,23 +392,20 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
 
 
 // DELETE ////////////////////////////////////////////////
-export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
+export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, deleteType: "softWhenPossible" | "hard", transactionalDb: TransactionalPrismaClient = db as any): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
-        const publicData = getMutationPublicData(clientIntention);
-
-        if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
+        const publicData = await getMutationPublicData(ctx);
+        if (!table.authorizeTableForEdit(publicData)) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
-        requireSysadminTableAuthorization(table, publicData, [table.pkMember]);
-        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, [table.pkMember]);
         const deleteOperation = requireDeleteOperationAuthorization(table, deleteType);
 
         const selectionArgs = table.tableName === db3.xUser.tableName
             ? UserWithRolesArgs // require roles in order to do protected auth checks
-            : table.getSelectionArgs(clientIntention, { items: [] });
+            : table.getSelectionArgs({ items: [] });
         const oldValues = await dbTableClient.findFirst({
             ...selectionArgs,
             where: { [table.pkMember]: id },
@@ -456,8 +415,8 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         }
 
         const rowIsAuthorized = deleteOperation === "soft"
-            ? table.authorizeRowForDeletePreferSoft({ model: oldValues, publicData, clientIntention })
-            : table.authorizeRowForDeleteHard({ model: oldValues, publicData, clientIntention });
+            ? table.authorizeRowForDeletePreferSoft({ model: oldValues, publicData })
+            : table.authorizeRowForDeleteHard({ model: oldValues, publicData });
         if (!rowIsAuthorized) {
             throw new DB3MutationAuthorizationError(table.tableName, [table.pkMember]);
         }
@@ -465,7 +424,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         if (deleteOperation === "soft") {
             await updateImpl(table, id, {
                 [table.SqlSpecialColumns.isDeleted!.member]: true,
-            }, ctx, clientIntention, transactionalDb);
+            }, ctx, transactionalDb);
             return true;
         }
 
@@ -475,7 +434,6 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
             await UpdateAssociations({
                 changeContext,
                 ctx,
-                clientIntention,
                 localId: id,
                 localModel: oldValues,
                 localTable: table,
@@ -523,31 +481,28 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 };
 
 // INSERT ////////////////////////////////////////////////
-export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
+export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedCtx, transactionalDb: TransactionalPrismaClient = db as any): Promise<TReturnPayload> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
-        const publicData = getMutationPublicData(clientIntention);
-
-        if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
+        const publicData = await getMutationPublicData(ctx);
+        if (!table.authorizeRowBeforeInsert({ publicData })) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
-        requireSysadminTableAuthorization(table, publicData, Object.keys(fields));
-        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
         // so those values will continue to be ID.
-        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "new", clientIntention);
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "new", await getCurrentUserCore(ctx));
         // converts client -> sanitized client
-        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "new", clientIntention);
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "new");
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);
             throw new Error(`validation failed; log contains details.`);
         }
 
-        const dbModel = table.clientToDbModel(validateResult.successfulModel, "new", clientIntention);
+        const dbModel = table.clientToDbModel(validateResult.successfulModel, "new");
 
         const proposedMutationFields = db3.separateMutationValues({ table, fields: dbModel });
         const proposedModel = {
@@ -561,7 +516,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         // at this point `fields` should not be used because it mixes foreign associations with local values
         if (Object.keys(proposedModel).length > 0) {
             const authResult = table.authorizeAndSanitize({
-                clientIntention,
                 contextDesc,
                 model: proposedModel,
                 publicData,
@@ -571,17 +525,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             const authorizedMutationFields = requireAuthorizedMutationFields(table, authResult);
             ({ localFields: authorizedLocalFields, associationFields: authorizedAssociationFields }
                 = db3.separateMutationValues({ table, fields: authorizedMutationFields }));
-
-            for (const column of table.columns) {
-                if (column.fieldTableAssociation !== "associationRecord") continue;
-                if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
-                requireRolePermissionTopologyAuthorization(
-                    (column as db3.TagsField<TAnyModel>).getAssociationTableShema().tableName,
-                    table,
-                    publicData,
-                    [column.member],
-                );
-            }
         }
 
         if (Object.keys(proposedModel).length > 0) {
@@ -619,7 +562,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             await UpdateAssociations({
                 changeContext,
                 ctx,
-                clientIntention,
                 localId: obj[table.pkMember],
                 localModel: obj,
                 localTable: table,
@@ -649,28 +591,25 @@ interface UpdateImplResult<T> {
     newModel: T,
     didChangesOccur: boolean,
 };
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, transactionalDb: TransactionalPrismaClient = db as any): Promise<UpdateImplResult<TAnyModel>> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = transactionalDb[table.tableName]; // the prisma interface
-        const publicData = getMutationPublicData(clientIntention);
-
-        if (clientIntention.intention === "admin" && !publicData.permissions.includes(Permission.sysadmin)) {
+        const publicData = await getMutationPublicData(ctx);
+        if (!table.authorizeTableForEdit(publicData)) {
             throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
         }
-        requireSysadminTableAuthorization(table, publicData, Object.keys(fields));
-        requireRolePermissionTopologyAuthorization(table.tableName, table, publicData, Object.keys(fields));
 
         // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
-        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "update", clientIntention);
-        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "update", clientIntention);
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "update");
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "update");
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);
             throw new Error(`validation failed; log contains details.`);
         }
-        const dbModel = table.clientToDbModel(validateResult.successfulModel, "update", clientIntention);
+        const dbModel = table.clientToDbModel(validateResult.successfulModel, "update");
 
         const proposedMutationFields = db3.separateMutationValues({ table, fields: dbModel });
         const proposedModel = {
@@ -696,7 +635,6 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             if (!table.authorizeRowForRestore({
                 model: fullOldObj,
                 publicData,
-                clientIntention,
             })) {
                 throw new DB3MutationAuthorizationError(table.tableName, Object.keys(fields));
             }
@@ -708,7 +646,6 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 
         if (Object.keys(proposedModel).length > 0) {
             const authResult = table.authorizeAndSanitize({
-                clientIntention,
                 contextDesc,
                 // Authorize the proposed values while deriving ownership and
                 // row-level access from the persisted row. This prevents an
@@ -722,22 +659,11 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             const authorizedMutationFields = requireAuthorizedMutationFields(table, authResult);
             ({ localFields: authorizedLocalFields, associationFields: authorizedAssociationFields }
                 = db3.separateMutationValues({ table, fields: authorizedMutationFields }));
-
-            for (const column of table.columns) {
-                if (column.fieldTableAssociation !== "associationRecord") continue;
-                if (!Object.prototype.hasOwnProperty.call(authorizedAssociationFields, column.member)) continue;
-                requireRolePermissionTopologyAuthorization(
-                    (column as db3.TagsField<TAnyModel>).getAssociationTableShema().tableName,
-                    table,
-                    publicData,
-                    [column.member],
-                );
-            }
         }
 
         // enforce policies for user table updates
         if (table.tableName === db3.xUser.tableName && Object.keys(proposedModel).length > 0) {
-            const actor = clientIntention.currentUser || null;
+            const actor = await getCurrentUserCore(ctx);
             requireCanManageUser({ actor, target: fullOldObj, action: "edit" });
         }
 
@@ -784,7 +710,6 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             const didAssociationsChange = await UpdateAssociations({
                 changeContext,
                 ctx,
-                clientIntention,
                 localId: pkid,
                 localModel: fullOldObj,
                 localTable: table,
@@ -1064,125 +989,21 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
 };
 
 
-export interface QueryImplArgs {
+export const queryFirstImpl = async <TitemPayload,>({ schema, filterModel, ctx }: {
     schema: db3.xTable;
-    clientIntention: db3.xTableClientUsageContext;
     filterModel: CMDBTableFilterModel;
-    // when records are fetched internally it's important sometimes to bypass visibility check.
-    // case: gallery items reference files. both gallery items and files have visibility checks.
-    // if the gallery item passes, but file fails, what should be done? well that's too edgy of a case to care about.
-    // better to just have 1 check: the gallery item
-    skipVisibilityCheck: boolean;
     ctx: Ctx;
+}) => {
+    const result = await queryTable({
+        tableID: schema.tableID,
+        tableName: schema.tableName,
+        filter: filterModel,
+        orderBy: undefined,
+        take: 1,
+        cmdbQueryContext: "queryFirstImpl",
+    }, await getRequestAuthorization(ctx.session));
+    return { item: (result.items[0] as TitemPayload | undefined) ?? null };
 };
-
-export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
-    const currentUser = await getCurrentUserCore(ctx);
-    const publicData = await createPublicDataFromDatabase(db, { user: clientIntention.intention === "public" ? null : currentUser });
-    clientIntention.authorizationPermissions = publicData.permissions;
-    const contextDesc = `queryManyImpl:${args.schema.tableName}`;
-    if (clientIntention.intention === "public") {
-        clientIntention.currentUser = undefined;// for public intentions, no user should be used.
-    }
-    else {
-        clientIntention.currentUser = currentUser;
-    }
-    const where = await args.schema.CalculateWhereClause({
-        clientIntention,
-        filterModel,
-        publicData,
-        skipVisibilityCheck: args.skipVisibilityCheck,
-    });
-
-    const selectionArgs = await args.schema.CalculateSelectionArgs(clientIntention, filterModel);
-
-    const items = await db[args.schema.tableName].findMany({
-        where,
-        orderBy: args.schema.naturalOrderBy,
-        ...selectionArgs,
-        //include,
-        //take: input.take,
-    }) as TitemPayload[];
-
-    const rowAuthResult = (items as TAnyModel[]).map(row => args.schema.authorizeAndSanitize({
-        contextDesc,
-        publicData,
-        clientIntention,
-        rowMode: "view",
-        model: row,
-        fallbackOwnerId: null,
-    }));
-
-    // any unknown / unauthorized columns are simply discarded.
-    const sanitizedItems = rowAuthResult.filter(r => r.rowIsAuthorized).map(r => r.authorizedModel);
-
-    return {
-        items: sanitizedItems,
-        where,
-        selectionArgs,
-        clientIntention,
-    };
-
-};
-
-
-export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, skipVisibilityCheck, ...args }: QueryImplArgs) => {
-
-    const contextDesc = `queryFirstImpl:${args.schema.tableName}`;
-
-    const currentUser = await getCurrentUserCore(ctx);
-    const publicData = await createPublicDataFromDatabase(db, { user: clientIntention.intention === "public" ? null : currentUser });
-    clientIntention.authorizationPermissions = publicData.permissions;
-    if (clientIntention.intention === "public") {
-        clientIntention.currentUser = undefined;// for public intentions, no user should be used.
-    }
-    else {
-        clientIntention.currentUser = currentUser;
-    }
-
-    const where = await args.schema.CalculateWhereClause({
-        clientIntention,
-        filterModel,
-        publicData,
-        skipVisibilityCheck,
-    });
-
-    const selectionArgs = await args.schema.CalculateSelectionArgs(clientIntention, filterModel);
-
-    let item = await db[args.schema.tableName].findFirst({
-        where,
-        orderBy: args.schema.naturalOrderBy,
-        ...selectionArgs,
-        //take: input.take,
-    }) as (TitemPayload | null);
-
-    if (!!item) {
-        const rowAuthResult = args.schema.authorizeAndSanitize({
-            contextDesc,
-            publicData,
-            clientIntention,
-            rowMode: "view",
-            model: item,
-            fallbackOwnerId: null,
-        });
-        // any unknown / unauthorized columns are simply discarded.
-        if (!rowAuthResult.rowIsAuthorized) {
-            item = null;
-        } else {
-            item = rowAuthResult.authorizedModel as any;
-        }
-    }
-
-    return {
-        item,
-        where,
-        selectionArgs,
-        clientIntention,
-    };
-
-};
-
-
 
 export const GetFileServerStoragePath = (storedLeafName: string) => {
     const uploadPath = process.env.FILE_UPLOAD_PATH;
@@ -1274,25 +1095,19 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
     if (!currentUser) {
         throw new Error(`public cannot create files`);
     }
-    const clientIntention: db3.xTableClientUsageContext = {
-        currentUser,
-        intention: 'user',
-        mode: 'primary',
-    };
-    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
-    clientIntention.authorizationPermissions = publicData.permissions;
+
+    const publicData = await getMutationPublicData(ctx);
+
     const requiredInsertPermission = db3.xFile.tableAuthMap.Insert;
-    if (!publicData.permissions.includes(requiredInsertPermission)) {
+    if (!publicData.effectivePermissions.includesName(requiredInsertPermission)) {
         throw new DB3MutationAuthorizationError(db3.xFile.tableName, ["insert"]);
     }
 
     // Resolve the source through the normal File visibility policy. The
     // storedLeafName is a storage identifier, never a bearer capability.
     const { item: parentFile } = await queryFirstImpl<db3.FilePayload>({
-        clientIntention,
         ctx,
         schema: db3.xFile,
-        skipVisibilityCheck: false,
         filterModel: {
             items: [{
                 operator: "equals",
@@ -1326,7 +1141,6 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
     // Preflight the complete File insert before touching the filesystem. The
     // normal insert path repeats this check immediately before persistence.
     requireAuthorizedMutationFields(db3.xFile, db3.xFile.authorizeAndSanitize({
-        clientIntention,
         contextDesc: "forkImage:insertFile",
         model: newFile,
         publicData,
@@ -1382,7 +1196,7 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
     // seems natural to gather the metadata right now, however it gets done in post-processing so it's not necessary.
     newFile.customData = JSON.stringify(customData);
 
-    const ret = await insertImpl(db3.xFile, newFile, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+    const ret = await insertImpl(db3.xFile, newFile, ctx) as Prisma.FileGetPayload<{}>;
 
     await PostProcessFile({ file: ret });
 
@@ -1407,13 +1221,8 @@ export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }
     if (!currentUser) {
         throw new Error(`public cannot create files`);
     }
-    const clientIntention: db3.xTableClientUsageContext = {
-        currentUser,
-        intention: 'user',
-        mode: 'primary',
-    };
-    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
-    clientIntention.authorizationPermissions = publicData.permissions;
+
+
 
     // new filename will be same as old, with new extension and add a tag.
     const parsedPath = path.parse(parentFile.fileLeafName); // user-friendly name
@@ -1464,7 +1273,7 @@ export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }
     // seems natural to gather the metadata right now, however it gets done in post-processing so it's not necessary.
     newFile.customData = JSON.stringify(customData);
 
-    const ret = await insertImpl(db3.xFile, newFile, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+    const ret = await insertImpl(db3.xFile, newFile, ctx) as Prisma.FileGetPayload<{}>;
 
     await PostProcessFile({ file: ret });
 

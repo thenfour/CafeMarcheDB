@@ -22,13 +22,8 @@ export default resolver.pipe(
             relevanceClassOverride: relevanceClassValue,
         };
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
-        await mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx, clientIntention);
+
+        await mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx);
         return args;
     }
 );

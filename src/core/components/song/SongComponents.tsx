@@ -1,6 +1,6 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
 import { TAnyModel } from '@/shared/rootroot';
-import { useAuthenticatedSession } from '@blitzjs/auth';
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Button, Tooltip } from "@mui/material";
 import { Prisma } from "db";
@@ -164,14 +164,12 @@ export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
 export const SongDescriptionControl = ({ song, refetch, readonly }: { song: SongWithDescription, refetch: () => void, readonly: boolean }) => {
     const [editing, setEditing] = React.useState<boolean>(false);
 
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     const authorized = db3.xSong.authorizeColumnForEdit({
         model: null,
         columnName: "description",
-        clientIntention,
         publicData,
         fallbackOwnerId: song.createdByUserId,
     });
@@ -211,7 +209,7 @@ export interface SongCreditEditButtonProps {
 export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCreditEditButtonProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
 
     const handleConfirmedDelete = (api: DB3EditRowButtonAPI) => {
         void recordFeature({
@@ -246,7 +244,6 @@ export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCredi
     };
 
     const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
-        clientIntention: creditsTableClient.args.clientIntention,
         model: props.value,
         publicData,
     });
@@ -269,8 +266,8 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const user = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
-    const publicData = useAuthenticatedSession();
+
+    const publicData = useDB3Authorization();
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
@@ -287,7 +284,6 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     });
 
     const creditsTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.Mutation,
         tableSpec,
     });
@@ -308,13 +304,12 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         });
     };
 
-    const newObj = db3.xSongCredit.createNew(clientIntention);
+    const newObj = db3.xSongCredit.createNew(user);
     newObj.song = songData.song;
     newObj.songId = songData.song.id;
     newObj.year = `${(new Date()).getFullYear()}`;
 
     const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
-        clientIntention,
         publicData,
     });
 

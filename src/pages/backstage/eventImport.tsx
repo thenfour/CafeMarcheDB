@@ -39,14 +39,14 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
     const dashboardContext = useDashboardContext();
     const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
-        const ret = db3.xEvent.createNew(clientIntention) as Partial<db3.EventPayload>;
+        const ret = db3.xEvent.createNew(currentUser) as Partial<db3.EventPayload>;
         return ret as any;
     });
     const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
-        const ret = db3.xEventSegment.createNew(clientIntention) as Partial<db3.EventSegmentPayload>;
+        const ret = db3.xEventSegment.createNew(currentUser) as Partial<db3.EventSegmentPayload>;
         ret.isAllDay = true;
         ret.startsAt = new Date();
         ret.durationMillis = BigInt(gMillisecondsPerDay);
@@ -94,7 +94,6 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
     // necessary to connect all the columns in the spec.
     const eventTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec: eventTableSpec,
     });
@@ -106,7 +105,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         },
     };
 
-    const eventValidationResult = eventTableSpec.args.table.ValidateAndComputeDiff(eventValue, eventValue, "new", clientIntention);
+    const eventValidationResult = eventTableSpec.args.table.ValidateAndComputeDiff(eventValue, eventValue, "new");
 
 
     // EVENT SEGMENT BINDINGS
@@ -120,7 +119,6 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
     // necessary to connect all the columns in the spec.
     const segmentTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec: segmentTableSpec,
     });
@@ -132,7 +130,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         },
     };
 
-    const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new", clientIntention);
+    const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new");
 
     const handleSaveClick = async () => {
         const payload: TinsertEventArgs = {
@@ -151,7 +149,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
     };
 
     const renderColumn = (table: DB3Client.xTableClientSpec, colName: string, row: TAnyModel, validationResult: db3.ValidateAndComputeDiffResult, api: DB3Client.NewDialogAPI, autoFocus: boolean) => {
-        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], clientIntention, autoFocus });
+        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], autoFocus });
     };
 
     const range: DateTimeRange = new DateTimeRange({

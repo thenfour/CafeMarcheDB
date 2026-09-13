@@ -1,9 +1,35 @@
 # Band Admin Authorization Hardening
 
-- Last updated: 2026-09-12
+- Last updated: 2026-09-13
 - Overall status: Implementation
 - Audit type: Static code-path audit plus read-only inspection of the configured local database
 - Implementation status: BA-T001, BA-A001 through BA-A005, BA-U001 through BA-U006, BA-S001 through BA-S006, BA-M001, BA-C001 through BA-C003, and BA-N001 through BA-N003 complete; BA-N004 next
+
+## DB3 authorization contract (2026-09-13)
+
+This contract supersedes the historical references below to deriving client/admin intention.
+
+- DB3 has no client intention or primary/relation usage context. Authorization depends on the resolved actor, effective database grants, operation, and stored row, regardless of the UI entry point.
+- Anonymous actors inherit the database public role and undergo the same table, row, field, filter, visibility, and ownership checks as signed-in actors. Public feeds resolve that authorization explicitly; queries do not switch authentication modes.
+- `RequestAuthorization` supplies the actor and an explicit `PermissionSet` containing effective database permission names/IDs. Schema checks require `DB3Authorization`; omitted grants are programming errors, while `new PermissionSet([])` represents no grants. DB3 query predicates and row sanitization use those effective visibility IDs without falling back to the assigned role alone.
+- `includeDeleted` is an explicit query option, false by default for every actor, including Sysadmins. Listing and restoration require the schema's recovery grants and retain row visibility and private ownership restrictions. `Permission.sysadmin` does not bypass these policies. Recovery grids opt in using the same schema check, and an explicit `includeDeleted: false` takes precedence.
+- Deletion retains the explicit `deleteType` argument and table `deletePolicy`. No caller context selects or authorizes hard deletion.
+- Mutation cores resolve the cached request authorization themselves, so generic and dedicated entry points cannot accidentally omit grants. Browser-side schema checks use the dashboard's effective authorization for UI feedback; the server never accepts those grants from a browser payload.
+- Form creation receives the current user directly for attribution defaults. Validation, conversion, selection dialogs, and ordinary rendering no longer forward an unused context object.
+
+Regression coverage: `tests/authorization/db3Authorization.test.ts`, the schema-wide read-policy suite, and the existing generic query/mutation authorization suites.
+
+### Schema-owned operation permissions
+
+- Table and field auth maps own permission requirements. The separate Sysadmin requirement flags and hard-coded RolePermission authorization helper have been removed.
+- Mutation entry points reject callers through the operation maps before reading a target, then authorize the persisted row and proposed fields. The early edit check accepts either Edit or EditOwn; row ownership determines which grant applies when the target is available.
+- Role and Permission metadata writes, including association fields, require `Permission.sysadmin` without an additional `manage_users` grant. Visibility selectors retain their ordinary read access. Direct RolePermission operations use that table's map; association updates use the parent table and field maps.
+- Delete policies, transaction boundaries, and restrictions requiring dedicated mutations remain in place.
+- `PermissionSet` lives in a shared module. Dashboard RPC and session payloads carry serializable permission names, and browser consumers reconstruct the set using the permission catalog. Session refresh compares complete grant sets so both additions and revocations take effect.
+
+Regression coverage additionally includes `db3TableAuthorization.test.ts`, `permissionSet.test.ts`, and permission-revocation tests in `sessionPermissionRefresh.test.ts`.
+
+Verification: all 624 tests pass; TypeScript, lint, and the production Blitz build pass. The build used a separate temporary checkout to preserve the running development server. Read-only smoke checks against that server returned HTTP 200 for `/`, `/api/public?lang=en`, and the anonymous `getDashboardData` RPC using the configured database public-role grants. The dashboard RPC returns serializable permission names. The public feed uses Blitz's API wrapper to receive its request authorization context.
 
 ## Goal
 

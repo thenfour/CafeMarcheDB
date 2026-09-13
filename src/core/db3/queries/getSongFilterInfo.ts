@@ -1,3 +1,4 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // based off the structure/logic of getEventFilterInfo
 
 import { resolver } from "@blitzjs/rpc";
@@ -10,7 +11,7 @@ import { SplitQuickFilter } from "shared/quickFilter";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
+import { queryTable } from "../server/db3QueryCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
 
 interface TArgs {
@@ -177,8 +178,7 @@ export default resolver.pipe(
                     songIds: songIds.map(e => e.SongId), // prevent fetching the entire table!
                 };
 
-                const queryResult = await DB3QueryCore2({
-                    clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+                const queryResult = await queryTable({
                     cmdbQueryContext: "getSongFilterInfo",
                     tableID: db3.xSong_Verbose.tableID,
                     tableName: db3.xSong_Verbose.tableName,
@@ -187,7 +187,7 @@ export default resolver.pipe(
                         tableParams,
                     },
                     orderBy: undefined,
-                }, u);
+                }, await getRequestAuthorization(ctx.session));
 
                 fullSongs = queryResult.items as db3.SongPayload_Verbose[];
             }

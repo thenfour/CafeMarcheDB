@@ -1,3 +1,4 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // insertOrUpdateEventWorkflowInstance
 import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
@@ -7,7 +8,7 @@ import { MutationArgsToWorkflowInstance, TWorkflowChange, TWorkflowInstanceMutat
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
+import { queryTable } from "../server/db3QueryCore";
 import { gWorkflowMutex } from "../server/eventWorkflow";
 import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
@@ -178,11 +179,7 @@ export default resolver.pipe(
 
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             if (!currentUser) throw new Error("Current user was not found.");
-            const clientIntention: db3.xTableClientUsageContext = {
-                intention: "user",
-                mode: "primary",
-                currentUser,
-            };
+
 
             const changeContext = CreateChangeContext(`insertOrUpdateEventWorkflowInstance`);
 
@@ -213,8 +210,7 @@ export default resolver.pipe(
                     // the client can be stupid and pass in ids which correspond to old data. should be ultimately ignored  by other logic but proceed for now.
                     args.instance.id = eventWithWfInstanceId.workflowInstanceId;
 
-                    const oldValuesInfo = await DB3QueryCore2({
-                        clientIntention,
+                    const oldValuesInfo = await queryTable({
                         cmdbQueryContext: "insertOrUpdateEventWorkflowInstance",
                         tableID: db3.xWorkflowInstance_Verbose.tableID,
                         tableName: db3.xWorkflowInstance_Verbose.tableName,
@@ -224,8 +220,7 @@ export default resolver.pipe(
                         },
                         orderBy: undefined,
                     },
-                        currentUser,
-                        transactionalDb);
+                        await getRequestAuthorization(ctx.session));
 
                     // convert to engine workflow def
                     const oldEngineInstance = db3.WorkflowInstanceQueryResultToMutationArgs(oldValuesInfo.items[0] as db3.WorkflowInstance_Verbose, args.eventId);

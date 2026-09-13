@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { ImageEditParams, UpdateGalleryItemImageParams } from "../shared/fileTypes";
@@ -17,7 +17,7 @@ export default resolver.pipe(
         if (!currentUser) {
             throw new Error("Current user was not found.");
         }
-        const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
+
 
         // Verify the target before ForkImageImpl performs any filesystem work.
         // The resolver permission matches the gallery table's mutation policy;
@@ -37,11 +37,10 @@ export default resolver.pipe(
             displayParams: galleryItem.displayParams,
         };
         const authorization = db3.xFrontpageGalleryItem.authorizeAndSanitize({
-            clientIntention,
             contextDesc: "updateGalleryItemImage:preflight",
             model: galleryMutationFields,
             existingModel: galleryItem,
-            publicData: await createPublicDataFromDatabase(db, { user: currentUser }),
+            publicData: db3.createDB3Authorization(currentUser, (await getRequestAuthorization(ctx.session)).effectivePermissions),
             rowMode: "update",
             fallbackOwnerId: null,
         });
@@ -68,7 +67,7 @@ export default resolver.pipe(
             displayParams: JSON.stringify(newDisplayParams),
         }
 
-        await mutationCore.updateImpl(db3.xFrontpageGalleryItem, args.galleryItemId, fields, ctx, clientIntention);
+        await mutationCore.updateImpl(db3.xFrontpageGalleryItem, args.galleryItemId, fields, ctx);
 
         return {
             newFile,

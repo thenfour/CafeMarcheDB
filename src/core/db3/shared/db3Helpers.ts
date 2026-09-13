@@ -26,13 +26,11 @@ interface GetVisibilityWhereExpressionArgs {
     ownerUserIdColumnName?: string | undefined | null;
 }
 
-/**
- * Builds the canonical Prisma visibility predicate. A null visibility value is
- * private and is visible only to its owner; all other rows require the
- * corresponding permission ID.
- */
+// Builds Prisma visibility WHERE clause.
+// null visibility value is private and is visible only to its owner
+// all other rows require the corresponding permission ID.
 export const GetVisibilityWhereExpression = ({
-    permissionIds,
+    permissionIds, // array of permission IDs that the current user has
     visiblePermissionIdColumnName,
     ownerUserId,
     ownerUserIdColumnName,

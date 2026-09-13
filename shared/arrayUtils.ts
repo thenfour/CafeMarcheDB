@@ -20,9 +20,17 @@ export function toSorted<T>(array: T[], compareFn?: (a: T, b: T) => number): T[]
     return array.slice().sort(compareFn);
 }
 
-// export function isOneOf<T>(value: T, ...values: T[]): boolean {
-//     return values.includes(value);
-// }
+// usage:
+// zip([1,2,3], ["one", "two", "three"], (a, b) => `${a} - ${b}`)
+// produces ["1 - one", "2 - two", "3 - three"]
+export function zip<T, U, R>(arr1: T[], arr2: U[], combiner: (a: T, b: U) => R): R[] {
+    if (arr1.length !== arr2.length) throw new Error("Arrays must have the same length");
+    const result: R[] = [];
+    for (let i = 0; i < arr1.length; i++) {
+        result.push(combiner(arr1[i]!, arr2[i]!));
+    }
+    return result;
+}
 
 /**
  * `values` can only contain members of the union type of `value`.

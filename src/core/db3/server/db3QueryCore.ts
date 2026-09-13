@@ -1,16 +1,11 @@
 import { AuthenticatedCtx, AuthorizationError, paginate } from "blitz";
-const { randomUUID } = require("crypto") as typeof import("crypto");
+import { randomUUID } from "crypto";
 import db from "db";
 import { sleep } from "shared/utils";
-import { CreatePublicData } from "types";
-import { loadEffectivePermissions, type EffectivePermissions } from "@/src/auth/server/effectivePermissions";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { getRequestAuthorization, type RequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
-import { TransactionalPrismaClient } from "../shared/apiTypes";
-import { UserWithRolesPayload } from "../shared/schema/userPayloads";
-import { TAnyModel } from "@/shared/rootroot";
-import { deriveDB3ClientIntention } from "./db3RequestValidation";
-import { includesPermission, Permission } from "@/shared/permissions";
+import type { TransactionalPrismaClient } from "../shared/apiTypes";
+import type { TAnyModel } from "@/shared/rootroot";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -20,229 +15,86 @@ export class DB3QueryAuthorizationError extends AuthorizationError {
     }
 }
 
-const authorizeQueryBeforeDatabaseAccess = (
-    table: db3.xTable,
-    input: db3.QueryInput | db3.PaginatedQueryInput,
-    publicData: ReturnType<typeof CreatePublicData>,
-): void => {
-    if (input.clientIntention.intention === "admin" && !includesPermission(publicData.permissions, Permission.sysadmin)) {
-        throw new DB3QueryAuthorizationError();
-    }
-    if (table.requiresSysadminPermission && !includesPermission(publicData.permissions, Permission.sysadmin)) {
-        throw new DB3QueryAuthorizationError();
-    }
-    if (!table.authorizeTableForView(publicData)) {
-        throw new DB3QueryAuthorizationError();
-    }
-    if (!table.authorizeIncludeDeleted(publicData, input.clientIntention)) {
-        throw new DB3QueryAuthorizationError();
-    }
+async function prepareTableQuery(input: db3.QueryInputBase, authorization: RequestAuthorization) {
+    const table = db3.GetTableById(input.tableID);
+    const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+    const includeDeleted = input.includeDeleted === true;
 
+    if (!table.authorizeTableForView(publicData) || !table.authorizeIncludeDeleted(publicData, includeDeleted)) {
+        throw new DB3QueryAuthorizationError();
+    }
     const authorizeField = (columnName: string) => {
-        if (!table.authorizeColumnForView({
-            model: null,
-            publicData,
-            clientIntention: input.clientIntention,
-            columnName,
-        })) throw new DB3QueryAuthorizationError();
+        if (!table.authorizeColumnForView({ model: null, publicData, columnName })) {
+            throw new DB3QueryAuthorizationError();
+        }
     };
-
     input.filter.items.forEach(item => authorizeField(item.field));
     if (input.orderBy) authorizeField(Object.keys(input.orderBy)[0]!);
     if (input.filter.pks) authorizeField(table.pkMember);
-
     Object.keys(input.filter.tableParams || {}).forEach(parameterName => {
-        if (!table.authorizeQueryParameter(parameterName, publicData, input.clientIntention)) {
-            throw new DB3QueryAuthorizationError();
-        }
+        if (!table.authorizeQueryParameter(parameterName, publicData)) throw new DB3QueryAuthorizationError();
     });
-};
+    const where = await table.CalculateWhereClause({ publicData, includeDeleted, filterModel: input.filter });
+    const selectionArgs = await table.CalculateSelectionArgs(publicData, input.filter, includeDeleted);
+    return { table, publicData, includeDeleted, where, selectionArgs };
+}
 
-export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient, requestPermissions?: EffectivePermissions) => {
-    try {
-        const startTimestamp = Date.now();
-        const table = db3.GetTableById(input.tableID);
-        console.assert(!!table);
-        const contextDesc = `query:${table.tableName}`;
-
-        const clientIntention = input.clientIntention;
-        if (!input.clientIntention) {
-            throw new Error(`client intention is required; context: ${input.cmdbQueryContext}.`);
-        }
-        if (clientIntention.intention === "public") {
-            // for public intentions, no user should be used.
-            clientIntention.currentUser = undefined;
-        }
-        else {
-            clientIntention.currentUser = currentUser;
-        }
-
-        const authorizationUser = clientIntention.intention === "public" ? null : currentUser;
-        const transactionalDb: TransactionalPrismaClient = (__transactionalDb as any) || (db as any);
-
-        const queryingAsPublicWhileSignedIn =
-            clientIntention.intention === "public" && currentUser !== null;
-
-        const permissionsWereSupplied = requestPermissions !== undefined;
-
-        const canReuseRequestPermissions =
-            permissionsWereSupplied &&
-            !queryingAsPublicWhileSignedIn;
-
-        const effectivePermissions = canReuseRequestPermissions
-            ? requestPermissions!
-            : await loadEffectivePermissions(transactionalDb, authorizationUser);
-
-        const publicData = CreatePublicData({ user: authorizationUser, permissions: effectivePermissions.names });
-        if (clientIntention.intention !== "public" && includesPermission(effectivePermissions.names, Permission.sysadmin)) {
-            clientIntention.intention = "admin";
-        }
-        clientIntention.authorizationPermissions = effectivePermissions.names;
-        clientIntention.authorizationPermissionIds = effectivePermissions.ids;
-        clientIntention.includeDeleted = input.includeDeleted === true;
-        authorizeQueryBeforeDatabaseAccess(table, input, publicData);
-
-        const dbTableClient = (transactionalDb || db)[table.tableName]; // the prisma interface
-        const orderBy = input.orderBy || table.naturalOrderBy;
-
-        const where = await table.CalculateWhereClause({
-            clientIntention,
-            filterModel: input.filter,
-            publicData,
-        });
-
-        const selectionArgs = await table.CalculateSelectionArgs(clientIntention, input.filter);
-
-        const items = await dbTableClient.findMany({
-            where,
-            orderBy,
-            take: input.take,
-            ...selectionArgs,
-        });
-
-        const rowAuthResult = (items as TAnyModel[]).map(row => table.authorizeAndSanitize({
-            contextDesc,
-            publicData,
-            clientIntention,
-            rowMode: "view",
-            model: row,
-            fallbackOwnerId: null, // assume model contains this
-        }));
-
-        // any unknown / unauthorized columns are simply discarded.
-        const sanitizedItems = rowAuthResult.filter(r => r.rowIsAuthorized).map(r => r.authorizedModel);
-
-        if (input.delayMS) {
-            await sleep(input.delayMS);
-        }
-
-        return {
-            items: sanitizedItems,
-            where,
-            selectionArgs,
-            executionTimeMillis: Date.now() - startTimestamp,
-            resultId: randomUUID(),
-        };
-    } catch (e) {
-        console.error(e);
-        throw (e);
-    }
-};
-
-
-
-
-
-
-
-export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: AuthenticatedCtx) => {
-    const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
-    const input: db3.QueryInput = {
-        ...request,
-        clientIntention: deriveDB3ClientIntention("query", currentUser),
-    };
-    return await DB3QueryCore2(input, currentUser, undefined, effectivePermissions);
-};
-
-
-
-export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestInput, ctx: AuthenticatedCtx) => {
-    const startTimestamp = Date.now();
-    const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
-    const input: db3.PaginatedQueryInput = {
-        ...request,
-        clientIntention: deriveDB3ClientIntention("paginatedQuery", currentUser),
-    };
-    const table = db3.GetTableById(input.tableID);
-    const contextDesc = `paginatedQuery:${table.tableName}`;
-    const clientIntention = input.clientIntention;
-    const publicData = CreatePublicData({ user: currentUser, permissions: effectivePermissions.names });
-    if (clientIntention.intention !== "public" && includesPermission(effectivePermissions.names, Permission.sysadmin)) {
-        clientIntention.intention = "admin";
-    }
-    clientIntention.authorizationPermissions = effectivePermissions.names;
-    clientIntention.authorizationPermissionIds = effectivePermissions.ids;
-    clientIntention.includeDeleted = input.includeDeleted === true;
-
-    authorizeQueryBeforeDatabaseAccess(table, input, publicData);
-
-    const dbTableClient = db[table.tableName]; // the prisma interface
-    const orderBy = input.orderBy || table.naturalOrderBy;
-
-    const where = await table.CalculateWhereClause({
-        clientIntention,
-        filterModel: input.filter,
-        publicData,
-    });
-
-    const selectionArgs = await table.CalculateSelectionArgs(clientIntention, input.filter);
-
-    const {
-        items,
-        hasMore,
-        nextPage,
-        count,
-    } = await paginate({
-        skip: input.skip,
-        take: input.take,
-        count: () => dbTableClient.count({ where }),
-        query: (paginateArgs) =>
-            dbTableClient.findMany({
-                ...paginateArgs,
-                where,
-                orderBy,
-                ...selectionArgs,
-            }),
-    });
-
-    const rowAuthResult = (items as TAnyModel[]).map(row => table.authorizeAndSanitize({
+function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof prepareTableQuery>>, contextDesc: string): TAnyModel[] {
+    return items.map(model => query.table.authorizeAndSanitize({
         contextDesc,
-        publicData,
-        clientIntention,
+        publicData: query.publicData,
+        includeDeleted: query.includeDeleted,
         rowMode: "view",
-        model: row,
-        fallbackOwnerId: null, // assume model contains this
-    }));
+        model,
+        fallbackOwnerId: null,
+    })).filter(result => result.rowIsAuthorized).map(result => result.authorizedModel);
+}
 
-    // any unknown / unauthorized columns are simply discarded.
-    const sanitizedItems = rowAuthResult.filter(r => r.rowIsAuthorized).map(r => r.authorizedModel);
-
-    if (input.delayMS) {
-        await sleep(input.delayMS);
-    }
-
+export async function queryTable(input: db3.QueryRequestInput, authorization: RequestAuthorization, database: TransactionalPrismaClient = db) {
+    const startTimestamp = Date.now();
+    const query = await prepareTableQuery(input, authorization);
+    const items = await database[query.table.tableName].findMany({
+        where: query.where,
+        orderBy: input.orderBy || query.table.naturalOrderBy,
+        take: input.take,
+        ...query.selectionArgs,
+    });
+    if (input.delayMS) await sleep(input.delayMS);
     return {
-        items: sanitizedItems,
-        nextPage,
-        hasMore,
-        count,
-
-        where,
-        selectionArgs,
+        items: sanitizeQueryRows(items, query, `query:${query.table.tableName}`),
+        where: query.where,
+        selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,
         resultId: randomUUID(),
     };
-};
+}
 
+export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: AuthenticatedCtx) => (
+    queryTable(request, await getRequestAuthorization(ctx.session))
+);
 
-
+export async function DB3PaginatedQueryCore(input: db3.PaginatedQueryRequestInput, ctx: AuthenticatedCtx) {
+    const startTimestamp = Date.now();
+    const query = await prepareTableQuery(input, await getRequestAuthorization(ctx.session));
+    const delegate = db[query.table.tableName];
+    const { items, ...pagination } = await paginate({
+        skip: input.skip,
+        take: input.take,
+        count: () => delegate.count({ where: query.where }),
+        query: paginateArgs => delegate.findMany({
+            ...paginateArgs,
+            where: query.where,
+            orderBy: input.orderBy || query.table.naturalOrderBy,
+            ...query.selectionArgs,
+        }),
+    });
+    if (input.delayMS) await sleep(input.delayMS);
+    return {
+        items: sanitizeQueryRows(items as TAnyModel[], query, `paginatedQuery:${query.table.tableName}`),
+        ...pagination,
+        where: query.where,
+        selectionArgs: query.selectionArgs,
+        executionTimeMillis: Date.now() - startTimestamp,
+        resultId: randomUUID(),
+    };
+}

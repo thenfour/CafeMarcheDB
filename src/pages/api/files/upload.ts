@@ -11,7 +11,6 @@ import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL } 
 import { api } from "src/blitz-server";
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { populateDB3AuthorizationPermissions } from 'src/core/db3/server/db3RequestValidation';
 import { AutoAssignInstrumentPartition } from 'src/core/db3/shared/apiTypes';
 
 var path = require('path');
@@ -79,11 +78,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                         }
                     }
 
-                    const clientIntention = await populateDB3AuthorizationPermissions(db, {
-                        currentUser,
-                        intention: 'user',
-                        mode: 'primary',
-                    });
+
 
                     if (!files || Object.values(files).length < 1) {
                         if (args.externalURI) {
@@ -110,7 +105,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];
                             if (args.externalURI) (fields as db3.FilePayloadMinimum).externalURI = args.externalURI;
 
-                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx) as Prisma.FileGetPayload<{}>;
 
                             responsePayload.files.push(newFile);
                         }
@@ -195,7 +190,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             if (args.taggedWikiPageId) fields.taggedWikiPages = [args.taggedWikiPageId];
                             fields.tags = [...tags];
 
-                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx) as Prisma.FileGetPayload<{}>;
 
                             await rename(oldpath, newpath);
 

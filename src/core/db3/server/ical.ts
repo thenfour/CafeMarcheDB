@@ -1,7 +1,8 @@
+import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
 import { floorLocalToLocalDay } from "shared/time";
-import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
+import { queryTable } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
@@ -160,7 +161,7 @@ export interface CalExportCoreArgsUpcoming extends CalExportCoreArgs1 {
 type CalExportCoreArgs = CalExportCoreArgsUpcoming | CalExportCoreArgsSingleEvent;
 
 export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCoreArgs): Promise<ICalCalendar> => {
-    const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: currentUser ? "user" : "public", mode: 'primary' };
+
 
     const table = db3.xEventVerbose;
     const minDate = floorLocalToLocalDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
@@ -171,8 +172,7 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         eventUids: type === "event" ? [(args as CalExportCoreArgsSingleEvent).eventUid] : undefined,
     };
 
-    const eventsRaw = await DB3QueryCore2({
-        clientIntention,
+    const eventsRaw = await queryTable({
         tableName: table.tableName,
         tableID: table.tableID,
         filter: {
@@ -181,7 +181,7 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         },
         cmdbQueryContext: `CalExportCore`,
         orderBy: undefined,
-    }, currentUser);
+    }, await loadUserAuthorization(currentUser));
 
     // don't error if 0 events. this is a calendar-of-events and 0 events is valid.
 

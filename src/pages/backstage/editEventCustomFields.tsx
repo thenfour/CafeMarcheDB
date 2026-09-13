@@ -1,7 +1,6 @@
 import { ColorPick } from "@/src/core/components/color/ColorPick";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
-import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import { Button, ButtonGroup } from '@mui/material';
 import { nanoid } from 'nanoid';
@@ -147,7 +146,6 @@ const makeEventCustomFieldClientColumns = () => [
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const row = gridArgs.row as db3.EventCustomFieldPayload;
     const [open, setOpen] = React.useState<boolean>(false);
-    const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
 
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -174,7 +172,7 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
                 }
             }}
             table={tableSpec}
-            clientIntention={dashboardContext.userClientIntention}
+
         />}
     </>;
 };

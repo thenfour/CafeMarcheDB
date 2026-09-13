@@ -1,4 +1,4 @@
-import { partition } from '@/shared/arrayUtils';
+import { partition, zip } from '@/shared/arrayUtils';
 import { shouldShowAdminControls } from '@/shared/adminControls';
 import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
@@ -20,6 +20,7 @@ import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
 import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
 import { enrichInstrument } from '@db3/shared/schema/enrichedInstrumentTypes';
+import { PermissionSet } from '@/src/auth/shared/PermissionSet';
 
 type CmdbWindow = Window & {
     cmdbDashboardContext?: DashboardContextData;
@@ -35,11 +36,12 @@ interface ObjectWithVisiblePermission {
 
 export class DashboardContextData extends DashboardContextDataBase {
     metronomeSilencers: (() => void)[];
-    userClientIntention: db3.xTableClientUsageContext;
+
 
     session: ClientSession | null;
     refetchDashboardData: (() => void) = () => { };
-    effectivePermissions: string[] = [];
+    effectivePermissions: PermissionSet = new PermissionSet([], []);
+    authorization: db3.DB3Authorization = db3.createDB3Authorization(null, new PermissionSet([]));
 
     constructor() {
         super();
@@ -47,7 +49,7 @@ export class DashboardContextData extends DashboardContextDataBase {
     }
 
     isAuthorized(p: Permission | string) {
-        return this.effectivePermissions.includes(p);
+        return this.effectivePermissions.includesName(p);
     }
 
     // isAuthorizedPermissionId(pid: number | null) {
@@ -193,30 +195,37 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     const sess = useSession();
     valueRef.current.session = sess;
 
+    // ALT+9 admin controls
     React.useEffect(() => {
-        if (!sess.permissions?.includes(Permission.sysadmin)) return;
+        if (!sess.permissionNames?.includes(Permission.sysadmin)) {
+            return;
+        }
         async function handleKeyPress(event) {
             if (event.altKey && event.key === '9') {
                 await setShowingAdminControlsMutation({ toggle: true });
             }
         }
 
-        // Add event listener
         window.addEventListener('keydown', handleKeyPress);
-
-        // Remove event listener on cleanup
         return () => {
             window.removeEventListener('keydown', handleKeyPress);
         };
-    }, [sess.permissions, setShowingAdminControlsMutation]);
+    }, [sess.permissionNames, setShowingAdminControlsMutation]);
 
     const [dashboardData, { refetch }] = useQuery(getDashboardData, {});
     valueRef.current.refetchDashboardData = refetch;
-    valueRef.current.effectivePermissions = dashboardData.effectivePermissions;
-    valueRef.current.userClientIntention = { intention: currentUser ? "user" : 'public', mode: 'primary', currentUser }
+    valueRef.current.permission = new TableAccessor(dashboardData.permission);
+
+    valueRef.current.effectivePermissions = new PermissionSet(zip(
+        dashboardData.effectivePermissionIds,
+        dashboardData.effectivePermissionNames,
+        (id, name) => ({ id: id, name: name })
+    ));
+
+    valueRef.current.authorization = db3.createDB3Authorization(currentUser, valueRef.current.effectivePermissions);
+
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag);
     valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);
-    valueRef.current.permission = new TableAccessor(dashboardData.permission);
     valueRef.current.role = new TableAccessor(dashboardData.role);
     valueRef.current.eventType = new TableAccessor(dashboardData.eventType);
     valueRef.current.eventStatus = new TableAccessor(dashboardData.eventStatus);

@@ -36,7 +36,7 @@ export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 export const xInstrumentFunctionalGroup = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupDefaultArgs => {
+    getSelectionArgs: (): Prisma.InstrumentFunctionalGroupDefaultArgs => {
         return InstrumentFunctionalGroupArgs;
     },
     tableName: "InstrumentFunctionalGroup",
@@ -82,7 +82,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
 
 
 export const xInstrumentTag = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.InstrumentTagDefaultArgs => {
         return InstrumentTagArgs;
     },
     tableName: "InstrumentTag",
@@ -146,7 +146,7 @@ export const xInstrumentTag = new db3.xTable({
 export const xInstrumentTagAssociation = new db3.xTable({
     tableName: "InstrumentTagAssociation",
     deletePolicy: "hard",
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationDefaultArgs => {
+    getSelectionArgs: (): Prisma.InstrumentTagAssociationDefaultArgs => {
         return InstrumentTagAssociationArgs;
     },
     tableAuthMap: xInstrumentTableAuthMap,
@@ -177,7 +177,7 @@ export const xInstrumentTagAssociation = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xInstrument = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentDefaultArgs => {
+    getSelectionArgs: (): Prisma.InstrumentDefaultArgs => {
         return InstrumentArgs;
     },
     tableName: "Instrument",

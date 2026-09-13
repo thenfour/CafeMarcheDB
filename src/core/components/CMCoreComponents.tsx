@@ -87,12 +87,11 @@ export interface EditTextFieldProps {
     value: string;
     onChange: (value: string) => void;
     columnSpec: db3.FieldBase<string>;
-    clientIntention: db3.xTableClientUsageContext;
+
 };
 export const EditTextField = (props: EditTextFieldProps) => {
     const validationResult = props.columnSpec.ValidateAndParse({
         mode: "update",
-        clientIntention: props.clientIntention,
         row: { [props.columnSpec.member]: props.value }
     });
     return <CMTextField

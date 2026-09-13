@@ -1,9 +1,9 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 import CloseIcon from '@mui/icons-material/Close';
 import { Button } from "@mui/material";
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React, { Suspense } from "react";
 //import * as DB3Client from "../DB3Client";
-import { useAuthenticatedSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon
@@ -19,7 +19,6 @@ import {
 import { SplitQuickFilter } from 'shared/quickFilter';
 import type { SettingKey } from 'shared/settingKeys';
 import { gQueryOptions } from "shared/utils";
-import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
@@ -73,17 +72,15 @@ interface DB3SelectTagsDialogListProps<TAssociation extends TAnyModel> {
 
 function DB3SelectTagsDialogList<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogListProps<TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const publicData = useAuthenticatedSession();
-    const currentUser = useCurrentUser()[0]!;
+    const publicData = useDB3Authorization();
     const dashboardContext = useDashboardContext();
 
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
+
 
     const dbctx = useTagsFieldRenderContext({
         filterText: props.filterText,
         row: props.row,
         spec: props.spec,
-        clientIntention,
     });
 
     const itemIsSelected = (x: TAssociation) => {
@@ -109,7 +106,7 @@ function DB3SelectTagsDialogList<TAssociation extends TAnyModel>(props: DB3Selec
             }));
     };
 
-    const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({ clientIntention, publicData });
+    const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({ publicData });
 
     return <>
         {
@@ -257,13 +254,11 @@ export interface TagsFieldInputProps<TAssociation extends TAnyModel> {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const ChipsFieldInlineValues = <TAssociation extends TAnyModel,>(props: TagsFieldInputProps<TAssociation>) => {
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
+
     const dbctx = useTagsFieldRenderContext({
         filterText: "",
         row: props.row,
         spec: props.spec,
-        clientIntention,
     });
 
     const itemIsSelected = (x: TAssociation) => {
@@ -563,7 +558,7 @@ export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClie
             },
             sortable: false, // https://github.com/thenfour/CafeMarcheDB/issues/120
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
+                const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update" });
                 const value: TAssociation[] = params.value;
                 return <TagsFieldInput
                     //validationError={vr.result === "success" ? null : vr.errorMessage || null}
@@ -609,7 +604,7 @@ export interface TagsFieldRenderContextArgs<TAssociation extends TAnyModel> {
     row: TAnyModel;
     spec: TagsFieldClient<TAssociation>;
     filterText: string;
-    clientIntention: db3.xTableClientUsageContext;
+
 };
 
 export interface TagsCreateFromStringArgs {

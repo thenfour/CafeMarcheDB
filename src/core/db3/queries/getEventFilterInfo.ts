@@ -1,3 +1,4 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
@@ -6,7 +7,7 @@ import { Permission } from "shared/permissions";
 import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
+import { queryTable } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
 import { SplitQuickFilter } from "shared/quickFilter";
@@ -235,8 +236,7 @@ export default resolver.pipe(
                     userIdForResponses: u.id, // fetch user responses for this user id.
                 };
 
-                const queryResult = await DB3QueryCore2({
-                    clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+                const queryResult = await queryTable({
                     cmdbQueryContext: "getEventFilterInfo",
                     tableID: db3.xEventSearch.tableID,
                     tableName: db3.xEventSearch.tableName,
@@ -245,7 +245,7 @@ export default resolver.pipe(
                         tableParams,
                     },
                     orderBy: undefined,
-                }, u);
+                }, await getRequestAuthorization(ctx.session));
 
                 fullEvents = queryResult.items as any;
 
@@ -273,8 +273,7 @@ export default resolver.pipe(
                     ids: [...expectedAttendanceUserTagIds],
                 };
 
-                const queryResult = await DB3QueryCore2({
-                    clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+                const queryResult = await queryTable({
                     cmdbQueryContext: "getEventFilterInfo-userTags",
                     tableID: db3.xUserTagForEventSearch.tableID,
                     tableName: db3.xUserTagForEventSearch.tableName,
@@ -283,7 +282,7 @@ export default resolver.pipe(
                         tableParams,
                     },
                     orderBy: undefined,
-                }, u);
+                }, await getRequestAuthorization(ctx.session));
 
                 userTags = queryResult.items as db3.EventResponses_ExpectedUserTag[];
             }

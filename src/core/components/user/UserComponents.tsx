@@ -36,7 +36,6 @@ export const AddUserButton = (props: AddUserButtonProps) => {
             ],
         }),
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention: { intention: "user", mode: 'primary' },
     });
 
     let filteredItems: db3.UserPayload[] = tableClient.items as any;

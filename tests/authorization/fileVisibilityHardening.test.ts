@@ -32,7 +32,7 @@ import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
 const publicPermissionId = 700
-const hiddenPermissionId = 701
+const hiddenPermissionId = 799 // distinct from every grant in seedPublicRole()
 
 const makeFile = (overrides: Record<string, unknown> = {}) => ({
   id: 10,

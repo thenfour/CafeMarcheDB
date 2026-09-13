@@ -1,3 +1,4 @@
+import type { UserWithRolesPayload } from "./userPayloads";
 
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
@@ -42,7 +43,9 @@ export const xUserAuthMap_R_ETaxonomyManagers: db3.DB3AuthContextPermissionMap =
     PreInsert: Permission.manage_user_taxonomy,
 } as const;
 
-const xUserAuthMap_R_ESysadmins: db3.DB3AuthContextPermissionMap = {
+// Visibility selectors need ordinary metadata reads; the table map restricts
+// raw role/permission access. Metadata writes require the sysadmin grant only.
+const xAuthorizationMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.basic_trust,
     PostQuery: Permission.basic_trust,
     PreMutateAsOwner: Permission.sysadmin,
@@ -54,14 +57,14 @@ const xUserAuthMap_R_ESysadmins: db3.DB3AuthContextPermissionMap = {
 // mutations. Generic User tables may display them but never change them.
 const authorizeUserSecurityFieldViewOnly = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
     if (args.rowMode !== "view") return false;
-    return (args.publicData.permissions || []).includes(Permission.basic_trust);
+    return args.publicData.effectivePermissions.includesName(Permission.basic_trust);
 };
 
 // Email is a login identifier, not an ordinary profile field. An actual
 // Sysadmin may supply it when creating a maintenance account, but corrections
 // to an existing account use the dedicated correctUserEmail mutation.
 const authorizeUserLoginEmail = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
-    if (args.rowMode === "new") return (args.publicData.permissions || []).includes(Permission.sysadmin);
+    if (args.rowMode === "new") return args.publicData.effectivePermissions.includesName(Permission.sysadmin);
     return authorizeUserSecurityFieldViewOnly(args);
 };
 
@@ -122,7 +125,7 @@ const xVisibilityPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 export const xUserMinimum = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
+    getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserMinimumArgs;
     },
     tableName: "User",
@@ -155,7 +158,7 @@ export const xUserMinimum = new db3.xTable({
 
     // * when inserting, you need certain permissions to set certain values. custom processing would be ideal.
 
-    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): (Prisma.UserWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: { userId?: number }): (Prisma.UserWhereInput[] | false) => {
         if (params.userId != null) {
             return [{
                 id: { equals: params.userId }
@@ -205,12 +208,11 @@ export const xUserMinimum = new db3.xTable({
 
 
 export const xPermissionBaseArgs: db3.TableDesc = {
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.PermissionDefaultArgs => {
+    getSelectionArgs: (): Prisma.PermissionDefaultArgs => {
         return PermissionArgs;
     },
     tableName: "Permission",
     deletePolicy: "disabled",
-    requiresSysadminPermission: true,
     requiresTransactionalMutation: true,
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
@@ -228,19 +230,19 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xAuthorizationMetadataAuthMap,
         }),
-        MakeDescriptionField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeSortOrderField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeDescriptionField({ authMap: xAuthorizationMetadataAuthMap }),
+        MakeSortOrderField({ authMap: xAuthorizationMetadataAuthMap }),
         new BoolField({
             columnName: "isVisibility",
             defaultValue: false,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xAuthorizationMetadataAuthMap,
             allowNull: false,
         }),
-        MakeSignificanceField("significance", PermissionSignificance, { authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeColorField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeIconField("iconName", gIconOptions, { authMap: xUserAuthMap_R_EOwn_EManagers }),
+        MakeSignificanceField("significance", PermissionSignificance, { authMap: xAuthorizationMetadataAuthMap }),
+        MakeColorField({ authMap: xAuthorizationMetadataAuthMap }),
+        MakeIconField("iconName", gIconOptions, { authMap: xAuthorizationMetadataAuthMap }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "roles",
             associationForeignIDMember: "roleId",
@@ -251,7 +253,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             foreignTableID: "Role",
             getCustomFilterWhereClause: (query: CMDBTableFilterModel) => false,
             getQuickFilterWhereClause: (query: string): Prisma.PermissionWhereInput | boolean => false,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xAuthorizationMetadataAuthMap,
         }),
 
     ]
@@ -263,11 +265,9 @@ export const xPermissionForVisibility = new db3.xTable({
     ...xPermissionBaseArgs,
     tableUniqueName: "xPermissionForVisibility",
     tableAuthMap: xVisibilityPermissionTableAuthMap,
-    requiresSysadminPermission: false,
-    requiresSysadminPermissionForMutation: true,
     getSelectionArgs: () => PermissionForVisibilityArgs,
     queryParameters: {},
-    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.PermissionWhereInput[] => {
+    getParameterizedWhereClause: (params: { userId?: number }, publicData: db3.DB3Authorization): Prisma.PermissionWhereInput[] => {
         return [
             {
                 isVisibility: {
@@ -276,11 +276,7 @@ export const xPermissionForVisibility = new db3.xTable({
             },
             {
                 // when you are selecting a visibility permission it makes no sense to include visibilities you can't see yourself.
-                roles: {
-                    some: {
-                        roleId: clientIntention.currentUser!.roleId!,
-                    }
-                }
+                id: { in: publicData.effectivePermissions.ids }
             }
         ];
     },
@@ -294,9 +290,8 @@ export const xPermissionForVisibility = new db3.xTable({
 export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
     deletePolicy: "disabled",
-    requiresSysadminPermission: true,
     requiresTransactionalMutation: true,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionDefaultArgs => {
+    getSelectionArgs: (): Prisma.RolePermissionDefaultArgs => {
         return RolePermissionArgs;
     },
     tableAuthMap: xPermissionTableAuthMap,
@@ -315,7 +310,7 @@ export const xRolePermissionAssociation = new db3.xTable({
             allowNull: false,
             foreignTableID: "Permission",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xUserAuthMap_R_ESysadmins,
+            authMap: xAuthorizationMetadataAuthMap,
         }),
         new ForeignSingleField<RolePayload>({
             columnName: "role",
@@ -323,7 +318,7 @@ export const xRolePermissionAssociation = new db3.xTable({
             allowNull: false,
             foreignTableID: "Role",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xUserAuthMap_R_ESysadmins,
+            authMap: xAuthorizationMetadataAuthMap,
         }),
     ]
 });
@@ -331,12 +326,11 @@ export const xRolePermissionAssociation = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xRole = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.RoleDefaultArgs => {
+    getSelectionArgs: (): Prisma.RoleDefaultArgs => {
         return RoleArgs;
     },
     tableName: "Role",
     deletePolicy: "disabled",
-    requiresSysadminPermission: true,
     requiresTransactionalMutation: true,
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
@@ -361,9 +355,9 @@ export const xRole = new db3.xTable({
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xUserAuthMap_R_ESysadmins,
+            authMap: xAuthorizationMetadataAuthMap,
         }),
-        MakeDescriptionField({ authMap: xUserAuthMap_R_ESysadmins }),
+        MakeDescriptionField({ authMap: xAuthorizationMetadataAuthMap }),
         new BoolField({
             columnName: "isRoleForNewUsers",
             defaultValue: false,
@@ -382,9 +376,9 @@ export const xRole = new db3.xTable({
             _customAuth: authorizeBuiltInRoleFlag("isSysAdminRole"),
             allowNull: false,
         }),
-        MakeSortOrderField({ authMap: xUserAuthMap_R_ESysadmins }),
-        MakeColorField({ authMap: xUserAuthMap_R_EOwn_EManagers }),
-        MakeSignificanceField("significance", RoleSignificance, { authMap: xUserAuthMap_R_ESysadmins }),
+        MakeSortOrderField({ authMap: xAuthorizationMetadataAuthMap }),
+        MakeColorField({ authMap: xAuthorizationMetadataAuthMap }),
+        MakeSignificanceField("significance", RoleSignificance, { authMap: xAuthorizationMetadataAuthMap }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",
             associationForeignIDMember: "permissionId",
@@ -393,7 +387,7 @@ export const xRole = new db3.xTable({
             associationLocalObjectMember: "role",
             associationTableID: "RolePermission",
             foreignTableID: "Permission",
-            authMap: xUserAuthMap_R_ESysadmins,
+            authMap: xAuthorizationMetadataAuthMap,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
@@ -416,7 +410,7 @@ export const xUserInstrument = new db3.xTable({
     tableName: "UserInstrument",
     deletePolicy: "hard",
     tableAuthMap: xUserTableAuthMap_R_EManagers,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInstrumentDefaultArgs => {
+    getSelectionArgs: (): Prisma.UserInstrumentDefaultArgs => {
         return UserInstrumentArgs;
     },
     naturalOrderBy: UserInstrumentNaturalOrderBy,
@@ -470,7 +464,7 @@ export interface UserTagTableParams {
 
 const userTagBaseArgs: db3.TableDesc =
 {
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
         return UserTagArgs;
     },
     tableName: "UserTag",
@@ -481,7 +475,7 @@ const userTagBaseArgs: db3.TableDesc =
     },
     tableAuthMap: xUserTableAuthMap_R_ETaxonomyManagers,
     naturalOrderBy: UserTagNaturalOrderBy,
-    getParameterizedWhereClause: (params: UserTagTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.UserTagWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: UserTagTableParams): (Prisma.UserTagWhereInput[] | false) => {
         const ret: Prisma.UserTagWhereInput[] = [];
 
         if (params.userTagId != null) {
@@ -558,7 +552,7 @@ export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
 export const xUserTagForEventSearch = new db3.xTable({
     ...userTagBaseArgs,
     tableUniqueName: "xUserTagForEventSearch",
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
         return UserTagForEventSearchArgs;
     },
 });
@@ -585,7 +579,7 @@ export const xUserTagAssignment = new db3.xTable({
     deletePolicy: "hard",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
     tableAuthMap: xUserTableAuthMap_R_EManagers,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagAssignmentDefaultArgs => {
+    getSelectionArgs: (): Prisma.UserTagAssignmentDefaultArgs => {
         return UserTagAssignmentArgs;
     },
     getRowInfo: (row: UserTagAssignmentPayload) => {
@@ -622,7 +616,7 @@ export interface UserTablParams {
 };
 
 const userBaseArgs: db3.TableDesc = {
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
+    getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserSafeArgs;
     },
     tableName: "User",
@@ -638,7 +632,7 @@ const userBaseArgs: db3.TableDesc = {
         name: row.name,
         ownerUserId: row.id,
     }),
-    getParameterizedWhereClause: (params: UserTablParams, clientIntention: db3.xTableClientUsageContext): Prisma.UserWhereInput[] => {
+    getParameterizedWhereClause: (params: UserTablParams): Prisma.UserWhereInput[] => {
         const ret: Prisma.UserWhereInput[] = [];
         if (params.userId != null) {
             ret.push({ id: { equals: params.userId } });
@@ -754,7 +748,7 @@ export const xUser = new db3.xTable(userBaseArgs);
 export const xUserWithInstrument = new db3.xTable({
     ...userBaseArgs,
     tableUniqueName: "xUserWithInstrument",
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.UserDefaultArgs => {
+    getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserWithInstrumentsArgs;
     },
 });
@@ -784,12 +778,12 @@ export class CreatedByUserField extends ForeignSingleField<UserPayload> {
             _customAuth: (args as any)._customAuth || null,
         });
     }
-    ApplyToNewRow = (args: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
-        args[this.member] = clientIntention.currentUser;
+    ApplyToNewRow = (args: TAnyModel, currentUser: UserWithRolesPayload | null) => {
+        args[this.member] = currentUser;
     };
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: db3.DB3RowMode, clientIntention: db3.xTableClientUsageContext) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: db3.DB3RowMode, currentUser?: UserWithRolesPayload | null) => {
         if (mode === "new") {
-            dbModel[this.member] = clientIntention.currentUser;
+            dbModel[this.member] = currentUser;
             return;
         }
         if (dbModel[this.member] === undefined) return;

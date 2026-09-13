@@ -1,3 +1,4 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // getWorkflowDefAndInstanceForEvent
 
 import { resolver } from "@blitzjs/rpc";
@@ -6,7 +7,7 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import * as db3 from "../db3";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
+import { queryTable } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 
@@ -28,7 +29,7 @@ export default resolver.pipe(
     async (args, ctx: AuthenticatedCtx): Promise<TResult> => {
         try {
             const currentUser = (await getCurrentUserCore(ctx))!;
-            const clientIntention: db3.xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
+
 
             const event = await db.event.findFirst({
                 where: await GetAuthorizedTableReadWhere({
@@ -45,14 +46,13 @@ export default resolver.pipe(
             };
 
             if (event.workflowDefId) {
-                const qr = await DB3QueryCore2({
-                    clientIntention,
+                const qr = await queryTable({
                     orderBy: undefined,
                     tableID: db3.xWorkflowDef_Verbose.tableID,
                     tableName: db3.xWorkflowDef_Verbose.tableName,
                     filter: { items: [], pks: [event.workflowDefId] },
                     cmdbQueryContext: "getWorkflowDefAndInstanceForEvent/workflowDef",
-                }, currentUser);
+                }, await getRequestAuthorization(ctx.session));
                 assert(qr.items.length < 2, "broken query?");
                 if (qr.items.length === 1) {
                     ret.workflowDef = qr.items[0] as db3.WorkflowDef_Verbose;
@@ -60,14 +60,13 @@ export default resolver.pipe(
             }
 
             if (event.workflowInstanceId) {
-                const qr = await DB3QueryCore2({
-                    clientIntention,
+                const qr = await queryTable({
                     orderBy: undefined,
                     tableID: db3.xWorkflowInstance_Verbose.tableID,
                     tableName: db3.xWorkflowInstance_Verbose.tableName,
                     filter: { items: [], pks: [event.workflowInstanceId] },
                     cmdbQueryContext: "getWorkflowDefAndInstanceForEvent/workflowInstance",
-                }, currentUser);
+                }, await getRequestAuthorization(ctx.session));
                 assert(qr.items.length < 2, "broken query?");
                 if (qr.items.length === 1) {
                     ret.workflowInstance = qr.items[0] as db3.WorkflowInstance_Verbose;

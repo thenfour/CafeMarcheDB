@@ -5,7 +5,7 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
-import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import {
@@ -19,20 +19,14 @@ export default resolver.pipe(
     resolver.zod(TGeneralDeleteArgsSchema),
     async (args: TGeneralDeleteArgs, ctx: AuthenticatedCtx) => {
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
-        if (!currentUser
-            || !publicData.permissions.includes(Permission.manage_events)) {
+        const reqAuth = await getRequestAuthorization(ctx.session);
+        const publicData = db3.createDB3Authorization(currentUser, reqAuth.effectivePermissions);
+        if (!publicData.effectivePermissions.includesName(Permission.manage_events)) {
             throw new mutationCore.DB3MutationAuthorizationError(
                 db3.xEventSongList.tableName,
                 [db3.xEventSongList.pkMember],
             );
         }
-
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: publicData.permissions.includes(Permission.sysadmin) ? "admin" : "user",
-            mode: "primary",
-            currentUser,
-        };
 
         await db.$transaction(async transactionalDb => {
             const oldSongList = await transactionalDb.eventSongList.findFirst({
@@ -43,7 +37,6 @@ export default resolver.pipe(
             if (!db3.xEventSongList.authorizeRowForDeleteHard({
                 model: oldSongList,
                 publicData,
-                clientIntention,
             })) {
                 throw new mutationCore.DB3MutationAuthorizationError(
                     db3.xEventSongList.tableName,

@@ -19,13 +19,8 @@ export default resolver.pipe(
 
         // TODO
         //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)
-        const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
 
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
+
 
         // verbose on purpose in order to validate args type against UncheckedUpdateInput
         const fields: Prisma.EventSongListUncheckedUpdateInput = {
@@ -38,7 +33,7 @@ export default resolver.pipe(
 
         const changeContext = CreateChangeContext(`updateEventSongList`);
 
-        const newObject = (await mutationCore.updateImpl(db3.xEventSongList, args.id, fields, ctx, clientIntention)).newModel;
+        const newObject = (await mutationCore.updateImpl(db3.xEventSongList, args.id, fields, ctx)).newModel;
 
         await mutationCore.UpdateEventSongListSongs({ changeContext, ctx, songListID: newObject.id, desiredSongs: args.songs, desiredDividers: args.dividers });
 

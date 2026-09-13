@@ -49,15 +49,29 @@ describe("authorization refresh on every request", () => {
     it("reads again on the next request with the same handle and no elapsed time", async () => {
         const first = createAuthorizationTestContext(user).session;
         await getRequestAuthorization(first);
-        authorizationTestDb.reset({ user: [createAuthorizationTestUser("normal", {
-            id: user.id, permissions: [Permission.login, Permission.admin_songs],
-        })] });
+        authorizationTestDb.reset({
+            user: [createAuthorizationTestUser("normal", {
+                id: user.id, permissions: [Permission.login, Permission.admin_songs],
+            })]
+        });
         const second = createAuthorizationTestContext(user).session;
         expect(second.$handle).toBe(first.$handle);
         await getRequestAuthorization(second);
-        expect(second.$publicData.permissions).toContain(Permission.admin_songs);
-        expect(second.$publicData.permissions).not.toContain(Permission.basic_trust);
+        expect(second.$publicData.permissionNames).toContain(Permission.admin_songs);
+        expect(second.$publicData.permissionNames).not.toContain(Permission.basic_trust);
         expect(second.userId).toBe(user.id);
+    });
+
+    it("removes revoked grants when no new grant replaces them", async () => {
+        const previousUser = createAuthorizationTestUser("normal", {
+            id: user.id, permissions: [Permission.login, Permission.basic_trust, Permission.admin_events],
+        });
+        const { session } = createAuthorizationTestContext(previousUser);
+        const setPublicData = vi.spyOn(session, "$setPublicData");
+        await getRequestAuthorization(session);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.admin_events);
+        expect(session.$publicData.permissionNames).toContain(Permission.basic_trust);
+        expect(setPublicData).toHaveBeenCalledOnce();
     });
 
     it("replaces equal-count grants while preserving identity and impersonation metadata", async () => {
@@ -65,12 +79,14 @@ describe("authorization refresh on every request", () => {
         session.$publicData.impersonatingFromUserId = 99;
         const handle = session.$handle;
         const revoke = vi.spyOn(session, "$revoke");
-        authorizationTestDb.reset({ user: [createAuthorizationTestUser("normal", {
-            id: user.id, permissions: [Permission.login, Permission.admin_events],
-        })] });
+        authorizationTestDb.reset({
+            user: [createAuthorizationTestUser("normal", {
+                id: user.id, permissions: [Permission.login, Permission.admin_events],
+            })]
+        });
         await getRequestAuthorization(session);
-        expect(session.$publicData.permissions).toContain(Permission.admin_events);
-        expect(session.$publicData.permissions).not.toContain(Permission.basic_trust);
+        expect(session.$publicData.permissionNames).toContain(Permission.admin_events);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.basic_trust);
         expect(session.$publicData.impersonatingFromUserId).toBe(99);
         expect(session.userId).toBe(user.id);
         expect(session.$handle).toBe(handle);
@@ -88,8 +104,8 @@ describe("authorization refresh on every request", () => {
         });
         const second = createAuthorizationTestContext(principal).session;
         await getRequestAuthorization(second);
-        expect(second.$publicData.permissions).toContain(Permission.admin_events);
-        expect(second.$publicData.permissions).not.toContain(Permission.practice_tools_use);
+        expect(second.$publicData.permissionNames).toContain(Permission.admin_events);
+        expect(second.$publicData.permissionNames).not.toContain(Permission.practice_tools_use);
         expect(second.userId).toBe(first.userId);
     });
 
@@ -98,7 +114,7 @@ describe("authorization refresh on every request", () => {
         session.$publicData.showAdminControls = true;
         await getRequestAuthorization(session);
         expect(session.$publicData).toMatchObject({ isSysAdmin: false, showAdminControls: false });
-        expect(session.$publicData.permissions).not.toContain(Permission.sysadmin);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.sysadmin);
         expect(session.userId).toBe(user.id);
     });
 
@@ -106,8 +122,8 @@ describe("authorization refresh on every request", () => {
         const { session } = createAuthorizationTestContext(user);
         authorizationTestDb.reset({ user: [{ ...user, roleId: null, role: null }] });
         await getRequestAuthorization(session);
-        expect(session.$publicData.permissions).not.toContain(Permission.login);
-        expect(session.$publicData.permissions).toContain(Permission.public);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.login);
+        expect(session.$publicData.permissionNames).toContain(Permission.public);
         expect(session.userId).toBe(user.id);
     });
 
@@ -145,7 +161,7 @@ describe("authorization refresh on every request", () => {
         await getRequestAuthorization(ctx.session);
         await expect(invokeResolver(getDashboardData, {}, ctx)).resolves.toMatchObject({
             relevantEventIds: [],
-            effectivePermissions: expect.not.arrayContaining([Permission.login]),
+            effectivePermissionNames: expect.not.arrayContaining([Permission.login]),
         });
         expect(lookup).not.toHaveBeenCalled();
     });

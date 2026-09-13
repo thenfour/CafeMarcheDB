@@ -90,17 +90,16 @@ describe("canonical permission registry", () => {
           isPublicRole: true,
           isSysAdminRole: false,
           permissions: [
-            { permissionId: 1, permission: { name: Permission.public } },
-            { permissionId: 2, permission: { name: "retired_permission" } },
+            { permissionId: 1, permission: { id: 1, name: Permission.public } },
+            { permissionId: 2, permission: { id: 2, name: "retired_permission" } },
           ],
         }],
       },
     }
 
-    await expect(loadEffectivePermissions(database as any, null)).resolves.toEqual({
-      ids: [1],
-      names: [Permission.public],
-    })
+    const permissions = await loadEffectivePermissions(database as any, null)
+    expect(permissions.ids).toEqual([1])
+    expect(permissions.names).toEqual([Permission.public])
     expect(warning).toHaveBeenCalledWith("Ignoring unknown persisted permissions: retired_permission")
     warning.mockRestore()
   })

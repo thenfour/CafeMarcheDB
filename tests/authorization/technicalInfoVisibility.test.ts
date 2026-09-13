@@ -15,9 +15,9 @@ describe("BA-C003 technical information visibility", () => {
 
   it("requires both the Sysadmin permission and the explicit admin-control preference", () => {
     expect(shouldShowAdminControls(null)).toBe(false)
-    expect(shouldShowAdminControls({ permissions: [], showAdminControls: true })).toBe(false)
-    expect(shouldShowAdminControls({ permissions: ["sysadmin"], showAdminControls: false })).toBe(false)
-    expect(shouldShowAdminControls({ permissions: ["sysadmin"], showAdminControls: true })).toBe(true)
+    expect(shouldShowAdminControls({ permissionNames: [], showAdminControls: true })).toBe(false)
+    expect(shouldShowAdminControls({ permissionNames: ["sysadmin"], showAdminControls: false })).toBe(false)
+    expect(shouldShowAdminControls({ permissionNames: ["sysadmin"], showAdminControls: true })).toBe(true)
   })
 
   it("does not send server version diagnostics to non-Sysadmins", () => {

@@ -26,12 +26,10 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
     useRecordFeatureUse({ feature: ActivityFeature.song_view, songId });
 
-    const currentUser = dashboardContext.currentUser;
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: currentUser, };
+
 
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
-        clientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xSong_Verbose,
             columns: [

@@ -18,31 +18,12 @@ export const AuxUserArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
 
 // export type AuxUserPayload = Prisma.UserGetPayload<typeof AuxUserArgs>;
 
-
-// export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
-//   include: {
-//     role: {
-//       include: {
-//         permissions: {
-//           include: {
-//             permission: true,
-//           }
-//         },
-//       }
-//     }
-//   }
-// });
-
-// export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
-
-
-
-
+// serializable.
 export type PublicDataType = {
   userId: number,
   impersonatingFromUserId?: number | null,
   isSysAdmin: boolean,
-  permissions: string[],
+  permissionNames: string[],
 
   showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
   GOOGLE_ANALYTICS_ID_BACKSTAGE: string | undefined;
@@ -75,7 +56,7 @@ type CMAuthorizeArgs = {
 export function CMAuthorize(args: CMAuthorizeArgs) {
   return CMAuthorize2({
     isSysAdmin: args.publicData.isSysAdmin || false,
-    userPermissions: args.publicData.permissions || [],
+    userPermissions: args.publicData.permissionNames || [],
     reason: args.reason,
     permission: args.permission,
     userId: args.publicData.userId || null,
@@ -122,7 +103,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     return {
       userId: 0, // numeric & falsy
       isSysAdmin: false,
-      permissions: [...new Set(args.permissions)],
+      permissionNames: [...new Set(args.permissions)],
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
       GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
@@ -132,7 +113,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
   return {
     userId: args.user.id,
     isSysAdmin: args.user.isSysAdmin,
-    permissions: [...new Set(args.permissions)],
+    permissionNames: [...new Set(args.permissions)],
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,
     GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,

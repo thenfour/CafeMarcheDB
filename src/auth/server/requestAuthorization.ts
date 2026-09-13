@@ -1,7 +1,9 @@
+import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import type { SessionContext } from "@blitzjs/auth";
 import db from "db";
 import type { PublicDataType } from "types";
-import { loadEffectivePermissions, type EffectivePermissions } from "./effectivePermissions";
+import { loadEffectivePermissions } from "./effectivePermissions";
+import type { PermissionSet } from "../shared/PermissionSet";
 import { loadFreshPrincipal } from "./permissionAuthorization";
 import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 
@@ -10,7 +12,7 @@ import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloa
 
 export interface RequestAuthorization {
     user: UserWithRolesPayload | null;
-    effectivePermissions: EffectivePermissions;
+    effectivePermissions: PermissionSet;
 }
 
 const requestAuthorizations = new WeakMap<SessionContext, {
@@ -18,11 +20,6 @@ const requestAuthorizations = new WeakMap<SessionContext, {
     handle: string | null; // session.$handle
     authorization: Promise<RequestAuthorization>;
 }>();
-
-const areEqualPermissionSets = (previous: readonly string[], current: readonly string[]): boolean => {
-    const previousSet = new Set(previous);
-    return previous.length === current.length && current.every(permission => previousSet.has(permission));
-};
 
 async function refreshAuthorization(session: SessionContext): Promise<RequestAuthorization> {
     const user = await loadFreshPrincipal(db, session.userId);
@@ -35,14 +32,14 @@ async function refreshAuthorization(session: SessionContext): Promise<RequestAut
     const effectivePermissions = await loadEffectivePermissions(db, user);
     const previous = session.$publicData;
     const current = {
-        permissions: effectivePermissions.names,
+        permissionNames: effectivePermissions.names,
         isSysAdmin: user?.isSysAdmin ?? false,
         showAdminControls: !!user?.isSysAdmin && !!previous.showAdminControls,
         GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
         GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     } satisfies Partial<Omit<PublicDataType, "userId">>;
 
-    if (!areEqualPermissionSets(previous.permissions ?? [], current.permissions)
+    if (!effectivePermissions.hasSameNames(previous.permissionNames ?? [])
         || previous.isSysAdmin !== current.isSysAdmin
         || previous.showAdminControls !== current.showAdminControls
         || previous.GOOGLE_ANALYTICS_ID_BACKSTAGE !== current.GOOGLE_ANALYTICS_ID_BACKSTAGE
@@ -68,4 +65,9 @@ export function getRequestAuthorization(session: SessionContext): Promise<Reques
     };
     requestAuthorizations.set(session, entry);
     return entry.authorization;
+}
+
+// Non-session entry points (for example calendar subscriptions) resolve the same effective grants as ordinary requests.
+export async function loadUserAuthorization(user: UserWithRolesPayload | null, database: TransactionalPrismaClient = db): Promise<RequestAuthorization> {
+    return { user, effectivePermissions: await loadEffectivePermissions(database, user) };
 }

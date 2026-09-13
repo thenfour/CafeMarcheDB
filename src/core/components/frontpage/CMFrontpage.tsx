@@ -11,53 +11,6 @@ import { PublicFeedResponseSpec } from "../../db3/shared/publicTypes";
 const MainContent = ({ lang, onLangChange, publicFeed }: { lang: EnNlFr, onLangChange: (newLang: EnNlFr) => void, publicFeed: PublicFeedResponseSpec }) => {
     const sess = useSession();
 
-    // const eventsTableSpec = new DB3Client.xTableClientSpec({
-    //     table: db3.xEvent,
-    //     columns: [
-    //         new DB3Client.PKColumnClient({ columnName: "id" }),
-    //     ],
-    // });
-
-    // const clientIntention: db3.xTableClientUsageContext = { intention: "public", mode: "primary" };
-
-    // const eventsFilterModel: CMDBTableFilterModel = {
-    //     items: [
-    //         {
-    //             field: "frontpageVisible",
-    //             operator: "equals",
-    //             value: true
-    //         }
-    //     ],
-    // };
-
-    // const eventsClient = DB3Client.useTableRenderContext({
-    //     clientIntention,
-    //     requestedCaps: DB3Client.xTableClientCaps.Query,
-    //     tableSpec: eventsTableSpec,
-    //     filterModel: eventsFilterModel,
-    // });
-
-    // const galleryTableSpec = new DB3Client.xTableClientSpec({
-    //     table: db3.xFrontpageGalleryItem,
-    //     columns: [
-    //         new DB3Client.PKColumnClient({ columnName: "id" }),
-    //     ],
-    // });
-
-    // const galleryClient = DB3Client.useTableRenderContext({
-    //     clientIntention,
-    //     requestedCaps: DB3Client.xTableClientCaps.Query,
-    //     tableSpec: galleryTableSpec,
-    // });
-
-    // const events = API.events.sortEvents(eventsClient.items as db3.EventPayload[]);
-    // const agenda = events.map(x => API.events.getAgendaItem(x, lang));
-
-    // const content: PublicFeedResponseSpec = {
-    //     gallery: galleryClient.items,
-    //     agenda,
-    // };
-
     return <NoSsr>
         <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_BACKSTAGE} />
         <HomepageMain content={publicFeed} className="realFrontpage" fullPage={true} lang={lang} onLangChange={onLangChange} />

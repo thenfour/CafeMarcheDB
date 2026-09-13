@@ -68,7 +68,7 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
         ownerUserId: null,
     }),
 
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+    getParameterizedWhereClause: (params: TAnyModel) => {
         return false;
     },
     columns: [
@@ -89,14 +89,14 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
 
 export const xWorkflowDef_Search = new db3.xTable({
     ...xWorkflowDefArgs,
-    getSelectionArgs: (clientIntention, filterModel): Prisma.EventDefaultArgs => {
+    getSelectionArgs: (filterModel): Prisma.EventDefaultArgs => {
         return WorkflowDefArgs_Search;
     },
 });
 
 export const xWorkflowDef_Verbose = new db3.xTable({
     ...xWorkflowDefArgs,
-    getSelectionArgs: (clientIntention, filterModel): Prisma.WorkflowDefDefaultArgs => {
+    getSelectionArgs: (filterModel): Prisma.WorkflowDefDefaultArgs => {
         return WorkflowDefArgs_Verbose;
     },
 });
@@ -131,7 +131,7 @@ export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
         ownerUserId: null,
     }),
 
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+    getParameterizedWhereClause: (params: TAnyModel) => {
         return false;
     },
     columns: [
@@ -147,7 +147,7 @@ export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getSelectionArgs"> = {
 
 export const xWorkflowInstance_Verbose = new db3.xTable({
     ...xWorkflowInstanceArgs,
-    getSelectionArgs: (clientIntention, filterModel): Prisma.WorkflowInstanceDefaultArgs => {
+    getSelectionArgs: (filterModel): Prisma.WorkflowInstanceDefaultArgs => {
         return WorkflowInstanceArgs_Verbose;
     },
 });

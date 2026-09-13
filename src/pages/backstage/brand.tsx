@@ -309,7 +309,7 @@ const BrandPageContent = () => {
     const dashboardContext = useDashboardContext();
     return <>
         {dashboardContext.isAuthorized(Permission.manage_site_branding) && <BrandForm />}
-        {session.permissions?.includes(Permission.sysadmin) && <PlatformBrandForm />}
+        {session.permissionNames?.includes(Permission.sysadmin) && <PlatformBrandForm />}
     </>;
 };
 

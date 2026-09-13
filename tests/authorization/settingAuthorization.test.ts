@@ -354,8 +354,6 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
   })
 
   it("marks the raw Setting DB3 schema as Sysadmin-permission-only", () => {
-    expect(db3.xSetting.requiresSysadminPermission).toBe(true)
-    expect(db3.xSetting.requiresSysadminPermissionForMutation).toBe(true)
     expect(db3.xSetting.tableAuthMap).toEqual({
       ViewOwn: Permission.sysadmin,
       View: Permission.sysadmin,

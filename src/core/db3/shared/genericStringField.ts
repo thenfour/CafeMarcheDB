@@ -5,7 +5,7 @@ import { type CMDBTableFilterModel, type CriterionQueryElements, type DiscreteCr
 import {
     type DB3AuthSpec, ErrorValidateAndParseResult, FieldBase,
     type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult,
-    UndefinedValidateAndParseResult, type ValidateAndParseArgs, type ValidateAndParseResult, xTable, type xTableClientUsageContext
+    UndefinedValidateAndParseResult, type ValidateAndParseArgs, type ValidateAndParseResult, xTable
 } from "./db3core";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
 import { TAnyModel } from "@/shared/rootroot";
@@ -101,10 +101,10 @@ export class GenericStringField extends FieldBase<string> {
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     ValidateAndParse = (args: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null | undefined> => {
         let value = args.row[this.member];
@@ -150,7 +150,7 @@ export class GenericStringField extends FieldBase<string> {
         return SuccessfulValidateAndParseResult(objValue);
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 

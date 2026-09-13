@@ -607,7 +607,6 @@ type SetlistPlannerDocumentOverviewProps = {
 };
 
 const SetlistPlannerDocumentOverview = ({ expandedGroups, setExpandedGroups, plans, ...props }: SetlistPlannerDocumentOverviewProps) => {
-    const dashboardContext = useDashboardContext();
 
     let [plansWithgroup, ungroupedPlans] = partition(plans, (plan) => !!plan.groupId);
 
@@ -713,7 +712,6 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
     const [neighbors, setNeighbors] = React.useState<SetlistPlan[]>([]);
 
     const groupTableClient = DB3Client.useTableRenderContext<db3.SetlistPlanGroupPayload>({
-        clientIntention: dashboardContext.userClientIntention,
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xSetlistPlanGroup,

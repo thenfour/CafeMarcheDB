@@ -1,5 +1,4 @@
-import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
-import { principalHasPermission } from "@/src/auth/server/permissionAuthorization";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, AuthorizationError, NotFoundError } from "blitz";
 import db, { Prisma } from "db";
@@ -27,28 +26,26 @@ export default resolver.pipe(
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         if (!currentUser) throw new EventAttendanceAuthorizationError(Permission.login);
 
-        const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
+        const reqAuth = await getRequestAuthorization(ctx.session);
+        const publicData = db3.createDB3Authorization(currentUser, reqAuth.effectivePermissions);
         const hasResponseMutation = args.comment !== undefined
             || args.instrumentId !== undefined
             || Object.keys(args.segmentResponses || {}).length > 0;
         if (hasResponseMutation) {
             const isSelf = currentUser.id === args.userId;
-            if (!principalHasPermission(publicData.permissions, isSelf ? Permission.respond_to_events : Permission.change_others_event_responses)) {
-                throw new EventAttendanceAuthorizationError(isSelf ? Permission.respond_to_events : Permission.change_others_event_responses);
+            const perm = isSelf ? Permission.respond_to_events : Permission.change_others_event_responses;
+            if (!reqAuth.effectivePermissions.includesName(perm)) {
+                throw new EventAttendanceAuthorizationError(perm);
             }
         }
         if (args.isInvited !== undefined) {
-            if (!principalHasPermission(publicData.permissions, Permission.manage_events)) {
-                throw new EventAttendanceAuthorizationError(Permission.manage_events);
+            const perm = Permission.manage_events;
+            if (!reqAuth.effectivePermissions.includesName(perm)) {
+                throw new EventAttendanceAuthorizationError(perm);
             }
         }
 
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: publicData.permissions.includes(Permission.sysadmin) ? "admin" : "user",
-            mode: "primary",
-            currentUser,
-            authorizationPermissions: publicData.permissions,
-        };
+
         const segmentIds = Object.keys(args.segmentResponses || {}).map(Number);
         const changeContext = CreateChangeContext("updateUserEventAttendance");
         await db.$transaction(async transactionalDb => {
@@ -73,7 +70,7 @@ export default resolver.pipe(
             ]);
 
             if (!event
-                || !db3.xEvent.authorizeRowForView({ model: event, publicData, clientIntention })) {
+                || !db3.xEvent.authorizeRowForView({ model: event, publicData })) {
                 throw new NotFoundError();
             }
             if (!targetUser || eventSegments.length !== segmentIds.length) {

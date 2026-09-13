@@ -59,7 +59,7 @@ export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
 
 
 export const xSongTag = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.SongTagDefaultArgs => {
         return SongTagArgs;
     },
     tableName: "SongTag",
@@ -126,7 +126,7 @@ export const xSongTag = new db3.xTable({
 export const xSongTagAssociation = new db3.xTable({
     tableName: "SongTagAssociation",
     deletePolicy: "hard",
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationDefaultArgs => {
+    getSelectionArgs: (): Prisma.SongTagAssociationDefaultArgs => {
         return SongTagAssociationArgs;
     },
     tableAuthMap: xSongTableAuthMap_R_EManagers,
@@ -169,7 +169,7 @@ const xSongArgs_Base: db3.TableDesc = {
         songId: { kind: "integer", authorizeAs: "id" },
         songIds: { kind: "integerArray", authorizeAs: "id" },
     },
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongDefaultArgs => {
+    getSelectionArgs: (): Prisma.SongDefaultArgs => {
         return SongArgs;
     },
     tableAuthMap: xSongTableAuthMap_R_EManagers,
@@ -180,7 +180,7 @@ const xSongArgs_Base: db3.TableDesc = {
         description: row.description,
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: SongTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.SongWhereInput[]) => {
+    getParameterizedWhereClause: (params: SongTableParams): (Prisma.SongWhereInput[]) => {
         const ret: Prisma.SongWhereInput[] = [];
 
         if (params.songId !== undefined) {
@@ -288,14 +288,14 @@ export const xSong = new db3.xTable(xSongArgs_Base);
 export const xSong_Verbose = new db3.xTable({
     ...xSongArgs_Base,
     tableUniqueName: "xSong_Verbose",
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongDefaultArgs => {
+    getSelectionArgs: (): Prisma.SongDefaultArgs => {
         return SongArgs_Verbose;
     },
 });
 
 ////////////////////////////////////////////////////////////////
 export const xSongCreditType = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditTypeDefaultArgs => {
+    getSelectionArgs: (): Prisma.SongCreditTypeDefaultArgs => {
         return SongCreditTypeArgs;
     },
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
@@ -350,7 +350,7 @@ export const xSongCreditType = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 export const xSongCredit = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditDefaultArgs => {
+    getSelectionArgs: (): Prisma.SongCreditDefaultArgs => {
         return SongCreditArgs;
     },
     tableName: "SongCredit",
@@ -365,7 +365,7 @@ export const xSongCredit = new db3.xTable({
         name: "<a song credit>",
         ownerUserId: row.userId, // questionable.
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCreditWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.SongCreditWhereInput[] | false) => {
         if (params.songId != null) {
             return [{
                 songId: { equals: params.songId }

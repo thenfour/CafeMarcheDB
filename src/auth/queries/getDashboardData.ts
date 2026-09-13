@@ -6,8 +6,8 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
-import { EventStatusSignificance, gEventRelevanceClass, gVisibleEventRelevanceClasses, xEvent, xMenuLink, type xTableClientUsageContext } from "src/core/db3/db3";
-import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
+import { EventStatusSignificance, gEventRelevanceClass, gVisibleEventRelevanceClasses, xEvent, xMenuLink } from "src/core/db3/db3";
+import { queryTable } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadBandTimeZone } from "src/server/dateTime";
@@ -96,17 +96,15 @@ export default resolver.pipe(
 
             const authorization = await getRequestAuthorization(ctx.session);
             const currentUser = authorization.user;
-            const effectivePermissions = authorization.effectivePermissions.names;
-            const clientIntention: xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
+            const effectivePermissions = authorization.effectivePermissions;
 
-            const menuItemsCall = DB3QueryCore2({
+            const menuItemsCall = queryTable({
                 filter: { items: [] },
-                clientIntention,
                 cmdbQueryContext: "getDashboardData/menulinks",
                 tableID: xMenuLink.tableID,
                 tableName: xMenuLink.tableName,
                 orderBy: undefined,
-            }, currentUser, undefined, authorization.effectivePermissions);
+            }, authorization);
 
             // Existing events retain the meaning of a status after that status
             // is retired, so relevance calculations use every referenced row.
@@ -157,7 +155,8 @@ export default resolver.pipe(
                 bandTimeZone,
             ] = results;
 
-            const clientServerState = getClientServerState(effectivePermissions.includes(Permission.sysadmin));
+            const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
+
             const ret = {
                 userTag,
                 permission,
@@ -179,7 +178,8 @@ export default resolver.pipe(
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
                 bandTimeZone,
-                effectivePermissions,
+                effectivePermissionNames: effectivePermissions.names,
+                effectivePermissionIds: effectivePermissions.ids,
             };
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);

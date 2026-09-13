@@ -91,7 +91,6 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     }), [wikiPageId]);
 
     const tableClient = DB3Client.useTableRenderContext<db3.WikiPagePayload>({
-        clientIntention: dashboardContext.userClientIntention,
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         tableSpec: tagsTableSpec,
         filterModel,

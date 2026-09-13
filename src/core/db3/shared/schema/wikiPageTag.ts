@@ -5,7 +5,7 @@ import {
     WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, WikiPageTagAssignmentPayload
 } from "./prismArgs";
 import { ForeignSingleField, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../db3basicFields";
-import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, xTable, xTableClientUsageContext } from "../db3core";
+import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, xTable } from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
@@ -50,7 +50,7 @@ const wikiPageTagAssignmentTableAuthMap: DB3AuthTablePermissionMap = {
 
 //////////////////////////////////////////////////////////////
 export const xWikiPageTag = new xTable({
-    getSelectionArgs: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.WikiPageTagDefaultArgs => {
         return WikiPageTagArgs;
     },
     tableName: "WikiPageTag",
@@ -90,7 +90,7 @@ export const xWikiPageTagAssignment = new xTable({
     deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
     tableAuthMap: wikiPageTagAssignmentTableAuthMap,
-    getSelectionArgs: (clientIntention: xTableClientUsageContext): Prisma.WikiPageTagAssignmentDefaultArgs => {
+    getSelectionArgs: (): Prisma.WikiPageTagAssignmentDefaultArgs => {
         return WikiPageTagAssignmentArgs;
     },
     getRowInfo: (row: WikiPageTagAssignmentPayload) => {

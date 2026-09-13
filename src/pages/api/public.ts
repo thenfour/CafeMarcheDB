@@ -1,20 +1,24 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // provide json feed of content for public homepage consumption.
 
 // input: lang
 
 import { xEvent } from "@/src/core/db3/db3";
-import { DB3QueryCore2 } from "@/src/core/db3/server/db3QueryCore";
+import { queryTable } from "@/src/core/db3/server/db3QueryCore";
 import { CMDBTableFilterModel } from "@/src/core/db3/shared/apiTypes";
 import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
+import { Ctx } from "blitz";
 import { NextApiRequest, NextApiResponse } from "next";
 import { EnNlFr } from "shared/lang";
 import * as db3 from "src/core/db3/db3";
+import { api } from "src/blitz-server";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
+    const authorization = await getRequestAuthorization(ctx.session);
     const langParam = req.query.lang;
     const lang: EnNlFr = (langParam === "nl" ? "nl" : langParam === "fr" ? "fr" : "en");
 
-    const clientIntention = { intention: "public", mode: "primary" } as const;
+
 
     const eventsFilterModel: CMDBTableFilterModel = {
         items: [
@@ -26,26 +30,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ],
     };
 
-    const eventsCall = DB3QueryCore2({
+    const eventsCall = queryTable({
         filter: eventsFilterModel,
-        clientIntention,
         cmdbQueryContext: "publicDataFeed",
         tableID: xEvent.tableID,
         tableName: xEvent.tableName,
         orderBy: undefined,
     },
-        null /* no session; no user */);
+        authorization);
 
 
-    const galleryCall = DB3QueryCore2({
+    const galleryCall = queryTable({
         filter: { items: [] },
-        clientIntention,
         cmdbQueryContext: "publicDataFeed",
         tableID: db3.xFrontpageGalleryItem.tableID,
         tableName: db3.xFrontpageGalleryItem.tableName,
         orderBy: undefined,
     },
-        null /* no session; no user */);
+        authorization);
 
     const [eventsResultRaw, galleryResultRaw] = await Promise.all([
         eventsCall,
@@ -59,3 +61,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.status(200).json(payload);
 }
+
+export default api(handler);

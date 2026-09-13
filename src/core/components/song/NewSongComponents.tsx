@@ -21,10 +21,10 @@ export const NewSongButton = () => {
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
 
     const emptyRow = (() => {
-        const ret = db3.xSong.createNew(clientIntention);
+        const ret = db3.xSong.createNew(currentUser);
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         ret.visiblePermission = dashboardContext.getDefaultVisibilityPermission();
@@ -53,7 +53,6 @@ export const NewSongButton = () => {
 
     // necessary to connect all the columns in the spec.
     const songTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.Mutation,
         tableSpec: songTableSpec,
     });

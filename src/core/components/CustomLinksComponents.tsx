@@ -192,7 +192,6 @@ export const CustomLinkList = () => {
 
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xCustomLink,
             columns: [
@@ -210,7 +209,7 @@ export const CustomLinkList = () => {
 
     const canEdit = dashboardContext.isAuthorized(Permission.manage_custom_links);
 
-    const newObj = db3.xCustomLink.createNew(dashboardContext.userClientIntention);
+    const newObj = db3.xCustomLink.createNew(dashboardContext.currentUser);
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({

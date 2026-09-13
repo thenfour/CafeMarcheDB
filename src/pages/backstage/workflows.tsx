@@ -40,7 +40,6 @@ const WorkflowDefEditorMain = () => {
 
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xWorkflowDef_Verbose,
             columns: [

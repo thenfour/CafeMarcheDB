@@ -17,13 +17,8 @@ export default resolver.pipe(
             description: args.description,
         };
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
-        await mutationCore.updateImpl(db3.xSong, args.songId, fields, ctx, clientIntention);
+
+        await mutationCore.updateImpl(db3.xSong, args.songId, fields, ctx);
 
         return args;
     }

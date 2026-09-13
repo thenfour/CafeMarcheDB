@@ -4,9 +4,8 @@ import { Permission } from "shared/permissions";
 import db from "db";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { deriveDB3ClientIntention, populateDB3AuthorizationPermissions, validateDB3MutationRequest } from "../server/db3RequestValidation";
+import { validateDB3MutationRequest } from "../server/db3RequestValidation";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -15,26 +14,20 @@ export default resolver.pipe(
         const input = validateDB3MutationRequest(untrustedInput);
         const table = db3.GetTableById(input.tableID);
 
-        const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
-        const clientIntention = await populateDB3AuthorizationPermissions(
-            db,
-            deriveDB3ClientIntention("mutation", currentUser),
-            effectivePermissions,
-        );
+
 
         const execute = async (transactionalDb: TransactionalPrismaClient = db as any) => {
             if (input.mutationType === "delete") {
-                return await mutationCore.deleteImpl(table, input.deleteId, ctx, clientIntention, input.deleteType, transactionalDb);
+                return await mutationCore.deleteImpl(table, input.deleteId, ctx, input.deleteType, transactionalDb);
             }
             if (input.mutationType === "insert") {
-                return await mutationCore.insertImpl(table, input.insertModel, ctx, clientIntention, transactionalDb);
+                return await mutationCore.insertImpl(table, input.insertModel, ctx, transactionalDb);
             }
             return (await mutationCore.updateImpl(
                 table,
                 input.updateId!,
                 input.updateModel,
                 ctx,
-                clientIntention,
                 transactionalDb,
             )).newModel;
         };

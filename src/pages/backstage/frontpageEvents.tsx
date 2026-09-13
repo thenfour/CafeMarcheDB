@@ -5,7 +5,6 @@ import { enrichSearchResultEvent } from "@/src/core/db3/shared/schema/enrichedEv
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from 'react';
 import { gQueryOptions } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { EventDetailContainer } from "src/core/components/event/EventComponents";
 import { CalculateEventMetadata_Verbose } from "src/core/components/event/EventComponentsBase";
@@ -15,10 +14,9 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
 const EventsList = () => {
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
+
     const dashboardContext = useDashboardContext();
-    const [currentUser] = useCurrentUser();
-    clientIntention.currentUser = currentUser!;
+
 
     const tableParams: db3.EventTableParams = {
         forFrontPageAgenda: true,
@@ -40,7 +38,6 @@ const EventsList = () => {
             pageSize: 20,
         },
         requestedCaps: DB3Client.xTableClientCaps.Query,// | DB3Client.xTableClientCaps.Mutation,
-        clientIntention,
         queryOptions: gQueryOptions.liveData,
     });
 

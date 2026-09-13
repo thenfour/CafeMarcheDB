@@ -37,14 +37,14 @@ export const xChange = new db3.xTable({
         userIds: { kind: "integerArray", authorizeAs: "userId", nullable: true },
         recordId: { kind: "integer", authorizeAs: "recordId", nullable: true },
     },
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.ChangeDefaultArgs => {
+    getSelectionArgs: (): Prisma.ChangeDefaultArgs => {
         return {
             include: {
                 user: true,
             }
         };
     },
-    getParameterizedWhereClause: (params: ChangeTableParams, clientIntention): Prisma.ChangeWhereInput[] => {
+    getParameterizedWhereClause: (params: ChangeTableParams): Prisma.ChangeWhereInput[] => {
         /*
         [
             {OR: [{ table: a }, { table: b }]},

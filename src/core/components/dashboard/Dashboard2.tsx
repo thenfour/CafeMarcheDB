@@ -114,10 +114,11 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
 
         {currentUser &&
             <>
-                <MenuItem component={Link} href="/backstage/calendar" onClick={closeMenu}>
+                {dashboardContext.isAuthorized(Permission.view_events_nonpublic) && <MenuItem component={Link} href="/backstage/calendar" onClick={closeMenu}>
                     <ListItemIcon>{gIconMap.CalendarMonth()}</ListItemIcon>
                     Calendar subscription
                 </MenuItem>
+                }
                 <AppContextMarker name="appBarQrCode">
                     <QrCodeButton
                         content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}

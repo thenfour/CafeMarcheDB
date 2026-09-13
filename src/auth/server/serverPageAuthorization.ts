@@ -1,3 +1,4 @@
+import { createDB3Authorization } from "src/core/db3/shared/db3Authorization";
 import type { Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import { gSSP } from "src/blitz-server";
@@ -50,7 +51,7 @@ export async function loadAuthorizedPageEntity<T>({
     if (!CMAuthorize({ reason: "server-rendered entity metadata", permission, publicData })) {
         return null;
     }
-    if (!table.authorizeTableForView(publicData)) return null;
+    if (!table.authorizeTableForView(createDB3Authorization(currentUser, effectivePermissions))) return null;
 
     const where = await GetAuthorizedTableReadWhere({
         table,

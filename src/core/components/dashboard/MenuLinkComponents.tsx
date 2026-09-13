@@ -4,7 +4,6 @@ import * as ReactSmoothDnd from "react-smooth-dnd";
 import { DynamicMenuLinkType } from "shared/dynMenuTypes";
 import { Permission } from 'shared/permissions';
 import { slugify, TAnyModel } from "shared/rootroot";
-import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -137,9 +136,8 @@ export interface WikiSlugInputWithSearchProps extends CMTextInputBaseProps {
 export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => {
     const searchQuery = props.value || "";
 
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    const [currentUser] = useCurrentUser();
-    clientIntention.currentUser = currentUser!;
+
+
 
     const songsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
@@ -158,7 +156,6 @@ export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => 
             pageSize: 1,
         },
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
-        clientIntention,
     });
 
     const items = songsClient.items as db3.SongPayload_Verbose[];
@@ -221,7 +218,6 @@ export const MenuLinkList = () => {
 
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xMenuLink,
             columns: [
@@ -248,7 +244,7 @@ export const MenuLinkList = () => {
 
     const canEdit = dashboardContext.isAuthorized(Permission.customize_menu);
 
-    const newObj = db3.xMenuLink.createNew(dashboardContext.userClientIntention) as db3.MenuLinkPayload;
+    const newObj = db3.xMenuLink.createNew(dashboardContext.currentUser) as db3.MenuLinkPayload;
     newObj.iconName = "Link" as keyof typeof gIconMap;
     newObj.linkType = DynamicMenuLinkType.Wiki;
     newObj.visiblePermission = dashboardContext.getDefaultVisibilityPermission();

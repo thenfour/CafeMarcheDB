@@ -1,3 +1,4 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
@@ -5,7 +6,6 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { TAnyModel } from '@/shared/rootroot';
-import { useAuthenticatedSession } from '@blitzjs/auth';
 import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
@@ -605,9 +605,8 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     // Fetch all pinned recordings for songs in this list at once
     const songIds = props.value.songs.map(s => s.song.id);
@@ -618,7 +617,6 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     });
 
     const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
-        clientIntention,
         publicData,
         model: props.value,
     });
@@ -789,12 +787,10 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
     const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
-        clientIntention,
         publicData,
         model: props.value,
     });
@@ -1246,8 +1242,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     setValue: (x: db3.EventSongListPayload) => void,
 }) => {
     const snackbarContext = React.useContext(SnackbarContext);
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
     const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
     const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
 
@@ -1273,7 +1268,6 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
 
     // necessary to connect columns.
     const ctx__ = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.None, // i don't think it's necessary to do this when i'm just connecting columns.
         tableSpec: tableSpec,
     });
@@ -1285,7 +1279,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         },
     };
 
-    const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode, clientIntention);
+    const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode);
 
     const stats = API.events.getSongListStats(value);
 
@@ -1398,7 +1392,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     };
 
     const nameColumn = tableSpec.getColumn("name");
-    const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention, autoFocus: true });
+    const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, autoFocus: true });
 
     // Store current dependencies in a ref so the playlist function always returns current data
     const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: value.id });
@@ -1441,7 +1435,6 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
             label="As performed / actually played live?"
         />
 
-        {/* {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })} */}
 
         {/*
           TITLE                  DURATION    BPM      Comment
@@ -1549,7 +1542,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
             {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
         </div>
 
-        {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}
+        {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, autoFocus: false })}
     </div>;
 };
 
@@ -1649,12 +1642,10 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
-        clientIntention,
         publicData,
         model: props.value,
     });
@@ -1750,12 +1741,8 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     const insertMutation = API.events.insertEventSongListx.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [currentUser] = useCurrentUser();
-    const clientIntention: db3.xTableClientUsageContext = {
-        intention: 'user',
-        mode: 'primary',
-        currentUser: currentUser!,
-    };
-    const initialValue = db3.xEventSongList.createNew(clientIntention) as db3.EventSongListPayload;
+
+    const initialValue = db3.xEventSongList.createNew(currentUser!) as db3.EventSongListPayload;
     initialValue.dividers = []; // because it's just not created (i would need to create like a db3.ArrayColumnType or something)
     initialValue.name = `Setlist`;
     if (props.event.songLists.length > 0) {
@@ -1871,12 +1858,10 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventSongListTabContent = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
-        clientIntention,
         publicData,
     });
 

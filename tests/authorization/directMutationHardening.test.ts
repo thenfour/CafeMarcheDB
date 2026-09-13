@@ -58,7 +58,7 @@ const rowScopedSortTable = new db3.xTable({
 })
 
 const publicVisibility = {
-  id: 700,
+  id: 920_002, // Matches the inherited public-role grant in the database fixture.
   name: Permission.visibility_public,
   roles: [],
 }

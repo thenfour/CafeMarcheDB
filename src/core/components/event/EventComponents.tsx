@@ -1,8 +1,8 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { useAuthenticatedSession } from '@blitzjs/auth';
 import { Checklist, EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
@@ -318,7 +318,7 @@ export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) =
     const potentialValues = dashboardContext.eventCustomField.map(ecf => {
         const existing = props.event.customFieldValues.find(e => e.customFieldId === ecf.id);
         if (existing) return existing;
-        const n = db3.xEventCustomFieldValue.createNew({ mode: 'primary', intention: "user" }) as db3.EventCustomFieldValuePayload;
+        const n = db3.xEventCustomFieldValue.createNew(dashboardContext.currentUser) as db3.EventCustomFieldValuePayload;
         n.customField = ecf;
         n.customFieldId = ecf.id;
         n.eventId = props.event.id;
@@ -429,8 +429,7 @@ export interface EventAttendanceEditDialogProps {
 // 3. this edits responses for all segments, not just 1. so a dynamic # of items
 export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
     const mutationToken = API.events.updateUserEventAttendance.useToken();
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
@@ -469,14 +468,12 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 
     //necessary to connect all the columns in the spec.
     const eventResponseTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.None, // we're only using this for display.
         tableSpec: eventResponseTableSpec,
     });
 
     //necessary to connect all the columns in the spec.
     const eventSegmentResponseTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.None, // we're only using this for display.
         tableSpec: eventSegmentResponseTableSpec,
     });
@@ -484,9 +481,15 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     // if this is null it 
     if (!eventResponseValue) throw new Error("eventResponseValue is null; i'm guessing usermap did not include a relevant user.");
 
-    const eventValidationResult = eventResponseTableSpec.args.table.ValidateAndComputeDiff(eventResponseValue, eventResponseValue, "update", clientIntention);
+    const eventValidationResult = eventResponseTableSpec.args.table.ValidateAndComputeDiff(eventResponseValue, eventResponseValue, "update");
     const eventSegmentValidationResults: Record<number, db3.ValidateAndComputeDiffResult> = Object.fromEntries(
-        props.event.segments.map(segment => [segment.id, eventSegmentResponseTableSpec.args.table.ValidateAndComputeDiff(eventSegmentResponseValues[segment.id]!, eventSegmentResponseValues[segment.id]!, "update", clientIntention)])
+        props.event.segments.map(segment => [
+            segment.id,
+            eventSegmentResponseTableSpec.args.table.ValidateAndComputeDiff(
+                eventSegmentResponseValues[segment.id]!,
+                eventSegmentResponseValues[segment.id]!,
+                "update"),
+        ])
     );
 
     const handleSaveClick = () => {
@@ -547,8 +550,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             </CMDialogContentText>
 
             <div className="EventSongListValue">
-                {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
-                {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
+                {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
+                {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
                 {(cancelledSegments.length > 0) && dashboardContext.isAuthorized(Permission.manage_events) &&
                     <FormControlLabel
@@ -569,12 +572,12 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                         return <div key={segment.id} className='editSegmentResponse segment'>
                             <div>
                                 <div className='segmentName'>{segment.name}</div>
-                                {eventSegmentResponseTableSpec.renderEditor("attendance", augmentedResponse, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), clientIntention, false)}
+                                {eventSegmentResponseTableSpec.renderEditor("attendance", augmentedResponse, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), false)}
                             </div>
                         </div>;
                     })
                 }
-                {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
+                {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
             </div>
             <DialogActionsCM>
@@ -916,12 +919,10 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     const authorizedForEdit = db3.xEvent.authorizeColumnForEdit({
-        clientIntention,
         publicData,
         model: event,
         columnName: "expectedAttendanceUserTag",
@@ -1028,7 +1029,6 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xInstrumentFunctionalGroup,
             columns: [

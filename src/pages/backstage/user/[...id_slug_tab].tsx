@@ -31,7 +31,6 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
 
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
-        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xUser,
             columns: [

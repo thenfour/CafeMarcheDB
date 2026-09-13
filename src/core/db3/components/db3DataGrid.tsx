@@ -1,7 +1,5 @@
-// todo:
-// respect auth for editing / insertion. right now everything is assumed to be admin.
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
-import { useAuthenticatedSession } from '@blitzjs/auth';
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -27,7 +25,6 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
-import { Permission } from 'shared/permissions';
 import { AdminInspectObject, DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
 import { AgeRelativeToNow } from '@components/DateTime/RelativeTimeComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -118,22 +115,13 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const [sortModel, setSortModel] = React.useState<GridSortModel>(props.defaultSortModel || []);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
-    const publicData = useAuthenticatedSession();
-    const recoveryPermission = tableSpec.args.table.viewDeletedPermission;
-    const canRecoverDeletedRows = !!tableSpec.args.table.SqlSpecialColumns.isDeleted
-        && (publicData.permissions || []).some(permission => (
-            permission === Permission.sysadmin || permission === recoveryPermission
-        ));
+    const publicData = useDB3Authorization();
+    const canRecoverDeletedRows = tableSpec.args.table.authorizeIncludeDeleted(publicData, true);
     const includeDeleted = props.includeDeleted ?? canRecoverDeletedRows;
-    const clientIntention: db3.xTableClientUsageContext = {
-        intention: 'admin',
-        mode: 'primary',
-        includeDeleted,
-    };
+
 
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
-        clientIntention,
         tableSpec,
         filterModel: {
             items: filterModel.items.filter(i => i.value !== undefined).map(i => {
@@ -181,7 +169,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         return new Promise<GridRowModel>((resolve, reject) => {
-            const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow, "update", clientIntention);
+            const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow, "update");
             // there are 3 possible paths:
             // 1. validation errors
             // 2. or, changes made
@@ -333,7 +321,6 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     for (let i = 0; i < tableClient.clientColumns.length; ++i) {
         const column = tableClient.clientColumns[i]!;
         if (!column.schemaTable.authorizeColumnForView({
-            clientIntention,
             columnName: column.columnName,
             model: null,
             publicData,
@@ -417,7 +404,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddOK}
             table={tableSpec}
-            clientIntention={clientIntention}
+
         />}
 
         <KeyValueTable data={{

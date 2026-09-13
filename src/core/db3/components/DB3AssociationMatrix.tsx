@@ -17,10 +17,8 @@ import {
     type GridSortModel
 } from '@mui/x-data-grid';
 import React from "react";
-import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
-import * as db3 from '../db3';
 import type { CMDBTableFilterItem, CMDBTableFilterModel } from '../shared/apiTypes';
 import { TAnyModel } from '@/shared/rootroot';
 
@@ -53,13 +51,8 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
-    const [currentUser] = useCurrentUser();
 
-    const clientIntention: db3.xTableClientUsageContext = {
-        intention: 'admin',
-        mode: 'primary',
-        currentUser: currentUser!
-    };
+
 
     const convertedFilter: CMDBTableFilterModel = {
         items: filterModel.items.filter(i => i.value !== undefined).map((i): CMDBTableFilterItem => ({
@@ -73,7 +66,6 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
 
     const dbRows = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery | DB3Client.xTableClientCaps.Mutation,
-        clientIntention,
         tableSpec: props.localTableSpec,
         filterModel: convertedFilter,// quick filter will apply to both rows & columns
         sortModel,
@@ -84,7 +76,6 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
 
     const dbColumns = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
         tableSpec: props.foreignTableSpec,
         filterModel: convertedFilter,// quick filter will apply to both rows & columns
         // use the table's natural sort

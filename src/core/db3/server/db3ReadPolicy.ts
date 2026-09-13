@@ -1,11 +1,9 @@
 import { AuthorizationError } from "blitz";
-import { includesPermission, Permission } from "@/shared/permissions";
 import type { TAnyModel } from "shared/rootroot";
-import db from "db";
-import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
+import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
+import { createDB3Authorization } from "../shared/db3Authorization";
 import type { xTable } from "../shared/db3core";
 import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
-import { deriveDB3ClientIntention } from "./db3RequestValidation";
 
 const emptyFilter = {
     items: [],
@@ -27,27 +25,19 @@ interface GetAuthorizedTableReadWhereArgs {
     where?: TAnyModel | null;
 }
 
-/**
- * Composes a trusted server-side business predicate with the same table,
- * soft-delete, private-owner, and visibility-permission scope used by DB3.
- * Direct Prisma reads of DB3-managed content should enter through this helper.
- */
+// returns a prisma where clause that enforces the table's read policy
 export async function GetAuthorizedTableReadWhere({
     table,
     currentUser,
     where,
 }: GetAuthorizedTableReadWhereArgs): Promise<TAnyModel> {
-    const clientIntention = deriveDB3ClientIntention("query", currentUser);
-    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
-    clientIntention.authorizationPermissions = publicData.permissions;
 
-    if (table.requiresSysadminPermission && !includesPermission(publicData.permissions, Permission.sysadmin)) {
-        throw new AuthorizationError();
-    }
+    const authorization = await loadUserAuthorization(currentUser);
+    const publicData = createDB3Authorization(authorization.user, authorization.effectivePermissions);
+
     if (!table.authorizeTableForView(publicData)) throw new AuthorizationError();
 
     const policyWhere = await table.CalculateWhereClause({
-        clientIntention,
         publicData,
         filterModel: emptyFilter,
     });

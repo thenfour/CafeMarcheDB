@@ -1,4 +1,3 @@
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
@@ -14,9 +13,8 @@ export interface TextInputWithSearchProps extends CMTextInputBaseProps {
 export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
     const searchQuery = props.value || "";
 
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    const [currentUser] = useCurrentUser();
-    clientIntention.currentUser = currentUser!;
+
+
 
     const songsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
@@ -35,7 +33,6 @@ export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
             pageSize: 1,
         },
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
-        clientIntention,
     });
 
     const items = songsClient.items as db3.SongPayload_Verbose[];

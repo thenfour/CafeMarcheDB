@@ -1,3 +1,5 @@
+import { PermissionSet } from "src/auth/shared/PermissionSet";
+import { createDB3Authorization } from "src/core/db3/shared/db3Authorization";
 import type { AuthenticatedCtx, Ctx } from "blitz"
 import { Permission } from "shared/permissions"
 import type { PublicDataType } from "types"
@@ -125,7 +127,7 @@ export function createAuthorizationPublicData(
   return {
     userId: user?.id ?? 0,
     isSysAdmin: user?.isSysAdmin ?? false,
-    permissions: [
+    permissionNames: [
       ...testPublicRolePermissions,
       ...(user?.role?.permissions.map((entry) => entry.permission.name) ?? []),
     ],
@@ -148,7 +150,7 @@ export function createAuthorizationTestContext(
     $authorize: (...requiredPermissions: Array<Permission | Permission[]>) => {
       const required = requiredPermissions.flat()
       const isAuthorized = required.every((permission) =>
-        publicData.permissions.includes(permission),
+        publicData.permissionNames.includes(permission),
       )
 
       if (!isAuthorized) {
@@ -180,6 +182,7 @@ export function createAuthorizationPersona(
     persona,
     user,
     publicData: createAuthorizationPublicData(user),
+    schemaAuthorization: createAuthorizationSchemaData(user),
     ctx: createAuthorizationTestContext(user),
   }
 }
@@ -206,4 +209,13 @@ export function createAuthorizationTarget(
         ...overrides,
       })
   }
+}
+
+// Direct schema tests use synthetic row IDs from the fixture's assigned role.
+// Server-path tests resolve inherited role IDs through the real loader.
+export function createAuthorizationSchemaData(user: AuthorizationTestUser | null) {
+  return createDB3Authorization(user, new PermissionSet([
+    ...testPublicRolePermissions.map((name, index) => ({ id: 920_000 + index, name })),
+    ...(user?.role?.permissions.map(entry => entry.permission) ?? []),
+  ]))
 }

@@ -1,3 +1,5 @@
+import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // generalized version of search results.
 // hopefully can unify song & event search, and then extend to users & files.
 
@@ -7,7 +9,7 @@ import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUti
 import { SplitQuickFilter } from "shared/quickFilter";
 import { Stopwatch, TAnyModel } from "shared/rootroot";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
+import { queryTable } from "src/core/db3/server/db3QueryCore";
 import { CalculateFilterQueryResult, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
@@ -33,8 +35,7 @@ async function GetCustomSearchResultsHook(currentUser: UserWithRolesPayload, inp
         ids: [...expectedAttendanceUserTagIds],
     };
 
-    const queryResult = await DB3QueryCore2({
-        clientIntention: { intention: "user", currentUser, mode: "primary" },
+    const queryResult = await queryTable({
         cmdbQueryContext: "getEventFilterInfo-userTags",
         tableID: db3.xUserTagForEventSearch.tableID,
         tableName: db3.xUserTagForEventSearch.tableName,
@@ -43,7 +44,7 @@ async function GetCustomSearchResultsHook(currentUser: UserWithRolesPayload, inp
             tableParams,
         },
         orderBy: undefined,
-    }, currentUser);
+    }, await loadUserAuthorization(currentUser));
 
     userTags = queryResult.items as db3.EventResponses_ExpectedUserTag[];
     return {
@@ -355,8 +356,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
 
         // FULL EVENT DETAILS USING DB3.
         if (resultIds.length) {
-            const queryResult = await DB3QueryCore2({
-                clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+            const queryResult = await queryTable({
                 cmdbQueryContext: `getSearchResults[${table.tableName}]`,
                 tableID: table.tableID,
                 tableName: table.tableName,
@@ -365,7 +365,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
                     pks: resultIds,
                 },
                 orderBy: undefined,
-            }, u);
+            }, await getRequestAuthorization(ctx.session));
             ret.queryMetrics.push({
                 title: "db3 verbose items",
                 millis: queryResult.executionTimeMillis,

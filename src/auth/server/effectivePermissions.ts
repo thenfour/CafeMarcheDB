@@ -1,21 +1,38 @@
 import { distinctValuesOfArray } from "@/shared/arrayUtils";
-import { gPermissionRegistry, isPermission, Permission } from "@/shared/permissions";
-import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
+import { isPermission, Permission } from "@/shared/permissions";
+import { PermissionSet } from "../shared/PermissionSet";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { CreatePublicData, type CreatePublicDataArgs, type PublicDataType } from "types";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
-type PermissionBearingPrincipal = Pick<UserWithRolesPayload, "id" | "isSysAdmin" | "role">;
-
-export type EffectivePermissions = {
-    ids: number[];
-    names: Permission[];
-};
+type UserWithPermissions = Prisma.UserGetPayload<{
+    select: {
+        id: true,
+        isSysAdmin: true,
+        role: {
+            include: {
+                permissions: {
+                    include: {
+                        permission: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        }
+                    },
+                },
+            },
+        },
+    },
+}>;
 
 // accepts a user with roles & permissions, and applies public & sysadmin inherited perms.
 export const loadEffectivePermissions = async (
-    db: TransactionalPrismaClient,
-    user: PermissionBearingPrincipal | null | undefined,
-): Promise<EffectivePermissions> => {
+    db_: TransactionalPrismaClient,
+    user: UserWithPermissions | null | undefined,
+): Promise<PermissionSet> => {
+
+    const db = db_ as PrismaClient; // cast for tooling/typing
 
     // load defs for inherited roles for the user.
     // all users inherit public permissions,
@@ -60,16 +77,18 @@ export const loadEffectivePermissions = async (
         console.warn(`Ignoring unknown persisted permissions: ${unknownNames.join(", ")}`);
     }
 
-    return {
-        ids: recognized.map(entry => entry.permissionId),
-        names: recognized.map(entry => entry.permission.name),
-    }
+    return new PermissionSet(recognized.map(entry => entry.permission));
+
 };
 
+// public data gets permission names without ids
 export const loadEffectivePermissionNames = async (
     db: TransactionalPrismaClient,
-    user: PermissionBearingPrincipal | null | undefined,
-): Promise<string[]> => (await loadEffectivePermissions(db, user)).names;
+    user: UserWithPermissions | null | undefined,
+): Promise<string[]> => {
+    const ep = await loadEffectivePermissions(db, user);
+    return ep.names;
+}
 
 export const createPublicDataFromDatabase = async (
     db: TransactionalPrismaClient,

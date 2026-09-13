@@ -66,7 +66,7 @@ describe("BA-U005 built-in role designations", () => {
       {
         ...makeRole(12),
         permissions: designation === RoleDesignation.sysadmin
-          ? [{ permission: { name: Permission.sysadmin } }]
+          ? [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }]
           : [],
       },
     ]
@@ -119,7 +119,7 @@ describe("BA-U005 built-in role designations", () => {
       role: [makeRole(10), {
         ...makeRole(11),
         permissions: designation === RoleDesignation.sysadmin
-          ? [{ permission: { name: Permission.sysadmin } }]
+          ? [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }]
           : [],
       }],
       change: [],
@@ -195,7 +195,7 @@ describe("BA-U005 built-in role designations", () => {
   it("rejects designating a Sysadmin role that cannot administer the platform", async () => {
     const roles = [{
       ...makeRole(10, { isSysAdminRole: true }),
-      permissions: [{ permission: { name: Permission.sysadmin } }],
+      permissions: [{ permissionId: 500, permission: { id: 500, name: Permission.sysadmin } }],
     }, { ...makeRole(11), permissions: [] }]
     authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [] })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })

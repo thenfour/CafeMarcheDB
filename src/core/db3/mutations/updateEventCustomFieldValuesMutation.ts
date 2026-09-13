@@ -2,7 +2,6 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateEventCustomFieldValuesArgs } from "../shared/apiTypes";
 import { CreateChangeContext } from "shared/activityLog";
@@ -19,13 +18,8 @@ export default resolver.pipe(
             throw new Error(`can't update event custom fields without a pk`);
         }
 
-        const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
 
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
+
 
         const changeContext = CreateChangeContext(`updateEventCustomFieldValuesMutation`);
 

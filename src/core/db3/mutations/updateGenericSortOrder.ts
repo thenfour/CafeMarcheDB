@@ -4,9 +4,9 @@ import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { moveItemInArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
-import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
-import { deriveDB3ClientIntention, DB3RequestValidationError } from "../server/db3RequestValidation";
+import { DB3RequestValidationError } from "../server/db3RequestValidation";
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateGenericSortOrderArgs, ZupdateGenericSortOrderArgs } from "../shared/apiTypes";
 
@@ -68,12 +68,9 @@ export default resolver.pipe(
             throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [sortOrderColumn.member]);
         }
 
-        const clientIntention = deriveDB3ClientIntention("mutation", currentUser);
-        const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
-        clientIntention.authorizationPermissions = publicData.permissions;
-        const hasTableMutationCapability = publicData.permissions.includes(table.tableAuthMap.Edit)
-            || publicData.permissions.includes(table.tableAuthMap.EditOwn);
-        if (!hasTableMutationCapability || (table.requiresSysadminPermissionForMutation && !publicData.permissions.includes(Permission.sysadmin))) {
+        const permSet = (await getRequestAuthorization(ctx.session)).effectivePermissions;
+        const publicData = db3.createDB3Authorization(currentUser, permSet);
+        if (!table.authorizeTableForEdit(publicData)) {
             throw new mutationCore.DB3MutationAuthorizationError(table.tableName, [sortOrderColumn.member]);
         }
 
@@ -89,7 +86,7 @@ export default resolver.pipe(
             whereClause[table.pkMember] = { in: args.scopeRowIds };
 
             const items = await dbTableClient.findMany({
-                ...table.getSelectionArgs(clientIntention, { items: [] }),
+                ...table.getSelectionArgs({ items: [] }),
                 where: whereClause,
                 orderBy: { [sortOrderColumn.member]: "asc" },
             }) as unknown as Array<Record<string, any>>;
@@ -108,7 +105,6 @@ export default resolver.pipe(
             // must be visible to the fresh database actor before it may
             // participate in the operation.
             if (items.some(item => !table.authorizeRowForView({
-                clientIntention,
                 model: item,
                 publicData,
             }))) {
@@ -149,7 +145,6 @@ export default resolver.pipe(
             // outside the actor's authorization envelope.
             changes.forEach(change => {
                 const authorization = table.authorizeAndSanitize({
-                    clientIntention,
                     contextDesc: `updateSortOrder:${table.tableName}:preflight`,
                     model: { [sortOrderColumn.member]: change.newSortOrder },
                     existingModel: change.item,

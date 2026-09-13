@@ -11,12 +11,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: AuthenticatedCtx) => {
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
+
 
         // load ALL instruments because it's always a small list,
         // and we want to get multiple data:
@@ -43,13 +38,13 @@ export default resolver.pipe(
         for (let i = 0; i < existingIds.length; ++i) {
             await mutationCore.updateImpl(db3.xUserInstrument, existingIds[i]!, {
                 isPrimary: false,
-            }, ctx, clientIntention);
+            }, ctx);
         }
 
         if (newId) {
             await mutationCore.updateImpl(db3.xUserInstrument, newId, {
                 isPrimary: true,
-            }, ctx, clientIntention);
+            }, ctx);
         }
 
         return args;

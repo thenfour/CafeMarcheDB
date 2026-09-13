@@ -459,6 +459,14 @@ const permissionDefinitionByKey = new Map<Permission, PermissionDefinition>(
 export const isPermission = (value: string): value is Permission =>
   permissionDefinitionByKey.has(value as Permission)
 
+// asPermission accepts a string, asserts that it's a valid permission, narrows the type to Permission if true.
+export const asPermission = (value: string): Permission => {
+  if (!isPermission(value)) {
+    throw new Error(`Invalid permission: ${value}`);
+  }
+  return value as Permission;
+}
+
 export const getPermissionDefinition = (permission: Permission): PermissionDefinition =>
   permissionDefinitionByKey.get(permission)!
 

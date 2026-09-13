@@ -1,3 +1,4 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 import React from "react";
 
 import { Box, Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
@@ -9,7 +10,6 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { CMDBTableFilterModel } from "../shared/apiTypes";
 import { SearchInput } from "src/core/components/CMTextField";
 import { gIconMap } from "./IconMap";
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
@@ -40,7 +40,7 @@ export const useDB3SingleSelectLogic = <T extends TAnyModel,>(
 
     const ctx = useDashboardContext();
     const snackbar = useSnackbar();
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
 
     const [allOptionsX, setAllOptionsX] = React.useState<TX[]>([]);
 
@@ -86,7 +86,6 @@ export const useDB3SingleSelectLogic = <T extends TAnyModel,>(
     }
 
     const queryStatus = DB3Client.fetchUnsuspended<T>({
-        clientIntention: ctx.userClientIntention,
         schema: props.schema,
         filterModel,
         delayMS: 500, // TODO: remove.
@@ -97,7 +96,7 @@ export const useDB3SingleSelectLogic = <T extends TAnyModel,>(
     }, [queryStatus.queryResult?.dataUpdatedAt]);
 
     const insMutation = DB3Client.useInsertMutationClient(props.schema);
-    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ clientIntention: ctx.userClientIntention, publicData });
+    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ publicData });
     let allowInsertFromString = CoalesceBool(props.allowInsertFromString, true);
     if (allowInsertFromString) {
         if (!insertAuthorized) {
@@ -310,7 +309,7 @@ export const useDB3MultiSelectLogic = <T extends TAnyModel,>(
 
     const ctx = useDashboardContext();
     const snackbar = useSnackbar();
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
 
     const [allOptionsX, setAllOptionsX] = React.useState<TX[]>([]);
 
@@ -332,7 +331,6 @@ export const useDB3MultiSelectLogic = <T extends TAnyModel,>(
     }
 
     const queryStatus = DB3Client.fetchUnsuspended<T>({
-        clientIntention: ctx.userClientIntention,
         schema: props.schema,
         filterModel,
         delayMS: 500, // TODO: remove.
@@ -359,7 +357,7 @@ export const useDB3MultiSelectLogic = <T extends TAnyModel,>(
     };
 
     const insMutation = DB3Client.useInsertMutationClient(props.schema);
-    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ clientIntention: ctx.userClientIntention, publicData });
+    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ publicData });
     let allowInsertFromString = CoalesceBool(props.allowInsertFromString, true);
     if (allowInsertFromString) {
         if (!insertAuthorized) {

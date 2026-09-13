@@ -9,10 +9,10 @@ import {
 
 describe("DB3 client mutation preparation", () => {
   const target = createAuthorizationTestUser("normal", { id: 10 })
-  const clientIntention = { intention: "user", mode: "primary" } as const
+
 
   it("omits viewable login fields while retaining an authorized user-tag edit", () => {
-    const { publicData } = createAuthorizationPersona("bandAdmin", { id: 2 })
+    const { schemaAuthorization: publicData } = createAuthorizationPersona("bandAdmin", { id: 2 })
     const tags = [{ id: 1, userId: target.id, userTagId: 7 }]
 
     const result = omitUnauthorizedMutationFields({
@@ -24,7 +24,6 @@ describe("DB3 client mutation preparation", () => {
       },
       existingModel: target,
       mode: "update",
-      clientIntention,
       publicData,
     })
 
@@ -34,7 +33,7 @@ describe("DB3 client mutation preparation", () => {
   })
 
   it("covers profile edits by omitting email while retaining owner-editable fields", () => {
-    const { publicData } = createAuthorizationPersona("normal", { id: target.id })
+    const { schemaAuthorization: publicData } = createAuthorizationPersona("normal", { id: target.id })
 
     const result = omitUnauthorizedMutationFields({
       schema: xUser,
@@ -46,7 +45,6 @@ describe("DB3 client mutation preparation", () => {
       },
       existingModel: target,
       mode: "update",
-      clientIntention,
       publicData,
     })
 
@@ -57,7 +55,7 @@ describe("DB3 client mutation preparation", () => {
   })
 
   it("preserves unknown fields so the server can reject schema drift", () => {
-    const { publicData } = createAuthorizationPersona("bandAdmin", { id: 2 })
+    const { schemaAuthorization: publicData } = createAuthorizationPersona("bandAdmin", { id: 2 })
 
     const result = omitUnauthorizedMutationFields({
       schema: xUser,
@@ -67,7 +65,6 @@ describe("DB3 client mutation preparation", () => {
       },
       existingModel: target,
       mode: "update",
-      clientIntention,
       publicData,
     })
 

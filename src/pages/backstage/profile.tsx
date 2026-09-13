@@ -121,7 +121,6 @@ const OwnInstrumentsControl = () => {
             ],
         }),
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention: { intention: "user", mode: 'primary' },
         filterModel: {
             items: [],
             tableParams: {
@@ -188,7 +187,6 @@ const MainContent = () => {
         filterModel: {
             items: [{ field: "id", value: dashboardContext.currentUser?.id || -1, operator: "equals" }]
         },
-        clientIntention: dashboardContext.userClientIntention,
     });
 
     const value = client.items[0]! as db3.UserPayload;

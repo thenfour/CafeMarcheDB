@@ -9,7 +9,6 @@ import { Permission } from 'shared/permissions';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import { formatFileSize, SortDirection } from 'shared/rootroot';
 import { IsNullOrWhitespace, parseMimeType, smartTruncate } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
@@ -364,8 +363,7 @@ export const FileEditor = (props: FileEditorProps) => {
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xFile,
@@ -439,7 +437,7 @@ export const FileEditor = (props: FileEditorProps) => {
                 props.onClose();
             });
         }}
-        clientIntention={clientIntention}
+
         table={tableSpec}
     />;
 };

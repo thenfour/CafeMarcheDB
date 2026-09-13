@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { PermissionSet } from "src/auth/shared/PermissionSet"
 
 vi.mock("db", async () => {
   const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client")
@@ -15,7 +16,7 @@ import { GetAuthorizedTableReadWhere } from "@db3/server/db3ReadPolicy"
 import { SqlCombineAndExpression } from "shared/mysqlUtils"
 import { gPermissionOrdered, Permission } from "shared/permissions"
 import {
-  createAuthorizationPublicData,
+  createAuthorizationSchemaData,
   createAuthorizationTestUser,
 } from "./support/authorizationFixtures"
 import { authorizationTestDb, matchesWhere } from "./support/inMemoryPrisma"
@@ -32,7 +33,7 @@ const actor = createAuthorizationTestUser("normal", {
   id: 501,
   permissions: gPermissionOrdered,
 })
-const actorPublicData = createAuthorizationPublicData(actor)
+const actorPublicData = createAuthorizationSchemaData(actor)
 const grantedVisibilityId = actor.role!.permissions.find(
   entry => entry.permission.name === Permission.visibility_public,
 )!.permissionId
@@ -87,7 +88,6 @@ describe("schema-wide DB3 read-policy contracts", () => {
     async (_tableId, table) => {
       const where = await table.CalculateWhereClause({
         filterModel: emptyFilter,
-        clientIntention: { intention: "user", mode: "primary", currentUser: actor as any },
         publicData: actorPublicData,
       })
       const deletedColumn = table.SqlSpecialColumns.isDeleted!
@@ -102,7 +102,6 @@ describe("schema-wide DB3 read-policy contracts", () => {
     async (_tableId, table) => {
       const where = await table.CalculateWhereClause({
         filterModel: emptyFilter,
-        clientIntention: { intention: "user", mode: "primary", currentUser: actor as any },
         publicData: actorPublicData,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
@@ -129,7 +128,6 @@ describe("schema-wide DB3 read-policy contracts", () => {
     async (_tableId, table) => {
       const where = await table.CalculateWhereClause({
         filterModel: { ...emptyFilter, pks: [1] },
-        clientIntention: { intention: "user", mode: "primary", currentUser: actor as any },
         publicData: actorPublicData,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
@@ -153,12 +151,16 @@ describe("schema-wide DB3 read-policy contracts", () => {
         permissions: [{ permissionId: publicVisibilityId }],
       }],
     })
-    const publicData = createAuthorizationPublicData(null)
+    const publicAuthorization = createAuthorizationSchemaData(null)
+    const publicData = { ...publicAuthorization, effectivePermissions: new PermissionSet(
+      publicAuthorization.effectivePermissions.names.map((name, index) => ({
+        id: name === Permission.visibility_public ? publicVisibilityId : 920_000 + index, name,
+      })),
+    ) }
 
     for (const table of visibilityTables) {
       const where = await table.CalculateWhereClause({
         filterModel: emptyFilter,
-        clientIntention: { intention: "public", mode: "primary" },
         publicData,
       })
       const visibilityColumn = table.SqlSpecialColumns.visiblePermission!
@@ -176,19 +178,18 @@ describe("schema-wide DB3 read-policy contracts", () => {
   })
 
   it.each(policyTables.map(table => [table.tableID, table] as const))(
-    "%s bypasses row policies only with the Sysadmin permission and admin intention",
+    "%s applies row policies to Sysadmins and requires explicit deleted-row access",
     async (_tableId, table) => {
       const sysadmin = createAuthorizationTestUser("sysadmin", { id: 601 })
-      const publicData = createAuthorizationPublicData(sysadmin)
+      const publicData = createAuthorizationSchemaData(sysadmin)
       const restrictedWhere = await table.CalculateWhereClause({
         filterModel: emptyFilter,
-        clientIntention: { intention: "user", mode: "primary", currentUser: sysadmin as any, authorizationPermissions: publicData.permissions },
         publicData,
       })
-      const adminWhere = await table.CalculateWhereClause({
+      const recoveryWhere = await table.CalculateWhereClause({
         filterModel: emptyFilter,
-        clientIntention: { intention: "admin", mode: "primary", currentUser: sysadmin as any, authorizationPermissions: publicData.permissions },
         publicData,
+        includeDeleted: true,
       })
       const hiddenRow = makePolicyRow(table)
       if (table.SqlSpecialColumns.isDeleted) {
@@ -199,7 +200,9 @@ describe("schema-wide DB3 read-policy contracts", () => {
       }
 
       expect(matchesWhere(hiddenRow, restrictedWhere as any)).toBe(false)
-      expect(matchesWhere(hiddenRow, adminWhere as any)).toBe(true)
+      expect(matchesWhere(hiddenRow, recoveryWhere as any)).toBe(
+        !table.SqlSpecialColumns.visiblePermission && !!table.viewDeletedPermission,
+      )
     },
   )
 })
@@ -221,7 +224,7 @@ describe("read-policy composition boundaries", () => {
 
   it("awaits visibility filtering for protected relation includes", async () => {
     const selection = await db3.xSong_Verbose.CalculateSelectionArgs(
-      { intention: "user", mode: "primary", currentUser: actor as any, authorizationPermissions: createAuthorizationPublicData(actor).permissions },
+      createAuthorizationSchemaData(actor),
       emptyFilter,
     )
     const fileWhere = selection!.include.taggedFiles.where.file

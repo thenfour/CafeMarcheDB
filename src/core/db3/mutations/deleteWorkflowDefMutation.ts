@@ -1,3 +1,4 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // deleteWorkflowDefMutation
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
@@ -5,8 +6,7 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import { mapWorkflowDef, TWorkflowMutationResult, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 import * as db3 from "../db3";
-import * as mutationCore from "../server/db3mutationCore";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
+import { queryTable } from "../server/db3QueryCore";
 import { TGeneralDeleteArgs, TGeneralDeleteArgsSchema } from "../shared/apiTypes";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
@@ -16,18 +16,12 @@ export default resolver.pipe(
     resolver.zod(TGeneralDeleteArgsSchema),
     async (args: TGeneralDeleteArgs, ctx: AuthenticatedCtx) => {
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
+
 
         const changeContext = CreateChangeContext(`deleteWorkflowDef`);
 
         // old values.
-        const oldValuesInfo = await DB3QueryCore2({
-            clientIntention,
+        const oldValuesInfo = await queryTable({
             cmdbQueryContext: "deleteWorkflowDef",
             tableID: db3.xWorkflowDef_Verbose.tableID,
             tableName: db3.xWorkflowDef_Verbose.tableName,
@@ -36,7 +30,7 @@ export default resolver.pipe(
                 pks: [args.id],
             },
             orderBy: undefined,
-        }, currentUser);
+        }, await getRequestAuthorization(ctx.session));
 
         // convert to engine workflow def
         const engineDef = mapWorkflowDef(oldValuesInfo.items[0] as any);

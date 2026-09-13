@@ -117,7 +117,6 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
     // fetch users with instruments.
     const dynMenuClient = useTableRenderContext({
         requestedCaps: xTableClientCaps.Query,
-        clientIntention: dashboardContext.userClientIntention,
         tableSpec: new xTableClientSpec({
             table: db3.xUserWithInstrument,
             columns: [],

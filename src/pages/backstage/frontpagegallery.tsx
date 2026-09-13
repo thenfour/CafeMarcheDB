@@ -55,7 +55,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
 
     const permissionId = dashboardContext.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
     const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
+
 
     // ok when you upload, the gallery item component is created.
     const handleFileSelect = (files: FileList) => {
@@ -82,7 +82,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
                     feature: ActivityFeature.frontpagegallery_item_create,
                 });
                 const promises = resp.files.map(file => {
-                    const newGalleryItem = props.client.tableSpec.args.table.createNew(clientIntention) as db3.FrontpageGalleryItemPayloadForUpload;
+                    const newGalleryItem = props.client.tableSpec.args.table.createNew(currentUser) as db3.FrontpageGalleryItemPayloadForUpload;
                     newGalleryItem.fileId = file.id;
                     newGalleryItem.file = file;
                     return props.client.doInsertMutation(newGalleryItem);
@@ -597,8 +597,7 @@ const MainContent = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
+
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xFrontpageGalleryItem,
         columns: [
@@ -611,13 +610,11 @@ const MainContent = () => {
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption_nl", cellWidth: 120 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption_fr", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
-            //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
         ],
     });
 
     const client = DB3Client.useTableRenderContext({
-        clientIntention,
         tableSpec,
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
     });

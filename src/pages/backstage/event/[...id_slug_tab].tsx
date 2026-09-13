@@ -29,16 +29,10 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     useRecordFeatureUse({ feature: ActivityFeature.event_view, eventId });
 
-    const currentUser = dashboardContext.currentUser;
-    const clientIntention: db3.xTableClientUsageContext = {
-        intention: 'user',
-        mode: 'primary',
-        currentUser,
-    };
+
 
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
-        clientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
             columns: [

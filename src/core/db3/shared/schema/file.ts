@@ -1,5 +1,5 @@
 import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, FileWikiPageTag, Prisma } from "db";
-import { includesPermission, Permission } from "shared/permissions";
+import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { CMDBTableFilterModel } from "../apiTypes";
 import { DateTimeField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
@@ -74,13 +74,13 @@ export const xFileAuthMap_FileObjects_AdminEdit: db3.DB3AuthContextPermissionMap
 // - never modified
 const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
     if (args.rowMode === "view") {
-        return includesPermission(args.publicData.permissions || [], Permission.view_files);
+        return args.publicData.effectivePermissions.includesName(Permission.view_files);
     }
     if (args.rowMode === "new") {
         // for now, "trusted code" is assumed.
         // this is safe because this function is called by the server before mutation occurs.
         // unit test coverage verifies this
-        return includesPermission(args.publicData.permissions || [], Permission.upload_files);
+        return args.publicData.effectivePermissions.includesName(Permission.upload_files);
     }
     return false; // by default, server-owned fields are not authorized for mutation
 };
@@ -102,7 +102,7 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TA
 
 
 export const xFileTag = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileTagDefaultArgs => {
         return FileTagArgs;
     },
     tableName: "FileTag",
@@ -142,7 +142,7 @@ export const xFileTagAssignment = new db3.xTable({
     deletePolicy: "hard",
     naturalOrderBy: FileTagAssignmentNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagAssignmentDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileTagAssignmentDefaultArgs => {
         return FileTagAssignmentArgs;
     },
     getRowInfo: (row: FileTagAssignmentPayload) => {
@@ -194,7 +194,7 @@ export const xFileUserTag = new db3.xTable({
     deletePolicy: "hard",
     naturalOrderBy: FileUserTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileUserTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileUserTagDefaultArgs => {
         return FileUserTagArgs;
     },
     getRowInfo: (row: FileUserTagPayload) => {
@@ -241,7 +241,7 @@ export const xFileSongTag = new db3.xTable({
     deletePolicy: "hard",
     naturalOrderBy: FileSongTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_FileObjects,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileSongTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileSongTagDefaultArgs => {
         return FileSongTagArgs;
     },
     getRowInfo: (row: FileSongTagPayload) => {
@@ -283,7 +283,7 @@ export const xFileEventTag = new db3.xTable({
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileEventTagNaturalOrderBy,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileEventTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileEventTagDefaultArgs => {
         return FileEventTagArgs;
     },
     getRowInfo: (row: FileEventTagPayload) => {
@@ -335,7 +335,7 @@ export const xFileInstrumentTag = new db3.xTable({
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileInstrumentTagNaturalOrderBy,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInstrumentTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileInstrumentTagDefaultArgs => {
         return FileInstrumentTagArgs;
     },
     getRowInfo: (row: FileInstrumentTagPayload) => {
@@ -399,12 +399,12 @@ const xFileBaseArgs = {
         fileId: { kind: "integer", authorizeAs: "id" },
         fileTagIds: { kind: "integerArray", authorizeAs: "tags" },
     } satisfies db3.DB3QueryParameterMap,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileDefaultArgs => {
         return FileArgs;
     },
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileNaturalOrderBy,
-    getParameterizedWhereClause: (params: xFileFilterParams, clientIntention: db3.xTableClientUsageContext): (Prisma.FileWhereInput[]) => {
+    getParameterizedWhereClause: (params: xFileFilterParams): (Prisma.FileWhereInput[]) => {
         const ret: Prisma.FileWhereInput[] = [];
         if (params.fileId !== undefined) {
             ret.push({ id: params.fileId, });
@@ -671,12 +671,12 @@ export const xFrontpageGalleryItem = new db3.xTable({
     restorePermission: Permission.edit_public_homepage,
     sortOrderPolicy: { groupingColumn: null, scope: "explicitRowIds" },
     queryParameters: {},
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemDefaultArgs => {
+    getSelectionArgs: (): Prisma.FrontpageGalleryItemDefaultArgs => {
         return FrontpageGalleryItemArgs;
     },
     tableAuthMap: xFrontpageTableAuthMap,
     naturalOrderBy: FrontpageGalleryItemNaturalOrderBy,
-    getParameterizedWhereClause: (params: any, clientIntention: db3.xTableClientUsageContext): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
+    getParameterizedWhereClause: (params: any): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
     getRowInfo: (row: FrontpageGalleryItemPayload) => ({
         pk: row.id,
         name: row.caption,
@@ -734,7 +734,7 @@ export const xFileWikiPageTag = new db3.xTable({
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileWikiPageTagNaturalOrderBy,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.FileWikiPageTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.FileWikiPageTagDefaultArgs => {
         return FileWikiPageTagArgs;
     },
     getRowInfo: (row: FileWikiPageTagPayload) => {

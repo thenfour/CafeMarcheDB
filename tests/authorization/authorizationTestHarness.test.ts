@@ -1,3 +1,4 @@
+import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import { hash256 } from "@blitzjs/auth"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -34,7 +35,7 @@ import {
   validateDB3PaginatedQueryRequest,
   validateDB3QueryRequest,
 } from "@db3/server/db3RequestValidation"
-import { DB3QueryCore2 } from "@db3/server/db3QueryCore"
+import { queryTable } from "@db3/server/db3QueryCore"
 import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads"
 import { Permission } from "shared/permissions"
 import {
@@ -70,15 +71,15 @@ describe("authorization test personas", () => {
     expect(fixture.persona).toBe(persona)
     expect(fixture.publicData.userId).toBe(fixture.user?.id ?? 0)
     expect(fixture.publicData.isSysAdmin).toBe(persona === "sysadmin")
-    expect(fixture.publicData.permissions).toContain(Permission.visibility_public)
+    expect(fixture.publicData.permissionNames).toContain(Permission.visibility_public)
   })
 
   it("keeps Band Admin distinct from Sysadmin", () => {
     const bandAdmin = createAuthorizationPersona("bandAdmin")
 
     expect(bandAdmin.publicData.isSysAdmin).toBe(false)
-    expect(bandAdmin.publicData.permissions).not.toContain(Permission.sysadmin)
-    expect(bandAdmin.publicData.permissions).not.toContain(Permission.impersonate_user)
+    expect(bandAdmin.publicData.permissionNames).not.toContain(Permission.sysadmin)
+    expect(bandAdmin.publicData.permissionNames).not.toContain(Permission.impersonate_user)
   })
 
   const targetKinds: AuthorizationTargetKind[] = [
@@ -179,13 +180,13 @@ describe("BA-A001 generic DB3 request validation", () => {
     ).toThrow("table name 'Role' does not match table ID 'User'")
   })
 
-  it("rejects unknown request properties, including caller-provided intention", () => {
+  it("rejects unknown request properties, including caller-provided authorization", () => {
     expect(() =>
       validateDB3QueryRequest({
         ...forgeDb3Query("User"),
-        clientIntention: { intention: "admin", mode: "primary" },
+        authorization: { permissions: [Permission.sysadmin] },
       }),
-    ).toThrow(/Unrecognized key.*clientIntention/)
+    ).toThrow(/Unrecognized key.*authorization/)
 
     expect(() =>
       validateDB3QueryRequest({ ...forgeDb3Query("User"), rawPrismaArgs: {} }),
@@ -303,7 +304,7 @@ describe("BA-A001 generic DB3 request validation", () => {
     ).toThrow("update model field 'id' must match updateId")
   })
 
-  it("derives query intention from the database actor", async () => {
+  it("uses database authorization and excludes deleted rows for every actor by default", async () => {
     authorizationTestDb.reset({
       user: [sysadmin, moderator, { ...target, isDeleted: true }],
       change: [],
@@ -321,7 +322,7 @@ describe("BA-A001 generic DB3 request validation", () => {
 
     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
     const sysadminResult = await invokeResolver(db3Query, forgeDb3Query("User"), sysadminCtx)
-    expect(sysadminResult.items).toEqual(
+    expect(sysadminResult.items).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: target.id })]),
     )
 
@@ -333,7 +334,7 @@ describe("BA-A001 generic DB3 request validation", () => {
     expect(publicResult.items).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: 11 })]),
     )
-    expect(sysadminResult).not.toHaveProperty("clientIntention")
+    expect(sysadminResult).not.toHaveProperty("authorization")
   })
 })
 
@@ -380,14 +381,13 @@ describe("BA-A002 generic DB3 query authorization", () => {
     expect(count).not.toHaveBeenCalled()
   })
 
-  it("rejects admin intention without a database-derived sysadmin capability", async () => {
+  it("rejects an internal query without the table's required effective permission", async () => {
     const findMany = vi.spyOn(authorizationTestDb.getDelegate("user"), "findMany")
     const databaseNormal = normal as unknown as UserWithRolesPayload
 
-    await expect(DB3QueryCore2({
-      ...forgeDb3Query("User"),
-      clientIntention: { intention: "admin", mode: "primary", currentUser: databaseNormal },
-    }, databaseNormal)).rejects.toThrow("Not authorized to perform this DB3 query")
+    await expect(queryTable({
+      ...forgeDb3Query("Role"),
+    }, await loadUserAuthorization(databaseNormal))).rejects.toThrow("Not authorized to perform this DB3 query")
     expect(findMany).not.toHaveBeenCalled()
   })
 
@@ -406,16 +406,15 @@ describe("BA-A002 generic DB3 query authorization", () => {
   })
 
   it("does not consult protected columns while building quick or custom filters", () => {
-    const { publicData } = createAuthorizationPersona("public")
-    const clientIntention = { intention: "public", mode: "primary" } as const
+    const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
+
     const protectedColumn = db3.xEvent.getColumn("isDeleted")!
     const quickFilter = vi.spyOn(protectedColumn, "getQuickFilterWhereClause")
     const customFilter = vi.spyOn(protectedColumn, "getCustomFilterWhereClause")
 
-    db3.xEvent.GetQuickFilterWhereClauseExpression("probe", clientIntention, publicData)
+    db3.xEvent.GetQuickFilterWhereClauseExpression("probe", publicData)
     db3.xEvent.GetCustomWhereClauseExpression(
       { items: [], tagIds: [12] },
-      clientIntention,
       publicData,
     )
 
@@ -424,11 +423,10 @@ describe("BA-A002 generic DB3 query authorization", () => {
   })
 
   it("does not let a primary key qualify a row from a protected table", () => {
-    const { publicData } = createAuthorizationPersona("public")
+    const { schemaAuthorization: publicData } = createAuthorizationPersona("public")
     const result = db3.xChange.authorizeAndSanitize({
       contextDesc: "BA-A002 protected-row regression",
       publicData,
-      clientIntention: { intention: "public", mode: "primary" },
       rowMode: "view",
       model: { id: 41, table: "User", recordId: activeTarget.id },
       fallbackOwnerId: null,
@@ -533,8 +531,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
       sysadminCtx,
     )
 
-    expect(sysadminResult.count).toBe(4)
-    expect(sysadminResult.items).toEqual(
+    expect(sysadminResult.count).toBe(3)
+    expect(sysadminResult.items).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ id: deletedTarget.id })]),
     )
 
@@ -551,10 +549,8 @@ describe("BA-A002 generic DB3 query authorization", () => {
       },
       sysadminCtx,
     )
-    expect(sysadminDeletedOnlyResult.count).toBe(1)
-    expect(sysadminDeletedOnlyResult.items).toEqual([
-      expect.objectContaining({ id: deletedTarget.id }),
-    ])
+    expect(sysadminDeletedOnlyResult.count).toBe(0)
+    expect(sysadminDeletedOnlyResult.items).toEqual([])
   })
 
   it("does not count rows outside an authenticated user's visibility scope", async () => {
@@ -1557,11 +1553,11 @@ describe("BA-U002 delegated user administration", () => {
     await expect(invokeResolver(getAllRoles, {}, ctx)).resolves.toBeDefined()
   })
 
-  it("keeps the visibility-permission selector readable but its metadata immutable", async () => {
-    const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
+  it("keeps visibility metadata writes behind the table's sysadmin grant", async () => {
+    const ordinaryUser = createAuthorizationTestUser("normal", {
       id: 20,
       isSysAdmin: false,
-      permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
+      permissions: [Permission.login, Permission.basic_trust, Permission.manage_users],
     })
     const visibilityPermission = {
       id: 300,
@@ -1574,17 +1570,15 @@ describe("BA-U002 delegated user administration", () => {
       iconName: null,
     }
     authorizationTestDb.reset({
-      user: [roleGrantedSysadmin],
+      user: [ordinaryUser],
       permission: [visibilityPermission],
     })
     const update = vi.spyOn(authorizationTestDb.getDelegate("permission"), "update")
     const { ctx } = createAuthorizationPersona("normal", {
-      id: roleGrantedSysadmin.id,
-      permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
+      id: ordinaryUser.id,
+      permissions: [Permission.login, Permission.basic_trust, Permission.manage_users],
     })
 
-    expect(db3.xPermissionForVisibility.requiresSysadminPermission).toBe(false)
-    expect(db3.xPermissionForVisibility.requiresSysadminPermissionForMutation).toBe(true)
     await expect(invokeResolver(
       db3Mutation,
       forgeDb3Update("xPermissionForVisibility", visibilityPermission.id, {

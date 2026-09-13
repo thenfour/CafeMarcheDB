@@ -19,18 +19,13 @@ import {
 } from "src/auth/server/serverPageAuthorization";
 import {
     createAuthorizationPersona,
-    createAuthorizationPublicData,
+    createAuthorizationSchemaData,
     createAuthorizationTestUser,
 } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 
 const makeAuthorizationArgs = (user: ReturnType<typeof createAuthorizationTestUser>) => ({
-    publicData: createAuthorizationPublicData(user),
-    clientIntention: {
-        intention: user.isSysAdmin ? "admin" as const : "user" as const,
-        mode: "primary" as const,
-        currentUser: user as never,
-    },
+    publicData: createAuthorizationSchemaData(user),
 });
 
 describe("BA-S004 wiki DB3 capabilities", () => {

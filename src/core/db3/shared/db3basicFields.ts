@@ -10,8 +10,9 @@ import {
 import {
     ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
-    type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, type xTableClientUsageContext
+    type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable
 } from "./db3core";
+import type { DB3Authorization } from "./db3Authorization";
 import { type UserWithRolesPayload } from "./schema/userPayloads";
 import { type ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gSwatchColors } from "../../components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
@@ -48,18 +49,18 @@ export class GhostField extends FieldBase<number> {
 
     connectToTable = (table: xTable) => { this.table = table; };
 
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     ValidateAndParse = (val: ValidateAndParseArgs<number>): ValidateAndParseResult<number | null> => {
         return SuccessfulValidateAndParseResult({ [this.member]: val.row[this.member] });
     };
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
     };
     isEqual = (a: any, b: any) => {
         //assert(false, "ghost fields should not be doing validation.");
@@ -108,7 +109,7 @@ export class PKField extends FieldBase<number> {
     };
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return false;// don't filter on pk id. { [this.member]: { contains: query } };
@@ -116,14 +117,14 @@ export class PKField extends FieldBase<number> {
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     // for pk id fields, there should never be any changes. but it is required to pass into update/delete/whatever so just pass it always.
     ValidateAndParse = (val: ValidateAndParseArgs<number>): ValidateAndParseResult<number | null> => {
         return SuccessfulValidateAndParseResult({ [this.member]: val.row[this.member] });
     };
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         // new rows don't have primary keys assigned yet; NOP
     };
     isEqual = (a: number, b: number) => {
@@ -189,21 +190,21 @@ export class GenericIntegerField extends FieldBase<number> {
 
     connectToTable = (table: xTable) => { };
 
-    getQuickFilterWhereClause = (query: string, clientIntention: xTableClientUsageContext): TAnyModel | false => {
+    getQuickFilterWhereClause = (query: string): TAnyModel | false => {
         if (!this.allowSearchingThisField) return false;
         const queryAsNumber = CoerceToNumberOrNull(query);
         if (queryAsNumber === null) return false;
-        const r = this.ValidateAndParse({ row: { [this.member]: queryAsNumber }, mode: "view", clientIntention }); // passing empty row because it's not used by this class.
+        const r = this.ValidateAndParse({ row: { [this.member]: queryAsNumber }, mode: "view" }); // passing empty row because it's not used by this class.
         if (r.result !== "success") return false;
         return { [this.member]: { equals: r.values[this.member] } };
     };
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (args: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
@@ -232,7 +233,7 @@ export class GenericIntegerField extends FieldBase<number> {
         return SuccessfulValidateAndParseResult(objValue);
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -240,9 +241,9 @@ export class GenericIntegerField extends FieldBase<number> {
         return a === b;
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         if (clientModel[this.member] === undefined) return;
-        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        const vr = this.ValidateAndParse({ row: clientModel, mode });
         mutationModel[this.member] = vr.values[this.member];
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -296,14 +297,14 @@ export class DateTimeField extends FieldBase<Date> {
 
     connectToTable = (table: xTable) => { };
 
-    getQuickFilterWhereClause = (query: string, clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (args: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
@@ -344,7 +345,7 @@ export class DateTimeField extends FieldBase<Date> {
         return SuccessfulValidateAndParseResult(objValue);
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -352,9 +353,9 @@ export class DateTimeField extends FieldBase<Date> {
         return a === b;
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         if (clientModel[this.member] === undefined) return;
-        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        const vr = this.ValidateAndParse({ row: clientModel, mode });
         mutationModel[this.member] = vr.values[this.member];
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -424,10 +425,10 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -441,7 +442,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
         mutationModel[this.member] = (val?.id) || null;
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -503,12 +504,12 @@ export class BoolField extends FieldBase<boolean> {
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -584,16 +585,16 @@ export class ConstEnumStringField extends FieldBase<string> {
         return { [this.member]: { contains: query } };
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -704,23 +705,23 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyIncludeFiltering = (include: TAnyModel) => {
         // actually what is the play here? for a many-to-one relationship like this, when the foreign item is not accessibly by the current user
         // then we are forced to return null?
         // hm, well actually it's not possible to do this; there is no "where" clause on these types of relations.
         // which makes sense.
     };
 
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         //ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         // leaves behind the fk id.
         clientModel[this.member] = dbModel[this.member];
     }
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow: FieldBase<TForeign>["ApplyToNewRow"] = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -1043,10 +1044,10 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
     getCustomFilterWhereClause = (query: CMDBTableFilterModel) => this.getCustomFilterWhereClause__(query);
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    ApplyIncludeFiltering = async (include: TAnyModel, clientIntention: xTableClientUsageContext) => {
-        await ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.associationForeignObjectMember, this.foreignTableID, clientIntention);
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {
+        await ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.associationForeignObjectMember, this.foreignTableID, publicData, includeDeleted);
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -1055,7 +1056,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         clientModel[this.member] = dbModel[this.member];
     }
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -1390,10 +1391,10 @@ export class EventStartsAtField extends FieldBase<Date> {
         return false;
     };
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (args: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
@@ -1428,7 +1429,7 @@ export class EventStartsAtField extends FieldBase<Date> {
         return SuccessfulValidateAndParseResult(objValue);
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -1440,10 +1441,10 @@ export class EventStartsAtField extends FieldBase<Date> {
             a.getMinutes() === b.getMinutes();
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         //console.assert(clientModel[this.member] instanceof Date);
         if (clientModel[this.member] === undefined) return;
-        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        const vr = this.ValidateAndParse({ row: clientModel, mode });
         Object.assign(mutationModel, vr.values);
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -1719,10 +1720,10 @@ export class CreatedAtField extends FieldBase<Date> {
     };
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
 
     // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -1743,7 +1744,7 @@ export class CreatedAtField extends FieldBase<Date> {
         };
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = new Date();
     };
 
@@ -1751,10 +1752,10 @@ export class CreatedAtField extends FieldBase<Date> {
         return a === b;
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         if (clientModel[this.member] === undefined) return;
         if (mode !== "new") return; // exclude this field from updates
-        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        const vr = this.ValidateAndParse({ row: clientModel, mode });
         Object.assign(mutationModel, vr.values);
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -1808,8 +1809,8 @@ export class RevisionField extends FieldBase<number> {
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
-    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+    getOverallWhereClause = (): TAnyModel | boolean => false;
+    ApplyIncludeFiltering = (include: TAnyModel) => { };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (args: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
@@ -1824,7 +1825,7 @@ export class RevisionField extends FieldBase<number> {
         return SuccessfulValidateAndParseResult(objValue);
     };
 
-    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    ApplyToNewRow = (args: TAnyModel) => {
         args[this.member] = this.defaultValue;
     };
 
@@ -1832,7 +1833,7 @@ export class RevisionField extends FieldBase<number> {
         return a === b;
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         if (mode === "new") {
             mutationModel[this.member] = this.defaultValue;
             return;

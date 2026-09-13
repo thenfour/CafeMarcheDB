@@ -15,7 +15,6 @@ import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilte
 import { slugify, unslugify } from "shared/rootroot";
 import { Timing } from "shared/time";
 import { IsNullOrWhitespace, getEnumValues, isInternalUrl, parseMimeType } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { AdminInspectObject, KeyValueDisplay, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -166,12 +165,10 @@ const AutoAssignInstrumentTester = () => {
         ],
     });
 
-    const [currentUser] = useCurrentUser();
 
     const tableClient = DB3Client.useTableRenderContext({
         tableSpec,
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: "user", mode: 'primary', currentUser },
     });
     const allInstruments = tableClient.items as Prisma.InstrumentGetPayload<{}>[];
 

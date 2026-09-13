@@ -1,13 +1,11 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
 
 
 // TODO: how is this different from DB3EditRowButton ? is it different at all or did i accidentally write this twice?
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Button } from "@mui/material";
 import React from "react";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import * as db3 from "src/core/db3/db3";
 import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { TAnyModel } from "@/shared/rootroot";
@@ -32,12 +30,10 @@ export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
 };
 export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-    const publicData = useAuthenticatedSession();
+
+    const publicData = useDB3Authorization();
 
     const authorizedForEdit = props.tableSpec.args.table.authorizeRowForEdit({
-        clientIntention,
         publicData,
         model: props.initialValue,
     });
@@ -65,7 +61,7 @@ export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: Edit
             }}
             onDelete={onDelete}
             table={props.tableSpec}
-            clientIntention={clientIntention}
+
             description={props.dialogDescription}
         />
         }

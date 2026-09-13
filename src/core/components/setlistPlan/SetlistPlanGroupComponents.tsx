@@ -60,7 +60,6 @@ interface SetlistPlanGroupListItemProps {
 
 
 export const SetlistPlanGroupListItem = (props: SetlistPlanGroupListItemProps) => {
-    const dashboardContext = useDashboardContext();
     const confirm = useConfirm();
     const snackbar = useSnackbar();
 
@@ -124,7 +123,7 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
     const snackbar = useSnackbar();
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
 
-    const newObj = props.tableClient.schema.createNew(dashboardContext.userClientIntention);
+    const newObj = props.tableClient.schema.createNew(dashboardContext.currentUser);
     const client = props.tableClient;
     const items = props.tableClient.items;
 

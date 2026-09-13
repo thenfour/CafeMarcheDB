@@ -10,25 +10,14 @@ type DownloadableFile = Pick<db3.FilePayloadMinimum,
     "fileLeafName" | "storedLeafName" | "isDeleted"
 >;
 
-const makeClientIntention = async (ctx: Ctx): Promise<db3.xTableClientUsageContext> => {
-    const currentUser = await mutationCore.getCurrentUserCore(ctx);
-    return {
-        currentUser: currentUser || undefined,
-        intention: currentUser ? "user" : "public",
-        mode: "primary",
-    };
-};
-
 export const GetAuthorizedDirectDownloadFile = async (
     storedLeafName: string,
     ctx: Ctx,
 ): Promise<db3.FilePayloadMinimum | null> => {
-    const clientIntention = await makeClientIntention(ctx);
+
     const { item } = await mutationCore.queryFirstImpl<db3.FilePayloadMinimum>({
-        clientIntention,
         ctx,
         schema: db3.xFile,
-        skipVisibilityCheck: false,
         filterModel: {
             items: [{
                 operator: "equals",

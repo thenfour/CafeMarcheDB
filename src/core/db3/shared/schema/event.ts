@@ -148,7 +148,7 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
 };
 
 export const xEventType = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTypeDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventTypeDefaultArgs => {
         return EventTypeArgs;
     },
     tableName: "EventType",
@@ -190,7 +190,7 @@ export const xEventType = new db3.xTable({
 
 
 export const xEventStatus = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventStatusDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventStatusDefaultArgs => {
         return EventStatusArgs;
     },
     tableName: "EventStatus",
@@ -235,7 +235,7 @@ export const xEventStatus = new db3.xTable({
 export const xEventTag = new db3.xTable({
     tableName: "EventTag",
     deletePolicy: "hard",
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventTagDefaultArgs => {
         return EventTagArgs;
     },
     naturalOrderBy: EventTagNaturalOrderBy,
@@ -277,7 +277,7 @@ export const xEventTagAssignment = new db3.xTable({
     deletePolicy: "hard",
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventTagAssignmentDefaultArgs => {
         return EventTagAssignmentArgs;
     },
     getRowInfo: (row: EventTagAssignmentPayload) => {
@@ -312,7 +312,7 @@ export const xEventCustomField = new db3.xTable({
     deletePolicy: "hard",
     naturalOrderBy: EventCustomFieldNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventCustomFieldDefaultArgs => {
         return EventCustomFieldArgs;
     },
     getRowInfo: (row: EventCustomFieldPayload) => {
@@ -355,7 +355,7 @@ export const xEventCustomFieldValue = new db3.xTable({
     deletePolicy: "hard",
     naturalOrderBy: EventCustomFieldValueNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldValueDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventCustomFieldValueDefaultArgs => {
         return EventCustomFieldValueArgs;
     },
     getRowInfo: (row: EventCustomFieldValuePayload) => {
@@ -445,7 +445,7 @@ export const xEventArgs_Base: db3.TableDesc = {
     viewDeletedPermission: Permission.recover_events,
     restorePermission: Permission.recover_events,
     queryParameters: EventQueryParameters,
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
+    getSelectionArgs: (filterModel): Prisma.EventDefaultArgs => {
         return EventArgs;
     },
     SearchCustomDataHookId: SearchCustomDataHookId.Events,
@@ -458,7 +458,7 @@ export const xEventArgs_Base: db3.TableDesc = {
         ownerUserId: row.createdByUserId,
     }),
 
-    getParameterizedWhereClause: (params: EventTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
+    getParameterizedWhereClause: (params: EventTableParams): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
 
         if (params.eventId !== undefined) {
@@ -722,7 +722,7 @@ export const xEvent = new db3.xTable(xEventArgs_Base);
 const xEventArgs_Verbose: db3.TableDesc = {
     ...xEventArgs_Base,
     tableUniqueName: "xEventArgs_Verbose",
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventDefaultArgs => {
         return EventArgs_Verbose;
     },
 };
@@ -790,7 +790,7 @@ const xEventArgs_Search: db3.TableDesc = {
         ...EventQueryParameters,
         userIdForResponses: { kind: "integer", authorizeAs: "responses", required: true },
     },
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventDefaultArgs => {
+    getSelectionArgs: (filterModel): Prisma.EventDefaultArgs => {
         const tableParams = filterModel.tableParams as EventTableParams;
         assert(tableParams.userIdForResponses, "when searching for events you must provide a userid to limit responses");
         return EventSearchArgs(tableParams.userIdForResponses);
@@ -814,7 +814,7 @@ export const xEventSegment = new db3.xTable({
     queryParameters: {
         eventId: { kind: "integer", authorizeAs: "eventId" },
     },
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventSegmentDefaultArgs => {
         return EventSegmentArgs;
     },
     naturalOrderBy: EventSegmentNaturalOrderBy,
@@ -825,7 +825,7 @@ export const xEventSegment = new db3.xTable({
         description: row.description,
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSegmentWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSegmentWhereInput[] | false) => {
         if (params.eventId != null) {
             return [{
                 eventId: { equals: params.eventId }
@@ -887,7 +887,7 @@ export const xEventSegment = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xEventAttendance = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventAttendanceDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventAttendanceDefaultArgs => {
         return EventAttendanceArgs;
     },
     tableName: "EventAttendance",
@@ -931,7 +931,7 @@ export const xEventAttendance = new db3.xTable({
 
 
 export const xEventSegmentUserResponse = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentUserResponseDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventSegmentUserResponseDefaultArgs => {
         return EventSegmentUserResponseArgs;
     },
     tableName: "EventSegmentUserResponse",
@@ -946,7 +946,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
         name: row.user?.name || "",
         ownerUserId: row.userId,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+    getParameterizedWhereClause: (params: TAnyModel) => {
         const ret: Prisma.EventSegmentUserResponseWhereInput[] = [];
         if (params.eventSegmentId != null) {
             ret.push({
@@ -992,7 +992,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
 
 
 export const xEventUserResponse = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventUserResponseDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventUserResponseDefaultArgs => {
         return EventUserResponseArgs;
     },
     tableName: "EventUserResponse",
@@ -1007,7 +1007,7 @@ export const xEventUserResponse = new db3.xTable({
         name: row.user?.name || "",
         ownerUserId: row.userId || row.user?.id,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+    getParameterizedWhereClause: (params: TAnyModel) => {
         const ret: Prisma.EventUserResponseWhereInput[] = [];
         if (params.eventId != null) {
             ret.push({
@@ -1059,7 +1059,7 @@ export const xEventUserResponse = new db3.xTable({
 
 
 export const xEventSongList = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventSongListDefaultArgs => {
         return EventSongListArgs;
     },
     tableName: "EventSongList",
@@ -1076,7 +1076,7 @@ export const xEventSongList = new db3.xTable({
         description: row.description,
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+    getParameterizedWhereClause: (params: TAnyModel) => {
         const ret: Prisma.EventSongListWhereInput[] = [];
         if (params.eventId != null) {
             ret.push({
@@ -1122,7 +1122,7 @@ export const xEventSongList = new db3.xTable({
 
 
 export const xEventSongListSong = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListSongDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventSongListSongDefaultArgs => {
         return EventSongListSongArgs;
     },
     tableName: "EventSongListSong",
@@ -1138,7 +1138,7 @@ export const xEventSongListSong = new db3.xTable({
         description: row.subtitle || "",
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListSongWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSongListSongWhereInput[] | false) => {
         const ret: Prisma.EventSongListSongWhereInput[] = [];
         if (params.eventSongListId != null) {
             ret.push({
@@ -1173,7 +1173,7 @@ export const xEventSongListSong = new db3.xTable({
 
 
 export const xEventSongListDivider = new db3.xTable({
-    getSelectionArgs: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListDividerDefaultArgs => {
+    getSelectionArgs: (): Prisma.EventSongListDividerDefaultArgs => {
         return EventSongListDividerArgs;
     },
     tableName: "EventSongListDivider",
@@ -1190,7 +1190,7 @@ export const xEventSongListDivider = new db3.xTable({
         description: row.subtitle || "",
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListDividerWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSongListDividerWhereInput[] | false) => {
         const ret: Prisma.EventSongListDividerWhereInput[] = [];
         if (params.eventSongListId != null) {
             ret.push({

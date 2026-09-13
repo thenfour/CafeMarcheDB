@@ -12,12 +12,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (args: TinsertOrUpdateEventSongListArgs, ctx: AuthenticatedCtx) => {
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
+
 
         // TODO
         //CMDBAuthorizeOrThrow("insertEventSongListMutation", Permission.comm)
@@ -37,7 +32,7 @@ export default resolver.pipe(
         // insert the song list
         const changeContext = CreateChangeContext(`insertEventSongList`);
 
-        const newObject = await mutationCore.insertImpl<Prisma.EventSongListGetPayload<{}>>(db3.xEventSongList, fields, ctx, clientIntention);
+        const newObject = await mutationCore.insertImpl<Prisma.EventSongListGetPayload<{}>>(db3.xEventSongList, fields, ctx);
 
         await mutationCore.UpdateEventSongListSongs({ changeContext, ctx, songListID: newObject.id, desiredSongs: args.songs, desiredDividers: args.dividers });
 

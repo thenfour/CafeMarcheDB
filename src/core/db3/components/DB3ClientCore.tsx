@@ -1,5 +1,7 @@
 'use client';
 
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+
 // so originally this started as a general API (hence the "capabilities" bitfield). but it's really just geared towards datagrids.
 // for a more conventional "client side API" look at clientAPI.tsx et al.
 
@@ -11,14 +13,12 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { type RestPaginatedResult, type RestQueryResult, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import React from "react";
 //import * as db3 from "../db3";
 import type { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Coalesce, HasFlag, gQueryOptions } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
@@ -28,7 +28,6 @@ import db3queries from "../queries/db3queries";
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { SettingKey } from "shared/settingKeys";
 import { TAnyModel } from "@/shared/rootroot";
-import type { PublicDataType } from "types";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,7 +42,7 @@ export interface RenderForNewItemDialogArgs {
     value: unknown;
     validationResult?: db3.ValidateAndComputeDiffResult;
     api: NewDialogAPI,
-    clientIntention: db3.xTableClientUsageContext;
+
     autoFocus: boolean; // should the renderer set focus on mount?
 };
 
@@ -153,13 +152,12 @@ export class xTableClientSpec {
         });
     }
 
-    renderEditor = <T extends TAnyModel,>(columnName: string, row: T, validationResult: db3.ValidateAndComputeDiffResult, onChange: (row: T) => void, clientIntention: db3.xTableClientUsageContext, autoFocus: boolean) => {
+    renderEditor = <T extends TAnyModel,>(columnName: string, row: T, validationResult: db3.ValidateAndComputeDiffResult, onChange: (row: T) => void, autoFocus: boolean) => {
         const col = this.getColumn(columnName);
 
         return col.renderForNewDialog && col.renderForNewDialog({
             validationResult,
             autoFocus,
-            clientIntention,
             api: {
                 setFieldValues: (fieldValues: { [key: string]: any }) => {
                     const newValue = { ...row, ...fieldValues };
@@ -198,8 +196,8 @@ export const omitUnauthorizedMutationFields = (args: {
     model: TAnyModel;
     existingModel: TAnyModel;
     mode: "new" | "update";
-    clientIntention: db3.xTableClientUsageContext;
-    publicData: Partial<PublicDataType>;
+
+    publicData: db3.DB3Authorization;
 }): TAnyModel => {
     const authorization = args.schema.authorizeAndSanitize({
         contextDesc: "DB3 client mutation preparation",
@@ -207,7 +205,6 @@ export const omitUnauthorizedMutationFields = (args: {
         existingModel: args.existingModel,
         rowMode: args.mode,
         publicData: args.publicData,
-        clientIntention: args.clientIntention,
         fallbackOwnerId: null,
     });
 
@@ -234,7 +231,7 @@ export interface xTableClientArgs {
     tableSpec: xTableClientSpec,
 
     requestedCaps: xTableClientCaps,
-    clientIntention: db3.xTableClientUsageContext;
+
 
     // optional for example for new item dialog which doesn't do any querying at all.
     sortModel?: GridSortModel,
@@ -264,7 +261,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
     };
 
     refetch: () => void;
-    publicData: Partial<PublicDataType>;
+    publicData: db3.DB3Authorization;
 
     get schema() {
         return this.tableSpec.args.table;
@@ -277,21 +274,17 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         return this.tableSpec.getColumn(name);
     }
 
-    constructor(args: xTableClientArgs, publicData: Partial<PublicDataType>) {
+    constructor(args: xTableClientArgs, publicData: db3.DB3Authorization) {
         this.tableSpec = args.tableSpec;
         this.args = args;
         this.publicData = publicData;
-        args.clientIntention.includeDeleted = args.includeDeleted === true;
+
         this.queryResultInfo = {
             executionTimeMillis: 0,
             resultId: "",
             //resultPayloadSize: 0,
         };
 
-        const [currentUser] = useCurrentUser();
-        if (currentUser != null) {
-            args.clientIntention.currentUser = currentUser;
-        }
 
         if (HasFlag(args.requestedCaps, xTableClientCaps.Mutation)) {
             this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
@@ -386,7 +379,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
-            return this.schema.getClientModel(dbitem, "view", args.clientIntention) as Trow;
+            return this.schema.getClientModel(dbitem, "view") as Trow;
         });
 
         this.refetch = this.refetch || (() => { });
@@ -415,14 +408,13 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         });
 
         this.schema.columns.forEach(schemaCol => {
-            schemaCol.ApplyClientToDb(postClientModel, dbModel, mode, this.args.clientIntention);
+            schemaCol.ApplyClientToDb(postClientModel, dbModel, mode);
         });
         return omitUnauthorizedMutationFields({
             schema: this.schema,
             model: dbModel,
             existingModel: row,
             mode,
-            clientIntention: this.args.clientIntention,
             publicData: this.publicData,
         });
     };
@@ -493,14 +485,14 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 
 
 export const useTableRenderContext = <Trow extends TAnyModel,>(args: xTableClientArgs) => {
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
     return new xTableRenderClient<Trow>(args, publicData);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface FetchAsyncArgs<T> {
     schema: db3.xTable;
-    clientIntention: db3.xTableClientUsageContext;
+
     sortModel?: GridSortModel,
     filterModel?: CMDBTableFilterModel,
     take?: number | undefined;
@@ -541,7 +533,7 @@ export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T
 
     // convert items from a database result to a client-side object.
     const clientItems: T[] = dbItems.map(dbitem => {
-        return args.schema.getClientModel(dbitem, "view", args.clientIntention) as T;
+        return args.schema.getClientModel(dbitem, "view") as T;
     });
 
     return {

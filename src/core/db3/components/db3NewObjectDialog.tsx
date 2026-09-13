@@ -1,4 +1,5 @@
-import { useAuthenticatedSession } from "@blitzjs/auth";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 import {
     Button, Dialog, DialogContent,
     DialogTitle,
@@ -22,28 +23,28 @@ type db3NewObjectDialogProps = {
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => any;
     onCancel: () => any;
     table: DB3ClientCore.xTableClientSpec;
-    clientIntention: db3.xTableClientUsageContext;
+
 
     caption?: string;
     descriptionSettingName?: SettingKey;
 };
 
-export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...props }: db3NewObjectDialogProps) {
-    const [obj, setObj] = React.useState(table.args.table.createNew(clientIntention));
-    const [oldObj, setOldObj] = React.useState(table.args.table.createNew(clientIntention)); // needed for tracking changes
+export function DB3NewObjectDialog({ onOK, onCancel, table, ...props }: db3NewObjectDialogProps) {
+    const [currentUser] = useCurrentUser();
+    const [obj, setObj] = React.useState(table.args.table.createNew(currentUser));
+    const [oldObj, setOldObj] = React.useState(table.args.table.createNew(currentUser)); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
     const [grayed, setGrayed] = React.useState<boolean>(false);
 
     const tableClient = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
         tableSpec: table,
-        clientIntention,
     });
 
     // validate on change
     React.useEffect(() => {
-        const vr = tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new", clientIntention);
+        const vr = tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new");
         setValidationResult(vr);
         setOldObj(obj);
     }, [obj]);
@@ -89,7 +90,6 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                             tableClient.clientColumns.filter(c => {
                                 if (!c.visible) return false;
                                 return tableClient.schema.authorizeColumnForInsert({
-                                    clientIntention: tableClient.args.clientIntention,
                                     model: obj,
                                     columnName: c.columnName,
                                     publicData,
@@ -107,7 +107,6 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                                     row: obj,
                                     value: obj[column.columnName],
                                     validationResult,
-                                    clientIntention,
                                 })}</React.Fragment>;
                             })
                         }
@@ -140,7 +139,7 @@ type DB3EditObject2DialogProps = {
 
 export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete, ...props }: DB3EditObject2DialogProps) {
     const theme = useTheme();
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(initialValue);
     const [oldObj, setOldObj] = React.useState(initialValue); // needed for tracking changes during validation
@@ -150,7 +149,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
 
     // validate on change
     React.useEffect(() => {
-        const vr = tableRenderClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "update", tableRenderClient.args.clientIntention);
+        const vr = tableRenderClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "update");
         setValidationResult(vr);
         setOldObj(obj);
     }, [obj]);
@@ -214,7 +213,6 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                             tableRenderClient.clientColumns.filter(c => {
                                 if (!c.visible) return false;
                                 return (c.schemaTable.authorizeColumnForEdit({
-                                    clientIntention: tableRenderClient.args.clientIntention,
                                     columnName: c.columnName,
                                     model: obj,
                                     publicData,
@@ -233,7 +231,6 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                                     autoFocus,
                                     value: obj[column.columnName],
                                     validationResult,
-                                    clientIntention: tableRenderClient.args.clientIntention,
                                 })}</React.Fragment>;
                             })
                         }
@@ -260,18 +257,17 @@ type DB3EditObjectDialogProps = {
     onCancel: () => void;
     onDelete?: (tableClient: DB3ClientCore.xTableRenderClient) => void;
     table: DB3ClientCore.xTableClientSpec;
-    clientIntention: db3.xTableClientUsageContext;
+
     initialValue: TAnyModel;
     title?: React.ReactNode;
     description?: React.ReactNode;
 };
 
 // TODO: is this the same thing as DB3EditRowButton? if so, merge them.
-export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
+export function DB3EditObjectDialog({ onOK, onCancel, table, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
     const tableClient = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
         tableSpec: table,
-        clientIntention,
     });
 
     return <AppContextMarker name="DB3EditObjectDialog">
@@ -307,10 +303,9 @@ export interface DB3EditRowButtonProps {
 // TODO: is this the same thing as DB3EditObjectDialog? if so, merge them.
 export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
 
     const deleteAuthorized = props.tableRenderClient.args.tableSpec.args.table.authorizeRowForDeletePreferSoft({
-        clientIntention: props.tableRenderClient.args.clientIntention,
         publicData,
         model: props.row,
     });
@@ -336,7 +331,6 @@ export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
             <DB3EditObject2Dialog
                 initialValue={props.row}
                 onDelete={onDelete}
-                //clientIntention={props.clientIntention}
                 onCancel={() => setEditOpen(false)}
                 onOK={(updatedObj: TAnyModel) => {
                     props.onSave(updatedObj, api);

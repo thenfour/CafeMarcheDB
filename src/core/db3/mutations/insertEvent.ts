@@ -15,7 +15,7 @@ export default resolver.pipe(
         try {
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             assert(!!currentUser, "user required to insert an event")
-            const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
+
 
             // verbose on purpose in order to validate args type against UncheckedUpdateInput
             const eventFields: Prisma.EventUncheckedCreateInput & { tags: number[] } = {
@@ -36,7 +36,7 @@ export default resolver.pipe(
             };
 
             // create the root event,
-            const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx, clientIntention) as Prisma.EventGetPayload<{}>;
+            const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx) as Prisma.EventGetPayload<{}>;
 
             const segmentFields: Prisma.EventSegmentUncheckedCreateInput = {
                 name: args.segment.name || "Set 1",
@@ -48,7 +48,7 @@ export default resolver.pipe(
             };
 
             // create the initial segment.
-            const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx, clientIntention) as db3.EventSegmentPayloadMinimum;
+            const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx) as db3.EventSegmentPayloadMinimum;
 
             // create song lists
             if (args.songList) {
@@ -60,7 +60,7 @@ export default resolver.pipe(
                     name: "Setlist",
                     sortOrder: 0,
                 };
-                const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx, clientIntention) as db3.EventSongListPayload;
+                const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx) as db3.EventSongListPayload;
                 // add songs.
                 for (let i = 0; i < args.songList.length; ++i) {
                     const s = args.songList[i]!;
@@ -72,7 +72,7 @@ export default resolver.pipe(
                         sortOrder: i,
                         subtitle: s.comment || "",
                     };
-                    await mutationCore.insertImpl(db3.xEventSongListSong, songFields, ctx, clientIntention);
+                    await mutationCore.insertImpl(db3.xEventSongListSong, songFields, ctx);
                 }
             }
 
@@ -86,7 +86,7 @@ export default resolver.pipe(
                         attendanceId: r.attendanceId,
                         userId: r.userId,
                     };
-                    await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx, clientIntention);
+                    await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx);
                 };
             }
 

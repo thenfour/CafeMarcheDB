@@ -1,8 +1,8 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useMutation } from "@blitzjs/rpc";
 import { Button, Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
@@ -62,7 +62,6 @@ interface EventSegmentEditDialogProps {
 export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
     //const currentUser = useCurrentUser()[0]!;
     const dashboardContext = useDashboardContext();
-    //const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', dash };
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSegment,
@@ -84,7 +83,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
             status: dashboardContext.eventStatus.getById(props.initialValue.statusId),
         }}
         onDelete={props.onDelete}
-        clientIntention={dashboardContext.userClientIntention}
+
         onCancel={props.onCancel}
         onOK={props.onSave}
         table={tableSpec}
@@ -106,15 +105,14 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
     const [open, setOpen] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
-    const publicData = useAuthenticatedSession();
-    const blankObject: db3.EventSegmentPayload = db3.xEventSegment.createNew(clientIntention) as any;
+
+    const publicData = useDB3Authorization();
+    const blankObject: db3.EventSegmentPayload = db3.xEventSegment.createNew(currentUser) as any;
     blankObject.name = props.initialName;
     blankObject.eventId = event.id;
     blankObject.event = event;
 
     const authorized = db3.xEventSegment.authorizeRowBeforeInsert({
-        clientIntention,
         publicData,
     });
 
@@ -157,8 +155,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
     //const user = useCurrentUser()[0]!;
     const dashboardContext = useDashboardContext();
-    const publicData = useAuthenticatedSession();
-    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
 
     const handleDelete = (saveClient: DB3Client.xTableRenderClient) => {
         saveClient.doDeleteMutation(props.segment.id, 'softWhenPossible').then(e => {
@@ -186,7 +183,6 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     };
 
     const editAuthorized = db3.xEventSegment.authorizeRowForEdit({
-        clientIntention: dashboardContext.userClientIntention,
         publicData,
         model: props.segment,
     });
@@ -268,9 +264,8 @@ export interface EditSingleSegmentDateButtonProps {
 export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonProps) => {
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     const handleSave = (updatedFields, saveClient: DB3Client.xTableRenderClient) => {
         const updateObj = {
@@ -287,7 +282,6 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
     };
 
     const editAuthorized = db3.xEventSegment.authorizeRowForEdit({
-        clientIntention,
         publicData,
         model: props.segment,
     });

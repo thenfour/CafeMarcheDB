@@ -1,6 +1,7 @@
 'use client';
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon
@@ -63,23 +64,21 @@ export interface ForeignSingleFieldInputProps<TForeign extends TAnyModel> {
     onChange: (value: TForeign | null) => void;
     validationError?: string | null;
     readOnly: boolean;
-    clientIntention: db3.xTableClientUsageContext,
+
     selectStyle: "inline" | "dialog";
     inlineSelectOpenDialogButtonCaption?: React.ReactNode;
     openDialogButtonCaption?: React.ReactNode;
 };
 
 export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(props: ForeignSingleFieldInputProps<TForeign>) => {
-    //const publicData = useAuthenticatedSession();
     const db3Context = useForeignSingleFieldRenderContext({
         filterText: "",
         spec: props.foreignSpec,
-        clientIntention: props.clientIntention,
     });
     let items = db3Context.items;
     const fs = props.foreignSpec.typedSchemaColumn.getForeignTableSchema();
     if (fs.activeAsSelectable) {
-        items = items.filter(o => fs.activeAsSelectable!(o as any, props.clientIntention));
+        items = items.filter(o => fs.activeAsSelectable!(o as any));
     }
 
     const isEqual = (a: TForeign | null, b: TForeign | null) => {
@@ -200,7 +199,7 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
         {/* <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.member}</Button> */}
         {openDialogButton}
         {isOpen && <SelectSingleForeignDialog
-            clientIntention={props.clientIntention}
+
             closeOnSelect={true}
             value={props.value}
             spec={props.foreignSpec}
@@ -252,7 +251,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     args: ForeignSingleFieldClientArgs<TForeign>;
 
     fixedValue: TForeign | null | undefined;
-    foreignClientIntention: db3.xTableClientUsageContext;
+
 
     selectStyle: "inline" | "dialog";
     size: CMChipSizeOptions;
@@ -338,14 +337,6 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     onSchemaConnected = (tableClient: xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
 
-        // calculate a client intention based on the table. all args are the asme as the table, except the mode for the relation is primary.
-        this.foreignClientIntention = {
-            mode: "primary",
-            intention: tableClient.args.clientIntention.intention,
-            currentUser: tableClient.args.clientIntention.currentUser,
-            relationPath: tableClient.args.clientIntention.relationPath,
-        };
-
 
         if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!] != null) {
             const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!]);
@@ -393,14 +384,14 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
             },
             sortable: false, // https://github.com/thenfour/CafeMarcheDB/issues/120
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
+                const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update" });
                 return <ForeignSingleFieldInput
                     tableName={this.schemaTable.tableName}
                     columnName={this.columnName}
                     allowNull={this.typedSchemaColumn.allowNull}
                     validationError={vr.result === "success" ? null : vr.errorMessage || null}
                     selectStyle={this.selectStyle}
-                    clientIntention={this.foreignClientIntention}
+
                     foreignSpec={this}
                     readOnly={false} // always allow switching this; for admin purposes makes sense
                     value={params.value}
@@ -443,7 +434,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
                     allowNull={this.typedSchemaColumn.allowNull}
                     selectStyle={this.selectStyle}
                     readOnly={!!this.fixedValue}
-                    clientIntention={this.foreignClientIntention}
+
                     validationError={validationValue}
                     value={value as any}
                     onChange={(newValue: TForeign | null) => {
@@ -466,7 +457,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
 export interface ForeignSingleFieldRenderContextArgs<TForeign extends TAnyModel> {
     spec: ForeignSingleFieldClient<TForeign>;
     filterText: string;
-    clientIntention: db3.xTableClientUsageContext,
+
 };
 
 // the "live" adapter handling server-side comms.
@@ -521,7 +512,7 @@ export const useForeignSingleFieldRenderContext = <TForeign extends TAnyModel,>(
 ////////////////////////////////////////////////////////
 interface SelectSingleForeignDialogQuerierProps<TForeign extends TAnyModel> {
     spec: ForeignSingleFieldClient<TForeign>;
-    clientIntention: db3.xTableClientUsageContext,
+
     filterText: string;
     allowCreateNew: boolean;
 
@@ -532,7 +523,6 @@ export function SelectSingleForeignDialogQuerier<TForeign extends TAnyModel>(pro
     const db3Context = useForeignSingleFieldRenderContext({
         filterText: props.filterText,
         spec: props.spec,
-        clientIntention: props.clientIntention,
     });
     const items = db3Context.items;
     React.useEffect(() => {
@@ -573,7 +563,7 @@ export function SelectSingleForeignDialogQuerier<TForeign extends TAnyModel>(pro
 export interface SelectSingleForeignDialogProps<TForeign extends TAnyModel> {
     value: TForeign | null;
     spec: ForeignSingleFieldClient<TForeign>;
-    clientIntention: db3.xTableClientUsageContext,
+
 
     onOK: (value: TForeign | null) => void;
     onCancel: () => void;
@@ -587,7 +577,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
     const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
     const [filterText, setFilterText] = React.useState("");
     const [items, setItems] = React.useState<TForeign[]>([]);
-    const publicData = useAuthenticatedSession();
+    const publicData = useDB3Authorization();
 
     const isEqual = (a: TForeign | null, b: TForeign | null) => {
         const anull = (a === null || a === undefined);
@@ -612,7 +602,6 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
     const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.getForeignTableSchema().doesItemExactlyMatchText(item, filterText));
 
     const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({
-        clientIntention: props.clientIntention,
         publicData,
     });
 
@@ -645,7 +634,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
             <Suspense>
                 <SelectSingleForeignDialogQuerier
                     allowCreateNew={!!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && insertAuthorized}
-                    clientIntention={props.clientIntention}
+
                     filterText={filterText}
                     onResults={(v) => setItems(v)}
                     spec={props.spec}

@@ -1,4 +1,5 @@
-import type { EmptyPublicData } from "@blitzjs/auth";
+export type { DB3Authorization } from "./db3Authorization";
+import { type DB3Authorization } from "./db3Authorization";
 import { assert } from "blitz";
 import { Prisma } from "db";
 import { isEmptyArray } from "shared/arrayUtils";
@@ -6,14 +7,13 @@ import { CalculateChanges, type CalculateChangesResult, createEmptyCalculateChan
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import type { SortDirection, TAnyModel } from "shared/rootroot";
-import type { PublicDataType } from "types";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements,
     type DiscreteCriterion, type GetSearchResultsSortModel,
     SearchCustomDataHookId,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
-import { GetPublicRole, GetVisibilityWhereExpression } from "./db3Helpers";
+import { GetVisibilityWhereExpression } from "./db3Helpers";
 import type { UserWithRolesPayload } from "./schema/userPayloads";
 import type { ColorPaletteEntry } from "../../components/color/palette";
 
@@ -64,9 +64,6 @@ export interface QueryRequestInput extends QueryInputBase {
     take?: number | undefined;
 };
 
-export interface QueryInput extends QueryRequestInput {
-    clientIntention: xTableClientUsageContext;
-};
 
 ////////////////////////////////////////////////////////////////
 export interface PaginatedQueryRequestInput extends QueryInputBase {
@@ -74,9 +71,6 @@ export interface PaginatedQueryRequestInput extends QueryInputBase {
     take: number;
 };
 
-export interface PaginatedQueryInput extends PaginatedQueryRequestInput {
-    clientIntention: xTableClientUsageContext;
-};
 
 ////////////////////////////////////////////////////////////////
 export interface ValidateAndParseResult<FieldType> {
@@ -241,10 +235,11 @@ export interface ValidateAndParseArgs<FieldDataType> {
     //value: FieldDataType | null;
     row: TAnyModel;
     mode: DB3RowMode;
-    clientIntention: xTableClientUsageContext;
+
 };
 
 export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
+    includeDeleted?: boolean;
     contextDesc: string,
     model: T | null,
     // For updates, field authorization is applied to `model` (the proposed
@@ -252,8 +247,8 @@ export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
     // the persisted row.
     existingModel?: T | null,
     rowMode: DB3RowMode,
-    publicData: EmptyPublicData | Partial<PublicDataType>,
-    clientIntention: xTableClientUsageContext,
+    publicData: DB3Authorization,
+
     fallbackOwnerId: number | null;
 };
 
@@ -266,31 +261,32 @@ export type DB3AuthorizeAndSanitizeFieldInput<T extends TAnyModel> = DB3Authoriz
 
 export interface DB3AuthorizeForViewColumnArgs<T extends TAnyModel> {
     model: T | null,
-    publicData: EmptyPublicData | Partial<PublicDataType>,
-    clientIntention: xTableClientUsageContext,
+    publicData: DB3Authorization,
+
     columnName: string;
 };
 
 
 export interface DB3AuthorizeForEditColumnArgs<T extends TAnyModel> {
     model: T | null,
-    publicData: EmptyPublicData | Partial<PublicDataType>,
-    clientIntention: xTableClientUsageContext,
+    publicData: DB3Authorization,
+
     columnName: string;
     fallbackOwnerId: number | null;
 };
 
 
 export interface DB3AuthorizeForRowArgs<T extends TAnyModel> {
+    includeDeleted?: boolean;
     model: T | null,
-    publicData: EmptyPublicData | Partial<PublicDataType>,
-    clientIntention: xTableClientUsageContext,
+    publicData: DB3Authorization,
+
 };
 
 export interface DB3AuthorizeForBeforeInsertArgs<T extends TAnyModel> {
     //model: T | null,
-    publicData: EmptyPublicData | Partial<PublicDataType>,
-    clientIntention: xTableClientUsageContext,
+    publicData: DB3Authorization,
+
 };
 
 export interface DB3AuthorizeAndSanitizeResult<T> {
@@ -329,9 +325,9 @@ export abstract class FieldBase<FieldDataType> {
     abstract connectToTable: (table: xTable) => void;
 
     // return either falsy, or a "WhereInput" object like { name: { contains: query } }
-    abstract getQuickFilterWhereClause: (query: string, clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
+    abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
     abstract getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
-    abstract getOverallWhereClause: (clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
+    abstract getOverallWhereClause: () => TAnyModel | boolean;
 
     // provide the sql expression for filtering a column on this 1 token. e.g. if the token is "conce", return "(Name like "%conce%")"
     // be sure to sql escape the token.
@@ -377,70 +373,20 @@ export abstract class FieldBase<FieldDataType> {
             }
         }
         const requiredPermission = this.authMap[args.authContext];
-        if (!args.publicData.permissions) {
-            return false;
-        }
-        return args.publicData.permissions.some(p => p === requiredPermission);
+        return args.publicData.effectivePermissions.includesName(requiredPermission);
     }
 
-    abstract ApplyToNewRow: (args: TAnyModel, clientIntention: xTableClientUsageContext) => void;
+    abstract ApplyToNewRow: (args: TAnyModel, currentUser: UserWithRolesPayload | null) => void;
 
     // SANITIZED values are passed in. That means no nulls, and ValidateAndParse has already been called.
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
 
-    abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => void;
-    abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => void; // apply the value from db to client.
+    abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => void;
+    abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode, currentUser?: UserWithRolesPayload | null) => void; // apply the value from db to client.
 
     // for foreign "includes", we need to apply a WHERE clause which excludes soft deletes, irrelevant things, & records the user doesn't have access to.
-    abstract ApplyIncludeFiltering: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void | Promise<void>;
+    abstract ApplyIncludeFiltering: (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => void | Promise<void>;
 };
-
-// export enum xTableClientUsageCustomContextType {
-//     //UserInsertDialog,
-//     //AdminInsertDialog,
-// }
-
-// export interface xTableClientUsageCustomContextBase {
-//     type: xTableClientUsageCustomContextType, // a way to identify the type of custom context provided.
-// };
-
-export interface UsageContextPathPart {
-    table: string,
-    member: string,
-};
-
-export interface xTableClientUsageContext {
-    // various table interactions depend on how the client is using it. for example
-    // when creating an object from an admin table, versus a normal user create dialog.
-    // they have different permissions, and even take different values / defaults.
-    // so these are kinda "domains" of client interaction or something.
-    // originally thinking of specifying the specific area, like "EventsPageNewEventButton"
-    // but it's going to bleed too much logic and annoyance into here.
-    // then, more generally "UserCreate" vs. "AdminCreate"
-    // but the "create" now becomes pretty much redundant with the requestedcaps. Therefore leave the actual operation out, just focus on the domain.
-    intention: "public" | "user" | "admin";
-
-    // visibility is different depending on where the object is within a query.
-    // if you're viewing a list of Songs, we want to exclude ones which are deleted.
-    // if you're viewing an old setlist, then we don't want to exclude songs which are in the setlist but deleted.
-    mode: "relation" | "primary";
-
-    // will be filled in by the table client so not necessary from client code.
-    currentUser?: UserWithRolesPayload | null;
-    authorizationPermissions?: string[];
-    authorizationPermissionIds?: number[];
-
-    // Server-validated query option. This never bypasses visiblePermission;
-    // it only relaxes the normal isDeleted=false filter for recovery-capable tables.
-    includeDeleted?: boolean;
-
-    // does your xTable need to act differently when it's being used to populate a dropdown for a related key of some field? use this to do whatever.
-    //customContext?: xTableClientUsageCustomContextBase;
-
-    // for related objects, this is the hierarchical path. first element is the root.
-    relationPath?: UsageContextPathPart[];
-};
-
 
 export interface SortModel {
     field: string,
@@ -463,10 +409,10 @@ export type SqlSpecialColumnFunctionMap = {
 };
 
 export interface CalculateWhereClauseArgs {
+    includeDeleted?: boolean;
     filterModel: CMDBTableFilterModel;
-    clientIntention: xTableClientUsageContext;
-    publicData: EmptyPublicData | Partial<PublicDataType>;
-    skipVisibilityCheck?: boolean;
+
+    publicData: DB3Authorization;
 };
 
 export type DB3QueryParameterKind = "boolean" | "date" | "integer" | "integerArray" | "string" | "stringArray";
@@ -488,16 +434,16 @@ export interface TableDesc {
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
     columns: FieldBase<unknown>[];
 
-    getSelectionArgs: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel,
+    getSelectionArgs: (filterModel: CMDBTableFilterModel) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText?: (row: TAnyModel, filterText: string) => boolean,
     naturalOrderBy?: TAnyModel;
-    getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+    getParameterizedWhereClause?: (params: TAnyModel, publicData: DB3Authorization) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
     queryParameters?: DB3QueryParameterMap; // runtime contract for untrusted generic DB3 requests
 
     // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.
-    activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
+    activeAsSelectable?: (params: TAnyModel) => boolean;
 
     tableAuthMap: DB3AuthTablePermissionMap;
 
@@ -509,10 +455,6 @@ export interface TableDesc {
         groupingColumn: string | null;
         scope: "explicitRowIds";
     };
-
-    // Platform-control tables require the effective Sysadmin permission.
-    requiresSysadminPermission?: boolean;
-    requiresSysadminPermissionForMutation?: boolean;
 
     // Wraps generic writes, audit rows, and mutation hooks in one transaction.
     // kinda a special case, for role/permission association changes which need
@@ -539,7 +481,7 @@ export class xTable /* implements TableDesc*/ {
     tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
-    getSelectionArgs: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel;
+    getSelectionArgs: (filterModel: CMDBTableFilterModel) => TAnyModel;
 
     deletePolicy: DB3DeletePolicy;
     viewDeletedPermission?: Permission;
@@ -548,18 +490,16 @@ export class xTable /* implements TableDesc*/ {
     rowNameMember?: string;
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
-    getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+    getParameterizedWhereClause?: (params: TAnyModel, publicData: DB3Authorization) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
     queryParameters?: DB3QueryParameterMap;
 
-    activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
+    activeAsSelectable?: (params: TAnyModel) => boolean;
 
     tableAuthMap: DB3AuthTablePermissionMap;
     sortOrderPolicy?: {
         groupingColumn: string | null;
         scope: "explicitRowIds";
     };
-    requiresSysadminPermission: boolean;
-    requiresSysadminPermissionForMutation: boolean;
     requiresTransactionalMutation: boolean;
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
@@ -571,9 +511,6 @@ export class xTable /* implements TableDesc*/ {
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
-        this.requiresSysadminPermission = args.requiresSysadminPermission ?? false;
-        this.requiresSysadminPermissionForMutation = args.requiresSysadminPermissionForMutation
-            ?? this.requiresSysadminPermission;
         this.requiresTransactionalMutation = args.requiresTransactionalMutation ?? false;
 
         if (this.getParameterizedWhereClause && !this.queryParameters) {
@@ -744,7 +681,6 @@ export class xTable /* implements TableDesc*/ {
                 break;
             case "update":
                 rowIsAuthorized = this.authorizeRowForEdit({
-                    clientIntention: args.clientIntention,
                     model: authorizationModel,
                     publicData: args.publicData,
                 });
@@ -804,7 +740,6 @@ export class xTable /* implements TableDesc*/ {
         const col = this.getColumnForAuthorization(args.columnName);
         if (!col) return false;
         return col.authorize({
-            clientIntention: args.clientIntention,
             authContext: isOwner ? "PostQueryAsOwner" : "PostQuery",
             rowMode: "view",
             isOwner: isOwner,
@@ -824,7 +759,6 @@ export class xTable /* implements TableDesc*/ {
         const col = this.getColumn(args.columnName);
         if (!col) return false;
         return col.authorize({
-            clientIntention: args.clientIntention,
             authContext: isOwner ? "PreMutateAsOwner" : "PreMutate",
             rowMode: "update",
             isOwner,
@@ -839,7 +773,6 @@ export class xTable /* implements TableDesc*/ {
         const col = this.getColumn(args.columnName);
         if (!col) return false;
         return col.authorize({
-            clientIntention: args.clientIntention,
             authContext: "PreInsert",
             rowMode: "new",
             isOwner: false,
@@ -850,35 +783,21 @@ export class xTable /* implements TableDesc*/ {
         });
     };
 
-    private canUseSysadminBypass = (
-        publicData: EmptyPublicData | Partial<PublicDataType>,
-        clientIntention: xTableClientUsageContext,
-    ): boolean => this.hasPermission(publicData, Permission.sysadmin)
-        && clientIntention.intention === "admin";
-
     private isRowVisibleToActor = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>): boolean => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
         const ownerUserId = this.getOwnerUserId(args.model, rowInfo?.ownerUserId, null);
         const isOwner = ownerUserId != null
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
-        const canUseAdminVisibility = this.canUseSysadminBypass(args.publicData, args.clientIntention);
 
-        if (args.model && !canUseAdminVisibility) {
+        if (args.model) {
             const visiblePermissionColumn = this.SqlSpecialColumns.visiblePermission;
             if (visiblePermissionColumn) {
                 const visiblePermissionId = args.model[visiblePermissionColumn.fkidMember!];
                 if (visiblePermissionId == null) {
                     if (!isOwner) return false;
                 } else {
-                    const visiblePermission = args.model[visiblePermissionColumn.member] as { name?: Permission } | null | undefined;
-                    const permissionName = visiblePermission?.name;
-                    const permissionGrantedByName = permissionName
-                        ? this.hasPermission(args.publicData, permissionName)
-                        : false;
-                    const permissionGrantedById = args.clientIntention.currentUser?.role?.permissions
-                        .some(p => p.permissionId === visiblePermissionId) || false;
-                    if (!permissionGrantedByName && !permissionGrantedById) return false;
+                    if (!args.publicData.effectivePermissions.includesId(visiblePermissionId)) return false;
                 }
             }
         }
@@ -887,19 +806,16 @@ export class xTable /* implements TableDesc*/ {
     };
 
     canViewDeletedRows = (
-        publicData: EmptyPublicData | Partial<PublicDataType>,
-        clientIntention: xTableClientUsageContext,
-    ): boolean => this.canUseSysadminBypass(publicData, clientIntention)
-        || (!!this.viewDeletedPermission && this.hasPermission(publicData, this.viewDeletedPermission));
+        publicData: DB3Authorization,
+    ): boolean => !!this.viewDeletedPermission && this.hasPermission(publicData, this.viewDeletedPermission);
 
     authorizeIncludeDeleted = (
-        publicData: EmptyPublicData | Partial<PublicDataType>,
-        clientIntention: xTableClientUsageContext,
-    ): boolean => !clientIntention.includeDeleted
-        || (!!this.SqlSpecialColumns.isDeleted && this.canViewDeletedRows(publicData, clientIntention));
+        publicData: DB3Authorization,
+        includeDeleted: boolean,
+    ): boolean => !includeDeleted
+        || (!!this.SqlSpecialColumns.isDeleted && this.canViewDeletedRows(publicData));
 
     authorizeRowForRestore = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>): boolean => {
-        if (this.canUseSysadminBypass(args.publicData, args.clientIntention)) return true;
         if (!this.restorePermission || !this.hasPermission(args.publicData, this.restorePermission)) return false;
         return this.isRowVisibleToActor(args);
     };
@@ -914,8 +830,7 @@ export class xTable /* implements TableDesc*/ {
         if (args.model) {
             const isDeletedColumn = this.SqlSpecialColumns.isDeleted;
             if (isDeletedColumn && args.model[isDeletedColumn.member] === true) {
-                if (!this.canUseSysadminBypass(args.publicData, args.clientIntention)
-                    && (!args.clientIntention.includeDeleted || !this.canViewDeletedRows(args.publicData, args.clientIntention))) {
+                if (!args.includeDeleted || !this.canViewDeletedRows(args.publicData)) {
                     return false;
                 }
             }
@@ -926,8 +841,8 @@ export class xTable /* implements TableDesc*/ {
         return this.hasPermission(args.publicData, requiredPermission);
     };
 
-    private hasPermission = (publicData: EmptyPublicData | Partial<PublicDataType>, permission: Permission): boolean => {
-        return (publicData.permissions || []).some(p => p === permission);
+    private hasPermission = (publicData: DB3Authorization, permission: Permission): boolean => {
+        return publicData.effectivePermissions.includesName(permission);
     };
 
     private getOwnerUserId = (
@@ -951,7 +866,7 @@ export class xTable /* implements TableDesc*/ {
 
     // Returns undefined when all rows are table-authorized, an ownership clause
     // for ViewOwn-only access, and null when the table cannot be queried at all.
-    getRowAuthorizationWhereClause = (publicData: EmptyPublicData | Partial<PublicDataType>): TAnyModel | null | undefined => {
+    getRowAuthorizationWhereClause = (publicData: DB3Authorization): TAnyModel | null | undefined => {
         if (this.hasPermission(publicData, this.tableAuthMap.View)) return undefined;
 
         const ownerColumn = this.SqlSpecialColumns.ownerUser;
@@ -966,14 +881,20 @@ export class xTable /* implements TableDesc*/ {
         return null;
     };
 
-    authorizeTableForView = (publicData: EmptyPublicData | Partial<PublicDataType>): boolean => {
+    authorizeTableForView = (publicData: DB3Authorization): boolean => {
         return this.getRowAuthorizationWhereClause(publicData) !== null;
+    };
+
+    // Reject actors with neither edit grant before reading a mutation target.
+    // The persisted row still determines whether Edit or EditOwn applies.
+    authorizeTableForEdit = (publicData: DB3Authorization): boolean => {
+        return this.hasPermission(publicData, this.tableAuthMap.Edit)
+            || ((publicData.userId || 0) > 0 && this.hasPermission(publicData, this.tableAuthMap.EditOwn));
     };
 
     authorizeQueryParameter = (
         parameterName: string,
-        publicData: EmptyPublicData | Partial<PublicDataType>,
-        clientIntention: xTableClientUsageContext,
+        publicData: DB3Authorization,
     ): boolean => {
         const spec = this.queryParameters?.[parameterName];
         if (!spec) return false;
@@ -982,7 +903,6 @@ export class xTable /* implements TableDesc*/ {
         return fieldNames.every(columnName => this.authorizeColumnForView({
             model: null,
             publicData,
-            clientIntention,
             columnName,
         }));
     };
@@ -994,10 +914,7 @@ export class xTable /* implements TableDesc*/ {
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
         const requiredPermission = isOwner ? this.tableAuthMap.EditOwn : this.tableAuthMap.Edit;
-        if (!args.publicData.permissions) {
-            return false;
-        }
-        return args.publicData.permissions.some(p => p === requiredPermission);
+        return args.publicData.effectivePermissions.includesName(requiredPermission);
     };
 
     authorizeRowForDeletePreferSoft = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
@@ -1012,14 +929,11 @@ export class xTable /* implements TableDesc*/ {
 
     authorizeRowBeforeInsert = <T extends TAnyModel,>(args: DB3AuthorizeForBeforeInsertArgs<T>) => {
         const requiredPermission = this.tableAuthMap.Insert;
-        if (!args.publicData.permissions) {
-            return false;
-        }
-        return args.publicData.permissions.some(p => p === requiredPermission);
+        return args.publicData.effectivePermissions.includesName(requiredPermission);
     };
 
     // returns an object describing changes and validation errors.
-    ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext): ValidateAndComputeDiffResult {
+    ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel, mode: DB3RowMode): ValidateAndComputeDiffResult {
         const ret: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({
             errors: {},
             success: true,
@@ -1033,7 +947,7 @@ export class xTable /* implements TableDesc*/ {
             // clients are not required to provide values for all values. only care about fields which are in a or b.
             //const a = oldItem[field.member];
 
-            const b_parseResult = field.ValidateAndParse({ row: newItem, mode, clientIntention }); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
+            const b_parseResult = field.ValidateAndParse({ row: newItem, mode }); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
 
             if (b_parseResult.result === "undefined") continue;
 
@@ -1072,9 +986,9 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    CalculateSelectionArgs = async (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel): Promise<TAnyModel | undefined> => {
+    CalculateSelectionArgs = async (publicData: DB3Authorization, filterModel: CMDBTableFilterModel, includeDeleted = false): Promise<TAnyModel | undefined> => {
         // create a deep copy so our modifications don't spill into other stuff.
-        const selectionArgs = JSON.parse(JSON.stringify(this.getSelectionArgs(clientIntention, filterModel)));
+        const selectionArgs = JSON.parse(JSON.stringify(this.getSelectionArgs(filterModel)));
 
         // selection args can be like,
         // { include: { field1: true, field2: true } }
@@ -1088,20 +1002,19 @@ export class xTable /* implements TableDesc*/ {
             if (Object.entries(include).length === 0) return undefined;
         }
 
-        await this.ApplyIncludeFiltering(include, clientIntention);
+        await this.ApplyIncludeFiltering(include, publicData, includeDeleted);
 
         return selectionArgs;
     };
 
     // takes an "include" Prisma clause, and adds a WHERE clause to it to exclude objects that should be hidden.
     // really it just delegates down to columns.
-    ApplyIncludeFiltering = async (include: TAnyModel, clientIntention: xTableClientUsageContext): Promise<void> => {
-        await Promise.all(this.columns.map(col => col.ApplyIncludeFiltering(include, clientIntention)));
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted = false): Promise<void> => {
+        await Promise.all(this.columns.map(col => col.ApplyIncludeFiltering(include, publicData, includeDeleted)));
     };
 
-    CalculateWhereClause = async ({ filterModel, clientIntention, publicData, skipVisibilityCheck }: CalculateWhereClauseArgs) => {
+    CalculateWhereClause = async ({ filterModel, publicData, includeDeleted = false }: CalculateWhereClauseArgs) => {
         const and: Prisma.EventWhereInput[] = [];
-        skipVisibilityCheck = !!skipVisibilityCheck; // default to false.
 
         const rowAuthorizationWhere = this.getRowAuthorizationWhereClause(publicData);
         if (rowAuthorizationWhere === null) {
@@ -1118,7 +1031,7 @@ export class xTable /* implements TableDesc*/ {
             // each "item" is a token typically.
             const quickFilterItems = filterModel.quickFilterValues.filter(q => q.length > 0).map(q => {// for each token
                 return {
-                    OR: this.GetQuickFilterWhereClauseExpression(q, clientIntention, publicData)
+                    OR: this.GetQuickFilterWhereClauseExpression(q, publicData)
                 };
             });
             and.push(...quickFilterItems);
@@ -1126,7 +1039,7 @@ export class xTable /* implements TableDesc*/ {
 
         // GENERAL FILTER (allows custom) -- TODO: maybe this is redundant. parameterized where clauses kinda cover this.
         if (filterModel) {
-            and.push(...this.GetCustomWhereClauseExpression(filterModel, clientIntention, publicData));
+            and.push(...this.GetCustomWhereClauseExpression(filterModel, publicData));
         }
 
         if (filterModel && filterModel.items && filterModel.items.length > 0) { // non-quick normal filtering.
@@ -1135,7 +1048,6 @@ export class xTable /* implements TableDesc*/ {
                 assert(this.authorizeColumnForView({
                     model: null,
                     publicData,
-                    clientIntention,
                     columnName: i.field,
                 }), `Unauthorized DB3 filter field on table ${this.tableID}.`);
                 return { [i.field]: { [i.operator]: i.value } }
@@ -1145,10 +1057,10 @@ export class xTable /* implements TableDesc*/ {
 
         if (this.getParameterizedWhereClause) {
             Object.keys(filterModel.tableParams || {}).forEach(parameterName => {
-                assert(this.authorizeQueryParameter(parameterName, publicData, clientIntention),
+                assert(this.authorizeQueryParameter(parameterName, publicData),
                     `Unauthorized DB3 query parameter on table ${this.tableID}.`);
             });
-            const filterItems = this.getParameterizedWhereClause(filterModel.tableParams || {}, clientIntention);
+            const filterItems = this.getParameterizedWhereClause(filterModel.tableParams || {}, publicData);
             if (filterItems) {
                 and.push(...filterItems);
             }
@@ -1158,7 +1070,6 @@ export class xTable /* implements TableDesc*/ {
             assert(this.authorizeColumnForView({
                 model: null,
                 publicData,
-                clientIntention,
                 columnName: this.pkMember,
             }), `Unauthorized DB3 primary-key filter on table ${this.tableID}.`);
             const expr: Prisma.EventWhereInput = {
@@ -1169,37 +1080,18 @@ export class xTable /* implements TableDesc*/ {
             and.push(expr);
         }
 
-        const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);
+        const overallWhere = this.GetOverallWhereClauseExpression();
         and.push(...overallWhere);
 
-        const canUseAdminQuery = this.canUseSysadminBypass(publicData, clientIntention);
-        const canIncludeDeleted = canUseAdminQuery || (
-            !!clientIntention.includeDeleted
-            && this.canViewDeletedRows(publicData, clientIntention)
-        );
-
-        // add soft delete clause.
-        if (this.SqlSpecialColumns.isDeleted) {
-            if (!canIncludeDeleted) {
-                and.push({ [this.SqlSpecialColumns.isDeleted.member]: false });
-            }
+        const canIncludeDeleted = includeDeleted && this.canViewDeletedRows(publicData);
+        if (this.SqlSpecialColumns.isDeleted && !canIncludeDeleted) {
+            and.push({ [this.SqlSpecialColumns.isDeleted.member]: false });
         }
-
-        // and visibility
-        if (this.SqlSpecialColumns.visiblePermission && !skipVisibilityCheck && !canUseAdminQuery) {
-            let permissionIds = clientIntention.authorizationPermissionIds;
-            if (!permissionIds && clientIntention.intention === "public") {
-                const publicRole = await GetPublicRole();
-                permissionIds = publicRole.permissions.map(p => p.permissionId);
-            } else if (!permissionIds) {
-                assert(!!clientIntention.currentUser, "current user is required in this line.");
-                permissionIds = clientIntention.currentUser.role?.permissions.map(p => p.permissionId) || [];
-            }
-
+        if (this.SqlSpecialColumns.visiblePermission) {
             and.push(GetVisibilityWhereExpression({
-                permissionIds,
+                permissionIds: [...publicData.effectivePermissions.ids],
                 visiblePermissionIdColumnName: this.SqlSpecialColumns.visiblePermission.fkidMember,
-                ownerUserId: clientIntention.currentUser?.id,
+                ownerUserId: publicData.userId || undefined,
                 ownerUserIdColumnName: this.SqlSpecialColumns.ownerUser?.fkidMember || this.SqlSpecialColumns.ownerUser?.member,
             }));
         }
@@ -1208,17 +1100,16 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    GetQuickFilterWhereClauseExpression = (query: string, clientIntention: xTableClientUsageContext, publicData: EmptyPublicData | Partial<PublicDataType>) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
+    GetQuickFilterWhereClauseExpression = (query: string, publicData: DB3Authorization) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
         const ret = [] as any[];
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
             if (!this.authorizeColumnForView({
                 model: null,
                 publicData,
-                clientIntention,
                 columnName: field.member,
             })) continue;
-            const clause = field.getQuickFilterWhereClause(query, clientIntention);
+            const clause = field.getQuickFilterWhereClause(query);
             if (clause && !isEmptyArray(clause)) {
                 ret.push(clause);
             }
@@ -1226,14 +1117,13 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    GetCustomWhereClauseExpression = (filterModel: CMDBTableFilterModel, clientIntention: xTableClientUsageContext, publicData: EmptyPublicData | Partial<PublicDataType>) => {
+    GetCustomWhereClauseExpression = (filterModel: CMDBTableFilterModel, publicData: DB3Authorization) => {
         const ret = [] as any[];
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
             if (!this.authorizeColumnForView({
                 model: null,
                 publicData,
-                clientIntention,
                 columnName: field.member,
             })) continue;
             const clause = field.getCustomFilterWhereClause(filterModel);
@@ -1244,11 +1134,11 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    GetOverallWhereClauseExpression = (clientIntention: xTableClientUsageContext) => {
+    GetOverallWhereClauseExpression = () => {
         const ret = [] as any[];
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
-            const clause = field.getOverallWhereClause(clientIntention);
+            const clause = field.getOverallWhereClause();
             if (clause && !isEmptyArray(clause)) {
                 ret.push(clause);
             }
@@ -1256,21 +1146,21 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    getClientModel = (dbModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+    getClientModel = (dbModel: TAnyModel, mode: DB3RowMode, currentUser?: UserWithRolesPayload | null) => {
         const ret: TAnyModel = {};
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
-            field.ApplyDbToClient(dbModel, ret, mode, clientIntention);
+            field.ApplyDbToClient(dbModel, ret, mode, currentUser);
         }
         return { ...dbModel, ...ret };
         //return ret;
     }
 
-    clientToDbModel = <T extends TAnyModel,>(clientModel: T, mode: DB3RowMode, clientIntention: xTableClientUsageContext): TAnyModel => {
+    clientToDbModel = <T extends TAnyModel,>(clientModel: T, mode: DB3RowMode): TAnyModel => {
         const dbModel = {};
 
         this.columns.forEach(schemaCol => {
-            schemaCol.ApplyClientToDb(clientModel, dbModel, mode, clientIntention);
+            schemaCol.ApplyClientToDb(clientModel, dbModel, mode);
         });
         return dbModel;
     };
@@ -1285,10 +1175,10 @@ export class xTable /* implements TableDesc*/ {
 
     // create a new row object (no primary key etc)
     // to later be used by insertion.
-    createNew = (clientIntention: xTableClientUsageContext): any => {
+    createNew = (currentUser: UserWithRolesPayload | null): any => {
         const ret = {};
         this.columns.forEach(field => {
-            field.ApplyToNewRow(ret, clientIntention);
+            field.ApplyToNewRow(ret, currentUser);
         });
         return ret;
     }
@@ -1307,7 +1197,7 @@ export const GetTableById = (tableID: string): xTable => {
 }
 
 ////////////////////////////////////////////////////////////////
-export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, localTableName: string, foreignMemberOnAssociation: string, foreignTableID: string, clientIntention: xTableClientUsageContext) => {
+export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, localTableName: string, foreignMemberOnAssociation: string, foreignTableID: string, publicData: DB3Authorization, includeDeleted = false) => {
     const foreignTable = GetTableById(foreignTableID);
     let member = include[memberName];
     if (!member) { // applies to === false, === null, === undefined
@@ -1325,22 +1215,9 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
         member = {};
     }
 
-    // calculate the where clause
-    const newClientIntention: xTableClientUsageContext = { ...clientIntention, mode: "relation" };
-    newClientIntention.relationPath = !!newClientIntention.relationPath ? [...newClientIntention.relationPath] : [];
-    newClientIntention.relationPath.push({
-        table: localTableName,
-        member: memberName,
-    });
-
     const where = await foreignTable.CalculateWhereClause({
-        skipVisibilityCheck: false,
-        clientIntention: newClientIntention,
-        publicData: {
-            userId: newClientIntention.currentUser?.id || 0,
-            isSysAdmin: newClientIntention.currentUser?.isSysAdmin || false,
-            permissions: newClientIntention.authorizationPermissions || [],
-        },
+        publicData,
+        includeDeleted,
         filterModel: { // clobber the filter; we don't propagate any filter values through relations for this.
             items: [],
         }
@@ -1360,6 +1237,6 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
 
     // now we should do children. for all members, apply its table filtering. see the example hierarchy:
     if (include[memberName].include) {
-        await foreignTable.ApplyIncludeFiltering(include[memberName].include, newClientIntention);
+        await foreignTable.ApplyIncludeFiltering(include[memberName].include, publicData, includeDeleted);
     }
 };

@@ -1,9 +1,5 @@
 import { z } from "zod";
 import * as db3 from "../db3";
-import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
-import type { TransactionalPrismaClient } from "../shared/apiTypes";
-import { loadEffectivePermissions, type EffectivePermissions } from "@/src/auth/server/effectivePermissions";
-import { includesPermission, Permission } from "@/shared/permissions";
 
 const MAX_FILTER_ITEMS = 100;
 const MAX_FILTER_VALUES = 1000;
@@ -210,43 +206,4 @@ export function validateDB3MutationRequest(input: unknown): db3.MutatorInput {
         }
     }
     return parsed;
-}
-
-type DB3RpcEndpoint = "mutation" | "paginatedQuery" | "query";
-
-// create a clientintention based on context... actually it's not perfect, but
-// that's largely because clientintention is a bit of a fuzzy concept. this is required
-// to maintain parity with as-is behavior, while no longer trusting client-provided intentions.
-export function deriveDB3ClientIntention(
-    endpoint: DB3RpcEndpoint,
-    currentUser: UserWithRolesPayload | null,
-): db3.xTableClientUsageContext {
-    if (!currentUser) {
-        if (endpoint !== "query") {
-            throw new DB3RequestValidationError(`${endpoint} requires an authenticated database user`);
-        }
-        return { intention: "public", mode: "primary", currentUser: undefined };
-    }
-
-    return {
-        intention: currentUser.isSysAdmin ? "admin" : "user",
-        mode: "primary",
-        currentUser,
-    };
-}
-
-export async function populateDB3AuthorizationPermissions(
-    database: TransactionalPrismaClient,
-    context: db3.xTableClientUsageContext,
-    permissions?: EffectivePermissions,
-): Promise<db3.xTableClientUsageContext> {
-    permissions ??= await loadEffectivePermissions(database, context.currentUser);
-    return {
-        ...context,
-        intention: context.intention === "public"
-            ? "public"
-            : includesPermission(permissions.names, Permission.sysadmin) ? "admin" : "user",
-        authorizationPermissions: permissions.names,
-        authorizationPermissionIds: permissions.ids,
-    };
 }

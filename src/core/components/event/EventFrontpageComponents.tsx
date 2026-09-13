@@ -1,11 +1,10 @@
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Button, DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
 import { Prisma } from "db";
 import React from "react";
 import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
 import { DateTimeRange } from "shared/time";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "@db3/db3"
 import { API } from '../../db3/clientAPI';
@@ -39,7 +38,7 @@ export interface EditTextDialogProps {
     onOK: (valueEn: string, valueNl: string, valueFr: string) => void;
     onCancel: () => void;
     description: React.ReactNode;
-    clientIntention: db3.xTableClientUsageContext
+
 
     valueEn: string;
     columnSpecEn: db3.FieldBase<string>;
@@ -65,21 +64,21 @@ const EditTextDialog = (props: EditTextDialogProps) => {
             <h3>EN</h3>
             <EditTextField
                 columnSpec={props.columnSpecEn}
-                clientIntention={props.clientIntention}
+
                 onChange={(newValue) => { setValueEn(newValue) }}
                 value={valueEn}
             />
             <h3>NL</h3>
             <EditTextField
                 columnSpec={props.columnSpecNl}
-                clientIntention={props.clientIntention}
+
                 onChange={(newValue) => { setValueNl(newValue) }}
                 value={valueNl}
             />
             <h3>FR</h3>
             <EditTextField
                 columnSpec={props.columnSpecFr}
-                clientIntention={props.clientIntention}
+
                 onChange={(newValue) => { setValueFr(newValue) }}
                 value={valueFr}
             />
@@ -109,7 +108,7 @@ interface EditTextDialogButtonProps {
     onChange: (valueEn: string, valueNl: string, valueFr: string) => void;
     dialogTitle: string;
     dialogDescription: React.ReactNode;
-    clientIntention: db3.xTableClientUsageContext
+
 };
 const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
@@ -123,7 +122,7 @@ const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
             columnSpecNl={props.columnSpecNl}
             valueFr={props.valueFr}
             columnSpecFr={props.columnSpecFr}
-            clientIntention={props.clientIntention}
+
             title={props.dialogTitle}
             description={props.dialogDescription}
             onOK={(valueEn: string, valueNl: string, valueFr: string) => {
@@ -217,11 +216,10 @@ const EventFrontpageValuesTable = ({ valueEn, valueNl, valueFr }: { valueEn: str
 const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const user = useCurrentUser()[0]!;
     const recordFeature = useFeatureRecorder();
     const confirm = useConfirm();
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
 
     const handleChange = (valueEn: string | null, valueNl: string | null, valueFr: string | null) => {
         void recordFeature({
@@ -247,7 +245,6 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const valueFr = props.event[props.fieldSpec.fieldNameFr] || "";
 
     const canEdit = db3.xEvent.authorizeColumnForEdit({
-        clientIntention,
         publicData,
         model: props.event,
         columnName: props.fieldSpec.fieldNameEn, // assume same perms for all languages
@@ -264,7 +261,7 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         <div className='editButtonContainer'>
             {!readonly && <div style={{ display: "flex", flexDirection: "column", width: "100px" }}>
                 <EditTextDialogButton
-                    clientIntention={clientIntention}
+
                     columnSpecEn={db3.xEvent.getColumn(props.fieldSpec.fieldNameEn)! as db3.FieldBase<string>}
                     valueEn={valueEn || ""}
                     columnSpecNl={db3.xEvent.getColumn(props.fieldSpec.fieldNameNl)! as db3.FieldBase<string>}
@@ -323,10 +320,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const [previewLang, setPreviewLang] = React.useState<EnNlFr>("en");
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const user = useCurrentUser()[0]!;
     const confirm = useConfirm();
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useDB3Authorization();
+
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
@@ -350,7 +346,6 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const agendaItem: PublicAgendaItemSpec = getAgendaItem(props.event, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
-        clientIntention,
         publicData,
         columnName: "frontpageVisible",
         model: props.event,

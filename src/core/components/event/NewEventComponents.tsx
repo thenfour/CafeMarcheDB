@@ -30,7 +30,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const [grayed, setGrayed] = React.useState<boolean>(false);
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
     const router = useRouter();
@@ -58,13 +58,12 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
     // necessary to connect all the columns in the spec.
     const eventTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec: eventTableSpec,
     });
 
     const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
-        const ret = db3.xEvent.createNew(clientIntention) as db3.EventPayload;
+        const ret = db3.xEvent.createNew(currentUser) as db3.EventPayload;
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//
@@ -84,7 +83,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         },
     };
 
-    const eventValidationResult = eventTableSpec.args.table.ValidateAndComputeDiff(eventValue, eventValue, "new", clientIntention);
+    const eventValidationResult = eventTableSpec.args.table.ValidateAndComputeDiff(eventValue, eventValue, "new");
 
 
     // EVENT SEGMENT BINDINGS
@@ -98,12 +97,11 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
     // necessary to connect all the columns in the spec.
     const segmentTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
         requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec: segmentTableSpec,
     });
 
-    const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(db3.xEventSegment.createNew(clientIntention));
+    const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(db3.xEventSegment.createNew(currentUser));
 
     const segmentAPI: DB3Client.NewDialogAPI = {
         setFieldValues: (fieldValues: TAnyModel) => {
@@ -112,7 +110,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         },
     };
 
-    const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new", clientIntention);
+    const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new");
 
     const handleSaveClick = async () => {
         void recordFeature({
@@ -135,7 +133,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     };
 
     const renderColumn = (table: DB3Client.xTableClientSpec, colName: string, row: TAnyModel, validationResult: db3.ValidateAndComputeDiffResult, api: DB3Client.NewDialogAPI, autoFocus: boolean) => {
-        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], clientIntention, autoFocus });
+        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], autoFocus });
     };
 
     return <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">

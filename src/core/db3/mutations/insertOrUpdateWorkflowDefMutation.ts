@@ -1,3 +1,4 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // insertOrUpdateWorkflowDefMutation
 import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
@@ -7,8 +8,7 @@ import { Permission } from "shared/permissions";
 import { ObjectDiff, passthroughWithoutTransaction } from "shared/utils";
 import { mapWorkflowDef, TWorkflowChange, TWorkflowMutationResult, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 import * as db3 from "../db3";
-import * as mutationCore from "../server/db3mutationCore";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
+import { queryTable } from "../server/db3QueryCore";
 import { TinsertOrUpdateWorkflowDefArgs, TransactionalPrismaClient, WorkflowObjectType } from "../shared/apiTypes";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
@@ -400,12 +400,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.edit_workflow_defs),
     async (args: TinsertOrUpdateWorkflowDefArgs, ctx: AuthenticatedCtx) => {
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
+
 
         const changeContext = CreateChangeContext(`insertOrUpdateWorkflow`);
 
@@ -419,8 +414,7 @@ export default resolver.pipe(
                 serializableFlowDef: undefined,
             };
             if (args.id >= 0) {
-                const oldValuesInfo = await DB3QueryCore2({
-                    clientIntention,
+                const oldValuesInfo = await queryTable({
                     cmdbQueryContext: "insertOrUpdateWorkflowDef",
                     tableID: db3.xWorkflowDef_Verbose.tableID,
                     tableName: db3.xWorkflowDef_Verbose.tableName,
@@ -430,8 +424,7 @@ export default resolver.pipe(
                     },
                     orderBy: undefined,
                 },
-                    currentUser,
-                    transactionalDb);
+                    await getRequestAuthorization(ctx.session));
 
                 // convert to engine workflow def
                 const oldEngineDef = mapWorkflowDef(oldValuesInfo.items[0] as any);
