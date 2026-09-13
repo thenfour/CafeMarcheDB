@@ -1,20 +1,14 @@
-import { Routes } from "@blitzjs/next";
+import { kContinuityAcknowledgementErrorPrefix } from "@/src/auth/server/userManagementPolicy";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Button,
     Dialog,
     DialogContent,
     DialogTitle,
-    FormControl,
-    InputLabel,
-    MenuItem,
-    Select,
     TextField,
     Tooltip,
 } from "@mui/material";
-import { useRouter } from "next/router";
 import React from "react";
-import assignUserRole from "src/auth/mutations/assignUserRole";
 import correctUserEmail from "src/auth/mutations/correctUserEmail";
 import deactivateUser from "src/auth/mutations/deactivateUser";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
@@ -28,7 +22,6 @@ import { useSnackbar } from "../SnackbarContext";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { EnrichedVerboseUser } from "./UserListItem";
-import { kContinuityAcknowledgementErrorPrefix } from "@/src/auth/server/userManagementPolicy";
 
 interface UserAdminPanelProps {
     user: EnrichedVerboseUser;
@@ -48,27 +41,110 @@ const getContinuityPermissionsFromError = (error: unknown): string[] => {
         .filter(Boolean);
 };
 
-export const UserAdminPanel = (props: UserAdminPanelProps) => {
-    const snackbar = useSnackbar();
-    const router = useRouter();
-    const confirm = useConfirm();
-    const [showRoleDialog, setShowRoleDialog] = React.useState(false);
-    const [showEmailDialog, setShowEmailDialog] = React.useState(false);
-    const [correctedEmail, setCorrectedEmail] = React.useState(props.user.email);
-    const [selectedRoleId, setSelectedRoleId] = React.useState<number | null>(props.user.roleId);
-    const [capabilities, { refetch: refetchCapabilities }] = useQuery(
-        getUserManagementCapabilities,
-        { userId: props.user.id },
-    );
-    const [assignUserRoleMutation] = useMutation(assignUserRole);
-    const [correctUserEmailMutation] = useMutation(correctUserEmail);
-    const [deactivateUserMutation] = useMutation(deactivateUser);
-    const [setUserSysAdminMutation] = useMutation(setUserSysAdmin);
+type UserMgmtCaps = {
+    canEdit: boolean;
+    canCorrectEmail: boolean;
+    canDeactivate: boolean;
+    canSetSysAdmin: boolean;
 
-    const refetch = async () => {
-        props.refetch?.();
-        await refetchCapabilities();
-    };
+    deactivationContinuityWarnings: string[];
+}
+
+type EditUserProfileButtonProps = {
+    capabilities: UserMgmtCaps;
+    readonly: boolean;
+    tableClient: DB3Client.xTableRenderClient;
+    user: EnrichedVerboseUser;
+    onOK: () => void;
+};
+
+export const EditUserProfileButton = ({ capabilities, readonly, tableClient, user, onOK }: EditUserProfileButtonProps) => {
+    const snackbar = useSnackbar();
+
+    return <>{capabilities.canEdit && <EditFieldsDialogButton
+        readonly={readonly}
+        dialogTitle="Edit user profile"
+        tableSpec={tableClient.tableSpec}
+        initialValue={user}
+        onCancel={() => { }}
+        onOK={async (updatedUser, tableClient, api) => {
+            await snackbar.invokeAsync(async () => {
+                await tableClient.doUpdateMutation(updatedUser);
+                onOK();
+                api.close();
+            });
+        }}
+        dialogDescription={null}
+        renderButtonChildren={() => "Edit profile"}
+    />}</>
+}
+
+type CorrectUserEmailButtonProps = {
+    capabilities: UserMgmtCaps;
+    user: EnrichedVerboseUser;
+    onOK?: () => void;
+};
+
+export const CorrectUserEmailButton = ({ capabilities, user, onOK }: CorrectUserEmailButtonProps) => {
+    const snackbar = useSnackbar();
+    const [correctUserEmailMutation] = useMutation(correctUserEmail);
+    const [showEmailDialog, setShowEmailDialog] = React.useState(false);
+    const [correctedEmail, setCorrectedEmail] = React.useState(user.email);
+
+    return <>
+        {capabilities.canCorrectEmail && <>
+            <Button onClick={() => {
+                setCorrectedEmail(user.email);
+                setShowEmailDialog(true);
+            }}>
+                Correct login email
+            </Button>
+            <Dialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
+                <DialogTitle>Correct login email for {user.name}</DialogTitle>
+                <DialogContent dividers>
+                    <p>
+                        This changes the account&apos;s login identifier and revokes its active sessions.
+                        It does not change any linked Google identity.
+                    </p>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        label="Login email"
+                        margin="normal"
+                        onChange={event => setCorrectedEmail(event.target.value)}
+                        type="email"
+                        value={correctedEmail}
+                    />
+                    <DialogActionsCM>
+                        <Button onClick={() => setShowEmailDialog(false)}>Cancel</Button>
+                        <Button disabled={!correctedEmail.trim()} onClick={async () => {
+                            await snackbar.invokeAsync(async () => {
+                                await correctUserEmailMutation({
+                                    userId: user.id,
+                                    email: correctedEmail,
+                                });
+                                setShowEmailDialog(false);
+                                onOK?.();
+                            }, "Login email corrected");
+                        }}>Save</Button>
+                    </DialogActionsCM>
+                </DialogContent>
+            </Dialog>
+        </>}
+    </>
+}
+
+export type DeactivateUserButtonProps = {
+    capabilities: UserMgmtCaps;
+    user: EnrichedVerboseUser;
+    onOK?: () => void;
+};
+
+export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUserButtonProps) => {
+    const [showDialog, setShowDialog] = React.useState(false);
+    const snackbar = useSnackbar();
+    const [deactivateUserMutation] = useMutation(deactivateUser);
+    const confirm = useConfirm();
 
     const confirmContinuityRisk = (permissions: readonly string[], action: string) => confirm({
         title: "Confirm continuity risk",
@@ -105,164 +181,114 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
         }
     };
 
-    const selectedRole = capabilities.assignableRoles.find(role => role.id === selectedRoleId);
-    const selectedRoleWarnings = selectedRoleId == null
-        ? capabilities.unassignedRoleContinuityWarnings
-        : selectedRole?.continuityWarnings || [];
-
-    const hasAnyControl = Object.entries(capabilities)
-        .some(([key, value]) => key.startsWith("can") && value === true);
-    if (!hasAnyControl) return null;
-
-    return <div>
-        {capabilities.canEdit && <EditFieldsDialogButton
-            readonly={props.readonly}
-            dialogTitle="Edit user profile"
-            tableSpec={props.tableClient.tableSpec}
-            initialValue={props.user}
-            onCancel={() => { }}
-            onOK={async (updatedUser, tableClient, api) => {
-                await snackbar.invokeAsync(async () => {
-                    await props.tableClient.doUpdateMutation(updatedUser);
-                    props.refetch?.();
-                    api.close();
-                });
-            }}
-            dialogDescription={null}
-            renderButtonChildren={() => "Edit profile"}
-        />}
-
-        {capabilities.canAssignRole && <>
-            <Button onClick={() => {
-                setSelectedRoleId(props.user.roleId);
-                setShowRoleDialog(true);
-            }}>
-                Assign role
-            </Button>
-            <Dialog open={showRoleDialog} onClose={() => setShowRoleDialog(false)}>
-                <DialogTitle>Assign role for {props.user.name}</DialogTitle>
-                <DialogContent dividers>
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel id="user-role-label">Role</InputLabel>
-                        <Select
-                            labelId="user-role-label"
-                            label="Role"
-                            value={selectedRoleId ?? ""}
-                            onChange={event => setSelectedRoleId(
-                                event.target.value === "" ? null : Number(event.target.value),
-                            )}
-                        >
-                            <MenuItem value=""><em>No role</em></MenuItem>
-                            {capabilities.assignableRoles.map(role => (
-                                <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <DialogActionsCM>
-                        <Button onClick={() => setShowRoleDialog(false)}>Cancel</Button>
-                        <Button autoFocus onClick={async () => {
-                            try {
-                                const changed = await runContinuitySensitiveMutation(
-                                    selectedRoleWarnings,
-                                    `Changing role for ${props.user.name}`,
-                                    acknowledgeContinuityRisk => assignUserRoleMutation({
-                                        userId: props.user.id,
-                                        roleId: selectedRoleId,
-                                        acknowledgeContinuityRisk,
-                                    }),
-                                );
-                                if (!changed) return;
-                                snackbar.showSuccess("Role updated");
-                                setShowRoleDialog(false);
-                                await refetch();
-                            } catch (error) {
-                                console.error(error);
-                                snackbar.showError("Unable to update role; see console");
-                            }
-                        }}>Save</Button>
-                    </DialogActionsCM>
-                </DialogContent>
-            </Dialog>
-        </>}
-
-        {capabilities.canCorrectEmail && <>
-            <Button onClick={() => {
-                setCorrectedEmail(props.user.email);
-                setShowEmailDialog(true);
-            }}>
-                Correct login email
-            </Button>
-            <Dialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
-                <DialogTitle>Correct login email for {props.user.name}</DialogTitle>
-                <DialogContent dividers>
-                    <p>
-                        This changes the account&apos;s login identifier and revokes its active sessions.
-                        It does not change any linked Google identity.
-                    </p>
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        label="Login email"
-                        margin="normal"
-                        onChange={event => setCorrectedEmail(event.target.value)}
-                        type="email"
-                        value={correctedEmail}
-                    />
-                    <DialogActionsCM>
-                        <Button onClick={() => setShowEmailDialog(false)}>Cancel</Button>
-                        <Button disabled={!correctedEmail.trim()} onClick={async () => {
-                            await snackbar.invokeAsync(async () => {
-                                await correctUserEmailMutation({
-                                    userId: props.user.id,
-                                    email: correctedEmail,
-                                });
-                                setShowEmailDialog(false);
-                                await refetch();
-                            }, "Login email corrected");
-                        }}>Save</Button>
-                    </DialogActionsCM>
-                </DialogContent>
-            </Dialog>
-        </>}
-
+    return <>
         {capabilities.canDeactivate && <Tooltip title="Deactivate this account and revoke its sessions.">
             <Button onClick={async () => {
                 if (!await confirm({
-                    description: `Deactivate ${props.user.name}'s account?`,
+                    description: `Deactivate ${user.name}'s account?`,
                     title: "Deactivate user",
                 })) return;
 
                 try {
                     const changed = await runContinuitySensitiveMutation(
                         capabilities.deactivationContinuityWarnings,
-                        `Deactivating ${props.user.name}`,
+                        `Deactivating ${user.name}`,
                         acknowledgeContinuityRisk => deactivateUserMutation({
-                            userId: props.user.id,
+                            userId: user.id,
                             acknowledgeContinuityRisk,
                         }),
                     );
                     if (!changed) return;
                     snackbar.showSuccess("User deactivated");
-                    void router.push(Routes.UserSearchPage());
+                    // TODO: are you still allowed to see this page?
+                    // if not, redirect to the user search page
+                    // but for sysadmins who can see deactivated users, stay.
+                    //void router.push(Routes.UserSearchPage());
                 } catch (error) {
                     console.error(error);
                     snackbar.showError("Unable to deactivate user; see console");
                 }
             }} startIcon={gIconMap.Delete()}>Deactivate</Button>
         </Tooltip>}
+    </>;
+};
 
-        {capabilities.canResetPassword && <AdminResetPasswordButton user={props.user} />}
+type SetUserSysadminButtonProps = {
+    capabilities: UserMgmtCaps;
+    user: EnrichedVerboseUser;
+    onOK?: () => void;
+};
+
+export const SetUserSysadminButton = ({ capabilities, user, onOK }: SetUserSysadminButtonProps) => {
+    const [setUserSysAdminMutation] = useMutation(setUserSysAdmin);
+    const snackbar = useSnackbar();
+    const confirm = useConfirm();
+    return <>
         {capabilities.canSetSysAdmin && <Button onClick={async () => {
-            const isSysAdmin = !props.user.isSysAdmin;
+            const isSysAdmin = !user.isSysAdmin;
             if (!await confirm({
                 title: isSysAdmin ? "Grant Sysadmin" : "Revoke Sysadmin",
-                description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${props.user.name}?`,
+                description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${user.name}?`,
             })) return;
             await snackbar.invokeAsync(async () => {
-                await setUserSysAdminMutation({ userId: props.user.id, isSysAdmin });
-                await refetch();
+                await setUserSysAdminMutation({ userId: user.id, isSysAdmin });
+                void onOK?.();
             }, "Sysadmin status updated");
-        }}>{props.user.isSysAdmin ? "Revoke Sysadmin" : "Grant Sysadmin"}</Button>}
+        }}>{user.isSysAdmin ? "Revoke Sysadmin" : "Grant Sysadmin"}</Button>}
+    </>;
+
+};
+
+export const UserAdminPanel = (props: UserAdminPanelProps) => {
+    const [capabilities, { refetch: refetchCapabilities }] = useQuery(
+        getUserManagementCapabilities,
+        { userId: props.user.id },
+    );
+
+    const hasAnyControl = Object.entries(capabilities)
+        .some(([key, value]) => key.startsWith("can") && value === true);
+    if (!hasAnyControl) return null;
+
+    capabilities.canCorrectEmail
+
+    return <div>
+        <EditUserProfileButton
+            capabilities={capabilities}
+            readonly={props.readonly}
+            tableClient={props.tableClient}
+            user={props.user}
+            onOK={() => {
+                props.refetch?.();
+            }}
+        />
+
+        <CorrectUserEmailButton
+            capabilities={capabilities}
+            user={props.user}
+            onOK={() => {
+                props.refetch?.();
+            }}
+        />
+
+        <DeactivateUserButton
+            capabilities={capabilities}
+            user={props.user}
+            onOK={() => {
+                props.refetch?.();
+            }}
+        />
+
+        {capabilities.canResetPassword && <AdminResetPasswordButton user={props.user} />}
+
+        <SetUserSysadminButton
+            capabilities={capabilities}
+            user={props.user}
+            onOK={() => {
+                props.refetch?.();
+            }}
+        />
+
         {capabilities.canImpersonate && <ImpersonateUserButton userId={props.user.id} />}
+
     </div>;
 };

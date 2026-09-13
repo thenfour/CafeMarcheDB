@@ -358,7 +358,9 @@ export abstract class FieldBase<FieldDataType> {
 
     authorize = (args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>): boolean => {
         if (!!this._customAuth) {
-            return this._customAuth(args);
+            const r = this._customAuth(args);
+            //console.log(`Custom authorization result for field "${this.member}":`, r);
+            return r;
         }
         if (!this.authMap) {
             switch (this.specialFunction) {
@@ -373,7 +375,9 @@ export abstract class FieldBase<FieldDataType> {
             }
         }
         const requiredPermission = this.authMap[args.authContext];
-        return args.publicData.effectivePermissions.includesName(requiredPermission);
+        const isAuthorized = args.publicData.effectivePermissions.includesName(requiredPermission);
+        //console.log(`Authorization check for field "${this.member}" with required permission "${requiredPermission}":`, isAuthorized);
+        return isAuthorized;
     }
 
     abstract ApplyToNewRow: (args: TAnyModel, currentUser: UserWithRolesPayload | null) => void;

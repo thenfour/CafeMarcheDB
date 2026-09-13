@@ -128,7 +128,9 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
                         wikiPageId: wikiPageId,
                     })) satisfies db3.WikiPageTagAssignmentPayload[],
                 });
-                if (props.refetch) props.refetch();
+                if (props.refetch) {
+                    props.refetch();
+                }
             });
         }}
     />;

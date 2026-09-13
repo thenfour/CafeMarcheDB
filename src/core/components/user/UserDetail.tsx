@@ -1,4 +1,5 @@
 import { Permission } from "@/shared/permissions";
+import { Prisma } from "@prisma/client";
 import React, { Suspense } from "react";
 import { StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -8,11 +9,71 @@ import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
 import { CMTab, CMTabPanel } from "../TabPanel";
 import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
+import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { SongsProvider } from "../song/SongsContext";
 import { UserAdminPanel } from "./UserAdminPanel";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
+import { useSnackbar } from "../SnackbarContext";
+
+type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name: true, color: true, sortOrder: true, } }>;
+
+type RoleControlProps = {
+    value: _Role | null;
+    userId: number;
+    tableClient: DB3Client.xTableRenderClient;
+    readonly: boolean;
+    onChange: () => void;
+};
+
+export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: RoleControlProps) => {
+    const dashboardContext = useDashboardContext();
+    const snackbar = useSnackbar();
+    return (
+        <CMSingleSelect<_Role>
+            value={value}
+            readonly={readonly}
+            nullBehavior={CMSelectNullBehavior.AllowNull}
+            onChange={async (option) => {
+                await snackbar.invokeAsync(async () => {
+                    const newid = option?.id ?? null;
+                    console.log("Updating role for userId:", userId, "to roleId:", newid, " - ", dashboardContext.role.getById(newid));
+                    await tableClient.doUpdateMutation({
+                        id: userId,
+                        roleId: newid,
+                        //role: dashboardContext.role.getById(newid) ?? null,
+                    });
+                });
+                onChange();
+            }}
+            displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+            renderOption={(item) => {
+                return item.name;
+            }}
+            getOptions={(args) => {
+                return dashboardContext.role.items;
+            }}
+            getOptionInfo={(item) => {
+                return {
+                    id: item.id,
+                    color: item.color,
+                    tooltip: item.description ?? undefined,
+                };
+            }}
+        />
+    );
+};
+
+
+
+
+
+
+
+
+
 
 export enum UserDetailTabSlug {
     credits = "credits",
@@ -32,7 +93,6 @@ export interface UserDetailArgs {
 
 export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
     const dashboardContext = useDashboardContext();
-    //const router = useRouter();
 
     const [selectedTab, setSelectedTab] = React.useState<UserDetailTabSlug>(props.initialTab || UserDetailTabSlug.attendance);
 
@@ -55,21 +115,21 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     </div>
                 </div>
 
-                <CMChipContainer>
-                    <CMStandardDBChip
-                        size='small'
-                        shape="rectangle"
-                        model={user.role}
-                        variation={StandardVariationSpec.Strong}
-                        getTooltip={(_) => user.role?.description || null}
-                    />
-                </CMChipContainer>
+                <RoleControl
+                    userId={user.id}
+                    value={user.role}
+                    readonly={props.readonly}
+                    tableClient={tableClient}
+                    onChange={() => {
+                        refetch();
+                    }}
+                />
 
                 <div className='flex-spacer'></div>
 
                 <AdminInspectObject src={user} />
 
-            </div>{/* title line */}
+            </div>{/* /title line */}
 
             <UserAdminPanel
                 user={user}
@@ -102,59 +162,64 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
             }
             {dashboardContext.isAuthorized(Permission.manage_users) &&
                 <KeyValueTable data={{
-                    phone: user.phone,
-                    email: user.email,
-                    identity: <Suspense><UserIdentityIndicator user={user} /></Suspense>// user.googleId ? <GoogleIconSmall /> : "Password"
+                    //Role: ,
+                    Phone: user.phone,
+                    Email: user.email,
+                    Identity: <Suspense><UserIdentityIndicator user={user} /></Suspense>,
                 }} />
             }
 
-            <CMTabPanel
-                selectedTabId={selectedTab}
-                handleTabChange={(e, newId) => handleTabChange(newId as string)}
-            >
-                <CMTab
-                    enabled={dashboardContext.isAuthorized(Permission.view_events_nonpublic)}
-                    thisTabId={UserDetailTabSlug.attendance}
-                    summaryTitle={"Attendance"}
-                    summaryIcon={gIconMap.Check()}
+            {dashboardContext.isAuthorized(Permission.sysadmin) && (
+
+                <CMTabPanel
+                    selectedTabId={selectedTab}
+                    handleTabChange={(e, newId) => handleTabChange(newId as string)}
                 >
-                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                        <UserAttendanceTabContent user={user} />
-                    </Suspense>
-                </CMTab>
-                <CMTab
-                    enabled={dashboardContext.isAuthorized(Permission.manage_users)}
-                    thisTabId={UserDetailTabSlug.credits}
-                    summaryTitle={"Credits"}
-                    summaryIcon={gIconMap.Comment()}
-                >
-                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                        <SongsProvider>
-                            <UserCreditsTabContent user={user} />
-                        </SongsProvider>
-                    </Suspense>
-                </CMTab>
-                <CMTab
-                    enabled={dashboardContext.isAuthorized(Permission.view_wiki_page_revisions)}
-                    thisTabId={UserDetailTabSlug.wiki}
-                    summaryTitle={"Wiki Contributions"}
-                    summaryIcon={gIconMap.Article()}
-                >
-                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                        <UserWikiContributionsTabContent user={user} />
-                    </Suspense>
-                </CMTab>
-                <CMTab
-                    enabled={dashboardContext.isAuthorized(Permission.sysadmin)}
-                    thisTabId={UserDetailTabSlug.massAnalysis}
-                    summaryTitle={"Mass Analysis"}
-                    summaryIcon={gIconMap.Info()}
-                >
-                    <Suspense fallback={<div className="lds-dual-ring"></div>}>
-                        <UserMassAnalysisTabContent user={user} />
-                    </Suspense>
-                </CMTab>
-            </CMTabPanel>
+                    <CMTab
+                        enabled={dashboardContext.isAuthorized(Permission.sysadmin)}
+                        thisTabId={UserDetailTabSlug.attendance}
+                        summaryTitle={"Attendance"}
+                        summaryIcon={gIconMap.Check()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <UserAttendanceTabContent user={user} />
+                        </Suspense>
+                    </CMTab>
+                    <CMTab
+                        enabled={dashboardContext.isAuthorized(Permission.sysadmin)}
+                        thisTabId={UserDetailTabSlug.credits}
+                        summaryTitle={"Credits"}
+                        summaryIcon={gIconMap.Comment()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <SongsProvider>
+                                <UserCreditsTabContent user={user} />
+                            </SongsProvider>
+                        </Suspense>
+                    </CMTab>
+                    <CMTab
+                        enabled={dashboardContext.isAuthorized(Permission.sysadmin)}
+                        thisTabId={UserDetailTabSlug.wiki}
+                        summaryTitle={"Wiki Contributions"}
+                        summaryIcon={gIconMap.Article()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <UserWikiContributionsTabContent user={user} />
+                        </Suspense>
+                    </CMTab>
+                    <CMTab
+                        enabled={dashboardContext.isAuthorized(Permission.sysadmin)}
+                        thisTabId={UserDetailTabSlug.massAnalysis}
+                        summaryTitle={"Mass Analysis"}
+                        summaryIcon={gIconMap.Info()}
+                    >
+                        <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                            <UserMassAnalysisTabContent user={user} />
+                        </Suspense>
+                    </CMTab>
+                </CMTabPanel>
+            )}
         </div>
     </div>;
 };
+

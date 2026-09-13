@@ -410,13 +410,16 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         this.schema.columns.forEach(schemaCol => {
             schemaCol.ApplyClientToDb(postClientModel, dbModel, mode);
         });
-        return omitUnauthorizedMutationFields({
+
+        const ret = omitUnauthorizedMutationFields({
             schema: this.schema,
             model: dbModel,
             existingModel: row,
             mode,
             publicData: this.publicData,
         });
+
+        return ret;
     };
 
     // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
@@ -425,23 +428,6 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
     // for things like FK, 
     doUpdateMutation = async (row: TAnyModel) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
-        // const postClientModel = { }; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
-        // const updateModel = { };
-
-        // this.clientColumns.forEach(clientCol => {
-        //     // seems to be an eternal problem; probably a bad design in general. well,
-        //     // the case for using client schema is for EventDateRangeColumn, where the single "client" field consists of 3 underlying schema columns.
-        //     // so the client column types need the ability to prepare things for update.
-        //     if (clientCol.ApplyClientToPostClient) {
-        //         clientCol.ApplyClientToPostClient(row, postClientModel, "update");
-        //     } else {
-        //         postClientModel[clientCol.columnName] = row[clientCol.columnName]; // by default just copy the value.
-        //     }
-        // });
-
-        // this.schema.columns.forEach(schemaCol => {
-        //     schemaCol.ApplyClientToDb(postClientModel, updateModel, "update");
-        // });
 
         const dbModel = this.prepareMutation(row, "update");
 

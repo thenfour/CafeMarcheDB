@@ -53,21 +53,6 @@ const xAuthorizationMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
     PreInsert: Permission.sysadmin,
 } as const;
 
-// Account lifecycle, role membership, and the superuser flag use dedicated
-// mutations. Generic User tables may display them but never change them.
-const authorizeUserSecurityFieldViewOnly = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
-    if (args.rowMode !== "view") return false;
-    return args.publicData.effectivePermissions.includesName(Permission.basic_trust);
-};
-
-// Email is a login identifier, not an ordinary profile field. An actual
-// Sysadmin may supply it when creating a maintenance account, but corrections
-// to an existing account use the dedicated correctUserEmail mutation.
-const authorizeUserLoginEmail = (args: db3.DB3AuthorizeAndSanitizeInput<TAnyModel>): boolean => {
-    if (args.rowMode === "new") return args.publicData.effectivePermissions.includesName(Permission.sysadmin);
-    return authorizeUserSecurityFieldViewOnly(args);
-};
-
 // These fields are owned by dedicated authentication/calendar flows. Keep
 // them known to request validation so crafted writes fail as unauthorized
 // rather than falling through as unknown fields.
@@ -169,7 +154,7 @@ export const xUserMinimum = new db3.xTable({
     columns: [
         MakePKfield(),
         MakeCreatedAtField(),
-        MakeIsDeletedField({ _customAuth: authorizeUserSecurityFieldViewOnly }),
+        MakeIsDeletedField({ authMap: xAuthorizationMetadataAuthMap }),
 
         new GenericStringField({
             columnName: "name",
@@ -182,7 +167,8 @@ export const xUserMinimum = new db3.xTable({
             columnName: "email",
             allowNull: false,
             format: "email",
-            _customAuth: authorizeUserLoginEmail,
+            //_customAuth: authorizeUserLoginEmail,
+            authMap: xAuthorizationMetadataAuthMap,
         }),
         new GenericStringField({
             columnName: "phone",
@@ -193,7 +179,7 @@ export const xUserMinimum = new db3.xTable({
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            _customAuth: authorizeUserSecurityFieldViewOnly,
+            authMap: xAuthorizationMetadataAuthMap,
             allowNull: false,
         }),
         new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
@@ -650,7 +636,7 @@ const userBaseArgs: db3.TableDesc = {
     },
     columns: [
         MakePKfield(),
-        MakeIsDeletedField({ _customAuth: authorizeUserSecurityFieldViewOnly }),
+        MakeIsDeletedField({ authMap: xAuthorizationMetadataAuthMap }),
         MakeCreatedAtField(),
         new GenericStringField({
             columnName: "name",
@@ -663,7 +649,7 @@ const userBaseArgs: db3.TableDesc = {
             columnName: "email",
             allowNull: false,
             format: "email",
-            _customAuth: authorizeUserLoginEmail,
+            authMap: xAuthorizationMetadataAuthMap,
         }),
         new GenericStringField({
             columnName: "phone",
@@ -680,7 +666,7 @@ const userBaseArgs: db3.TableDesc = {
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            _customAuth: authorizeUserSecurityFieldViewOnly,
+            authMap: xAuthorizationMetadataAuthMap,
             allowNull: false,
         }),
         new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
@@ -688,7 +674,7 @@ const userBaseArgs: db3.TableDesc = {
             allowNull: true,
             fkidMember: "roleId",
             foreignTableID: "Role",
-            _customAuth: authorizeUserSecurityFieldViewOnly,
+            authMap: xAuthorizationMetadataAuthMap,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 OR: [
                     { name: { contains: query } },

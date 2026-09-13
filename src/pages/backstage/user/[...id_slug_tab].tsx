@@ -44,6 +44,8 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
                 new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
                 new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
 
+                // required to be able to edit.
+                new DB3Client.ForeignSingleFieldClient<db3.RolePayload>({ columnName: "role", cellWidth: 150 }),
             ],
         }),
         filterModel: {
