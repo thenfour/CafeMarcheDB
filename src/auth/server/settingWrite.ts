@@ -5,12 +5,22 @@ import {
     RegisterChange,
 } from "shared/activityLog";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
+import { resolveBandTimeZone } from "shared/dateTimePolicy";
+import { Setting } from "shared/settingKeys";
 
 export type SettingValue = {
     id: number;
     name: string;
     value: string;
 };
+
+// Generic setting editors must enforce the same scheduling contract as the
+// branding form. Empty values retain their existing clear/default semantics.
+export function validateSettingValue(name: string | undefined, value: string | null | undefined): void {
+    if (name?.trim().toLowerCase() === Setting.BandTimeZone.toLowerCase()) {
+        resolveBandTimeZone(value);
+    }
+}
 
 export const writeSettingValue = async (args: {
     db: TransactionalPrismaClient;
@@ -19,7 +29,11 @@ export const writeSettingValue = async (args: {
     name: string;
     value: string | null | undefined;
 }): Promise<SettingValue | null> => {
+    validateSettingValue(args.name, args.value);
     const oldValue = await args.db.setting.findFirst({ where: { name: args.name } });
+    if (oldValue && oldValue.name !== args.name) {
+        validateSettingValue(oldValue.name, args.value);
+    }
     const shouldDelete = args.value === null || args.value === undefined || args.value === "";
 
     if (shouldDelete) {

@@ -11,6 +11,7 @@ import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { loadEffectivePermissionNames } from "../server/effectivePermissions";
+import { loadBandTimeZone } from "src/server/dateTime";
 
 // exported for unit tests
 export async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
@@ -183,6 +184,7 @@ export default resolver.pipe(
                 db.eventCustomField.findMany(),
                 db.wikiPageTag.findMany(),
                 relevantEventsCall,
+                loadBandTimeZone(),
             ]);
 
             await RefreshSessionPermissions(ctx);
@@ -205,6 +207,7 @@ export default resolver.pipe(
                 eventCustomField,
                 wikiPageTag,
                 relevantEventIds,
+                bandTimeZone,
             ] = results;
 
             const clientServerState = getClientServerState(effectivePermissions.includes(Permission.sysadmin));
@@ -228,6 +231,7 @@ export default resolver.pipe(
                 serverBaseUri: clientServerState.baseUri,
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
+                bandTimeZone,
                 effectivePermissions,
             };
             if (process.env.NODE_ENV === "development") {

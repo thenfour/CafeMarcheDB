@@ -24,11 +24,11 @@ export const loadFreshPrincipal = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
 ): Promise<UserWithRolesPayload | null> => userId
-    ? db.user.findFirst({
-        ...UserWithRolesArgs,
-        where: { id: userId, isDeleted: false },
-    })
-    : null;
+        ? db.user.findFirst({
+            ...UserWithRolesArgs,
+            where: { id: userId, isDeleted: false },
+        })
+        : null;
 
 export const requireFreshAuthorization = async (
     db: TransactionalPrismaClient,
@@ -38,6 +38,7 @@ export const requireFreshAuthorization = async (
     const actor = await loadFreshPrincipal(db, userId);
     const permissionNames = await loadEffectivePermissionNames(db, actor);
     if (!principalHasPermission(permissionNames, permission)) {
+        console.trace("userId:", userId, "checking permission:", permission);
         throw new FreshPermissionAuthorizationError(permission);
     }
     return actor;

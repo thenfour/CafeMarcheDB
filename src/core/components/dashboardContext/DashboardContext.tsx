@@ -231,6 +231,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
+    valueRef.current.bandTimeZone = dashboardData.bandTimeZone;
     valueRef.current.brand = brand;
 
     // establish singleton for use by non-react code

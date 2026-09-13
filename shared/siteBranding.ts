@@ -4,6 +4,7 @@ import {
     OptionalBrandColorSchema,
     RequiredBrandColorSchema,
 } from "./brandingValidation";
+import { BandTimeZoneSchema, resolveBandTimeZone } from "./dateTimePolicy";
 import { Setting } from "./settingKeys";
 
 // Branding is a single delegated configuration capability even though its
@@ -15,6 +16,7 @@ export const SiteBrandingSettingsSchema = z.object({
     siteTitlePrefix: z.string(),
     siteFaviconUrl: BrandAssetUrlSchema,
     siteLogoUrl: BrandAssetUrlSchema,
+    bandTimeZone: BandTimeZoneSchema,
     calendarName: z.string(),
     calendarCompany: z.string(),
     calendarProduct: z.string(),
@@ -34,6 +36,7 @@ export const siteBrandingSettingByField = {
     siteTitlePrefix: Setting.Dashboard_SiteTitlePrefix,
     siteFaviconUrl: Setting.Dashboard_SiteFaviconUrl,
     siteLogoUrl: Setting.Dashboard_SiteLogoUrl,
+    bandTimeZone: Setting.BandTimeZone,
     calendarName: Setting.Ical_CalendarName,
     calendarCompany: Setting.Ical_CalendarCompany,
     calendarProduct: Setting.Ical_CalendarProduct,
@@ -53,6 +56,8 @@ export const siteBrandingSettingsFromValues = (
 ): SiteBrandingSettings => Object.fromEntries(
     Object.entries(siteBrandingSettingByField).map(([field, settingName]) => [
         field,
-        values.get(settingName) ?? "",
+        field === "bandTimeZone"
+            ? resolveBandTimeZone(values.get(settingName))
+            : values.get(settingName) ?? "",
     ]),
 ) as SiteBrandingSettings;

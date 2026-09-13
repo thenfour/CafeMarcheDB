@@ -1,5 +1,5 @@
 import { distinctValuesOfArray } from "@/shared/arrayUtils";
-import { isPermission, Permission } from "@/shared/permissions";
+import { gPermissionRegistry, isPermission, Permission } from "@/shared/permissions";
 import type { UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { CreatePublicData, type CreatePublicDataArgs, type PublicDataType } from "types";

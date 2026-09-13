@@ -5,6 +5,7 @@ import { ICalEventStatus } from "ical-generator";
 import { markdownToPlainText } from "shared/markdownUtils";
 import { slugify } from "shared/rootroot";
 import { DateTimeRange } from "shared/time";
+import { calendarDateToUtcDate, getStoredAllDayCalendarRange } from "shared/dateTimePolicy";
 import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
@@ -146,14 +147,6 @@ export type EventCalendarInput = Pick<EventForCal,
 };
 
 
-function prepareAllDayDateForICal(date) {
-    const ret = new Date(date);
-    ret.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return ret;
-}
-
-
-
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
 // grab just the info needed to know if a revision # is necessary.
 // returns null if no event can be generated
@@ -163,33 +156,33 @@ type GetEventSegmentCalendarInputArgs = {
     descriptionText: string;
 };
 export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, ...args }: GetEventSegmentCalendarInputArgs): EventCalendarInput | null => {
-    const dateRange = new DateTimeRange({
-        startsAtDateTime: segment.startsAt || null,
-        durationMillis: Number(segment.durationMillis),
-        isAllDay: CoalesceBool(segment.isAllDay, true),
-    });
+    if (!segment.startsAt) return null;
+    const isAllDay = CoalesceBool(segment.isAllDay, true);
 
     const eventUri = ServerApi.getAbsoluteUri(`/backstage/event/${event.id}/${slugify(event.name || "")}`); // 
 
-    if (dateRange.isTBD()) {
-        return null;
-    }
     const statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance) = event.status?.significance as any;
 
     const calStatus = (statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
         (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
             ICalEventStatus.TENTATIVE;
 
-    // for all-day events, the datetime range will return midnight of the start day.
-    // BUT this will lead to issues because of timezones. In order to output a UTC date,
-    // the time gets shifted and will likely be the previous day. For all-day events therefore,
-    // let's be precise and use an ISO string (20240517) because all-day events are not subject to
-    // time zone offsets.
-    let start: Date = dateRange.getStartDateTime()!;
-    let end: Date = dateRange.getEndDateTime()!; // this date must be IN the time range so don't use "end", use "last"
-    if (dateRange.isAllDay()) {
-        start = prepareAllDayDateForICal(start);
-        end = prepareAllDayDateForICal(end);
+    let start: Date;
+    let end: Date;
+    if (isAllDay) {
+        // All-day feeds carry the selected dates, not the band's absolute
+        // midnight interval. Supply both calendar bounds without host-local math.
+        const dates = getStoredAllDayCalendarRange(segment.startsAt, Number(segment.durationMillis));
+        start = calendarDateToUtcDate(dates.startDate);
+        end = calendarDateToUtcDate(dates.endDateExclusive);
+    } else {
+        const dateRange = new DateTimeRange({
+            startsAtDateTime: segment.startsAt,
+            durationMillis: Number(segment.durationMillis),
+            isAllDay: false,
+        });
+        start = dateRange.getStartDateTime()!;
+        end = dateRange.getEndDateTime()!;
     }
 
     let name = event.name || "";
@@ -212,7 +205,7 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
 
         start,
         end,
-        isAllDay: segment.isAllDay,
+        isAllDay,
         calStatus,
 
         statusSignificance,

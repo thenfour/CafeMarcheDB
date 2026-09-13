@@ -1,4 +1,5 @@
 import { DefaultDbBrandConfig, HostingMode } from "@/shared/brandConfigBase";
+import { BandTimeZoneSchema } from "@/shared/dateTimePolicy";
 import type { SiteBrandingSettings } from "@/shared/siteBranding";
 import updateSetting from "@/src/auth/mutations/updateSetting";
 import updateSiteBrandingSettings from "@/src/auth/mutations/updateSiteBrandingSettings";
@@ -198,6 +199,10 @@ const BrandForm = () => {
     const [values, setValues] = React.useState<SiteBrandingSettings>(loadedSettings);
     const [isSaving, setIsSaving] = React.useState(false);
     const [updateBranding] = useMutation(updateSiteBrandingSettings);
+    const bandTimeZoneValidation = BandTimeZoneSchema.safeParse(values.bandTimeZone);
+    const bandTimeZoneError = bandTimeZoneValidation.success
+        ? undefined
+        : bandTimeZoneValidation.error.issues[0]?.message;
 
     React.useEffect(() => setValues(loadedSettings), [loadedSettings]);
 
@@ -206,10 +211,12 @@ const BrandForm = () => {
     };
 
     const onSave = async () => {
+        if (!bandTimeZoneValidation.success) return;
         setIsSaving(true);
         try {
-            const saved = await updateBranding(values);
+            const saved = await updateBranding({ ...values, bandTimeZone: bandTimeZoneValidation.data });
             setValues(saved);
+            await dashboardContext.refetchDashboardData();
             showMessage({
                 severity: "success",
                 children: "Brand settings saved. Refresh to see application-wide changes.",
@@ -230,12 +237,21 @@ const BrandForm = () => {
                 canUpload={dashboardContext.isAuthorized(Permission.upload_files)}
                 onChange={onChange}
             />
+            <h2>Event scheduling</h2>
+            <TextField
+                fullWidth
+                label="Band time zone"
+                value={values.bandTimeZone}
+                onChange={event => onChange("bandTimeZone", event.target.value)}
+                error={!!bandTimeZoneError}
+                helperText={bandTimeZoneError || "The band's home time zone, including daylight saving time. Use a named zone, such as Europe/Brussels or Asia/Tokyo."}
+            />
             <h2>Calendar identity</h2>
             <BrandingFields fields={calendarFields} values={values} canUpload={false} onChange={onChange} />
             <h2>Theme</h2>
             <BrandingFields fields={themeFields} values={values} canUpload={false} onChange={onChange} />
             <Box>
-                <Button variant="contained" disabled={isSaving} onClick={onSave}>Save branding</Button>
+                <Button variant="contained" disabled={isSaving || !bandTimeZoneValidation.success} onClick={onSave}>Save branding</Button>
             </Box>
         </div>
     </CMSinglePageSurfaceCard>;

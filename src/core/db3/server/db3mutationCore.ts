@@ -26,6 +26,7 @@ import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
 import { clearBrandCache } from "@/src/server/brand";
 import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
 import { invalidateSessionsForRolePermissionChanges } from "@/src/auth/server/sessionInvalidation";
+import { validateSettingValue } from "@/src/auth/server/settingWrite";
 
 var path = require('path');
 var fs = require('fs');
@@ -618,6 +619,10 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             }
             // createdAt and updatedAt are done automatically by prisma.
 
+            if (table.tableName === db3.xSetting.tableName) {
+                validateSettingValue(authorizedLocalFields.name, authorizedLocalFields.value);
+            }
+
             obj = await dbTableClient.create({
                 data: authorizedLocalFields,
             });
@@ -762,6 +767,11 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         }
 
         if (Object.keys(authorizedLocalFields).length > 0) {
+            if (table.tableName === db3.xSetting.tableName) {
+                // A raw setting edit can change only its name or only its value.
+                const setting = { ...fullOldObj, ...authorizedLocalFields };
+                validateSettingValue(setting.name, setting.value);
+            }
             const oldValues = getIntersectingFields(authorizedLocalFields, fullOldObj);
             obj = oldValues;
 

@@ -24,6 +24,7 @@ import getPaginatedSettings from "src/auth/queries/getPaginatedSettings"
 import getSetting from "src/auth/queries/getSetting"
 import getSiteBrandingSettings from "src/auth/queries/getSiteBrandingSettings"
 import { clearBrandCache } from "src/server/brand"
+import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy"
 import { Permission, getPermissionDefinition } from "shared/permissions"
 import { Setting } from "shared/settingKeys"
 import {
@@ -87,6 +88,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       Setting.Dashboard_SiteTitlePrefix,
       Setting.Dashboard_SiteFaviconUrl,
       Setting.Dashboard_SiteLogoUrl,
+      Setting.BandTimeZone,
       Setting.Ical_CalendarName,
       Setting.Ical_CalendarCompany,
       Setting.Ical_CalendarProduct,
@@ -110,6 +112,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
       ...validBranding(),
       siteTitle: "The Example Band",
       calendarName: "Example Band calendar",
+      bandTimeZone: "Asia/Tokyo",
       themePrimaryMain: "#123456",
     }
 
@@ -118,12 +121,52 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
     expect(authorizationTestDb.snapshot("setting")).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: Setting.Dashboard_SiteTitle, value: input.siteTitle }),
       expect.objectContaining({ name: Setting.Ical_CalendarName, value: input.calendarName }),
+      expect.objectContaining({ name: Setting.BandTimeZone, value: input.bandTimeZone }),
       expect.objectContaining({ name: Setting.Dashboard_Theme_PrimaryMain, value: input.themePrimaryMain }),
     ]))
     expect(authorizationTestDb.snapshot("setting")).not.toEqual(expect.arrayContaining([
       expect.objectContaining({ name: Setting.Dashboard_HostingMode }),
     ]))
     expect(clearBrandCache).toHaveBeenCalledTimes(1)
+    await expect(invokeResolver(getSiteBrandingSettings, {}, ctx)).resolves.toEqual(input)
+  })
+
+  it.each([undefined, "", "   "])("defaults an unset band time zone (%s) without writing settings", async value => {
+    if (value !== undefined) {
+      authorizationTestDb.getDelegate("setting").reset([
+        { id: 1, name: Setting.BandTimeZone, value },
+      ])
+    }
+    const before = authorizationTestDb.snapshot("setting")
+    const { ctx } = createAuthorizationPersona("public")
+
+    await expect(invokeResolver(getSiteBrandingSettings, {}, ctx)).resolves.toEqual(
+      expect.objectContaining({ bandTimeZone: DEFAULT_BAND_TIME_ZONE }),
+    )
+    expect(authorizationTestDb.snapshot("setting")).toEqual(before)
+    expect(clearBrandCache).not.toHaveBeenCalled()
+  })
+
+  it.each(["", "   ", "Europe/NotAPlace", "+02:00"])("rejects invalid band time zone %s before changing any branding", async bandTimeZone => {
+    const initialSettings = [
+      { id: 1, name: Setting.Dashboard_SiteTitle, value: "Original title" },
+      { id: 2, name: Setting.BandTimeZone, value: "Europe/Brussels" },
+    ]
+    authorizationTestDb.getDelegate("setting").reset(initialSettings)
+    const { ctx } = createAuthorizationPersona("normal", {
+      id: brandManager.id,
+      permissions: brandingPermissionSet,
+    })
+
+    await expect(invokeResolver(updateSiteBrandingSettings, {
+      ...validBranding(),
+      siteTitle: "Changed title",
+      bandTimeZone,
+    }, ctx)).rejects.toThrow()
+
+    expect(authorizationTestDb.snapshot("setting")).toEqual(initialSettings)
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
+    expect(clearBrandCache).not.toHaveBeenCalled()
   })
 
   it("rejects platform or unknown keys at the branding schema boundary", async () => {
@@ -182,10 +225,23 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
 
     await expect(invokeResolver(
       updateSiteBrandingSettings,
-      { ...validBranding(), siteTitle: "Forged" },
+      { ...validBranding(), siteTitle: "Forged", bandTimeZone: "Asia/Tokyo" },
       ctx,
     )).rejects.toThrow("Not authorized for manage_site_branding")
     expect(authorizationTestDb.snapshot("setting")).toEqual([])
+    expect(clearBrandCache).not.toHaveBeenCalled()
+  })
+
+  it.each(["public", "normal"] as const)("requires branding permission to change the band time zone as %s", async persona => {
+    const { ctx } = createAuthorizationPersona(persona)
+
+    await expect(invokeResolver(updateSiteBrandingSettings, {
+      ...validBranding(),
+      bandTimeZone: "Asia/Tokyo",
+    }, ctx)).rejects.toThrow()
+
+    expect(authorizationTestDb.snapshot("setting")).toEqual([])
+    expect(authorizationTestDb.snapshot("change")).toEqual([])
     expect(clearBrandCache).not.toHaveBeenCalled()
   })
 

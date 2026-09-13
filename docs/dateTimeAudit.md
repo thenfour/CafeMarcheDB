@@ -1,10 +1,12 @@
 # Date/time policy audit
 
-2026-09-12. This is an audit and executable regression baseline. Production code,
-database settings, event data, and schema are unchanged. The tests expose existing
-defects and the gap between current behavior and the timezone policy agreed in the
-planning conversation. The Japan report has not been reproduced as a complete user
-journey, and none of these findings establishes its historical cause.
+2026-09-12. This report tracks the audit, executable regression baseline, and
+completed first repair slice: band-timezone configuration, shared policy routines,
+and all-day calendar-feed correction. Event editors, general range handling,
+lifecycle classification, and SQL queries still need integration and repairs.
+No existing event data or database schema has been changed. The Japan report has
+not been reproduced as a complete user journey, and none of these findings
+establishes its historical cause.
 
 ## Agreed policy
 
@@ -26,9 +28,48 @@ The iCalendar date-only/exclusive-end contract is specified by
 `TZID` cannot be attached to a `DATE` property, per
 [section 3.2.19](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.19).
 
+## Completed slice 1: establish the band-timezone foundation
+
+- The existing `Setting` table now supports `BandTimeZone`, exposed as **Band time
+  zone** on [the branding page](../src/pages/backstage/brand.tsx). The strict
+  [branding aggregate](../shared/siteBranding.ts) validates named zones and uses
+  the existing `manage_site_branding` permission, fresh permission check, and
+  atomic transaction. Missing or blank configuration resolves to
+  `Europe/Brussels` without writing a default row; invalid configured names fail
+  validation instead of silently selecting another zone. Generic settings writes
+  and raw Settings inserts/updates enforce the same validation, including edits
+  that change only a row's name or value. Their existing Sysadmin restriction
+  remains in place.
+- [The server loader](../src/server/dateTime.ts) reads the setting freshly.
+  Dashboard data exposes it as `dashboardContext.bandTimeZone`, and saving the
+  branding form refreshes that context. No additional permission or schema
+  migration is needed.
+- [shared/dateTimePolicy.ts](../shared/dateTimePolicy.ts) contains named-zone
+  validation, band-clock authoring conversion, exact-instant formatting,
+  all-day calendar-date decoding, and band-midnight interval construction.
+  `@js-temporal/polyfill` 0.5.1 stays behind this module; its public APIs use ISO
+  strings and native `Date` values. Authoring explicitly uses `compatible` DST
+  disambiguation: choose the earlier repeated occurrence and move a nonexistent
+  clock time forward by the gap. This follows
+  [Temporal's documented conventional behavior](https://tc39.es/proposal-temporal/docs/timezone.html).
+  Reading an existing instant preserves its occurrence and precision.
+- [The all-day feed adapter](../src/core/db3/server/icalUtils.ts) now decodes
+  stored calendar dates through that policy and supplies exclusive date-only
+  bounds without server-local arithmetic. All five previously failing feed
+  checks are ordinary passing regressions. Feed dates intentionally do not
+  depend on the band's absolute midnight interval.
+
+This slice establishes configuration and conversion operations; existing event
+editors still interpret input in device-local time. Existing lifecycle checks,
+cached aggregate bounds, and SQL date filters retain their previous behavior.
+Changing the setting does not rewrite event or segment data or recalculate those
+cached bounds. Their adoption and the treatment of timezone changes must be
+implemented together in subsequent slices. The all-day feed repair avoids the
+general `DateTimeRange` hydration defect; it does not repair its other consumers.
+
 ## Executable evidence
 
-The new tests live under [tests/datetime](../tests/datetime). Native `Date` runs in
+The date/time tests live under [tests/datetime](../tests/datetime). Native `Date` runs in
 separate Node processes with `TZ` set before startup. This avoids relying on the
 developer machine's timezone or changing timezone globals inside a Vitest worker.
 The matrix covers UTC, Brussels, Tokyo, Los Angeles, and Sydney for feed-specific
@@ -39,8 +80,17 @@ cases. Clocks are fixed where an operation depends on the current date.
 | [timePolicy.test.ts](../tests/datetime/timePolicy.test.ts) | 44 | 22 | Real shared range, arithmetic, classification, relative labels, and sorting helpers |
 | [authoringPolicy.test.ts](../tests/datetime/authoringPolicy.test.ts) | 20 | 12 | Real clock-option/range helpers and the control's selected-end/toggle calculations |
 | [eventDateConsumers.test.ts](../tests/datetime/eventDateConsumers.test.ts) | 8 | 5 | Actual compact event-date React rendering with unrelated sibling imports isolated |
-| [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 18 | 5 | Actual application feed adapter and installed `ical-generator` serialization |
-| Total | 90 | 44 | 134 checks; failures repeat root causes across zones and boundaries |
+| [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 23 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
+| [bandTimePolicy.test.ts](../tests/datetime/bandTimePolicy.test.ts) | 54 | 0 | Named-zone validation, band-time conversion, DST ambiguity, all-day bounds, and host-timezone independence |
+| [bandTimeZoneLoading.test.ts](../tests/datetime/bandTimeZoneLoading.test.ts) | 4 | 0 | Fresh server setting reads, default/error behavior, and dashboard delivery |
+| [bandTimeZoneWrites.test.ts](../tests/datetime/bandTimeZoneWrites.test.ts) | 25 | 0 | Generic and raw settings validation, partial edits, clears, and retained authorization |
+| Total | 178 | 39 | 217 checks; remaining failures repeat root causes across zones and boundaries |
+
+The original audit contained 134 checks: 90 ordinary passing checks and 44 known
+failures. Slice 1 adds 83 policy/loading/write checks and repairs the five feed failures.
+[Setting authorization tests](../tests/authorization/settingAuthorization.test.ts)
+also cover default reads, valid persistence/readback, invalid updates leaving all
+branding values unchanged, and denied or stale permission grants.
 
 Confirmed gaps use Vitest's `it.fails`, asserting the desired behavior. They are
 executed, not skipped. A newly passing gap also fails the normal suite, requiring
@@ -69,7 +119,7 @@ try {
 }
 ```
 
-The expected strict result is 44 failing test cases and 90 passing test cases.
+The expected strict result is 39 failing test cases and 178 passing test cases.
 This is a reproduction command; those failures are the audit output, not test
 harness errors. Infrastructure/probe errors are outside expected-failure tests.
 
@@ -82,8 +132,10 @@ harness errors. Infrastructure/probe errors are outside expected-failure tests.
 UTC-encoded calendar dates. In Los Angeles, loading `2026-07-10T00:00Z` yields
 `2026-07-09T00:00Z`. Reconstructing its spec again yields 8 July. This violates
 round-trip stability and can spread through rendering, editing, union, and feed
-generation. The actual feed adapter exports 9-10 July instead of 10-11 July in
-that server timezone (`DT-FEED-02` in the feed tests).
+generation. The original feed adapter exported 9-10 July instead of 10-11 July in
+that server timezone (`DT-FEED-02` in the feed tests). **Slice 1 repairs the feed
+path** by decoding stored calendar dates directly; the general constructor and
+its other consumers still reproduce this defect.
 
 Separate picker-date conversion from hydration of a stored calendar date. Reading
 an already normalized spec must preserve it. Retaining the existing database
@@ -154,20 +206,21 @@ is labeled `Today` instead of `Happening now` in all four tested zones. An all-d
 formatted as an instant. This presentation path needs the same semantic range
 used by the rest of the event UI.
 
-**DT-07 / DT-FEED-01 - Medium: local DST correction can corrupt all-day feed boundaries.**
+**DT-07 / DT-FEED-01 - Resolved in slice 1: local DST correction corrupted all-day feed boundaries.**
 
-[prepareAllDayDateForICal](../src/core/db3/server/icalUtils.ts#L149) applies the
-timezone offset through local `setMinutes`. That mutation can cross a clock
-change. With server timezone `Australia/Sydney`, all-day 3 October 2026 exports
-`DTSTART=20261003` and `DTEND=20261003`, an empty interval. All-day 4 October
-exports 3-5 October, an incorrect two-day period. A Sydney autumn case preserves
-serialized dates but changes the intermediate timestamp and therefore the
-[revision input hash](../src/core/db3/server/icalUtils.ts#L262).
+The former `prepareAllDayDateForICal` applied the timezone offset through local
+`setMinutes`, which could cross a clock change. With server timezone
+`Australia/Sydney`, all-day 3 October 2026 exported `DTSTART=20261003` and
+`DTEND=20261003`, an empty interval. All-day 4 October exported 3-5 October, an
+incorrect two-day period. A Sydney autumn case preserved serialized dates but
+changed the intermediate timestamp and therefore the revision input hash.
 
-Construct date-only feed values directly from calendar fields using the
-serializer's supported boundary representation. Feed output and revision
-inputs must be independent of server-local timezone. These failures depend on
-the server timezone; a subscriber traveling to Japan does not change it.
+[The adapter](../src/core/db3/server/icalUtils.ts) now constructs date-only feed
+values directly from stored calendar fields using shared policy operations.
+Regression tests verify correct exclusive ends and stable revision input across
+the tested server timezones. These historical failures depended on the server
+timezone; a subscriber traveling to Japan does not change it. Timed feed entries
+still use `DateTimeRange` and remain subject to DT-02.
 
 **DT-08 - Medium: point timestamps acquire an invented ongoing interval.**
 
@@ -179,15 +232,16 @@ tooltips and other creation/history timestamps as well as the compact event
 label. Keep point-relative descriptions separate from event lifecycle
 classification; both can remain in the existing shared date/time files.
 
-**POL-01 - Required policy change: band timezone is not represented at runtime.**
+**POL-01 - Partially resolved: band timezone is configured, but event consumers still need adoption.**
 
 All-day [hitTestDateTime](../shared/time.ts#L787) derives its boundaries from
 runtime-local midnight. The same event can be future in UTC or Los Angeles and
 already ongoing in Brussels or Tokyo. Tests cover both exact band-midnight
 edges of a 10 July event. [Event authoring](../src/core/components/DateTime/DateTimeRangeControl.tsx#L321)
-also remains device-local, and [the setting registry](../shared/settingKeys.ts)
-has no band timezone setting. This is the newly agreed policy's implementation
-gap; it is distinct from corruption of existing representations.
+also remains device-local. Slice 1 adds the band setting, runtime access, and
+tested shared conversion operations; these existing consumers do not yet use
+them. The remaining policy integration is distinct from corruption of existing
+representations.
 
 ## Findings traced in code, with integration tests still needed
 
@@ -259,28 +313,28 @@ do not need a framework for elapsed-versus-calendar-day precision.
 
 ## Bounded implementation sequence
 
-1. **Make the existing range representation lossless.** Separate hydration from
+1. **Establish the band-time policy first - completed in slice 1.** The validated
+   branding setting, fresh server/dashboard access, and shared date/time policy
+   now provide the foundation. The all-day feed adapter is its first production
+   consumer, with all five feed regressions repaired. Keep calendar-window and
+   lifecycle decisions in this module as those consumers are integrated; pass
+   `now` and timezone context explicitly. No event data was rewritten.
+2. **Make the existing range representation lossless.** Separate hydration from
    authoring normalization, preserve UTC instants, repair all-day round trips and
    union algebra, and remove the affected expected-failure markers. Introduce
    explicit semantic calendar-date and absolute-interval operations within the
    shared files. Avoid changing persisted schema merely to rename representations.
-2. **Introduce the band-time policy in one place.** Add a validated named timezone
-   setting using the existing `Setting` name/value table. Resolve it through
-   existing server/dashboard data plumbing. A small `shared/dateTimePolicy.ts`
-   can own authoring conversion, band-midnight intervals, local calendar windows,
-   and lifecycle/relative-label decisions. Pass `now` and timezone context
-   explicitly into pure policy routines. Keep `shared/time.ts` focused on
-   mechanical operations and existing representation boundaries.
 3. **Integrate existing controls and presentations.** Event editors, compact
    labels, attendance timing, and calendar adapters consume semantic operations.
    Keep generic personal report/range pickers in the viewer timezone: they share
    lower-level controls with event editing and must not inherit band time
    accidentally. Repair clock options and selected-end calculations together.
-4. **Align server aggregation, queries, and feeds.** Cache absolute event bounds
-   consistently, apply overlap queries, and serialize all-day dates directly.
-   Verify an unchanged event yields the same feed and revision input in every
-   tested server timezone. Remove the remaining expected-failure markers as the
-   behavior is repaired.
+4. **Align server aggregation, queries, and remaining feed behavior.** Cache
+   absolute event bounds consistently and apply overlap queries. All-day feed
+   serialization is repaired; timed feed hydration still depends on the general
+   range repair. Define recalculation of derived all-day bounds when the band
+   timezone changes before lifecycle consumers adopt that setting. Remove the
+   remaining expected-failure markers as the behavior is repaired.
 5. **Verify persisted data and browser boundaries.** Inspect actual stored event
    and segment values before any correction; compute a reviewable comparison of
    cached bounds against canonical segment-derived bounds. Rebuild derived
@@ -299,22 +353,23 @@ the shared policy boundary.
 Enabling plugins alone is not a complete fix. A read-only probe of installed
 Day.js 1.11.9 parsed `2026-10-25 02:30 Europe/Brussels` as `01:30Z` with the clock
 frozen in January and `00:30Z` with it frozen in July. The wrapper must define
-deterministic handling of repeated and nonexistent authoring times and test it.
-Existing explicit UTC instants already identify their occurrence and must remain
-unchanged. A band-timezone setting change also needs explicit treatment of
-existing all-day bounds and cache invalidation; it should not be an incidental
-generic setting update with stale derived dates.
+deterministic handling of repeated and nonexistent authoring times. Slice 1's
+shared Temporal policy now specifies and tests that behavior; subsequent picker
+adapters should use it. Existing explicit UTC instants already identify their
+occurrence and must remain unchanged. Before applying the band timezone to
+existing lifecycle consumers, define its effect on derived all-day bounds and
+recalculation after setting changes. Slice 1 refreshes configuration only.
 
 ## Verification and limits
 
-- Audit tests: 134 checks, including 44 executed expected failures; strict mode
-  exposes those failures and leaves 90 passing controls.
-- `yarn test`: 481 test cases across 24 files passed, including the 44 expected
-  failures described above. Strict date/time mode produced exactly 44 failing
-  cases and 90 passing cases across four files, with no harness failures.
-- `yarn tsc --noEmit` and `yarn eslint tests/datetime --ext .ts` passed. Tracked
-  diff checking plus explicit whitespace/final-newline checks of all ten added
-  files passed. Every relative file link in this report resolves.
+- Full `yarn test` passed all 573 cases, including 217 date/time checks: 178
+  ordinary checks and 39 executed expected failures. Strict date/time mode
+  exposes exactly those 39 remaining failures.
+- `yarn tsc --noEmit`, focused ESLint for every changed TypeScript file,
+  `yarn build`, and `git diff --check` passed.
+- Settings resolver tests use the existing in-memory database. It does not
+  emulate transaction rollback; the bulk rejection case checks validation before
+  writes. Production mutations retain their existing serializable transactions.
 - No production database, deployed server timezone, existing corrupted row count,
   interactive MUI/calendar behavior, or external calendar application was tested.
   Query findings are code traces, not claims of live SQL execution. Authoring
