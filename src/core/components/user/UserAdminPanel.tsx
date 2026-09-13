@@ -1,5 +1,5 @@
 import { kContinuityAcknowledgementErrorPrefix } from "@/src/auth/server/userManagementPolicy";
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { useMutation } from "@blitzjs/rpc";
 import {
     Button,
     Dialog,
@@ -12,7 +12,6 @@ import React from "react";
 import correctUserEmail from "src/auth/mutations/correctUserEmail";
 import deactivateUser from "src/auth/mutations/deactivateUser";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
-import getUserManagementCapabilities from "src/auth/queries/getUserManagementCapabilities";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "../../db3/components/IconMap";
 import { DialogActionsCM } from "../CMCoreComponents2";
@@ -23,11 +22,23 @@ import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { EnrichedVerboseUser } from "./UserListItem";
 
+type UserMgmtCaps = {
+    canEdit: boolean;
+    canCorrectEmail: boolean;
+    canDeactivate: boolean;
+    canSetSysAdmin: boolean;
+    canResetPassword: boolean;
+    canImpersonate: boolean;
+
+    deactivationContinuityWarnings: string[];
+}
+
 interface UserAdminPanelProps {
     user: EnrichedVerboseUser;
     tableClient: DB3Client.xTableRenderClient;
     refetch?: () => void;
     readonly: boolean;
+    capabilities: UserMgmtCaps;
 }
 
 const getContinuityPermissionsFromError = (error: unknown): string[] => {
@@ -40,15 +51,6 @@ const getContinuityPermissionsFromError = (error: unknown): string[] => {
         .map(value => value.trim())
         .filter(Boolean);
 };
-
-type UserMgmtCaps = {
-    canEdit: boolean;
-    canCorrectEmail: boolean;
-    canDeactivate: boolean;
-    canSetSysAdmin: boolean;
-
-    deactivationContinuityWarnings: string[];
-}
 
 type EditUserProfileButtonProps = {
     capabilities: UserMgmtCaps;
@@ -141,7 +143,6 @@ export type DeactivateUserButtonProps = {
 };
 
 export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUserButtonProps) => {
-    const [showDialog, setShowDialog] = React.useState(false);
     const snackbar = useSnackbar();
     const [deactivateUserMutation] = useMutation(deactivateUser);
     const confirm = useConfirm();
@@ -208,7 +209,7 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
                     console.error(error);
                     snackbar.showError("Unable to deactivate user; see console");
                 }
-            }} startIcon={gIconMap.Delete()}>Deactivate</Button>
+            }}>Deactivate</Button>
         </Tooltip>}
     </>;
 };
@@ -240,16 +241,10 @@ export const SetUserSysadminButton = ({ capabilities, user, onOK }: SetUserSysad
 };
 
 export const UserAdminPanel = (props: UserAdminPanelProps) => {
-    const [capabilities, { refetch: refetchCapabilities }] = useQuery(
-        getUserManagementCapabilities,
-        { userId: props.user.id },
-    );
-
+    const { capabilities } = props;
     const hasAnyControl = Object.entries(capabilities)
         .some(([key, value]) => key.startsWith("can") && value === true);
     if (!hasAnyControl) return null;
-
-    capabilities.canCorrectEmail
 
     return <div>
         <EditUserProfileButton

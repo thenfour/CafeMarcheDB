@@ -17,6 +17,8 @@ import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabCon
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { useSnackbar } from "../SnackbarContext";
+import { useQuery } from "@blitzjs/rpc";
+import getUserManagementCapabilities from "@/src/auth/queries/getUserManagementCapabilities";
 
 type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name: true, color: true, sortOrder: true, } }>;
 
@@ -92,12 +94,20 @@ export interface UserDetailArgs {
 }
 
 export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
+
+    const [capabilities, { refetch: refetchCapabilities }] = useQuery(
+        getUserManagementCapabilities,
+        { userId: user.id },
+    );
+
+
     const dashboardContext = useDashboardContext();
 
     const [selectedTab, setSelectedTab] = React.useState<UserDetailTabSlug>(props.initialTab || UserDetailTabSlug.attendance);
 
-    const refetch = () => {
-        tableClient.refetch();
+    const refetch = async () => {
+        await tableClient.refetch();
+        await refetchCapabilities();
     };
 
     const handleTabChange = (newId: string) => {
@@ -118,10 +128,10 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 <RoleControl
                     userId={user.id}
                     value={user.role}
-                    readonly={props.readonly}
+                    readonly={props.readonly || !capabilities.canAssignRole}
                     tableClient={tableClient}
-                    onChange={() => {
-                        refetch();
+                    onChange={async () => {
+                        await refetch();
                     }}
                 />
 
@@ -136,6 +146,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 tableClient={tableClient}
                 readonly={props.readonly}
                 refetch={refetch}
+                capabilities={capabilities}
             />
 
             {dashboardContext.isAuthorized(Permission.search_users) &&
