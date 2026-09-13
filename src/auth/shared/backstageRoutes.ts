@@ -8,7 +8,18 @@ export interface BackstageRouteDefinition {
 }
 
 const routes = [
-    { key: "home", pattern: "/backstage", caption: "Home", permission: Permission.login },
+    { key: "root", pattern: "/", caption: "Home", permission: Permission.public },
+    { key: "error", pattern: "/_error", caption: "Error", permission: Permission.public },
+    { key: "signup", pattern: "/auth/signup", caption: "signup", permission: Permission.public },
+    { key: "login", pattern: "/auth/login", caption: "login", permission: Permission.public },
+    { key: "forgotPassword", pattern: "/auth/forgot-password", caption: "Forgot Password", permission: Permission.public },
+    { key: "login", pattern: "/auth/login", caption: "login", permission: Permission.public },
+    // maybe others need to be added since i removed the "/backstage/" restriction on this table.
+    // for example forgot password page...
+
+    // the backstage entrypoint is public because it contains login forms, public resources, practice tools.
+    { key: "home", pattern: "/backstage", caption: "Home", permission: Permission.public },
+
     { key: "events", pattern: "/backstage/events", caption: "Events", permission: Permission.view_events_nonpublic },
     { key: "event", pattern: "/backstage/event/[...id_slug_tab]", caption: "Event", permission: Permission.view_events_nonpublic },
     { key: "songs", pattern: "/backstage/songs", caption: "Songs", permission: Permission.view_songs },
@@ -21,7 +32,7 @@ const routes = [
     { key: "users", pattern: "/backstage/users", caption: "User search", permission: Permission.search_users },
     { key: "user", pattern: "/backstage/user/[...id_slug_tab]", caption: "User", permission: Permission.view_users_basic_info },
     { key: "profile", pattern: "/backstage/profile", caption: "Your Profile", permission: Permission.basic_trust },
-    { key: "calendar", pattern: "/backstage/calendar", caption: "Calendar subscription", permission: Permission.login },
+    { key: "calendar", pattern: "/backstage/calendar", caption: "Calendar subscription", permission: Permission.view_events_nonpublic },
     { key: "setlistPlanner", pattern: "/backstage/setlistPlanner", caption: "Setlist Planner", permission: Permission.setlist_planner_access },
     { key: "stats", pattern: "/backstage/stats", caption: "Event Stats", permission: Permission.view_events_reports },
     { key: "featureReports", pattern: "/backstage/featureReports", caption: "Feature Usage", permission: Permission.view_feature_reports },
@@ -87,5 +98,6 @@ export function getBackstageRoute(key: BackstageRouteKey): BackstageRouteDefinit
 
 // Needed for reverse lookup: "which route am I currently on?"
 export function findBackstageRouteByPattern(pattern: string): BackstageRouteDefinition | undefined {
+    // 
     return routeByPattern.get(pattern.replace(/\/$/, "") || "/");
 }

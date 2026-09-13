@@ -1,26 +1,3 @@
-// todo: permissions that we can consider adding:
-// - invite users to events (currently this operation is under manage_events)
-
-// export const PermissionCategories = [
-//   "access",
-//   "site-content",
-//   "visibility",
-//   "events",
-//   "songs",
-//   "files",
-//   "instruments",
-//   "users",
-//   "custom-links",
-//   "wiki",
-//   "workflows",
-//   "menu",
-//   "setlists",
-//   "reports",
-//   "practice-tools",
-//   "system",
-// ] as const
-
-//export type PermissionCategory = (typeof PermissionCategories)[number]
 
 export const PermissionScopes = ["public", "account", "site", "platform"] as const
 
@@ -34,7 +11,6 @@ export type PermissionPresentation = Readonly<{
 
 export type PermissionDefinition = Readonly<{
   key: string
-  //category: PermissionCategory
 
   // todo: explain permission scope
   scope: PermissionScope

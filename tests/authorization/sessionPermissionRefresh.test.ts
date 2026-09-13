@@ -7,13 +7,46 @@ vi.mock("db", async () => {
     return { ...prisma, default: authorizationTestDb };
 });
 
-import { RefreshSessionPermissions } from "src/auth/queries/getDashboardData";
+import getDashboardData, { RefreshSessionPermissions } from "src/auth/queries/getDashboardData";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
+import { createAuthorizationTestContext } from "./support/authorizationFixtures";
+import { invokeResolver } from "./support/resolverHarness";
 
 describe("BA-R001 persisted session refresh", () => {
     beforeEach(() => authorizationTestDb.reset({ user: [] }));
 
-    it("revokes the current session when its user no longer exists or is active", async () => {
+    it.each([null, undefined, 0])("skips user refresh for an anonymous session with userId %s", async userId => {
+        const ctx = createAuthorizationTestContext(null);
+        ctx.session.$publicData.userId = userId;
+        const lookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
+            .mockRejectedValue(new Error("Anonymous sessions must not query users"));
+        const revoke = vi.fn();
+        const setPublicData = vi.fn();
+        ctx.session.$revoke = revoke;
+        ctx.session.$setPublicData = setPublicData;
+
+        await expect(RefreshSessionPermissions(ctx)).resolves.toBe(false);
+        expect(lookup).not.toHaveBeenCalled();
+        expect(revoke).not.toHaveBeenCalled();
+        expect(setPublicData).not.toHaveBeenCalled();
+    });
+
+    it("loads dashboard data for a new anonymous session without a refresh timestamp", async () => {
+        const ctx = createAuthorizationTestContext(null);
+        ctx.session.$publicData.userId = null;
+        delete ctx.session.$publicData.permissionsLastRefreshedAt;
+        const lookup = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
+            .mockRejectedValue(new Error("Anonymous sessions must not query users"));
+
+        await expect(invokeResolver(getDashboardData, {}, ctx)).resolves.toMatchObject({
+            relevantEventIds: [],
+            effectivePermissions: expect.not.arrayContaining([Permission.login]),
+        });
+        expect(lookup).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])("revokes the session for a missing or deleted user (deleted: %s)", async isDeleted => {
+        if (isDeleted) authorizationTestDb.reset({ user: [{ id: 42, isDeleted: true }] });
         const revoke = vi.fn();
         const setPublicData = vi.fn();
         const ctx = {

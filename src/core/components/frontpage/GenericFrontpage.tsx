@@ -1,3 +1,5 @@
+// for sites that have no front page content (only backstage), this redirects.
+
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React from "react";
@@ -22,7 +24,7 @@ export const GenericPublicIndex: React.FC = () => {
             {/* Content for users while redirect occurs, and as a last-resort fallback */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "40vh", textAlign: "center", padding: 24 }}>
                 <div>
-                    <h1 style={{ marginBottom: 8 }}>Redirecting to Backstage…</h1>
+                    <h1 style={{ marginBottom: 8 }}>Redirecting to Backstage...</h1>
                     <p style={{ marginTop: 0, color: "#666" }}>If you are not redirected automatically, use the button below.</p>
                     <p>
                         <a href={destination} style={{

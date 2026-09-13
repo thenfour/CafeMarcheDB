@@ -1,9 +1,9 @@
-import { AppProps, ErrorBoundary, ErrorFallbackProps } from "@blitzjs/next";
+import { AppProps, BlitzPage, ErrorBoundary, ErrorFallbackProps } from "@blitzjs/next";
 import { CacheProvider, EmotionCache } from "@emotion/react";
 import { Box, CssBaseline, Typography } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme, PaletteColorOptions, SimplePaletteColorOptions } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import '@xyflow/react/dist/style.css';
 import { AuthenticationError, AuthorizationError } from "blitz";
@@ -14,6 +14,7 @@ import { SnackbarProvider } from "src/core/components/SnackbarContext";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
 import Head from "next/head";
+import NextApp, { AppContext, AppInitialProps } from "next/app";
 import { BrandContext, useBrand } from "@/shared/brandConfig";
 import '../../public/eventSongList.css';
 import '../../public/frontpage.css';
@@ -42,12 +43,17 @@ const clientSideEmotionCache = createEmotionCache();
 
 //const theme = createTheme(themeOptions);
 
-export interface MyAppProps extends AppProps {
+interface SharedPageProps {
+  brand?: DbBrandConfig;
+}
+
+export interface MyAppProps extends Omit<AppProps<SharedPageProps>, "Component"> {
+  Component: BlitzPage<SharedPageProps>;
   emotionCache?: EmotionCache;
 }
 
 
-export function getRootErrorPresentation(error: Error & Record<any, any>) {
+export function getRootErrorPresentation(error: Error & { statusCode?: number }) {
   if (error instanceof AuthenticationError) {
     return { statusCode: error.statusCode || 401, title: "You are not authenticated" };
   }
@@ -108,15 +114,21 @@ function RootErrorFallback({ error }: ErrorFallbackProps) {
   </>;
 }
 
+function getMainPaletteColor(color: PaletteColorOptions | undefined): SimplePaletteColorOptions | undefined {
+  return color && "main" in color ? color : undefined;
+}
+
 // in order to emit css from the theme, this must be a CHILD of ThemeProvider.
-function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache }) {
-  const getLayout = Component.getLayout || ((page) => page)
+function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pageProps">) {
+  const getLayout = Component.getLayout || ((page: React.ReactElement) => page)
   // Persist brand across client navigations; only update when a new brand is provided
   const [brand, setBrand] = React.useState<DbBrandConfig>(pageProps?.brand ?? DefaultDbBrandConfig)
   React.useEffect(() => {
-    if (pageProps?.brand) setBrand(pageProps.brand as DbBrandConfig)
+    if (pageProps?.brand) setBrand(pageProps.brand)
   }, [pageProps?.brand])
-  const base = themeOptions as any;
+  const base = themeOptions;
+  const basePrimary = getMainPaletteColor(base.palette?.primary);
+  const baseSecondary = getMainPaletteColor(base.palette?.secondary);
   const theme = createTheme({
     ...base,
     palette: {
@@ -124,13 +136,13 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
       mode: base?.palette?.mode ?? 'light',
       primary: {
         ...(base?.palette?.primary ?? {}),
-        main: brand.theme?.primaryMain ?? base?.palette?.primary?.main ?? '#1976d2',
-        contrastText: brand.theme?.contrastText ?? base?.palette?.primary?.contrastText,
+        main: brand.theme?.primaryMain ?? basePrimary?.main ?? '#1976d2',
+        contrastText: brand.theme?.contrastText ?? basePrimary?.contrastText,
       },
       secondary: {
         ...(base?.palette?.secondary ?? {}),
-        main: brand.theme?.secondaryMain ?? base?.palette?.secondary?.main ?? '#9c27b0',
-        contrastText: brand.theme?.contrastText ?? base?.palette?.secondary?.contrastText,
+        main: brand.theme?.secondaryMain ?? baseSecondary?.main ?? '#9c27b0',
+        contrastText: brand.theme?.contrastText ?? baseSecondary?.contrastText,
       },
       background: {
         ...(base?.palette?.background ?? {}),
@@ -186,43 +198,34 @@ export function MyApp({
 }: MyAppProps) {
   return (
     <CacheProvider value={emotionCache}>
-      <ThemedApp Component={Component} pageProps={pageProps} emotionCache={emotionCache} />
+      <ThemedApp Component={Component} pageProps={pageProps} />
     </CacheProvider>
   );
 }
 
-// Ensure SSR per-request loads brand from DB and injects into pageProps
-const BlitzedApp = withBlitz(MyApp);
-const originalGetInitialProps = (BlitzedApp as any).getInitialProps as
-  | ((ctx: any) => Promise<any>)
-  | undefined;
-(BlitzedApp as any).getInitialProps = async (appCtx) => {
-  let appProps: any;
-  if (typeof originalGetInitialProps === "function") {
-    appProps = await originalGetInitialProps(appCtx);
-  } else {
-    const NextApp = (await import("next/app")).default as any;
-    appProps = await NextApp.getInitialProps(appCtx);
-  }
-
-  const req = appCtx.ctx?.req as any;
+// withBlitz preserves this hook; define it here so its Next types stay visible.
+MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
+  const appProps: AppInitialProps<SharedPageProps> = await NextApp.getInitialProps(appCtx);
+  const { req, res, pathname } = appCtx.ctx;
   if (req) {
+    if (!res) throw new Error("Server page request is missing its response.");
+
+    // getInitialProps also runs in the browser during navigation. Initialize
+    // server authentication only for server requests, before reading a session.
+    await import("src/blitz-server");
     const { getSession } = await import("@blitzjs/auth");
-    const { authorizeBackstagePageRequest } = await import("@/src/auth/server/backstagePageRequestAuthorization");
-    const session = await getSession(req, appCtx.ctx.res);
-    await authorizeBackstagePageRequest(appCtx.ctx.pathname, session.userId);
-  }
+    const { authorizePageRequest } = await import("@/src/auth/server/pageRequestAuthorization");
+    const session = await getSession(req, res);
+    await authorizePageRequest(pathname, session.userId);
 
-  if (req) {
     // A request with no valid or last-known-good brand must fail instead of
     // rendering normal application content under the wrong site identity.
     const { loadDbBrandConfig } = await import("@/src/server/brand");
-    const host = req?.headers?.host as string | undefined;
-    const brand = await loadDbBrandConfig(host);
+    const brand = await loadDbBrandConfig(req.headers.host);
     appProps.pageProps = { ...(appProps.pageProps || {}), brand };
   }
 
   return appProps;
 };
 
-export default BlitzedApp;
+export default withBlitz(MyApp);

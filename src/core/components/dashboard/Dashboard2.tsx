@@ -352,6 +352,7 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
             // just redirect to login.
             forceLogin = true;
         } else {
+            console.log(`unauthorized access to route`, registeredRoute);
             throw new Error(`unauthorized`);
         }
     }

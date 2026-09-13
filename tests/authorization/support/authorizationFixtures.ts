@@ -131,7 +131,6 @@ export function createAuthorizationPublicData(
     ],
     impersonatingFromUserId: null,
     showAdminControls: false,
-    permissionsLastRefreshedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
     GOOGLE_ANALYTICS_ID_BACKSTAGE: undefined,
     GOOGLE_ANALYTICS_ID_PUBLIC: undefined,
   }
@@ -143,7 +142,7 @@ export function createAuthorizationTestContext(
   const publicData = createAuthorizationPublicData(user)
 
   const session = {
-    userId: publicData.userId,
+    get userId() { return publicData.userId },
     $handle: `test-session-${publicData.userId}`,
     $publicData: publicData,
     $authorize: (...requiredPermissions: Array<Permission | Permission[]>) => {
@@ -156,7 +155,14 @@ export function createAuthorizationTestContext(
         throw new Error(`Unauthorized test persona; required: ${required.join(", ")}`)
       }
     },
-    $create: async () => undefined,
+    $create: async (updates: PublicDataType) => {
+      Object.keys(publicData).forEach(key => delete publicData[key])
+      Object.assign(publicData, updates)
+    },
+    $revoke: async () => {
+      Object.keys(publicData).forEach(key => delete publicData[key])
+      Object.assign(publicData, createAuthorizationPublicData(null))
+    },
     $setPublicData: async (updates: Partial<PublicDataType>) => {
       Object.assign(publicData, updates)
     },

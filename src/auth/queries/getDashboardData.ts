@@ -1,7 +1,7 @@
 import { BigintToNumber } from "@/shared/utils";
 import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { resolver } from "@blitzjs/rpc";
-import type { AuthenticatedCtx } from "blitz";
+import type { Ctx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
@@ -14,8 +14,12 @@ import { loadEffectivePermissionNames } from "../server/effectivePermissions";
 import { loadBandTimeZone } from "src/server/dateTime";
 
 // exported for unit tests
-export async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
+export async function RefreshSessionPermissions(ctx: Ctx) {
     const publicData = { ...ctx.session?.$publicData };
+    // Anonymous dashboard visitors have no user to refresh or revoke. Their
+    // public-role permissions are loaded separately by getDashboardData.
+    if (!publicData.userId) return false;
+
     // only query if x seconds has elapsed since last fetch
     const now = new Date().getTime();
     const lastRefreshedAt = new Date(publicData.permissionsLastRefreshedAt || 0).getTime();
@@ -142,7 +146,7 @@ async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, ev
 
 
 export default resolver.pipe(
-    async (args, ctx: AuthenticatedCtx) => {
+    async (args, ctx: Ctx) => {
         try {
             const sw = new Stopwatch();
 

@@ -7,7 +7,9 @@ vi.mock("db", async () => {
 });
 
 import { Permission } from "shared/permissions";
-import { authorizeBackstagePageRequest } from "src/auth/server/backstagePageRequestAuthorization";
+import { authorizePageRequest } from "@/src/auth/server/pageRequestAuthorization";
+import { loadAuthorizedPageEntity } from "src/auth/server/serverPageAuthorization";
+import { xEvent } from "src/core/db3/db3";
 import getUserMassAnalysis from "src/core/db3/queries/getUserMassAnalysis";
 import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
@@ -35,19 +37,19 @@ describe("backstage server page guard", () => {
     });
 
     it("allows a delegated route only with its declared capability", async () => {
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/editEventTags",
             eventAdmin.id,
         )).resolves.toBeUndefined();
 
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/editSongTags",
             eventAdmin.id,
         )).rejects.toThrow();
     });
 
     it("accepts the declared sysadmin permission regardless of how it is held", async () => {
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/roles",
             roleCarriedSysadmin.id,
         )).resolves.toBeUndefined();
@@ -61,28 +63,57 @@ describe("backstage server page guard", () => {
             })],
         });
 
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/editEventTags",
             eventAdmin.id,
         )).rejects.toThrow(`Not authorized for ${Permission.admin_events}`);
     });
 
     it("allows anonymous access through the public permission baseline", async () => {
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/practice-tools",
             undefined,
         )).resolves.toBeUndefined();
     });
 
+    it.each([
+        ["/backstage", null],
+        ["/backstage/", undefined],
+        ["/backstage/calendar", null],
+        ["/backstage/event/[...id_slug_tab]", undefined],
+        ["/backstage/roles", null],
+    ] as const)("allows the anonymous dashboard login frame at %s", async (pathname, userId) => {
+        await expect(authorizePageRequest(pathname, userId)).resolves.toBeUndefined();
+    });
+
+    it("does not grant protected page data when allowing the anonymous frame", async () => {
+        await authorizePageRequest("/backstage/event/[...id_slug_tab]", null);
+        const load = vi.fn();
+        await expect(loadAuthorizedPageEntity({
+            ctx: createAuthorizationTestContext(null),
+            permission: Permission.view_events_nonpublic,
+            table: xEvent,
+            id: 1,
+            load,
+        })).resolves.toBeNull();
+        expect(load).not.toHaveBeenCalled();
+    });
+
+    it("keeps contained routes and unregistered pages closed to anonymous visitors", async () => {
+        await expect(authorizePageRequest("/backstage/workflows", null)).rejects.toThrow();
+        await expect(authorizePageRequest("/backstage/notRegistered", null))
+            .rejects.toThrow("missing route authorization metadata");
+    });
+
     it("keeps contained workflow routes unreachable even to Sysadmin", async () => {
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/workflows",
             actualSysadmin.id,
         )).rejects.toThrow();
     });
 
     it("keeps experimental event import behind sysadmin at the route and query", async () => {
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/eventImport",
             eventAdmin.id,
         )).rejects.toThrow(`Not authorized for ${Permission.sysadmin}`);
@@ -103,7 +134,7 @@ describe("backstage server page guard", () => {
     });
 
     it("fails closed for an unregistered backstage page", async () => {
-        await expect(authorizeBackstagePageRequest(
+        await expect(authorizePageRequest(
             "/backstage/notRegistered",
             actualSysadmin.id,
         )).rejects.toThrow("missing route authorization metadata");
