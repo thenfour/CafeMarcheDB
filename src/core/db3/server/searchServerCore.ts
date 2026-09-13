@@ -3,12 +3,11 @@ import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization"
 // generalized version of search results.
 // hopefully can unify song & event search, and then extend to users & files.
 
-import { AuthenticatedCtx } from "blitz";
+import { AuthenticatedCtx, AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
 import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUtils";
 import { SplitQuickFilter } from "shared/quickFilter";
 import { Stopwatch, TAnyModel } from "shared/rootroot";
-import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { queryTable } from "src/core/db3/server/db3QueryCore";
 import { CalculateFilterQueryResult, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
@@ -120,7 +119,12 @@ function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQ
 
 // construct a SQL select clause returning filtered items.
 // no pagination or sorting applied yet
-function calculateFilterQuery(currentUser: UserWithRolesPayload, args: GetSearchResultsInput, excludeCriterionColumn: string | null, sortElements: SortQueryElements): CalculateFilterQueryResult {
+function calculateFilterQuery(currentUser: UserWithRolesPayload,
+    args: GetSearchResultsInput,
+    excludeCriterionColumn: string | null,
+    sortElements: SortQueryElements,
+    publicData: db3.DB3Authorization
+): CalculateFilterQueryResult {
     const table = db3.GetTableById(args.tableID);
     if (!table) {
         throw new Error(`table ${args.tableID} not found`);
@@ -174,7 +178,7 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload, args: GetSearch
         whereAnd.push(elements.whereAnd);
     }
 
-    whereAnd.push(table.SqlGetVisFilterExpression(currentUser, "P"));
+    whereAnd.push(table.SqlGetVisFilterExpression(currentUser, "P", args.includeDeleted === true, publicData));
 
     const ret: string = `
         SELECT
@@ -199,10 +203,10 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
     try {
         const rootsw = new Stopwatch();
         const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
-        const u = (await mutationCore.getCurrentUserCore(ctx))!;
-        if (!u.role || u.role.permissions.length < 1) {
-            return ret;
-        }
+        const authorization = await getRequestAuthorization(ctx.session);
+        if (!authorization.user) throw new AuthorizationError();
+        const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
+        const u = authorization.user;
 
         // todo: input validation. it's very important because things are being appended to SQL.
 
@@ -211,9 +215,14 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
             throw new Error(`table ${args.tableID} not found`);
         }
 
+        if (!table.authorizeTableForView(publicData)
+            || (args.includeDeleted === true && !table.getSearchCapabilities(publicData).includeDeleted)) {
+            throw new AuthorizationError();
+        }
+
         const sortElements = ProcessSortModel(table, args);
 
-        const filterResult = calculateFilterQuery(u, args, null, sortElements);
+        const filterResult = calculateFilterQuery(u, args, null, sortElements, publicData);
         ret.filterQueryResult = filterResult;
 
         const queries: Promise<any>[] = [];
@@ -225,7 +234,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
                 throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
             }
 
-            const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements);
+            const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements, publicData);
 
             const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filterResult.sqlSelect, filterResult2.sqlSelect, criterion);
             // no facet info to be done on this column
@@ -360,12 +369,13 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
                 cmdbQueryContext: `getSearchResults[${table.tableName}]`,
                 tableID: table.tableID,
                 tableName: table.tableName,
+                includeDeleted: args.includeDeleted === true,
                 filter: {
                     items: [],
                     pks: resultIds,
                 },
                 orderBy: undefined,
-            }, await getRequestAuthorization(ctx.session));
+            }, authorization);
             ret.queryMetrics.push({
                 title: "db3 verbose items",
                 millis: queryResult.executionTimeMillis,

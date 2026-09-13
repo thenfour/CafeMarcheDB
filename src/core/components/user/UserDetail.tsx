@@ -19,6 +19,7 @@ import { EnrichedVerboseUser } from "./UserListItem";
 import { useSnackbar } from "../SnackbarContext";
 import { useQuery } from "@blitzjs/rpc";
 import getUserManagementCapabilities from "@/src/auth/queries/getUserManagementCapabilities";
+import { Alert } from "@mui/material";
 
 type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name: true, color: true, sortOrder: true, } }>;
 
@@ -117,6 +118,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
     return <div className="EventDetail contentSection event">
         <div className='content'>
+            {user.isDeleted && <Alert severity="warning">This user account is deactivated.</Alert>}
 
             <div className='titleLine'>
                 <div className="titleText">

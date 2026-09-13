@@ -1,4 +1,5 @@
 import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorization";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { gSSP } from "@/src/blitz-server";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
@@ -30,6 +31,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
     if (!userId) throw new Error(`user not found`);
 
     const queryArgs: DB3Client.xTableClientArgs = {
+        includeDeleted: dashboardContext.isAuthorized(Permission.recover_users),
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xUser,
@@ -92,11 +94,13 @@ export const getServerSideProps = gSSP<PageProps>(async ({ params, ctx }) => {
     // /backstage/song/2/slug/info   => ["2", "slug", "info"]
     // /backstage/song/2/whateveridontcare/info
 
+    const { effectivePermissions } = await getRequestAuthorization(ctx.session);
     const user = await loadAuthorizedPageEntity({
         ctx,
         permission: Permission.view_users_basic_info,
         table: db3.xUser,
         id,
+        includeDeleted: effectivePermissions.includesName(Permission.recover_users),
         load: where => db.user.findFirst({
             select: {
                 id: true,

@@ -719,6 +719,7 @@ export interface GetSearchResultsSortModel {
 
 export interface GetSearchResultsInput {
     tableID: string;
+    includeDeleted?: boolean;
 
     // pageSize: number;
     // page: number;
@@ -758,6 +759,7 @@ const ZGetSearchResultsSortModel = z.object({
 // Zod schema for GetSearchResultsInput
 export const ZGetSearchResultsInput = z.object({
     tableID: ZDBSymbol,
+    includeDeleted: z.boolean().optional(),
 
     offset: z.number(),
     take: z.number(),

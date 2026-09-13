@@ -1,5 +1,5 @@
 import { resolver } from "@blitzjs/rpc";
-import { NotFoundError } from "blitz";
+import { AuthorizationError, NotFoundError } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
@@ -7,10 +7,12 @@ import { z } from "zod";
 import {
     getContinuityWarningsForUserResult,
     getUserManagementCapabilities,
+    roleHasPermission,
 } from "../server/userManagementPolicy";
 import {
     findActiveNonSysadminUsers,
     getAssignableRoles,
+    findActiveUserManagementPrincipal,
 } from "../server/userManagementState";
 
 const GetUserManagementCapabilitiesInput = z.object({
@@ -22,10 +24,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.view_users_basic_info),
     async ({ userId }, ctx) => {
         const [actor, target] = await Promise.all([
-            db.user.findFirst({
-                ...UserWithRolesArgs,
-                where: { id: ctx.session.userId, isDeleted: false },
-            }),
+            findActiveUserManagementPrincipal(db, ctx.session.userId),
             db.user.findFirst({
                 ...UserWithRolesArgs,
                 where: { id: userId },
@@ -33,6 +32,11 @@ export default resolver.pipe(
         ]);
 
         if (!target) throw new NotFoundError();
+        if (target.isDeleted && !roleHasPermission(actor?.role, Permission.recover_users)) {
+            // target user is deleted.
+            // deleted users are only known through Permission.recover_users
+            throw new AuthorizationError();
+        }
         const capabilities = getUserManagementCapabilities(actor, target);
         const activeNonSysadminUsers = capabilities.canAssignRole || capabilities.canDeactivate
             ? await findActiveNonSysadminUsers(db)

@@ -23,6 +23,7 @@ interface GetAuthorizedTableReadWhereArgs {
     table: xTable;
     currentUser: UserWithRolesPayload | null;
     where?: TAnyModel | null;
+    includeDeleted?: boolean;
 }
 
 // returns a prisma where clause that enforces the table's read policy
@@ -30,15 +31,17 @@ export async function GetAuthorizedTableReadWhere({
     table,
     currentUser,
     where,
+    includeDeleted = false,
 }: GetAuthorizedTableReadWhereArgs): Promise<TAnyModel> {
 
     const authorization = await loadUserAuthorization(currentUser);
     const publicData = createDB3Authorization(authorization.user, authorization.effectivePermissions);
 
-    if (!table.authorizeTableForView(publicData)) throw new AuthorizationError();
+    if (!table.authorizeTableForView(publicData) || !table.authorizeIncludeDeleted(publicData, includeDeleted)) throw new AuthorizationError();
 
     const policyWhere = await table.CalculateWhereClause({
         publicData,
+        includeDeleted,
         filterModel: emptyFilter,
     });
 

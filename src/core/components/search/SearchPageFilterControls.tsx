@@ -1,4 +1,5 @@
 import React from "react";
+import { Checkbox, FormControlLabel } from "@mui/material";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { AdminInspectObject, CMSmallButton } from "../CMCoreComponents2";
@@ -89,7 +90,7 @@ export function SearchPageFilterControls<TStaticFilter extends { label: string; 
     );
 
     // Extra filter: individual filter groups
-    const extraFilter = props.filterGroups.length > 0 ? (
+    const extraFilter = props.filterGroups.length > 0 || props.searchPage.capabilities.includeDeleted ? (
         <div>
             {props.filterGroups.map((filterGroup, index) => (
                 <React.Fragment key={filterGroup.key}>
@@ -109,6 +110,13 @@ export function SearchPageFilterControls<TStaticFilter extends { label: string; 
                     {index < props.filterGroups.length - 1 && <div className="divider" />}
                 </React.Fragment>
             ))}
+            {props.searchPage.capabilities.includeDeleted && <FormControlLabel
+                label="Show deactivated items"
+                control={<Checkbox
+                    checked={props.searchPage.includeDeleted}
+                    onChange={(_, checked) => props.searchPage.setIncludeDeleted(checked)}
+                />}
+            />}
         </div>
     ) : undefined;
 

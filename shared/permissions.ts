@@ -282,6 +282,12 @@ const permissionRegistry = [
     }
   ),
   definePermission(
+    "recover_users",
+    "site",
+    "View deactivated user accounts and reactivate accounts within the actor's delegation authority.",
+    706
+  ),
+  definePermission(
     "assign_user_roles",
     //"users",
     "site",

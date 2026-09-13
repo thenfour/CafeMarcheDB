@@ -9,6 +9,7 @@ export interface GenericSearchListItemProps<T> {
 
     href: string; // URL for the item
     title: string;
+    titleExtra?: React.ReactNode;
     icon?: React.ReactNode;
     bodyContent?: React.ReactNode;
     footerContent?: React.ReactNode;
@@ -22,6 +23,7 @@ export const GenericSearchListItem = <T,>(props: GenericSearchListItemProps<T>) 
             <div className="topTitleLine">
                 {props.icon}
                 <CMLink className="nameLink" href={props.href}>{props.title}</CMLink>
+                {props.titleExtra}
                 <div style={{ flexGrow: 1 }}>
                     <AdminInspectObject src={props.item} label="Obj" />
                 </div>

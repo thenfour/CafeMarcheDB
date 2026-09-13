@@ -42,18 +42,19 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
     const [results, setResults] = useState<SearchResultsRet>(MakeEmptySearchResultsRet());
     const [loading, setLoading] = useState(false);
 
-    const isFetchingRef = useRef(false);
+    const activeRequest = useRef<AbortController | null>(null);
 
     const fetchData = async (offset: number) => {
-        if (isFetchingRef.current) return;
-        isFetchingRef.current = true;
+        if (activeRequest.current) return;
+        const request = new AbortController();
+        activeRequest.current = request;
         setLoading(true);
 
         try {
             const queryArgs = config.getQueryArgs(filterSpec, offset, pageSize);
             //console.log('Fetching search results with args:', queryArgs);
-            const searchResult = await fetchSearchResultsApi(queryArgs);
-            setLoading(false);
+            const searchResult = await fetchSearchResultsApi(queryArgs, request.signal);
+            if (request.signal.aborted || activeRequest.current !== request) return;
             const enrichmentArgs = config.getEnrichmentArgs ? config.getEnrichmentArgs(dashboardContext) : [];
 
             const newItemsDb = searchResult.results.map(rawItem =>
@@ -81,26 +82,36 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
 
             setResults(searchResult);
         } catch (error) {
+            if (request.signal.aborted || activeRequest.current !== request) return;
             snackbarContext.showMessage({
                 severity: 'error',
                 children: config.errorMessage || 'Failed to load more items.',
             });
         } finally {
-            isFetchingRef.current = false;
+            if (activeRequest.current === request) {
+                activeRequest.current = null;
+                setLoading(false);
+            }
         }
     };
 
     useEffect(() => {
+        activeRequest.current?.abort();
+        activeRequest.current = null;
         setEnrichedItems([]);
         setResults(MakeEmptySearchResultsRet());
         // Fetch the first page
         void fetchData(0);
+        return () => {
+            activeRequest.current?.abort();
+            activeRequest.current = null;
+        };
     }, [filterSpecHash]);
 
     const loadMoreData = useCallback(() => {
-        if (isFetchingRef.current) return;
+        if (activeRequest.current) return;
         void fetchData(enrichedItems.length);
-    }, [enrichedItems]);
+    }, [enrichedItems, filterSpecHash]);
 
     return { enrichedItems, results, loadMoreData, loading };
 }

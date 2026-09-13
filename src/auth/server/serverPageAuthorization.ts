@@ -30,6 +30,7 @@ interface LoadAuthorizedPageEntityArgs<T> {
     permission: Permission;
     table: xTable;
     id: number;
+    includeDeleted?: boolean;
     load: (where: TAnyModel) => Promise<T | null>;
 }
 
@@ -44,6 +45,7 @@ export async function loadAuthorizedPageEntity<T>({
     permission,
     table,
     id,
+    includeDeleted = false,
     load,
 }: LoadAuthorizedPageEntityArgs<T>): Promise<T | null> {
     const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
@@ -57,6 +59,7 @@ export async function loadAuthorizedPageEntity<T>({
         table,
         currentUser,
         where: { [table.pkMember]: id },
+        includeDeleted,
     });
     return load(where);
 }

@@ -14,6 +14,7 @@ const MainContent = () => {
         table: db3.xEventAttendance,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
             new DB3Client.GenericStringColumnClient({ columnName: "personalText", cellWidth: 180 }),
             new DB3Client.GenericStringColumnClient({ columnName: "pastText", cellWidth: 180 }),

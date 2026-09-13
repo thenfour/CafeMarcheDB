@@ -15,6 +15,7 @@ export enum UserOrderByColumnNames {
 export type UserOrderByColumnOption = keyof typeof UserOrderByColumnOptions;
 
 export interface UsersFilterSpec {
+    includeDeleted?: boolean;
     quickFilter: string;
     refreshSerial: number; // this is necessary because you can do things to change the results from this page. think of adding an event then refetching.
 

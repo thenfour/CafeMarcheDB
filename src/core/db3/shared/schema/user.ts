@@ -607,6 +607,8 @@ const userBaseArgs: db3.TableDesc = {
     },
     tableName: "User",
     deletePolicy: "disabled",
+    viewDeletedPermission: Permission.recover_users,
+    searchCapabilities: { includeDeleted: true },
     queryParameters: {
         userId: { kind: "integer", authorizeAs: "id" },
         userIds: { kind: "integerArray", authorizeAs: "id" },

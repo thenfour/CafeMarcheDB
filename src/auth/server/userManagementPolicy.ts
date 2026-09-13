@@ -12,6 +12,7 @@ export type UserManagementAction =
     | "assignRole"
     | "correctEmail"
     | "deactivate"
+    | "reactivate"
     | "edit"
     | "impersonate"
     | "resetPassword"
@@ -50,6 +51,7 @@ export interface UserManagementCapabilities {
     canAssignRole: boolean;
     canCorrectEmail: boolean;
     canDeactivate: boolean;
+    canReactivate: boolean;
     canEdit: boolean;
     canImpersonate: boolean;
     canResetPassword: boolean;
@@ -84,6 +86,7 @@ export const isRoleWithinDelegationEnvelope = (
     }) ?? true;
 };
 
+// todo: is this really necessary; our role-perm model already encodes protection through permissions
 export const isProtectedUserRole = (role: UserManagementRole | undefined): boolean => (
     role?.permissions?.some(entry => {
         const permissionName = entry.permission?.name;
@@ -91,6 +94,7 @@ export const isProtectedUserRole = (role: UserManagementRole | undefined): boole
     }) || false
 );
 
+// todo: is this really necessary; our role-perm model already encodes protection through permissions
 export const isProtectedUser = (user: UserManagementPrincipal): boolean => (
     user.isSysAdmin || isProtectedUserRole(user.role)
 );
@@ -98,11 +102,17 @@ export const isProtectedUser = (user: UserManagementPrincipal): boolean => (
 // This is an additional target/ceiling policy. Existing endpoint, table, row,
 // and field authorization remains mandatory and may be more restrictive.
 export const canManageUser = ({ actor, target, action, desiredRole }: CanManageUserArgs): boolean => {
-    if (!actor) {
+    if (!actor || actor.isDeleted) {
         return false;
     }
 
     const actorIsSysadmin = roleHasPermission(actor.role, Permission.sysadmin);
+
+    if (action === "reactivate") {
+        return target.isDeleted === true
+            && roleHasPermission(actor.role, Permission.recover_users)
+            && (actorIsSysadmin || (!isProtectedUser(target) && isRoleWithinDelegationEnvelope(actor, target.role)));
+    }
 
     if (target.isDeleted === true) return false;
 
@@ -165,6 +175,7 @@ export const getUserManagementCapabilities = (
     canAssignRole: canManageUser({ actor, target, action: "assignRole" }),
     canCorrectEmail: canManageUser({ actor, target, action: "correctEmail" }),
     canDeactivate: canManageUser({ actor, target, action: "deactivate" }),
+    canReactivate: canManageUser({ actor, target, action: "reactivate" }),
     canEdit: canManageUser({ actor, target, action: "edit" }),
     canImpersonate: canManageUser({ actor, target, action: "impersonate" }),
     canResetPassword: canManageUser({ actor, target, action: "resetPassword" }),

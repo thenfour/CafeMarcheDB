@@ -79,6 +79,7 @@ export const userSearchConfig: SearchableListConfig<
         offset,
         take,
         tableID: db3.xUser.tableID,
+        includeDeleted: filterSpec.includeDeleted,
         refreshSerial: filterSpec.refreshSerial,
         sort: [{
             db3Column: filterSpec.orderByColumn,

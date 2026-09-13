@@ -10,6 +10,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
     table: db3.xEventStatus,
     columns: [
         new DB3Client.PKColumnClient({ columnName: "id" }),
+        new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
         new DB3Client.GenericStringColumnClient({ columnName: "label", cellWidth: 180 }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
         new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),

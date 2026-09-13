@@ -4,6 +4,8 @@ import { SortDirection } from "shared/rootroot";
 import { arraysContainSameValues } from "shared/arrayUtils";
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import type { xTable } from "src/core/db3/shared/db3core";
 
 export interface DiscreteFilterConfig<T extends number | boolean | string = number> {
     urlPrefix: string; // e.g., "tg" for tags, "st" for status
@@ -74,6 +76,7 @@ export interface SearchPageFilterMapping {
 }
 
 export interface SearchPageConfig<TStaticFilter, TFilterSpec> {
+    table?: xTable;
     staticFilters: TStaticFilter[];
     defaultStaticFilter: TStaticFilter;
     sortColumnKey: keyof TStaticFilter;
@@ -84,6 +87,7 @@ export interface SearchPageConfig<TStaticFilter, TFilterSpec> {
     buildFilterSpec: (params: {
         refreshSerial: number;
         quickFilter: string;
+        includeDeleted: boolean;
         sortColumn: string;
         sortDirection: SortDirection;
         filterMappings: SearchPageFilterMapping[];
@@ -98,6 +102,9 @@ export interface SearchPageConfig<TStaticFilter, TFilterSpec> {
 }
 
 export interface SearchPageState<TStaticFilter, TFilterSpec> {
+    capabilities: { includeDeleted: boolean };
+    includeDeleted: boolean;
+    setIncludeDeleted: (value: boolean) => void;
     // Sort state
     sortColumn: string;
     setSortColumn: (column: string) => void;
@@ -138,6 +145,10 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
     config: SearchPageConfig<TStaticFilter, TFilterSpec>
 ): SearchPageState<TStaticFilter, TFilterSpec> {
     const snackbarContext = React.useContext(SnackbarContext);
+    const publicData = useDB3Authorization();
+    const capabilities = config.table?.getSearchCapabilities(publicData) ?? { includeDeleted: false };
+    const [requestedIncludeDeleted, setIncludeDeleted] = useURLState<boolean>("includeDeleted", false);
+    const includeDeleted = capabilities.includeDeleted && requestedIncludeDeleted === true;
 
     // Basic state
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
@@ -167,6 +178,7 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
     const filterSpec = config.buildFilterSpec({
         refreshSerial,
         quickFilter,
+        includeDeleted,
         sortColumn,
         sortDirection,
         filterMappings: config.filterMappings,
@@ -174,6 +186,7 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
 
     // Static filter matching
     const matchesStaticFilter = (staticFilter: TStaticFilter): boolean => {
+        if (includeDeleted) return false;
         if (sortColumn !== staticFilter[config.sortColumnKey]) return false;
         if (sortDirection !== staticFilter[config.sortDirectionKey]) return false;
 
@@ -200,6 +213,7 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
 
     // Filter state checks
     const hasExtraFilters = (): boolean => {
+        if (includeDeleted) return true;
         if (!!matchingStaticFilter) return false;
         return config.filterMappings.some(mapping => mapping.filterHook.enabled);
     };
@@ -243,10 +257,14 @@ export function useSearchPage<TStaticFilter extends Record<string, any>, TFilter
     };
 
     const resetToDefaults = () => {
+        setIncludeDeleted(false);
         handleClickStaticFilter(config.defaultStaticFilter);
     };
 
     return {
+        capabilities,
+        includeDeleted,
+        setIncludeDeleted,
         sortColumn,
         setSortColumn,
         sortDirection,

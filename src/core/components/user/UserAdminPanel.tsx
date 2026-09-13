@@ -1,4 +1,3 @@
-import { kContinuityAcknowledgementErrorPrefix } from "@/src/auth/server/userManagementPolicy";
 import { useMutation } from "@blitzjs/rpc";
 import {
     Button,
@@ -10,10 +9,8 @@ import {
 } from "@mui/material";
 import React from "react";
 import correctUserEmail from "src/auth/mutations/correctUserEmail";
-import deactivateUser from "src/auth/mutations/deactivateUser";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { gIconMap } from "../../db3/components/IconMap";
 import { DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
@@ -21,11 +18,17 @@ import { useSnackbar } from "../SnackbarContext";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { EnrichedVerboseUser } from "./UserListItem";
+import { useUserLifecycleActions } from "./useUserLifecycleActions";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { Permission } from "shared/permissions";
+import { Routes } from "@blitzjs/next";
+import { useRouter } from "next/router";
 
 type UserMgmtCaps = {
     canEdit: boolean;
     canCorrectEmail: boolean;
     canDeactivate: boolean;
+    canReactivate: boolean;
     canSetSysAdmin: boolean;
     canResetPassword: boolean;
     canImpersonate: boolean;
@@ -40,17 +43,6 @@ interface UserAdminPanelProps {
     readonly: boolean;
     capabilities: UserMgmtCaps;
 }
-
-const getContinuityPermissionsFromError = (error: unknown): string[] => {
-    const message = error instanceof Error ? error.message : String(error);
-    const markerIndex = message.indexOf(kContinuityAcknowledgementErrorPrefix);
-    if (markerIndex < 0) return [];
-    return message
-        .slice(markerIndex + kContinuityAcknowledgementErrorPrefix.length)
-        .split(",")
-        .map(value => value.trim())
-        .filter(Boolean);
-};
 
 type EditUserProfileButtonProps = {
     capabilities: UserMgmtCaps;
@@ -144,74 +136,55 @@ export type DeactivateUserButtonProps = {
 
 export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUserButtonProps) => {
     const snackbar = useSnackbar();
-    const [deactivateUserMutation] = useMutation(deactivateUser);
-    const confirm = useConfirm();
-
-    const confirmContinuityRisk = (permissions: readonly string[], action: string) => confirm({
-        title: "Confirm continuity risk",
-        description: <>
-            <p>{action} would leave no active non-Sysadmin user able to perform:</p>
-            <ul>{permissions.map(permission => <li key={permission}>{permission}</li>)}</ul>
-            <p>Continue anyway?</p>
-        </>,
-    });
-
-    const runContinuitySensitiveMutation = async (
-        knownWarnings: readonly string[],
-        action: string,
-        mutation: (acknowledgeContinuityRisk: boolean) => Promise<unknown>,
-    ): Promise<boolean> => {
-        let acknowledged = false;
-        if (knownWarnings.length > 0) {
-            acknowledged = await confirmContinuityRisk(knownWarnings, action);
-            if (!acknowledged) return false;
-        }
-
-        try {
-            await mutation(acknowledged);
-            return true;
-        } catch (error) {
-            const newlyDetectedWarnings = getContinuityPermissionsFromError(error);
-            if (!acknowledged && newlyDetectedWarnings.length > 0) {
-                const retry = await confirmContinuityRisk(newlyDetectedWarnings, action);
-                if (!retry) return false;
-                await mutation(true);
-                return true;
-            }
-            throw error;
-        }
-    };
+    const lifecycle = useUserLifecycleActions();
+    const dashboardContext = useDashboardContext();
+    const router = useRouter();
+    const [pending, setPending] = React.useState(false);
 
     return <>
         {capabilities.canDeactivate && <Tooltip title="Deactivate this account and revoke its sessions.">
-            <Button onClick={async () => {
-                if (!await confirm({
-                    description: `Deactivate ${user.name}'s account?`,
-                    title: "Deactivate user",
-                })) return;
-
+            <Button disabled={pending} onClick={async () => {
+                setPending(true);
                 try {
-                    const changed = await runContinuitySensitiveMutation(
-                        capabilities.deactivationContinuityWarnings,
-                        `Deactivating ${user.name}`,
-                        acknowledgeContinuityRisk => deactivateUserMutation({
-                            userId: user.id,
-                            acknowledgeContinuityRisk,
-                        }),
-                    );
+                    const changed = await lifecycle.deactivate(user, capabilities.deactivationContinuityWarnings);
                     if (!changed) return;
                     snackbar.showSuccess("User deactivated");
-                    // TODO: are you still allowed to see this page?
-                    // if not, redirect to the user search page
-                    // but for sysadmins who can see deactivated users, stay.
-                    //void router.push(Routes.UserSearchPage());
+                    if (dashboardContext.currentUser?.id === user.id) {
+                        window.location.assign("/backstage");
+                    } else if (!dashboardContext.isAuthorized(Permission.recover_users)) {
+                        await router.replace(dashboardContext.isAuthorized(Permission.search_users)
+                            ? Routes.UserSearchPage() : "/backstage");
+                    } else {
+                        await onOK?.();
+                    }
                 } catch (error) {
                     console.error(error);
                     snackbar.showError("Unable to deactivate user; see console");
+                } finally {
+                    setPending(false);
                 }
             }}>Deactivate</Button>
         </Tooltip>}
     </>;
+};
+
+export const ReactivateUserButton = ({ capabilities, user, onOK }: DeactivateUserButtonProps) => {
+    const lifecycle = useUserLifecycleActions();
+    const snackbar = useSnackbar();
+    const [pending, setPending] = React.useState(false);
+    return capabilities.canReactivate ? <Button disabled={pending} onClick={async () => {
+        setPending(true);
+        try {
+            if (!await lifecycle.reactivate(user)) return;
+            await onOK?.();
+            snackbar.showSuccess("User reactivated");
+        } catch (error) {
+            console.error(error);
+            snackbar.showError("Unable to reactivate user; see console");
+        } finally {
+            setPending(false);
+        }
+    }}>Reactivate</Button> : null;
 };
 
 type SetUserSysadminButtonProps = {
@@ -269,9 +242,11 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
             capabilities={capabilities}
             user={props.user}
             onOK={() => {
-                props.refetch?.();
+                return props.refetch?.();
             }}
         />
+
+        <ReactivateUserButton capabilities={capabilities} user={props.user} onOK={props.refetch} />
 
         {capabilities.canResetPassword && <AdminResetPasswordButton user={props.user} />}
 

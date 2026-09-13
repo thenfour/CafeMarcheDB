@@ -8,6 +8,8 @@ import { BlitzPage } from "@blitzjs/next";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
+import { useUserLifecycleActions } from "src/core/components/user/useUserLifecycleActions";
+import { Permission } from "shared/permissions";
 
 const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
     // This grid may inspect security state, but generic DB3 mutation must not
@@ -20,11 +22,17 @@ const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T 
 
 const UserListContent: React.FC<{}> = () => {
     const dashboardContext = useDashboardContext();
+    //const lifecycle = useUserLifecycleActions();
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xUser,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
+
+            // isDeleted should require continuity checks and dedicated lifecycle actions.
+            // but this adds complexity to the grid capabilities; as this is sysadmin maintenance only,
+            // leave as-is.
+            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
@@ -49,7 +57,11 @@ const UserListContent: React.FC<{}> = () => {
         </div>;
     }
 
-    return <DB3EditGrid tableSpec={tableSpec} renderExtraActions={extraActions} defaultSortModel={[{ field: "id", sort: "desc" }]} />;
+    return <DB3EditGrid
+        tableSpec={tableSpec}
+        renderExtraActions={extraActions}
+        defaultSortModel={[{ field: "id", sort: "desc" }]}
+    />;
 };
 
 const UserListPage: BlitzPage = () => {

@@ -1,7 +1,7 @@
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { UserOrderByColumnNames, UserOrderByColumnOption, UserOrderByColumnOptions, UsersFilterSpec } from "@/src/core/components/user/UserClientBaseTypes";
-import { UserListItem } from "@/src/core/components/user/UserListItem";
+import { EnrichedVerboseUser, UserListItem } from "@/src/core/components/user/UserListItem";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
@@ -11,7 +11,6 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
-import { EnrichedVerboseUser } from "./wikiPageHistory";
 
 
 // for serializing in compact querystring
@@ -107,6 +106,7 @@ const UserListOuter = () => {
 
     // Using useSearchPage hook for centralized search page logic
     const searchPage = useSearchPage<UsersFilterSpecStatic, UsersFilterSpec>({
+        table: db3.xUser,
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnKey: "orderByColumn",
@@ -116,10 +116,11 @@ const UserListOuter = () => {
             { filterHook: roleFilter, columnKey: "roleFilter" },
             { filterHook: instrumentFilter, columnKey: "instrumentFilter" },
         ],
-        buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, filterMappings }) => {
+        buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, includeDeleted }) => {
             const filterSpec: UsersFilterSpec = {
                 refreshSerial,
                 quickFilter,
+                includeDeleted,
                 orderByColumn: sortColumn as any,
                 orderByDirection: sortDirection,
                 tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },

@@ -98,6 +98,8 @@ export type DB3EditGridProps = {
     readOnly?: boolean,
     defaultSortModel?: GridSortModel,
     includeDeleted?: boolean,
+    onUpdateRow?: (newRow: TAnyModel, oldRow: TAnyModel, client: DB3Client.xTableRenderClient) => Promise<TAnyModel>;
+    isCellEditable?: (row: TAnyModel, field: string) => boolean;
 };
 
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
@@ -166,6 +168,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     };
 
     const [confirmDialogArgs, setConfirmDialogArgs] = React.useState<any>(null);
+    const [isSaving, setIsSaving] = React.useState(false);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         return new Promise<GridRowModel>((resolve, reject) => {
@@ -198,22 +201,24 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         setConfirmDialogArgs(null);
     };
 
-    const handleYes = () => {
+    const handleYes = async () => {
         const { newRow, oldRow, reject, resolve }: { newRow, oldRow, reject: any, resolve: any } = confirmDialogArgs;
+        setIsSaving(true);
         try {
-            tableClient.doUpdateMutation(newRow).then((updatedObj) => {
-                showSnackbar({ children: "update success", severity: 'success' });
-                tableClient.refetch();
-            }).catch((reason => {
-                showSnackbar({ children: "update error", severity: 'error' });
-                tableClient.refetch();
-            }));
-            resolve(newRow); // optimistic
+            let updatedRow = newRow;
+            if (props.onUpdateRow) updatedRow = await props.onUpdateRow(newRow, oldRow, tableClient);
+            else await tableClient.doUpdateMutation(newRow);
+            resolve(updatedRow);
+            await tableClient.refetch();
+            dashboardContext.refreshCachedData();
+            if (updatedRow !== oldRow) showSnackbar({ children: "update success", severity: 'success' });
         } catch (error) {
-            showSnackbar({ children: "update exception", severity: 'error' });
-            reject(oldRow);
+            showSnackbar({ children: error instanceof Error ? error.message : "update error", severity: 'error' });
+            reject(error);
+        } finally {
+            setIsSaving(false);
+            setConfirmDialogArgs(null);
         }
-        setConfirmDialogArgs(null);
     };
 
     const renderDeleteConfirmation = () => {
@@ -248,7 +253,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 onClose={handleClose}
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >
-                <DialogTitle>Delete row (this is a HARD delete)?</DialogTitle>
+                <DialogTitle>{tableClient.schema.deletePolicy === "softOnly" ? "Deactivate row?" : "Permanently delete row?"}</DialogTitle>
                 <DialogContent dividers>
                     confirm delete
                     <DialogActionsCM>
@@ -271,16 +276,16 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             <Dialog
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 open={true}
-                onClose={handleNo}
+                onClose={isSaving ? undefined : handleNo}
             >
                 <DialogTitle>{explicitSave ? "Are you sure?" : "Save your changes?"}</DialogTitle>
                 <DialogContent dividers>
                     confirm update...
                     <DialogActionsCM>
-                        <Button onClick={handleNo}>No</Button>
+                        <Button disabled={isSaving} onClick={handleNo}>No</Button>
                         {/* type=submit doesn't seem to work. why? */}
                         <Button
-                            autoFocus={true}
+                            disabled={isSaving} autoFocus={true}
                             type="submit" onClick={handleYes}>Yes</Button>
                     </DialogActionsCM>
                 </DialogContent>
@@ -375,7 +380,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                         onClick={handleEditClick(id)}
                         color="inherit"
                     />,
-                    readOnly ? <></> : <GridActionsCellItem
+                    readOnly || tableClient.schema.deletePolicy === "disabled" ? <></> : <GridActionsCellItem
                         icon={<DeleteIcon className="hoverActionIcon" />}
                         key="delete"
                         label="Delete"
@@ -485,6 +490,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             }}
             onProcessRowUpdateError={(error) => { console.error(error) }}
             processRowUpdate={processRowUpdate}
+            isCellEditable={params => props.isCellEditable?.(params.row, params.field) ?? true}
         />
     </>
     );

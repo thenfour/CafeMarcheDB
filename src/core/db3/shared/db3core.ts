@@ -473,6 +473,9 @@ export interface TableDesc {
     viewDeletedPermission?: Permission;
     restorePermission?: Permission;
 
+    // Search features are opt-in independently of admin-grid recovery.
+    searchCapabilities?: { includeDeleted?: boolean };
+
     // this allows tables to supplement search results with extra "customdata".
     SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 };
@@ -490,6 +493,7 @@ export class xTable /* implements TableDesc*/ {
     deletePolicy: DB3DeletePolicy;
     viewDeletedPermission?: Permission;
     restorePermission?: Permission;
+    searchCapabilities?: { includeDeleted?: boolean };
     pkMember: string;
     rowNameMember?: string;
     rowDescriptionMember?: string;
@@ -562,12 +566,12 @@ export class xTable /* implements TableDesc*/ {
             `Table ${this.tableID} allows hard deletion despite having an isDeleted field.`,
         );
         assert(
-            (!this.viewDeletedPermission && !this.restorePermission) || this.deletePolicy === "softOnly",
+            (!this.viewDeletedPermission && !this.restorePermission) || !!this.SqlSpecialColumns.isDeleted,
             `Table ${this.tableID} declares recovery permissions without soft deletion.`,
         );
         assert(
-            (!!this.viewDeletedPermission) === (!!this.restorePermission),
-            `Table ${this.tableID} must declare both viewDeletedPermission and restorePermission.`,
+            !this.restorePermission || !!this.viewDeletedPermission,
+            `Table ${this.tableID} must declare viewDeletedPermission when generic restoration is enabled.`,
         );
 
         args.columns.forEach(field => {
@@ -610,16 +614,17 @@ export class xTable /* implements TableDesc*/ {
     }
 
     // AND this into your query to apply visibility & soft delete logic.
-    SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string) {
+    SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string, includeDeleted = false, publicData?: DB3Authorization) {
         const AND: string[] = [];
-        if (this.SqlSpecialColumns.isDeleted) {
+        const canIncludeDeleted = includeDeleted && !!publicData && this.canViewDeletedRows(publicData);
+        if (this.SqlSpecialColumns.isDeleted && !canIncludeDeleted) {
             AND.push(`(${tableAlias}.${this.SqlSpecialColumns.isDeleted.member} = false)`);
         }
         if (this.SqlSpecialColumns.visiblePermission) {
             const ownerColumn = this.SqlSpecialColumns.ownerUser;
             assert(!!ownerColumn, `Table ${this.tableID} requires an owner for private visibility.`);
             const permissionColumn = this.SqlSpecialColumns.visiblePermission.fkidMember!;
-            const permissionIds = currentUser.role?.permissions.map(p => p.permissionId) || [];
+            const permissionIds = publicData?.effectivePermissions.ids || currentUser.role?.permissions.map(p => p.permissionId) || [];
             const permissionIdList = permissionIds.length > 0 ? permissionIds.join(",") : "NULL";
             AND.push(SqlCombineOrExpression([
                 `(${tableAlias}.${permissionColumn} IN (${permissionIdList}))`,
@@ -812,6 +817,12 @@ export class xTable /* implements TableDesc*/ {
     canViewDeletedRows = (
         publicData: DB3Authorization,
     ): boolean => !!this.viewDeletedPermission && this.hasPermission(publicData, this.viewDeletedPermission);
+
+    getSearchCapabilities = (publicData: DB3Authorization) => ({
+        includeDeleted: !!this.searchCapabilities?.includeDeleted
+            && this.authorizeTableForView(publicData)
+            && this.canViewDeletedRows(publicData),
+    });
 
     authorizeIncludeDeleted = (
         publicData: DB3Authorization,

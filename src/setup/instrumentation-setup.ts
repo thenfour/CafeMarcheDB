@@ -281,6 +281,7 @@ async function EnsureRolePermissionMatrix() {
             ["Admin", "admin_instruments"],
             ["Admin", "manage_user_taxonomy"],
             ["Admin", "deactivate_users"],
+            ["Admin", "recover_users"],
             ["Admin", "assign_user_roles"],
             ["Moderators", "manage_users"],
             ["Admin", "manage_users"]
