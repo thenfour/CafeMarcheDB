@@ -5,6 +5,7 @@ import { SeedingState } from './seeding/base';
 import { SeedEvents_VeryRandom } from './seeding/events';
 import { SeedActivity } from './seeding/activitySeeding';
 import { SeedWikiPages } from './seeding/wikiPageSeeding';
+import { DefaultRolePermissionAssignments } from '../shared/defaultRolePermissionAssignments';
 
 const gState = new SeedingState();
 
@@ -556,11 +557,21 @@ const main = async () => {
       },
       {
         "name": "Moderators",
-        "description": "just below site admin",
+        "description": "site content moderation",
         "isRoleForNewUsers": false,
         "isPublicRole": false,
         "isSysAdminRole": false,
         "sortOrder": 80,
+        "color": "purple",
+        "significance": null
+      },
+      {
+        "name": "Band Admin",
+        "description": "technical band administration",
+        "isRoleForNewUsers": false,
+        "isPublicRole": false,
+        "isSysAdminRole": false,
+        "sortOrder": 90,
         "color": "purple",
         "significance": null
       },
@@ -586,148 +597,31 @@ const main = async () => {
     });
   }
 
-  const rolePermissionAssignments =
-    [
-      ["Admin", "admin_workflow_defs"],
-      ["Public", "always_grant"],
-      ["Limited Users", "always_grant"],
-      ["Normal Users", "always_grant"],
-      ["Editors", "always_grant"],
-      ["Moderators", "always_grant"],
-      ["Admin", "always_grant"],
-      ["Moderators", "edit_workflow_defs"],
-      ["Admin", "edit_workflow_defs"],
-      ["Editors", "edit_workflow_instances"],
-      ["Moderators", "edit_workflow_instances"],
-      ["Admin", "edit_workflow_instances"],
-      ["Editors", "view_workflow_defs"],
-      ["Moderators", "view_workflow_defs"],
-      ["Admin", "view_workflow_defs"],
-      ["Normal Users", "view_workflow_instances"],
-      ["Editors", "view_workflow_instances"],
-      ["Moderators", "view_workflow_instances"],
-      ["Admin", "view_workflow_instances"],
-      ["Public", "public"],
-      ["Public", "practice_tools_use"],
-      ["Limited Users", "public"],
-      ["Normal Users", "public"],
-      ["Editors", "public"],
-      ["Moderators", "public"],
-      ["Admin", "public"],
-      ["Limited Users", "login"],
-      ["Normal Users", "login"],
-      ["Editors", "login"],
-      ["Moderators", "login"],
-      ["Admin", "login"],
-      ["Limited Users", "basic_trust"],
-      ["Normal Users", "basic_trust"],
-      ["Editors", "basic_trust"],
-      ["Moderators", "basic_trust"],
-      ["Admin", "basic_trust"],
-      ["Admin", "sysadmin"],
-      ["Admin", "impersonate_user"],
-      ["Editors", "visibility_editors"],
-      ["Moderators", "visibility_editors"],
-      ["Admin", "visibility_editors"],
-      ["Normal Users", "visibility_members"],
-      ["Editors", "visibility_members"],
-      ["Moderators", "visibility_members"],
-      ["Admin", "visibility_members"],
-      ["Limited Users", "visibility_logged_in_users"],
-      ["Normal Users", "visibility_logged_in_users"],
-      ["Editors", "visibility_logged_in_users"],
-      ["Moderators", "visibility_logged_in_users"],
-      ["Admin", "visibility_logged_in_users"],
-      ["Public", "visibility_public"],
-      ["Limited Users", "visibility_public"],
-      ["Normal Users", "visibility_public"],
-      ["Editors", "visibility_public"],
-      ["Moderators", "visibility_public"],
-      ["Admin", "visibility_public"],
-      ["Editors", "edit_public_homepage"],
-      ["Moderators", "edit_public_homepage"],
-      ["Admin", "edit_public_homepage"],
-      ["Admin", "admin_events"],
-      ["Editors", "manage_events"],
-      ["Moderators", "manage_events"],
-      ["Admin", "manage_events"],
-      ["Admin", "recover_events"],
-      ["Public", "view_events"],
-      ["Limited Users", "view_events"],
-      ["Normal Users", "view_events"],
-      ["Editors", "view_events"],
-      ["Moderators", "view_events"],
-      ["Admin", "view_events"],
-      ["Normal Users", "view_events_nonpublic"],
-      ["Editors", "view_events_nonpublic"],
-      ["Moderators", "view_events_nonpublic"],
-      ["Admin", "view_events_nonpublic"],
-      ["Normal Users", "respond_to_events"],
-      ["Editors", "respond_to_events"],
-      ["Moderators", "respond_to_events"],
-      ["Admin", "respond_to_events"],
-      ["Admin", "admin_songs"],
-      ["Editors", "manage_songs"],
-      ["Moderators", "manage_songs"],
-      ["Admin", "manage_songs"],
-      ["Admin", "recover_songs"],
-      ["Normal Users", "view_songs"],
-      ["Editors", "view_songs"],
-      ["Moderators", "view_songs"],
-      ["Admin", "view_songs"],
-      ["Admin", "admin_files"],
-      ["Editors", "manage_files"],
-      ["Moderators", "manage_files"],
-      ["Admin", "manage_files"],
-      ["Admin", "recover_files"],
-      ["Public", "view_files"],
-      ["Limited Users", "view_files"],
-      ["Normal Users", "view_files"],
-      ["Editors", "view_files"],
-      ["Moderators", "view_files"],
-      ["Admin", "view_files"],
-      ["Normal Users", "upload_files"],
-      ["Editors", "upload_files"],
-      ["Moderators", "upload_files"],
-      ["Admin", "upload_files"],
-      ["Admin", "admin_instruments"],
-      ["Admin", "manage_user_taxonomy"],
-      ["Admin", "deactivate_users"],
-      ["Admin", "assign_user_roles"],
-      ["Moderators", "manage_users"],
-      ["Admin", "manage_users"],
-      ["Normal Users", "view_custom_links"],
-      ["Editors", "view_custom_links"],
-      ["Moderators", "view_custom_links"],
-      ["Admin", "view_custom_links"],
-      ["Editors", "manage_custom_links"],
-      ["Moderators", "manage_custom_links"],
-      ["Admin", "manage_custom_links"],
-      ["Limited Users", "view_wiki_pages"],
-      ["Normal Users", "view_wiki_pages"],
-      ["Editors", "view_wiki_pages"],
-      ["Moderators", "view_wiki_pages"],
-      ["Admin", "view_wiki_pages"],
-      ["Normal Users", "edit_wiki_pages"],
-      ["Editors", "edit_wiki_pages"],
-      ["Moderators", "edit_wiki_pages"],
-      ["Admin", "edit_wiki_pages"],
-      ["Editors", "customize_menu"],
-      ["Moderators", "customize_menu"],
-      ["Admin", "customize_menu"]
-    ]
-
-    ;
 
   console.log(`Seeding role-permission assignments`);
+  const rolePermissionAssignments = DefaultRolePermissionAssignments;
+  const errorMessages: string[] = [];
   for (let i = 0; i < rolePermissionAssignments.length; ++i) {
     const assignment = rolePermissionAssignments[i]!;
-    const role = await gState.prisma.role.findFirstOrThrow({
-      where: { name: assignment[0] }
-    });
-    const permission = await gState.prisma.permission.findFirstOrThrow({
-      where: { name: assignment[1] }
-    });
+    let role;
+    let permission;
+    try {
+      role = await gState.prisma.role.findFirstOrThrow({
+        where: { name: assignment[0] }
+      });
+    } catch (error) {
+      console.error(`Failed to find role for assignment: ${assignment[0]}`, error);
+      errorMessages.push(`Failed to find role for assignment: ${assignment[0]}`);
+    }
+    try {
+      permission = await gState.prisma.permission.findFirstOrThrow({
+        where: { name: assignment[1] }
+      });
+    } catch (error) {
+      console.error(`Failed to find permission for assignment: ${assignment[1]}`, error);
+      errorMessages.push(`Failed to find permission for assignment: ${assignment[1]}`);
+      continue;
+    }
     const ass = await gState.prisma.rolePermission.create({
       data: {
         permissionId: permission.id,
@@ -735,6 +629,14 @@ const main = async () => {
       }
     });
     console.log(`-> assId:${ass.id} ${role.id}(${role.name}) - ${permission.id}(${permission.name})`);
+  }
+
+  if (errorMessages.length > 0) {
+    console.error(`Encountered the following errors while seeding role-permission assignments:`);
+    for (const message of errorMessages) {
+      console.error(`- ${message}`);
+    }
+    throw new Error(`Encountered errors while seeding role-permission assignments.`);
   }
 
   await SeedTable("setting", gState.prisma.setting,
