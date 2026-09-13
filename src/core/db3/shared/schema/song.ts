@@ -166,8 +166,8 @@ const xSongArgs_Base: db3.TableDesc = {
     viewDeletedPermission: Permission.recover_songs,
     restorePermission: Permission.recover_songs,
     queryParameters: {
-        songId: { kind: "integer", authorizeAs: "id" },
-        songIds: { kind: "integerArray", authorizeAs: "id" },
+        songId: { kind: "integer", authorizeAs: "id", nullable: true },
+        songIds: { kind: "integerArray", authorizeAs: "id", nullable: true },
     },
     getSelectionArgs: (): Prisma.SongDefaultArgs => {
         return SongArgs;
@@ -356,7 +356,7 @@ export const xSongCredit = new db3.xTable({
     tableName: "SongCredit",
     deletePolicy: "hard",
     queryParameters: {
-        songId: { kind: "integer", authorizeAs: "songId" },
+        songId: { kind: "integer", authorizeAs: "songId", nullable: true },
     },
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,
