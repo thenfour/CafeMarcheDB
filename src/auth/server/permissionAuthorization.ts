@@ -20,6 +20,12 @@ export const principalHasPermission = (
     return permissionNames.includes(permission);
 };
 
+export function assertPermission(permissionNames: readonly string[], permission: Permission): void {
+    if (!principalHasPermission(permissionNames, permission)) {
+        throw new FreshPermissionAuthorizationError(permission);
+    }
+}
+
 export const loadFreshPrincipal = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
@@ -37,10 +43,7 @@ export const requireFreshAuthorization = async (
 ): Promise<UserWithRolesPayload | null> => {
     const actor = await loadFreshPrincipal(db, userId);
     const permissionNames = await loadEffectivePermissionNames(db, actor);
-    if (!principalHasPermission(permissionNames, permission)) {
-        console.trace("userId:", userId, "checking permission:", permission);
-        throw new FreshPermissionAuthorizationError(permission);
-    }
+    assertPermission(permissionNames, permission);
     return actor;
 };
 

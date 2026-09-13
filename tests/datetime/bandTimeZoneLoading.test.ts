@@ -36,7 +36,6 @@ describe("server band timezone configuration", () => {
   it("delivers the configured timezone through dashboard data without requiring branding edit permission", async () => {
     authorizationTestDb.reset({ setting: [{ id: 1, name: Setting.BandTimeZone, value: "Asia/Tokyo" }] })
     const { ctx } = createAuthorizationPersona("public")
-    ctx.session.$publicData.permissionsLastRefreshedAt = new Date().toISOString()
     await expect(invokeResolver(getDashboardData, {}, ctx)).resolves.toMatchObject({ bandTimeZone: "Asia/Tokyo" })
   })
 })

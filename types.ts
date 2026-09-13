@@ -43,7 +43,6 @@ export type PublicDataType = {
   impersonatingFromUserId?: number | null,
   isSysAdmin: boolean,
   permissions: string[],
-  permissionsLastRefreshedAt: string, // iso utc string new Date().toISOString()
 
   showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
   GOOGLE_ANALYTICS_ID_BACKSTAGE: string | undefined;
@@ -126,7 +125,6 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
       permissions: [...new Set(args.permissions)],
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
-      permissionsLastRefreshedAt: new Date().toISOString(),
       GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
       GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     };
@@ -137,7 +135,6 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     permissions: [...new Set(args.permissions)],
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,
-    permissionsLastRefreshedAt: new Date().toISOString(),
     GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
     GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
   };

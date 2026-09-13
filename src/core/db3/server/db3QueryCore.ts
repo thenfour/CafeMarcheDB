@@ -3,9 +3,9 @@ const { randomUUID } = require("crypto") as typeof import("crypto");
 import db from "db";
 import { sleep } from "shared/utils";
 import { CreatePublicData } from "types";
-import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
+import { loadEffectivePermissions, type EffectivePermissions } from "@/src/auth/server/effectivePermissions";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import * as db3 from "../db3";
-import * as mutationCore from "../server/db3mutationCore";
 import { TransactionalPrismaClient } from "../shared/apiTypes";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { TAnyModel } from "@/shared/rootroot";
@@ -58,7 +58,7 @@ const authorizeQueryBeforeDatabaseAccess = (
     });
 };
 
-export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient) => {
+export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient, requestPermissions?: EffectivePermissions) => {
     try {
         const startTimestamp = Date.now();
         const table = db3.GetTableById(input.tableID);
@@ -69,7 +69,6 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
         if (!input.clientIntention) {
             throw new Error(`client intention is required; context: ${input.cmdbQueryContext}.`);
         }
-        //const currentUser = await mutationCore.getCurrentUserCore(ctx);
         if (clientIntention.intention === "public") {
             // for public intentions, no user should be used.
             clientIntention.currentUser = undefined;
@@ -80,7 +79,20 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
 
         const authorizationUser = clientIntention.intention === "public" ? null : currentUser;
         const transactionalDb: TransactionalPrismaClient = (__transactionalDb as any) || (db as any);
-        const effectivePermissions = await loadEffectivePermissions(transactionalDb, authorizationUser);
+
+        const queryingAsPublicWhileSignedIn =
+            clientIntention.intention === "public" && currentUser !== null;
+
+        const permissionsWereSupplied = requestPermissions !== undefined;
+
+        const canReuseRequestPermissions =
+            permissionsWereSupplied &&
+            !queryingAsPublicWhileSignedIn;
+
+        const effectivePermissions = canReuseRequestPermissions
+            ? requestPermissions!
+            : await loadEffectivePermissions(transactionalDb, authorizationUser);
+
         const publicData = CreatePublicData({ user: authorizationUser, permissions: effectivePermissions.names });
         if (clientIntention.intention !== "public" && includesPermission(effectivePermissions.names, Permission.sysadmin)) {
             clientIntention.intention = "admin";
@@ -144,19 +156,19 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: UserWith
 
 
 export const DB3QueryCore = async (request: db3.QueryRequestInput, ctx: AuthenticatedCtx) => {
-    const currentUser = await mutationCore.getCurrentUserCore(ctx);
+    const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
     const input: db3.QueryInput = {
         ...request,
         clientIntention: deriveDB3ClientIntention("query", currentUser),
     };
-    return await DB3QueryCore2(input, currentUser);
+    return await DB3QueryCore2(input, currentUser, undefined, effectivePermissions);
 };
 
 
 
 export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestInput, ctx: AuthenticatedCtx) => {
     const startTimestamp = Date.now();
-    const currentUser = await mutationCore.getCurrentUserCore(ctx);
+    const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
     const input: db3.PaginatedQueryInput = {
         ...request,
         clientIntention: deriveDB3ClientIntention("paginatedQuery", currentUser),
@@ -164,7 +176,6 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
     const table = db3.GetTableById(input.tableID);
     const contextDesc = `paginatedQuery:${table.tableName}`;
     const clientIntention = input.clientIntention;
-    const effectivePermissions = await loadEffectivePermissions(db, currentUser);
     const publicData = CreatePublicData({ user: currentUser, permissions: effectivePermissions.names });
     if (clientIntention.intention !== "public" && includesPermission(effectivePermissions.names, Permission.sysadmin)) {
         clientIntention.intention = "admin";
@@ -232,7 +243,6 @@ export const DB3PaginatedQueryCore = async (request: db3.PaginatedQueryRequestIn
         resultId: randomUUID(),
     };
 };
-
 
 
 

@@ -751,7 +751,7 @@ Evidence:
 - [-] Treat `Role.sortOrder` strictly as presentation metadata.
 - [-] Keep `isPublicRole` and `isRoleForNewUsers` as functional database flags administered only by actual Sysadmin.
 - [-] Treat roles installed by seeds or migrations as deployment templates, not runtime identities; deployed instances may customize or replace them.
-- [-] Evaluate a per-user authorization/session version under BA-R002 for immediate revocation; do not attach it to a role rank.
+- [x] Refresh effective authorization on each application request under BA-R002; no role rank or session version is needed.
 
 Acceptance criteria:
 
@@ -789,13 +789,13 @@ Phase completion evidence:
 - [x] Upon server startup, require exactly one designated Sysadmin role in the database.
 - [x] Upon server startup, require the designated Sysadmin role to grant `sysadmin`, the platform authority used to manage roles, permissions, and grants.
 
-Reference: [session permission refresh](../src/auth/queries/getDashboardData.ts#L16)
+Reference: [request authorization refresh](../src/auth/server/requestAuthorization.ts)
 
 ### BA-R002 — Reliable revocation
 
-- [x] Invalidate or version sessions after user-role, RolePermission, `isSysAdmin`, and user-active-state changes.
+- [x] Refresh authorization after user-role, RolePermission, and `isSysAdmin` changes while preserving authenticated sessions. Revoke sessions for account deactivation and credential/security operations.
 - [x] Require current authorization state for sensitive mutations rather than relying indefinitely on cached session grants.
-- [x] Define the maximum acceptable propagation time for ordinary grant changes: affected persisted sessions are deleted in the same transaction, so revocation takes effect when that transaction commits.
+- [x] Define propagation for ordinary grant changes: each application request reloads the active user and effective database grants before authorization. Requests whose authorization lookup starts after the change commits see the new grants; already-running requests retain their snapshot. Sensitive administration also checks current authority within its transaction.
 
 Acceptance criteria:
 
@@ -807,8 +807,8 @@ Acceptance criteria:
 
 Phase completion evidence:
 
-- Implementation: Session refresh compares complete effective permissions and `isSysAdmin`, revokes missing/deactivated principals, and preserves the database-owned public-role union. User role/lifecycle/Sysadmin mutations and transactional RolePermission topology edits revoke every affected persisted session; public-role grant changes revoke all sessions and Sysadmin-role changes cover both assigned users and `User.isSysAdmin` principals. Startup fails closed unless exactly one designated Sysadmin role grants `sysadmin`; sensitive administration continues to re-read current database authorization.
-- Verification: focused BA-R001/BA-R002 regressions; `yarn test:auth` and `yarn test` (331 passed); `yarn tsc --noEmit`; focused ESLint; `yarn build`; `git diff --check`.
+- Implementation: Blitz middleware and the Next page adapter refresh authorization before page guards or synchronous `resolver.authorize` checks. A promise cached by request SessionContext shares the principal and effective permissions among the dashboard, page guards, and main DB3 entry points. A new request always reads again, even when the session handle is unchanged. The refresh compares complete grants and Sysadmin state and calls `$setPublicData` only when these values change, preserving identity, impersonation metadata, and valid admin-control preferences. Role assignment, built-in role designation, Sysadmin flag, and permission-matrix changes no longer delete sessions. Missing/deactivated accounts, password resets, email correction, bootstrap credential rotation, and explicit logout retain revocation. No schema migration, timer, dirty flag, or version counter is required.
+- Verification (2026-09-13): `yarn test` (591 passed), plus two added public-role refresh regressions; `yarn tsc --noEmit`; focused ESLint; `git diff --check`. Local Chrome smoke testing with two disposable accounts confirmed consecutive Admin permission-matrix edits and reload, then denied/granted/denied access through a real Blitz RPC resolver after role-grant changes, with both session handles unchanged. Temporary accounts and their test records were removed, and the Admin grant was restored. Detailed observations: [auth refresh smoke test](authRequestRefreshSmoke.md).
 - Commit/PR:
 
 ## Deferred rollout — Compose and assign Band Admin

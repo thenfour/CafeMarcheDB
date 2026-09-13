@@ -25,7 +25,7 @@ import { CreatePublicData } from "types";
 import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
 import { clearBrandCache } from "@/src/server/brand";
 import { createPublicDataFromDatabase } from "@/src/auth/server/effectivePermissions";
-import { invalidateSessionsForRolePermissionChanges } from "@/src/auth/server/sessionInvalidation";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { validateSettingValue } from "@/src/auth/server/settingWrite";
 
 var path = require('path');
@@ -117,24 +117,7 @@ export const getAuthenticatedCtx = (unauthenticatedCtx: Ctx, perm: Permission): 
 
 
 // returns null if public
-export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
-    try {
-        const ctx = getAuthenticatedCtx(unauthenticatedCtx, Permission.visibility_public);
-        if (!ctx) throw new Error("unauthorized");
-        if (!ctx.session.userId) return null;
-        const currentUser = await db.user.findFirst({
-            ...UserWithRolesArgs,
-            where: {
-                id: ctx.session.userId,
-                isDeleted: false,
-            }
-        });
-
-        return currentUser;
-    } catch (e) {
-        return null; // public. no logged in user.
-    }
-};
+export const getCurrentUserCore = async (ctx: Ctx) => (await getRequestAuthorization(ctx.session)).user;
 
 export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: number, updatingEventModel: Partial<EventForCal>, db?: TransactionalPrismaClient, }) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
@@ -246,14 +229,6 @@ export const CallMutateEventHooks = async (args: {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     let eventIdToUpdate: null | number | undefined = null;
     switch (args.tableNameOrSpecialMutationKey.toLowerCase()) {
-        case "rolepermission": {
-            // changes to role-perm topology require invalidating sessions for affected roles
-            const roleIds = [args.model, args.oldModel, ...(args.additionalModels || [])]
-                .map(model => model?.roleId)
-                .filter((roleId): roleId is number => typeof roleId === "number");
-            await invalidateSessionsForRolePermissionChanges(transactionalDb, roleIds);
-            return;
-        }
         case "setting":
             clearBrandCache();
             return;

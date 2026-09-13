@@ -3,15 +3,13 @@ import { Permission } from "shared/permissions";
 import { gSSP } from "src/blitz-server";
 import type { xTable } from "src/core/db3/shared/db3core";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
-import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
-import { CMAuthorize } from "types";
-import db from "db";
-import { createPublicDataFromDatabase } from "./effectivePermissions";
+import { CMAuthorize, CreatePublicData } from "types";
+import { getRequestAuthorization } from "./requestAuthorization";
 import type { TAnyModel } from "@/shared/rootroot";
 
 export async function isAuthorizedForServerPage(ctx: Ctx, permission: Permission): Promise<boolean> {
-    const currentUser = await getCurrentUserCore(ctx);
-    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
+    const { user, effectivePermissions } = await getRequestAuthorization(ctx.session);
+    const publicData = CreatePublicData({ user, permissions: effectivePermissions.names });
     return CMAuthorize({
         reason: "server-rendered page",
         permission,
@@ -47,8 +45,8 @@ export async function loadAuthorizedPageEntity<T>({
     id,
     load,
 }: LoadAuthorizedPageEntityArgs<T>): Promise<T | null> {
-    const currentUser = await getCurrentUserCore(ctx);
-    const publicData = await createPublicDataFromDatabase(db, { user: currentUser });
+    const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
+    const publicData = CreatePublicData({ user: currentUser, permissions: effectivePermissions.names });
     if (!CMAuthorize({ reason: "server-rendered entity metadata", permission, publicData })) {
         return null;
     }

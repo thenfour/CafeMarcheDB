@@ -212,11 +212,10 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
 
     // getInitialProps also runs in the browser during navigation. Initialize
     // server authentication only for server requests, before reading a session.
-    await import("src/blitz-server");
-    const { getSession } = await import("@blitzjs/auth");
+    const { getSessionForRequest } = await import("src/blitz-server");
     const { authorizePageRequest } = await import("@/src/auth/server/pageRequestAuthorization");
-    const session = await getSession(req, res);
-    await authorizePageRequest(pathname, session.userId);
+    const session = await getSessionForRequest(req, res);
+    await authorizePageRequest(pathname, session);
 
     // A request with no valid or last-known-good brand must fail instead of
     // rendering normal application content under the wrong site identity.

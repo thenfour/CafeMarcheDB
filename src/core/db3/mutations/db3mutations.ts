@@ -6,6 +6,7 @@ import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { deriveDB3ClientIntention, populateDB3AuthorizationPermissions, validateDB3MutationRequest } from "../server/db3RequestValidation";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -14,10 +15,11 @@ export default resolver.pipe(
         const input = validateDB3MutationRequest(untrustedInput);
         const table = db3.GetTableById(input.tableID);
 
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
         const clientIntention = await populateDB3AuthorizationPermissions(
             db,
             deriveDB3ClientIntention("mutation", currentUser),
+            effectivePermissions,
         );
 
         const execute = async (transactionalDb: TransactionalPrismaClient = db as any) => {

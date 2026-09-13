@@ -1,10 +1,11 @@
-import db from "db";
+import type { SessionContext } from "@blitzjs/auth";
 import { findBackstageRouteByPattern } from "../shared/backstageRoutes";
-import { requireFreshAuthorization } from "./permissionAuthorization";
+import { assertPermission } from "./permissionAuthorization";
+import { getRequestAuthorization } from "./requestAuthorization";
 
 export async function authorizePageRequest(
     pathname: string,
-    userId: number | null | undefined,
+    session: SessionContext,
 ): Promise<void> {
     // all pages should take the same authorization path, even the root homepage.
     // non-logged in users have explicit access to the homepage and public pages via
@@ -13,5 +14,6 @@ export async function authorizePageRequest(
     const route = findBackstageRouteByPattern(pathname);
     if (!route) throw new Error(`Backstage page is missing route authorization metadata: ${pathname}`);
 
-    await requireFreshAuthorization(db, userId, route.permission);
+    const { effectivePermissions } = await getRequestAuthorization(session);
+    assertPermission(effectivePermissions.names, route.permission);
 }

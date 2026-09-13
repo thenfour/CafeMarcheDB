@@ -2,7 +2,7 @@ import { z } from "zod";
 import * as db3 from "../db3";
 import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
-import { loadEffectivePermissions } from "@/src/auth/server/effectivePermissions";
+import { loadEffectivePermissions, type EffectivePermissions } from "@/src/auth/server/effectivePermissions";
 import { includesPermission, Permission } from "@/shared/permissions";
 
 const MAX_FILTER_ITEMS = 100;
@@ -238,8 +238,9 @@ export function deriveDB3ClientIntention(
 export async function populateDB3AuthorizationPermissions(
     database: TransactionalPrismaClient,
     context: db3.xTableClientUsageContext,
+    permissions?: EffectivePermissions,
 ): Promise<db3.xTableClientUsageContext> {
-    const permissions = await loadEffectivePermissions(database, context.currentUser);
+    permissions ??= await loadEffectivePermissions(database, context.currentUser);
     return {
         ...context,
         intention: context.intention === "public"

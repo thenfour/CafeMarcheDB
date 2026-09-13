@@ -13,9 +13,7 @@ const routes = [
     { key: "signup", pattern: "/auth/signup", caption: "signup", permission: Permission.public },
     { key: "login", pattern: "/auth/login", caption: "login", permission: Permission.public },
     { key: "forgotPassword", pattern: "/auth/forgot-password", caption: "Forgot Password", permission: Permission.public },
-    { key: "login", pattern: "/auth/login", caption: "login", permission: Permission.public },
     // maybe others need to be added since i removed the "/backstage/" restriction on this table.
-    // for example forgot password page...
 
     // the backstage entrypoint is public because it contains login forms, public resources, practice tools.
     { key: "home", pattern: "/backstage", caption: "Home", permission: Permission.public },

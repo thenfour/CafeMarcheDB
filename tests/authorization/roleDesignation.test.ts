@@ -70,7 +70,8 @@ describe("BA-U005 built-in role designations", () => {
           : [],
       },
     ]
-    authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [] })
+    const sessions = [{ id: 1, userId: sysadmin.id }, { id: 2, userId: 99 }]
+    authorizationTestDb.reset({ user: [sysadmin], role: roles, change: [], session: sessions })
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await expect(invokeResolver(setRoleDesignation, {
@@ -79,6 +80,7 @@ describe("BA-U005 built-in role designations", () => {
     }, ctx)).resolves.toEqual({ designation, roleId: 12 })
 
     const resultingRoles = authorizationTestDb.snapshot("role")
+    expect(authorizationTestDb.snapshot("session")).toEqual(sessions)
     expect(resultingRoles.filter(role => role[flag])).toEqual([
       expect.objectContaining({ id: 12 }),
     ])

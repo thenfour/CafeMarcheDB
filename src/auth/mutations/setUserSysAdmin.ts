@@ -37,7 +37,6 @@ export default resolver.pipe(
                 where: { id: userId },
                 data: { isSysAdmin },
             });
-            await tx.session.deleteMany({ where: { userId } });
             await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext("setUserSysAdmin"),

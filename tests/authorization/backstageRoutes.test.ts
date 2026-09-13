@@ -24,7 +24,9 @@ function discoverBackstagePagePatterns(directory: string): string[] {
 describe("backstage route authorization registry", () => {
     it("registers every backstage page exactly once and has no stale entries", () => {
         const pagePatterns = discoverBackstagePagePatterns(path.join(process.cwd(), "src/pages/backstage")).sort();
-        const registeredPatterns = backstageRouteRegistry.map(route => route.pattern).sort();
+        const registeredPatterns = backstageRouteRegistry
+            .filter(route => route.pattern.startsWith("/backstage"))
+            .map(route => route.pattern).sort();
 
         expect(new Set(registeredPatterns).size).toBe(registeredPatterns.length);
         expect(registeredPatterns).toEqual(pagePatterns);

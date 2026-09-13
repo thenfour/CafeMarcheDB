@@ -1347,7 +1347,7 @@ describe("BA-U002 delegated user administration", () => {
     })).toBe(false)
   })
 
-  it("assigns a peer-equivalent role, revokes target sessions, and logs only roleId", async () => {
+  it("assigns a peer-equivalent role, preserves target sessions, and logs only roleId", async () => {
     const peer = {
       ...createAuthorizationTarget("peerBandAdmin", { id: 11 }),
       roleId: peerRole.id,
@@ -1375,6 +1375,7 @@ describe("BA-U002 delegated user administration", () => {
     ]))
     expect(authorizationTestDb.snapshot("session")).toEqual([
       expect.objectContaining({ userId: bandAdmin.id }),
+      expect.objectContaining({ userId: peer.id }),
     ])
     const change = authorizationTestDb.snapshot("change")[0]!
     expect(change).toEqual(expect.objectContaining({ table: "User", recordId: peer.id }))
@@ -1432,7 +1433,7 @@ describe("BA-U002 delegated user administration", () => {
     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: selfInPeerRole.id, roleId: ordinaryRole.id }),
     ]))
-    expect(authorizationTestDb.snapshot("session")).toEqual([])
+    expect(authorizationTestDb.snapshot("session")).toEqual([{ id: 1, userId: selfInPeerRole.id }])
   })
 
   it("does not warn when another active non-Sysadmin retains continuity permissions", async () => {
@@ -1469,6 +1470,8 @@ describe("BA-U002 delegated user administration", () => {
   })
 
   it("reserves the dedicated isSysAdmin mutation for a Sysadmin", async () => {
+    const sessions = [{ id: 1, userId: ordinaryUser.id }, { id: 2, userId: sysadmin.id }]
+    authorizationTestDb.getDelegate("session").reset(sessions)
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
     const { ctx: bandAdminCtx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
     const { ctx: sysadminCtx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
@@ -1486,6 +1489,7 @@ describe("BA-U002 delegated user administration", () => {
     expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: ordinaryUser.id, isSysAdmin: true }),
     ]))
+    expect(authorizationTestDb.snapshot("session")).toEqual(sessions)
   })
 
   it("rejects role, deactivation, and Sysadmin state through generic User mutation", async () => {

@@ -8,65 +8,9 @@ import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
 import { EventStatusSignificance, gEventRelevanceClass, gVisibleEventRelevanceClasses, xEvent, xMenuLink, type xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
-import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { loadEffectivePermissionNames } from "../server/effectivePermissions";
+import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadBandTimeZone } from "src/server/dateTime";
-
-// exported for unit tests
-export async function RefreshSessionPermissions(ctx: Ctx) {
-    const publicData = { ...ctx.session?.$publicData };
-    // Anonymous dashboard visitors have no user to refresh or revoke. Their
-    // public-role permissions are loaded separately by getDashboardData.
-    if (!publicData.userId) return false;
-
-    // only query if x seconds has elapsed since last fetch
-    const now = new Date().getTime();
-    const lastRefreshedAt = new Date(publicData.permissionsLastRefreshedAt || 0).getTime();
-    const tenSeconds = 10000; // 10 seconds in milliseconds
-    if (now - lastRefreshedAt < tenSeconds) {
-        return false;
-    }
-
-    // get current permissions.
-    const u = await db.user.findFirst({
-        where: {
-            id: publicData.userId,
-            isDeleted: false,
-        },
-        include: {
-            role: {
-                include: {
-                    permissions: {
-                        include: {
-                            permission: true,
-                        }
-                    }
-                }
-            }
-        }
-    });
-    if (!u) {
-        await ctx.session.$revoke();
-        return true;
-    }
-
-    const newPerms = await loadEffectivePermissionNames(db, u);
-    await ctx.session.$setPublicData({
-        permissionsLastRefreshedAt: new Date().toISOString(),
-        GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
-        GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
-        showAdminControls: u.isSysAdmin ? publicData.showAdminControls || false : false,
-        impersonatingFromUserId: publicData.impersonatingFromUserId,
-        isSysAdmin: u.isSysAdmin,
-        permissions: newPerms,
-    });
-}
-
-
-
-
-
 
 async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
     if (!currentUser) {
@@ -150,8 +94,9 @@ export default resolver.pipe(
         try {
             const sw = new Stopwatch();
 
-            const currentUser = await getCurrentUserCore(ctx);
-            const effectivePermissions = await loadEffectivePermissionNames(db, currentUser);
+            const authorization = await getRequestAuthorization(ctx.session);
+            const currentUser = authorization.user;
+            const effectivePermissions = authorization.effectivePermissions.names;
             const clientIntention: xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
 
             const menuItemsCall = DB3QueryCore2({
@@ -161,7 +106,7 @@ export default resolver.pipe(
                 tableID: xMenuLink.tableID,
                 tableName: xMenuLink.tableName,
                 orderBy: undefined,
-            }, currentUser);
+            }, currentUser, undefined, authorization.effectivePermissions);
 
             // Existing events retain the meaning of a status after that status
             // is retired, so relevance calculations use every referenced row.
@@ -190,8 +135,6 @@ export default resolver.pipe(
                 relevantEventsCall,
                 loadBandTimeZone(),
             ]);
-
-            await RefreshSessionPermissions(ctx);
 
             const [
                 userTag,
@@ -248,6 +191,5 @@ export default resolver.pipe(
         }
     }
 );
-
 
 

@@ -276,6 +276,8 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
 
         const revokedActor = createAuthorizationTestUser("normal", { id: sysadmin.id });
         authorizationTestDb.reset({ user: [revokedActor] });
-        await expect(isAuthorizedForServerPage(ctx, Permission.sysadmin)).resolves.toBe(false);
+        // A new request still carries the old session grants, but reloads the actor.
+        const { ctx: nextRequest } = createAuthorizationPersona("sysadmin", { id: sysadmin.id });
+        await expect(isAuthorizedForServerPage(nextRequest, Permission.sysadmin)).resolves.toBe(false);
     });
 });

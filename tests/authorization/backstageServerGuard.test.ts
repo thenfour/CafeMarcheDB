@@ -7,7 +7,7 @@ vi.mock("db", async () => {
 });
 
 import { Permission } from "shared/permissions";
-import { authorizePageRequest } from "@/src/auth/server/pageRequestAuthorization";
+import { authorizePageRequest as authorizeRequest } from "@/src/auth/server/pageRequestAuthorization";
 import { loadAuthorizedPageEntity } from "src/auth/server/serverPageAuthorization";
 import { xEvent } from "src/core/db3/db3";
 import getUserMassAnalysis from "src/core/db3/queries/getUserMassAnalysis";
@@ -28,6 +28,12 @@ const roleCarriedSysadmin = createAuthorizationTestUser("normal", {
     permissions: [Permission.login, Permission.sysadmin],
 });
 const actualSysadmin = createAuthorizationTestUser("sysadmin", { id: 812 });
+
+// Model a distinct Next request for each guard invocation.
+const authorizePageRequest = (pathname: string, userId: number | null | undefined) => {
+    const user = userId ? createAuthorizationTestUser("normal", { id: userId }) : null;
+    return authorizeRequest(pathname, createAuthorizationTestContext(user).session);
+};
 
 describe("backstage server page guard", () => {
     beforeEach(() => {
@@ -79,15 +85,19 @@ describe("backstage server page guard", () => {
     it.each([
         ["/backstage", null],
         ["/backstage/", undefined],
-        ["/backstage/calendar", null],
-        ["/backstage/event/[...id_slug_tab]", undefined],
-        ["/backstage/roles", null],
     ] as const)("allows the anonymous dashboard login frame at %s", async (pathname, userId) => {
         await expect(authorizePageRequest(pathname, userId)).resolves.toBeUndefined();
     });
 
-    it("does not grant protected page data when allowing the anonymous frame", async () => {
-        await authorizePageRequest("/backstage/event/[...id_slug_tab]", null);
+    it.each([
+        "/backstage/calendar",
+        "/backstage/event/[...id_slug_tab]",
+        "/backstage/roles",
+    ])("rejects anonymous requests to protected page %s", async pathname => {
+        await expect(authorizePageRequest(pathname, null)).rejects.toMatchObject({ statusCode: 403 });
+    });
+
+    it("does not load protected entity data for an anonymous visitor", async () => {
         const load = vi.fn();
         await expect(loadAuthorizedPageEntity({
             ctx: createAuthorizationTestContext(null),

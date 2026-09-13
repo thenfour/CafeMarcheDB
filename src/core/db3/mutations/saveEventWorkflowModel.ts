@@ -10,15 +10,17 @@ import * as mutationCore from "../server/db3mutationCore";
 import { deriveDB3ClientIntention, populateDB3AuthorizationPermissions } from "../server/db3RequestValidation";
 import { gWorkflowMutex, MockEvent, ZSaveModelMutationInput } from "../server/eventWorkflow";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 
 export default resolver.pipe(
     resolver.zod(ZSaveModelMutationInput),
     resolver.authorize(Permission.edit_workflow_instances),
     async (args, ctx: AuthenticatedCtx) => {
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        const { user: currentUser, effectivePermissions } = await getRequestAuthorization(ctx.session);
         const clientIntention = await populateDB3AuthorizationPermissions(
             db,
             deriveDB3ClientIntention("mutation", currentUser),
+            effectivePermissions,
         );
 
         return gWorkflowMutex.runExclusive(async () => {

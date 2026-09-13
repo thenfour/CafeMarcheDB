@@ -93,14 +93,6 @@ export default resolver.pipe(
                 throw new Error(`Expected exactly one ${designation} role after reassignment.`);
             }
 
-            // invalidate sessions to force refresh permissions
-            // for more complex scenarios.
-            if (designation === RoleDesignation.public) {
-                await tx.session.deleteMany({});
-            } else if (designation === RoleDesignation.sysadmin) {
-                await tx.session.deleteMany({ where: { user: { isSysAdmin: true } } });
-            }
-
             return { designation, roleId };
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

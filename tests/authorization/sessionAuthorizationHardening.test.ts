@@ -1,91 +1,77 @@
 import { describe, expect, it, vi } from "vitest";
 import { Permission } from "shared/permissions";
-import {
-    assertValidSysadminRole,
-    invalidateSessionsForRolePermissionChanges,
-} from "src/auth/server/sessionInvalidation";
-import { CallMutateEventHooks } from "src/core/db3/server/db3mutationCore";
 
-describe("BA-R002 role permission revocation", () => {
-    it("derives every affected role from a batched RolePermission mutation hook", async () => {
-        const findMany = vi.fn().mockResolvedValue([]);
-        const db = {
-            role: { findMany },
-            session: { deleteMany: vi.fn() },
-        } as any;
+vi.mock("db", async () => {
+    const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
+    const { authorizationTestDb } = await import("./support/inMemoryPrisma");
+    return { ...prisma, default: authorizationTestDb };
+});
 
-        await CallMutateEventHooks({
-            tableNameOrSpecialMutationKey: "RolePermission",
-            model: { id: 1, roleId: 10 },
-            oldModel: { id: 1, roleId: 9 },
-            additionalModels: [{ id: 2, roleId: 11 }],
-            db,
+import { assertValidSysadminRole } from "src/auth/server/sessionInvalidation";
+import db3Mutation from "src/core/db3/mutations/db3mutations";
+import { authorizationTestDb } from "./support/inMemoryPrisma";
+import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import { forgeDb3Update } from "./support/db3RequestBuilders";
+import { invokeResolver } from "./support/resolverHarness";
+
+describe("role permission changes preserve authenticated sessions", () => {
+    it.each(["assigned", "public", "sysadmin"])("allows consecutive matrix edits for the %s role", async kind => {
+        const actor = createAuthorizationTestUser("sysadmin", { id: 1 });
+        const roleId = actor.roleId!;
+        const role = {
+            ...actor.role!,
+            isPublicRole: kind === "public",
+            isSysAdminRole: kind === "sysadmin",
+        };
+        const sessions = [
+            { id: 1, userId: actor.id, user: actor, handle: "actor-session" },
+            { id: 2, userId: 2, user: { roleId, isSysAdmin: false }, handle: "other-session" },
+        ];
+        authorizationTestDb.reset({
+            user: [actor], role: [role], session: sessions,
+            permission: [{ id: 80, name: Permission.manage_site_branding, roles: [] }],
+            rolePermission: [], change: [],
         });
+        await invokeResolver(db3Mutation, forgeDb3Update("Permission", 80, { roles: [roleId] }), createAuthorizationTestContext(actor));
+        expect(authorizationTestDb.snapshot("rolePermission")).toEqual([
+            expect.objectContaining({ roleId, permissionId: 80 }),
+        ]);
+        expect(authorizationTestDb.snapshot("session")).toEqual(sessions);
 
-        expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
-            where: { id: { in: [10, 9, 11] } },
-        }));
-    });
-
-    it("invalidates every session for a public-role grant change", async () => {
-        const deleteMany = vi.fn();
-        const db = {
-            role: { findMany: vi.fn().mockResolvedValue([{ id: 10, isPublicRole: true, isSysAdminRole: false }]) },
-            session: { deleteMany },
-        } as any;
-
-        await invalidateSessionsForRolePermissionChanges(db, [10]);
-
-        expect(deleteMany).toHaveBeenCalledWith({});
-    });
-
-    it("invalidates assigned users and User.isSysAdmin principals for a Sysadmin-role grant change", async () => {
-        const deleteMany = vi.fn();
-        const db = {
-            role: { findMany: vi.fn().mockResolvedValue([{ id: 20, isPublicRole: false, isSysAdminRole: true }]) },
-            session: { deleteMany },
-        } as any;
-
-        await invalidateSessionsForRolePermissionChanges(db, [20]);
-
-        expect(deleteMany).toHaveBeenCalledWith({
-            where: {
-                user: {
-                    OR: [
-                        { roleId: { in: [20] } },
-                        { isSysAdmin: true },
-                    ],
-                },
-            },
-        });
+        await invokeResolver(db3Mutation, forgeDb3Update("Permission", 80, { roles: [] }), createAuthorizationTestContext(actor));
+        expect(authorizationTestDb.snapshot("rolePermission")).toEqual([]);
+        expect(authorizationTestDb.snapshot("session")).toEqual(sessions);
+        expect(authorizationTestDb.snapshot("change")).toHaveLength(2);
     });
 });
 
 describe("BA-R001 startup Sysadmin-role assertion", () => {
     it("requires exactly one designated role", async () => {
-        const db = { role: { findMany: vi.fn().mockResolvedValue([]) } } as any;
-        await expect(assertValidSysadminRole(db)).rejects.toThrow("exactly one designated Sysadmin role");
+        authorizationTestDb.reset({ role: [] });
+        await expect(assertValidSysadminRole(authorizationTestDb)).rejects.toThrow("exactly one designated Sysadmin role");
     });
 
-    it("requires the designated role to carry the Sysadmin permission", async () => {
-        const db = {
-            role: {
-                findMany: vi.fn().mockResolvedValue([{ id: 30, name: "Admin", permissions: [] }]),
-            },
-        } as any;
-        await expect(assertValidSysadminRole(db)).rejects.toThrow(`must grant ${Permission.sysadmin}`);
+    it("adds missing required grants to the designated role", async () => {
+        const createMany = vi.fn();
+        await assertValidSysadminRole({
+            role: { findMany: async () => [{ id: 30, name: "Admin", permissions: [] }] },
+            permission: { findMany: async () => [{ id: 1, name: Permission.sysadmin }, { id: 2, name: Permission.login }] },
+            rolePermission: { createMany },
+        });
+        expect(createMany).toHaveBeenCalledWith({ data: [
+            { roleId: 30, permissionId: 1 },
+            { roleId: 30, permissionId: 2 },
+        ] });
     });
 
-    it("accepts one designated role carrying the Sysadmin permission", async () => {
-        const db = {
-            role: {
-                findMany: vi.fn().mockResolvedValue([{
-                    id: 30,
-                    name: "Admin",
-                    permissions: [{ permission: { name: Permission.sysadmin } }],
-                }]),
-            },
-        } as any;
-        await expect(assertValidSysadminRole(db)).resolves.toBeUndefined();
+    it("accepts one designated role already carrying the required permissions", async () => {
+        const permissions = [{ id: 1, name: Permission.sysadmin }, { id: 2, name: Permission.login }];
+        authorizationTestDb.reset({
+            role: [{ id: 30, name: "Admin", isSysAdminRole: true, permissions: permissions.map(permission => ({ permission })) }],
+            permission: permissions,
+            rolePermission: [],
+        });
+        await assertValidSysadminRole(authorizationTestDb);
+        expect(authorizationTestDb.snapshot("rolePermission")).toEqual([]);
     });
 });
