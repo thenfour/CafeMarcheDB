@@ -16,7 +16,7 @@ const routes = [
     // maybe others need to be added since i removed the "/backstage/" restriction on this table.
 
     // /[...customLinkSlug] 
-    { key: "customLink", pattern: "/backstage/[...customLinkSlug]", caption: "Custom Link", permission: Permission.public },
+    { key: "customLink", pattern: "/[...customLinkSlug]", caption: "Custom Link", permission: Permission.public },
 
     // the backstage entrypoint is public because it contains login forms, public resources, practice tools.
     { key: "home", pattern: "/backstage", caption: "Home", permission: Permission.public },
