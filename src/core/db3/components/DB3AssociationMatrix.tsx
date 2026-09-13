@@ -160,15 +160,27 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         const obj: [string, string][] = [];
         const objRows: string[] = [];
 
-        for (let iy = 0; iy < filteredRows.length; ++iy) {
-            const permission = filteredRows[iy]!;// as db3.PermissionPayload;
-            const associations = permission[props.tagsField.columnName] as TAssociation[];
-            const permissionInfo = props.localTableSpec.args.table.getRowInfo(permission);
+        const orderedRows = filteredRows.slice().sort((a, b) => {
+            const aInfo = props.localTableSpec.args.table.getRowInfo(a);
+            const bInfo = props.localTableSpec.args.table.getRowInfo(b);
+            return aInfo.name.localeCompare(bInfo.name);
+        });
+        const orderedColumns = dbColumns.items.slice().sort((a, b) => {
+            const aInfo = props.foreignTableSpec.args.table.getRowInfo(a);
+            const bInfo = props.foreignTableSpec.args.table.getRowInfo(b);
+            return aInfo.name.localeCompare(bInfo.name);
+        });
 
-            for (let ix = 0; ix < dbColumns.items.length; ++ix) {
-                // "tag" = X (foreign) (column) (role)
-                const role = dbColumns.items[ix]!;
-                const roleId = role[props.foreignTableSpec.args.table.pkMember];
+        for (let ix = 0; ix < orderedColumns.length; ++ix) {
+            // "tag" = X (foreign) (column) (role)
+            const role = orderedColumns[ix]!;
+            const roleId = role[props.foreignTableSpec.args.table.pkMember];
+
+            for (let iy = 0; iy < orderedRows.length; ++iy) {
+                const permission = orderedRows[iy]!;// as db3.PermissionPayload;
+                const associations = permission[props.tagsField.columnName] as TAssociation[];
+                const permissionInfo = props.localTableSpec.args.table.getRowInfo(permission);
+
 
                 const association = associations.find(a => a[props.tagsField.associationForeignIDMember] === roleId);
                 if (!association) continue;
