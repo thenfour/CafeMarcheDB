@@ -15,7 +15,7 @@ import type { UploadResponsePayload } from "@/src/core/db3/shared/fileTypes";
 import { useSession } from "@blitzjs/auth";
 import type { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { Setting } from "shared/settingKeys";
@@ -226,6 +226,10 @@ const BrandForm = () => {
         }
     };
 
+    const allTimeZones = React.useMemo(() => {
+        return Intl.supportedValuesOf("timeZone");
+    }, []);
+
     return <CMSinglePageSurfaceCard>
         <div className="brandFormContainer header" style={{ backgroundColor: "#fff", color: "var(--text-secondary)" }}>
             <h2 style={{ color: "var(--text-primary)" }}>Site identity</h2>
@@ -238,14 +242,29 @@ const BrandForm = () => {
                 onChange={onChange}
             />
             <h2>Event scheduling</h2>
-            <TextField
+            <Autocomplete
                 fullWidth
-                label="Band time zone"
+                options={allTimeZones}
                 value={values.bandTimeZone}
-                onChange={event => onChange("bandTimeZone", event.target.value)}
-                error={!!bandTimeZoneError}
-                helperText={bandTimeZoneError || "The band's home time zone, including daylight saving time. Use a named zone, such as Europe/Brussels or Asia/Tokyo."}
+                freeSolo
+                onChange={(e, newValue) => {
+                    if (newValue) onChange("bandTimeZone", newValue)
+                }}
+                filterOptions={(options, state) => {
+                    const q = state.inputValue.toLocaleLowerCase();
+                    return options.filter(o => o.toLocaleLowerCase().indexOf(q) != -1);
+                }}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        label="Band time zone"
+                        error={!!bandTimeZoneError}
+                        helperText={bandTimeZoneError || "The band's home time zone, including daylight saving time. Use a named zone, such as Europe/Brussels or Asia/Tokyo."}
+                    />
+                )}
             />
+
+
             <h2>Calendar identity</h2>
             <BrandingFields fields={calendarFields} values={values} canUpload={false} onChange={onChange} />
             <h2>Theme</h2>
