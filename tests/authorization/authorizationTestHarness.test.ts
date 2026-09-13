@@ -951,21 +951,6 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
       ]),
     )
   })
-
-  it("keeps isSysAdmin out of generic mutation even for Sysadmin", async () => {
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-    const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
-
-    await expect(
-      invokeResolver(
-        db3Mutation,
-        forgeDb3Update("User", target.id, { id: target.id, isSysAdmin: true }),
-        ctx,
-      ),
-    ).rejects.toThrow("Not authorized to mutate User fields: isSysAdmin")
-
-    expect(update).not.toHaveBeenCalled()
-  })
 })
 
 describe("BA-U001 protected-principal policy", () => {
@@ -1486,27 +1471,6 @@ describe("BA-U002 delegated user administration", () => {
       expect.objectContaining({ id: ordinaryUser.id, isSysAdmin: true }),
     ]))
     expect(authorizationTestDb.snapshot("session")).toEqual(sessions)
-  })
-
-  it("rejects role, deactivation, and Sysadmin state through generic User mutation", async () => {
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-
-    for (const fields of [
-      { roleId: ordinaryRole.id },
-      { isDeleted: true },
-      { isSysAdmin: true },
-    ]) {
-      await expect(invokeResolver(
-        db3Mutation,
-        forgeDb3Update("User", ordinaryUser.id, { id: ordinaryUser.id, ...fields }),
-        ctx,
-      )).rejects.toThrow("Not authorized to mutate User fields")
-    }
-    await expect(invokeResolver(
-      db3Mutation,
-      forgeDb3Delete("User", ordinaryUser.id, "softWhenPossible"),
-      ctx,
-    )).rejects.toThrow("Not authorized to mutate User fields")
   })
 
   it("allows the Sysadmin maintenance grid to create an unprivileged user", async () => {

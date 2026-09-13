@@ -1,4 +1,7 @@
 import { Permission } from "@/shared/permissions";
+import getUserManagementCapabilities from "@/src/auth/queries/getUserManagementCapabilities";
+import { useQuery } from "@blitzjs/rpc";
+import { Alert } from "@mui/material";
 import { Prisma } from "@prisma/client";
 import React, { Suspense } from "react";
 import { StringToEnumValue } from "shared/utils";
@@ -6,20 +9,18 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
+import { useSnackbar } from "../SnackbarContext";
 import { CMTab, CMTabPanel } from "../TabPanel";
 import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { SongsProvider } from "../song/SongsContext";
-import { UserAdminPanel } from "./UserAdminPanel";
+import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
+import { CorrectUserEmailButton, EditUserProfileButton, UserAdminPanel } from "./UserAdminPanel";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
-import { useSnackbar } from "../SnackbarContext";
-import { useQuery } from "@blitzjs/rpc";
-import getUserManagementCapabilities from "@/src/auth/queries/getUserManagementCapabilities";
-import { Alert } from "@mui/material";
 
 type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name: true, color: true, sortOrder: true, } }>;
 
@@ -175,10 +176,37 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
             }
             {dashboardContext.isAuthorized(Permission.manage_users) &&
                 <KeyValueTable data={{
-                    //Role: ,
-                    Phone: user.phone,
-                    Email: user.email,
-                    Identity: <Suspense><UserIdentityIndicator user={user} /></Suspense>,
+                    "_": <EditUserProfileButton
+                        capabilities={capabilities}
+                        readonly={props.readonly}
+                        tableClient={tableClient}
+                        user={user}
+                        onOK={async () => {
+                            await refetch();
+                        }}
+                    />,
+                    Phone: <div className='key-value-cell' style={{ display: 'flex', alignItems: 'center' }}>
+                        <div>{user.phone}</div>
+                    </div>,
+                    Email: <>
+                        <div>{user.email}</div>
+                        <CorrectUserEmailButton
+                            capabilities={capabilities}
+                            user={user}
+                            onOK={async () => {
+                                await refetch();
+                            }}
+                        />
+                    </>,
+                    Identity: <Suspense>
+                        <UserIdentityIndicator user={user} />
+
+                        {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
+
+                    </Suspense>,
+
+
+
                 }} />
             }
 

@@ -1,3 +1,4 @@
+import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
     Button,
@@ -7,22 +8,20 @@ import {
     TextField,
     Tooltip,
 } from "@mui/material";
+import { useRouter } from "next/router";
 import React from "react";
+import { Permission } from "shared/permissions";
 import correctUserEmail from "src/auth/mutations/correctUserEmail";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
 import { useSnackbar } from "../SnackbarContext";
-import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { Permission } from "shared/permissions";
-import { Routes } from "@blitzjs/next";
-import { useRouter } from "next/router";
 
 type UserMgmtCaps = {
     canEdit: boolean;
@@ -91,10 +90,10 @@ export const CorrectUserEmailButton = ({ capabilities, user, onOK }: CorrectUser
                 setCorrectedEmail(user.email);
                 setShowEmailDialog(true);
             }}>
-                Correct login email
+                Change login email
             </Button>
             <Dialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
-                <DialogTitle>Correct login email for {user.name}</DialogTitle>
+                <DialogTitle>Change login email for {user.name}</DialogTitle>
                 <DialogContent dividers>
                     <p>
                         This changes the account&apos;s login identifier and revokes its active sessions.
@@ -220,24 +219,6 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
     if (!hasAnyControl) return null;
 
     return <div>
-        <EditUserProfileButton
-            capabilities={capabilities}
-            readonly={props.readonly}
-            tableClient={props.tableClient}
-            user={props.user}
-            onOK={() => {
-                props.refetch?.();
-            }}
-        />
-
-        <CorrectUserEmailButton
-            capabilities={capabilities}
-            user={props.user}
-            onOK={() => {
-                props.refetch?.();
-            }}
-        />
-
         <DeactivateUserButton
             capabilities={capabilities}
             user={props.user}
@@ -247,8 +228,6 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
         />
 
         <ReactivateUserButton capabilities={capabilities} user={props.user} onOK={props.refetch} />
-
-        {capabilities.canResetPassword && <AdminResetPasswordButton user={props.user} />}
 
         <SetUserSysadminButton
             capabilities={capabilities}

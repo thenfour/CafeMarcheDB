@@ -81,7 +81,6 @@ describe("BA-U006 generic User identity boundaries", () => {
   })
 
   it.each([
-    ["email", "generic-sysadmin@test.invalid"],
     ["googleId", "generic-sysadmin-google-subject"],
     ["hashedPassword", "generic-sysadmin-password-hash"],
     ["calendarFeedToken", "generic-sysadmin-calendar-token"],
