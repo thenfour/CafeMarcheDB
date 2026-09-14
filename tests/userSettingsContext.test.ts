@@ -46,7 +46,7 @@ const dashboardData = (showDeclinedEvents: boolean) => ({
         "songTag", "songCreditType", "eventCustomField", "relevantEventIds", "dynMenuLinks", "instrument",
     ].map(name => [name, []])),
     bandTimeZone: "Europe/Brussels",
-    userSettings: { "calendar.showDeclinedEvents": showDeclinedEvents },
+    userSettings: { "calendar.showDeclinedEvents": showDeclinedEvents, "calendar.showUninvitedEvents": true },
 });
 
 beforeEach(() => {
@@ -97,24 +97,28 @@ describe("user settings in dashboard context", () => {
         expect(original.metronomeSilencers).toHaveLength(1);
     });
 
-    it("saves through the mutation and updates every mounted preference control", async () => {
-        update.mockResolvedValue({ "calendar.showDeclinedEvents": false });
+    it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("saves %s and updates every mounted preference control", async name => {
+        update.mockResolvedValue({ ...data.userSettings, [name]: false });
         await act(async () => root.render(React.createElement(DashboardContextProvider, null,
             React.createElement(CalendarUserSettingsControl), React.createElement(CalendarUserSettingsControl),
         )));
-        expect([...container.querySelectorAll("input")].map(input => input.checked)).toEqual([true, true]);
-        await act(async () => container.querySelector("input")!.click());
-        expect(update).toHaveBeenCalledWith({ "calendar.showDeclinedEvents": false });
-        expect([...container.querySelectorAll("input")].map(input => input.checked)).toEqual([false, false]);
+        const inputs = () => [...container.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`)];
+        expect(inputs().map(input => input.checked)).toEqual([true, true]);
+        await act(async () => inputs()[0]!.click());
+        expect(update).toHaveBeenCalledWith({ [name]: false });
+        expect(inputs().map(input => input.checked)).toEqual([false, false]);
+        expect([...container.querySelectorAll<HTMLInputElement>(`input:not([name="${name}"])`)]
+            .every(input => input.checked)).toBe(true);
         expect(setQueryData).toHaveBeenCalledWith(getDashboardData, { userId: 10 }, expect.any(Function), { refetch: false });
     });
 
-    it("retains the saved preference and reports a failed save", async () => {
+    it.each(["calendar.showDeclinedEvents", "calendar.showUninvitedEvents"] as const)("retains %s and reports a failed save", async name => {
         update.mockRejectedValue(new Error("Save failed"));
         await act(async () => root.render(React.createElement(DashboardContextProvider, null, React.createElement(CalendarUserSettingsControl))));
-        await act(async () => container.querySelector("input")!.click());
-        expect(container.querySelector("input")!.checked).toBe(true);
-        expect(container.querySelector("input")!.disabled).toBe(false);
+        const input = container.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
+        await act(async () => input.click());
+        expect(input.checked).toBe(true);
+        expect(input.disabled).toBe(false);
         expect(errorMessage).toHaveBeenCalled();
         expect(setQueryData).not.toHaveBeenCalled();
     });

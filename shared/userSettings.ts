@@ -7,6 +7,10 @@ export const userSettingDefinitions = {
         schema: z.boolean(),
         defaultValue: true,
     },
+    "calendar.showUninvitedEvents": {
+        schema: z.boolean(),
+        defaultValue: true,
+    },
 } as const;
 
 // extracts the zod schemas by key.

@@ -1286,7 +1286,9 @@ export interface EventUserResponse<TEvent extends EventResponses_MinimalEvent, T
     user: UserWithInstrumentsPayload;
     response: TResponse;
 
-    isInvited: boolean; // NB: invites & comments are per-event, not segment.
+    // calculated invitation status -- can derive from either tag membership or explicit individual invitation.
+    // response.isInvited may differ
+    isInvited: boolean;
 
     // if the user is invited, they are relevant for display; show them.
     // if the user is not invited but has responded, show them.

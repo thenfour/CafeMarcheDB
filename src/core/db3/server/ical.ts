@@ -8,6 +8,7 @@ import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
 import { Setting } from "@/shared/settingKeys";
 import { isAttendanceGoing } from "shared/eventAttendance";
+import { isUserInvitedToEvent } from "shared/eventInvitation";
 import { loadUserSettings } from "src/auth/server/userSettings";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
 
@@ -208,9 +209,16 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
 
     for (let i = 0; i < events.length; ++i) {
         const event = events[i]!;
+        const defaultInviteeUserIds = new Set(event.expectedAttendanceUserTag?.userAssignments.map(assignment => assignment.userId));
         if (!shouldIncludeEventInCalendarFeed({
             userId: currentUser.id,
             showDeclinedEvents: userSettings["calendar.showDeclinedEvents"],
+            showUninvitedEvents: userSettings["calendar.showUninvitedEvents"],
+            isInvited: isUserInvitedToEvent({
+                userId: currentUser.id,
+                defaultInvitationUserIds: defaultInviteeUserIds,
+                responses: event.responses,
+            }),
             segments: event.segments,
             cancelledStatusIds: cancelledStatuses,
             attendanceById,

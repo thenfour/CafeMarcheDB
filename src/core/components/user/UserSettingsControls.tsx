@@ -2,6 +2,7 @@ import { useSession } from "@blitzjs/auth";
 import { setQueryData, useMutation } from "@blitzjs/rpc";
 import { Checkbox, FormControl, FormControlLabel, FormHelperText } from "@mui/material";
 import React from "react";
+import type { UserSettingsPatch } from "shared/userSettings";
 import updateMyUserSettings from "src/auth/mutations/updateMyUserSettings";
 import getDashboardData from "src/auth/queries/getDashboardData";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
@@ -14,11 +15,12 @@ export const CalendarUserSettingsControl = () => {
     const [saving, setSaving] = React.useState(false);
     const snackbar = useSnackbar();
     const descriptionId = React.useId();
+    const invitationDescriptionId = React.useId();
 
-    const save = async (showDeclinedEvents: boolean) => {
+    const save = async (patch: UserSettingsPatch) => {
         setSaving(true);
         try {
-            const userSettings = await updateSettings({ "calendar.showDeclinedEvents": showDeclinedEvents });
+            const userSettings = await updateSettings(patch);
             await setQueryData(getDashboardData, { userId: session.userId ?? null }, previous => previous ? {
                 ...previous,
                 userSettings,
@@ -36,12 +38,27 @@ export const CalendarUserSettingsControl = () => {
             label="Show declined events in my calendar feed"
             control={<Checkbox
                 checked={dashboardContext.userSettings["calendar.showDeclinedEvents"]}
+                name="calendar.showDeclinedEvents"
                 inputProps={{ "aria-describedby": descriptionId }}
-                onChange={(_, checked) => { void save(checked); }}
+                onChange={(_, checked) => { void save({ "calendar.showDeclinedEvents": checked }); }}
             />}
         />
         <FormHelperText id={descriptionId}>
             When disabled, events are hidden if you aren't going.
+        </FormHelperText>
+        <FormControlLabel
+            label="Show events I'm not invited to in my calendar feed"
+            control={<Checkbox
+                checked={dashboardContext.userSettings["calendar.showUninvitedEvents"]}
+                name="calendar.showUninvitedEvents"
+                inputProps={{ "aria-describedby": invitationDescriptionId }}
+                onChange={(_, checked) => { void save({ "calendar.showUninvitedEvents": checked }); }}
+            />}
+        />
+        <FormHelperText id={invitationDescriptionId}>
+            When disabled, events you're not explicitly attending are hidden if you aren't invited.
+        </FormHelperText>
+        <FormHelperText>
             Changes appear when your calendar app next refreshes.
         </FormHelperText>
     </FormControl>;

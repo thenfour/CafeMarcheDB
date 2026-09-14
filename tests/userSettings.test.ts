@@ -16,22 +16,28 @@ describe("attendance classification", () => {
 
 describe("user settings registry", () => {
     it("resolves missing preferences without database rows and preserves false", () => {
-        expect(resolveUserSettings()).toEqual({ "calendar.showDeclinedEvents": true });
+        expect(resolveUserSettings()).toEqual({ "calendar.showDeclinedEvents": true, "calendar.showUninvitedEvents": true });
         expect(resolveUserSettings([{ name: "calendar.showDeclinedEvents", value: false }]))
-            .toEqual({ "calendar.showDeclinedEvents": false });
+            .toEqual({ "calendar.showDeclinedEvents": false, "calendar.showUninvitedEvents": true });
+        expect(resolveUserSettings([{ name: "calendar.showUninvitedEvents", value: false }]))
+            .toEqual({ "calendar.showDeclinedEvents": true, "calendar.showUninvitedEvents": false });
     });
 
     it("ignores retired keys and defaults invalid stored values without coercion", () => {
         expect(resolveUserSettings([
             { name: "calendar.showDeclinedEvents", value: "false" },
+            { name: "calendar.showUninvitedEvents", value: "false" },
             { name: "retired.preference", value: 123 },
-        ])).toEqual({ "calendar.showDeclinedEvents": true });
+        ])).toEqual({ "calendar.showDeclinedEvents": true, "calendar.showUninvitedEvents": true });
     });
 
     it.each([
         { "calendar.showDeclinedEvents": "false" },
         { "calendar.showDeclinedEvents": null },
         { "calendar.showDeclinedEvents": 0 },
+        { "calendar.showUninvitedEvents": "false" },
+        { "calendar.showUninvitedEvents": null },
+        { "calendar.showUninvitedEvents": 0 },
         { "unknown.setting": true },
         { userId: 123, "calendar.showDeclinedEvents": false },
         { calendar: { showDeclinedEvents: false } },

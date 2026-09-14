@@ -37,18 +37,18 @@ describe("own user settings", () => {
     });
 
     it("loads defaults anonymously and only the specified user's preferences", async () => {
-        expect(await loadUserSettings(null)).toEqual({ [settingName]: true });
-        expect(await loadUserSettings(owner.id)).toEqual({ [settingName]: true });
-        expect(await loadUserSettings(other.id)).toEqual({ [settingName]: false });
+        expect(await loadUserSettings(null)).toEqual({ [settingName]: true, "calendar.showUninvitedEvents": true });
+        expect(await loadUserSettings(owner.id)).toEqual({ [settingName]: true, "calendar.showUninvitedEvents": true });
+        expect(await loadUserSettings(other.id)).toEqual({ [settingName]: false, "calendar.showUninvitedEvents": true });
         expect(authorizationTestDb.snapshot("userSetting")).toHaveLength(1);
     });
 
     it("creates, updates and audits a preference without duplicating the row", async () => {
         const { ctx } = createAuthorizationPersona("normal", { id: owner.id });
         expect(await invokeResolver(updateMyUserSettings, { [settingName]: false }, ctx))
-            .toEqual({ [settingName]: false });
+            .toEqual({ [settingName]: false, "calendar.showUninvitedEvents": true });
         expect(await invokeResolver(updateMyUserSettings, { [settingName]: true }, ctx))
-            .toEqual({ [settingName]: true });
+            .toEqual({ [settingName]: true, "calendar.showUninvitedEvents": true });
         await invokeResolver(updateMyUserSettings, { [settingName]: true }, ctx);
 
         expect(authorizationTestDb.snapshot("userSetting")).toEqual([
@@ -68,6 +68,20 @@ describe("own user settings", () => {
         expect(authorizationTestDb.snapshot("userSetting")).toContainEqual(
             expect.objectContaining({ name: "future.preference", value: "kept" }),
         );
+    });
+
+    it("saves each calendar preference independently and returns both through the dashboard", async () => {
+        const { ctx } = createAuthorizationPersona("normal", { id: owner.id });
+        await invokeResolver(updateMyUserSettings, { [settingName]: false }, ctx);
+        expect(await invokeResolver(updateMyUserSettings, { "calendar.showUninvitedEvents": false }, ctx))
+            .toEqual({ [settingName]: false, "calendar.showUninvitedEvents": false });
+        expect(await invokeResolver(updateMyUserSettings, { [settingName]: true }, ctx))
+            .toEqual({ [settingName]: true, "calendar.showUninvitedEvents": false });
+        expect(await invokeResolver(getDashboardData, {}, ctx)).toMatchObject({
+            userSettings: { [settingName]: true, "calendar.showUninvitedEvents": false },
+        });
+        expect(await loadUserSettings(other.id))
+            .toEqual({ [settingName]: false, "calendar.showUninvitedEvents": true });
     });
 
     it.each(["public", "deactivated", "missing"])("rejects writes for a %s principal", async kind => {

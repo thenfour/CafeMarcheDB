@@ -1,5 +1,6 @@
 import { DashboardContextDataBase } from "@/src/core/components/dashboardContext/dashboardContextTypes";
 import * as db3 from "@db3/db3";
+import { isUserInvitedToEvent } from "shared/eventInvitation";
 
 
 ////////////////////////////////////////////////////////////////
@@ -31,11 +32,6 @@ export function createMockEventSegmentUserResponse
         args: GetEventResponseForSegmentAndUserArgs<TEventSegment, TSegmentResponse>
     )
     : db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse> | null {
-    let expectAttendance: boolean = false;
-    if (args.expectedAttendanceTag) {
-        expectAttendance = !!args.expectedAttendanceTag.userAssignments.find(ua => ua.userId === args.user.id);
-    }
-
     // // mock response when none exists
     // const mockResponse = args.createMockResponse(args.segment, args.user) : EventResponses_MinimalEventSegmentUserResponse = {
     //     attendanceId: null,
@@ -87,55 +83,26 @@ export interface createMockEventUserResponseArgs<TEvent extends db3.EventRespons
 export function createMockEventUserResponse<TEvent extends db3.EventResponses_MinimalEvent, TResponse extends db3.EventResponses_MinimalEventUserResponse>(
     args: createMockEventUserResponseArgs<TEvent, TResponse>
 ): db3.EventUserResponse<TEvent, TResponse> | null {
-    const invitedByDefault: boolean = args.defaultInvitees.has(args.userId);
+    const isInvited = isUserInvitedToEvent({
+        userId: args.userId,
+        defaultInvitationUserIds: args.defaultInvitees,
+        responses: args.event.responses,
+    });
     const user = args.users.find(u => u.id === args.userId)!;
 
     // mock response when none exists
-    const mockResponse = args.makeMockEventUserResponse(args.event, user, invitedByDefault);
+    const mockResponse = args.makeMockEventUserResponse(args.event, user, isInvited);
     if (!mockResponse) return null;
-    //     const mockResponse: EventUserResponsePayload = {
-    //         userComment: "",
-    //     eventId: event.id,
-    //     id: -1,
-    //     user,
-    //     userId: user.id,
-    //     instrument: null,
-    //     instrumentId: null,
-    //     isInvited: invitedByDefault,
-    // };
 
     return {
         user,
         event: args.event,
-        isInvited: invitedByDefault,
-        isRelevantForDisplay: invitedByDefault,
+        isInvited,
+        isRelevantForDisplay: isInvited,
         instrument: getInstrumentForEventUserResponse(mockResponse, args.userId, args.dashboardContext, args.users),
         response: mockResponse,
     };
 };
-
-// who's relevant? it's not 100% clear how to handle certain cases.
-// there should be 2 stages to the decision: is the user invited, and what is their answer?
-// first, how to decide if a user is invited?
-// it's based on if they have the expected attendance user tag and if it's been specified in EventSegmentUserResponse.expectAttendance.
-// this is basically coalesce(Response.ExpectAttendance, hasusertag)
-//
-// HasUserTag    Response.ExpectAttendance    Invited
-// no            no                           = no (explicit)
-// no            yes                          = yes (explicit)
-// no            null                         = no (use hasusertag)
-// yes           no                           = no (explicit -- in this case the user has been explicitly uninvited)
-// yes           yes                          = yes (explicit, redundant)
-// yes           null                         = yes (use hasusertag)
-// 
-// INVITED?   ANSWER       RELEVANCE
-// no         null         = no
-// no         notgoing     = no. but questionable. "no" because it's redundant and unhelpful.
-// no         going        = yes. but should be alerted.
-// yes        null         = yes
-// yes        notgoing     = yes
-// yes        going        = yes
-//
 
 export function getEventSegmentResponseForSegmentAndUser<
     TEventSegment extends db3.EventResponses_MinimalEventSegment,
@@ -143,11 +110,6 @@ export function getEventSegmentResponseForSegmentAndUser<
 >(args: GetEventResponseForSegmentAndUserArgs<TEventSegment, TSegmentResponse>)
     : db3.EventSegmentUserResponse<TEventSegment, TSegmentResponse> | null {
     console.assert(!!args.segment.responses);
-
-    let expectAttendance: boolean = false;
-    if (args.expectedAttendanceTag) {
-        expectAttendance = !!args.expectedAttendanceTag.userAssignments.find(ua => ua.userId === args.user.id);
-    }
 
     const responseNullable = args.segment.responses.find(r => r.userId === args.user.id);
     if (!!responseNullable) {
@@ -182,7 +144,7 @@ export function getEventResponseForUser<TEvent extends db3.EventResponses_Minima
 >({ event, user, defaultInvitationUserIds, dashboardContext, userMap, makeMockEventUserResponse }: GetEventResponseForUserArgs<TEvent, TEventResponse>): db3.EventUserResponse<TEvent, TEventResponse> | null {
     const response = event.responses.find(r => r.userId === user.id);
     if (response) {
-        const isInvited = response.isInvited || defaultInvitationUserIds.has(user.id); // #162 default invitation overrides "uninvite"
+        const isInvited = isUserInvitedToEvent({ userId: user.id, defaultInvitationUserIds, responses: event.responses });
         const instrument = getInstrumentForEventUserResponse(response, user.id, dashboardContext, userMap);
         return {
             isInvited,
