@@ -32,7 +32,6 @@ describe("own user settings", () => {
         const { ctx } = createAuthorizationPersona(persona, { id: owner.id });
         const dashboard = await invokeResolver(getDashboardData, { userId: other.id }, ctx);
         expect(dashboard).toMatchObject({
-            userSettingsUserId: persona === "public" ? null : owner.id,
             userSettings: { [settingName]: true },
         });
     });

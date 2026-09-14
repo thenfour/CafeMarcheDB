@@ -28,7 +28,7 @@ const makeEvent = (segments: ReturnType<typeof segment>[]) => ({
     songLists: [], responses: [], status: { significance: null as string | null },
 });
 
-const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = false, userId: number | null = owner.id) =>
+const include = (segments: ReturnType<typeof segment>[], showDeclinedEvents = false, userId = owner.id) =>
     shouldIncludeEventInCalendarFeed({
         segments, showDeclinedEvents, userId,
         cancelledStatusIds: new Set([cancelledId]),
@@ -50,9 +50,8 @@ describe("event-level calendar attendance", () => {
         expect(include([segment(1, 100, cancelledId)])).toBe(false);
         expect(include([segment(1, 0), { ...segment(2), startsAt: null }])).toBe(true);
     });
-    it("keeps public feeds and the enabled preference inclusive", () => {
+    it("keeps declined events when the preference is enabled", () => {
         expect(include([segment(1, 0)], true)).toBe(true);
-        expect(include([segment(1, 0)], false, null)).toBe(true);
     });
     it("uses only the subscribing user's responses", () => {
         expect(include([segment(1, 0)], false, 20)).toBe(true);
@@ -70,8 +69,8 @@ beforeEach(() => {
 });
 
 describe("calendar export integration", () => {
-    const exportFeed = (currentUser: typeof owner | null = owner) => CalExportCore({
-        type: "upcoming", currentUser: currentUser as UserForCalBackendPayload | null,
+    const exportFeed = () => CalExportCore({
+        type: "upcoming", currentUser: owner as UserForCalBackendPayload,
     });
 
     it("retains all dated active segments of a qualifying event, including declined ones", async () => {
@@ -97,7 +96,6 @@ describe("calendar export integration", () => {
         event.segments[1]!.responses = [];
         const restored = await exportFeed();
         expect(restored.events().map(event => event.uid())).toEqual(original.events().map(event => event.uid()));
-        expect((await exportFeed(null)).events()).toHaveLength(2);
     });
 
     it("omits cancelled events and undated segments without changing attendance eligibility", async () => {

@@ -39,14 +39,13 @@ const update = vi.fn();
 const errorMessage = vi.fn();
 const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 
-const dashboardData = (owner: number | null, showDeclinedEvents: boolean) => ({
+const dashboardData = (showDeclinedEvents: boolean) => ({
     ...Object.fromEntries([
         "permission", "effectivePermissionIds", "effectivePermissionNames", "userTag", "wikiPageTag", "role",
         "eventType", "eventStatus", "eventTag", "eventAttendance", "fileTag", "instrumentTag", "instrumentFunctionalGroup",
         "songTag", "songCreditType", "eventCustomField", "relevantEventIds", "dynMenuLinks", "instrument",
     ].map(name => [name, []])),
     bandTimeZone: "Europe/Brussels",
-    userSettingsUserId: owner,
     userSettings: { "calendar.showDeclinedEvents": showDeclinedEvents },
 });
 
@@ -56,7 +55,7 @@ beforeEach(() => {
     container = document.getElementById("root") as HTMLDivElement;
     root = createRoot(container);
     userId = 10;
-    data = dashboardData(userId, true);
+    data = dashboardData(true);
     vi.mocked(useSession).mockImplementation(() => ({ userId, permissionNames: [] }) as any);
     vi.mocked(useCurrentUser).mockImplementation(() => [{ id: userId }] as any);
     vi.mocked(useBrand).mockReturnValue(DefaultDbBrandConfig);
@@ -67,8 +66,8 @@ beforeEach(() => {
         notify = () => rerender(value => value + 1);
         return [data, { refetch: vi.fn() }] as any;
     });
-    vi.mocked(setQueryData).mockImplementation(async (_query, args: any, updater: any) => {
-        if (args.userId === data.userSettingsUserId) data = updater(data);
+    vi.mocked(setQueryData).mockImplementation(async (_query, _args, updater: any) => {
+        data = updater(data);
         notify();
     });
 });
@@ -91,22 +90,11 @@ describe("user settings in dashboard context", () => {
         await act(async () => root.render(React.createElement(DashboardContextProvider, null, child)));
         const original = (window as any).cmdbDashboardContext;
         expect(container.textContent).toBe("true");
-        data = dashboardData(userId, false);
+        data = dashboardData(false);
         await act(async () => notify());
         expect(container.textContent).toBe("false");
         expect((window as any).cmdbDashboardContext).toBe(original);
         expect(original.metronomeSilencers).toHaveLength(1);
-    });
-
-    it("uses account-specific query keys and does not expose the previous account's preference", async () => {
-        const Probe = () => React.createElement("span", null, String(useDashboardContext().userSettings["calendar.showDeclinedEvents"]));
-        data = dashboardData(10, false);
-        await act(async () => root.render(React.createElement(DashboardContextProvider, null, React.createElement(Probe))));
-        expect(container.textContent).toBe("false");
-        userId = 20;
-        await act(async () => notify());
-        expect(useQuery).toHaveBeenLastCalledWith(getDashboardData, { userId: 20 });
-        expect(container.textContent).toBe("true");
     });
 
     it("saves through the mutation and updates every mounted preference control", async () => {

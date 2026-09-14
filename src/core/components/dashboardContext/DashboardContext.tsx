@@ -22,7 +22,6 @@ import { DashboardContextDataBase } from './dashboardContextTypes';
 import { enrichInstrument } from '@db3/shared/schema/enrichedInstrumentTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
 import { isAttendanceGoing } from 'shared/eventAttendance';
-import { resolveUserSettings } from 'shared/userSettings';
 
 type CmdbWindow = Window & {
     cmdbDashboardContext?: DashboardContextData;
