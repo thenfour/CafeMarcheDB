@@ -322,6 +322,18 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     opacity: 100%;
 }
 
+/* subtle chip-adjascent button */
+.CMTextButton.freeButton {
+    background-color: #0001;
+    color: #0009;
+    padding: 0px 9px;
+    border-radius: 3px;
+}
+
+.CMTextButton.freeButton:hover {
+    background-color: #0002;
+}
+
 .interactableWithBorder:hover {
     border-color: #08f4;
 }

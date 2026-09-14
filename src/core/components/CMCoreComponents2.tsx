@@ -136,13 +136,13 @@ export function useIsShowingAdminControls() {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type Url = string | UrlObject;
+// type Url = string | UrlObject;
 
-const formatUrl = (url: UrlObject): string => {
-    const { pathname = '', query = {}, hash = '' } = url;
-    const searchParams = new URLSearchParams(query as Record<string, string>).toString();
-    return `${pathname}${searchParams ? `?${searchParams}` : ''}${hash ? `#${hash}` : ''}`;
-};
+// const formatUrl = (url: UrlObject): string => {
+//     const { pathname = '', query = {}, hash = '' } = url;
+//     const searchParams = new URLSearchParams(query as Record<string, string>).toString();
+//     return `${pathname}${searchParams ? `?${searchParams}` : ''}${hash ? `#${hash}` : ''}`;
+// };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {
@@ -154,6 +154,41 @@ export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: strin
         {open && (obj !== undefined) && <pre>{JSON.stringify(obj, undefined, 2)}</pre>}
     </div>}</>;
 };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CMTextButtonProps {
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+    enabled?: boolean;
+    startIcon?: React.ReactNode;
+    tooltip?: React.ReactNode;
+
+    className?: string;
+    style?: React.CSSProperties;
+};
+
+export const CMTextButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMTextButtonProps>) => {
+    let innerContent = <>
+        {props.startIcon}
+        {props.children}
+    </>;
+
+    if (props.tooltip) {
+        innerContent = <Tooltip title={props.tooltip} arrow>
+            <div>
+                {innerContent}
+            </div>
+        </Tooltip>;
+    }
+
+    return <div
+        style={props.style}
+        className={`interactable freeButton CMTextButton ${props.className} ${enabled ? "enabled" : "disabled"}`}
+        onClick={enabled ? (e) => { props.onClick && props.onClick(e) } : undefined}
+    >
+        {innerContent}
+    </div>;
+};
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSmallButtonProps {
