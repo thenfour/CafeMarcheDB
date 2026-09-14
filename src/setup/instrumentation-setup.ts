@@ -1,10 +1,11 @@
-import { getPermissionDatabaseMetadata, gPermissionRegistry } from "@/shared/permissions";
-import db from "db"
-import { SeedTable } from "./setupUtils";
-import { Setting } from "@/shared/settingKeys";
 import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
-import { assertValidSysadminRole } from "@/src/auth/server/sessionInvalidation";
 import { DefaultRolePermissionAssignments } from "@/shared/defaultRolePermissionAssignments";
+import { getPermissionDatabaseMetadata, gPermissionRegistry } from "@/shared/permissions";
+import { Setting } from "@/shared/settingKeys";
+import { assertValidSysadminRole } from "@/src/auth/server/sessionInvalidation";
+import db from "db";
+import { SeedTable } from "./setupUtils";
+import { ValidateRouteRegistry } from "../auth/shared/backstageRoutes";
 
 // Ensure all permissions in code are present in the database
 async function SyncPermissionsTable() {
@@ -642,6 +643,9 @@ async function InitSettings() {
 }
 
 export async function instrumentationSetup() {
+
+    await ValidateRouteRegistry();
+
     await SyncPermissionsTable();
     await EnsureDefaultRoles();
     await EnsureRolePermissionMatrix();

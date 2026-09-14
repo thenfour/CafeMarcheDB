@@ -1,3 +1,4 @@
+import { Routes } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 
 export interface BackstageRouteDefinition {
@@ -9,13 +10,18 @@ export interface BackstageRouteDefinition {
 
 const routes = [
     { key: "root", pattern: "/", caption: "Home", permission: Permission.public },
-    { key: "error", pattern: "/_error", caption: "Error", permission: Permission.public },
+    //{ key: "error", pattern: "/_error", caption: "Error", permission: Permission.public },
     { key: "signup", pattern: "/auth/signup", caption: "signup", permission: Permission.public },
     { key: "login", pattern: "/auth/login", caption: "login", permission: Permission.public },
     { key: "forgotPassword", pattern: "/auth/forgot-password", caption: "Forgot Password", permission: Permission.public },
-    // maybe others need to be added since i removed the "/backstage/" restriction on this table.
 
-    // /[...customLinkSlug] 
+    { key: "/404", pattern: "/404", caption: "/404", permission: Permission.public },
+    { key: "/auth/admin-bootstrap", pattern: "/auth/admin-bootstrap", caption: "/auth/admin-bootstrap", permission: Permission.public },
+    { key: "/auth/logout", pattern: "/auth/logout", caption: "/auth/logout", permission: Permission.public },
+    { key: "/auth/reset-password", pattern: "/auth/reset-password", caption: "/auth/reset-password", permission: Permission.public },
+    { key: "/auth/stopImpersonating", pattern: "/auth/stopImpersonating", caption: "/auth/stopImpersonating", permission: Permission.public },
+    { key: "/test/test", pattern: "/test/test", caption: "/test/test", permission: Permission.public },
+
     { key: "customLink", pattern: "/[...customLinkSlug]", caption: "Custom Link", permission: Permission.public },
 
     // the backstage entrypoint is public because it contains login forms, public resources, practice tools.
@@ -99,6 +105,26 @@ export function getBackstageRoute(key: BackstageRouteKey): BackstageRouteDefinit
 
 // Needed for reverse lookup: "which route am I currently on?"
 export function findBackstageRouteByPattern(pattern: string): BackstageRouteDefinition | undefined {
-    // 
     return routeByPattern.get(pattern.replace(/\/$/, "") || "/");
+}
+
+export function ValidateRouteRegistry(): void {
+    // check that our registry keys cover all Blitz routes
+    const blitzRoutePaths: string[] = Object.values(Routes).map(route => route({} as any).pathname);
+    const ourRoutePaths: string[] = routes.map(route => route.pattern);
+    const errorMessages: string[] = [];
+    for (const path of blitzRoutePaths) {
+        if (!ourRoutePaths.includes(path)) {
+            errorMessages.push(`Missing route in our registry: ${path}`);
+        }
+    }
+    // and check stale routes in our registry that are not in Blitz routes
+    for (const path of ourRoutePaths) {
+        if (!blitzRoutePaths.includes(path)) {
+            errorMessages.push(`Stale route in our registry: ${path}`);
+        }
+    }
+    if (errorMessages.length > 0) {
+        throw new Error(`Route registry validation failed:\n${errorMessages.join("\n")}`);
+    }
 }

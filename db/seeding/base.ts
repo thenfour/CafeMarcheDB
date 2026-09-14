@@ -26,12 +26,12 @@ export class SeedingState {
     prisma = new PrismaClient();
 
     config = {
-        userCount: 100,
+        userCount: 80,
         songCount: 100,
 
         events: {
-            minDate: monthsFromNow(-60),
-            maxDate: monthsFromNow(9),
+            minDate: monthsFromNow(-40),
+            maxDate: monthsFromNow(6),
         }
 
 
