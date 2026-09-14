@@ -26,6 +26,8 @@ import { clearBrandCache } from "@/src/server/brand";
 import { queryTable } from "./db3QueryCore";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { validateSettingValue } from "@/src/auth/server/settingWrite";
+//import { requireUnmergedMutationUsers } from "./mergedUserMutationGuard";
+//import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 
 var path = require('path');
 var fs = require('fs');
@@ -323,6 +325,22 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
         where: { [args.column.associationLocalIDMember]: args.localId },
     });
 
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    // hack: this enforces the policy that merged users cannot be referenced in new associations.
+    // i am not even sure this route has a UI entrypoint but here it is.
+    // better would be a hook system so this function doesn't bake in user table behaviors.
+    //
+    // update: don't enforce this. no such policy is needed. merged users should be soft-deleted and that's enough.
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    // if (args.localTable.tableName === "User") {
+    //     await requireUnmergedUserReferences(transactionalDb, [args.localId]);
+    // }
+    // if (args.column.getForeignTableShema().tableName === "User") {
+    //     await requireUnmergedUserReferences(transactionalDb, args.desiredTagIds);
+    // }
+
     const cp = ComputeChangePlan(currentAssociations.map(a => a[args.column.associationForeignIDMember]), args.desiredTagIds, (a, b) => a === b);
     const changedAssociations = currentAssociations.filter(
         association => cp.delete.includes(association[args.column.associationForeignIDMember]),
@@ -541,6 +559,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 validateSettingValue(authorizedLocalFields.name, authorizedLocalFields.value);
             }
 
+            //await requireUnmergedMutationUsers(transactionalDb, table, { ...authorizedLocalFields, ...authorizedAssociationFields });
             obj = await dbTableClient.create({
                 data: authorizedLocalFields,
             });
@@ -682,6 +701,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             }
             // updatedAt are done automatically by prisma.
 
+            //await requireUnmergedMutationUsers(transactionalDb, table, { ...authorizedLocalFields, ...authorizedAssociationFields });
             obj = await dbTableClient.update({
                 where: { [table.pkMember]: pkid },
                 data: authorizedLocalFields,

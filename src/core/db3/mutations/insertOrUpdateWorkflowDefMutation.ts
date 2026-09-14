@@ -14,6 +14,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activi
 
 
 async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefArgs, transactionalDb: TransactionalPrismaClient): Promise<TWorkflowMutationResult> {
+    //await requireUnmergedUserReferences(transactionalDb, args.nodes.flatMap(node => node.defaultAssignees.map(assignee => assignee.userId)));
 
     // NB: we will mutate args during this function to add new ids as items are inserted.
 

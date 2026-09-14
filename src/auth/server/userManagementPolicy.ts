@@ -9,6 +9,7 @@ import {
 } from "shared/permissions";
 
 export type UserManagementAction =
+    | "merge"
     | "manageSignInMethods"
     | "assignRole"
     | "correctEmail"
@@ -36,6 +37,7 @@ export type UserManagementPrincipal = {
     id: number;
     isSysAdmin: boolean;
     isDeleted?: boolean;
+    mergedIntoUserId?: number | null;
     role?: UserManagementRole;
 };
 
@@ -49,6 +51,7 @@ export interface CanManageUserArgs {
 }
 
 export interface UserManagementCapabilities {
+    canMerge: boolean;
     canManageSignInMethods: boolean;
     canAssignRole: boolean;
     canCorrectEmail: boolean;
@@ -109,6 +112,15 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     const actorIsSysadmin = roleHasPermission(actor.role, Permission.sysadmin);
+
+    if (target.mergedIntoUserId != null) return false;
+
+    if (action === "merge") {
+        return roleHasPermission(actor.role, Permission.merge_users)
+            && actor.id !== target.id
+            && (!target.isDeleted || roleHasPermission(actor.role, Permission.recover_users))
+            && (actorIsSysadmin || (!isProtectedUser(target) && isRoleWithinDelegationEnvelope(actor, target.role)));
+    }
 
     if (action === "manageSignInMethods" || action === "correctEmail") {
         return actorIsSysadmin;
@@ -171,6 +183,7 @@ export const getUserManagementCapabilities = (
     actor: UserManagementPrincipal | null,
     target: UserManagementPrincipal,
 ): UserManagementCapabilities => ({
+    canMerge: canManageUser({ actor, target, action: "merge" }),
     canManageSignInMethods: canManageUser({ actor, target, action: "manageSignInMethods" }),
     canAssignRole: canManageUser({ actor, target, action: "assignRole" }),
     canCorrectEmail: canManageUser({ actor, target, action: "correctEmail" }),

@@ -25,7 +25,7 @@ interface CMTableColumnSpec<T extends Object> {
      */
     valueBar?: {
         enabled?: boolean; // default true if valueBar is specified
-        getValue?: (row: T) => number; // defaults to using memberName value
+        getValue?: (row: T) => number | undefined; // defaults to using memberName value
         color?: string;
         maxValue?: number; // if not specified, will calculate from dataset
     };
@@ -83,7 +83,7 @@ const CMTableRow = <T extends Object,>({ row, slot, columns, maxValues, ...props
 
                     const value = getValue(row);
                     const maxValue = column.valueBar.maxValue || maxValues?.get(idx) || 1; // fallback to avoid div by zero
-                    const fillPercent = maxValue > 0 ? (value * 100 / maxValue) : 0;
+                    const fillPercent = value === undefined ? 0 : (maxValue > 0 ? (value * 100 / maxValue) : 0);
                     const color = column.valueBar.color || '#08f4';
 
                     const barStyle: React.CSSProperties = {
@@ -115,7 +115,7 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
                     return typeof val === 'number' ? val : 0;
                 });
 
-                const values = rows.map(getValue);
+                const values = rows.map(getValue).filter(v => v !== undefined);
                 const maxValue = Math.max(...values, 1); // ensure at least 1 to avoid div by zero
                 maxValuesMap.set(idx, maxValue);
             }

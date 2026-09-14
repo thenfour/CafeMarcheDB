@@ -119,7 +119,11 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
     return <div className="EventDetail contentSection event">
         <div className='content'>
-            {user.isDeleted && <Alert severity="warning">This user account is deactivated.</Alert>}
+            {user.isDeleted && <Alert severity="warning">
+                {capabilities.mergedIntoUserId != null
+                    ? <>This account was merged into <a href={`/backstage/user/${capabilities.mergedIntoUserId}`}>account #{capabilities.mergedIntoUserId}</a> and cannot be reactivated.</>
+                    : "This user account is deactivated."}
+            </Alert>}
 
             <div className='titleLine'>
                 <div className="titleText">

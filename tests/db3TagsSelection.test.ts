@@ -183,7 +183,7 @@ describe("shared DB3 tags selection", () => {
         let rejectCreate!: (error: Error) => void;
         createOption.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectCreate = reject; }));
         await click(button("Create “Flute”"));
-        expect(button("Creating…").disabled).toBe(true);
+        expect(button("Creating...").disabled).toBe(true);
         expect(button("Cancel").disabled).toBe(true);
         expect(button("Apply").disabled).toBe(true);
         vi.spyOn(console, "error").mockImplementation(() => undefined);

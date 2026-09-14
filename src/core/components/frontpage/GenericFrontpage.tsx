@@ -16,7 +16,7 @@ export const GenericPublicIndex: React.FC = () => {
     return (
         <>
             <Head>
-                <title>Redirecting…</title>
+                <title>Redirecting...</title>
                 <meta name="robots" content="noindex, nofollow" />
                 {/* <meta httpEquiv="refresh" content={`10; url=${destination}`} /> */}
             </Head>

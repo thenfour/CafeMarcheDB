@@ -7,7 +7,7 @@ import { SelectionQuery, SelectionSource } from "./selectionSource";
 
 export const SelectionQueryStatus = <T,>({ query }: { query: SelectionQuery<T> }) => <>
     {query.isFetching && <Box role="status" sx={{ display: "flex", alignItems: "center", gap: 1, px: 3, py: 2 }}>
-        <CircularProgress size={18} /><Typography variant="body2" color="text.secondary">{query.isLoading ? "Loading options…" : "Updating options…"}</Typography>
+        <CircularProgress size={18} /><Typography variant="body2" color="text.secondary">{query.isLoading ? "Loading options..." : "Updating options..."}</Typography>
     </Box>}
     {query.isError && <Alert severity="error" sx={{ m: 2 }} action={<Button type="button" onClick={query.refetch}>Retry</Button>}>
         Could not load options. Your selection is still here.
@@ -97,7 +97,7 @@ export function SelectionPicker<T>(props: SelectionPickerProps<T>) {
         <SelectionQueryStatus query={query} />
         {createError && <Alert severity="error" sx={{ m: 2 }}>{createError}</Alert>}
         {allowCreate && <Box sx={{ px: 3, py: 2 }}>
-            <Button type="button" size="small" startIcon={<AddIcon />} onClick={() => { void create(); }} disabled={creating} sx={{ minHeight: 44 }}>{creating ? "Creating…" : `Create “${filterText.trim()}”`}</Button>
+            <Button type="button" size="small" startIcon={<AddIcon />} onClick={() => { void create(); }} disabled={creating} sx={{ minHeight: 44 }}>{creating ? "Creating..." : `Create “${filterText.trim()}”`}</Button>
             <Typography variant="caption" display="block" color="text.secondary">New options are created immediately.</Typography>
         </Box>}
         {!props.multiple && !immediate ? <RadioGroup aria-label="Choose one option" value={value.length ? String(source.getKey(value[0]!)) : ""}>{list}</RadioGroup> : list}

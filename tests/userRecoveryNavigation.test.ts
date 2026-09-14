@@ -15,6 +15,7 @@ vi.mock("@mui/material", async () => {
 vi.mock("@blitzjs/rpc", () => ({ useMutation: () => [vi.fn()] }));
 vi.mock("src/auth/mutations/correctUserEmail", () => ({ default: vi.fn() }));
 vi.mock("src/core/components/user/UserSignInMethodsButton", () => ({ UserSignInMethodsButton: () => null }));
+vi.mock("src/core/components/user/MergeUsersButton", () => ({ MergeUsersButton: () => null }));
 vi.mock("src/auth/mutations/setUserSysAdmin", () => ({ default: vi.fn() }));
 vi.mock("@blitzjs/next", () => ({ Routes: { UserSearchPage: () => "/backstage/users" } }));
 vi.mock("next/router", () => ({ useRouter: vi.fn() }));

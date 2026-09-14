@@ -28,7 +28,7 @@ export const findUserManagementPrincipal = (
 ) => {
     if (!userId) return Promise.resolve(null);
     return db.user.findFirst({
-        ...UserWithRolesArgs,
+        select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
         where: { id: userId },
     });
 };

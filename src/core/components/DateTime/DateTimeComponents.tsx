@@ -43,6 +43,7 @@ interface DateValueProps {
     className?: string;
     style?: React.CSSProperties;
     format?: (dateString: string) => React.ReactNode;
+    showRelative?: boolean;
 }
 
 // file uploaded at, created at, event dates, etc.
@@ -65,7 +66,10 @@ export const DateValue = (props: DateValueProps) => {
             {rel.label}
         </span>
     }>
-        <span className={`DateValue ${props.className}`} style={props.style}>{valueNode}</span>
+        <span className={`DateValue ${props.className}`} style={props.style}>
+            {valueNode}
+            {" "}({props.showRelative && <span className="RelativeIndicator">{rel.label}</span>})
+        </span>
     </Tooltip>;
 }
 

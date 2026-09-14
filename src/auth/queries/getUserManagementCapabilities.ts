@@ -26,7 +26,7 @@ export default resolver.pipe(
         const [actor, target] = await Promise.all([
             findActiveUserManagementPrincipal(db, ctx.session.userId),
             db.user.findFirst({
-                ...UserWithRolesArgs,
+                select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
                 where: { id: userId },
             }),
         ]);
@@ -44,6 +44,7 @@ export default resolver.pipe(
 
         return {
             ...capabilities,
+            mergedIntoUserId: target.mergedIntoUserId,
             assignableRoles: await getAssignableRoles(
                 db,
                 actor,

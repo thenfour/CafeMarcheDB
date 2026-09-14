@@ -288,6 +288,13 @@ const permissionRegistry = [
     706
   ),
   definePermission(
+    "merge_users",
+    "site",
+    "Merge eligible user accounts and view aggregate merge data across the organization.",
+    707,
+    protectedPermission
+  ),
+  definePermission(
     "assign_user_roles",
     //"users",
     "site",

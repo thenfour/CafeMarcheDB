@@ -49,6 +49,7 @@ describe("canonical permission registry", () => {
 
   it("derives protected and continuity policy from metadata", () => {
     expect([...gProtectedPermissions]).toEqual([
+      Permission.merge_users,
       Permission.impersonate_user,
       Permission.sysadmin,
       Permission.never_grant,

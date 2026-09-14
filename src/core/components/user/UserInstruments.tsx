@@ -1,4 +1,3 @@
-import { StandardVariationSpec } from "@/src/core/components/color/palette";
 import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { Box, Typography } from "@mui/material";

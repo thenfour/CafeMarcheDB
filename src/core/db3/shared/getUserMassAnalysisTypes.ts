@@ -1,5 +1,4 @@
 
-// Type-safe data structures for mass analysis
 export type UserMassAnalysisContentCounts = {
     createdSongs: number;
     createdEvents: number;

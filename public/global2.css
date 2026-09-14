@@ -2692,3 +2692,36 @@ nav a:hover {
     min-width: 20px;
     justify-content: center;
 }
+
+
+.user-mass-analysis-summary-card {
+    border: 1px solid #0004;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.user-mass-analysis-summary-card table {
+    border: 0;
+}
+
+.user-mass-analysis-summary-card .h3 {
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    margin-left: 8px;
+
+}
+
+.user-mass-analysis-summary-card .description {
+    margin-left: 8px;
+    max-width: 350px;
+    overflow-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.4;
+    opacity: 0.8;
+}

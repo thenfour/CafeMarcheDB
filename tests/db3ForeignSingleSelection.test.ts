@@ -237,12 +237,12 @@ describe("shared DB3 foreign-single selection", () => {
         await click(button("Create “Flute”"));
         expect(createOption).toHaveBeenCalledOnce();
         expect(createOption.mock.calls[0]![0].insertModel).toEqual({ name: "Flute" });
-        expect(button("Creating…").disabled).toBe(true);
+        expect(button("Creating...").disabled).toBe(true);
         expect(button("Cancel").disabled).toBe(true);
         expect(button("Apply").disabled).toBe(true);
         expect(radio("None").disabled).toBe(true);
         expect(document.querySelector<HTMLInputElement>('input[type=search]')!.disabled).toBe(true);
-        await click(button("Creating…"));
+        await click(button("Creating..."));
         expect(createOption).toHaveBeenCalledOnce();
         vi.spyOn(console, "error").mockImplementation(() => undefined);
         await act(async () => rejectCreate(new Error("Failed")));

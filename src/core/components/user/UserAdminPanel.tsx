@@ -23,8 +23,10 @@ import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
 import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
+import { MergeUsersButton } from "./MergeUsersButton";
 
 type UserMgmtCaps = {
+    canMerge?: boolean;
     canManageSignInMethods: boolean;
     canEdit: boolean;
     canCorrectEmail: boolean;
@@ -220,6 +222,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
     if (!hasAnyControl) return null;
 
     return <div>
+        {capabilities.canMerge && <MergeUsersButton user={props.user} />}
         {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={props.user} onChanged={props.refetch} />}
         <DeactivateUserButton
             capabilities={capabilities}

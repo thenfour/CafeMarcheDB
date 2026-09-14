@@ -86,7 +86,7 @@ export const UserSignInMethodsButton = (props: Props) => {
         <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
             <DialogTitle>Sign-in methods for {props.user.name}</DialogTitle>
             <DialogContent dividers>
-                {open && <Suspense fallback={<div>Loading sign-in methods…</div>}>
+                {open && <Suspense fallback={<div>Loading sign-in methods...</div>}>
                     <SignInMethodsEditor {...props} />
                 </Suspense>}
                 <DialogActionsCM><Button onClick={() => setOpen(false)}>Close</Button></DialogActionsCM>

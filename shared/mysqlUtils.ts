@@ -113,7 +113,7 @@ export function MySqlStringLiteralAllowingPercent(str: string): string {
 //         case ActivityReportTimeBucketSize.month:
 //             // E.g. "2025-03" or if you want a date: "2025-03-01"
 //             return "%Y-%m";
-//         case ActivityReportTimeBucketSize.year: return "%Y";           // 2025, 2026, …
+//         case ActivityReportTimeBucketSize.year: return "%Y";           // 2025, 2026, ...
 //         case ActivityReportTimeBucketSize.all: return "'all'";        // literal const string
 //         default:
 //             throw new Error(`Unsupported aggregateBy: ${aggregateBy}`);
@@ -146,7 +146,7 @@ export function getMySqlTimeBucketSelectExpression(dateColumnName: string, aggre
         //return "%Y-%m";
         case ActivityReportTimeBucketSize.year:
             return `DATE_FORMAT(${MySqlSymbol(dateColumnName)}, '%Y')`;
-        //return "%Y";           // 2025, 2026, …
+        //return "%Y";           // 2025, 2026, ...
 
         case ActivityReportTimeBucketSize.all:
             return "'all'";        // literal const string

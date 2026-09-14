@@ -204,7 +204,7 @@ export type DeviceInfo = z.infer<typeof ZDeviceInfo>;
 
 /**
  * Collect the device information client-side.
- * Call inside useEffect(() => { … }, []) so it never runs on the server.
+ * Call inside useEffect(() => { ... }, []) so it never runs on the server.
  */
 export async function collectDeviceInfo(): Promise<DeviceInfo> {
     const info: DeviceInfo = {};
@@ -261,10 +261,10 @@ export async function collectDeviceInfo(): Promise<DeviceInfo> {
 function detectBrowser(uaData?: /* NavigatorUAData */ any): Browsers | string | undefined {
     /* ---- A. UA-CH branch ---------------------------------------------------- */
     /*  (Brave & Edge really do expose their own brand token in modern Chromium) */
-    /*      see table lines 11-13 here …                                        */
+    /*      see table lines 11-13 here ...                                        */
     /*      Brave“Brave”;v=”124″, “Chromium”;v=”124″✅                          */
     /*      Edge “Microsoft Edge”;v=”124″, “Chromium”;v=”124″✅                 */
-    /*      Opera“Opera”…                                                      */
+    /*      Opera“Opera”...                                                      */
     const brandMap: Record<string, Browsers> = {
         'Microsoft Edge': Browsers.edge,
         'Opera': Browsers.opera,
@@ -303,7 +303,7 @@ function detectBrowser(uaData?: /* NavigatorUAData */ any): Browsers | string | 
 
     if (/Firefox/i.test(ua)) return Browsers.firefox;
 
-    /* IE 6-10 → “MSIE”, IE11 → “Trident/… rv:11.0”  */  // Example UA strings: turn2search0
+    /* IE 6-10 → “MSIE”, IE11 → “Trident/... rv:11.0”  */  // Example UA strings: turn2search0
     if (/MSIE |Trident\//i.test(ua)) return Browsers.ie;
 
     /* Safari must come *after* the Chromium-based checks                       */

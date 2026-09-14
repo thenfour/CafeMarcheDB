@@ -90,6 +90,8 @@ export const requireSignInMethodAdmin = async (db: TransactionalPrismaClient, ct
     return actor;
 };
 
+// this explicitly allows deactivated users, because
+// admins may want to deactivate a user before managing their sign-in methods
 export const requireSignInMethodTarget = async (db: TransactionalPrismaClient, userId: number) => {
     const user = await db.user.findFirst({ where: { id: userId } });
     if (!user) throw new NotFoundError();

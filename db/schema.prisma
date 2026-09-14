@@ -173,18 +173,24 @@ model UserTagAssignment {
 }
 
 model User {
-  id             Int      @id @default(autoincrement())
-  name           String   @default("") @db.VarChar(768)
-  isSysAdmin     Boolean  @default(false)
-  isDeleted      Boolean  @default(false)
-  email          String   @db.VarChar(768) // contact/display address; authentication uses signInMethods
-  phone          String?  @db.VarChar(768)
-  hashedPassword String?
-  signInMethods  UserSignInMethod[]
-  settings       UserSetting[]
-  createdAt      DateTime @default(now())
-  calendarFeedToken String? @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
-  uid               String? @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
+  id         Int     @id @default(autoincrement())
+  name       String  @default("") @db.VarChar(768)
+  isSysAdmin Boolean @default(false)
+  isDeleted  Boolean @default(false)
+
+  mergedIntoUserId Int?
+  mergedIntoUser   User?     @relation("MergedUsers", fields: [mergedIntoUserId], references: [id], onDelete: Restrict)
+  mergedUsers      User[]    @relation("MergedUsers")
+  mergedAt         DateTime?
+
+  email             String             @db.VarChar(768) // contact/display address; authentication uses signInMethods
+  phone             String?            @db.VarChar(768)
+  hashedPassword    String?
+  signInMethods     UserSignInMethod[]
+  settings          UserSetting[]
+  createdAt         DateTime           @default(now())
+  calendarFeedToken String?            @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
+  uid               String?            @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
 
   roleId Int? // nullable for new users a role should be assigned by an admin. null = public
   role   Role? @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
@@ -245,7 +251,7 @@ model UserSignInMethod {
   userId     Int
   type       SignInMethodType
   identifier String           @db.VarChar(320)
-  createdAt  DateTime          @default(now())
+  createdAt  DateTime         @default(now())
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([type, identifier])
@@ -1202,8 +1208,8 @@ model MenuLink {
   realm String? @db.VarChar(768)
 
   applicationPage String? @db.VarChar(768) // section name where to house this, or a custom section name
-  groupName     String @db.VarChar(768) // freeform group id to group links together separated by divider
-  groupCssClass String @db.VarChar(768)
+  groupName       String  @db.VarChar(768) // freeform group id to group links together separated by divider
+  groupCssClass   String  @db.VarChar(768)
 
   itemCssClass String @db.VarChar(768)
   linkType     String @db.VarChar(768) // external, wiki
@@ -1211,8 +1217,8 @@ model MenuLink {
   // for external, this is a URL
   // for application, this is empty.
   // for wiki, this is the slug
-  externalURI     String? @db.MediumText
-  wikiSlug        String? @db.VarChar(768)
+  externalURI String? @db.MediumText
+  wikiSlug    String? @db.VarChar(768)
 
   iconName String? @db.VarChar(768)
   caption  String  @db.VarChar(768)

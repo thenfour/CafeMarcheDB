@@ -2,6 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
+//import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 import * as mutationCore from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { xSetlistPlan } from "../shared/schema/setlistPlan";
@@ -16,6 +17,10 @@ export default resolver.pipe(
         if (!currentUser) {
             throw new Error("No current user");
         }
+
+        // const associatedUsers = [...args.payload.columns, ...(args.payload.columnLeds || []), ...(args.payload.rowLeds || [])]
+        //     .map(item => item.associatedItem).filter(item => item?.itemType === "user").map(item => item!.id);
+        //await requireUnmergedUserReferences(db, associatedUsers);
 
         const existing = await db.setlistPlan.findFirst({
             where: await GetAuthorizedTableReadWhere({

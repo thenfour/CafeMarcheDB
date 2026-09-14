@@ -162,7 +162,7 @@ describe("public picker APIs", () => {
         await click(button("Create “New”"));
         expect(create).toHaveBeenCalledWith("New");
         expect(button("Cancel").disabled).toBe(true);
-        await click(button("Creating…"));
+        await click(button("Creating..."));
         expect(create).toHaveBeenCalledTimes(1);
         await act(async () => resolveCreate("New"));
         expect(onChange).not.toHaveBeenCalled();

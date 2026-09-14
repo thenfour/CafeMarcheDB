@@ -28,6 +28,7 @@ export const DefaultRolePermissionAssignments: ReadonlyArray<[string, string]> =
         ["Admin", "manage_songs"],
         ["Admin", "manage_user_taxonomy"],
         ["Admin", "manage_users"],
+        ["Admin", "merge_users"],
         ["Admin", "pin_song_recordings"],
         ["Admin", "practice_tools_use"],
         ["Admin", "public"],

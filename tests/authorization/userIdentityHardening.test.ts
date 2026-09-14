@@ -67,6 +67,8 @@ describe("BA-U006 generic User identity boundaries", () => {
     ["calendarFeedToken", "attacker-calendar-token"],
     ["accessToken", "attacker-legacy-calendar-token"],
     ["uid", "attacker-server-uid"],
+    ["mergedIntoUserId", 1],
+    ["mergedAt", new Date("2026-09-14T12:00:00Z")],
   ])("rejects delegated generic writes to authentication field %s", async (field, value) => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
@@ -86,6 +88,8 @@ describe("BA-U006 generic User identity boundaries", () => {
     ["calendarFeedToken", "generic-sysadmin-calendar-token"],
     ["accessToken", "generic-sysadmin-legacy-calendar-token"],
     ["uid", "generic-sysadmin-server-uid"],
+    ["mergedIntoUserId", 1],
+    ["mergedAt", new Date("2026-09-14T12:00:00Z")],
   ])("keeps authentication field %s out of generic Sysadmin updates", async (field, value) => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })

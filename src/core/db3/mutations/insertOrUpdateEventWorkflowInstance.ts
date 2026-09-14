@@ -14,6 +14,7 @@ import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowOb
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 
 async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaClient, args: TUpdateEventWorkflowInstanceArgs): Promise<TWorkflowInstanceMutationResult> {
+    //await requireUnmergedUserReferences(db, args.instance.nodeInstances.flatMap(node => [...node.assignees, ...node.lastAssignees].map(assignee => assignee.userId)));
     const resultChanges: TWorkflowChange[] = [];
     // we don't actually want to care about the incoming workflow instance ID. event IDs have 1 wf instance.
     //debugger;
