@@ -78,6 +78,8 @@ export function matchesWhere(row: TestRow, where: Record<string, unknown> | unde
 export class InMemoryDelegate {
   private rows: TestRow[] = []
 
+  constructor(private readonly createDefaults: Record<string, unknown> = {}) {}
+
   reset(rows: TestRow[]) {
     this.rows = clone(rows)
   }
@@ -106,7 +108,7 @@ export class InMemoryDelegate {
 
   async create(args: { data: Omit<TestRow, "id"> & Partial<Pick<TestRow, "id">> }) {
     const nextId = this.rows.reduce((highest, row) => Math.max(highest, row.id), 0) + 1
-    const row = { id: args.data.id ?? nextId, ...clone(args.data) } as TestRow
+    const row = { id: args.data.id ?? nextId, ...clone(this.createDefaults), ...clone(args.data) } as TestRow
     this.rows.push(row)
     return clone(row)
   }
@@ -171,7 +173,8 @@ class AuthorizationTestDatabase {
     const prismaDelegateName = `${tableName.charAt(0).toLowerCase()}${tableName.slice(1)}`
     let delegate = this.delegates.get(prismaDelegateName)
     if (!delegate) {
-      delegate = new InMemoryDelegate()
+      // Signup relies on User.isDeleted's database default to create active users.
+      delegate = new InMemoryDelegate(prismaDelegateName === "user" ? { isDeleted: false } : {})
       this.delegates.set(prismaDelegateName, delegate)
     }
     return delegate

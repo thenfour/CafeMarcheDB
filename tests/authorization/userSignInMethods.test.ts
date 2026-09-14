@@ -107,6 +107,7 @@ describe("multiple sign-in resolution", () => {
         await invokeResolver(deactivateUser, { userId: target.id }, adminContext());
         await invokeResolver(removeUserSignInMethod, { userId: target.id, methodId: 100 }, adminContext());
         const fresh = await invokeResolver(signup, { email: methods[0]!.identifier, name: "New", password: validPassword }, publicContext());
+        expect(authorizationTestDb.snapshot("user").find(row => row.id === fresh.id)?.isDeleted).toBe(false);
         await invokeResolver(reactivateUser, { userId: target.id }, adminContext());
         expect((await authenticateUser(methods[0]!.identifier, validPassword)).id).toBe(fresh.id);
         expect((await authenticateUser(methods[1]!.identifier, validPassword)).id).toBe(target.id);
