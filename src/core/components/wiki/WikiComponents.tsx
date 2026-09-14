@@ -279,7 +279,7 @@ const WikiPageVisibilityControl = (props: WikiPageVisibilityControlProps) => {
         getOptionInfo={(permissionId: number) => {
             return {
                 id: permissionId,
-                name: `pid:${permissionId}`,
+                name: dashboardContext.permission.getById(permissionId)?.name || String(permissionId),
             }
         }}
     />;

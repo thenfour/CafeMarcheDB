@@ -101,6 +101,7 @@ https://github.com/thenfour/CafeMarcheDB/milestone/28
 
 - upon `git pull --ff-only`, do `node scripts/check-sign-in-migration.cjs`
 - install / upgrade process has changed
+- test selecting foreign single and tags on mobile
 
 ```plaintext
 

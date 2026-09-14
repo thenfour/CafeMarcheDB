@@ -3,18 +3,19 @@ import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, InputAd
 import React from "react";
 
 interface SelectionDialogProps {
-    title: string;
+    title: React.ReactNode;
     description?: React.ReactNode;
     summary: React.ReactNode;
     filterText: string;
     onFilterTextChange: (value: string) => void;
     onCancel: () => void;
-    onApply: () => void;
+    onApply?: () => void;
     applyDisabled?: boolean;
     busy?: boolean;
+    allowQuickFilter?: boolean;
 }
 
-// A selection dialog edits a draft. Its caller decides whether applying that draft saves it.
+// Callers can accept an option immediately, or provide Apply to confirm a draft.
 export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogProps>) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
@@ -53,7 +54,7 @@ export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogPr
             <Box id={descriptionId} sx={{ mt: 1, color: "text.secondary", fontSize: 14 }}>
                 {props.description || "Choose one or more options."}
             </Box>
-            <TextField
+            {props.allowQuickFilter !== false && <TextField
                 fullWidth
                 size="small"
                 type="search"
@@ -65,7 +66,7 @@ export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogPr
                 inputProps={{ "aria-label": "Search options", style: { fontSize: 16 }, autoComplete: "off" }}
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
                 sx={{ mt: 2, mb: 1 }}
-            />
+            />}
             {props.summary}
         </Box>
         <DialogContent dividers sx={{ p: 0, minHeight: 0, overscrollBehavior: "contain" }}>
@@ -77,7 +78,7 @@ export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogPr
             "& .MuiButton-root": { minHeight: 44, minWidth: 88, ml: 0, flex: fullScreen ? 1 : undefined },
         }}>
             <Button type="button" disabled={props.busy} onClick={props.onCancel}>Cancel</Button>
-            <Button type="button" variant="contained" disabled={props.applyDisabled || props.busy} onClick={props.onApply}>Apply</Button>
+            {props.onApply && <Button type="button" variant="contained" disabled={props.applyDisabled || props.busy} onClick={props.onApply}>Apply</Button>}
         </DialogActions>
     </Dialog>;
 };

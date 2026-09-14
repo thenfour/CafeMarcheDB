@@ -84,7 +84,7 @@ afterEach(async () => {
     else Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 });
 
-const button = (name: string) => [...document.querySelectorAll("button")].find(b => (b.getAttribute("aria-label") || b.textContent)?.trim() === name)!;
+const button = (name: string) => [...document.querySelectorAll<HTMLButtonElement>("button")].find(b => (b.getAttribute("aria-label") || b.textContent)?.trim() === name)!;
 const checkbox = (name: string) => document.querySelector<HTMLInputElement>(`input[type=checkbox][aria-label="${name}"]`)!;
 const click = async (element: HTMLElement) => { await act(async () => element.click()); };
 const render = async (value = initialValue, selectStyle: "inline" | "dialog" = "dialog") => {
@@ -215,11 +215,11 @@ describe("shared DB3 tags selection", () => {
         expect(onChange.mock.calls[0]![0].map((a: Association) => a.instrumentId)).toEqual([1, 2, 3]);
     });
 
-    it("shows an empty value with an accessible Select trigger", async () => {
+    it("shows an empty value and opens the selector", async () => {
         await render([]);
         expect(document.body.textContent).toContain("None selected");
-        expect(button("Select Instruments")).toBeDefined();
-        await click(button("Select Instruments"));
+        expect(button("Edit Instruments")).toBeDefined();
+        await click(button("Edit Instruments"));
         expect([...document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].every(c => !c.checked)).toBe(true);
     });
 

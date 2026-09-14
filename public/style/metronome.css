@@ -120,6 +120,7 @@ ul.mechanicalSelector>li {
 .GlobalMetronomeDialog {
     user-select: none;
     touch-action: none;
+    --indicator-diam: 96px;
 }
 
 .GlobalMetronomeDialog.ReactiveInputDialog .MuiDialog-container>.MuiPaper-root.MuiDialog-paperFullScreen {
@@ -273,8 +274,8 @@ ul.mechanicalSelector>li {
 
 
 .GlobalMetronomeDialog .metronomeIndicator {
-    width: 100px;
-    height: 100px;
+    width: var(--indicator-diam);
+    height: var(--indicator-diam);
 }
 
 

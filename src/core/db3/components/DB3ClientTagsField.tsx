@@ -1,21 +1,20 @@
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
-import { Alert, Box, Button, CircularProgress, List, Typography } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React from "react";
 //import * as DB3Client from "../DB3Client";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import {
-    Add as AddIcon
-} from '@mui/icons-material';
 import { SplitQuickFilter } from 'shared/quickFilter';
 import type { SettingKey } from 'shared/settingKeys';
 import { gQueryOptions } from "shared/utils";
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
 import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
-import { CMLinkButton, CMSmallButton, CMTextButton, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
-import { SelectionDialog, SelectionSummary } from 'src/core/components/select/SelectionDialog';
-import { SelectionCheckboxRow, SelectionValueList } from 'src/core/components/select/SelectionOptions';
+import { useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
+import { SelectionPicker } from 'src/core/components/select/SelectionPicker';
+import { SelectionEditButton, SelectionFieldFrame } from 'src/core/components/select/SelectionField';
+import { SelectionSource } from 'src/core/components/select/selectionSource';
+import { SelectionValueList } from 'src/core/components/select/SelectionOptions';
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
@@ -53,116 +52,6 @@ export const DB3TagsValueComponent = <TAssociation extends TAnyModel,>(props: DB
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface DB3SelectTagsDialogListProps<TAssociation extends TAnyModel> {
-    value: TAssociation[];
-    spec: TagsFieldClient<TAssociation>;//CMSelectTagsDialogSpec<AssociationModel, ForeignWhereInput>;
-    row: TAnyModel;
-    filterText: string;
-    handleItemToggle: (value: TAssociation) => void;
-    handleItemAdd: (value: TAssociation) => void;
-    isCreating: boolean;
-    onCreatingChange: (value: boolean) => void;
-}
-
-function DB3SelectTagsDialogList<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogListProps<TAssociation>) {
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const publicData = useDB3Authorization();
-    const dashboardContext = useDashboardContext();
-    const [createError, setCreateError] = React.useState<string | null>(null);
-    const dbctx = useTagsFieldRenderContext({
-        filterText: props.filterText,
-        row: props.row,
-        spec: props.spec,
-        suspense: false,
-    });
-
-    const itemIsSelected = (x: TAssociation) => {
-        return props.value.some(v => v[props.spec.associationForeignIDMember] === x[props.spec.associationForeignIDMember]);
-    }
-
-    const filterMatchesAnyItemsExactly = dbctx.options.some(item => props.spec.typedSchemaColumn.getAssociationTableShema().doesItemExactlyMatchText(item, props.filterText.trim()));
-
-    const onNewClicked = async () => {
-        if (props.isCreating) return;
-        props.onCreatingChange(true);
-        setCreateError(null);
-        try {
-            const newObj = await dbctx.doInsertFromString({ row: props.row, userInput: props.filterText.trim() });
-            props.handleItemAdd(newObj);
-            showSnackbar({ children: "New option created", severity: 'success' });
-            dbctx.refetch();
-            dashboardContext.refreshCachedData();
-        } catch (error) {
-            console.error(error);
-            setCreateError("Could not create the option. Please try again.");
-        } finally {
-            props.onCreatingChange(false);
-        }
-    };
-
-    const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({ publicData });
-
-    if (dbctx.isError) {
-        return <Alert severity="error" sx={{ m: 2 }} action={<Button type="button" onClick={() => dbctx.refetch()}>Retry</Button>}>
-            Could not load options. Your selection is still here.
-        </Alert>;
-    }
-
-    return <>
-        {dbctx.isFetching && <Box role="status" sx={{ display: "flex", alignItems: "center", gap: 1, px: 3, py: 2 }}>
-            <CircularProgress size={18} />
-            <Typography variant="body2" color="text.secondary">{dbctx.isLoading ? "Loading options…" : "Updating options…"}</Typography>
-        </Box>}
-        {createError && <Alert severity="error" sx={{ m: 2 }}>{createError}</Alert>}
-        {
-            !dbctx.isFetching && !!props.filterText.trim().length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && insertAuthorized && (
-                <Box sx={{ px: 3, py: 2 }}><Button
-                    type="button"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => { void onNewClicked(); }}
-                    disabled={props.isCreating}
-                    sx={{ minHeight: 44 }}
-                >
-                    {props.isCreating ? "Creating…" : `Create “${props.filterText.trim()}”`}
-                </Button>
-                    <Typography variant="caption" display="block" color="text.secondary">New options are created immediately.</Typography>
-                </Box>
-            )
-        }
-
-        {
-            (dbctx.options.length === 0) ?
-                (!dbctx.isFetching && <Box role="status" sx={{ px: 3, py: 4 }}>
-                    <Typography color="text.secondary">{props.filterText.trim() ? "No matching options" : "No options available"}</Typography>
-                    {props.filterText.trim() && <Typography variant="body2" color="text.secondary">Try a different search.</Typography>}
-                </Box>)
-                :
-                <List disablePadding aria-label="Available options" aria-busy={dbctx.isFetching}>
-
-                    {
-                        dbctx.options.map(item => {
-                            const selected = itemIsSelected(item);
-                            return (
-                                <SelectionCheckboxRow
-                                    key={item[props.spec.associationForeignIDMember]}
-                                    label={props.spec.getSelectionLabel(item)}
-                                    selected={selected}
-                                    disabled={dbctx.isPreviousData || props.isCreating}
-                                    onToggle={() => props.handleItemToggle(item)}
-                                >
-                                    {props.spec.args.renderAsListItem!({}, item, selected)}
-                                </SelectionCheckboxRow>
-                            );
-                        })
-                    }
-                </List>
-        }</>;
-
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 export interface DB3SelectTagsDialogProps<TAssociation extends TAnyModel> {
     initialValue: TAssociation[];
     row: TAnyModel;
@@ -174,62 +63,35 @@ export interface DB3SelectTagsDialogProps<TAssociation extends TAnyModel> {
 };
 
 function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogProps<TAssociation>) {
-    const [filterText, setFilterText] = React.useState("");
-    const [value, setValue] = React.useState<TAssociation[]>(props.initialValue);
-    const [isCreating, setIsCreating] = React.useState(false);
-    const getKey = (item: TAssociation): React.Key => item[props.spec.associationForeignIDMember];
-
-    const handleItemRemove = (x: TAssociation) => {
-        setValue(previous => previous.filter(item => getKey(item) !== getKey(x)));
-    };
-
-    const handleItemAdd = (item: TAssociation) => {
-        setValue(previous => previous.some(x => getKey(x) === getKey(item)) ? previous : [...previous, item]);
-    };
-
-    const handleItemToggle = (item: TAssociation) => {
-        setValue(previous => previous.some(x => getKey(x) === getKey(item))
-            ? previous.filter(x => getKey(x) !== getKey(item))
-            : [...previous, props.initialValue.find(x => getKey(x) === getKey(item)) || item]);
-    };
-
-    const initialKeys = new Set(props.initialValue.map(getKey));
-    const changed = initialKeys.size !== value.length || value.some(item => !initialKeys.has(getKey(item)));
     const descriptionSettingName = props.descriptionSettingName || props.spec.fieldDescriptionSettingName;
-
-    return <SelectionDialog
+    const source: SelectionSource<TAssociation> = {
+        getKey: item => item[props.spec.associationForeignIDMember],
+        getLabel: props.spec.getSelectionLabel,
+        renderValue: item => props.spec.args.renderAsChip!({ value: item, colorVariant: StandardVariationSpec.Strong }),
+        renderOption: (item, selected) => props.spec.args.renderAsListItem!({}, item, selected),
+        matchesText: (item, text) => props.spec.typedSchemaColumn.getAssociationTableShema().doesItemExactlyMatchText(item, text),
+        useOptions(filterText) {
+            const query = useTagsFieldRenderContext({ spec: props.spec, row: props.row, filterText, suspense: false });
+            const publicData = useDB3Authorization();
+            const dashboard = useDashboardContext();
+            const { showMessage } = React.useContext(SnackbarContext);
+            const canCreate = props.spec.typedSchemaColumn.allowInsertFromString && props.spec.schemaTable.authorizeRowBeforeInsert({ publicData });
+            return {
+                ...query, items: query.options,
+                createOption: canCreate ? async text => {
+                    const item = await query.doInsertFromString({ row: props.row, userInput: text });
+                    dashboard.refreshCachedData();
+                    showMessage({ children: "New option created", severity: "success" });
+                    return item;
+                } : undefined,
+            };
+        },
+    };
+    return <SelectionPicker source={source} multiple value={props.initialValue}
         title={props.caption || `Select ${props.spec.selectionCaption}`}
         description={descriptionSettingName ? <SettingMarkdown setting={descriptionSettingName} /> : undefined}
-        summary={<SelectionSummary count={value.length}>
-            <SelectionValueList
-                value={value}
-                getKey={getKey}
-                getLabel={props.spec.getSelectionLabel}
-                renderValue={item => props.spec.args.renderAsChip!({ value: item, colorVariant: StandardVariationSpec.Strong })}
-                onRemove={handleItemRemove}
-                disabled={isCreating}
-            />
-        </SelectionSummary>}
-        filterText={filterText}
-        onFilterTextChange={setFilterText}
-        onCancel={props.onClose}
-        onApply={() => { props.onChange(value); props.onClose(); }}
-        applyDisabled={!changed}
-        busy={isCreating}
-    >
-        <DB3SelectTagsDialogList
-            value={value}
-            spec={props.spec}
-            handleItemToggle={handleItemToggle}
-            handleItemAdd={handleItemAdd}
-            filterText={filterText}
-            row={props.row}
-            isCreating={isCreating}
-            onCreatingChange={setIsCreating}
-        />
-    </SelectionDialog>;
+        onCancel={props.onClose} onAccept={value => { props.onChange(value); props.onClose(); }} />;
 }
-
 
 export function DB3SelectTagsDialog<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogProps<TAssociation>) {
     return <DB3SelectTagsDialogInner {...props} />;
@@ -346,30 +208,20 @@ export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsField
             <CMChip size="small" onClick={() => handleChangeSetting(null)} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyleSettingValue === null }}>default</CMChip>
         </CMChipContainer>}
 
-        <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
-            {selectStyle === "dialog" ? <SelectionValueList
-                value={correctedValue}
-                getKey={value => value[props.spec.associationForeignIDMember]}
-                getLabel={props.spec.getSelectionLabel}
-                renderValue={value => props.spec.renderAsChipForCell({ value, colorVariant: StandardVariationSpec.Strong })}
-                onRemove={props.spec.args.allowDeleteFromCell ? value => {
-                    props.onChange(correctedValue.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]));
-                } : undefined}
-            /> : <CMChipContainer><ChipsFieldInlineValues {...newProps} /></CMChipContainer>}
-            {/* <Button
-                type="button"
-                variant="outlined"
-                size="small"
-                aria-label={`${correctedValue.length ? "Edit" : "Select"} ${props.spec.selectionCaption}`}
-                onClick={() => setIsOpen(true)}
-                sx={{ minHeight: 44, flexShrink: 0, textTransform: "none" }}
-            >{correctedValue.length ? "Edit" : "Select"}</Button> */}
-            <CMTextButton
-                onClick={() => { setIsOpen(!isOpen) }}
-            >
-                Edit
-            </CMTextButton>
-        </Box>
+        {selectStyle === "dialog" ? <SelectionValueList
+            value={correctedValue}
+            getKey={value => value[props.spec.associationForeignIDMember]}
+            getLabel={props.spec.getSelectionLabel}
+            renderValue={value => props.spec.renderAsChipForCell({ value, colorVariant: StandardVariationSpec.Strong })}
+            onRemove={props.spec.args.allowDeleteFromCell ? value => {
+                props.onChange(correctedValue.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]));
+            } : undefined}
+        >
+            <SelectionEditButton onClick={() => setIsOpen(true)} label={`Edit ${props.spec.selectionCaption}`} />
+        </SelectionValueList> : <SelectionFieldFrame>
+            <ChipsFieldInlineValues {...newProps} />
+            <SelectionEditButton onClick={() => setIsOpen(true)} label={`Edit ${props.spec.selectionCaption}`} />
+        </SelectionFieldFrame>}
 
         {isOpen && <DB3SelectTagsDialog
             row={props.row}

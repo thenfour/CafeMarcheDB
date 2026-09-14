@@ -3,29 +3,22 @@
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import {
-    Add as AddIcon
-} from '@mui/icons-material';
-import CloseIcon from '@mui/icons-material/Close';
-import {
-    Box, Button,
-    DialogContent, DialogTitle,
-    Divider,
-    List,
-    ListItemButton
-} from "@mui/material";
+import { Box } from "@mui/material";
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
-import React, { Suspense } from "react";
+import React from "react";
 import { SplitQuickFilter } from "shared/quickFilter";
 import type { SettingKey } from "shared/settingKeys";
 import { Coalesce, gQueryOptions, parseIntOrNull } from "shared/utils";
 import updateSetting from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { CMChip, CMChipContainer, type CMChipSizeOptions } from "src/core/components/CMChip";
-import { AdminInspectObject, CMDialogContentText, CMSmallButton, DialogActionsCM, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
-import { SearchInput } from "src/core/components/CMTextField";
-import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
+import { SelectionPicker } from "src/core/components/select/SelectionPicker";
+import { SelectionEditButton, SelectionFieldFrame } from "src/core/components/select/SelectionField";
+import { CMSelectNullBehavior, SelectionSource, singleSelectionValue, withNullSelection } from "src/core/components/select/selectionSource";
+import { SelectionValue } from "src/core/components/select/SelectionOptions";
+import { useDashboardContext } from "src/core/components/dashboardContext/DashboardContext";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
@@ -96,15 +89,15 @@ export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(prop
     };
 
     const handleItemClick = (value: TForeign | null) => {
-        props.onChange(value);
+        if (!props.readOnly) props.onChange(value);
     };
 
     const nullItem = props.allowNull && props.foreignSpec.args.renderAsChip!({
         value: null,
-        onClick: () => handleItemClick(null),
+        onClick: props.readOnly ? undefined : () => handleItemClick(null),
         colorVariant: {
             selected: props.value === null,
-            enabled: true,
+            enabled: !props.readOnly,
             variation: (props.value === null) ? "strong" : "weak",
             fillOption: "filled",
         }
@@ -122,10 +115,10 @@ export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(prop
                     // onDelete: selected ? (() => {
                     //     handleItemClick(null)
                     // }) : undefined,
-                    onClick: () => handleItemClick(item),
+                    onClick: props.readOnly ? undefined : () => handleItemClick(item),
                     colorVariant: {
                         selected,
-                        enabled: true,
+                        enabled: !props.readOnly,
                         variation: selected ? "strong" : "weak",
                         fillOption: "filled",
                     }
@@ -139,10 +132,6 @@ export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(prop
 export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: ForeignSingleFieldInputProps<TForeign>) => {
 
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    //const [oldValue, setOldValue] = React.useState<TForeign | null>();
-    // React.useEffect(() => {
-    //     setOldValue(props.value);
-    // }, []);
 
     const isShowingAdminControls = useIsShowingAdminControls();
 
@@ -156,19 +145,11 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
     const newProps = { ...props };
     newProps.selectStyle = selectStyle;
 
-    const chip = selectStyle === "dialog" ? (props.foreignSpec.args.renderAsChip!({
+    const chip = selectStyle === "dialog" ? <SelectionValue>{props.foreignSpec.args.renderAsChip!({
         value: props.value,
-        colorVariant: { ...StandardVariationSpec.Strong, selected: true },
-        onClick: props.readOnly ? undefined : (() => {
-            setIsOpen(!isOpen)
-        }),
-        onDelete: props.readOnly ? undefined : (() => {
-            props.onChange(null);
-        }),
-    })) : (
-        <CMChipContainer>
-            <ForeignSingleFieldInlineValues {...newProps} />
-        </CMChipContainer>
+        colorVariant: StandardVariationSpec.Strong,
+    })}</SelectionValue> : (
+        <ForeignSingleFieldInlineValues {...newProps} />
     );
 
     assert(!!props.foreignSpec.typedSchemaColumn, "schema is not connected to the table spec. you probably need to initiate the client render context");
@@ -182,25 +163,28 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
         }));
     };
 
-    // inlineSelectOpenDialogButtonCaption?: React.ReactNode;
-    // openDialogButtonCaption?: React.ReactNode;
-    const defaultCaption = `Select ${props.foreignSpec.typedSchemaColumn.member}...`;
+    const defaultCaption = props.value == null ? "Select" : "Edit";
     const openDialogCaption = (selectStyle === "dialog" ? props.openDialogButtonCaption : props.inlineSelectOpenDialogButtonCaption) || defaultCaption;
 
-    const openDialogButton = !props.readOnly && <CMSmallButton onClick={() => { setIsOpen(!isOpen) }}>{openDialogCaption}</CMSmallButton>
+    const openDialogButton = !props.readOnly && <SelectionEditButton
+        label={typeof openDialogCaption === "string" && openDialogCaption !== defaultCaption ? openDialogCaption : `${defaultCaption} ${props.foreignSpec.selectionCaption}`}
+        onClick={() => setIsOpen(true)}
+    >{openDialogCaption}</SelectionEditButton>;
 
-    return <div className={`chipContainer`}>
+    return <Box>
         {isShowingAdminControls && <CMChipContainer className="adminControlFrame">
             <CMChip size="small" onClick={() => handleChangeSetting("inline")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "inline" }}>inline</CMChip>
             <CMChip size="small" onClick={() => handleChangeSetting("dialog")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "dialog" }}>dialog</CMChip>
             <CMChip size="small" onClick={() => handleChangeSetting(null)} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyleSettingValue === null }}>default</CMChip>
         </CMChipContainer>}
-        {chip}
-        {/* <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.member}</Button> */}
-        {openDialogButton}
-        {isOpen && <SelectSingleForeignDialog
+        <SelectionFieldFrame>
+            {chip}
+            {openDialogButton}
+        </SelectionFieldFrame>
+        {isOpen && !props.readOnly && <SelectSingleForeignDialog
 
             closeOnSelect={true}
+            allowNull={props.allowNull}
             value={props.value}
             spec={props.foreignSpec}
             onOK={(newValue: TForeign | null) => {
@@ -208,12 +192,11 @@ export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: Fore
                 setIsOpen(false);
             }}
             onCancel={() => {
-                //props.onChange(oldValue || null);
                 setIsOpen(false);
             }}
         />
         }
-    </div>;
+    </Box>;
 };
 
 
@@ -231,7 +214,7 @@ export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
 
     renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactNode;
 
-    // should render a <li {...props}> for autocomplete
+    // Renders option content; the dialog supplies the row and selection control.
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactNode;
 
     visible?: boolean;
@@ -255,6 +238,14 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
 
     selectStyle: "inline" | "dialog";
     size: CMChipSizeOptions;
+
+    get selectionCaption(): string {
+        return this.fieldCaption || this.columnName.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/_/g, " ").toLowerCase();
+    }
+
+    getSelectionLabel = (value: TForeign | null): string => value == null
+        ? this.args.nullItemInfo?.label || "None"
+        : this.typedSchemaColumn.getForeignTableSchema().getRowInfo(value).name;
 
     constructor(args: ForeignSingleFieldClientArgs<TForeign>) {
         super({
@@ -282,7 +273,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
 
     defaultRenderAsChip = (args: RenderAsChipParams<TForeign>) => {
         if (!args.value) {
-            const caption = this.args.nullItemInfo?.label || "--";
+            const caption = this.getSelectionLabel(null);
             const color = this.args.nullItemInfo?.color || null;
             const tooltip = this.args.nullItemInfo?.tooltip || null;
             return <CMChip
@@ -315,15 +306,9 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         </CMChip>;
     };
 
-    defaultRenderAsListItem = (props, value, selected) => {
-        console.assert(value != null);
-        const chip = this.defaultRenderAsChip({ value, colorVariant: { ...StandardVariationSpec.Strong, selected } });
-        return <div {...props} className="listItemRow">
-            {/* {selected && <DoneIcon />} */}
-            {chip}
-            {selected && <CloseIcon />}
-        </div>
-    };
+    defaultRenderAsListItem = (_props, value, _selected) => this.args.renderAsChip!({
+        value, colorVariant: StandardVariationSpec.Strong,
+    });
 
     renderViewer = (params: RenderViewerArgs<TForeign>) => this.defaultRenderer({
         //key: params.key,
@@ -457,7 +442,8 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
 export interface ForeignSingleFieldRenderContextArgs<TForeign extends TAnyModel> {
     spec: ForeignSingleFieldClient<TForeign>;
     filterText: string;
-
+    // Dialog controls remain mounted while the query loads or fails.
+    suspense?: boolean;
 };
 
 // the "live" adapter handling server-side comms.
@@ -467,6 +453,10 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
 
     items: TForeign[];
     refetch: () => void;
+    isLoading: boolean;
+    isFetching: boolean;
+    isError: boolean;
+    isPreviousData: boolean;
 
     constructor(args: ForeignSingleFieldRenderContextArgs<TForeign>) {
         this.args = args;
@@ -475,15 +465,24 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
             this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
         }
 
-        const [{ items }, { refetch }] = useQuery(db3queries, {
+        const [result, queryStatus] = useQuery(db3queries, {
             tableID: args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
             tableName: args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
             orderBy: undefined,
             filter: { items: [], quickFilterValues: SplitQuickFilter(args.filterText) },
             cmdbQueryContext: "ForeignSingleFieldRenderContext",
-        }, gQueryOptions.default);
-        this.items = items as any;
-        this.refetch = refetch;
+        }, {
+            ...gQueryOptions.default,
+            suspense: args.suspense ?? true,
+            useErrorBoundary: args.suspense ?? true,
+            keepPreviousData: args.suspense === false,
+        });
+        this.items = (result?.items || []) as TForeign[];
+        this.refetch = queryStatus.refetch;
+        this.isLoading = queryStatus.isLoading;
+        this.isFetching = queryStatus.isFetching;
+        this.isError = queryStatus.isError;
+        this.isPreviousData = queryStatus.isPreviousData;
     }
 
     doInsertFromString = async (userInput: string): Promise<TForeign> => {
@@ -510,177 +509,55 @@ export const useForeignSingleFieldRenderContext = <TForeign extends TAnyModel,>(
 
 
 ////////////////////////////////////////////////////////
-interface SelectSingleForeignDialogQuerierProps<TForeign extends TAnyModel> {
-    spec: ForeignSingleFieldClient<TForeign>;
-
-    filterText: string;
-    allowCreateNew: boolean;
-
-    onResults: (items: TForeign[]) => void;
-    onSelectObj: (x: TForeign) => void;
-};
-export function SelectSingleForeignDialogQuerier<TForeign extends TAnyModel>(props: SelectSingleForeignDialogQuerierProps<TForeign>) {
-    const db3Context = useForeignSingleFieldRenderContext({
-        filterText: props.filterText,
-        spec: props.spec,
-    });
-    const items = db3Context.items;
-    React.useEffect(() => {
-        props.onResults(items);
-    }, [items]);
-
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    const onNewClicked = (e) => {
-        db3Context.doInsertFromString(props.filterText)
-            .then((updatedObj) => {
-                props.onSelectObj(updatedObj);
-                showSnackbar({ children: "New item created successfully", severity: 'success' });
-                db3Context.refetch();
-            }).catch((err => {
-                console.log(err);
-                showSnackbar({ children: "create error", severity: 'error' });
-                db3Context.refetch(); // should revert the data.
-            }));
-    };
-
-    return <Box>
-        {props.allowCreateNew &&
-            <Button
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={onNewClicked}
-            >
-                Create new item "{props.filterText}"
-            </Button>
-        }
-    </Box>;
-
-};
-
-
-
 export interface SelectSingleForeignDialogProps<TForeign extends TAnyModel> {
     value: TForeign | null;
     spec: ForeignSingleFieldClient<TForeign>;
-
-
     onOK: (value: TForeign | null) => void;
     onCancel: () => void;
     closeOnSelect: boolean;
-
+    allowNull?: boolean;
     caption?: string;
     descriptionSettingName?: SettingKey;
 };
 
 export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props: SelectSingleForeignDialogProps<TForeign>) {
-    const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
-    const [filterText, setFilterText] = React.useState("");
-    const [items, setItems] = React.useState<TForeign[]>([]);
-    const publicData = useDB3Authorization();
-
-    const isEqual = (a: TForeign | null, b: TForeign | null) => {
-        const anull = (a === null || a === undefined);
-        const bnull = (b === null || b === undefined);
-        if (anull && bnull) return true;
-        if (anull !== bnull) return false;
-        // both non-null.
-        return a![props.spec.typedSchemaColumn.getForeignTableSchema().pkMember] === b![props.spec.typedSchemaColumn.getForeignTableSchema().pkMember];
+    const foreignSchema = props.spec.typedSchemaColumn.getForeignTableSchema();
+    const allowNull = props.spec.typedSchemaColumn.allowNull && (props.allowNull ?? true);
+    const nullBehavior = allowNull ? CMSelectNullBehavior.AllowNull : CMSelectNullBehavior.NonNullable;
+    const descriptionSettingName = props.descriptionSettingName || props.spec.fieldDescriptionSettingName;
+    const source: SelectionSource<TForeign> = {
+        getKey: item => item[foreignSchema.pkMember],
+        getLabel: props.spec.getSelectionLabel,
+        renderValue: item => props.spec.args.renderAsChip!({ value: item, colorVariant: StandardVariationSpec.Strong }),
+        renderOption: (item, selected) => props.spec.args.renderAsListItem!({}, item, selected),
+        matchesText: (item, text) => foreignSchema.doesItemExactlyMatchText(item, text),
+        useOptions(filterText) {
+            const query = useForeignSingleFieldRenderContext({ spec: props.spec, filterText, suspense: false });
+            const publicData = useDB3Authorization();
+            const dashboard = useDashboardContext();
+            const { showMessage } = React.useContext(SnackbarContext);
+            const canCreate = props.spec.typedSchemaColumn.allowInsertFromString && !!foreignSchema.createInsertModelFromString && foreignSchema.authorizeRowBeforeInsert({ publicData });
+            return {
+                ...query,
+                createOption: canCreate ? async text => {
+                    const item = await query.doInsertFromString(text);
+                    dashboard.refreshCachedData();
+                    showMessage({ children: "New option created", severity: "success" });
+                    return item;
+                } : undefined,
+            };
+        },
     };
-
-    const handleItemClick = (value) => {
-        if (isEqual(value, selectedObj)) {
-            setSelectedObj(null);
-            return;
-        }
-        setSelectedObj(value);
-        if (props.closeOnSelect) {
-            props.onOK(value);
-        }
-    };
-
-    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.getForeignTableSchema().doesItemExactlyMatchText(item, filterText));
-
-    const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({
-        publicData,
-    });
-
-    return <>
-        <DialogTitle>
-            {props.caption || <>Select {props.spec.schemaColumn.member}</>}
-            <Box sx={{ p: 0 }}>
-                Selected: {props.spec.args.renderAsChip!({
-                    colorVariant: StandardVariationSpec.Strong,
-                    value: selectedObj || null,
-                    onDelete: () => {
-                        setSelectedObj(null);
-                    }
-                })}
-            </Box>
-            <AdminInspectObject src={props.value} label="value" />
-        </DialogTitle>
-        <DialogContent dividers>
-
-            {props.descriptionSettingName && <CMDialogContentText><SettingMarkdown setting={props.descriptionSettingName} /></CMDialogContentText>}
-
-            <Box>
-                <SearchInput
-                    onChange={(v) => setFilterText(v)}
-                    value={filterText}
-                //autoFocus={true} // see #408
-                />
-            </Box>
-
-            <Suspense>
-                <SelectSingleForeignDialogQuerier
-                    allowCreateNew={!!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && insertAuthorized}
-
-                    filterText={filterText}
-                    onResults={(v) => setItems(v)}
-                    spec={props.spec}
-                    onSelectObj={(x) => setSelectedObj(x)}
-                />
-            </Suspense>
-
-            {
-                (items.length == 0) ?
-                    <Box>Nothing here</Box>
-                    :
-                    <List>
-                        {
-                            items.map(item => {
-                                const selected = isEqual(item, selectedObj);
-                                return (
-                                    <React.Fragment key={item[props.spec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
-                                        <ListItemButton selected onClick={e => { handleItemClick(item) }}>
-                                            {props.spec.args.renderAsListItem!({}, item, selected)}
-                                        </ListItemButton>
-                                        <Divider></Divider>
-                                    </React.Fragment>
-                                );
-                            })
-                        }
-                    </List>
-            }
-            <DialogActionsCM>
-                <Button onClick={props.onCancel}>Cancel</Button>
-                <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
-            </DialogActionsCM>
-        </DialogContent>
-    </>;
-};
-
-
-export function SelectSingleForeignDialog<TForeign extends TAnyModel>(props: SelectSingleForeignDialogProps<TForeign>) {
-    return (
-        <ReactiveInputDialog
-            onCancel={props.onCancel}
-        >
-            <SelectSingleForeignDialogInner {...props} />
-        </ReactiveInputDialog>
-
-    );
+    return <SelectionPicker
+        source={withNullSelection(source, nullBehavior, () => props.spec.args.renderAsChip!({ value: null, colorVariant: StandardVariationSpec.Strong }), props.spec.getSelectionLabel(null))}
+        value={singleSelectionValue(props.value, nullBehavior)}
+        closeOnSelect={props.closeOnSelect}
+        title={props.caption || `Select ${props.spec.selectionCaption}`}
+        description={descriptionSettingName ? <SettingMarkdown setting={descriptionSettingName} /> : undefined}
+        onCancel={props.onCancel} onAccept={values => props.onOK(values[0]!)}
+    />;
 }
 
-
-
+export function SelectSingleForeignDialog<TForeign extends TAnyModel>(props: SelectSingleForeignDialogProps<TForeign>) {
+    return <SelectSingleForeignDialogInner {...props} />;
+}
