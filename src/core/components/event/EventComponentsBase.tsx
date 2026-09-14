@@ -2,6 +2,7 @@
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { DateTimeRange, Timing } from 'shared/time';
+import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -292,10 +293,10 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
 
     ret.allUncancelledSegmentsAnswered = ret.allUncancelledSegmentAttendances.every(r => !!r);
 
-    ret.allAffirmative = ret.allAttendances.every(r => !!r && r.strength > 50);
-    ret.allUncancelledSegmentsAffirmative = ret.allUncancelledSegmentAttendances.every(r => !!r && r.strength > 50);
-    ret.someUncancelledSegmentResponsesAffirmative = ret.allUncancelledSegmentAttendances.some(r => !!r && r.strength > 50);
-    ret.allUncancelledSegmentResponsesNegative = ret.allUncancelledSegmentAttendances.every(r => !!r && r.strength <= 50);
+    ret.allAffirmative = ret.allAttendances.every(isAttendanceGoing);
+    ret.allUncancelledSegmentsAffirmative = ret.allUncancelledSegmentAttendances.every(isAttendanceGoing);
+    ret.someUncancelledSegmentResponsesAffirmative = ret.allUncancelledSegmentAttendances.some(isAttendanceGoing);
+    ret.allUncancelledSegmentResponsesNegative = ret.allUncancelledSegmentAttendances.every(isAttendanceNotGoing);
 
     ret.alertFlag = ret.isInvited && !ret.allUncancelledSegmentsAnswered && !ret.eventIsPast && !ret.eventIsCancelled;
     ret.visible = !ret.eventIsCancelled && !ret.noSegments && (ret.anyAnswered || ret.isInvited);

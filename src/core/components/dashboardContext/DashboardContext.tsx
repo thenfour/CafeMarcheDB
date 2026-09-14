@@ -21,6 +21,8 @@ import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
 import { enrichInstrument } from '@db3/shared/schema/enrichedInstrumentTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
+import { isAttendanceGoing } from 'shared/eventAttendance';
+import { resolveUserSettings } from 'shared/userSettings';
 
 type CmdbWindow = Window & {
     cmdbDashboardContext?: DashboardContextData;
@@ -157,8 +159,7 @@ export class DashboardContextData extends DashboardContextDataBase {
 
     isAttendanceIdGoing(attendanceId: number | null) {
         const attendance = this.eventAttendance.getById(attendanceId);
-        if (!attendance) return false;
-        return attendance.strength >= 50;
+        return isAttendanceGoing(attendance);
     }
 
     getVisibilityPermissions(): Prisma.PermissionGetPayload<{}>[] {
@@ -178,9 +179,11 @@ export class DashboardContextData extends DashboardContextDataBase {
 };
 
 
-export const DashboardContext = React.createContext(new DashboardContextData());
+// Keep the runtime object stable (for example metronome registrations), while
+// a new provider envelope notifies React consumers when query data changes.
+export const DashboardContext = React.createContext({ data: new DashboardContextData() });
 
-export const useDashboardContext = () => React.useContext(DashboardContext);
+export const useDashboardContext = () => React.useContext(DashboardContext).data;
 
 
 export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{}>) => {
@@ -212,7 +215,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         };
     }, [sess.permissionNames, setShowingAdminControlsMutation]);
 
-    const [dashboardData, { refetch }] = useQuery(getDashboardData, {});
+    const [dashboardData, { refetch }] = useQuery(getDashboardData, { userId: currentUser?.id ?? null });
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
 
@@ -241,6 +244,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
     valueRef.current.bandTimeZone = dashboardData.bandTimeZone;
+    valueRef.current.userSettings = dashboardData.userSettings;
     valueRef.current.brand = brand;
 
     // establish singleton for use by non-react code
@@ -257,7 +261,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => enrichInstrument(i, valueRef.current)));
 
     return (
-        <DashboardContext.Provider value={valueRef.current}>
+        <DashboardContext.Provider value={{ data: valueRef.current }}>
             {children}
         </DashboardContext.Provider>
     );

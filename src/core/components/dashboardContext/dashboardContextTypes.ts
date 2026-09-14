@@ -6,8 +6,10 @@ import * as db3 from "@db3/db3";
 import { Prisma } from "db";
 import { EnrichedInstrument } from "../../db3/shared/schema/enrichedInstrumentTypes";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
+import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
 export abstract class DashboardContextDataBase {
+    userSettings: UserSettings = resolveUserSettings();
     bandTimeZone: string = DEFAULT_BAND_TIME_ZONE;
     userTag: TableAccessor<Prisma.UserTagGetPayload<{}>>;
     eventType: TableAccessor<Prisma.EventTypeGetPayload<{}>>;

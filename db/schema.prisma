@@ -181,6 +181,7 @@ model User {
   phone          String?  @db.VarChar(768)
   hashedPassword String?
   signInMethods  UserSignInMethod[]
+  settings       UserSetting[]
   createdAt      DateTime @default(now())
   calendarFeedToken String? @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
   uid               String? @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
@@ -260,6 +261,16 @@ model AdminBootstrapClaim {
   claimedByUserId Int
 
   @@index([claimedByUserId])
+}
+
+model UserSetting {
+  id     Int    @id @default(autoincrement())
+  userId Int
+  name   String @db.VarChar(191)
+  value  Json
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
 }
 
 model Setting {
@@ -835,7 +846,7 @@ model EventAttendance {
   description String  @db.MediumText // explanation
   color       String?
   iconName    String?
-  strength    Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
+  strength    Int // Going means strength > 50; shared/eventAttendance.ts owns this classification.
   isDeleted   Boolean @default(false)
 
   responses EventSegmentUserResponse[]

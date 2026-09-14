@@ -13,6 +13,7 @@ import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';
+import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
 import { gNullValue } from 'shared/rootroot';
 import { Timing } from 'shared/time';
 import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
@@ -980,11 +981,11 @@ const GetSegmentResponseStats = (segments: db3.EventVerbose_EventSegment[], dash
         segment: seg,
         notGoingCount: seg.responses.filter(resp => {
             const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
-            return att && (att.strength < 50)
+            return isAttendanceNotGoing(att)
         }).length,
         goingCount: seg.responses.filter(resp => {
             const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
-            return att && (att.strength >= 50)
+            return isAttendanceGoing(att)
         }).length
     }));
 };
@@ -1113,11 +1114,11 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                     <div className='attendanceResponseColorBarSegmentContainer'>
                                         {sortedResponses.map(resp => {
                                             const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
-                                            const going = (((att?.strength) || 0) > 50);
+                                            const going = isAttendanceGoing(att);
                                             const color = going ? att?.color : null;
                                             const style = GetStyleVariablesForColor({ color, ...StandardVariationSpec.Strong });
                                             return <Tooltip disableInteractive key={resp.response.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
-                                                <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass} ${((att?.strength) || 0) > 50 ? "going" : "notgoing"}`} style={style.style}>
+                                                <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass} ${going ? "going" : "notgoing"}`} style={style.style}>
                                                     {/* {resp.user.name.substring(0, 1).toLocaleUpperCase()} */}
                                                     {resp.user.name}
                                                 </div>
@@ -1125,7 +1126,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                         })}
                                     </div>
                                     {/* <div className='attendanceResponseColorBarText'>
-                                        {sortedResponses.reduce((acc, r) => acc + (((r.response.attendance?.strength || 0) > 50) ? 1 : 0), 0)}
+                                        {sortedResponses.reduce((acc, r) => acc + (isAttendanceGoing(r.response.attendance) ? 1 : 0), 0)}
                                     </div> */}
                                 </div>
                             </td>;
@@ -1397,7 +1398,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
     const segmentResponseCounts = !eventData.responseInfo ? [] : uncancelledSegments.map(seg => {
         return eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => {
             const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
-            return acc + ((((att?.strength || 0) > 50) ? 1 : 0))
+            return acc + (isAttendanceGoing(att) ? 1 : 0)
         }, 0);
     });
     const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${segmentResponseCounts.join(" - ")})` : "";

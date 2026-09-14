@@ -7,6 +7,9 @@ import * as db3 from "../db3";
 import { MakeICalEventUid } from "../shared/apiTypes";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
 import { Setting } from "@/shared/settingKeys";
+import { isAttendanceGoing } from "shared/eventAttendance";
+import { loadUserSettings } from "src/auth/server/userSettings";
+import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
 
 interface ICalSettings {
     calendarName: string;
@@ -146,7 +149,7 @@ export const addEventToCalendar = async (
 };
 
 export interface CalExportCoreArgs1 {
-    currentUser: null | db3.UserForCalBackendPayload;
+    currentUser: db3.UserForCalBackendPayload;
 };
 
 export interface CalExportCoreArgsSingleEvent extends CalExportCoreArgs1 {
@@ -198,10 +201,21 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
     const eventAttendances = await db.eventAttendance.findMany();
 
     const cancelledStatusIds = (await db.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
+    const userSettings = await loadUserSettings(currentUser.id);
+    const attendanceById = new Map(eventAttendances.map(attendance => [attendance.id, attendance]));
+    const cancelledStatuses = new Set(cancelledStatusIds);
+    const goingAttendanceIds = eventAttendances.filter(isAttendanceGoing).map(attendance => attendance.id);
 
     for (let i = 0; i < events.length; ++i) {
         const event = events[i]!;
-        await addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id), cancelledStatusIds, settings);
+        if (!shouldIncludeEventInCalendarFeed({
+            userId: currentUser.id,
+            showDeclinedEvents: userSettings["calendar.showDeclinedEvents"],
+            segments: event.segments,
+            cancelledStatusIds: cancelledStatuses,
+            attendanceById,
+        })) continue;
+        await addEventToCalendar(cal, currentUser, event, event, goingAttendanceIds, cancelledStatusIds, settings);
     }
 
     return cal;

@@ -11,6 +11,7 @@ import { queryTable } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadBandTimeZone } from "src/server/dateTime";
+import { loadUserSettings } from "../server/userSettings";
 
 async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
     if (!currentUser) {
@@ -132,6 +133,7 @@ export default resolver.pipe(
                 db.wikiPageTag.findMany(),
                 relevantEventsCall,
                 loadBandTimeZone(),
+                loadUserSettings(currentUser?.id ?? null),
             ]);
 
             const [
@@ -153,6 +155,7 @@ export default resolver.pipe(
                 wikiPageTag,
                 relevantEventIds,
                 bandTimeZone,
+                userSettings,
             ] = results;
 
             const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
@@ -178,6 +181,7 @@ export default resolver.pipe(
                 serverStartupState: clientServerState.diagnostics,
                 relevantEventIds,
                 bandTimeZone,
+                userSettings,
                 effectivePermissionNames: effectivePermissions.names,
                 effectivePermissionIds: effectivePermissions.ids,
             };

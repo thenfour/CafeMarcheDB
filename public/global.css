@@ -394,6 +394,19 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   gap: 14px;
 }
 
+/* surface2 20260914 flatter white header */
+.contentSection.surface2>.header {
+  background-color: #fff;
+}
+
+.contentSection.surface2>.header h1,
+.contentSection.surface2>.header h2,
+.contentSection.surface2>.header h3,
+.contentSection.surface2>.header h4,
+.contentSection.surface2>.header h5 {
+  color: var(--primary-color);
+}
+
 .contentSection .titleLine {
   display: flex;
   align-items: center;

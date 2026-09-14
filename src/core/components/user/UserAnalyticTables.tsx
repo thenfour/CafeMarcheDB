@@ -1,6 +1,7 @@
 import { useQuery } from "@blitzjs/rpc";
 import { CompareArrows } from "@mui/icons-material";
 import React from "react";
+import { isAttendanceGoing } from "shared/eventAttendance";
 import * as db3 from "src/core/db3/db3";
 import getUserCredits from "../../db3/queries/getUserCredits";
 import getUserEventAttendance from "../../db3/queries/getUserEventAttendance";
@@ -40,7 +41,7 @@ export const UserAttendanceTabContent = (props: UserAttendanceTabContentProps) =
             const att = dashboardContext.eventAttendance.getById(seg.attendanceId);
             return {
                 responseCount: segAcc.responseCount + (hasResponse ? 1 : 0),
-                goingCount: segAcc.goingCount + ((att?.strength || 0) > 50 ? 1 : 0),
+                goingCount: segAcc.goingCount + (isAttendanceGoing(att) ? 1 : 0),
             };
         }, { responseCount: 0, goingCount: 0 });
         return {

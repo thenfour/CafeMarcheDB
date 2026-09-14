@@ -20,6 +20,10 @@ export default api(async (req, res, ctx: Ctx) => {
         const calendarFeedToken = CoerceToString(req.query.calendarFeedToken);
         const accessingUser = await resolveCalendarFeedRequestUser(calendarFeedToken);
 
+        if (!accessingUser) {
+            throw new CalendarFeedNotFoundError();
+        }
+
         const cal: ICalCalendar = await CalExportCore({
             type: "upcoming",
             currentUser: accessingUser,

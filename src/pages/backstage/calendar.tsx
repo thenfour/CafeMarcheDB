@@ -20,6 +20,7 @@ import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import DashboardLayout from "src/core/components/dashboard/DashboardLayout";
 import { useSnackbar } from "src/core/components/SnackbarContext";
+import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 
 type TTabId = "apple" | "google" | "outlook" | "other";
 
@@ -182,6 +183,11 @@ const CalendarPageContent = () => {
                     </CMTabPanel>
                 </div>
             </div>
+
+            <CMSinglePageSurfaceCard className="surface2">
+                <div className="header"><h2>Calendar preferences</h2></div>
+                <div className="content"><CalendarUserSettingsControl /></div>
+            </CMSinglePageSurfaceCard>
 
             <CMSinglePageSurfaceCard>
                 <div className="content">

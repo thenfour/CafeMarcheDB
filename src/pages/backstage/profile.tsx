@@ -5,7 +5,6 @@ import { useDashboardContext, useFeatureRecorder, useRecordFeatureUse } from "@/
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { ProfilePageIdentityControl } from "@/src/core/components/user/UserIdentityIndicator";
 import { BlitzPage } from "@blitzjs/next";
-import { Typography } from "@mui/material";
 import React, { Suspense } from "react";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -17,6 +16,7 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
+import { CalendarUserSettingsControl } from "src/core/components/user/UserSettingsControls";
 
 
 type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
@@ -209,12 +209,14 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="profile_markdown"></SettingMarkdown>
-        <CMSinglePageSurfaceCard>
-            <div className="content yourProfile">
-                <Typography gutterBottom variant="h4" component="div">
+        <CMSinglePageSurfaceCard className="surface2">
+            <div className="header">
+                <h1>
                     {gIconMap.Person()} Your profile
-                </Typography>
+                </h1>
+            </div>
 
+            <div className="content">
                 <SettingMarkdown setting="profile_description_markdown" />
 
                 <NameValuePair isReadOnly={false} name="Your instruments" value={<OwnInstrumentsControl />} />
@@ -231,6 +233,10 @@ const MainContent = () => {
                 </Suspense>
 
             </div>
+        </CMSinglePageSurfaceCard>
+        <CMSinglePageSurfaceCard className="surface2">
+            <div className="header"><h2>Preferences</h2></div>
+            <div className="content"><CalendarUserSettingsControl /></div>
         </CMSinglePageSurfaceCard>
     </>;
 };

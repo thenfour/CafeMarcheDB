@@ -116,6 +116,7 @@ EventAttendanceSummary (obsolete?)
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import React from "react";
+import { isAttendanceGoing } from "shared/eventAttendance";
 import { Timing } from 'shared/time';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
@@ -394,7 +395,7 @@ interface EventAttendanceAnswerButtonProps {
 
 
 const EventAttendanceAnswerButton = ({ value, selected, noItemSelected, onSelect, tooltip }: EventAttendanceAnswerButtonProps) => {
-  const yesNoStyle = value && (value.strength > 50) ? "yes" : "no";
+  const yesNoStyle = isAttendanceGoing(value) ? "yes" : "no";
   return <CMChip
     onClick={() => onSelect && onSelect(value)}
     shape='rectangle'
