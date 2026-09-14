@@ -414,7 +414,7 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
         createdAt: true,
         roleId: true,
         cssClass: true,
-        // Explicitly exclude: hashedPassword, googleId, calendarFeedToken, uid
+        // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
         role: {
             include: {
                 permissions: {
@@ -479,7 +479,7 @@ export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
         createdAt: true,
         roleId: true,
         cssClass: true,
-        // Explicitly exclude: hashedPassword, googleId, calendarFeedToken, uid
+        // Explicitly exclude: hashedPassword, signInMethods, calendarFeedToken, uid
     }
 });
 export type UserPayloadMinimum = Prisma.UserGetPayload<typeof UserMinimumArgs>;

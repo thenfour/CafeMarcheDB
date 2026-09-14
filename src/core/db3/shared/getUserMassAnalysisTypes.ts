@@ -39,7 +39,7 @@ export type UserMassAnalysisUserInfo = {
     isDeleted: boolean;
     roleId: number | null;
     roleName: string | null;
-    googleId: string | null;
+    hasGoogleIdentity: boolean;
 };
 
 export type UserMassAnalysisActivityMetrics = {
@@ -211,12 +211,12 @@ export const getUserInfoRows = (
             isBooleanValue: true
         },
         {
-            key: "googleId",
+            key: "hasGoogleIdentity",
             label: "Google ID",
-            value: userInfo.googleId ? 1 : 0,
-            compareValue: compareUserInfo ? (compareUserInfo.googleId ? 1 : 0) : undefined,
-            displayValue: userInfo.googleId ? 'Yes' : 'No',
-            compareDisplayValue: compareUserInfo ? (compareUserInfo.googleId ? 'Yes' : 'No') : undefined,
+            value: userInfo.hasGoogleIdentity ? 1 : 0,
+            compareValue: compareUserInfo ? (compareUserInfo.hasGoogleIdentity ? 1 : 0) : undefined,
+            displayValue: userInfo.hasGoogleIdentity ? 'Yes' : 'No',
+            compareDisplayValue: compareUserInfo ? (compareUserInfo.hasGoogleIdentity ? 'Yes' : 'No') : undefined,
             isBooleanValue: true
         },
         {

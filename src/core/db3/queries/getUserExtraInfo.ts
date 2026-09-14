@@ -20,7 +20,7 @@ export default resolver.pipe(
         const { user, effectivePermissions } = await getRequestAuthorization(ctx.session);
         const ret = await db.user.findFirst({
             select: {
-                googleId: true,
+                signInMethods: { where: { type: "google" }, select: { id: true }, take: 1 },
             },
             where: await GetAuthorizedTableReadWhere({
                 table: xUser,
@@ -33,7 +33,7 @@ export default resolver.pipe(
         if (!ret) throw new NotFoundError();
 
         return {
-            identity: ret.googleId ? "Google" : "Password",
+            identity: ret.signInMethods.length > 0 ? "Google" : "Password",
         } satisfies UserExtraInfo;
     }
 );

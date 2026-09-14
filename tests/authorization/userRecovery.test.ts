@@ -26,7 +26,7 @@ const permissions = [Permission.login, Permission.basic_trust, Permission.view_u
     Permission.manage_users, Permission.deactivate_users, Permission.recover_users];
 const admin = createAuthorizationTestUser("bandAdmin", { id: 801, permissions });
 const target = { ...createAuthorizationTestUser("normal", { id: 802, isDeleted: true }),
-    googleId: "existing-google-identity", hashedPassword: "existing-password-hash" };
+    signInMethods: [{ id: 1, type: "google", identifier: "existing-google-identity" }], hashedPassword: "existing-password-hash" };
 
 describe("user recovery", () => {
     beforeEach(() => {

@@ -21,6 +21,16 @@ import {
 import { authorizationTestDb } from "./support/inMemoryPrisma"
 import { invokeResolver } from "./support/resolverHarness"
 
+// Existing accounts in these tests have migrated email sign-in ownership.
+const resetBootstrapDatabase = (seed: Parameters<typeof authorizationTestDb.reset>[0] = {}, options?: Parameters<typeof authorizationTestDb.reset>[1]) => {
+  authorizationTestDb.reset({
+    ...seed,
+    userSignInMethod: (seed.user || []).map(user => ({
+      id: user.id, userId: user.id, type: "email", identifier: String(user.email).toLowerCase().trim(),
+    })),
+  }, options);
+};
+
 const bootstrapEmail = "recovery-admin@test.invalid"
 const bootstrapSecret = "one-time-bootstrap-secret-with-32-characters"
 const previousBootstrapEmail = process.env.CMDB_ADMIN_BOOTSTRAP_EMAIL
@@ -50,7 +60,7 @@ describe("BA-U005 administrator bootstrap", () => {
   })
 
   it("ignores privileged fields supplied to ordinary signup and never uses ADMIN_EMAIL", async () => {
-    authorizationTestDb.reset({
+    resetBootstrapDatabase({
       role: [{ id: 10, isRoleForNewUsers: true }],
       user: [],
       change: [],
@@ -97,7 +107,7 @@ describe("BA-U005 administrator bootstrap", () => {
       { id: 11, isRoleForNewUsers: true },
     ]],
   ])("fails signup closed when the default role is %s", async (_case, roles) => {
-    authorizationTestDb.reset({ role: roles, user: [], change: [] })
+    resetBootstrapDatabase({ role: roles, user: [], change: [] })
     const { ctx } = createAuthorizationPersona("public")
 
     await expect(invokeResolver(signup, {
@@ -116,13 +126,13 @@ describe("BA-U005 administrator bootstrap", () => {
       { id: 21, isPublicRole: true, permissions: [] },
     ]],
   ])("fails public-role lookup closed when the role is %s", async (_case, roles) => {
-    authorizationTestDb.reset({ role: roles }, { includeAuthorizationRoles: false })
+    resetBootstrapDatabase({ role: roles }, { includeAuthorizationRoles: false })
 
     await expect(GetPublicRole()).rejects.toThrow(/Expected exactly one public role/)
   })
 
   it("requires an authenticated account before bootstrap lookup or claim", async () => {
-    authorizationTestDb.reset({ user: [], adminBootstrapClaim: [], change: [] })
+    resetBootstrapDatabase({ user: [], adminBootstrapClaim: [], change: [] })
     const { ctx } = createAuthorizationPersona("public")
     const findUser = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
 
@@ -140,7 +150,7 @@ describe("BA-U005 administrator bootstrap", () => {
       id: 1,
       email: "someone-else@test.invalid",
     })
-    authorizationTestDb.reset({ user: [actor], adminBootstrapClaim: [] })
+    resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: actor.id,
       email: actor.email,
@@ -156,7 +166,7 @@ describe("BA-U005 administrator bootstrap", () => {
 
   it("reports an unused credential only to the matching active user", async () => {
     const actor = createAuthorizationTestUser("normal", { id: 1, email: bootstrapEmail })
-    authorizationTestDb.reset({ user: [actor], adminBootstrapClaim: [] })
+    resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: actor.id,
       email: actor.email,
@@ -172,7 +182,7 @@ describe("BA-U005 administrator bootstrap", () => {
 
   it("rejects a wrong credential without mutating the user or claim history", async () => {
     const actor = createAuthorizationTestUser("normal", { id: 1, email: bootstrapEmail })
-    authorizationTestDb.reset({ user: [actor], adminBootstrapClaim: [], session: [], change: [] })
+    resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [], session: [], change: [] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: actor.id,
       email: actor.email,
@@ -192,7 +202,7 @@ describe("BA-U005 administrator bootstrap", () => {
       id: 1,
       email: "changed-address@test.invalid",
     })
-    authorizationTestDb.reset({ user: [actor], adminBootstrapClaim: [], session: [], change: [] })
+    resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [], session: [], change: [] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: actor.id,
       email: bootstrapEmail,
@@ -212,7 +222,7 @@ describe("BA-U005 administrator bootstrap", () => {
       email: bootstrapEmail,
       isDeleted: true,
     })
-    authorizationTestDb.reset({ user: [actor], adminBootstrapClaim: [], session: [], change: [] })
+    resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [], session: [], change: [] })
     const { ctx } = createAuthorizationPersona("normal", {
       id: actor.id,
       email: actor.email,
@@ -234,7 +244,7 @@ describe("BA-U005 administrator bootstrap", () => {
 
   it("atomically records the secret hash, grants Sysadmin, audits, and refreshes the session", async () => {
     const actor = createAuthorizationTestUser("normal", { id: 1, email: bootstrapEmail })
-    authorizationTestDb.reset({
+    resetBootstrapDatabase({
       user: [actor],
       adminBootstrapClaim: [],
       session: [{ id: 1, userId: actor.id, handle: "old-session" }],
@@ -277,7 +287,7 @@ describe("BA-U005 administrator bootstrap", () => {
 
   it("cannot reuse a claimed credential", async () => {
     const actor = createAuthorizationTestUser("normal", { id: 1, email: bootstrapEmail })
-    authorizationTestDb.reset({
+    resetBootstrapDatabase({
       user: [actor],
       adminBootstrapClaim: [{
         id: 1,

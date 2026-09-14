@@ -6,6 +6,7 @@ import {
     getAdminBootstrapTargetEmail,
 } from "../server/adminBootstrap";
 import { hasAdminBootstrapTokenBeenClaimed } from "../server/adminBootstrapClaims";
+import { findSignInUser } from "../server/signInMethods";
 
 export interface AdminBootstrapStatus {
     isEligible: boolean;
@@ -26,10 +27,14 @@ export default resolver.pipe(
     async (_, ctx): Promise<AdminBootstrapStatus> => {
         const user = await db.user.findFirst({
             where: { id: ctx.session.userId },
-            select: { email: true, isDeleted: true, isSysAdmin: true },
+            select: { id: true, isDeleted: true, isSysAdmin: true },
         });
         const targetEmail = getAdminBootstrapTargetEmail();
-        if (!user || user.isDeleted || !targetEmail || user.email.toLowerCase().trim() !== targetEmail) {
+        if (!targetEmail) {
+            return unavailableStatus;
+        }
+        const signInUser = await findSignInUser(db, { type: "email", identifier: targetEmail }, { allowInactive: false });
+        if (!user || signInUser?.id !== user.id) {
             return unavailableStatus;
         }
 

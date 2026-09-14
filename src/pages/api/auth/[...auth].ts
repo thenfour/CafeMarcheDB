@@ -3,14 +3,12 @@ import { ActivityFeature } from "@/src/core/components/featureReports/activityTr
 import { ServerApi } from "@/src/server/serverApi";
 import { passportAuth } from "@blitzjs/auth";
 import db from "db";
-import { nanoid } from 'nanoid';
+import { resolveGoogleSignIn } from "src/auth/server/googleSignIn";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { createSignupUser } from "src/auth/server/createSignupUser";
-import { getGoogleEmailLinkCandidateWhere, getVerifiedGoogleProfileEmail } from "src/auth/server/googleProfile";
 import { api } from "src/blitz-server";
 import { recordAction } from "src/core/db3/server/recordActionServer";
-import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { createPublicDataFromDatabase } from "src/auth/server/effectivePermissions";
+import { GoogleProfileWithEmails } from "@/src/auth/server/googleProfile";
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
@@ -26,74 +24,15 @@ export default api(
             callbackURL: process.env.GOOGLE_CALLBACK_URL,
 
           },
-          async function (accessToken, refreshToken, params, profile, done) {
-            // find or create user with this google ID.
-            // 1. matching googleID on existing user
-            // 2. matching email & no matching googleID. on existing user
-            // 3. create new.
-
+          async function (accessToken, refreshToken, params, profile: GoogleProfileWithEmails, done) {
             try {
-              const googleId = profile.id;
-              const displayName = profile.displayName;
-
-              let user = await db.user.findFirst({
-                ...UserWithRolesArgs,
-                where: {
-                  AND: [
-                    { googleId },
-                    { isDeleted: false }
-                  ]
-                },
-              });
-
-              if (!user) {
-                // An established subject-ID binding is sufficient on its own.
-                // Email is identity evidence only for first-time linking or
-                // signup, where the provider-verified claim is mandatory.
-                const email = getVerifiedGoogleProfileEmail(profile);
-                if (!email) {
-                  done(null, false);
-                  return;
-                }
-
-                user = await db.user.findFirst({
-                  ...UserWithRolesArgs,
-                  where: getGoogleEmailLinkCandidateWhere(email),
-                });
-
-                if (user) {
-                  // user already has correct email, but not the google id. might as well update it. i guess strictly it's not necessary,
-                  // as long as we don't allow users to update email addresses.
-                  await recordAction({
-                    feature: ActivityFeature.login_google,
-                    userId: user.id,
-                    uri: undefined,
-                  }, ctx);
-                  user = await db.user.update({
-                    ...UserWithRolesArgs,
-                    where: { id: user.id },
-                    data: { googleId },
-                  });
-                } else {
-                  // i should just create separate schema validation/mutation for when a user uses a password vs. external auth.
-                  // but whatever; simpler to just supply a password that will never be used.
-                  user = await createSignupUser({
-                    email,
-                    googleId,
-                    password: "1234567890!@#$%^&aoeuAOEU" + nanoid(),
-                    name: displayName,
-                  }, ctx);
-                  await recordAction({
-                    feature: ActivityFeature.signup_google,
-                    userId: user.id,
-                    uri: undefined,
-                  }, ctx);
-                }
-              }
-
-              // list permissions:
-              // user.role.permissions.map(p => p.permission.name);
-
+              //console.log("Google profile:", profile);
+              const { user, created } = await resolveGoogleSignIn(profile, ctx);
+              await recordAction({
+                feature: created ? ActivityFeature.signup_google : ActivityFeature.login_google,
+                userId: user.id,
+                uri: undefined,
+              }, ctx);
               done(null, { publicData: await createPublicDataFromDatabase(db, { user }) });
             } catch (err) {
               done(null, false);

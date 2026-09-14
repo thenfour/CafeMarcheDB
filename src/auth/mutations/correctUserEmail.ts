@@ -9,7 +9,7 @@ import {
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { UserEmailSchema } from "../schemas";
-import { requireFreshPermission } from "../server/permissionAuthorization";
+import { requireSignInMethodAdmin } from "../server/signInMethods";
 import { requireCanManageUser } from "../server/userManagementPolicy";
 
 export const CorrectUserEmailInput = z.object({
@@ -22,10 +22,9 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async ({ userId, email }, ctx) => db.$transaction(
         async tx => {
-            // A role-carried sysadmin grant is not sufficient. Verify the
-            // persisted exceptional flag before revealing whether a target
-            // account exists.
-            const actor = await requireFreshPermission(tx, ctx.session.userId, Permission.sysadmin);
+            // Re-read effective Sysadmin authority before revealing whether
+            // a target account exists.
+            const actor = await requireSignInMethodAdmin(tx, ctx);
 
             const target = await tx.user.findFirst({
                 select: {
@@ -52,16 +51,14 @@ export default resolver.pipe(
                 where: { id: userId },
                 data: { email },
             });
-            await tx.session.deleteMany({ where: { userId } });
             await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext("correctUserEmail"),
                 table: "User",
                 pkid: userId,
-                // Record that an identity change occurred without retaining
-                // either login identifier in change history.
-                oldValues: { loginEmailChanged: false },
-                newValues: { loginEmailChanged: true },
+                // Record the contact correction without retaining either address.
+                oldValues: { contactEmailChanged: false },
+                newValues: { contactEmailChanged: true },
                 ctx,
                 db: tx,
             });

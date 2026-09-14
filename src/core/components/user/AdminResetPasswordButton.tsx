@@ -19,7 +19,7 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
     const dashboardContext = useDashboardContext();
 
     const handleConfirmClick = () => {
-        forgotPasswordMutation({ email: user.email }).then((r) => {
+        forgotPasswordMutation({ userId: user.id }).then((r) => {
             setShowConfirm(false);
             setResetURL(r);
         }).catch(e => {

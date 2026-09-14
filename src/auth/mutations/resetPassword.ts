@@ -1,68 +1,44 @@
-import { hash256 } from "@blitzjs/auth"
-import { SecurePassword } from "@blitzjs/auth/secure-password"
-import { resolver } from "@blitzjs/rpc"
-import db from "db"
-import { ResetPassword } from "../schemas"
-import login from "./login"
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog"
+import { hash256 } from "@blitzjs/auth";
+import { SecurePassword } from "@blitzjs/auth/secure-password";
+import { resolver } from "@blitzjs/rpc";
+import db, { Prisma } from "db";
+import { ResetPassword } from "../schemas";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
+import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
+import { createPublicDataFromDatabase } from "../server/effectivePermissions";
+import { revokeUserSignInState } from "../server/signInMethods";
 
 export class ResetPasswordError extends Error {
-  name = "ResetPasswordError"
-  message = "Reset password link is invalid or it has expired."
+  name = "ResetPasswordError";
+  message = "Reset password link is invalid or it has expired.";
 }
 
 export default resolver.pipe(
   resolver.zod(ResetPassword),
   async ({ password, token }, ctx) => {
-
-    // 1. Try to find this token in the database
-    const hashedToken = hash256(token)
-    const possibleToken = await db.token.findFirst({
-      where: { hashedToken, type: "RESET_PASSWORD" },
-      include: { user: true },
-    })
-
-    // 2. If token not found, error
-    if (!possibleToken) {
-      throw new ResetPasswordError()
-    }
-    const savedToken = possibleToken
-
-    // 3. Delete token so it can't be used again
-    await db.token.delete({ where: { id: savedToken.id } })
-
-    // 4. If token has expired, error
-    if (savedToken.expiresAt < new Date()) {
-      throw new ResetPasswordError()
-    }
-
-    const userId = savedToken.userId;
-
-    // 5. Since token is valid, now we can update the user's password
-    const hashedPassword = await SecurePassword.hash(password.trim())
-    const user = await db.user.update({
-      where: { id: userId },
-      data: { hashedPassword },
-    })
-
-    await RegisterChange({
-      action: ChangeAction.update,
-      changeContext: CreateChangeContext("resetPasswordMutation"),
-      table: "User",
-      pkid: userId,
-      oldValues: {},
-      newValues: { passwordReset: true },
-      ctx,
-      options: { dontCalculateChanges: true },
-    });
-
-
-    // 6. Revoke all existing login sessions for this user
-    await db.session.deleteMany({ where: { userId: user.id } })
-
-    // 7. Now log the user in with the new credentials
-    await login({ email: user.email, password }, ctx)
-
-    return true
-  }
-)
+    const hashedToken = hash256(token);
+    const hashedPassword = await SecurePassword.hash(password);
+    const user = await db.$transaction(async tx => {
+      const savedToken = await tx.token.findFirst({ where: { hashedToken, type: "RESET_PASSWORD" } });
+      if (!savedToken || savedToken.expiresAt < new Date()) throw new ResetPasswordError();
+      const target = await tx.user.findFirst({ where: { id: savedToken.userId, isDeleted: false } });
+      if (!target) throw new ResetPasswordError();
+      // The token belongs to the user ID. Contact email is never an auth lookup.
+      const updated = await tx.user.update({
+        ...UserWithRolesArgs, where: { id: target.id }, data: { hashedPassword },
+      });
+      await revokeUserSignInState(tx, target.id);
+      await RegisterChange({
+        action: ChangeAction.update,
+        changeContext: CreateChangeContext("resetPasswordMutation"),
+        table: "User", pkid: target.id,
+        oldValues: {}, newValues: { passwordReset: true },
+        ctx, db: tx, options: { dontCalculateChanges: true },
+      });
+      return updated;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    // Preserve the existing automatic sign-in after a successful password reset.
+    await ctx.session.$create(await createPublicDataFromDatabase(db, { user }));
+    return true;
+  },
+);

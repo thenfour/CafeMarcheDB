@@ -8,8 +8,6 @@ import { BlitzPage } from "@blitzjs/next";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import { useUserLifecycleActions } from "src/core/components/user/useUserLifecycleActions";
-import { Permission } from "shared/permissions";
 
 const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T => {
     // This grid may inspect security state, but generic DB3 mutation must not

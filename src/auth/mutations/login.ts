@@ -4,14 +4,14 @@ import { AuthenticationError } from "blitz"
 import db from "db"
 import { Login } from "../schemas"
 import { createPublicDataFromDatabase } from "../server/effectivePermissions"
+import { requireActiveSignInUser } from "../server/signInMethods"
 
 export const authenticateUser = async (rawEmail: string, rawPassword: string) => {
   const { email, password } = Login.parse({ email: rawEmail, password: rawPassword })
-  const user = await db.user.findFirst({
-    where: { AND: [{ email, isDeleted: false }] },
-    include: { role: { include: { permissions: { include: { permission: true } } } } }
-  })
-  if (!user) throw new AuthenticationError()
+  const user = await requireActiveSignInUser(db, { type: "email", identifier: email })
+
+  // no hashed password field = cannot authenticate
+  if (!user.hashedPassword) throw new AuthenticationError()
 
   const result = await SecurePassword.verify(user.hashedPassword, password)
 

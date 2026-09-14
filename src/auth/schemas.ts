@@ -18,6 +18,7 @@ export const UserEmailSchema = z
   .string()
   .trim()
   .email()
+  .max(320)
   .transform((str) => str.toLowerCase());
 
 export const password = z
@@ -43,9 +44,10 @@ export const Login = z.object({
   password: z.string(),
 })
 
-export const ForgotPassword = z.object({
-  email: UserEmailSchema,
-})
+export const ForgotPassword = z.union([
+  z.object({ userId: z.number().int().positive() }).strict(),
+  z.object({ email: UserEmailSchema }).strict(),
+])
 
 export const ResetPassword = z
   .object({

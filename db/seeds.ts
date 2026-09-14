@@ -829,6 +829,29 @@ const main = async () => {
       });
     }
 
+    // generate 0-3 user sign-in methods for this user.
+    // random between emails, 1 google, and 1 email.
+    let signInMethodCount = faker.number.int({ min: 0, max: 3 });
+    const methods: {
+      userId: number;
+      type: "email" | "google";
+      identifier: string;
+    }[] = [];
+
+    if (signInMethodCount > 0) {
+      methods.push({ userId: user.id, type: "email", identifier: user.email.toLowerCase().trim() });
+      signInMethodCount--;
+    }
+
+    for (let j = 0; j < signInMethodCount; j++) {
+      const type = faker.helpers.arrayElement(["email", "google"]) as "email" | "google";
+      const identifier = type === "email" ? faker.internet.email().toLowerCase().trim() : faker.internet.email().toLowerCase().trim();
+      methods.push({ userId: user.id, type, identifier });
+    }
+    await gState.prisma.userSignInMethod.createMany({
+      data: methods,
+    });
+
     // assign this user instruments
     const instrumentCount = probabool(0.08) ? 0 : faker.number.int({ min: 1, max: 3 });
     const instruments = faker.helpers.arrayElements(gState.gAllInstruments, !!specialUser ? 3 : instrumentCount);

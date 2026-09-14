@@ -1119,7 +1119,7 @@ describe("BA-U001 protected-principal policy", () => {
     const tokenCreate = vi.spyOn(authorizationTestDb.getDelegate("token"), "create")
 
     await expect(
-      invokeResolver(forgotPassword, { email: target.email }, ctx),
+      invokeResolver(forgotPassword, { userId: target.id }, ctx),
     ).rejects.toThrow("Unauthorized test persona; required: sysadmin")
 
     expect(tokenDelete).not.toHaveBeenCalled()
@@ -1608,7 +1608,7 @@ describe("BA-U003 password-reset hardening", () => {
     try {
       await expect(invokeResolver(
         forgotPassword,
-        { email: target.email },
+        { userId: target.id },
         ctx,
       )).resolves.toContain("https://reset.test.invalid")
     } finally {
@@ -1626,7 +1626,7 @@ describe("BA-U003 password-reset hardening", () => {
     process.env.CMDB_BASE_URL = "https://reset.test.invalid"
 
     try {
-      const resetUrl = await invokeResolver(forgotPassword, { email: target.email }, ctx)
+      const resetUrl = await invokeResolver(forgotPassword, { userId: target.id }, ctx)
       const rawToken = new URL(resetUrl).searchParams.get("token")
       const storedTokens = authorizationTestDb.snapshot("token")
 

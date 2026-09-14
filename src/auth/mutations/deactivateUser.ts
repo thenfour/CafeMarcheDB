@@ -17,6 +17,7 @@ import {
     findUserManagementPrincipal,
     getUserManagementContinuityWarnings,
 } from "../server/userManagementState";
+import { revokeUserSignInState } from "../server/signInMethods";
 
 export const DeactivateUserInput = z.object({
     userId: z.number().int().positive(),
@@ -50,7 +51,7 @@ export default resolver.pipe(
                 where: { id: userId },
                 data: { isDeleted: true },
             });
-            await tx.session.deleteMany({ where: { userId } });
+            await revokeUserSignInState(tx, userId);
             await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext("deactivateUser"),

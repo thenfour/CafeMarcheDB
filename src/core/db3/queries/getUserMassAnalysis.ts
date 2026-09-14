@@ -147,7 +147,7 @@ export default resolver.pipe(
                 isDeleted: user.isDeleted,
                 roleId: user.roleId,
                 roleName: user.role?.name || null,
-                googleId: user.googleId,
+                hasGoogleIdentity: (await db.userSignInMethod.count({ where: { userId: user.id, type: "google" } })) > 0,
             },
             contentCounts: {
                 createdSongs,

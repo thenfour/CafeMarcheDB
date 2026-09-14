@@ -10,6 +10,7 @@ import {
 } from "src/core/db3/shared/schema/userPayloads";
 import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { z } from "zod";
+import { findSignInUser } from "../server/signInMethods";
 import {
     adminBootstrapSecretMatches,
     getAdminBootstrapConfiguration,
@@ -51,11 +52,13 @@ export default resolver.pipe(
                     ...UserWithRolesArgs,
                     where: { id: ctx.session.userId },
                 });
+
+                const signInUser = await findSignInUser(tx, { type: "email", identifier: verifiedConfiguration.email }, { allowInactive: false });
+
                 if (
                     !user
-                    || user.isDeleted
                     || user.isSysAdmin
-                    || user.email.toLowerCase().trim() !== verifiedConfiguration.email
+                    || signInUser?.id !== user.id
                 ) {
                     failClaim();
                 }

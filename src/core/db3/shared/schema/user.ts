@@ -183,7 +183,7 @@ export const xUserMinimum = new db3.xTable({
             allowNull: false,
         }),
         new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "googleId", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "signInMethods", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "calendarFeedToken", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "accessToken", _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name
         new GhostField({ memberName: "uid", _customAuth: denyGenericUserAuthenticationField }),
@@ -722,7 +722,7 @@ const userBaseArgs: db3.TableDesc = {
             },
         }), // column: tags
 
-        new GhostField({ memberName: "googleId", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "signInMethods", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "calendarFeedToken", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "accessToken", _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name

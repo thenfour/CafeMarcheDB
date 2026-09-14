@@ -177,10 +177,10 @@ model User {
   name           String   @default("") @db.VarChar(768)
   isSysAdmin     Boolean  @default(false)
   isDeleted      Boolean  @default(false)
-  email          String   @unique @db.VarChar(768)
+  email          String   @db.VarChar(768) // contact/display address; authentication uses signInMethods
   phone          String?  @db.VarChar(768)
   hashedPassword String?
-  googleId       String?
+  signInMethods  UserSignInMethod[]
   createdAt      DateTime @default(now())
   calendarFeedToken String? @map("accessToken") @db.VarChar(768) // private bearer credential scoped only to the user's read-only calendar feed.
   uid               String? @default(uuid()) // used for unique identification but is NOT secret like the calendar feed token.
@@ -230,7 +230,25 @@ model User {
   @@index([isDeleted])
   @@index([email])
   @@index([phone])
-  @@index([googleId])
+}
+
+enum SignInMethodType {
+  email
+  google
+}
+
+// Current sign-in ownership, retained when the user is deactivated.
+// Password email aliases share User.hashedPassword. Google identifiers are sub.
+model UserSignInMethod {
+  id         Int              @id @default(autoincrement())
+  userId     Int
+  type       SignInMethodType
+  identifier String           @db.VarChar(320)
+  createdAt  DateTime          @default(now())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([type, identifier])
+  @@index([userId])
 }
 
 // Server-only history for one-time deployment bootstrap credentials. This is

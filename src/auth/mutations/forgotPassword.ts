@@ -1,25 +1,24 @@
 import { ServerApi } from "@/src/server/serverApi"
 import { generateToken, hash256 } from "@blitzjs/auth"
 import { resolver } from "@blitzjs/rpc"
-import db from "db"
+import db, { Prisma } from "db"
 import { Permission } from "shared/permissions"
 import { ForgotPassword } from "../schemas"
-import { requireFreshPermission } from "../server/permissionAuthorization"
 import { requireCanManageUser } from "../server/userManagementPolicy"
+import { findSignInUser, requireSignInMethodAdmin } from "../server/signInMethods"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 
 export default resolver.pipe(
-  resolver.zod(ForgotPassword),
   resolver.authorize(Permission.sysadmin),
-  async ({ email }, ctx) => {
+  resolver.zod(ForgotPassword),
+  async (input, ctx) => db.$transaction(async tx => {
     // Re-read effective grants before target lookup or token generation.
-    const actor = await requireFreshPermission(db, ctx.session.userId, Permission.sysadmin)
+    const actor = await requireSignInMethodAdmin(tx, ctx)
 
-    const user = await db.user.findFirst({
-      select: { id: true, email: true, isDeleted: true, isSysAdmin: true },
-      where: { email: email.toLowerCase() },
-    })
+    const user = "userId" in input
+      ? await tx.user.findFirst({ where: { id: input.userId } })
+      : await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false })
     if (user) {
       requireCanManageUser({
         actor: { ...actor, role: { permissions: actor.effectivePermissionNames.map(name => ({ permission: { name } })) } },
@@ -37,11 +36,11 @@ export default resolver.pipe(
     // 3. If user with this email was found
     if (user) {
       // 4. Delete any existing password reset tokens
-      await db.token.deleteMany({ where: { type: "RESET_PASSWORD", userId: user.id } })
+      await tx.token.deleteMany({ where: { type: "RESET_PASSWORD", userId: user.id } })
       // 5. Save this new token in the database.
-      await db.token.create({
+      await tx.token.create({
         data: {
-          user: { connect: { id: user.id } },
+          userId: user.id,
           type: "RESET_PASSWORD",
           expiresAt,
           hashedToken,
@@ -58,4 +57,4 @@ export default resolver.pipe(
 
     const resetUrl = ServerApi.getAbsoluteUri(`/auth/reset-password?token=${token}`);
     return resetUrl;
-  })
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }))

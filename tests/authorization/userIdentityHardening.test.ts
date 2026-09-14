@@ -11,7 +11,7 @@ vi.mock("db", async () => {
 
 import db3Mutation from "@db3/mutations/db3mutations"
 import correctUserEmail from "src/auth/mutations/correctUserEmail"
-import { getGoogleEmailLinkCandidateWhere, getVerifiedGoogleProfileEmail } from "src/auth/server/googleProfile"
+import { getVerifiedGoogleProfileEmail } from "src/auth/server/googleProfile"
 import { Permission } from "shared/permissions"
 import {
   createAuthorizationPersona,
@@ -30,7 +30,7 @@ describe("BA-U006 generic User identity boundaries", () => {
       email: "original@test.invalid",
       calendarFeedToken: "calendar-secret",
     }),
-    googleId: "google-subject-1",
+    signInMethods: [{ id: 1, type: "google", identifier: "google-subject-1" }],
     hashedPassword: "password-hash",
     uid: "server-owned-uid",
   }
@@ -62,7 +62,7 @@ describe("BA-U006 generic User identity boundaries", () => {
 
   it.each([
     ["email", "attacker@test.invalid"],
-    ["googleId", "attacker-google-subject"],
+    ["signInMethods", [{ type: "google", identifier: "attacker-google-subject" }]],
     ["hashedPassword", "attacker-password-hash"],
     ["calendarFeedToken", "attacker-calendar-token"],
     ["accessToken", "attacker-legacy-calendar-token"],
@@ -81,7 +81,7 @@ describe("BA-U006 generic User identity boundaries", () => {
   })
 
   it.each([
-    ["googleId", "generic-sysadmin-google-subject"],
+    ["signInMethods", [{ type: "google", identifier: "generic-sysadmin-google-subject" }]],
     ["hashedPassword", "generic-sysadmin-password-hash"],
     ["calendarFeedToken", "generic-sysadmin-calendar-token"],
     ["accessToken", "generic-sysadmin-legacy-calendar-token"],
@@ -100,7 +100,7 @@ describe("BA-U006 generic User identity boundaries", () => {
   })
 })
 
-describe("BA-U006 actual-Sysadmin email correction", () => {
+describe("BA-U006 Sysadmin contact email correction", () => {
   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
   const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
   const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
@@ -113,7 +113,7 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
       id: 10,
       email: "original@test.invalid",
     }),
-    googleId: "existing-google-subject",
+    signInMethods: [{ id: 1, type: "google", identifier: "existing-google-subject" }],
   }
 
   beforeEach(() => {
@@ -128,7 +128,7 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
     vi.restoreAllMocks()
   })
 
-  it("normalizes the corrected email, preserves Google binding, revokes sessions, and redacts audit values", async () => {
+  it("normalizes contact email without changing sign-in methods or sessions, and redacts audit values", async () => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     const result = await invokeResolver(correctUserEmail, {
@@ -141,10 +141,11 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
       expect.objectContaining({
         id: target.id,
         email: "corrected@example.com",
-        googleId: target.googleId,
+        signInMethods: target.signInMethods,
       }),
     ]))
     expect(authorizationTestDb.snapshot("session")).toEqual([
+      expect.objectContaining({ id: 100, userId: target.id }),
       expect.objectContaining({ id: 101, userId: sysadmin.id }),
     ])
 
@@ -156,8 +157,8 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
         action: "update",
         context: "correctUserEmail",
         userId: sysadmin.id,
-        oldValues: JSON.stringify({ loginEmailChanged: false }),
-        newValues: JSON.stringify({ loginEmailChanged: true }),
+        oldValues: JSON.stringify({ contactEmailChanged: false }),
+        newValues: JSON.stringify({ contactEmailChanged: true }),
       }),
     ])
     expect(JSON.stringify(changes)).not.toContain(target.email)
@@ -194,7 +195,7 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
     expect(update).toHaveBeenCalled()
   })
 
-  it("rejects correction of a deactivated account", async () => {
+  it("allows contact correction of a deactivated account without restoring it", async () => {
     authorizationTestDb.reset({
       user: [sysadmin, { ...target, isDeleted: true }],
       session: [{ id: 100, userId: target.id }],
@@ -205,26 +206,16 @@ describe("BA-U006 actual-Sysadmin email correction", () => {
     await expect(invokeResolver(correctUserEmail, {
       userId: target.id,
       email: "corrected@test.invalid",
-    }, ctx)).rejects.toThrow("Not authorized to correctEmail this user")
+    }, ctx)).resolves.toEqual({ userId: target.id, email: "corrected@test.invalid" })
 
     expect(authorizationTestDb.snapshot("session")).toEqual([
       expect.objectContaining({ id: 100, userId: target.id }),
     ])
-    expect(authorizationTestDb.snapshot("change")).toEqual([])
+    expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(true)
   })
 })
 
 describe("BA-U006 verified Google email", () => {
-  it("limits email fallback to an active account without an existing Google link", () => {
-    expect(getGoogleEmailLinkCandidateWhere("verified@example.com")).toEqual({
-      AND: [
-        { email: "verified@example.com" },
-        { googleId: null },
-        { isDeleted: false },
-      ],
-    })
-  })
-
   it("normalizes a verified provider email", () => {
     expect(getVerifiedGoogleProfileEmail({
       emails: [{ value: "  Verified@Example.COM ", verified: true }],

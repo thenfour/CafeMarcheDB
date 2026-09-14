@@ -5,9 +5,27 @@ type GoogleProfileEmail = {
     verified?: boolean;
 };
 
-type GoogleProfileWithEmails = {
+export type GoogleProfileWithEmails = {
+    id?: string | null;
+    displayName?: string | null;
     emails?: readonly GoogleProfileEmail[] | null;
 };
+
+// type GooglePhoto = {
+//     value?: string | null; // uri
+// }
+
+// export type GoogleProfile = {
+//     id: string;
+//     displayName: string;
+//     name: {
+//         familyName: string;
+//         givenName: string;
+//     };
+//     emails: GoogleEmail[];
+//     photos: GooglePhoto[];
+// };
+
 
 // passport-google-oauth20 maps Google's email_verified claim onto the
 // normalized email entry. Fail closed if the claim or a valid address is
@@ -22,14 +40,3 @@ export const getVerifiedGoogleProfileEmail = (
     const parsed = UserEmailSchema.safeParse(candidate);
     return parsed.success ? parsed.data : null;
 };
-
-// Email fallback may claim only a local account that has never been linked to
-// another Google subject. A conflicting link must fail instead of being
-// silently replaced.
-export const getGoogleEmailLinkCandidateWhere = (email: string) => ({
-    AND: [
-        { email },
-        { googleId: null },
-        { isDeleted: false },
-    ],
-});

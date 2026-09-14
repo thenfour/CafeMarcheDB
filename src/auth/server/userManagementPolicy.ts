@@ -9,6 +9,7 @@ import {
 } from "shared/permissions";
 
 export type UserManagementAction =
+    | "manageSignInMethods"
     | "assignRole"
     | "correctEmail"
     | "deactivate"
@@ -48,6 +49,7 @@ export interface CanManageUserArgs {
 }
 
 export interface UserManagementCapabilities {
+    canManageSignInMethods: boolean;
     canAssignRole: boolean;
     canCorrectEmail: boolean;
     canDeactivate: boolean;
@@ -108,6 +110,10 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
 
     const actorIsSysadmin = roleHasPermission(actor.role, Permission.sysadmin);
 
+    if (action === "manageSignInMethods" || action === "correctEmail") {
+        return actorIsSysadmin;
+    }
+
     if (action === "reactivate") {
         return target.isDeleted === true
             && roleHasPermission(actor.role, Permission.recover_users)
@@ -120,15 +126,8 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
         return actorIsSysadmin;
     }
 
-    // Login email changes are an account-identity operation, not ordinary
-    // profile editing. Keep them on the dedicated actual-Sysadmin path until
-    // there is a verified self-service email-change flow.
-    if (action === "correctEmail") {
-        return actorIsSysadmin;
-    }
-
     // The current administrator-mediated reset URL is an account-takeover
-    // credential and remains an actual-Sysadmin-only operation.
+    // credential and remains a Sysadmin-only operation.
     //
     // TODO: consider making this a configurable permission. some work is to be done
     // to harden the process (shorter expiry, hide reset URL from screen by default,
@@ -172,6 +171,7 @@ export const getUserManagementCapabilities = (
     actor: UserManagementPrincipal | null,
     target: UserManagementPrincipal,
 ): UserManagementCapabilities => ({
+    canManageSignInMethods: canManageUser({ actor, target, action: "manageSignInMethods" }),
     canAssignRole: canManageUser({ actor, target, action: "assignRole" }),
     canCorrectEmail: canManageUser({ actor, target, action: "correctEmail" }),
     canDeactivate: canManageUser({ actor, target, action: "deactivate" }),

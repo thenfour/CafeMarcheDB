@@ -6,6 +6,7 @@ import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { requireCanManageUser } from "../server/userManagementPolicy";
 import { findActiveUserManagementPrincipal, findUserManagementPrincipal } from "../server/userManagementState";
+import { revokeUserSignInState } from "../server/signInMethods";
 
 export default resolver.pipe(
     resolver.zod(z.object({ userId: z.number().int().positive() }).strict()),
@@ -20,7 +21,7 @@ export default resolver.pipe(
 
         await tx.user.update({ where: { id: userId }, data: { isDeleted: false } });
         // Restoration never revives old login sessions.
-        await tx.session.deleteMany({ where: { userId } });
+        await revokeUserSignInState(tx, userId);
         await RegisterChange({
             action: ChangeAction.update,
             changeContext: CreateChangeContext("reactivateUser"),

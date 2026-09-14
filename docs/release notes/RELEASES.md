@@ -11,6 +11,8 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #664 establish behavior for new users signing up with an email that's already in use.
   - #672 changed build / package / release / upgrade process to use docker and
     github actions rather than a ubuntu vm
+  - #679 user administration page usable by band admin
+  - #683 deactivated users can now be reactivated by a sysadmin
 - Text editor
   - #634 Text editor auto-height support
   - #633 Side-by-side preview mode
@@ -89,12 +91,12 @@ Actions taken:
 
 https://github.com/thenfour/CafeMarcheDB/milestone/28
 
-- #664 needs a unit test https://github.com/thenfour/CafeMarcheDB/issues/664
-  - include new users that use an email used by a soft-deleted user.
 - #515 full screen mode for mobile should be treated better
+- user admin page needs "edit profile" fields to be restricted.
 
 ## Migration notes
 
+- upon `git pull --ff-only`, do `node scripts/check-sign-in-migration.cjs`
 - install / upgrade process has changed
 
 ```plaintext

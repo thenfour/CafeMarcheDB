@@ -22,8 +22,10 @@ import { useSnackbar } from "../SnackbarContext";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
+import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
 
 type UserMgmtCaps = {
+    canManageSignInMethods: boolean;
     canEdit: boolean;
     canCorrectEmail: boolean;
     canDeactivate: boolean;
@@ -90,19 +92,18 @@ export const CorrectUserEmailButton = ({ capabilities, user, onOK }: CorrectUser
                 setCorrectedEmail(user.email);
                 setShowEmailDialog(true);
             }}>
-                Change login email
+                Change contact email
             </Button>
             <Dialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
-                <DialogTitle>Change login email for {user.name}</DialogTitle>
+                <DialogTitle>Change contact email for {user.name}</DialogTitle>
                 <DialogContent dividers>
                     <p>
-                        This changes the account&apos;s login identifier and revokes its active sessions.
-                        It does not change any linked Google identity.
+                        This changes the profile&apos;s contact address. Manage login identifiers separately under Sign-in methods.
                     </p>
                     <TextField
                         autoFocus
                         fullWidth
-                        label="Login email"
+                        label="Contact email"
                         margin="normal"
                         onChange={event => setCorrectedEmail(event.target.value)}
                         type="email"
@@ -118,7 +119,7 @@ export const CorrectUserEmailButton = ({ capabilities, user, onOK }: CorrectUser
                                 });
                                 setShowEmailDialog(false);
                                 onOK?.();
-                            }, "Login email corrected");
+                            }, "Contact email corrected");
                         }}>Save</Button>
                     </DialogActionsCM>
                 </DialogContent>
@@ -219,6 +220,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
     if (!hasAnyControl) return null;
 
     return <div>
+        {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={props.user} onChanged={props.refetch} />}
         <DeactivateUserButton
             capabilities={capabilities}
             user={props.user}
