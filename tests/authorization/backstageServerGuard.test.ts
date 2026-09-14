@@ -90,11 +90,32 @@ describe("backstage server page guard", () => {
     });
 
     it.each([
+        "/backstage/profile",
         "/backstage/calendar",
         "/backstage/event/[...id_slug_tab]",
         "/backstage/roles",
-    ])("rejects anonymous requests to protected page %s", async pathname => {
-        await expect(authorizePageRequest(pathname, null)).rejects.toMatchObject({ statusCode: 403 });
+    ])("requires login for anonymous requests to protected page %s", async pathname => {
+        await expect(authorizePageRequest(pathname, null)).rejects.toMatchObject({ statusCode: 401 });
+    });
+
+    it("keeps signed-in profile permission failures as authorization errors", async () => {
+        await expect(authorizePageRequest("/backstage/profile", eventAdmin.id))
+            .rejects.toMatchObject({ statusCode: 403 });
+    });
+
+    it("allows a signed-in user with profile permission", async () => {
+        authorizationTestDb.reset({
+            user: [createAuthorizationTestUser("normal", {
+                id: eventAdmin.id,
+                permissions: [Permission.login, Permission.basic_trust],
+            })],
+        });
+        await expect(authorizePageRequest("/backstage/profile", eventAdmin.id)).resolves.toBeUndefined();
+    });
+
+    it("requires login when the session user no longer exists", async () => {
+        await expect(authorizePageRequest("/backstage/profile", 999999))
+            .rejects.toMatchObject({ statusCode: 401 });
     });
 
     it("does not load protected entity data for an anonymous visitor", async () => {

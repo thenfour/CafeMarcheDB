@@ -1,6 +1,7 @@
 import type { SessionContext } from "@blitzjs/auth";
+import { AuthenticationError } from "blitz";
 import { findBackstageRouteByPattern } from "../shared/backstageRoutes";
-import { assertPermission } from "./permissionAuthorization";
+import { assertPermission, principalHasPermission } from "./permissionAuthorization";
 import { getRequestAuthorization } from "./requestAuthorization";
 
 export async function authorizePageRequest(
@@ -14,6 +15,9 @@ export async function authorizePageRequest(
     const route = findBackstageRouteByPattern(pathname);
     if (!route) throw new Error(`Backstage page is missing route authorization metadata: ${pathname}`);
 
-    const { effectivePermissions } = await getRequestAuthorization(session);
+    const { user, effectivePermissions } = await getRequestAuthorization(session);
+    if (!user && !principalHasPermission(effectivePermissions.names, route.permission)) {
+        throw new AuthenticationError();
+    }
     assertPermission(effectivePermissions.names, route.permission);
 }

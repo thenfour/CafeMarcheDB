@@ -205,7 +205,6 @@ export function MyApp({
 
 // withBlitz preserves this hook; define it here so its Next types stay visible.
 MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<SharedPageProps>> => {
-  const appProps: AppInitialProps<SharedPageProps> = await NextApp.getInitialProps(appCtx);
   const { req, res, pathname } = appCtx.ctx;
   if (req) {
     if (!res) throw new Error("Server page request is missing its response.");
@@ -215,7 +214,24 @@ MyApp.getInitialProps = async (appCtx: AppContext): Promise<AppInitialProps<Shar
     const { getSessionForRequest } = await import("src/blitz-server");
     const { authorizePageRequest } = await import("@/src/auth/server/pageRequestAuthorization");
     const session = await getSessionForRequest(req, res);
-    await authorizePageRequest(pathname, session);
+    try {
+      await authorizePageRequest(pathname, session);
+    } catch (error) {
+      // Redirect unauthenticated users to the backstage login page.
+      if (!(error instanceof AuthenticationError)) throw error;
+      // also if you're already exactly at /backstage, don't redirect in an infinite loop
+      if (pathname === "/backstage") {
+        return { pageProps: {} };
+      }
+      res.writeHead(302, { Location: "/backstage" });
+      res.end();
+      return { pageProps: {} };
+    }
+  }
+
+  // Authorize before invoking page loaders, including on requests we redirect.
+  const appProps: AppInitialProps<SharedPageProps> = await NextApp.getInitialProps(appCtx);
+  if (req) {
 
     // A request with no valid or last-known-good brand must fail instead of
     // rendering normal application content under the wrong site identity.
