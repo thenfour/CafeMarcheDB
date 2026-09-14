@@ -1,12 +1,18 @@
 import { StandardVariationSpec } from "@/src/core/components/color/palette";
 import { useDashboardContext, useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { Box, Typography } from "@mui/material";
 import React from "react";
-import { CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { SelectionEditButton } from "src/core/components/select/SelectionField";
+import { SelectionPicker } from "src/core/components/select/SelectionPicker";
+import { SelectionValueList } from "src/core/components/select/SelectionOptions";
+import { makeLocalSelectionSource } from "src/core/components/select/selectionSource";
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
+import { CMChipContainer } from "../CMChip";
+import { InstrumentChip } from "../CMCoreComponents";
 
 
 type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
@@ -22,11 +28,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const currentUser = dashboardContext.currentUser;
 
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const [oldValue, setOldValue] = React.useState<db3.UserInstrumentPayload[]>([]);
-
-    React.useEffect(() => {
-        setOldValue(props.value);
-    }, []);
+    const [isDefaultOpen, setIsDefaultOpen] = React.useState(false);
 
     const primary: (db3.InstrumentPayload | null) = API.users.getPrimaryInstrument(props.row as db3.UserPayload);
 
@@ -48,31 +50,67 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
         });
     };
 
-    return <div className={"instrumentListVertical"}>
-        {props.value.map(value => (
-            <div className="instrumentAndPrimaryContainer" key={value[props.spec.associationForeignIDMember]}>
-                {props.spec.renderAsChipForCell!({
-                    value,
-                    colorVariant: { ...StandardVariationSpec.Strong, selected: (value.instrumentId === primary?.id) },
-                    onDelete: () => {
-                        const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
-                        props.onChange(newValue);
-                    }
-                })}
-                {
-                    (props.value.length > 1) && (
-                        (value.instrumentId === primary?.id) ? (
-                            <>
-                                This is your default instrument
-                            </>
-                        ) : (
-                            <CMSmallButton onClick={() => handleClickMakePrimary(value.instrumentId)}>make default</CMSmallButton>
-                        ))
-                }
-            </div>
-        ))}
+    const renderInstrument = (value: db3.UserInstrumentPayload) => //props.spec.renderAsChipForCell({ value, colorVariant: StandardVariationSpec.Strong });
+        <InstrumentChip value={value.instrument} size="big" />;
+    const primaryValue = props.value.find(value => value.instrumentId === primary?.id);
 
-        <CMSmallButton onClick={() => { setIsOpen(!isOpen) }}>Select instruments...</CMSmallButton>
+    const defaultChip = (<Typography
+        component="span"
+        variant="caption"
+        color="text.secondary"
+        sx={{
+            //bgcolor: "action.hover",
+            borderRadius: 0.5,
+            px: 0.75,
+            flexShrink: 0
+        }}
+    >
+        Default
+    </Typography>);
+
+    return <Box sx={{ minWidth: 0, py: 0.5 }}>
+        <SelectionValueList
+            value={props.value}
+            getKey={value => value.instrumentId}
+            getLabel={props.spec.getSelectionLabel}
+            renderValue={value => {
+                const isPrimary = value.instrumentId === primary?.id;
+                return <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, minWidth: 0, maxWidth: "100%" }}>
+                    {renderInstrument(value)}
+                    {props.value.length > 1 && isPrimary && defaultChip}
+                </Box>
+            }}
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+            }}
+        >
+        </SelectionValueList>
+
+        <CMChipContainer style={{
+            gap: "12px",
+            marginTop: "12px",
+        }}>
+            <SelectionEditButton onClick={() => setIsOpen(true)} label="Edit your instruments">{props.value.length ? "Edit" : "Select instruments"}</SelectionEditButton>
+            {props.value.length > 1 && <SelectionEditButton onClick={() => setIsDefaultOpen(true)} label="Change default instrument">Change default</SelectionEditButton>}
+        </CMChipContainer>
+
+        {isDefaultOpen && <SelectionPicker
+            source={makeLocalSelectionSource({
+                items: props.value,
+                getKey: value => value.instrumentId,
+                getLabel: props.spec.getSelectionLabel,
+                renderValue: renderInstrument
+            })}
+            value={primaryValue ? [primaryValue] : []}
+            title="Default instrument" description="When responding to events, this is the instrument that is selected by default."
+            onCancel={() => setIsDefaultOpen(false)}
+            onAccept={values => {
+                setIsDefaultOpen(false);
+                if (values[0] && values[0].instrumentId !== primary?.id) handleClickMakePrimary(values[0].instrumentId);
+            }}
+        />}
         {isOpen && <DB3Client.DB3SelectTagsDialog
             row={props.row}
             initialValue={props.value}
@@ -84,7 +122,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
                 props.onChange(newValue);
             }}
         />}
-    </div>;
+    </Box>;
 };
 
 

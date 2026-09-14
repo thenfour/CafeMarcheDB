@@ -81,11 +81,12 @@ interface SelectionValueListProps<T> {
     onRemove?: (value: T) => void;
     disabled?: boolean;
     children?: React.ReactNode;
+    style?: React.CSSProperties;
 }
 
 // Domain renderers supply the value; this component owns accessible removal controls.
 export const SelectionValueList = <T,>(props: SelectionValueListProps<T>) => (
-    <Box component={CMChipContainer} sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+    <Box component={CMChipContainer} sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5, minWidth: 0 }} style={props.style}>
         {props.value.length === 0 && <Typography variant="body2" color="text.secondary">None selected</Typography>}
         {props.value.map(value => <Box key={props.getKey(value)} sx={{ display: "inline-flex", alignItems: "center", minWidth: 0, maxWidth: "100%" }}>
             <SelectionValue>{props.renderValue(value)}</SelectionValue>

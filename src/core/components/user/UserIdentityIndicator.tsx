@@ -32,7 +32,7 @@ export const ProfilePageIdentityControl = ({ userId }: { userId: number }) => {
         name={"Identity and login"}
         value={<div className="googleIdentityControl">
             <img src="/web_light_rd_na.svg" />
-            <div>You have a Google identity and can sign in with your Google account. You still have the option of signing in with an email & password.</div>
+            <div>You have a Google identity and can sign in with your Google account.</div>
         </div>}
     />;
 }

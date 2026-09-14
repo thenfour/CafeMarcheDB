@@ -10,7 +10,8 @@ export interface BackstageRouteDefinition {
 
 const routes = [
     { key: "root", pattern: "/", caption: "Home", permission: Permission.public },
-    //{ key: "error", pattern: "/_error", caption: "Error", permission: Permission.public },
+    { key: "error", pattern: "/_error", caption: "Error", permission: Permission.public },
+
     { key: "signup", pattern: "/auth/signup", caption: "signup", permission: Permission.public },
     { key: "login", pattern: "/auth/login", caption: "login", permission: Permission.public },
     { key: "forgotPassword", pattern: "/auth/forgot-password", caption: "Forgot Password", permission: Permission.public },
@@ -110,7 +111,10 @@ export function findBackstageRouteByPattern(pattern: string): BackstageRouteDefi
 
 export function ValidateRouteRegistry(): void {
     // check that our registry keys cover all Blitz routes
-    const blitzRoutePaths: string[] = Object.values(Routes).map(route => route({} as any).pathname);
+    const blitzRoutePaths: string[] = [
+        "/_error", // arg i wish there was a central known place to get ALL POSSIBLE routes that will be checked.
+        ...Object.values(Routes).map(route => route({} as any).pathname)
+    ];
     const ourRoutePaths: string[] = routes.map(route => route.pattern);
     const errorMessages: string[] = [];
     for (const path of blitzRoutePaths) {
