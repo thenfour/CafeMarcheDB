@@ -37,6 +37,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #673 fixed: Site branding could sometimes be bypassed (favicon / error boundaries)
   - #663 Users can now have multiple signin methods (google + email/password, multiple emails...),
     and signin email can be different than displayed contact email.
+  - #671 You can now hide from your calendar feed events that you responded "not going".
 
 ## security hardening
 
