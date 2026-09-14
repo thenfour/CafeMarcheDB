@@ -705,8 +705,11 @@ export const MetronomePanel: React.FC<MetronomePanelProps> = ({ onClose }) => {
         };
 
         const handleWheel = (event: WheelEvent) => {
-            // Only handle wheel events when the dialog is focused or mouse is over it
-            const target = event.target as Element;
+            // Document-level wheel events can target non-elements, including in Firefox DevTools.
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+
+            // Only handle wheel events originating inside the metronome panel.
             const dialogElement = target.closest('.GlobalMetronomeDialog');
             if (!dialogElement) return;
 
