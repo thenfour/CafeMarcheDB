@@ -10,6 +10,7 @@ import { ActivityFeature } from "./featureReports/activityTracking";
 import { useLocalStorageState } from "./useLocalStorageState";
 import { Add, Remove } from "@mui/icons-material";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
+import { MetronomePlayback } from "./metronomePlayback";
 
 const gTickSampleFilePath = "/metronome3.mp3";
 const gMinBPM = 40;
@@ -130,243 +131,45 @@ export interface MetronomePlayerProps {
     running: boolean;
 };
 
-// this is just a metronome player.
+// React owns loading and disposal; playback owns beat phase and the two clocks.
 export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigger, mute, running }) => {
-    const classes = ['metronomeIndicator', 'metronomeIndicator tick', 'metronomeIndicator tock'] as const;
-    const [activeClass, setActiveClass] = React.useState<number>(0);
-    const [runningInitialized, setRunningInitialized] = React.useState<boolean | null>(null); // null = not initialized.
-    const [initialSyncTrig, _] = React.useState<number>(() => syncTrigger);
-    const [initialBpm, setInitialBpm] = React.useState<number | null>(() => bpm);
-    const timerIDRef = React.useRef<number | undefined>(undefined);
-    const audioContextRef = React.useRef<AudioContext | null>(null);
-    const gainNodeRef = React.useRef<GainNode | null>(null);
-    const tickBufferRef = React.useRef<AudioBuffer | null>(null);
-    const nextFlashTimerIdRef = React.useRef<number | undefined>(undefined);
-
-    // the sample that's scheduled to play next.
-    const nextTickSource = React.useRef<AudioBufferSourceNode | null>(null);
-    const nextTickBPM = React.useRef<number>(0); // in order to have smooth bpm transitions, keep track of the speed of the previous tick.
-    const nextTickScheduledTime = React.useRef<number>(0); // and when is it scheduled, to know when it passed. also used to calculate next beat.
-
-    // when swapping out, we don't want to disconnect it immediately, or we risk chopping off the sample.
-    // put it in a place to be disconnected on next tick.
-    const tickTrash = React.useRef<AudioBufferSourceNode | null>(null);
-
-    bpm = Clamp(bpm, gMinBPM, gMaxBPM);
-
-    const flash = () => {
-        setActiveClass((value) => value === 2 ? 1 : 2);
-    };
-
-    const beatsAndBPMToMS = (beats: number, bpm__) => beats * 1000 * 60 / bpm__;
-    const beatsToMS = (beats: number) => beatsAndBPMToMS(beats, bpm);//beats * 1000 * 60 / bpm;
-
-    const beatsAndBPMToSec = (beats: number, bpm__) => beats * 60 / bpm__;
-    const beatsToSec = (beats: number) => beatsAndBPMToSec(beats, bpm);//beats * 1000 * 60 / bpm;
-
-    const killTimer = () => {
-        if (timerIDRef.current) {
-            clearTimeout(timerIDRef.current);
-            timerIDRef.current = undefined;
-        }
-    };
-    const killSchedule = () => {
-        if (nextFlashTimerIdRef.current) {
-            clearTimeout(nextFlashTimerIdRef.current);
-            nextFlashTimerIdRef.current = undefined;
-        }
-        if (tickTrash.current) {
-            tickTrash.current.stop();
-            tickTrash.current.disconnect();
-            tickTrash.current = null;
-        }
-        if (nextTickSource.current) {
-            nextTickSource.current.stop();
-            nextTickSource.current.disconnect();
-            nextTickSource.current = null;
-        }
-    };
-
-    const scheduleTick = (why: string, t?: number | undefined) => {
-        const ctx = audioContextRef.current;
-        if (!ctx) return null;
-        const tickSource = ctx.createBufferSource();
-        tickSource.buffer = tickBufferRef.current;
-        tickSource.connect(gainNodeRef.current!);
-        tickSource.start(t);
-        const currentTime = ctx.currentTime;
-        if (nextFlashTimerIdRef.current) {
-            clearTimeout(nextFlashTimerIdRef.current);
-            nextFlashTimerIdRef.current = undefined;
-        }
-        if (t === undefined) {
-            flash();
-        } else {
-            let ms = 1000 * (t - currentTime);
-            if (ms > 0) {
-                ms += 10; // to align better with the sound in CHrome, a small delay. hacky and doubtfully accurate but it feels better than 0 delay.
-                nextFlashTimerIdRef.current = window.setTimeout(flash, ms);
-            }
-        }
-        return tickSource;
-    };
-
-    // timer proc to ensure there's a next tick scheduled for play.
-    // Scheduler function to queue up ticks in the audio context; setInterval is not accurate enough.
-    // basically this runs and schedules a tick a short time in the future.
-    const tickProc = (forceImmediate?: boolean) => {
-        const ctx = audioContextRef.current!;
-        const currentTime = ctx.currentTime;
-        const halfBeatMS = beatsToMS(0.5);
-
-        // - delete the trash node
-        if (tickTrash.current) {
-            tickTrash.current.disconnect();
-            tickTrash.current = null;
-        }
-
-        // - force immediate
-        if (forceImmediate) {
-            // stop currently playing stuff
-            if (nextTickSource.current) {
-                nextTickSource.current.stop();
-                nextTickSource.current.disconnect();
-                nextTickSource.current = null;
-            }
-            nextTickSource.current = scheduleTick("tick:forceImmediate"); // plays immediatly
-            nextTickBPM.current = bpm;
-            nextTickScheduledTime.current = currentTime;
-            // timer set for middle of beat.
-            timerIDRef.current = window.setTimeout(tickProc, halfBeatMS);
-            return;
-        }
-
-        if (!nextTickSource.current) {
-            nextTickSource.current = scheduleTick("tick:nonext?"); // plays immediatly
-            nextTickBPM.current = bpm;
-            nextTickScheduledTime.current = currentTime;
-            // timer set for middle of beat.
-            timerIDRef.current = window.setTimeout(tickProc, halfBeatMS);
-            return;
-        }
-
-        // - if tick is passed, move to trash and schedule a new one. this should almost always be the case.
-        if (nextTickScheduledTime.current < currentTime) {
-            tickTrash.current = nextTickSource.current;
-
-            // calculate audio time of the next beat.
-            const timeElapsed = currentTime - nextTickScheduledTime.current; // seconds since the tick passed
-            const beatFrac = timeElapsed * (nextTickBPM.current / 60); // beats, expressed in ITS BPM
-            let remainingSec = beatsToSec(1.0 - beatFrac);
-
-            nextTickBPM.current = bpm;
-
-            // it could be that we somehow miss a beat, especially during weird turbuent times or changing BPMs. in that case we can choose to skip it or to schedule it.
-            if (remainingSec <= 0) {
-                nextTickSource.current = scheduleTick("tickProc:missed a beat", undefined); // immediate.
-                nextTickScheduledTime.current = currentTime + remainingSec;
-                timerIDRef.current = window.setTimeout(tickProc, halfBeatMS);
-                return;
-            }
-
-            nextTickScheduledTime.current = currentTime + remainingSec;
-            nextTickSource.current = scheduleTick("tickProc:normal", currentTime + remainingSec);
-            // and set our next timeout to the middle of the beat after nexttick.
-            timerIDRef.current = window.setTimeout(tickProc, (remainingSec * 1000) + halfBeatMS);
-            return;
-        }
-
-        // for some reason the tick that's scheduled next has NOT passed yet. let's just try again in the middle of the next beat.
-        const timeRemaining = nextTickScheduledTime.current - currentTime;
-        const beatFracRemaining = timeRemaining * (nextTickBPM.current / 60);
-        const remainingMSInBeat = beatsToMS(beatFracRemaining); // so this is how long until the tick occurs.
-
-        timerIDRef.current = window.setTimeout(tickProc, remainingMSInBeat + halfBeatMS);
-    };
-
-    const doBeatSync = () => {
-        killTimer();
-        killSchedule();
-        if (running) {
-            tickProc(true);
-        }
-        else {
-            flash();
-        }
-    };
-
-    const doInit = async () => {
-        if (!!audioContextRef.current) return; // double mount?
-        audioContextRef.current = new AudioContext();
-        gainNodeRef.current = audioContextRef.current.createGain();
-        gainNodeRef.current.connect(audioContextRef.current.destination);
-        const response = await fetch(gTickSampleFilePath);
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
-        tickBufferRef.current = audioBuffer;
-
-        doBeatSync();
-    };
-
-    const doStop = () => {
-        killTimer();
-
-        if (tickTrash.current) {
-            tickTrash.current.disconnect();
-            tickTrash.current = null;
-        }
-        if (nextTickSource.current) {
-            nextTickSource.current.stop();
-            nextTickSource.current.disconnect();
-            nextTickSource.current = null;
-        }
-    };
+    const indicatorRef = React.useRef<HTMLDivElement>(null);
+    const playbackRef = React.useRef<MetronomePlayback | null>(null);
 
     React.useEffect(() => {
-        void doInit();
-        return () => doStop();
+        const abort = new AbortController();
+        const context = new AudioContext({ latencyHint: "interactive" });
+        const playback = new MetronomePlayback(context, pulse => {
+            indicatorRef.current?.style.setProperty("--metronome-pulse", pulse.toString());
+        });
+        playbackRef.current = playback;
+
+        const loadSample = async () => {
+            const response = await fetch(gTickSampleFilePath, { signal: abort.signal });
+            if (!response.ok) throw new Error(`Metronome sample request failed: ${response.status}`);
+            const bytes = await response.arrayBuffer();
+            if (abort.signal.aborted) return;
+            const buffer = await context.decodeAudioData(bytes);
+            if (abort.signal.aborted) return;
+            playback.setBuffer(buffer);
+        };
+        void loadSample().catch(error => {
+            if (!abort.signal.aborted) console.error("Unable to load metronome audio", error);
+        });
+
+        return () => {
+            abort.abort();
+            playback.dispose();
+            playbackRef.current = null;
+        };
     }, []);
 
     React.useEffect(() => {
-        if (syncTrigger > initialSyncTrig) {
-            doBeatSync();
-        }
-    }, [syncTrigger]);
+        playbackRef.current?.update({ bpm: Clamp(bpm, gMinBPM, gMaxBPM), syncTrigger, mute, running });
+    }, [bpm, syncTrigger, mute, running]);
 
-    React.useEffect(() => {
-        if (initialBpm === bpm) {
-            return;
-        }
-        setInitialBpm(null); // allow further bpm changes to always work even if === initial
-
-        // run the timer proc ASAP to evaluate what to do.
-        killTimer();
-
-        // if not running, do nothing.
-        if (running) {
-            tickProc(false);
-        }
-    }, [bpm]);
-
-    React.useEffect(() => {
-        if (gainNodeRef.current) {
-            gainNodeRef.current.gain.value = mute ? 0 : 1;
-        }
-    }, [mute, gainNodeRef.current]);
-
-    React.useEffect(() => {
-        killTimer();
-        if (running && runningInitialized) {
-            tickProc(false);
-        }
-        if (!runningInitialized) {
-            setRunningInitialized(true);
-        }
-    }, [running]);
-
-    return <div className="metronomePlayerContainer">
-        <div className={classes[activeClass]}>
-        </div>
+    return <div className="metronomePlayerContainer" aria-hidden="true">
+        <div ref={indicatorRef} className="metronomeIndicator" />
     </div>;
 };
 
@@ -465,8 +268,7 @@ export const MetronomeButton = React.forwardRef<
     return <div className={`metronomeButtonContainer ${variant}`}>
         <div onClick={togglePlaying} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"} ${variant}`}>
 
-            {playing && (variant === "normal") && gIconMap.VolumeUp()}
-            {!playing && (variant === "normal") && gIconMap.VolumeOff()}
+            {variant === "normal" && <span className="metronomeTransportLabel">{playing ? "Stop" : "Play"}</span>}
 
             {!playing && (variant === "tiny") && <span className="bpmText">{bpm}</span>}
 
@@ -641,18 +443,6 @@ export const MetronomePanel: React.FC<MetronomePanelProps> = ({ onClose }) => {
         setTextBpm(newBPM.toString());
     };
 
-    const setPresetBPM = (presetIndex: number) => {
-        // todo: specify which tempos per key
-        const allPresets = TEMPO_REGIONS.flatMap(region => region.presetTempos);
-        if (presetIndex >= 0 && presetIndex < allPresets.length) {
-            const preset = allPresets[presetIndex];
-            if (preset) {
-                setBPM(preset);
-                setTextBpm(preset.toString());
-            }
-        }
-    };
-
     // Keyboard shortcuts
     React.useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -685,19 +475,6 @@ export const MetronomePanel: React.FC<MetronomePanelProps> = ({ onClose }) => {
                 //     event.preventDefault();
                 //     props.onClose();
                 //     break;
-
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9': // Preset tempos
-                    event.preventDefault();
-                    setPresetBPM(parseInt(event.key) - 1);
-                    break;
 
                 default:
                     break;
@@ -860,7 +637,7 @@ export const MetronomePanel: React.FC<MetronomePanelProps> = ({ onClose }) => {
                     lineHeight: '1.3'
                 }}>
                     <div>
-                        <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: Jump to tick • <strong>Shift+Wheel</strong>: BPM ±1 • <strong>Shift+Drag</strong>: Fine control • <strong>T</strong>: Tap • <strong>S</strong>: Sync • <strong>1-9</strong>: Presets
+                        <strong>Space</strong>: Play/Stop • <strong>↑/↓</strong>: BPM ±1 • <strong>Shift+↑/↓</strong>: BPM ±5 • <strong>Mouse Wheel</strong>: Jump to tick • <strong>Shift+Wheel</strong>: BPM ±1 • <strong>Shift+Drag</strong>: Fine control • <strong>T</strong>: Tap • <strong>S</strong>: Sync
                     </div>
                 </div>
             </DialogContent>

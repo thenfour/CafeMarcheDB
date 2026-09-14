@@ -76,73 +76,44 @@ ul.mechanicalSelector>li {
 
 
 .metronomeIndicator {
-    --color1: #ff6;
-    --color2: #0f0;
-    --color3: #040;
-    --duration: .12s;
-    --timingfunction: linear;
+    position: relative;
+    flex-shrink: 0;
     border-radius: 50%;
     margin: 0 10px;
     width: 32px;
     height: 32px;
-    border: 2px solid #0004;
-    box-shadow: 0 0 25px var(--color3);
-
-
-    /* default animation state */
-    background-color: var(--color3);
-    box-shadow: 0 0 25px var(--color3);
+    border: 2px solid #263800;
+    background-color: #183000;
 }
 
+.metronomeIndicator::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-color: #ffff66;
+    box-shadow: 0 0 30px #ffff66;
+    opacity: var(--metronome-pulse, 0);
+    /* The output audio clock supplies the envelope each frame. No independent CSS animation. */
+}
+
+.GlobalMetronomeDialog .metronomeTransportLabel {
+    font-size: 40px;
+    font-weight: bold;
+    padding: 20px;
+}
+
+.GlobalMetronomeDialog .metronomeButton {
+    min-height: 104px;
+    opacity: 1;
+    color: #333;
+}
 
 
 .metronomeButtonContainer.tiny .metronomeIndicator {
     padding: 0;
     border: 0;
     margin: 0;
-}
-
-
-@keyframes MetronomeFlash1 {
-    0% {
-        background-color: var(--color1);
-        box-shadow: 0 0 25px var(--color1);
-    }
-
-    50% {
-        background-color: var(--color1);
-        box-shadow: 0 0 25px var(--color1);
-    }
-
-    100% {
-        background-color: var(--color3);
-        box-shadow: 0 0 25px var(--color3);
-    }
-}
-
-@keyframes MetronomeFlash2 {
-    0% {
-        background-color: var(--color1);
-        box-shadow: 0 0 25px var(--color1);
-    }
-
-    50% {
-        background-color: var(--color1);
-        box-shadow: 0 0 25px var(--color1);
-    }
-
-    100% {
-        background-color: var(--color3);
-        box-shadow: 0 0 25px var(--color3);
-    }
-}
-
-.metronomeIndicator.tick {
-    animation: MetronomeFlash1 var(--duration) var(--timingfunction) forwards;
-}
-
-.metronomeIndicator.tock {
-    animation: MetronomeFlash2 var(--duration) var(--timingfunction) forwards;
 }
 
 

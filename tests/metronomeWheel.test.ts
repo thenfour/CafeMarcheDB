@@ -54,6 +54,17 @@ const wheel = async (target: EventTarget, deltaY = -100, shiftKey = false) => {
 };
 
 describe("metronome wheel input", () => {
+    it("labels the stopped transport Play and leaves number keys unhandled", async () => {
+        expect(document.querySelector(".metronomeButton")!.textContent).toBe("Play");
+        expect(document.querySelector(".keyboardShortcutsHelp")!.textContent).not.toContain("Presets");
+        for (const key of "123456789") {
+            const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+            await act(async () => { document.dispatchEvent(event); });
+            expect(event.defaultPrevented).toBe(false);
+            expect(bpmInput().value).toBe("120");
+        }
+    });
+
     it.each(["document", "text", "comment"])("ignores a %s target without throwing or changing BPM (#678)", async targetKind => {
         const label = document.querySelector(".keyboardShortcutsHelp strong")!;
         const target = targetKind === "document" ? document
