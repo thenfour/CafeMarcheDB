@@ -681,7 +681,8 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
             const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update" });
             return <IconEditCell
                 validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
-                value={params.value}
+                // The grid uses a sentinel for enum filtering; the picker accepts native null.
+                value={params.value === gNullValue ? null : params.value}
                 allowNull={this.allowNull}
                 readonly={false}
                 onOK={(value) => {

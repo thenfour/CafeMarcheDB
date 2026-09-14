@@ -241,10 +241,9 @@ will show clearly on the command line.
 
     <DB3EditRowButton> -- quite possibly a dupe of another ....
 
-    <ChoiceEditCell>
-    renders a value
-    clicking reveals a dialog to select other values.
-    used for visibility controls, tags fields.
+    <SelectionField>
+    renders domain values and a compact Edit button inside CMChipContainer.
+    opens the shared SelectionPicker; SelectionSource supplies choices and labels.
 
     <DB3EditObjectDialog> & <DB3EditObject2Dialog>
 

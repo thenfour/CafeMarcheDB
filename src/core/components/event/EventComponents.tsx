@@ -1,5 +1,3 @@
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
-
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
@@ -40,8 +38,7 @@ import { Markdown } from '../markdown/Markdown';
 import { Markdown3Editor } from '../markdown/MarkdownControl3';
 import { ReactiveInputDialog } from '../ReactiveInputDialog';
 import { SearchItemBigCardLink } from '../SearchItemBigCardLink';
-import { ChoiceEditCell } from '../select/ChooseItemDialog';
-import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from '../SettingMarkdown';
+import { SettingMarkdown } from '../SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
 import { CMTab, CMTabPanel } from '../TabPanel';
 import { UserChip } from '../user/userChip';
@@ -52,6 +49,7 @@ import { EventWorkflowTabContent } from '../workflow/WorkflowEventComponents';
 import { EventsFilterSpec } from './EventClientBaseTypes';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
+import { EventAttendanceUserTagControl } from './EventAttendanceUserTagControl';
 import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
@@ -902,73 +900,6 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: P
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export interface EventAttendanceUserTagValueProps {
-    onClick?: () => void;
-    value: db3.UserTagPayload | null;
-};
-export const EventAttendanceUserTagValue = (props: EventAttendanceUserTagValueProps) => {
-    return !props.value ? <div className='interactable' onClick={props.onClick}>(none)</div> : <CMStandardDBChip onClick={props.onClick} model={props.value} />;
-    // return !props.value ? (<Button onClick={props.onClick}>Set expected attendance role</Button>) : (
-    //     
-    // );
-};
-
-export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: db3.EventWithAttendanceUserTagPayload, refetch: () => void, readonly: boolean }) => {
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const dashboardContext = useDashboardContext();
-    const recordFeature = useFeatureRecorder();
-
-    const publicData = useDB3Authorization();
-
-
-    const authorizedForEdit = db3.xEvent.authorizeColumnForEdit({
-        publicData,
-        model: event,
-        columnName: "expectedAttendanceUserTag",
-        fallbackOwnerId: event.createdByUserId,
-    });
-
-    const handleChange = (value: db3.UserTagPayload | null) => {
-        void recordFeature({ feature: ActivityFeature.event_change_invite_tag });
-        mutationToken.invoke({
-            eventId: event.id,
-            expectedAttendanceUserTagId: value?.id || null,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated event attendance tag" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event attendance tag" });
-        }).finally(() => {
-            refetch();
-        });
-    };
-
-    readonly = readonly || !authorizedForEdit;
-    const choices = [null, ...dashboardContext.userTag.items];
-
-    // value type is UserTagPayload
-    return <div className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`}>
-        <ChoiceEditCell
-            isEqual={(a: db3.UserTagPayload, b: db3.UserTagPayload) => a.id === b.id}
-            items={choices}
-            readonly={readonly}
-            selectDialogTitle="Select who should be expected to respond to this event"
-            value={event.expectedAttendanceUserTag}
-            dialogDescription={<SettingMarkdown setting={GenerateDefaultDescriptionSettingName("event", "expectedAttendanceUserTag")} />}
-            renderAsListItem={(chprops, value: db3.UserTagPayload | null, selected: boolean) => {
-                return <li {...chprops}>
-                    <EventAttendanceUserTagValue value={value} /></li>;
-            }}
-            renderValue={(args) => {
-                return <EventAttendanceUserTagValue value={args.value} onClick={readonly ? undefined : args.handleEnterEdit} />;
-            }}
-            onChange={handleChange}
-        />
-    </div>;
-};
-
 
 type SegmentResponseStat = {
     segment: db3.EventVerbose_EventSegment;

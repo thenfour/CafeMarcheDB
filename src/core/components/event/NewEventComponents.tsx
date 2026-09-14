@@ -5,7 +5,7 @@ import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { VisibilityControl } from "src/core/components/VisibilityControl";
+import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
@@ -62,7 +62,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         tableSpec: eventTableSpec,
     });
 
-    const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
+    const [eventValue, setEventValue] = React.useState<Omit<db3.EventPayload, "visiblePermission"> & { visiblePermission: VisibilityControlValue }>(() => {
         const ret = db3.xEvent.createNew(currentUser) as db3.EventPayload;
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
@@ -146,7 +146,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
             <div className="EventSongListValue">
                 <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
-                    const newValue: db3.EventPayload = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
+                    const newValue = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
                     setEventValue(newValue);
                 }} />
 

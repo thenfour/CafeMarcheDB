@@ -1,16 +1,17 @@
 
-import { Tooltip } from "@mui/material";
+import { Box, Tooltip } from "@mui/material";
 import React from 'react';
 import * as db3 from "src/core/db3/db3";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
-import { ChoiceEditCell } from "./select/ChooseItemDialog";
+import { CMSelectDisplayStyle, SelectionField } from "./select/SelectionField";
+import { CMSelectNullBehavior, makeLocalSelectionSource, withNullSelection } from "./select/selectionSource";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { StandardVariationSpec } from "./color/palette";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type VisibilityControlValue = (db3.PermissionPayload | null);
+export type VisibilityControlValue = (db3.PermissionPayloadMinimum | null);
 
 export interface VisibilityValueProps {
     permission?: db3.PermissionPayloadMinimum | null;
@@ -59,6 +60,7 @@ export const VisibilityValue = ({ variant, onClick, ...props }: VisibilityValueP
 interface VisibilityControlProps {
     value: VisibilityControlValue | number | null;
     variant?: "minimal" | "verbose";
+    readonly?: boolean;
     onChange: (value: VisibilityControlValue) => void;
     selectDialogTitle?: React.ReactNode;
 };
@@ -66,34 +68,25 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
     const dashboardContext = useDashboardContext();
 
     const variant = props.variant || "verbose";
-    const visibilityChoices = [null, ...(dashboardContext.permission.items).filter(p => {
+    const visibilityChoices = dashboardContext.permission.items.filter(p => {
         return p.isVisibility && dashboardContext.isAuthorized(p.name);
-    })];
+    });
 
     const heavyValue = typeof props.value === "number" ? dashboardContext.permission.getById(props.value) : props.value;
 
-    return <div className={`VisibilityControl`}>
-        <ChoiceEditCell
-            isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
-            items={visibilityChoices}
-            readonly={false} // todo!
-            validationError={null}
-            selectDialogTitle={props.selectDialogTitle || "Select who can see this"}
-            //selectButtonLabel='change visibility'
-            value={heavyValue}
-            //dialogDescription={<>dialog description her99ee</>}
-            dialogDescription={<SettingMarkdown setting="VisibilityControlSelectDialogDescription" />}
-            renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
-                return <li {...chprops}>
-                    <VisibilityValue permission={value} variant={"verbose"} />
-                </li>;
-            }}
-            renderValue={(args) => {
-                return <VisibilityValue permission={args.value} variant={variant} onClick={args.handleEnterEdit} />;
-            }}
-            onChange={props.onChange}
-        />
-    </div>;
+    const source = withNullSelection(makeLocalSelectionSource({
+        items: visibilityChoices,
+        getKey: permission => permission.id,
+        getLabel: permission => permission.name,
+        renderValue: permission => <VisibilityValue permission={permission} variant={variant} />,
+    }), CMSelectNullBehavior.AllowNull, () => <VisibilityValue permission={null} variant={variant} />, "Private");
+    source.renderOption = permission => <Box sx={{ display: "inline-flex", maxWidth: "100%" }}><VisibilityValue permission={permission} variant="verbose" /></Box>;
+
+    return <SelectionField className="VisibilityControl" source={source} value={[heavyValue ?? null]}
+        readonly={props.readonly} displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+        dialogTitle={props.selectDialogTitle || "Who can see this"}
+        dialogDescription={<SettingMarkdown setting="VisibilityControlSelectDialogDescription" />}
+        onChange={values => props.onChange(values[0]!)} />;
 };
 
 

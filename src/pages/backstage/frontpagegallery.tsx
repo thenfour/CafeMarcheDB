@@ -543,7 +543,7 @@ const GalleryItem = (props: GalleryItemProps) => {
     };
 
     const handleVisibilityChange = (visiblePermission: VisibilityControlValue) => {
-        const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, visiblePermission, visiblePermissionId: visiblePermission?.id || null };
+        const newrow = { ...props.value, visiblePermission, visiblePermissionId: visiblePermission?.id || null };
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_change_visibility,
             frontpageGalleryItemId: newrow.id,

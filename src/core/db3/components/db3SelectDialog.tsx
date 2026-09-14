@@ -15,7 +15,7 @@ export interface DB3SingleSelectDialogBaseProps<T extends TAnyModel> {
     onOK: (value: T | Tnull) => void;
     onCancel: () => void;
     title: React.ReactNode;
-    description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
+    description: React.ReactNode;
 
     renderOption?: ((value: T) => React.ReactNode) | undefined;
 
@@ -61,7 +61,7 @@ export interface DB3MultiSelectDialogProps<T extends TAnyModel> {
     onOK: (value: T[]) => void;
     onCancel: () => void;
     title: React.ReactNode;
-    description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
+    description: React.ReactNode;
 
     renderOption?: ((value: T) => React.ReactNode) | undefined;
 

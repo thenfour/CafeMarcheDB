@@ -1,9 +1,9 @@
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
+import { Box, FormHelperText } from "@mui/material";
+import React from "react";
 import { TIconOptions, gIconOptions } from "shared/utils";
-import { ChoiceEditCell } from "../../components/select/ChooseItemDialog";
+import { CMSelectDisplayStyle, SelectionField } from "../../components/select/SelectionField";
+import { CMSelectNullBehavior, makeLocalSelectionSource, singleSelectionValue, withNullSelection } from "../../components/select/selectionSource";
 import { RenderMuiIcon } from "./IconMap";
-import { gNullValue } from '@/shared/rootroot';
 
 export interface ChooseIconDialogProps {
     value: TIconOptions | null;
@@ -14,36 +14,19 @@ export interface ChooseIconDialogProps {
 };
 
 export function IconEditCell(props: ChooseIconDialogProps) {
+    const errorId = React.useId();
+    const nullBehavior = props.allowNull ? CMSelectNullBehavior.AllowNull : CMSelectNullBehavior.NonNullable;
+    const source = withNullSelection(makeLocalSelectionSource<TIconOptions>({
+        items: Object.keys(gIconOptions) as TIconOptions[],
+        getKey: icon => icon,
+        getLabel: icon => `${icon} icon`,
+        renderValue: icon => <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1, overflowWrap: "anywhere" }}>{RenderMuiIcon(icon)}<span>{icon}</span></Box>,
+    }), nullBehavior, () => "No icon");
 
-    const items = props.allowNull ? [gNullValue, ...Object.keys(gIconOptions)] : Object.keys(gIconOptions);
-
-    return <ChoiceEditCell
-        selectDialogTitle="Select icon"
-        dialogDescription={""}
-        items={items}
-        readonly={props.readonly}
-        value={props.value}
-        onChange={(value) => props.onOK(value)}
-        selectButtonLabel="Icon..."
-        validationError={props.validationError}
-        isEqual={(a, b) => a === b} // just strings / null
-        renderAsListItem={(props, value, selected) => {
-            if (value === gNullValue) {
-                return <li {...props}>
-                    {selected && <DoneIcon />}
-                    (none)
-                    {selected && <CloseIcon />}
-                </li>;
-            }
-            return <li {...props}>
-                {selected && <DoneIcon />}
-                {RenderMuiIcon(value)}
-                {value}
-                {selected && <CloseIcon />}
-            </li>;
-        }}
-        renderValue={(args) => {
-            return <>{RenderMuiIcon(args.value)}</>;
-        }}
-    />;
+    return <Box role="group" aria-label="Icon" aria-describedby={props.validationError ? errorId : undefined}>
+        <SelectionField source={source} value={singleSelectionValue(props.value, nullBehavior)}
+            onChange={values => props.onOK(values[0]!)} readonly={props.readonly}
+            displayStyle={CMSelectDisplayStyle.SelectedWithDialog} dialogTitle="Icon" />
+        {props.validationError && <FormHelperText id={errorId} error>{props.validationError}</FormHelperText>}
+    </Box>;
 }

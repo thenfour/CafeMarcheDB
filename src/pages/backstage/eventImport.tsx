@@ -13,7 +13,7 @@ import { EventDateField, NameValuePair } from "src/core/components/CMCoreCompone
 import { EventTableClientColumns } from "src/core/components/event/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/event/EventSegmentComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { VisibilityControl } from "src/core/components/VisibilityControl";
+import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -41,7 +41,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const currentUser = useCurrentUser()[0]!;
 
     const dashboardContext = useDashboardContext();
-    const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
+    const [eventValue, setEventValue] = React.useState<Omit<db3.EventPayload, "visiblePermission"> & { visiblePermission: VisibilityControlValue }>(() => {
         const ret = db3.xEvent.createNew(currentUser) as Partial<db3.EventPayload>;
         return ret as any;
     });
@@ -160,7 +160,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
     return <div className="EventSongListValue">
         <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
-            const newValue: db3.EventPayload = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
+            const newValue = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
             setEventValue(newValue);
         }} />
 

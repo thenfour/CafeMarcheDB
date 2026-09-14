@@ -26,7 +26,7 @@ import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/Das
 
 
 ////////////////////////////////////////////////////////////////
-// similar to ChooseItemDialog, we want little text fields to be editable
+// Small text fields can be edited in a dialog.
 // on profile.tsx, values are editable inline.
 // this one pops up a dialog, the point is
 // 1. debouncing not necessary

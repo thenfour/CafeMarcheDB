@@ -29,6 +29,19 @@ export interface SelectionSource<T> {
     matchesText?: (item: T, text: string) => boolean;
 }
 
+function filterSelectionItems<T>(items: T[], getLabel: (item: T) => string, filterText: string): T[] {
+    const words = filterText.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    return items.filter(item => words.every(word => getLabel(item).toLocaleLowerCase().includes(word)));
+}
+
+// Already-loaded choices can keep their domain rendering without another chip wrapper.
+export function makeLocalSelectionSource<T>({ items, ...source }: Omit<SelectionSource<T>, "useOptions"> & { items: T[] }): SelectionSource<T> {
+    return {
+        ...source,
+        useOptions: filterText => ({ items: filterSelectionItems(items, source.getLabel, filterText), refetch: () => { } }),
+    };
+}
+
 export interface SelectionItemInfo {
     id: string | number;
     name?: string;
@@ -87,10 +100,9 @@ export function makeAsyncSelectionSource<T>(props: AsyncSelectionProps<T>): Sele
         matchesText: props.doesItemExactlyMatchText || ((item, text) => getLabel(item).trim().toLocaleLowerCase() === text.toLocaleLowerCase()),
         useOptions(filterText, enabled) {
             const query = useAsyncSelectionOptions(props.getOptions, filterText, enabled);
-            const words = filterText.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
             return {
                 ...query,
-                items: query.items.filter(item => words.every(word => getLabel(item).toLocaleLowerCase().includes(word))),
+                items: filterSelectionItems(query.items, getLabel, filterText),
                 createOption: props.allowInsertFromString !== false ? props.doInsertFromString : undefined,
             };
         },

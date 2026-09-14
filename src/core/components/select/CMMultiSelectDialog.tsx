@@ -8,7 +8,7 @@ export interface CMMultiSelectDialogProps<T> {
     onOK: (value: T[]) => void;
     onCancel: () => void;
     title: React.ReactNode;
-    description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
+    description: React.ReactNode;
 
     getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
     getOptionInfo: (item: T) => ItemInfo;
