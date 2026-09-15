@@ -4,7 +4,7 @@ Note: v3.0.0 was released as a practical test of the new CI/CD; that release
 is to be ignored; v3.0.1 is considered the next production release after v2.03
 (094a783a)
 
-## changes
+## Change detail
 
 - Security / authorization
   - #669 #668 security hardening (see below)
@@ -40,6 +40,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #671 You can now hide from your calendar feed events that you responded "not going", and hide events you're not invited to.
   - #686 UI improvements / tweaks
   - #631 #684 various improvements to metronome (timing stability, edge case bugs, transition continuity)
+  - #481 ability to merge duplicate user identities
 
 ## security hardening
 
@@ -91,53 +92,3 @@ Actions taken:
   - BA-N003 - More routing corrections and hardening
 - Preparation for Band Admin role
   - splitting permissions that mixed sysadmin and band admin capabilities
-
-## todo
-
-https://github.com/thenfour/CafeMarcheDB/milestone/28
-
-- #515 full screen mode for mobile should be treated better
-
-## Migration notes
-
-- upon `git pull --ff-only`, do `node scripts/check-sign-in-migration.cjs`
-- install / upgrade process has changed
-- test selecting foreign single and tags on mobile
-
-```plaintext
-
-cd ...
-git pull --ff-only
-edit .env.deploy.local
-    SERVICE=cmdb
-    DB_NAME=tenfour_cmdb
-    BACKUP_DIR=~/backups
-    RELEASES_TO_SHOW=10
-.env.local
-    CMDB_ADMIN_BOOTSTRAP_EMAIL=admin@example.com
-    CMDB_ADMIN_BOOTSTRAP_SECRET=<at-least-32-character-random-secret>
-node scripts/upgrade.mjs --version 3.0.1 --dry-run
-
-```
-
-- add `recover_events` permission
-- add `recover_songs` permission
-- add `recover_files` permission
-- add `manage_user_taxonomy`
-- add `deactivate_users`
-- `manage_site_branding`
-
-### smoke test
-
-- create a band admin
-  - check all role assignments
-- create a new moderator
-- create an event
-- create a song
-- create a setlist
-- test practice tools
-- test setlist plan
-- test text editor
-- respond to an event
-- test calendar feed
-- test file upload and existing file visibility

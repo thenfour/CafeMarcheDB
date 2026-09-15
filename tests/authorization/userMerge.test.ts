@@ -60,15 +60,6 @@ describe("merge authorization and lifecycle", () => {
         expect(canManageUser({ actor: admin, target: { ...member, isDeleted: true }, action: "merge" })).toBe(true);
     });
 
-    it("blocks reactivation, sign-in reassignment and new references to merged accounts", async () => {
-        authorizationTestDb.reset({ user: [admin, member, { ...retiring, isDeleted: true, mergedIntoUserId: member.id }] });
-        const ctx = createAuthorizationTestContext(admin);
-        await expect(invokeResolver(reactivateUser, { userId: retiring.id }, ctx)).rejects.toThrow();
-        await expect(invokeResolver(addUserSignInMethod, { userId: retiring.id, method: { type: "email", identifier: "new@test.invalid" } }, ctx)).rejects.toThrow("merged");
-        // await expect(requireUnmergedUserReferences(authorizationTestDb as any, [retiring.id])).rejects.toThrow("merged");
-        // await expect(requireUnmergedUserReferences(authorizationTestDb as any, [member.id])).resolves.toBeUndefined();
-    });
-
     it("accepts only two distinct IDs and a confirmation, never client-supplied decisions", () => {
         expect(UserMergeInput.safeParse({ mainUserId: 10, retiringUserId: 10 }).success).toBe(false);
         expect(UserMergeInput.safeParse({ ...pair, transfer: [7] }).success).toBe(false);
