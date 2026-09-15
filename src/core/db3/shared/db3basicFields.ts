@@ -49,7 +49,7 @@ export class GhostField extends FieldBase<number> {
 
     connectToTable = (table: xTable) => { this.table = table; };
 
-    ApplyIncludeFiltering = (include: TAnyModel) => { };
+    ApplyIncludeFiltering = (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean): void | Promise<void> => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
 
@@ -87,6 +87,21 @@ export class GhostField extends FieldBase<number> {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// A direct child collection, with the same value handling as a GhostField but
+// an explicit target schema for authorization and nested relation traversal.
+export class ForeignCollectionField extends GhostField {
+    foreignTableID: string;
+
+    constructor(args: GhostFieldArgs & { foreignTableID: string }) {
+        super(args);
+        this.foreignTableID = args.foreignTableID;
+    }
+
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {
+        await ApplyIncludeFilteringToRelation(include, this.member, null, this.foreignTableID, publicData, includeDeleted);
+    };
+}
+
 export type PKFieldArgs = {
     columnName: string;
 };// & DB3AuthSpec;
@@ -639,12 +654,16 @@ export type ForeignSingleFieldArgs<TForeign> = {
     fkidMember: string; // "instrumentTypeId"
     foreignTableID: string; // for circular referencing don't force caller to use the xTable.
     allowNull: boolean;
+    // Omit the local row when its target cannot be read. Use for dependent
+    // records, such as a setlist entry whose song must remain private.
+    requireVisibleTarget?: boolean;
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     specialFunction?: SqlSpecialColumnFunction | undefined;
 } & DB3AuthSpec;
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
+    requireVisibleTarget: boolean;
     foreignTableID: string;
     localTableSpec: xTable;
     allowNull: boolean;
@@ -683,6 +702,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
 
         //this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
+        this.requireVisibleTarget = args.requireVisibleTarget === true;
         this.defaultValue = args.defaultValue || null;
         this.foreignTableID = args.foreignTableID;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
@@ -707,11 +727,18 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
 
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
-    ApplyIncludeFiltering = (include: TAnyModel) => {
-        // actually what is the play here? for a many-to-one relationship like this, when the foreign item is not accessibly by the current user
-        // then we are forced to return null?
-        // hm, well actually it's not possible to do this; there is no "where" clause on these types of relations.
-        // which makes sense.
+    getRowVisibilityWhereClause = async (publicData: DB3Authorization, includeDeleted: boolean): Promise<TAnyModel | undefined> => {
+        if (!this.requireVisibleTarget) return undefined;
+        const where = await this.getForeignTableSchema().CalculateWhereClause({
+            publicData, includeDeleted, filterModel: { items: [] },
+        });
+        return { [this.member]: { is: where || {} } };
+    };
+
+    ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {
+        const targetArgs = include[this.member];
+        if (!targetArgs) return;
+        await this.getForeignTableSchema().ApplyIncludeFiltering(targetArgs.include || targetArgs.select, publicData, includeDeleted);
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -1047,7 +1074,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getOverallWhereClause = (): TAnyModel | boolean => false;
 
     ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => {
-        await ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.associationForeignObjectMember, this.foreignTableID, publicData, includeDeleted);
+        await ApplyIncludeFilteringToRelation(include, this.member, this.associationForeignObjectMember, this.foreignTableID, publicData, includeDeleted);
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {

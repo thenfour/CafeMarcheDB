@@ -13,6 +13,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
     github actions rather than a ubuntu vm
   - #679 user administration page usable by band admin
   - #683 deactivated users can now be reactivated by a sysadmin
+  - #292 fixed: setlists could show songs you're not allowed to see
 - Text editor
   - #634 Text editor auto-height support
   - #633 Side-by-side preview mode

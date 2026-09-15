@@ -390,6 +390,9 @@ export abstract class FieldBase<FieldDataType> {
 
     // for foreign "includes", we need to apply a WHERE clause which excludes soft deletes, irrelevant things, & records the user doesn't have access to.
     abstract ApplyIncludeFiltering: (include: TAnyModel, publicData: DB3Authorization, includeDeleted: boolean) => void | Promise<void>;
+
+    // Relations may require their target to be readable for this row to appear.
+    getRowVisibilityWhereClause = async (publicData: DB3Authorization, includeDeleted: boolean): Promise<TAnyModel | undefined> => undefined;
 };
 
 export interface SortModel {
@@ -1025,6 +1028,7 @@ export class xTable /* implements TableDesc*/ {
     // takes an "include" Prisma clause, and adds a WHERE clause to it to exclude objects that should be hidden.
     // really it just delegates down to columns.
     ApplyIncludeFiltering = async (include: TAnyModel, publicData: DB3Authorization, includeDeleted = false): Promise<void> => {
+        if (!include) return;
         await Promise.all(this.columns.map(col => col.ApplyIncludeFiltering(include, publicData, includeDeleted)));
     };
 
@@ -1097,6 +1101,10 @@ export class xTable /* implements TableDesc*/ {
 
         const overallWhere = this.GetOverallWhereClauseExpression();
         and.push(...overallWhere);
+        for (const field of this.columns) {
+            const relationWhere = await field.getRowVisibilityWhereClause(publicData, includeDeleted);
+            if (relationWhere) and.push(relationWhere);
+        }
 
         const canIncludeDeleted = includeDeleted && this.canViewDeletedRows(publicData);
         if (this.SqlSpecialColumns.isDeleted && !canIncludeDeleted) {
@@ -1212,20 +1220,14 @@ export const GetTableById = (tableID: string): xTable => {
 }
 
 ////////////////////////////////////////////////////////////////
-export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, localTableName: string, foreignMemberOnAssociation: string, foreignTableID: string, publicData: DB3Authorization, includeDeleted = false) => {
+export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, foreignMemberOnAssociation: string | null, foreignTableID: string, publicData: DB3Authorization, includeDeleted = false) => {
     const foreignTable = GetTableById(foreignTableID);
     let member = include[memberName];
     if (!member) { // applies to === false, === null, === undefined
         // this member is not present in the include; nothing to be done; silent NOP.
         return;
     }
-    if (member !== true) {
-        // assume member is an object which is the typical case, like Prisma.UserInclude.
-        // if there's already a where clause there, it's not clear what to do. likely "AND" them, but overall not worth supporting this case.
-        if (member.where) {
-            throw new Error(`can't apply a WHERE clause when one already exists. probably a bug. table.member: ${localTableName}.${memberName}`);
-        }
-    } else {
+    if (member === true) {
         // member === true is a shorthand; in order to support adding our WHERE clause it must be an object.
         member = {};
     }
@@ -1238,20 +1240,15 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
         }
     });
 
-    // replace it. no longer use `member` after this.
-    // include[memberName] = {
-    //     ...member,
-    //     where,
-    // };
+    const relationWhere = foreignMemberOnAssociation ? { [foreignMemberOnAssociation]: where } : where;
     include[memberName] = {
         ...member,
-        where: {
-            [foreignMemberOnAssociation]: where,
-        },
+        where: member.where ? { AND: [member.where, relationWhere || {}] } : relationWhere,
     };
 
-    // now we should do children. for all members, apply its table filtering. see the example hierarchy:
-    if (include[memberName].include) {
-        await foreignTable.ApplyIncludeFiltering(include[memberName].include, publicData, includeDeleted);
-    }
+    // Association selections describe the join row; descend into its target
+    // object before applying that target table's field filters.
+    const selection = member.include || member.select;
+    const targetArgs = foreignMemberOnAssociation ? selection?.[foreignMemberOnAssociation] : member;
+    await foreignTable.ApplyIncludeFiltering(targetArgs?.include || targetArgs?.select, publicData, includeDeleted);
 };

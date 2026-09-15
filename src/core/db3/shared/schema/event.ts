@@ -11,7 +11,7 @@ import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
 import { type CMDBTableFilterModel, SearchCustomDataHookId } from "../apiTypes";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../genericStringField";
 import {
@@ -674,7 +674,7 @@ export const xEventArgs_Base: db3.TableDesc = {
 
         new GhostField({ memberName: "segments", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new ForeignCollectionField({ memberName: "songLists", foreignTableID: "EventSongList", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "descriptionWikiPageId", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "descriptionWikiPage", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
@@ -1165,6 +1165,7 @@ export const xEventSongListSong = new db3.xTable({
             columnName: "song",
             fkidMember: "songId",
             allowNull: false,
+            requireVisibleTarget: true,
             foreignTableID: "Song",
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,

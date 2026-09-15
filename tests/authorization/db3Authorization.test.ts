@@ -123,6 +123,74 @@ describe("explicit DB3 authorization", () => {
     expect(authorizationTestDb.snapshot("song")[0]!.description).toBe("dedicated")
   })
 
+  it.each([db3.xEventVerbose, db3.xEventSongList, db3.xEventSongListSong])(
+    "enforces song visibility through $tableID at the query boundary", async table => {
+      const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
+      const authorization = await loadUserAuthorization(actor as any)
+      const findMany = vi.fn(async (_args: any) => [])
+      await queryTable(forgeDb3Query(table.tableID), authorization, { [table.tableName]: { findMany } } as any)
+      const args = findMany.mock.calls[0]![0]
+      const entryWhere = table === db3.xEventVerbose ? args.include.songLists.include.songs.where
+        : table === db3.xEventSongList ? args.include.songs.where : args.where
+      const songs = [
+        makeSong(1),
+        makeSong(2, { createdByUserId: 502 }),
+        makeSong(3, { visiblePermissionId: 920_002, createdByUserId: 502 }),
+        makeSong(4, { visiblePermissionId: 999_999 }),
+        makeSong(5, { isDeleted: true }),
+        makeSong(6, { createdByUserId: null }),
+      ]
+      expect(songs.filter(song => matchesWhere({ id: song.id, song }, entryWhere)).map(song => song.id)).toEqual([1, 3])
+    },
+  )
+
+  it("keeps nested event song filters specific to each viewer and recovery request", async () => {
+    const actor = createAuthorizationTestUser("sysadmin", { id: 501 })
+    const resolved = await loadUserAuthorization(actor as any)
+    const owner = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
+    const otherResolved = await loadUserAuthorization(createAuthorizationTestUser("sysadmin", { id: 502 }) as any)
+    const other = db3.createDB3Authorization(otherResolved.user, otherResolved.effectivePermissions)
+    const publicViewer = db3.createDB3Authorization(null, resolved.effectivePermissions)
+    const entry = { id: 1, song: makeSong(1) }
+    for (const [viewer, expected] of [[owner, true], [other, false], [publicViewer, false]] as const) {
+      const selection = await db3.xEventVerbose.CalculateSelectionArgs(viewer, { items: [] })
+      expect(matchesWhere(entry, selection!.include.songLists.include.songs.where)).toBe(expected)
+    }
+    const recovery = await db3.xEventVerbose.CalculateSelectionArgs(owner, { items: [] }, true)
+    const where = recovery!.include.songLists.include.songs.where
+    expect(matchesWhere({ id: 1, song: makeSong(1, { isDeleted: true }) }, where)).toBe(true)
+    expect(matchesWhere({ id: 2, song: makeSong(2, { isDeleted: true, createdByUserId: 502 }) }, where)).toBe(false)
+    expect(db3.EventArgs_Verbose.include.songLists.include.songs).not.toHaveProperty("where")
+  })
+
+  it("requires song read permission even when the parent event is readable", async () => {
+    const resolved = await loadUserAuthorization(null)
+    const selection = await db3.xEventVerbose.CalculateSelectionArgs(
+      db3.createDB3Authorization(null, resolved.effectivePermissions), { items: [] },
+    )
+    const entry = { id: 1, song: makeSong(1, { visiblePermissionId: 920_002 }) }
+    expect(matchesWhere(entry, selection!.include.songLists.include.songs.where)).toBe(false)
+  })
+
+  it.each(["include", "select"])("traverses association targets with %s and preserves authored filters", async selectionKind => {
+    const resolved = await loadUserAuthorization(createAuthorizationTestUser("sysadmin", { id: 501 }) as any)
+    const authorization = db3.createDB3Authorization(resolved.user, resolved.effectivePermissions)
+    const selection: any = {
+      songs: {
+        where: { sortOrder: { gte: 10 } },
+        [selectionKind]: {
+          song: { [selectionKind]: { taggedFiles: { [selectionKind]: { file: true } } } },
+        },
+      },
+    }
+    await db3.xEventSongList.ApplyIncludeFiltering(selection, authorization)
+    expect(matchesWhere({ id: 1, sortOrder: 5, song: makeSong(1) }, selection.songs.where)).toBe(false)
+    expect(matchesWhere({ id: 1, sortOrder: 10, song: makeSong(1) }, selection.songs.where)).toBe(true)
+    const fileWhere = selection.songs[selectionKind].song[selectionKind].taggedFiles.where
+    expect(matchesWhere({ id: 1, file: { id: 1, uploadedByUserId: 501, visiblePermissionId: null, isDeleted: false } }, fileWhere)).toBe(true)
+    expect(matchesWhere({ id: 2, file: { id: 2, uploadedByUserId: 502, visiblePermissionId: null, isDeleted: false } }, fileWhere)).toBe(false)
+  })
+
   it("denies both mutation entry points when the operation grant is absent", async () => {
     const { user, ctx } = createAuthorizationPersona("normal", { id: 501 })
     authorizationTestDb.reset({ user: [user!], song: [makeSong(1)], change: [] })
