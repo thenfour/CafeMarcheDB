@@ -2,8 +2,9 @@
 
 2026-09-12, updated 2026-09-15. This report tracks the audit, executable regression
 baseline, band-timezone foundation, all-day calendar-feed correction, DT-01
-all-day hydration, DT-02/DT-08 timed hydration and point-relative labels, and
-DT-03 range aggregation, and DT-04/DT-05 clock controls. Event editors still need band-timezone integration;
+all-day hydration, DT-02/DT-08 timed hydration and point-relative labels,
+DT-03 range aggregation, DT-04/DT-05 clock controls, and DT-06 compact labels.
+Event editors still need band-timezone integration;
 lifecycle classification and SQL queries still need repairs.
 No existing event data or database schema has been changed. The Japan report has
 not been reproduced as a complete user journey, and none of these findings
@@ -189,6 +190,26 @@ The component still passes the device timezone. Band-timezone date-picker
 integration, showing that zone beside the event editor, and lifecycle adoption
 remain part of POL-01. This slice does not change stored data or cached bounds.
 
+## Completed DT-06: compact labels consume the event range
+
+- `EventShortDate` now receives the full `DateTimeRange` and an explicit
+  reference time. Timed events say `Happening now` throughout their actual
+  interval, including overnight events, with an inclusive start and exclusive
+  end. Zero-duration and TBD events do not acquire an ongoing interval.
+- Date formatting uses the range's display start: timed instants appear in the
+  viewer timezone, while all-day values preserve their selected calendar date.
+  Year visibility uses the same supplied reference time as the relative label.
+- Compact cards reuse the range and reference time from `RelevantEvents` for
+  styling and labels. Refreshing that reference time remains a maintenance item.
+- The small presentation component lives in its own module. Tests render it
+  directly without intercepting dashboard imports or replacing the global clock.
+  All five DT-06 expected failures are now ordinary passing checks; 36 additional
+  checks cover interval edges, zero duration, overnight/multi-day events, and
+  reference-year formatting in four viewer timezones.
+
+All-day lifecycle boundaries still use the existing host-local range behavior.
+Adopting the configured band timezone remains POL-01.
+
 ## Executable evidence
 
 The date/time tests live under [tests/datetime](../tests/datetime). Native `Date` runs in
@@ -206,12 +227,12 @@ aggregation, and feed cases. Clocks are fixed where an operation depends on the 
 | [authoringPolicy.test.ts](../tests/datetime/authoringPolicy.test.ts) | 32 | 0 | Real clock-option/range helpers and the control's selected-end/toggle calculations |
 | [clockOptions.test.ts](../tests/datetime/clockOptions.test.ts) | 31 | 0 | Civil clock grid, dated instants, gap/fold choices, precise selections, and overnight/multi-day ends |
 | [clockControls.test.ts](../tests/datetime/clockControls.test.ts) | 3 | 0 | Mounted range control and native select changes in jsdom |
-| [eventDateConsumers.test.ts](../tests/datetime/eventDateConsumers.test.ts) | 8 | 5 | Actual compact event-date React rendering with unrelated sibling imports isolated |
+| [eventDateConsumers.test.ts](../tests/datetime/eventDateConsumers.test.ts) | 49 | 0 | Actual compact label rendering, interval edges, all-day dates, overnight events, and reference years in four viewer zones |
 | [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 29 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
 | [bandTimePolicy.test.ts](../tests/datetime/bandTimePolicy.test.ts) | 54 | 0 | Named-zone validation, band-time conversion, DST ambiguity, all-day bounds, and host-timezone independence |
 | [bandTimeZoneLoading.test.ts](../tests/datetime/bandTimeZoneLoading.test.ts) | 4 | 0 | Fresh server setting reads, default/error behavior, and dashboard delivery |
 | [bandTimeZoneWrites.test.ts](../tests/datetime/bandTimeZoneWrites.test.ts) | 25 | 0 | Generic and raw settings validation, partial edits, clears, and retained authorization |
-| Total | 399 | 8 | 407 checks; remaining failures repeat root causes across zones and boundaries |
+| Total | 440 | 3 | 443 checks; remaining failures cover POL-01 lifecycle boundaries |
 
 The original audit contained 134 checks: 90 ordinary passing checks and 44 known
 failures. Slice 1 adds 83 policy/loading/write checks and repairs the five feed failures.
@@ -219,6 +240,7 @@ DT-01 adds 40 checks and repairs three more failures.
 DT-02/DT-08 add 56 checks and repair another 18 failures.
 DT-03 adds 60 checks and repairs two more failures.
 DT-04/DT-05 add 34 checks and repair eight more failures.
+DT-06 adds 36 checks and repairs five more failures.
 [Setting authorization tests](../tests/authorization/settingAuthorization.test.ts)
 also cover default reads, valid persistence/readback, invalid updates leaving all
 branding values unchanged, and denied or stale permission grants.
@@ -250,7 +272,7 @@ try {
 }
 ```
 
-The expected strict result is 8 failing test cases and 399 passing test cases.
+The expected strict result is 3 failing test cases and 440 passing test cases.
 This is a reproduction command; those failures are the audit output, not test
 harness errors. Infrastructure/probe errors are outside expected-failure tests.
 
@@ -330,15 +352,15 @@ instants, and the handler stores their actual elapsed difference from the start.
 Tests verify the one/three-hour cases, half-hour DST changes, overnight and
 multi-day ends, and the mounted select's change handler.
 
-**DT-06 - Medium: compact event labels discard event duration and all-day meaning.**
+**DT-06 - Resolved 2026-09-15: compact event labels discarded event duration and all-day meaning.**
 
-[EventShortDate](../src/core/components/event/RelevantEvents.tsx#L42) receives
-only `startsAt`. Its caller already computes the full event range, but the label
-uses a point-timestamp helper. A four-hour event viewed two hours after its start
-is labeled `Today` instead of `Happening now` in all four tested zones. An all-day
-10 July event displays 9 July in Los Angeles because its raw UTC marker is
-formatted as an instant. This presentation path needs the same semantic range
-used by the rest of the event UI.
+[EventShortDate](../src/core/components/event/EventShortDate.tsx) formerly received
+only `startsAt` and used a point-timestamp helper. A four-hour event viewed two
+hours after its start said `Today` instead of `Happening now` in all four tested
+zones. An all-day 10 July event displayed 9 July in Los Angeles because its raw
+UTC marker was formatted as an instant. The component now consumes the caller's
+full event range, uses range-aware relative timing, and formats the semantic
+display date. All five regressions and 36 additional boundary checks pass.
 
 **DT-07 / DT-FEED-01 - Resolved in slice 1: local DST correction corrupted all-day feed boundaries.**
 
@@ -366,7 +388,7 @@ tooltips and other creation/history timestamps as well as the compact event
 label. The constructor now preserves zero, and point-relative descriptions call
 the shared calendar-label routine without event lifecycle classification.
 Tests cover past, equal, and future points at a local midnight boundary.
-Compact labels still need the full event-range integration described in DT-06.
+Compact labels now consume the full event range under DT-06.
 
 **POL-01 - Partially resolved: band timezone is configured, but event consumers still need adoption.**
 
@@ -435,9 +457,9 @@ do not need a framework for elapsed-versus-calendar-day precision.
   catches every exception. A segment mutation can succeed while aggregate dates
   remain stale. The repair should expose or propagate recalculation failures
   within the existing transaction contract.
-- [RelevantEvents](../src/core/components/event/RelevantEvents.tsx#L130) captures
-  `now` once without updating it, while its child label reads a fresh clock on
-  render. [DateValue](../src/core/components/DateTime/DateTimeComponents.tsx#L51)
+- [RelevantEvents](../src/core/components/event/RelevantEvents.tsx) captures
+  `now` once without updating it. DT-06 makes its card styling and labels share
+  that reference time. [DateValue](../src/core/components/DateTime/DateTimeComponents.tsx#L51)
   also freezes its reference time. A small shared clock hook in the date/time
   components can refresh time-sensitive presentation, including after tab focus.
 - [Attendance metadata](../src/core/components/event/EventComponentsBase.tsx#L71)
@@ -469,9 +491,10 @@ do not need a framework for elapsed-versus-calendar-day precision.
    labels, attendance timing, and calendar adapters consume semantic operations.
    Keep generic personal report/range pickers in the viewer timezone: they share
    lower-level controls with event editing and must not inherit band time
-   accidentally. **DT-04/DT-05 are completed:** clock options and selected-end
-   calculations now use resolved instants. Band-timezone date-picker integration,
-   compact labels, attendance timing, and calendar adapters remain open.
+   accidentally. **DT-04/DT-05 and DT-06 are completed:** clock options and
+   selected-end calculations use resolved instants; compact labels use full event
+   ranges. Band-timezone date-picker integration, attendance timing, and calendar
+   adapters remain open.
 4. **Align server aggregation, queries, and remaining feed behavior.** Cache
    absolute event bounds consistently and apply overlap queries. All-day feed
    serialization and timed feed hydration are repaired. Define recalculation of
@@ -505,16 +528,16 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
 
 ## Verification and limits
 
-- DT-04/DT-05 verification on 2026-09-15: full `yarn test` passed 1,114 cases;
-  nine opt-in MySQL checks were skipped. The 407 date/time checks contain 399
-  ordinary checks and 8 executed expected failures. Strict date/time mode exposes
-  exactly those 8 remaining failures (POL-01 and DT-06).
+- DT-06 verification on 2026-09-15: full `yarn test` passed 1,150 cases;
+  nine opt-in MySQL checks were skipped. The 443 date/time checks contain 440
+  ordinary checks and 3 executed expected failures. Strict date/time mode exposes
+  exactly those 3 remaining failures (POL-01).
 - Focused ESLint for every changed TypeScript file and `git diff --check` passed.
   `yarn tsc --noEmit` reports TS2321/TS2345 in `src/auth/mutations/mergeUsers.ts:11`
   comparing Prisma client types. During DT-01, a compiler run substituting unchanged `HEAD`
   sources for the edited files and excluding the new tests reproduced both
   diagnostics. No new type diagnostics were reported. A production build was
-  not run for DT-01 through DT-05; slice 1's earlier typecheck and build passed.
+  not run for DT-01 through DT-06; slice 1's earlier typecheck and build passed.
 - Settings resolver tests use the existing in-memory database. It does not
   emulate transaction rollback; the bulk rejection case checks validation before
   writes. Production mutations retain their existing serializable transactions.

@@ -1,9 +1,8 @@
 import { useQuery } from "@blitzjs/rpc";
 import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
-import { Prisma } from "db";
 import React from "react";
 import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
-import { CalcRelativeTiming, CalcRelativeTimingFromNow, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, Timing } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, Timing } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
@@ -21,43 +20,9 @@ import { StandardVariationSpec } from "../color/palette";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EnrichedSearchEventPayload, enrichSearchResultEvent } from "../../db3/shared/schema/enrichedEventTypes";
+import { EventShortDate } from "./EventShortDate";
 
-function formatShortDate(date: Date, locale: string = navigator.language): string {
-    const now = new Date();
-    const showYear = date.getFullYear() !== now.getFullYear();
-    const formatter = new Intl.DateTimeFormat(locale, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        ...(showYear ? { year: "numeric" } : {})
-    });
-    // Use formatToParts to filter out punctuation
-    const parts = formatter.formatToParts(date);
-    return parts
-        .filter(part => part.type !== "literal")
-        .map(part => part.value)
-        .join(" ");
-}
-
-export interface EventShortDateProps {
-    event: Prisma.EventGetPayload<{
-        select: {
-            startsAt: true;
-        }
-    }>;
-};
-
-export const EventShortDate = ({ event }: EventShortDateProps) => {
-    if (!event.startsAt) return null;
-    const relativeTiming = CalcRelativeTimingFromNow(event.startsAt);
-    return <>
-        {formatShortDate(event.startsAt)}
-        <span className={`EventDateField container ${relativeTiming.bucket}`}><span className="RelativeIndicator">{relativeTiming.label}</span></span>
-    </>
-};
-
-
-export const SubtleEventCard = ({ event, ...props }: { event: EnrichedSearchEventPayload, dateRange: DateTimeRange, relativeTiming: RelativeTimingInfo }) => {
+export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSearchEventPayload, dateRange: DateTimeRange, now: Date }) => {
     const dashboardContext = useDashboardContext();
     const visInfo = dashboardContext.getVisibilityInfo(event);
     const typeStyle = GetStyleVariablesForColor({
@@ -65,8 +30,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: EnrichedSearchEven
         color: event.type?.color || null,
     });
 
-    const dateRange = API.events.getEventDateRange(event);
-    const eventTiming = dateRange.hitTestDateTime();
+    const eventTiming = dateRange.hitTestDateTime(now);
 
     const classes = [
         "SubtleEventCard",
@@ -85,7 +49,7 @@ export const SubtleEventCard = ({ event, ...props }: { event: EnrichedSearchEven
                 <div className="SubtleEventCardDate">
                     <RelevanceClassOverrideIndicator event={event} colorStyle="subtle" />
                     <EventStatusMinimal statusId={event.statusId} />
-                    <EventShortDate event={event} />
+                    <EventShortDate dateRange={dateRange} now={now} />
                 </div>
             </CMLink>
             <div className='SearchItemBigCardLinkContainer'>
@@ -210,7 +174,7 @@ export const RelevantEvents = () => {
             </div>}
             {eventsWithTiming.length > 0 && <div>
                 <div className="RelevantEventsList SubtleEventCardContainer">
-                    {eventsWithTiming.map((e, i) => <SubtleEventCard key={i} event={e.event} dateRange={e.dateRange} relativeTiming={e.relativeTiming} />)}
+                    {eventsWithTiming.map((e, i) => <SubtleEventCard key={i} event={e.event} dateRange={e.dateRange} now={now} />)}
                 </div>
             </div>
             }
