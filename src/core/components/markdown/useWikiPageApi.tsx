@@ -60,6 +60,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
 
   const [lockUid, setLockUid] = React.useState<string | null>(null);
   const [basePage, setBasePage] = React.useState<WikiPageApiPayload | null>(null);
+  const [saving, setSaving] = React.useState(false);
 
   const [currentRevisionData, currentRevisionDataQueryExtras] = useQuery(getWikiPage, {
     canonicalWikiPath: args.canonicalWikiPath,
@@ -121,6 +122,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
   async function saveProgress(saveProgressArgs: WikiApiUpdateArgs): Promise<GetWikiPageUpdatabilityResult> {
     if (busyRef.current) throw new Error("A save is already in progress.");
     busyRef.current = true;
+    setSaving(true);
     try {
       // Reacquisition is explicit in the UI; a stale editor never takes ownership on save.
       const result = await updateWikiPageMutation({
@@ -139,6 +141,7 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
       return result;
     } finally {
       busyRef.current = false;
+      setSaving(false);
     }
   }
 
@@ -178,10 +181,34 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     wikiReleaseYourLockMutationExtras.isLoading ||
     wikiRenewYourLockMutationExtras.isLoading;
 
+  // A save response can lead polling. Keep its confirmed content until polling
+  // catches up, while still accepting polling's ownership and visibility updates.
+  const polledPage = currentRevisionData.wikiPage;
+  const currentPage = polledPage && basePage && polledPage.id === basePage.id &&
+    polledPage.contentVersion < basePage.contentVersion
+    ? { ...polledPage, contentVersion: basePage.contentVersion, currentRevision: basePage.currentRevision }
+    : polledPage;
+
+  // The server's conflict flag was computed against the base sent with that
+  // particular poll. Compare with today's draft base instead. During a save,
+  // a poll may see our own commit before its response has advanced the base.
+  const isRevisionConflict = !saving && (
+    (currentPage?.contentVersion ?? 0) !== (basePage?.contentVersion ?? 0) ||
+    (currentPage?.currentRevision?.id ?? null) !== (basePage?.currentRevision?.id ?? null)
+  );
+  const lockStatus: GetWikiPageUpdatabilityResult = {
+    ...currentRevisionData.lockStatus,
+    currentPage,
+    isRevisionConflict,
+    outcome: currentRevisionData.lockStatus.isLockConflict ? UpdateWikiPageResultOutcome.lockConflict :
+      isRevisionConflict ? UpdateWikiPageResultOutcome.revisionConflict : UpdateWikiPageResultOutcome.success,
+  };
+  const currentPageData = { ...currentRevisionData, wikiPage: currentPage, lockStatus };
+
   const MakeApi = (): WikiPageApi => ({
     wikiPath,
     basePage,
-    currentPageData: currentRevisionData,
+    currentPageData,
     yourLockId: lockUid,
     beginEditing,
     reacquireLock,
@@ -190,12 +217,12 @@ export function useWikiPageApi(args: UseWikiPageArgs): WikiPageApi {
     releaseYourLock,
     adminClearLock,
     renewYourLockThrottled,
-    lockStatus: currentRevisionData.lockStatus,
+    lockStatus,
     networkPending,
     refetch: currentRevisionDataQueryExtras.refetch,
     coalescedCurrentPageData: {
-      title: currentRevisionData.wikiPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
-      content: currentRevisionData.wikiPage?.currentRevision?.content ?? "",
+      title: currentPage?.currentRevision?.name ?? wikiPath.slugWithoutNamespace,
+      content: currentPage?.currentRevision?.content ?? "",
       visiblePermissionId: currentRevisionData.wikiPage ? currentRevisionData.wikiPage.visiblePermissionId : dashboardContext.getDefaultVisibilityPermission().id,
     },
   });

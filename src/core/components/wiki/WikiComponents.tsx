@@ -193,10 +193,7 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
         setReviewPage(props.wikiPageApi.currentPageData?.wikiPage ?? null);
         setReviewingConflict(true);
     };
-    const latest = props.wikiPageApi.currentPageData?.wikiPage;
-    const base = props.wikiPageApi.basePage;
-    const hasConflict = (latest?.contentVersion ?? 0) !== (base?.contentVersion ?? 0) ||
-        (latest?.currentRevision?.id ?? null) !== (base?.currentRevision?.id ?? null);
+    const hasConflict = props.wikiPageApi.lockStatus.isRevisionConflict;
     const needsLock = !props.wikiPageApi.lockStatus.isLockedInThisContext;
     const reacquire = async () => {
         try {

@@ -28,8 +28,9 @@ const page = (version: number) => ({ id: 1, slug: "test", contentVersion: versio
 const refetch = vi.fn();
 function Harness() { api = useWikiPageApi({ canonicalWikiPath: "test" }); return null; }
 const render = async () => { await act(async () => root.render(React.createElement(Harness))); };
-const poll = (version: number) => vi.mocked(useQuery).mockReturnValue([
-    { wikiPage: page(version), lockStatus: {} }, { refetch, isFetching: false },
+const poll = (version: number) => vi.mocked(useQuery).mockImplementation((_query, args: any) => [
+    { wikiPage: page(version), lockStatus: { isRevisionConflict: version !== args.baseContentVersion } },
+    { refetch, isFetching: false },
 ] as any);
 beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -84,5 +85,55 @@ describe("wiki editor draft base", () => {
         expect(api.basePage?.contentVersion).toBe(5);
         await act(async () => { await api.saveProgress({ revisionData: { name: "Title", content: "Draft" } }); });
         expect(save).toHaveBeenCalledTimes(2);
+    });
+});
+
+
+describe("save and polling reconciliation", () => {
+    it("does not flash a conflict when polling sees our save before its response", async () => {
+        await render();
+        await act(async () => { await api.beginEditing(); });
+        let completeSave!: (result: any) => void;
+        vi.mocked(save).mockImplementationOnce(() => new Promise<Awaited<ReturnType<WikiPageApi["saveProgress"]>>>(resolve => { completeSave = resolve; }));
+        let saving!: ReturnType<WikiPageApi["saveProgress"]>;
+        await act(async () => { saving = api.saveProgress({ revisionData: { name: "Title", content: "Draft" } }); });
+        poll(6); await render();
+        expect(api.lockStatus.isRevisionConflict).toBe(false);
+        await act(async () => { completeSave({ outcome: "success", currentPage: page(6) }); await saving; });
+        expect(api.lockStatus.isRevisionConflict).toBe(false);
+    });
+    it("uses the successful save while polling still has older content", async () => {
+        await render();
+        await act(async () => { await api.beginEditing(); });
+        await act(async () => { await api.saveProgress({ revisionData: { name: "Title", content: "Draft" } }); });
+        expect(api.currentPageData?.wikiPage?.contentVersion).toBe(6);
+        expect(api.coalescedCurrentPageData.content).toBe("Saved 6");
+        expect(api.lockStatus.isRevisionConflict).toBe(false);
+        poll(5); await render();
+        expect(api.currentPageData?.wikiPage?.contentVersion).toBe(6);
+    });
+    it("discards a conflict computed against the old base but detects subsequent remote edits", async () => {
+        await render();
+        await act(async () => { await api.beginEditing(); });
+        await act(async () => { await api.saveProgress({ revisionData: { name: "Title", content: "Draft" } }); });
+        vi.mocked(useQuery).mockReturnValue([
+            { wikiPage: page(6), lockStatus: { isRevisionConflict: true, outcome: "revisionConflict" } },
+            { refetch, isFetching: false },
+        ] as any);
+        await render();
+        expect(api.lockStatus.isRevisionConflict).toBe(false);
+        expect(api.lockStatus.outcome).toBe("success");
+        poll(7); await render();
+        expect(api.lockStatus.isRevisionConflict).toBe(true);
+        expect(api.basePage?.contentVersion).toBe(6);
+    });
+    it("shows the real conflict when the pending save fails", async () => {
+        await render();
+        await act(async () => { await api.beginEditing(); });
+        vi.mocked(save).mockResolvedValueOnce({ outcome: "revisionConflict", currentPage: page(6) } as any);
+        poll(6); await render();
+        await act(async () => { await api.saveProgress({ revisionData: { name: "Title", content: "Draft" } }); });
+        expect(api.lockStatus.isRevisionConflict).toBe(true);
+        expect(api.basePage?.contentVersion).toBe(5);
     });
 });
