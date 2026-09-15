@@ -1,0 +1,1 @@
+ALTER TABLE `WikiPage` ADD COLUMN `contentVersion` INTEGER NOT NULL DEFAULT 0;

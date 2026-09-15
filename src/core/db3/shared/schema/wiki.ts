@@ -149,6 +149,10 @@ export const xWikiPage = new db3.xTable({
             authMap: wikiPageAdministrationAuthMap,
             memberName: "lockId",
         }),
+        new GhostField({
+            authMap: wikiPageAdministrationAuthMap,
+            memberName: "contentVersion",
+        }),
 
         // Virtual field for searching wiki page content; hackhack
         (() => {
@@ -205,6 +209,7 @@ export const xWikiPageRevision = new db3.xTable({
         return WikiPageRevisionArgs;
     },
     tableName: "WikiPageRevision",
+    requiresTransactionalMutation: true,
     deletePolicy: "hard",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
     getRowInfo: (row: WikiPageRevisionPayload) => ({

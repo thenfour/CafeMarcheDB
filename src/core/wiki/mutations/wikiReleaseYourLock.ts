@@ -12,7 +12,7 @@ export default resolver.pipe(
     resolver.zod(ZTWikiReleaseYourLockArgs),
     async (args: TWikiReleaseYourLockArgs, ctx: AuthenticatedCtx): Promise<void> => {
 
-        await db.wikiPage.update({
+        await db.wikiPage.updateMany({
             where: {
                 slug: args.canonicalWikiPath,
                 lockId: args.lockId,

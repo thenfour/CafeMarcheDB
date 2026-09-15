@@ -54,6 +54,7 @@ export const getServerSideProps = gSSP<PageProps>(async (args) => {
         canonicalWikiSlug: wikiPath.canonicalWikiPath || "<never>",
         dbt: db as any,
         ctx: actx,
+        clientBaseContentVersion: 0,
         clientBaseRevisionId: null,
         clientLockId: null,
         currentUserId: null,

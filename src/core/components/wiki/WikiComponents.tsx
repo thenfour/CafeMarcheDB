@@ -154,35 +154,61 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
     const snackbar = useSnackbar();
 
     const handleSave = async () => {
-        //console.log(`Saving wiki page ${props.wikiPageApi.wikiPath.canonicalWikiPath} with title ${title} and content ${content}`);
-        const result = await props.wikiPageApi.saveProgress({
-            revisionData: {
-                content,
-                name: title,
+        try {
+            const result = await props.wikiPageApi.saveProgress({
+                revisionData: {
+                    content,
+                    name: title,
+                }
+            });
+            switch (result.outcome) {
+                case UpdateWikiPageResultOutcome.success:
+                    return true;
+                case UpdateWikiPageResultOutcome.lockConflict:
+                    snackbar.showError("Your editing lock is no longer valid. Reacquire it to save; your draft is preserved.");
+                    break;
+                case UpdateWikiPageResultOutcome.revisionConflict:
+                    snackbar.showError("Unable to save: page has been updated since you loaded it");
+                    break;
+                default:
+                    snackbar.showError("Unable to save: unknown error");
+                    break;
             }
-        });
-        //console.log(` => outcome ${result.outcome}`);
-        //console.log(result);
-        switch (result.outcome) {
-            case UpdateWikiPageResultOutcome.success:
-                return true;
-            case UpdateWikiPageResultOutcome.lockConflict:
-                snackbar.showError("Unable to save: page is locked by another user");
-                break;
-            case UpdateWikiPageResultOutcome.revisionConflict:
-                snackbar.showError("Unable to save: page has been updated since you loaded it");
-                break;
-            default:
-                snackbar.showError("Unable to save: unknown error");
-                break;
+            return false;
+        } catch {
+            snackbar.showError("Unable to save. Your draft is preserved; check your connection and try again.");
+            return false;
         }
-        return true;
     };
 
     const handleSaveAndClose = async () => {
         const success = await handleSave();
         if (!success) return;
         props.onClose();
+    };
+
+    const [reviewingConflict, setReviewingConflict] = React.useState(false);
+    const [reviewPage, setReviewPage] = React.useState(props.wikiPageApi.currentPageData?.wikiPage ?? null);
+    const openComparison = () => {
+        setReviewPage(props.wikiPageApi.currentPageData?.wikiPage ?? null);
+        setReviewingConflict(true);
+    };
+    const latest = props.wikiPageApi.currentPageData?.wikiPage;
+    const base = props.wikiPageApi.basePage;
+    const hasConflict = (latest?.contentVersion ?? 0) !== (base?.contentVersion ?? 0) ||
+        (latest?.currentRevision?.id ?? null) !== (base?.currentRevision?.id ?? null);
+    const needsLock = !props.wikiPageApi.lockStatus.isLockedInThisContext;
+    const reacquire = async () => {
+        try {
+            const result = await props.wikiPageApi.reacquireLock();
+            if (result.outcome === UpdateWikiPageResultOutcome.revisionConflict) {
+                setReviewPage(result.currentPage);
+                setReviewingConflict(true);
+            }
+            else if (result.outcome !== UpdateWikiPageResultOutcome.success) snackbar.showError("This page is still locked by another editor. Your draft is preserved.");
+        } catch {
+            snackbar.showError("Unable to reconnect. Your draft is preserved; try again.");
+        }
     };
 
     // while you're active, auto-renew your edit lock
@@ -199,6 +225,24 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
 
         <div className="content">
             <UnsavedChangesHandler isDirty={hasEdits} />
+            {(needsLock || hasConflict) && <div role="status">
+                <p>{hasConflict ? "This page has changed since your draft began. Review the latest version before saving." :
+                    "You do not currently hold the editing lock. Your draft is preserved; reacquire the lock to save."}</p>
+                <Button onClick={reacquire}>Reacquire editing lock</Button>
+                {hasConflict && <Button onClick={openComparison}>Compare with latest</Button>}
+            </div>}
+            {reviewingConflict && <section aria-label="Review latest version">
+                <h3>Latest saved version</h3>
+                <p>Your draft remains editable below. Incorporate the changes you want to keep, then acknowledge this version.</p>
+                <h4>{reviewPage?.currentRevision?.name}</h4>
+                <pre style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto" }}>{reviewPage?.currentRevision?.content ?? ""}</pre>
+                <Button onClick={() => {
+                    props.wikiPageApi.acceptLatestAsBase(reviewPage);
+                    setReviewingConflict(false);
+                }}>I have reconciled my draft with this version</Button>
+                <Button onClick={() => setReviewingConflict(false)}>Close comparison</Button>
+            </section>}
+
 
             {showTitle &&
                 <NameValuePair
@@ -426,7 +470,7 @@ export const WikiDebugIndicator = ({ wikiPageApi }: { wikiPageApi: WikiPageApi }
             "Page Lock ID": page.lockId || "-",
             "Page Locked since": page.lockAcquiredAt ? page.lockAcquiredAt.toLocaleString() : "-",
             "Page Lock Expires at": page.lockExpiresAt ? <>{page.lockExpiresAt.toLocaleString()} <AgeRelativeToNow value={page.lockExpiresAt} /></> : "-",
-            "Page last edit ping at": page.lastEditPingAt ? <>{page.lastEditPingAt.toLocaleString()} <AgeRelativeToNow value={page.lastEditPingAt} /></> : "-",
+            "Last editing activity": page.lastEditPingAt ? <>{page.lastEditPingAt.toLocaleString()} <AgeRelativeToNow value={page.lastEditPingAt} /></> : "-",
             "Your base revision id": wikiPageApi.basePage?.currentRevision?.id || "-",
             "Your lock ID": wikiPageApi.yourLockId || "-",
             "current revision id": wikiPageApi.currentPageData?.wikiPage?.currentRevision?.id || "-",

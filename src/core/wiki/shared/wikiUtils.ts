@@ -28,17 +28,8 @@ export function getFileUploadContext(wikiPageId: number | undefined, wikiPath: W
         taggedEventId: undefined,
     };
 }
-// lock refreshing is not a perfect science.
-// it's tempting to have a kind of auto-renewal, but it defeats the purpose
-// of expiration (auto renewal when you forget about a background tab would hold the lock forever).
-//
-// but on the other hand we wish to detect the scenario where the user innocently navigates away and their lock
-// didn't have a chance to release. they come back to the edit the page again and they locked themselves out.
-// it's too cumbersome to track that scenario; stick with the lock expiration and manual refresh (like dokuwiki)
-// and in the "lock yourself out" scenario, make an exception and just give it up.
+// Activity and successful saves renew the lease; presence does not revoke it.
 export const gWikiPageLockDurationSeconds = 15 * 60; // 15 minutes
-export const gWikiEditPingIntervalMilliseconds = 10 * 1000;
-export const gWikiEditAbandonedThresholdMilliseconds = 15 * 1000; // this should be longer than the ping interval
 export const gWikiLockAutoRenewThrottleInterval = 60 * 1000; // renew at most once every 1 minute
 
 ////////////////////////////////////////////////////////////////
@@ -60,6 +51,7 @@ export type WikiPageApiRevisionPayload = Prisma.WikiPageRevisionGetPayload<typeo
 
 export const WikiPageApiPayloadArgs = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
     select: {
+        contentVersion: true,
         slug: true,
         namespace: true,
         visiblePermissionId: true,
@@ -97,6 +89,7 @@ const ZWikiTitle = z.string().min(1);
 ////////////////////////////////////////////////////////////////
 export const ZTGetWikiPageArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
+    baseContentVersion: z.number().int().nonnegative(),
     baseRevisionId: z.number().nullable(), // used to return updateability status.
     lockId: z.string().nullable(), // used to return updateability status
 });
@@ -130,6 +123,7 @@ export const ZTUpdateWikiPageArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
     title: ZWikiTitle,
     content: z.string(),
+    baseContentVersion: z.number().int().nonnegative(),
     baseRevisionId: z.number().nullable(),
     lockId: z.string().nullable(), // you should always have a lock, but some weird cases like admin forcibly removing locks may cancel them.
 });
@@ -139,8 +133,10 @@ export type TUpdateWikiPageArgs = z.infer<typeof ZTUpdateWikiPageArgs>;
 ////////////////////////////////////////////////////////////////
 export const ZTAcquireLockOnWikiPageArgs = z.object({
     canonicalWikiPath: ZWikiSlug,
+    baseContentVersion: z.number().int().nonnegative(),
     baseRevisionId: z.number().nullable(),
-    lockId: z.string(),
+    lockId: z.string().min(1),
+    takeOverLockId: z.string().optional(),
 });
 export type TAcquireLockOnWikiPageArgs = z.infer<typeof ZTAcquireLockOnWikiPageArgs>;
 
@@ -288,12 +284,12 @@ type GetWikiPageLockStatusArgs = {
     currentUserId: number | null;
     userClientLockId: string | null;
     baseRevisionId: number | null;
+    baseContentVersion: number;
 }
 
 export type GetWikiPageUpdatabilityResult = {
     isLocked: boolean;
     isLockExpired: boolean;
-    //isLockAbandoned: boolean;
     isLockConflict: boolean;
     isLockedInThisContext: boolean;
     isRevisionConflict: boolean;
@@ -305,35 +301,32 @@ export type GetWikiPageUpdatabilityResult = {
     currentPage: WikiPageApiPayload | null;
 };
 
-export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClientLockId, baseRevisionId }: GetWikiPageLockStatusArgs): GetWikiPageUpdatabilityResult => {
+export const GetWikiPageUpdatability = ({ currentPage, currentUserId, userClientLockId, baseRevisionId, baseContentVersion }: GetWikiPageLockStatusArgs): GetWikiPageUpdatabilityResult => {
     if (!currentPage || !currentUserId) {
-        // non-existent page
+        const isRevisionConflict = baseRevisionId !== null || baseContentVersion !== 0;
         return {
             isLocked: false,
             isLockExpired: false,
-            //isLockAbandoned: false,
             isLockConflict: false,
             isLockedInThisContext: false,
-            isRevisionConflict: false,
+            isRevisionConflict,
             lockId: userClientLockId,
-            outcome: UpdateWikiPageResultOutcome.success,
+            outcome: isRevisionConflict ? UpdateWikiPageResultOutcome.revisionConflict : UpdateWikiPageResultOutcome.success,
 
             lockExpiresAt: null,
             currentPage: null,
         };
     }
 
-    const isLockExpired = currentPage.lockExpiresAt != null && currentPage.lockExpiresAt < new Date();
-    const isLockAbandoned = currentPage.lockId != null && (!!currentPage.lastEditPingAt && (Date.now() - currentPage.lastEditPingAt.valueOf()) > gWikiEditAbandonedThresholdMilliseconds);
-    const isLocked = currentPage.lockId != null && !isLockExpired && !isLockAbandoned;
-    const isLockedInThisContext = isLocked && currentPage.lockedByUser?.id == currentUserId && currentPage.lockId == userClientLockId;
-    const isRevisionCompatible = currentPage.currentRevision?.id == baseRevisionId;
-    const isLockConflict = !isLockAbandoned && isLocked && !isLockedInThisContext;
+    const isLockExpired = currentPage.lockExpiresAt != null && currentPage.lockExpiresAt <= new Date();
+    const isLocked = currentPage.lockId != null && currentPage.lockExpiresAt != null && !isLockExpired;
+    const isLockedInThisContext = isLocked && currentPage.lockedByUser?.id === currentUserId && currentPage.lockId === userClientLockId;
+    const isRevisionCompatible = (currentPage.currentRevision?.id ?? null) === baseRevisionId && currentPage.contentVersion === baseContentVersion;
+    const isLockConflict = isLocked && !isLockedInThisContext;
 
     return {
         isLocked,
         isLockExpired,
-        //isLockAbandoned,
         isLockConflict,
         isLockedInThisContext,
         isRevisionConflict: !isRevisionCompatible,

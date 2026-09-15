@@ -1,8 +1,8 @@
+import { wikiTransaction } from "../server/wikiTransaction";
 // acquireLockOnWikiPage
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db from "db";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
@@ -19,7 +19,7 @@ export default resolver.pipe(
 
         const currentUser = (await getCurrentUserCore(ctx))!;
 
-        return await db.$transaction(async (dbt) => {
+        return await wikiTransaction(async (dbt) => {
 
             // get latest page & check if we can acquire lock.
             let currentPage: WikiPageApiPayload | null = await dbt.wikiPage.findFirst({
@@ -35,10 +35,13 @@ export default resolver.pipe(
                 currentPage: currentPage,
                 currentUserId: ctx.session.userId,
                 baseRevisionId: args.baseRevisionId,
+                baseContentVersion: args.baseContentVersion,
                 userClientLockId: args.lockId,
             });
 
-            if (updatability.isLockConflict || updatability.isRevisionConflict) {
+            const isOwnTakeover = currentPage?.lockedByUser?.id === currentUser.id &&
+                !!args.takeOverLockId && currentPage.lockId === args.takeOverLockId;
+            if ((updatability.isLockConflict && !isOwnTakeover) || updatability.isRevisionConflict) {
                 return updatability;
             }
 
@@ -61,7 +64,7 @@ export default resolver.pipe(
 
             // now acquire the lock
             currentPage = await dbt.wikiPage.update({
-                where: { id: currentPage.id },
+                where: { id: currentPage!.id },
                 data: {
                     lockId: args.lockId,
                     lockAcquiredAt: new Date(),
@@ -73,8 +76,9 @@ export default resolver.pipe(
             });
 
             return {
-                ...updatability,
-                ...currentPage,
+                ...GetWikiPageUpdatability({ currentPage, currentUserId: currentUser.id,
+                    userClientLockId: args.lockId, baseRevisionId: args.baseRevisionId,
+                    baseContentVersion: args.baseContentVersion }),
             }
         });
     }

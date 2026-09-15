@@ -1,13 +1,13 @@
+import { wikiTransaction } from "../server/wikiTransaction";
 // updateWikiPage
 import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
-import db, { Prisma, PrismaClient } from "db";
+import { Prisma, PrismaClient } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { GetDateSecondsFromNow } from "shared/time";
 import { IsEntirelyIntegral } from "shared/utils";
 import * as mutationCore from "src/core/db3/server/db3mutationCore";
-import { getDefaultVisibilityPermission } from "src/core/db3/server/serverPermissionUtils";
 import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { calculateDiff, GetWikiPageUpdatability, GetWikiPageUpdatabilityResult, gWikiPageLockDurationSeconds, SpecialWikiNamespace, TUpdateWikiPageArgs, UpdateWikiPageResultOutcome, WikiPageApiPayload, WikiPageApiPayloadArgs, WikiPageApiRevisionPayload, WikiPageApiRevisionPayloadArgs, wikiParseCanonicalWikiPath, ZTUpdateWikiPageArgs } from "src/core/wiki/shared/wikiUtils";
 import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
@@ -56,6 +56,7 @@ const UpdateOrConsolidateRevision = async (args: TUpdateWikiPageArgs, currentPag
     // - the current revision was made with the same lock ID
     const revisionForConsolidation = await (dbt as PrismaClient).wikiPageRevision.findMany({
         where: {
+            id: currentPage.currentRevision?.id ?? -1,
             wikiPageId: currentPage.id,
             createdByUserId: currentUserId,
             consolidationKey: args.lockId,
@@ -107,38 +108,29 @@ const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: Wi
         currentUserId,
         userClientLockId: args.lockId,
         baseRevisionId: args.baseRevisionId,
+        baseContentVersion: args.baseContentVersion,
     });
 
     if (updatability.outcome !== UpdateWikiPageResultOutcome.success) {
         return updatability;
     }
 
+    if (!updatability.isLockedInThisContext) {
+        return { ...updatability, outcome: UpdateWikiPageResultOutcome.lockConflict, isLockConflict: true };
+    }
+
     const newRevision = await UpdateOrConsolidateRevision(args, currentPage, currentUserId, dbt);
 
-    let updatedPage: WikiPageApiPayload;
-
-    if (updatability.isLockedInThisContext) {
-        // update the page in your locked context; this renews the lock.
-        updatedPage = await dbt.wikiPage.update({
-            where: { id: currentPage.id },
-            data: {
-                currentRevisionId: newRevision.id,
-                lockExpiresAt: GetDateSecondsFromNow(gWikiPageLockDurationSeconds),
-                lastEditPingAt: new Date(),
-            },
-            ...WikiPageApiPayloadArgs,
-        });
-
-    } else {
-        // update the page without disturbing the existing lock.
-        updatedPage = await dbt.wikiPage.update({
-            where: { id: currentPage.id },
-            data: {
-                currentRevisionId: newRevision.id,
-            },
-            ...WikiPageApiPayloadArgs,
-        });
-    }
+    const updatedPage = await dbt.wikiPage.update({
+        where: { id: currentPage.id },
+        data: {
+            currentRevisionId: newRevision.id,
+            contentVersion: { increment: 1 },
+            lockExpiresAt: GetDateSecondsFromNow(gWikiPageLockDurationSeconds),
+            lastEditPingAt: new Date(),
+        },
+        ...WikiPageApiPayloadArgs,
+    });
 
     const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
     if (wikiPath.namespace?.toLowerCase() === SpecialWikiNamespace.EventDescription.toLowerCase()) {
@@ -161,26 +153,6 @@ const UpdateExistingWikiPage = async (args: TUpdateWikiPageArgs, currentPage: Wi
     };
 };
 
-const CreateWikiPage = async (args: TUpdateWikiPageArgs, currentUserId: number, dbt: TransactionalPrismaClient): Promise<GetWikiPageUpdatabilityResult> => {
-
-    const visiblePermission = await getDefaultVisibilityPermission(dbt);
-
-    // Page doesn't exist, create page and revision
-    const wikiPath = wikiParseCanonicalWikiPath(args.canonicalWikiPath);
-    const newWikiPage = await dbt.wikiPage.create({
-        data: {
-            slug: args.canonicalWikiPath,
-            namespace: wikiPath.namespace,
-            visiblePermissionId: visiblePermission?.id,
-            createdByUserId: currentUserId,
-        },
-        ...WikiPageApiPayloadArgs,
-    });
-
-    return await UpdateExistingWikiPage(args, newWikiPage, currentUserId, dbt);
-};
-
-
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.edit_wiki_pages),
@@ -190,7 +162,7 @@ export default resolver.pipe(
         const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
         const changeContext = CreateChangeContext("updateWikiPage");
 
-        return await db.$transaction(async (dbt) => {
+        return await wikiTransaction(async (dbt) => {
             const wikiPage = await dbt.wikiPage.findFirst({
                 where: await GetAuthorizedTableReadWhere({
                     table: xWikiPage,
@@ -203,10 +175,14 @@ export default resolver.pipe(
             if (wikiPage) {
                 result = await UpdateExistingWikiPage(args, wikiPage, currentUser.id, dbt);
             } else {
-                result = await CreateWikiPage(args, currentUser.id, dbt);
+                result = { ...GetWikiPageUpdatability({ currentPage: null, currentUserId: currentUser.id,
+                    userClientLockId: args.lockId, baseRevisionId: args.baseRevisionId,
+                    baseContentVersion: args.baseContentVersion }),
+                    outcome: UpdateWikiPageResultOutcome.lockConflict, isLockConflict: true };
             }
             if (result.outcome === UpdateWikiPageResultOutcome.success) {
                 await RegisterChange({
+                    db: dbt,
                     action: ChangeAction.insert,
                     ctx,
                     changeContext,

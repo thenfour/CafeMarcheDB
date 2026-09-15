@@ -204,6 +204,13 @@ export const CallMutateEventHooks = async (args: {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     let eventIdToUpdate: null | number | undefined = null;
     switch (args.tableNameOrSpecialMutationKey.toLowerCase()) {
+        case "wikipagerevision":
+            // Administrative revision edits must invalidate open drafts as well.
+            await transactionalDb.wikiPage.updateMany({
+                where: { currentRevisionId: args.model.id },
+                data: { contentVersion: { increment: 1 } },
+            });
+            return;
         case "setting":
             clearBrandCache();
             return;

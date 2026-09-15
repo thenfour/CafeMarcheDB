@@ -18,7 +18,7 @@ import { IsNullOrWhitespace } from "shared/utils";
 import { PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { AdminInspectObject, CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
-import { CMMultiSelect, CMSingleSelect } from "src/core/components/select/CMSelect";
+import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "src/core/components/select/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
 
 const GeneralFeatureStatsReport = () => {
@@ -118,6 +118,7 @@ const GeneralFeatureStatsReport = () => {
                         <Button onClick={() => setFilterSpec((x) => ({ ...x, includeFeatures: [] }))} >None</Button>
                         <CMMultiSelect
                             value={filterSpec.includeFeatures}
+                            displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
                             onChange={(checkedItems) => {
                                 setFilterSpec((x) => ({ ...x, includeFeatures: checkedItems as ActivityFeature[] }));
                             }}

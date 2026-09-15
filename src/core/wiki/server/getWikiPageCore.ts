@@ -9,6 +9,7 @@ import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 interface GetWikiPageCoreArgs {
     canonicalWikiSlug: string;
     currentUserId: number | null;
+    clientBaseContentVersion: number;
     clientBaseRevisionId: number | null;
     clientLockId: string | null;
     ctx: AuthenticatedCtx;
@@ -35,6 +36,7 @@ export async function GetWikiPageCore({ canonicalWikiSlug, dbt, ctx, ...args }: 
         currentUserId: args.currentUserId,
         userClientLockId: args.clientLockId,
         baseRevisionId: args.clientBaseRevisionId,
+        baseContentVersion: args.clientBaseContentVersion,
     });
 
     let ret: WikiPageData = {

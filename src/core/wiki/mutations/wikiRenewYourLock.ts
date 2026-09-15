@@ -1,3 +1,6 @@
+import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
+import { GetAuthorizedTableReadWhere } from "src/core/db3/server/db3ReadPolicy";
+import { xWikiPage } from "src/core/db3/shared/schema/wiki";
 // wikiRenewYourLock
 
 import { resolver } from "@blitzjs/rpc";
@@ -13,18 +16,22 @@ export default resolver.pipe(
     resolver.zod(ZTWikiReleaseYourLockArgs),
     async (args: TWikiReleaseYourLockArgs, ctx: AuthenticatedCtx) => {
 
-        await db.wikiPage.update({
+        const currentUser = (await getCurrentUserCore(ctx))!;
+        const readable = await GetAuthorizedTableReadWhere({ table: xWikiPage, currentUser });
+        const result = await db.wikiPage.updateMany({
             where: {
+                AND: [readable],
                 slug: args.canonicalWikiPath,
                 lockId: args.lockId,
                 lockedByUserId: ctx.session.userId,
+                lockExpiresAt: { gt: new Date() },
             },
             data: {
                 lockExpiresAt: GetDateSecondsFromNow(gWikiPageLockDurationSeconds),
                 lastEditPingAt: new Date(),
             },
         });
-        return true;
+        return result.count === 1;
     }
 );
 

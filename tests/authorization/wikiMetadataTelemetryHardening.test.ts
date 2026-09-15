@@ -23,6 +23,7 @@ import {
     createAuthorizationTestUser,
 } from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
+import { CallMutateEventHooks } from "src/core/db3/server/db3mutationCore";
 
 const makeAuthorizationArgs = (user: ReturnType<typeof createAuthorizationTestUser>) => ({
     publicData: createAuthorizationSchemaData(user),
@@ -274,5 +275,21 @@ describe("BA-S005 telemetry identity and diagnostic route grants", () => {
         // A new request still carries the old session grants, but reloads the actor.
         const { ctx: nextRequest } = createAuthorizationPersona("sysadmin", { id: sysadmin.id });
         await expect(isAuthorizedForServerPage(nextRequest, Permission.sysadmin)).resolves.toBe(false);
+    });
+});
+
+
+describe("administrative wiki revision editing", () => {
+    it("invalidates drafts of the page currently displaying the edited revision", async () => {
+        const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+        await CallMutateEventHooks({
+            tableNameOrSpecialMutationKey: "WikiPageRevision",
+            model: { id: 42, content: "Administrative correction" },
+            db: { wikiPage: { updateMany } } as any,
+        });
+        expect(updateMany).toHaveBeenCalledWith({
+            where: { currentRevisionId: 42 }, data: { contentVersion: { increment: 1 } },
+        });
+        expect(db3.xWikiPageRevision.requiresTransactionalMutation).toBe(true);
     });
 });
