@@ -378,7 +378,7 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     const isMediaBarVisible = !!(mediaPlayer.currentTrack || mediaPlayer.playlist.length > 0);
     const gridStyles = {
         display: 'grid',
-        height: '100vh',
+        height: '100dvh', /* dvh = dynamic viewport height; doesn' let browser chrome hide media bar */
         width: '100%',
         gridTemplateRows: isMediaBarVisible ? 'auto 1fr auto' : 'auto 1fr 0fr', // AppBar, Content, MediaBar (footer)
         gridTemplateColumns: isMdUp ? `${drawerWidth}px 1fr` : '1fr', // Sidebar, Main (desktop only)
