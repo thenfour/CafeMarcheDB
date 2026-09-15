@@ -15,7 +15,7 @@ import { useSearchableList } from 'src/core/hooks/useSearchableList';
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { EventListItem } from "./event/EventComponents";
 import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClientBaseTypes";
-import { DateToYYYYMMDD } from "@/shared/time";
+import { CalendarDisplayRange, DateToYYYYMMDD } from "@/shared/time";
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 import { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
@@ -29,6 +29,7 @@ type EventWithSearchResult = {
 }
 
 type TCalendarEventItem = {
+    calendarRange: CalendarDisplayRange;
     segment: EnrichedSearchEventPayload["segments"][0];
     event: EnrichedSearchEventPayload;
     result: SearchResultsRet;
@@ -195,12 +196,17 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
         };
     });
 
-    const segments: TCalendarEventItem[] = eventsWithMore.flatMap((event, index) => event.uncancelledSegments.map(segment => ({
-        segment: segment,
-        event: event.event.event,
-        result: event.result,
-        isSingleSegmentEvent: event.uncancelledSegments.length === 1,
-    })));
+    const segments: TCalendarEventItem[] = eventsWithMore.flatMap(event => event.uncancelledSegments.flatMap(segment => {
+        const calendarRange = db3.getEventSegmentDateTimeRange(segment).getCalendarDisplayRange();
+        if (!calendarRange) return [];
+        return [{
+            segment,
+            calendarRange,
+            event: event.event.event,
+            result: event.result,
+            isSingleSegmentEvent: event.uncancelledSegments.length === 1,
+        }];
+    }));
 
     return <div className="EventCalendarMonthContainer">
         <AdminInspectObject src={props.filterSpec} label='filterSpec' />
@@ -219,15 +225,13 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
                 events={segments}
 
                 // Note: "End" is actually the canonical end - as in, the first time OUTSIDE the range. yay for strictness.
-                startAccessor={(e: TCalendarEventItem) => e.segment.startsAt}
-                endAccessor={(e: TCalendarEventItem) => {
-                    return db3.getEventSegmentDateTimeRange(e.segment).getEndDateTime();
-                }}
+                startAccessor={(e: TCalendarEventItem) => e.calendarRange.start}
+                endAccessor={(e: TCalendarEventItem) => e.calendarRange.end}
                 titleAccessor={(e: TCalendarEventItem) => {
                     if (e.isSingleSegmentEvent) return e.event.name;
                     return `${e.event.name}: ${e.segment.name}`
                 }}
-                allDayAccessor={(e: TCalendarEventItem) => e.segment.isAllDay}
+                allDayAccessor={(e: TCalendarEventItem) => e.calendarRange.allDay}
 
                 // don't allow drilling down; it's more confusing than helpful
                 drilldownView={null}

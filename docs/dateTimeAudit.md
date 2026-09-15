@@ -3,7 +3,8 @@
 2026-09-12, updated 2026-09-15. This report tracks the audit, executable regression
 baseline, band-timezone foundation, all-day calendar-feed correction, DT-01
 all-day hydration, DT-02/DT-08 timed hydration and point-relative labels,
-DT-03 range aggregation, DT-04/DT-05 clock controls, and DT-06 compact labels.
+DT-03 range aggregation, DT-04/DT-05 clock controls, DT-06 compact labels,
+and DT-09 month-calendar display.
 Event editors still need band-timezone integration;
 lifecycle classification and SQL queries still need repairs.
 No existing event data or database schema has been changed. The Japan report has
@@ -210,6 +211,25 @@ remain part of POL-01. This slice does not change stored data or cached bounds.
 All-day lifecycle boundaries still use the existing host-local range behavior.
 Adopting the configured band timezone remains POL-01.
 
+## Completed DT-09: one display range for month-calendar endpoints
+
+- `DateTimeRange.getCalendarDisplayRange()` supplies both endpoints and the
+  all-day flag together. All-day endpoints carry local calendar dates for the
+  widget; timed endpoints preserve exact instants and elapsed duration. The end
+  remains exclusive. TBD ranges have no calendar placement.
+- `BigEventCalendarMonth` adapts each uncancelled segment once and passes those
+  endpoints to its accessors. It retains the original event, segment, and search
+  result for titles, attendance, and selection.
+- Seventy checks mount the installed `react-big-calendar` with its Moment
+  localizer in five timezone processes. They inspect rendered day spans for
+  single/multi-day dates, DST transitions, timed local midnight, overnight
+  events, exclusive midnight ends, zero duration, and precise repeated-hour
+  instants. Two consumer checks verify the actual month component's accessor
+  values, TBD/cancelled filtering, and selection callback data.
+
+This is a display adapter. Band-timezone lifecycle adoption remains POL-01;
+calendar query bounds and overlap selection remain DT-10.
+
 ## Executable evidence
 
 The date/time tests live under [tests/datetime](../tests/datetime). Native `Date` runs in
@@ -228,11 +248,13 @@ aggregation, and feed cases. Clocks are fixed where an operation depends on the 
 | [clockOptions.test.ts](../tests/datetime/clockOptions.test.ts) | 31 | 0 | Civil clock grid, dated instants, gap/fold choices, precise selections, and overnight/multi-day ends |
 | [clockControls.test.ts](../tests/datetime/clockControls.test.ts) | 3 | 0 | Mounted range control and native select changes in jsdom |
 | [eventDateConsumers.test.ts](../tests/datetime/eventDateConsumers.test.ts) | 49 | 0 | Actual compact label rendering, interval edges, all-day dates, overnight events, and reference years in four viewer zones |
+| [calendarDisplay.test.ts](../tests/datetime/calendarDisplay.test.ts) | 70 | 0 | Display ranges and real month-widget day spans in five viewer zones |
+| [calendarConsumer.test.ts](../tests/datetime/calendarConsumer.test.ts) | 2 | 0 | Production month accessors, TBD/cancelled filtering, and selection data |
 | [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 29 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
 | [bandTimePolicy.test.ts](../tests/datetime/bandTimePolicy.test.ts) | 54 | 0 | Named-zone validation, band-time conversion, DST ambiguity, all-day bounds, and host-timezone independence |
 | [bandTimeZoneLoading.test.ts](../tests/datetime/bandTimeZoneLoading.test.ts) | 4 | 0 | Fresh server setting reads, default/error behavior, and dashboard delivery |
 | [bandTimeZoneWrites.test.ts](../tests/datetime/bandTimeZoneWrites.test.ts) | 25 | 0 | Generic and raw settings validation, partial edits, clears, and retained authorization |
-| Total | 440 | 3 | 443 checks; remaining failures cover POL-01 lifecycle boundaries |
+| Total | 512 | 3 | 515 checks; remaining failures cover POL-01 lifecycle boundaries |
 
 The original audit contained 134 checks: 90 ordinary passing checks and 44 known
 failures. Slice 1 adds 83 policy/loading/write checks and repairs the five feed failures.
@@ -241,6 +263,7 @@ DT-02/DT-08 add 56 checks and repair another 18 failures.
 DT-03 adds 60 checks and repairs two more failures.
 DT-04/DT-05 add 34 checks and repair eight more failures.
 DT-06 adds 36 checks and repairs five more failures.
+DT-09 adds 72 checks for a previously code-traced finding.
 [Setting authorization tests](../tests/authorization/settingAuthorization.test.ts)
 also cover default reads, valid persistence/readback, invalid updates leaving all
 branding values unchanged, and denied or stale permission grants.
@@ -272,7 +295,7 @@ try {
 }
 ```
 
-The expected strict result is 3 failing test cases and 440 passing test cases.
+The expected strict result is 3 failing test cases and 512 passing test cases.
 This is a reproduction command; those failures are the audit output, not test
 harness errors. Infrastructure/probe errors are outside expected-failure tests.
 
@@ -401,16 +424,18 @@ tested shared conversion operations; these existing consumers do not yet use
 them. The remaining policy integration is distinct from corruption of existing
 representations.
 
-## Findings traced in code, with integration tests still needed
+## Calendar integration and remaining query findings
 
-**DT-09 - Medium: the month calendar mixes start and end representations.**
+**DT-09 - Resolved 2026-09-15: the month calendar mixed start and end representations.**
 
-[EventCalendar's accessors](../src/core/components/EventCalendar.tsx#L222) return
-raw persisted `segment.startsAt` for the start and a reconstructed range end for
-the end. An all-day UTC date is therefore interpreted as a local timed start,
-including the previous local day west of UTC. Provide both endpoints through
-one calendar adapter. The current tests prove the underlying date drift and
-compact rendering; they do not mount `react-big-calendar`.
+[EventCalendar's accessors](../src/core/components/EventCalendar.tsx) formerly
+returned raw persisted `segment.startsAt` for the start and a reconstructed
+range end. An all-day UTC date was therefore interpreted as a local timed start,
+including the previous local day west of UTC. Both endpoints now come from
+`getCalendarDisplayRange()`, and TBD segments are excluded from placement.
+Tests mount the installed `react-big-calendar` and inspect its rendered day
+spans in UTC, Brussels, Los Angeles, Tokyo, and Sydney. Query findings below
+remain code traces with real SQL integration tests still needed.
 
 **DT-10 - Medium: calendar queries lose viewer boundaries and miss overlapping segments.**
 
@@ -491,10 +516,10 @@ do not need a framework for elapsed-versus-calendar-day precision.
    labels, attendance timing, and calendar adapters consume semantic operations.
    Keep generic personal report/range pickers in the viewer timezone: they share
    lower-level controls with event editing and must not inherit band time
-   accidentally. **DT-04/DT-05 and DT-06 are completed:** clock options and
+   accidentally. **DT-04/DT-05, DT-06, and DT-09 are completed:** clock options and
    selected-end calculations use resolved instants; compact labels use full event
-   ranges. Band-timezone date-picker integration, attendance timing, and calendar
-   adapters remain open.
+   ranges; month-calendar endpoints share one display adapter. Band-timezone
+   date-picker integration and attendance timing remain open.
 4. **Align server aggregation, queries, and remaining feed behavior.** Cache
    absolute event bounds consistently and apply overlap queries. All-day feed
    serialization and timed feed hydration are repaired. Define recalculation of
@@ -528,8 +553,8 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
 
 ## Verification and limits
 
-- DT-06 verification on 2026-09-15: full `yarn test` passed 1,150 cases;
-  nine opt-in MySQL checks were skipped. The 443 date/time checks contain 440
+- DT-09 verification on 2026-09-15: full `yarn test` passed 1,222 cases;
+  nine opt-in MySQL checks were skipped. The 515 date/time checks contain 512
   ordinary checks and 3 executed expected failures. Strict date/time mode exposes
   exactly those 3 remaining failures (POL-01).
 - Focused ESLint for every changed TypeScript file and `git diff --check` passed.
@@ -537,7 +562,7 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
   comparing Prisma client types. During DT-01, a compiler run substituting unchanged `HEAD`
   sources for the edited files and excluding the new tests reproduced both
   diagnostics. No new type diagnostics were reported. A production build was
-  not run for DT-01 through DT-06; slice 1's earlier typecheck and build passed.
+  not run for these correction slices; slice 1's earlier typecheck and build passed.
 - Settings resolver tests use the existing in-memory database. It does not
   emulate transaction rollback; the bulk rejection case checks validation before
   writes. Production mutations retain their existing serializable transactions.
@@ -545,6 +570,12 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
   They do not execute SQL, emulate rollback, or test the existing swallowed-error
   path. All-day cached-end assertions intentionally reflect current host-local
   bounds; band-timezone lifecycle integration remains open.
+- DT-09 widget probes mount the installed calendar and Moment localizer in
+  jsdom. They supply element heights because jsdom has no layout engine and
+  inspect the widget's rendered day spans. Separate consumer tests inspect the
+  real month component's calendar props and selection callback, with the widget
+  and unrelated UI dependencies isolated. These do not exercise live queries,
+  attendance rendering, or a manual browser calendar journey.
 - No production database, deployed server timezone, existing corrupted row count,
   manual browser session, full date-picker/calendar journey, or external calendar
   application was tested. Query findings are code traces, not claims of live SQL

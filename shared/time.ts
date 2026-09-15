@@ -391,6 +391,14 @@ export interface DateTimeRangeHitTestResult {
     isLastDay: boolean, // does the given day represent the DAY of the end of the range? for a 1-day event on 12 Oct, testing any datetime with 12 Oct as the day will return true.
 }
 
+// A calendar widget consumes native Dates in the viewer timezone. For all-day
+// events these are calendar-date carriers, not absolute lifecycle boundaries.
+export interface CalendarDisplayRange {
+    start: Date;
+    end: Date; // exclusive
+    allDay: boolean;
+}
+
 export class DateTimeRange {
     private spec: DateTimeRangeSpec;
 
@@ -762,6 +770,13 @@ export class DateTimeRange {
         let ret = dayjs(startDate);
         ret = ret.add(durationDays, "day");
         return ret.toDate();
+    }
+
+    getCalendarDisplayRange(): CalendarDisplayRange | null {
+        const start = this.getStartDateTime();
+        const end = this.getEndDateTime();
+        if (!start || !end) return null; // TBD has no calendar placement.
+        return { start, end, allDay: this.isAllDay() };
     }
 
     // returns a valid date/time for the last valid time of the period (this date will be IN range)
