@@ -77,7 +77,7 @@ export function CalculateEventMetadata<
         expectedAttendanceTag,
         eventURI,
         responseInfo,
-        eventTiming: dateRange.hitTestDateTime(),
+        eventTiming: dateRange.hitTestDateTime(null, dashboardContext.bandTimeZone),
         dateRange,
     };
 };

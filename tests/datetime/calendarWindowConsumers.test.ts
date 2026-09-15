@@ -25,19 +25,20 @@ afterEach(() => {
   else Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT")
 })
 
-function mount(range: DateTimeRange) {
+function mount(range: DateTimeRange, timeZone?: string) {
   Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true })
   const segment = (id: number, startsAt: Date | null, durationMillis: number, statusId: number | null = null) => ({ id, startsAt, durationMillis: BigInt(durationMillis), isAllDay: false, statusId })
+  vi.mocked(useSearchableList).mockClear()
   vi.mocked(useSearchableList).mockReturnValue({
     enrichedItems: [{ id: 1, name: "Rehearsal", startsAt: new Date("2026-06-01T00:00:00Z"), segments: [
       segment(1, new Date(2026, 5, 1), 3_600_000),
-      segment(2, new Date(2026, 6, 11), 0),
+      segment(2, timeZone ? new Date("2026-07-10T15:30:00Z") : new Date(2026, 6, 11), 0),
       segment(3, null, 3_600_000),
       segment(4, new Date(2026, 6, 11), 3_600_000, 9),
     ] }], results: {} as any, loading: false, loadMoreData: vi.fn(),
   })
   let output: ReturnType<typeof useEventsForDateRange>
-  function Probe() { output = useEventsForDateRange(range); return null }
+  function Probe() { output = useEventsForDateRange(range, timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone); return null }
   const container = document.createElement("div")
   const root = createRoot(container)
   unmount = () => { act(() => root.unmount()); container.remove() }
@@ -47,6 +48,14 @@ function mount(range: DateTimeRange) {
 }
 
 describe("picker calendar-window consumer", () => {
+  it("uses band query bounds and band-date highlights when editing a shared event", () => {
+    const { args, output } = mount(new DateTimeRange({ startsAtDateTime: new Date(2026, 6, 11), durationMillis: 0, isAllDay: false }), "Asia/Tokyo")
+    expect(args.calendarWindow).toEqual({ startDate: "2026-07-11", endDateExclusive: "2026-07-12",
+      startInstant: "2026-07-10T15:00:00.000Z", endInstantExclusive: "2026-07-11T15:00:00.000Z" })
+    expect(output.events[1]!.dateRange.hitTestDay(dayjs(new Date(2026, 6, 11))).inRange).toBe(true)
+    expect(output.events[1]!.dateRange.hitTestDay(dayjs(new Date(2026, 6, 10))).inRange).toBe(false)
+  })
+
   it("carries an exclusive local-day window through the production search config", () => {
     const start = new Date(2026, 6, 11)
     const end = new Date(2026, 6, 12)
@@ -55,10 +64,13 @@ describe("picker calendar-window consumer", () => {
     expect(args.calendarWindow).toEqual({ startDate: "2026-07-11", endDateExclusive: "2026-07-12", startInstant: start.toISOString(), endInstantExclusive: end.toISOString() })
   })
 
-  it("highlights segments rather than gaps in the cached aggregate and preserves zero duration", () => {
+  it("highlights segment calendar days, including zero-duration points, instead of aggregate gaps", () => {
     const { output } = mount(new DateTimeRange({ startsAtDateTime: new Date(2026, 6, 11), durationMillis: 0, isAllDay: false }))
     expect(output.events.map(event => event.id)).toEqual(["1", "1"])
-    expect(output.events[1]!.dateRange.getSpec().durationMillis).toBe(0)
+    // Highlight ranges represent calendar days after projection into the explicit zone.
+    expect(output.events[1]!.dateRange.getSpec().durationMillis).toBe(86_400_000)
+    const source = vi.mocked(useSearchableList).mock.results[0]!.value.enrichedItems[0].segments[1]
+    expect(source.durationMillis).toBe(BigInt(0))
     expect(output.events[1]!.dateRange.getStartDateTime()).toEqual(new Date(2026, 6, 11))
     expect(output.events.some(event => event.dateRange.hitTestDay(dayjs(new Date(2026, 6, 10))).inRange)).toBe(false)
     expect(output.events[1]!.dateRange.hitTestDay(dayjs(new Date(2026, 6, 11))).inRange).toBe(true)

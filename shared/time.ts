@@ -1,6 +1,6 @@
 import dayjs, { Dayjs } from "dayjs";
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { addCalendarDays, CalendarWindow, getBandDateTimeFields, getCalendarWindow, getClockTimeOccurrences } from './dateTimePolicy';
+import { BandTimeZoneSchema, addCalendarDays, CalendarWindow, CalendarDateRange, InstantInterval, getAllDayInterval, getStoredAllDayCalendarRange, calendarDateToUtcDate, bandDateTimeToInstant, getCalendarWindow, getBandDateTimeFields, getClockTimeOccurrences } from './dateTimePolicy';
 
 import { assert } from "blitz";
 
@@ -126,14 +126,49 @@ export const DateToHyphenatedYYYYMMDD = (date: Date) =>
     `${date.getFullYear().toString().padStart(4, "0")}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
 
 // Native Dates here carry selected local calendar days; the end day is exclusive.
-export function getLocalCalendarWindow(start: Date, endExclusive: Date): CalendarWindow {
+export function getLocalCalendarWindow(start: Date, endExclusive: Date, timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone): CalendarWindow {
     return getCalendarWindow(
         {
             startDate: DateToHyphenatedYYYYMMDD(start),
             endDateExclusive: DateToHyphenatedYYYYMMDD(endExclusive)
         },
-        Intl.DateTimeFormat().resolvedOptions().timeZone //
+        timeZone
     );
+}
+
+export function localDateToCalendarDate(date: Date): string {
+    return DateToHyphenatedYYYYMMDD(date);
+}
+
+// Calendar widgets carry selected dates in host-local Date fields. This range
+// describes which days to paint in an explicitly chosen authoring timezone.
+export function getDateTimeRangeCalendarProjection(range: DateTimeRange, timeZone: string): DateTimeRange {
+    const dates = range.getCalendarDateRange(timeZone);
+    return new DateTimeRange({
+        isAllDay: true,
+        startsAtDateTime: dates ? calendarDateToUtcDate(dates.startDate) : null,
+        durationMillis: dates ? calendarDateToUtcDate(dates.endDateExclusive).valueOf() - calendarDateToUtcDate(dates.startDate).valueOf() : 0,
+    });
+}
+
+export function changeDateTimeRangeStartDate(range: DateTimeRange, date: string, timeZone: string): DateTimeRange {
+    const spec = range.getSpec();
+    if (spec.isAllDay) return new DateTimeRange({ ...spec, startsAtDateTime: calendarDateToUtcDate(date) });
+    const fields = getBandDateTimeFields(spec.startsAtDateTime!, timeZone);
+    // Re-selecting the same date must retain an existing later fold occurrence.
+    return new DateTimeRange({
+        ...spec, startsAtDateTime: fields.date === date
+            ? spec.startsAtDateTime : bandDateTimeToInstant({ date, time: fields.time }, timeZone)
+    });
+}
+
+export function changeDateTimeRangeAllDay(range: DateTimeRange, isAllDay: boolean, timeZone: string, now: Date): DateTimeRange {
+    const date = range.getCalendarDateRange(timeZone)?.startDate ?? getBandDateTimeFields(now, timeZone).date;
+    return new DateTimeRange({
+        isAllDay, durationMillis: isAllDay ? gMillisecondsPerDay : gMillisecondsPerHour,
+        startsAtDateTime: isAllDay ? calendarDateToUtcDate(date)
+            : bandDateTimeToInstant({ date, time: getBandDateTimeFields(now, timeZone).time }, timeZone),
+    });
 }
 
 // M:S format
@@ -513,7 +548,9 @@ export class DateTimeRange {
         return this.spec.durationMillis / gMillisecondsPerDay;
     }
 
-    // Enhanced toString method
+    // local timezone assumed for display
+    // All-day calendar dates remain fixed. For an explicit display
+    // timezone and locale, use toDisplayString instead.
     public toString(): string {
         if (this.isTBD()) {
             return "TBD";
@@ -596,6 +633,35 @@ export class DateTimeRange {
         assert(false, "unreachable");
     }
 
+    // Explicit presentation boundary. Timed values are instants; all-day values
+    // are calendar dates, formatted in UTC only to preserve their encoded fields.
+    // Display choices never affect storage or the band's lifecycle interval.
+    public toDisplayString({ displayTimeZone, locale }: { displayTimeZone: string; locale: string }): string//
+    {
+        // Validate the requested zone even for all-day/TBD values.
+        const timeZone = BandTimeZoneSchema.parse(displayTimeZone);
+        const dateFormatter = new Intl.DateTimeFormat(locale, {
+            timeZone: this.isAllDay() ? "UTC" : timeZone,
+            weekday: "short", day: "numeric", month: "short", year: "numeric",
+        });
+        const timeFormatter = new Intl.DateTimeFormat(locale, {
+            timeZone, hour: "2-digit", minute: "2-digit", second: "2-digit",
+            fractionalSecondDigits: 3, hourCycle: "h23", timeZoneName: "shortOffset",
+        });
+        if (this.isTBD()) return "TBD";
+        if (this.isAllDay()) {
+            const dates = this.getCalendarDateRange(displayTimeZone)!;
+            const start = dateFormatter.format(calendarDateToUtcDate(dates.startDate));
+            const lastDate = addCalendarDays(dates.endDateExclusive, -1);
+            return dates.startDate === lastDate ? `${start} (all day)`
+                : `${start} ? ${dateFormatter.format(calendarDateToUtcDate(lastDate))} (all day)`;
+        }
+        const { start, end } = this.getInstantInterval(displayTimeZone)!;
+        const format = (instant: Date) => `${dateFormatter.format(instant)} @ ${timeFormatter.format(instant)}`;
+        return start.valueOf() === end.valueOf() ? format(start) : `${format(start)} ? ${format(end)}`;
+    }
+
+    // Legacy multilingual presentation still uses the runtime timezone implicitly.
     public toDisplayStrings(): {
         en: { date: string; time?: string };
         fr: { date: string; time?: string };
@@ -856,22 +922,44 @@ export class DateTimeRange {
         return ret;
     }
 
-    hitTestDateTime = (lhs?: Date | null): Timing => {
+    getCalendarDateRange(timeZone: string): CalendarDateRange | null {
+        if (!this.spec.startsAtDateTime) return null;
+        if (this.isAllDay()) return getStoredAllDayCalendarRange(this.spec.startsAtDateTime, this.spec.durationMillis);
+        return {
+            startDate: getBandDateTimeFields(this.spec.startsAtDateTime, timeZone).date,
+            endDateExclusive: addCalendarDays(getBandDateTimeFields(this.getLastDateTime()!, timeZone).date, 1),
+        };
+    }
+
+    getInstantInterval(timeZone: string): InstantInterval | null {
+        if (!this.spec.startsAtDateTime) return null;
+        return this.isAllDay() ? getAllDayInterval(this.getCalendarDateRange(timeZone)!, timeZone) : {
+            start: new Date(this.spec.startsAtDateTime),
+            end: new Date(this.spec.startsAtDateTime.valueOf() + this.spec.durationMillis),
+        };
+    }
+
+    hitTestDateTime = (lhs?: Date | null, timeZone?: string): Timing => {
         const lhsx = lhs || new Date();
-        const start = this.getStartDateTime();
+        const interval = timeZone ? this.getInstantInterval(timeZone) : null;
+        const start = timeZone ? interval?.start ?? null : this.getStartDateTime();
         if (start === null) return Timing.Future; // TBD = future
         if (lhsx < start) return Timing.Future; // test date is before start; this range is in the future
 
-        const end = this.getEndDateTime();
+        const end = timeZone ? interval!.end : this.getEndDateTime();
         if (end === null) throw new Error("TBD should have been handled already");
         if (lhsx >= end) return Timing.Past;
         return Timing.Present;
     };
 
     // Calendar bounds use UTC date markers, not elapsed local-midnight instants.
-    // Timed ranges contribute the local dates they touch; a midnight exclusive
+    // Timed ranges contribute dates in the supplied zone (host-local if omitted); a midnight exclusive
     // end does not add another day. A zero-duration point contributes its own date.
-    private getCalendarBoundsUtc(): { start: number; end: number } {
+    private getCalendarBoundsUtc(timeZone?: string): { start: number; end: number } {
+        if (timeZone) {
+            const dates = this.getCalendarDateRange(timeZone)!;
+            return { start: calendarDateToUtcDate(dates.startDate).valueOf(), end: calendarDateToUtcDate(dates.endDateExclusive).valueOf() };
+        }
         if (this.spec.isAllDay) {
             const start = this.spec.startsAtDateTime!.valueOf();
             return { start, end: start + this.spec.durationMillis };
@@ -885,7 +973,7 @@ export class DateTimeRange {
     // Aggregate original ranges together: decide the representation before taking
     // extrema. Pairwise timed hulls can lose a terminal midnight point's calendar
     // date before an all-day range is encountered.
-    static union(ranges: readonly DateTimeRange[]): DateTimeRange {
+    static union(ranges: readonly DateTimeRange[], timeZone?: string): DateTimeRange {
         const knownRanges = ranges.filter(range => !range.isTBD());
         if (knownRanges.length === 0) {
             return new DateTimeRange({ startsAtDateTime: null, isAllDay: true, durationMillis: 0 });
@@ -894,7 +982,7 @@ export class DateTimeRange {
         let start = Infinity;
         let end = -Infinity;
         for (const range of knownRanges) {
-            const bounds = isAllDay ? range.getCalendarBoundsUtc() : {
+            const bounds = isAllDay ? range.getCalendarBoundsUtc(timeZone) : {
                 start: range.spec.startsAtDateTime!.valueOf(),
                 end: range.spec.startsAtDateTime!.valueOf() + range.spec.durationMillis,
             };
@@ -977,23 +1065,23 @@ export interface RelativeTimingInfo {
     label: string, // e.g. "in 4 months", "today", "last week", "2 weeks ago"
 };
 
-// DateTimeRange is a class which includes the following useful functions:
-// isAllDay() - returns true if the event is an all-day event. It means time info should be ignored (which implies time zone independent)
-// isTBD()
-// getStartDateTime() - returns a Date representing the moment the range begins (inclusive, similar to C++ .begin() iterator semantics); or null if the range is TBD.
-// getEndDateTime() - returns a Date representing the first moment after the range (similar to C++ .end() iterator semantics); or null if the range is TBD.
-export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): RelativeTimingInfo {
+// Relative labels use viewer calendar days; lifecycle uses the supplied zone.
+export function CalcRelativeTiming(refTime: Date, range: DateTimeRange, timeZone?: string): RelativeTimingInfo {
     // Check if the range is TBD
     if (range.isTBD()) {
         return { bucket: RelativeTimingBucket.TBD, label: "TBD" };
     }
 
-    const timing = range.hitTestDateTime(refTime);
+    const timing = range.hitTestDateTime(refTime, timeZone);
+    if (range.isAllDay()) {
+        const calendarTiming = range.getStartDateTime()! < refTime ? Timing.Past : Timing.Future;
+        const relative = range.hitTestDay(dayjs(refTime)).inRange
+            ? { bucket: RelativeTimingBucket.Today, label: "Today" }
+            : getRelativeCalendarTiming(refTime, range.getStartDateTime()!, calendarTiming);
+        return { ...relative, bucket: timing === Timing.Present ? RelativeTimingBucket.HappeningNow : relative.bucket };
+    }
     if (timing === Timing.Present) {
-        // for all-day events, be more safe about this. Very often events are marked as all-day even though they're not 100% of the day.
-        // either for laziness, or just because you can't specify the start/end times of day for all-day events.
-        // and seeing "happening now" when it's not actually ongoing is worse than seeing "today".
-        return { bucket: RelativeTimingBucket.HappeningNow, label: range.isAllDay() ? "Today" : "Happening now" };
+        return { bucket: RelativeTimingBucket.HappeningNow, label: "Happening now" };
     }
 
     return getRelativeCalendarTiming(refTime, range.getStartDateTime()!, timing);

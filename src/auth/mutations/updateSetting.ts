@@ -1,6 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import type { AuthenticatedCtx } from "blitz";
-import db from "db";
+import db, { Prisma } from "db";
 import { CreateChangeContext } from "shared/activityLog";
 import { Permission } from "shared/permissions";
 import { clearBrandCache } from "src/server/brand";
@@ -23,7 +23,7 @@ export default resolver.pipe(
                 name: args.name,
                 value: args.value,
             });
-        });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
         clearBrandCache();
         return result;
     },

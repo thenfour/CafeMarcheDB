@@ -290,6 +290,5 @@ describe("administrative wiki revision editing", () => {
         expect(updateMany).toHaveBeenCalledWith({
             where: { currentRevisionId: 42 }, data: { contentVersion: { increment: 1 } },
         });
-        expect(db3.xWikiPageRevision.requiresTransactionalMutation).toBe(true);
     });
 });

@@ -1,3 +1,4 @@
+import { loadBandTimeZone, isBandTimeZoneSetting, recalculateEventDateBounds } from "src/server/dateTime";
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
 import { AuthenticatedCtx, AuthorizationError, Ctx, assert } from "blitz";
@@ -95,56 +96,45 @@ export const getCurrentUserCore = async (ctx: Ctx) => (await getRequestAuthoriza
 
 export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: number, updatingEventModel: Partial<EventForCal>, db?: TransactionalPrismaClient, }) => {
     const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
-    try {
-        assert(!!args.eventId, "whoa there event id is not valid; bug.");
-        // get list of all event segments
-        const segments = await transactionalDb.eventSegment.findMany({
-            where: {
-                eventId: args.eventId,
-            }
-        });
+    assert(!!args.eventId, "whoa there event id is not valid; bug.");
+    // get list of all event segments
+    const segments = await transactionalDb.eventSegment.findMany({
+        where: {
+            eventId: args.eventId,
+        }
+    });
 
-        const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
+    const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
 
-        const range = db3.getEventDateTimeRangeFromSegments(segments, cancelledStatusIds);
+    const bandTimeZone = await loadBandTimeZone(transactionalDb);
+    const dateUpdates = db3.getEventDateBoundsFromSegments(segments, cancelledStatusIds, bandTimeZone);
 
-        // NOTE: this is going to be the wrong date! we need to calculate the date still.
-        let existingEvent = ((await transactionalDb.event.findFirst({
-            where: {
-                id: args.eventId,
-            },
-            ...EventForCalArgs,
-        })) || {}) as Partial<EventForCal>;
+    let existingEvent = ((await transactionalDb.event.findFirst({
+        where: {
+            id: args.eventId,
+        },
+        ...EventForCalArgs,
+    })) || {}) as Partial<EventForCal>;
 
-        Object.assign(existingEvent, args.updatingEventModel);
-        const dateUpdates = {
-            startsAt: range.getSpec().startsAtDateTime,
-            durationMillis: range.getSpec().durationMillis,
-            isAllDay: range.getSpec().isAllDay,
-            endDateTime: range.getEndDateTime(),
-        };
-        Object.assign(existingEvent, dateUpdates);
+    Object.assign(existingEvent, args.updatingEventModel);
+    Object.assign(existingEvent, dateUpdates);
 
-        const existingRevision = existingEvent.revision;
-        if (existingRevision === undefined) return;
+    const existingRevision = existingEvent.revision;
+    if (existingRevision === undefined) return;
 
-        const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds)!;
-        const newHash = calInp.inputHash || "-";
-        const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
+    const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds)!;
+    const newHash = calInp.inputHash || "-";
+    const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 
-        await transactionalDb.event.update({
-            where: { id: args.eventId },
-            data: {
-                ...dateUpdates,
-                revision: newRevisionSeq,
-                calendarInputHash: newHash,
-            }
-        });
-    } catch (e) {
-        // well weird.
-    }
+    await transactionalDb.event.update({
+        where: { id: args.eventId },
+        data: {
+            ...dateUpdates,
+            revision: newRevisionSeq,
+            calendarInputHash: newHash,
+        },
+    });
 };
-
 
 
 // it's not clear to me when this actually fires.
@@ -205,6 +195,15 @@ export const CallMutateEventHooks = async (args: {
             });
             return;
         case "setting":
+            // if you change the band time zone setting, we need to recalculate
+            // all-day event date bounds.
+            // Why? Because "all day" events mean "all day for the band's timezone" -- not GMT.
+            // so those specific events need their date bounds recalculated.
+            // another way to think of it is "all day" is a day-long time range in a specific timezone.
+            // when that timezone changes, the stored UTC representation changes.
+            if (isBandTimeZoneSetting(args.model.name) || isBandTimeZoneSetting(args.oldModel?.name)) {
+                await recalculateEventDateBounds(transactionalDb);
+            }
             clearBrandCache();
             return;
         case "event":

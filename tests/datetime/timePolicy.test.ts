@@ -5,7 +5,6 @@ import { runTimeZoneProbe } from "./support/runTimeZoneProbe"
 // Each expected failure asserts desired behavior, rather than preserving the bug.
 // Strict mode exposes the red regressions for audit/reproduction. Remove .fails
 // as each finding is fixed; an unexpected pass also fails the normal audit suite.
-const policyGap = process.env.CMDB_DATETIME_AUDIT_STRICT === "1" ? it : it.fails
 const zones = ["UTC", "Europe/Brussels", "Asia/Tokyo", "America/Los_Angeles"] as const
 const observations = new Map<string, TimePolicyProbe>()
 const inZone = (zone: string) => observations.get(zone)!
@@ -94,7 +93,7 @@ describe("shared all-day lifecycle policy (band timezone Europe/Brussels)", () =
   })
 
   for (const zone of zones.filter(zone => zone !== "Europe/Brussels")) {
-    policyGap(`POL-01: ${zone} observes the same absolute all-day start/end as the band`, () => {
+    it(`POL-01: ${zone} observes the same absolute all-day start/end as the band`, () => {
       expect(inZone(zone).allDayBandBoundaries).toEqual(["Future", "Present", "Present", "Past"])
     })
   }

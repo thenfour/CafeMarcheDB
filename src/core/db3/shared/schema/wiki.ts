@@ -209,7 +209,6 @@ export const xWikiPageRevision = new db3.xTable({
         return WikiPageRevisionArgs;
     },
     tableName: "WikiPageRevision",
-    requiresTransactionalMutation: true,
     deletePolicy: "hard",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
     getRowInfo: (row: WikiPageRevisionPayload) => ({

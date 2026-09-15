@@ -72,6 +72,7 @@ const membersVisibility = {
 const makeEvent = (overrides: Record<string, unknown> = {}) => ({
   id: 100,
   name: "Authorized event",
+  locationDescription: "",
   startsAt: new Date("2026-09-20T18:00:00.000Z"),
   isDeleted: false,
   createdByUserId: null,
@@ -79,6 +80,7 @@ const makeEvent = (overrides: Record<string, unknown> = {}) => ({
   visiblePermission: publicVisibility,
   revision: 1,
   calendarInputHash: "unchanged",
+  segments: [],
   ...overrides,
 })
 

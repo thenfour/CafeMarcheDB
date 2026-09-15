@@ -87,6 +87,7 @@ async function collect() {
     // transaction rollback is simulated; capture the actual persisted bounds.
     const rows = [...ordered, cancelled]
     const transaction = {
+      setting: { findFirst: async () => ({ value: Intl.DateTimeFormat().resolvedOptions().timeZone }) },
       eventSegment: { findMany: async (args: { where: { eventId: number } }) => {
         writerUsesEventFilter &&= args.where.eventId === 1
         return rows

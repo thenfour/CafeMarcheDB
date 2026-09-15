@@ -1,12 +1,13 @@
+import { calendarDateToUtcDate, getBandDateTimeFields } from "shared/dateTimePolicy";
 import { TAnyModel } from "@/shared/rootroot";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { DateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
+import { EventDateTimeRangeControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
-import { DateTimeRange, floorLocalTimeToDayUTC, gMillisecondsPerDay } from "shared/time";
+import { DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -48,7 +49,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
         const ret = db3.xEventSegment.createNew(currentUser) as Partial<db3.EventSegmentPayload>;
         ret.isAllDay = true;
-        ret.startsAt = floorLocalTimeToDayUTC(new Date());
+        ret.startsAt = calendarDateToUtcDate(getBandDateTimeFields(new Date(), dashboardContext.bandTimeZone).date);
         ret.durationMillis = BigInt(gMillisecondsPerDay);
         return ret as any;
     });
@@ -56,7 +57,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
     React.useEffect(() => {
         setSegmentValue({
             ...segmentValue,
-            startsAt: props.serverData?.segment.startsAt || floorLocalTimeToDayUTC(new Date()),
+            startsAt: props.serverData?.segment.startsAt || calendarDateToUtcDate(getBandDateTimeFields(new Date(), dashboardContext.bandTimeZone).date),
             durationMillis: BigInt(props.serverData?.segment.durationMillis || gMillisecondsPerDay),
         });
         setEventValue({
@@ -174,7 +175,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
             value={
                 <div>
                     <EventDateField dateRange={range} />
-                    <DateTimeRangeControl
+                    <EventDateTimeRangeControl
                         onChange={(newValue) => {
                             const spec = newValue.getSpec();
                             setSegmentValue({

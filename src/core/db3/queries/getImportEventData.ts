@@ -1,10 +1,12 @@
+import { calendarDateToUtcDate, getBandDateTimeFields } from "shared/dateTimePolicy";
+import { loadBandTimeZone } from "src/server/dateTime";
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { SplitQuickFilter } from "shared/quickFilter";
-import { floorLocalTimeToDayUTC, gMillisecondsPerDay } from "shared/time";
+import { gMillisecondsPerDay } from "shared/time";
 import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
@@ -147,8 +149,8 @@ const extractDate = (text: string, fallbackYear: number): Date | null => {
             }
 
             // Validate the date
-            const date = new Date(year!, month!, day!);
-            if (date.getDate() === day! && date.getMonth() === month! && date.getFullYear() === year!) {
+            const date = new Date(Date.UTC(year!, month!, day!));
+            if (date.getUTCDate() === day! && date.getUTCMonth() === month! && date.getUTCFullYear() === year!) {
                 return date;
             }
         }
@@ -184,6 +186,7 @@ export default resolver.pipe(
     async (args: TGetImportEventDataArgs, ctx: AuthenticatedCtx): Promise<TGetImportEventDataRet> => {
         const currentUser = await getCurrentUserCore(ctx);
         if (!currentUser) throw new Error("Current user was not found.");
+        const today = calendarDateToUtcDate(getBandDateTimeFields(new Date(), await loadBandTimeZone()).date);
         // start with defaults.
         const ret: TGetImportEventDataRet = {
             log: [],
@@ -200,7 +203,7 @@ export default resolver.pipe(
                 isAllDay: true, // always.
                 durationMillis: gMillisecondsPerDay, // always.
                 name: "Segment 1", // always.
-                startsAt: floorLocalTimeToDayUTC(new Date()),
+                startsAt: today,
             },
             responses: [],
             songList: [],
@@ -260,9 +263,9 @@ export default resolver.pipe(
             const fallbackYear = extractYear(args.config) || 2023;
             ret.log.push(`fallbackYear: ${fallbackYear}`);
             ret.log.push(`extractDate: ${extractDate(eventTxt, fallbackYear)}`);
-            // The parser returns a server-local calendar date; transport it using
+            // The parser returns a UTC calendar-date marker; transport it using
             // the same UTC date encoding as stored all-day segments.
-            ret.segment.startsAt = floorLocalTimeToDayUTC(extractDate(eventTxt, fallbackYear) || new Date());
+            ret.segment.startsAt = extractDate(eventTxt, fallbackYear) || today;
 
             // extract event name.
             ret.event.name = extractFirstNonEmptyLine(eventTxt) || "";

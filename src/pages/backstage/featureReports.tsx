@@ -192,7 +192,9 @@ const GeneralFeatureStatsReport = () => {
                                         setStartDate(val.start);
                                         setEndDate(val.end);
                                     }
-                                }} />
+                                }}
+                                timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+                            />
 
                             <CMSmallButton
                                 onClick={() => {

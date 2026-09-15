@@ -1,3 +1,4 @@
+import { isBandTimeZoneSetting, recalculateEventDateBounds } from "src/server/dateTime";
 import type { Ctx } from "@blitzjs/next";
 import {
     ChangeAction,
@@ -34,6 +35,11 @@ export const writeSettingValue = async (args: {
     if (oldValue && oldValue.name !== args.name) {
         validateSettingValue(oldValue.name, args.value);
     }
+    const refreshBounds = async () => {
+        if (isBandTimeZoneSetting(args.name) || isBandTimeZoneSetting(oldValue?.name)) {
+            await recalculateEventDateBounds(args.db);
+        }
+    };
     const shouldDelete = args.value === null || args.value === undefined || args.value === "";
 
     if (shouldDelete) {
@@ -48,6 +54,7 @@ export const writeSettingValue = async (args: {
             ctx: args.ctx,
             db: args.db,
         });
+        await refreshBounds();
         return null;
     }
 
@@ -67,6 +74,7 @@ export const writeSettingValue = async (args: {
             ctx: args.ctx,
             db: args.db,
         });
+        await refreshBounds();
         return newValue;
     }
 
@@ -82,5 +90,6 @@ export const writeSettingValue = async (args: {
         ctx: args.ctx,
         db: args.db,
     });
+    await refreshBounds();
     return newValue;
 };

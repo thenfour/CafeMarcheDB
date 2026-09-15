@@ -32,7 +32,7 @@ export default resolver.pipe(
                 updatedEntries.push([field, row?.value ?? ""]);
             }
             return Object.fromEntries(updatedEntries) as SiteBrandingSettings;
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
 
         // Clear only after the transaction commits so the cache cannot be
         // repopulated from pre-commit values.

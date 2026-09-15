@@ -21,7 +21,7 @@ async function main() {
         const env = { ...process.env, DATABASE_URL: target.toString(), DATETIME_TEST_DATABASE_URL: target.toString(), SESSION_SECRET_KEY: "datetime-integration-test-secret-only" };
         const schema = spawnSync(process.execPath, ["node_modules/prisma/build/index.js", "db", "push", "--skip-generate"], { env, stdio: "inherit", windowsHide: true });
         if (schema.status !== 0) throw new Error("Unable to create the disposable schema.");
-        const tests = spawnSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "tests/datetime/calendarWindow.mysql.test.ts", "--threads=false"], { env, stdio: "inherit", windowsHide: true });
+        const tests = spawnSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "tests/datetime/calendarWindow.mysql.test.ts", "tests/datetime/bandPolicy.mysql.test.ts", "--threads=false"], { env, stdio: "inherit", windowsHide: true });
         process.exitCode = tests.status || (tests.error ? 1 : 0);
     } finally {
         if (created) await admin.$executeRawUnsafe(`DROP DATABASE \`${databaseName}\``);
@@ -30,6 +30,6 @@ async function main() {
 }
 
 main().catch(() => {
-    console.error("MySQL calendar-window tests failed. Check the local server and disposable-database privileges.");
+    console.error("MySQL datetime tests failed. Check the local server and disposable-database privileges.");
     process.exitCode = 1;
 });

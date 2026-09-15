@@ -134,17 +134,31 @@ export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayl
 export const getEventDateTimeRangeFromSegments = (
     segments: { startsAt: Date | null; durationMillis: bigint; isAllDay: boolean; statusId: number | null }[],
     cancelledStatusIds: number[],
+    timeZone?: string,
 ) => {
     const ranges = segments
         .filter(segment => !segment.statusId || !cancelledStatusIds.includes(segment.statusId))
         .map(getEventSegmentDateTimeRange);
-    return DateTimeRange.union(ranges);
+    return DateTimeRange.union(ranges, timeZone);
 };
 
 
-export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) => {
+// Persisted aggregate dates retain their storage representation; the cached end
+// is always an absolute lifecycle boundary in the configured band zone.
+export function getEventDateBoundsFromSegments(
+    segments: Parameters<typeof getEventDateTimeRangeFromSegments>[0], cancelledStatusIds: number[], timeZone: string,
+) {
+    const range = getEventDateTimeRangeFromSegments(segments, cancelledStatusIds, timeZone);
+    const spec = range.getSpec();
+    return {
+        startsAt: spec.startsAtDateTime, durationMillis: spec.durationMillis, isAllDay: spec.isAllDay,
+        endDateTime: range.getInstantInterval(timeZone)?.end ?? null
+    };
+}
+
+export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>, timeZone: string) => {
     const r = getEventSegmentDateTimeRange(segment);
-    return r.hitTestDateTime(null);
+    return r.hitTestDateTime(null, timeZone);
 }
 
 
@@ -445,6 +459,7 @@ export const EventAPI = {
 
 
 export const xEventArgs_Base: db3.TableDesc = {
+    // modifying an event means multiple related changes; see the mutation event hooks.
     tableName: "Event", // case matters :(
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.recover_events,

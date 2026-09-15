@@ -12,7 +12,7 @@ function renderEvent(startsAt: string | null, durationMillis: number, isAllDay: 
     isAllDay,
   })
   return renderToStaticMarkup(React.createElement(EventShortDate, {
-    dateRange, now: new Date(refTime), locale: "en-US",
+    dateRange, now: new Date(refTime), locale: "en-US", timeZone: "Europe/Brussels",
   }))
 }
 

@@ -4,11 +4,14 @@ import { FormControlLabel, LinearProgress, NoSsr, Popover, Switch, Tooltip } fro
 import { DateCalendar, DateView, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import { assert } from 'blitz';
 import dayjs, { Dayjs } from "dayjs";
-import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, DateTimeOption, getDateTimeRangeTimeOptions, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, DateTimeOption, getDateTimeRangeTimeOptions, formatMillisecondsToDHMS, gMillisecondsPerDay } from "shared/time";
 import { gIconMap } from '../../db3/components/IconMap';
 import { KeyValueTable } from '../CMCoreComponents2';
 import { CalendarEventSpec } from './DateTimeTypes';
 import { useEventsForDateRange } from './useEventsForDateRange';
+import { localDateToCalendarDate, getDateTimeRangeCalendarProjection, changeDateTimeRangeStartDate, changeDateTimeRangeAllDay } from 'shared/time';
+import { calendarDateToUtcDate, getBandDateTimeFields } from 'shared/dateTimePolicy';
+import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { gGeneralPaletteList, StandardVariationSpec } from '../color/palette';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 
@@ -16,13 +19,13 @@ interface CustomDayProps {
     otherDay: Dayjs | null;
     range: DateTimeRange;
     selectedDay: Dayjs;
+    calendarToday: Dayjs;
     items: CalendarEventSpec[];
 }
 
 type DaySlotProps = CustomDayProps & PickersDayProps<Dayjs>;
 
-function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlotProps) {
-    const now = dayjs();
+function DaySlot({ day, selectedDay, range, items, otherDay, calendarToday: now, ...other }: DaySlotProps) {
     const classes: string[] = [
         "day",
     ];
@@ -107,6 +110,7 @@ function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlot
 }
 
 interface EventCalendarMonthProps {
+    timeZone: string;
     value: Date;
     onChange: (value: Date) => void;
     otherDay: Date | null;
@@ -119,13 +123,8 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
     const otherDjs = React.useMemo(() => props.otherDay ? dayjs(props.otherDay) : null, [props.otherDay]);
 
     const [view, setView] = React.useState<DateView>("day");
-    const { now, nowjs } = React.useMemo(() => {
-        const now = new Date();
-        return {
-            now,
-            nowjs: dayjs(now),
-        };
-    }, []);
+    const now = React.useMemo(() => props.timeZone
+        ? dayjs(getBandDateTimeFields(new Date(), props.timeZone).date).toDate() : new Date(), [props.timeZone]);
     const [displayedMonth, setDisplayedMonth] = React.useState<Dayjs>(djs);
 
     // Calculate visible range based on the displayed month
@@ -148,14 +147,15 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
         });
     }, [firstVisibleDay, lastVisibleDay]);
 
-    const { events, loading } = useEventsForDateRange(visibleRange);
+    const { events, loading } = useEventsForDateRange(visibleRange, props.timeZone);
 
     const dayProps: CustomDayProps = React.useMemo(() => ({
         selectedDay: djs,
+        calendarToday: dayjs(now),
         otherDay: otherDjs,
         items: events,
         range: props.range,
-    }), [djs, otherDjs, props.range, events, loading]);
+    }), [djs, otherDjs, props.range, events, now]);
 
     return <div className="EventCalendarMonthContainer">
         {loading && <LinearProgress className='loadingIndicator' />}
@@ -190,6 +190,11 @@ const EventCalendarMonth = (props: EventCalendarMonthProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface DayControlProps {
+    // timezone for presentation; underlying value is stored in UTC.
+    // also used for determining "today", event highlights, calendar query bounds
+    // (calendar gets shown in this timezone; query needs to return events whose
+    // dates are stored in the db in UTC to match those cal bounds)
+    timeZone: string;
     value: Date | null;
     otherValue: Date | null;
     onChange: (newValue: Date) => void;
@@ -257,6 +262,7 @@ export const DayControl = ({ readonly = false, coalescedFallbackValue, ...props 
                 }}
             >
                 <EventCalendarMonth
+                    timeZone={props.timeZone}
                     value={coalescedDay}
                     onChange={handleCalendarChangeDay}
                     otherDay={props.otherValue}
@@ -296,6 +302,7 @@ export const CMDBSelect = <T,>(props: CMDBSelectProps<T>) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeRangeControlProps {
+    timeZone: string;
     value: DateTimeRange;
     onChange: (newValue: DateTimeRange) => void;
 };
@@ -319,43 +326,36 @@ export interface DateTimeRangeControlProps {
 //
 
 export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlProps) => {
-
-    // sanitize input value
-    const coalescedStartDateTime = value.getStartDateTime(new Date());
-
-    const startMillis = coalescedStartDateTime.valueOf();
-    const endMillis = value.getEndDateTime(coalescedStartDateTime).valueOf();
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const timeZone = props.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const [fallbackStart, setFallbackStart] = React.useState<Date>(() => value.getSpec().startsAtDateTime
+        ?? (value.isAllDay() ? calendarDateToUtcDate(getBandDateTimeFields(new Date(), timeZone).date) : new Date()));
+    const coalesced = value.isTBD() ? new DateTimeRange({ ...value.getSpec(), startsAtDateTime: fallbackStart }) : value;
+    const calendarRange = getDateTimeRangeCalendarProjection(coalesced, timeZone);
+    const startDay = calendarRange.getStartDateTime()!;
+    const lastDay = calendarRange.getLastDateTime()!;
+    const startMillis = coalesced.getSpec().startsAtDateTime!.valueOf();
+    const endMillis = coalesced.getEndDateTime()!.valueOf();
     const showTimeOptions = !value.isAllDay() && !value.isTBD();
     const timeOptions = React.useMemo(() => !showTimeOptions ? null : getDateTimeRangeTimeOptions(
         new Date(startMillis), new Date(endMillis), timeZone,
     ), [showTimeOptions, startMillis, endMillis, timeZone]);
 
-    const [coalescedFallbackStartDay, setCoalescedFallbackStartDay] = React.useState<Date>(coalescedStartDateTime);
-
     const handleStartDateChange = (newValue: Date) => {
-        setCoalescedFallbackStartDay(newValue);
-        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), startsAtDateTime: newValue }));
+        const updated = changeDateTimeRangeStartDate(coalesced, localDateToCalendarDate(newValue), timeZone);
+        setFallbackStart(updated.getSpec().startsAtDateTime!);
+        props.onChange(updated);
     };
 
     const handleEndDateChange = (newEndDate: Date) => {
         assert(value.isAllDay(), "setting end date only makes sense for all-day events");
-        newEndDate = floorLocalToLocalDay(newEndDate); // ignore whatever time component the datepicker hands us; we know it should be midnight. maintain local tz.
-
-        // swap start/end if needed.
-        let newStartDateTime = coalescedStartDateTime;
-        if (newEndDate < newStartDateTime) {
-            newStartDateTime = newEndDate;
-            newEndDate = coalescedStartDateTime;
-        }
-
-        setCoalescedFallbackStartDay(newStartDateTime);
-
-        // convert to duration. if you select the same as the start, you want that to actually represent a duration of 1 day.
-        // assume these are aligned to day.
-        const durationMillis = newEndDate.valueOf() - newStartDateTime.valueOf() + gMillisecondsPerDay;
-
-        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), startsAtDateTime: newStartDateTime, durationMillis }));
+        const selected = calendarDateToUtcDate(localDateToCalendarDate(newEndDate)).valueOf();
+        const start = calendarDateToUtcDate(localDateToCalendarDate(startDay)).valueOf();
+        const startsAtDateTime = new Date(Math.min(start, selected));
+        setFallbackStart(startsAtDateTime);
+        props.onChange(new DateTimeRange({
+            ...value.getSpec(), startsAtDateTime,
+            durationMillis: Math.abs(selected - start) + gMillisecondsPerDay
+        }));
     };
 
     const handleChangeStartTime2 = (newTime: DateTimeOption) => {
@@ -367,26 +367,20 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
     };
 
     const handleAllDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newAllDay = e.target.checked;
-        // when you switch between all-day and not, always reset the duration. theoretically we could preserve durations between them but meh. not even sure that would be better ux
-        const newDuration = newAllDay ? gMillisecondsPerDay : gMillisecondsPerHour;
-
-        let newStartDateTime = floorLocalToLocalDay(coalescedStartDateTime);
-        if (!newAllDay) {
-            // for all-day events, start time can get set to midnight; anyway it's not used so assume it's not valid.
-            newStartDateTime = combineDateAndTime(newStartDateTime, new Date());
-        }
-        setCoalescedFallbackStartDay(newStartDateTime);
-        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), isAllDay: newAllDay, durationMillis: newDuration, startsAtDateTime: newStartDateTime }));
+        const updated = changeDateTimeRangeAllDay(coalesced, e.target.checked, timeZone, new Date());
+        setFallbackStart(updated.getSpec().startsAtDateTime!);
+        props.onChange(updated);
     };
 
     const handleTBDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), startsAtDateTime: e.target.checked ? coalescedFallbackStartDay : null }));
+        if (!e.target.checked) setFallbackStart(coalesced.getSpec().startsAtDateTime!);
+        props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: e.target.checked ? fallbackStart : null }));
     };
 
     // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.
     return <NoSsr>
         <div className="DateTimeRangeControl">
+            {props.timeZone && <div className="timeZone">Time zone: {timeZone}</div>}
             <div className="row">
                 <div className="tbdControl field">
                     <Switch size="small" checked={!value.isTBD()} onChange={handleTBDChange} />
@@ -395,12 +389,13 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                 <div className="dateSelection field">
 
                     <DayControl
+                        timeZone={props.timeZone}
                         readonly={false}
                         onChange={handleStartDateChange}
-                        value={value.getStartDateTime()}
-                        coalescedFallbackValue={coalescedFallbackStartDay}
-                        otherValue={value.getLastDateTime()} // use LAST time so it doesn't spill into next day.
-                        range={value}
+                        value={value.isTBD() ? null : startDay}
+                        coalescedFallbackValue={startDay}
+                        otherValue={value.isTBD() ? null : lastDay}
+                        range={calendarRange}
                         showDuration={false}
                         className="datePart field startDate"
                     />
@@ -419,13 +414,14 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                             <div className="ndash field">&ndash;</div>
 
                             {value.isAllDay() && <DayControl
+                                timeZone={props.timeZone}
                                 // for all-day events, selecting the end time means selecting the LAST day, not the "end". would not make sense to have to select 12-oct for an event that only exists on 11-oct.
                                 readonly={false}
                                 onChange={handleEndDateChange}
-                                value={value.getLastDateTime()}
-                                coalescedFallbackValue={value.getLastDateTime(coalescedFallbackStartDay)}
-                                otherValue={value.getStartDateTime()}
-                                range={value}
+                                value={lastDay}
+                                coalescedFallbackValue={lastDay}
+                                otherValue={startDay}
+                                range={calendarRange}
                                 showDuration={true}
                                 className="datePart field endDate"
                             />}
@@ -458,60 +454,69 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
     </NoSsr>;
 };
 
-
-const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
-    const t = CalcRelativeTiming(new Date(), value);
-
-    return <KeyValueTable
-        data={{
-            "Start": value.getStartDateTime()?.toISOString(),
-            "Last": value.getLastDateTime()?.toISOString(),
-            "End": value.getEndDateTime()?.toISOString(),
-            "Duration": `${formatMillisecondsToDHMS(value.getDurationMillis())} (${value.getDurationMillis()} ms)`,
-            "Relative label": t.label,
-            "Relative Bucket": t.bucket,
-            "toString": value.toString(),
-        }}
+// creating new events is done in the band's timezone.
+// that's different than viewing events which is presented to the user in their local timezone.
+export const EventDateTimeRangeControl = (props: Omit<DateTimeRangeControlProps, "timeZone">) => {
+    const dashboardContext = useDashboardContext();
+    return <DateTimeRangeControl
+        {...props}
+        timeZone={dashboardContext.bandTimeZone}
     />;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface CMDatePickerProps {
-    value: Date;
-    onChange: (newValue: Date) => void;
 };
 
-export const CMDatePicker = ({ value, ...props }: CMDatePickerProps) => {
+// const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
+//     const t = CalcRelativeTiming(new Date(), value);
 
-    const handleStartDateChange = (newValue: Date) => {
-        props.onChange(newValue);
-    };
+//     return <KeyValueTable
+//         data={{
+//             "Start": value.getStartDateTime()?.toISOString(),
+//             "Last": value.getLastDateTime()?.toISOString(),
+//             "End": value.getEndDateTime()?.toISOString(),
+//             "Duration": `${formatMillisecondsToDHMS(value.getDurationMillis())} (${value.getDurationMillis()} ms)`,
+//             "Relative label": t.label,
+//             "Relative Bucket": t.bucket,
+//             "toString": value.toString(),
+//         }}
+//     />;
 
-    // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.
-    return <NoSsr>
-        <div className="DateTimeRangeControl">
-            <div className="row" style={{ display: "flex", alignItems: "center" }}>
+// }
 
-                <DayControl
-                    readonly={false}
-                    onChange={handleStartDateChange}
-                    value={value}
-                    coalescedFallbackValue={value}
-                    otherValue={null} // use LAST time so it doesn't spill into next day.
-                    range={new DateTimeRange({
-                        durationMillis: 0,
-                        isAllDay: false,
-                        startsAtDateTime: value,
-                    })}
-                    showDuration={false}
-                    className="datePart field startDate"
-                />
-            </div>
-        </div>
-    </NoSsr>;
-};
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export interface CMDatePickerProps {
+//     value: Date;
+//     onChange: (newValue: Date) => void;
+// };
+
+// export const CMDatePicker = ({ value, ...props }: CMDatePickerProps) => {
+
+//     const handleStartDateChange = (newValue: Date) => {
+//         props.onChange(newValue);
+//     };
+
+//     // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.
+//     return <NoSsr>
+//         <div className="DateTimeRangeControl">
+//             <div className="row" style={{ display: "flex", alignItems: "center" }}>
+
+//                 <DayControl
+//                     readonly={false}
+//                     onChange={handleStartDateChange}
+//                     value={value}
+//                     coalescedFallbackValue={value}
+//                     otherValue={null} // use LAST time so it doesn't spill into next day.
+//                     range={new DateTimeRange({
+//                         durationMillis: 0,
+//                         isAllDay: false,
+//                         startsAtDateTime: value,
+//                     })}
+//                     showDuration={false}
+//                     className="datePart field startDate"
+//                 />
+//             </div>
+//         </div>
+//     </NoSsr>;
+// };
 
 
 
@@ -524,8 +529,10 @@ export interface DateRange {
 export interface CMDateRangePickerProps {
     value: DateRange;
     onChange: (newValue: DateRange) => void;
+    timeZone: string;
 };
 
+// currently only used on the feature reports internal page.
 export const CMDateRangePicker = ({ value, ...props }: CMDateRangePickerProps) => {
 
     const handleStartDateChange = (newValue: Date) => {
@@ -546,11 +553,11 @@ export const CMDateRangePicker = ({ value, ...props }: CMDateRangePickerProps) =
     return <NoSsr>
         <div className="DateTimeRangeControl">
             <div className="row" style={{ display: "flex", alignItems: "center" }}>
-
                 <DayControl
                     readonly={false}
                     onChange={handleStartDateChange}
                     value={value.start}
+                    timeZone={props.timeZone}
                     otherValue={null} // use LAST time so it doesn't spill into next day.
                     range={range}
                     showDuration={false}
@@ -567,14 +574,14 @@ export const CMDateRangePicker = ({ value, ...props }: CMDateRangePickerProps) =
                     readonly={false}
                     onChange={handleEndDateChange}
                     value={value.end}
+                    timeZone={props.timeZone}
                     otherValue={null} // use LAST time so it doesn't spill into next day.
                     range={range}
                     showDuration={false}
-                    className="datePart field startDate"
+                    className="datePart field startDate endDate"
                 />
             </div>
         </div>
 
     </NoSsr>;
 };
-

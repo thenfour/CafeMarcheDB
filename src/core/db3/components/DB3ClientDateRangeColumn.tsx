@@ -8,7 +8,7 @@
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
 import type { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { DateTimeRangeControl } from "src/core/components/DateTime/DateTimeRangeControl";
+import { EventDateTimeRangeControl } from "src/core/components/DateTime/DateTimeRangeControl";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 //import { API } from '../clientAPI';
@@ -62,7 +62,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 // renders only the editor
-                return <DateTimeRangeControl
+                return <EventDateTimeRangeControl
                     onChange={(newValue) => {
                         const spec = newValue.getSpec();
                         void params.api.setEditCellValue({ id: params.id, field: this.args.startsAtColumnName, value: spec.startsAtDateTime })!.then(() => {
@@ -90,7 +90,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         return this.defaultRenderer({
             isReadOnly: !this.editable,
             validationResult: params.validationResult,
-            value: <DateTimeRangeControl
+            value: <EventDateTimeRangeControl
                 onChange={(newValue) => {
                     const spec = newValue.getSpec();
                     params.api.setFieldValues({

@@ -24,7 +24,7 @@ export default resolver.pipe(
                     value: item.value,
                 });
             }
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
         clearBrandCache();
     },
 );

@@ -97,7 +97,7 @@ function collect() {
       timing: tbd.hitTestDateTime(today),
       relative: CalcRelativeTiming(today, tbd),
     },
-    allDayBandBoundaries: bandBoundaryInstants.map(now => authored.hitTestDateTime(new Date(now))),
+    allDayBandBoundaries: bandBoundaryInstants.map(now => authored.hitTestDateTime(new Date(now), "Europe/Brussels")),
     springDayElapsedHours: (springDay.getEndDateTime()!.valueOf() - springDay.getStartDateTime()!.valueOf()) / gMillisecondsPerHour,
     autumnDayElapsedHours: (autumnDay.getEndDateTime()!.valueOf() - autumnDay.getStartDateTime()!.valueOf()) / gMillisecondsPerHour,
     identicalAutumnUnionDays: union.getDurationDays(),

@@ -4,9 +4,10 @@
 baseline, band-timezone foundation, all-day calendar-feed correction, DT-01
 all-day hydration, DT-02/DT-08 timed hydration and point-relative labels,
 DT-03 range aggregation, DT-04/DT-05 clock controls, DT-06 compact labels,
-DT-09 month-calendar display, and DT-10 calendar-window queries.
-Event editors still need band-timezone integration;
-lifecycle classification and SQL queries still need repairs.
+DT-09 month-calendar display, DT-10 calendar-window queries, and POL-01 band-timezone
+authoring, lifecycle and derived bounds. DT-11 status facets and dashboard relevance
+are deferred by agreement. Earlier completed-slice notes retain their historical
+context; the POL-01 section describes the final integration.
 No existing event data or database schema has been changed. The Japan report has
 not been reproduced as a complete user journey, and none of these findings
 establishes its historical cause.
@@ -62,12 +63,9 @@ The iCalendar date-only/exclusive-end contract is specified by
   checks are ordinary passing regressions. Feed dates intentionally do not
   depend on the band's absolute midnight interval.
 
-This slice establishes configuration and conversion operations; existing event
-editors still interpret input in device-local time. Existing lifecycle checks,
-cached aggregate bounds, and SQL date filters retain their previous behavior.
-Changing the setting does not rewrite event or segment data or recalculate those
-cached bounds. Their adoption and the treatment of timezone changes must be
-implemented together in subsequent slices. The all-day feed repair bypassed the
+This foundation initially established configuration and conversion operations only.
+POL-01 below now integrates event editing, lifecycle and cached bounds, including
+transactional recalculation after setting changes. The all-day feed repair bypassed the
 general `DateTimeRange` hydration defect, subsequently repaired under DT-01 below.
 
 ## Completed DT-01: preserve all-day dates when loading ranges
@@ -257,6 +255,44 @@ The existing 100-event page limit in these calendar consumers remains a separate
 loading limit. All-day lifecycle/cached bounds remain POL-01, and status facets
 and dashboard interval classification remain DT-11.
 
+## Completed POL-01: enforce band authoring and shared lifecycle
+
+- Shared event editors use `dashboardContext.bandTimeZone` and display the zone
+  beside the controls. Start dates, clocks, all-day toggles, TBD restoration,
+  fallback dates, picker highlights and picker queries use that context.
+  Generic personal date/range pickers keep device-local semantics. The import
+  parser transports UTC calendar-date markers and defaults to the band date.
+- Existing timed instants, seconds/milliseconds, durations and repeated-hour
+  occurrences survive loading and unchanged selections. Newly authored ambiguous
+  dates use the shared compatible DST policy. Timed presentation remains viewer-local;
+  all-day presentation preserves calendar dates.
+- Event metadata, search/relevant cards, compact labels and attendance use the
+  configured band-midnight interval for all-day lifecycle, with inclusive start
+  and exclusive end. Relative `Today` remains a viewer-calendar fact; it can differ
+  from the globally shared ongoing bucket. Attendance retains the aggregate interval,
+  including gaps between its segments.
+- Mixed timed/all-day aggregation projects timed dates in the band timezone.
+  Cached `endDateTime` is an absolute band-midnight boundary for all-day aggregates.
+  Event/segment writes now propagate recalculation failures and use transactions.
+- Generic, bulk, branding and raw Settings writes refresh derived bounds in the
+  same serializable transaction, including clear/default and rename/delete paths.
+  Failure rolls back configuration, prior bound updates and audit records.
+  Unchanged events are skipped; authored segments and calendar revisions are untouched.
+  Calendar feed dates remain date-only values, independent of the band lifecycle.
+
+### Existing derived bounds at deployment
+
+Run `node scripts/recalculate-event-date-bounds.cjs` to review event IDs and
+before/after values without writing. After reviewing that report, run the same
+command with `--apply` to refresh the four derived aggregate fields in one
+transaction. No authored segment values or calendar revisions are changed.
+The implementation's local dry run inspected 430 events and proposed 37 aggregate
+corrections; it did not apply them. Review each target database independently.
+
+DT-11 remains deferred: database status facets and broad dashboard relevance still
+use their older predicates. This slice does not claim those queries implement the
+shared interval policy.
+
 ## Executable evidence
 
 The date/time tests live under [tests/datetime](../tests/datetime). Native `Date` runs in
@@ -267,7 +303,7 @@ aggregation, and feed cases. Clocks are fixed where an operation depends on the 
 
 | Suite | Ordinary passing checks | Known failing checks in strict mode | Boundary exercised |
 | --- | ---: | ---: | --- |
-| [timePolicy.test.ts](../tests/datetime/timePolicy.test.ts) | 63 | 3 | Real shared range, arithmetic, classification, relative labels, and sorting helpers |
+| [timePolicy.test.ts](../tests/datetime/timePolicy.test.ts) | 66 | 0 | Real shared range, arithmetic, classification, relative labels, and sorting helpers |
 | [allDayHydration.test.ts](../tests/datetime/allDayHydration.test.ts) | 40 | 0 | Stored all-day dates, explicit local authoring, copies, serialization, and calendar boundaries in five zones |
 | [timedHydration.test.ts](../tests/datetime/timedHydration.test.ts) | 50 | 0 | Exact instants/durations, copies, DST occurrences, zero-duration display, and point labels in five zones |
 | [unionPolicy.test.ts](../tests/datetime/unionPolicy.test.ts) | 60 | 0 | Range algebra, full-list event aggregation, cancellation/TBD filtering, and actual writer bounds in five zones |
@@ -278,15 +314,20 @@ aggregation, and feed cases. Clocks are fixed where an operation depends on the 
 | [calendarDisplay.test.ts](../tests/datetime/calendarDisplay.test.ts) | 75 | 0 | Display ranges, real month-widget day spans, and local search windows in five viewer zones |
 | [calendarConsumer.test.ts](../tests/datetime/calendarConsumer.test.ts) | 3 | 0 | Production month accessors, request bounds, TBD/cancelled filtering, and selection data |
 | [calendarWindow.test.ts](../tests/datetime/calendarWindow.test.ts) | 15 | 0 | Explicit window policy, DST boundaries, and request/SQL input validation |
-| [calendarWindowConsumers.test.ts](../tests/datetime/calendarWindowConsumers.test.ts) | 2 | 0 | Mounted picker lookup, search-config propagation, and segment highlights |
+| [calendarWindowConsumers.test.ts](../tests/datetime/calendarWindowConsumers.test.ts) | 3 | 0 | Mounted picker lookup, search-config propagation, and segment highlights |
 | [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 29 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
 | [bandTimePolicy.test.ts](../tests/datetime/bandTimePolicy.test.ts) | 54 | 0 | Named-zone validation, band-time conversion, DST ambiguity, all-day bounds, and host-timezone independence |
 | [bandTimeZoneLoading.test.ts](../tests/datetime/bandTimeZoneLoading.test.ts) | 4 | 0 | Fresh server setting reads, default/error behavior, and dashboard delivery |
 | [bandTimeZoneWrites.test.ts](../tests/datetime/bandTimeZoneWrites.test.ts) | 25 | 0 | Generic and raw settings validation, partial edits, clears, and retained authorization |
-| Total | 535 | 3 | 538 standard checks; remaining failures cover POL-01 lifecycle boundaries |
+| [bandPolicyConsumers.test.ts](../tests/datetime/bandPolicyConsumers.test.ts) | 45 | 0 | Band lifecycle, DST, authoring and actual aggregate writer across five native zones |
+| [bandEditor.test.ts](../tests/datetime/bandEditor.test.ts) | 4 | 0 | Mounted band editor dates, clock selections, all-day and TBD changes |
+| [bandAttendance.test.ts](../tests/datetime/bandAttendance.test.ts) | 4 | 0 | Production metadata and attendance adapter at exact band-midnight edges |
+| Total | 592 | 0 | All standard date/time checks are ordinary passing regressions |
 
 An additional six [MySQL overlap checks](../tests/datetime/calendarWindow.mysql.test.ts)
-are opt-in and skipped by the standard command. They passed via
+and five [POL-01 MySQL checks](../tests/datetime/bandPolicy.mysql.test.ts)
+are opt-in and skipped by the standard command. The POL-01 suite verifies real
+setting refreshes, raw mutation hooks, rollback, read-only previews and cached-field repairs. They passed via
 `node scripts/test-datetime-mysql.cjs`, which requires a local MySQL server with
 permission to create and drop a disposable test database. The suite executes
 the production SQL predicate; separate search-core tests verify its integration
@@ -302,41 +343,22 @@ DT-06 adds 36 checks and repairs five more failures.
 DT-09 adds 72 checks for a previously code-traced finding.
 DT-10 adds 23 standard date/time checks, six opt-in MySQL checks, and two
 search-core integration checks in the authorization suite.
+POL-01 adds 54 standard checks and five opt-in MySQL checks, and converts the
+last three expected failures to ordinary passing regressions.
 [Setting authorization tests](../tests/authorization/settingAuthorization.test.ts)
 also cover default reads, valid persistence/readback, invalid updates leaving all
 branding values unchanged, and denied or stale permission grants.
 
-Confirmed gaps use Vitest's `it.fails`, asserting the desired behavior. They are
-executed, not skipped. A newly passing gap also fails the normal suite, requiring
-its expected-failure annotation to be removed when repaired. A green normal audit
-run therefore does **not** mean the date/time policy is implemented.
-
-Normal audit run:
+All previously annotated failures are now ordinary passing regressions. DT-11
+remains deferred and code-traced; a green suite does not cover those SQL semantics.
+Run the date/time regressions with:
 
 ```powershell
 yarn test tests/datetime
 ```
 
-Expose the red regressions in PowerShell:
-
-```powershell
-$previousDateAuditMode = $env:CMDB_DATETIME_AUDIT_STRICT
-try {
-    $env:CMDB_DATETIME_AUDIT_STRICT = '1'
-    yarn test tests/datetime
-} finally {
-    if ($null -eq $previousDateAuditMode) {
-        Remove-Item Env:CMDB_DATETIME_AUDIT_STRICT -ErrorAction SilentlyContinue
-    } else {
-        $env:CMDB_DATETIME_AUDIT_STRICT = $previousDateAuditMode
-    }
-}
-```
-
-The expected strict result is 3 failing test cases and 535 passing test cases,
-with six opt-in MySQL checks skipped.
-This is a reproduction command; those failures are the audit output, not test
-harness errors. Infrastructure/probe errors are outside expected-failure tests.
+The earlier `CMDB_DATETIME_AUDIT_STRICT=1` switch now produces the same passing
+result: 592 checks, with eleven opt-in MySQL checks skipped.
 
 ## Findings reproduced by tests
 
@@ -452,16 +474,12 @@ the shared calendar-label routine without event lifecycle classification.
 Tests cover past, equal, and future points at a local midnight boundary.
 Compact labels now consume the full event range under DT-06.
 
-**POL-01 - Partially resolved: band timezone is configured, but event consumers still need adoption.**
+**POL-01 - Resolved 2026-09-15: band-timezone adoption.**
 
-All-day [hitTestDateTime](../shared/time.ts#L787) derives its boundaries from
-runtime-local midnight. The same event can be future in UTC or Los Angeles and
-already ongoing in Brussels or Tokyo. Tests cover both exact band-midnight
-edges of a 10 July event. [Event authoring](../src/core/components/DateTime/DateTimeRangeControl.tsx#L321)
-also remains device-local. Slice 1 adds the band setting, runtime access, and
-tested shared conversion operations; these existing consumers do not yet use
-them. The remaining policy integration is distinct from corruption of existing
-representations.
+The completed POL-01 section above describes authoring, lifecycle, aggregate bounds
+and atomic setting-change refreshes. Five-zone regressions now agree at both
+band-midnight boundaries. Existing cached rows have a separate review/apply command;
+no target database refresh was applied during implementation.
 
 ## Calendar integration and remaining query findings
 
@@ -499,7 +517,7 @@ the existing event visibility rules. The production overlap predicate passes
 real MySQL boundary tests; search-core tests verify row/count/facet integration.
 Simple year-number searches retain their existing behavior.
 
-**DT-11 - Medium: database status filters disagree with interval classification.**
+**DT-11 - Deferred: database status filters disagree with interval classification.**
 
 [Past/Future expressions](../src/core/db3/shared/apiTypes.ts#L357), used by the
 [active date facets](../src/core/db3/shared/db3basicFields.ts#L1314), compare only
@@ -507,8 +525,9 @@ the start against `CURDATE()`. An event that finished earlier today can still
 be `Future`, while an event that started yesterday and is ongoing can be `Past`.
 [Dashboard relevance](../src/auth/queries/getDashboardData.ts#L94) uses an
 inclusive end (`endDateTime >= now`) rather than the agreed exclusive end.
-It also compares the all-day UTC date marker as a start against an end cached
-using the server's local zone. Both endpoints need the same absolute meaning.
+It also compares the all-day UTC date marker as a start against the cached end.
+POL-01 now writes the end in band time, but DT-11 must still give both SQL endpoints
+the same absolute meaning and use an exclusive end.
 
 Move shared status semantics into policy and apply equivalent explicit bounds
 in SQL. The database clock/timezone should not supply an alternative definition
@@ -517,10 +536,8 @@ do not need a framework for elapsed-versus-calendar-day precision.
 
 **Additional maintenance observations.**
 
-- [The aggregate writer](../src/core/db3/server/db3mutationCore.ts#L191) silently
-  catches every exception. A segment mutation can succeed while aggregate dates
-  remain stale. The repair should expose or propagate recalculation failures
-  within the existing transaction contract.
+- POL-01 removes the aggregate writer's swallowed-error path and makes event/segment
+  edits transactional, so an aggregate failure rolls back the date edit.
 - [RelevantEvents](../src/core/components/event/RelevantEvents.tsx) captures
   `now` once without updating it. DT-06 makes its card styling and labels share
   that reference time. [DateValue](../src/core/components/DateTime/DateTimeComponents.tsx#L51)
@@ -587,46 +604,39 @@ frozen in January and `00:30Z` with it frozen in July. The wrapper must define
 deterministic handling of repeated and nonexistent authoring times. Slice 1's
 shared Temporal policy now specifies and tests that behavior; subsequent picker
 adapters should use it. Existing explicit UTC instants already identify their
-occurrence and must remain unchanged. Before applying the band timezone to
-existing lifecycle consumers, define its effect on derived all-day bounds and
-recalculation after setting changes. Slice 1 refreshes configuration only.
+occurrence and must remain unchanged. POL-01 now applies that boundary to event authoring and defines transactional
+recalculation of derived bounds after setting changes.
 
 ## Verification and limits
 
-- DT-10 verification on 2026-09-15: full `yarn test` passed 1,247 cases;
-  fifteen opt-in MySQL checks were skipped. The 538 standard date/time checks contain 535
-  ordinary checks and 3 executed expected failures. Strict date/time mode exposes
-  exactly those 3 remaining failures (POL-01).
-- Focused ESLint for every changed TypeScript file, `git diff --check`, and
-  `yarn tsc --noEmit` passed. The production `yarn build` also passed.
-  The earlier TS2321/TS2345 Prisma comparison errors
-  in `mergeUsers.ts` did not recur on the current tree; no merge code was changed.
-- Settings resolver tests use the existing in-memory database. It does not
-  emulate transaction rollback; the bulk rejection case checks validation before
-  writes. Production mutations retain their existing serializable transactions.
-- DT-03 writer tests stub database reads and capture the actual update payload.
-  They do not execute SQL, emulate rollback, or test the existing swallowed-error
-  path. All-day cached-end assertions intentionally reflect current host-local
-  bounds; band-timezone lifecycle integration remains open.
-- DT-09 widget probes mount the installed calendar and Moment localizer in
-  jsdom. They supply element heights because jsdom has no layout engine and
-  inspect the widget's rendered day spans. Separate consumer tests inspect the
-  real month component's calendar props and selection callback, with the widget
-  and unrelated UI dependencies isolated. These do not exercise live queries,
-  attendance rendering, or a manual browser calendar journey.
-- DT-10's six MySQL tests passed via `node scripts/test-datetime-mysql.cjs`.
-  The runner created a fresh local schema, seeded only synthetic events, executed
-  the production overlap predicate, and dropped that database afterward.
-  Search-core tests separately capture SQL for rows/counts/facets and verify that
-  segment overlap and visibility predicates coexist. They do not execute an
-  authenticated browser-to-MySQL journey or a production-scale query plan.
-- No production database, deployed server timezone, existing corrupted row count,
-  manual browser session, full date-picker/calendar journey, or external calendar
-  application was tested. DT-11 remains a code trace; DT-10 has the local MySQL
-  evidence described above. Authoring tests exercise boundary calculations and the explicit
-  local-date factory; the new clock tests additionally mount real controls in
-  jsdom. DT-01 did not exercise the import UI interactively.
-- Passing controls cover exact ordinary timed boundaries, TBD, local tomorrow,
-  calendar-day membership, ascending date sorting, leap-year adjacency, 23/25-hour
-  calendar days, and normal feed serialization. These are useful existing
-  contracts to preserve during repairs.
+- POL-01 verification on 2026-09-15: full `yarn test` passed 1,301 cases;
+  twenty opt-in MySQL checks were skipped. All 592 standard date/time checks are
+  ordinary passing regressions, with no expected-failure annotations remaining.
+- Focused ESLint, `git diff --check`, and ordinary `yarn tsc --noEmit` passed.
+  The production Next/Blitz build passed using the same configuration with a
+  temporary separate output directory; the initial `yarn build` collided with
+  the running development server's `.next` output during page-data collection.
+  Clean `tsc --noEmit --incremental false` reproduces TS2321/TS2345 in
+  `mergeUsers.ts` on both unmodified HEAD and this tree. No merge code was changed.
+- `node scripts/test-datetime-mysql.cjs` passed all eleven checks against a fresh
+  local schema and dropped that disposable database afterward. Five checks cover
+  setting changes, actual raw hooks, atomic rollback, previews and repairs; six
+  cover the production calendar-overlap SQL predicate.
+- Settings resolver tests retain the existing in-memory authorization harness.
+  It does not emulate rollback; the new MySQL failure-injection check supplies
+  that evidence. Raw hook integration uses real writes inside a transaction;
+  separate resolver tests cover validation and authorization.
+- Five native timezone processes exercise actual range helpers and the aggregate
+  writer with stubbed database reads. Mounted jsdom tests cover the band editor,
+  picker query/highlight adapter, and production metadata-to-attendance policy.
+  Unrelated query/response/UI dependencies are isolated in those mounted tests.
+- A read-only local refresh preview inspected 430 events and found 37 stale
+  aggregate records. No existing event data was changed. This is not evidence
+  about historical corruption or the state of a production database.
+- DT-09 widget probes use the installed calendar and Moment localizer in jsdom,
+  with supplied element heights because jsdom has no layout engine. DT-10
+  search-core tests separately verify row/count/facet and visibility integration.
+- No production database, deployed server timezone, manual browser journey,
+  external calendar application, or production-scale query plan was tested.
+  DT-11 remains deliberately deferred. Timed display and ordinary all-day feed
+  semantics retain their existing passing regressions.

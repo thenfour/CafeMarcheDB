@@ -88,6 +88,7 @@ const routes = [
     { key: "quickSearchTest", pattern: "/backstage/test/quickSearchTest", caption: "Quick Search Test", permission: Permission.sysadmin },
     { key: "selectTest", pattern: "/backstage/test/CMSelectTest", caption: "Select Test", permission: Permission.sysadmin },
     { key: "attendanceTest", pattern: "/backstage/test/attendance", caption: "Attendance scenarios", permission: Permission.sysadmin },
+    { key: "dateTest", pattern: "/backstage/test/date", caption: "Date Test", permission: Permission.sysadmin },
 
     { key: "workflows", pattern: "/backstage/workflows", caption: "Workflows", permission: Permission.never_grant },
     { key: "editEventCustomFields", pattern: "/backstage/editEventCustomFields", caption: "Event Custom Fields", permission: Permission.never_grant },

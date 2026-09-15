@@ -1,7 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
-import db from "db";
+import db, { Prisma } from "db";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { validateDB3MutationRequest } from "../server/db3RequestValidation";
@@ -14,9 +14,11 @@ export default resolver.pipe(
         const input = validateDB3MutationRequest(untrustedInput);
         const table = db3.GetTableById(input.tableID);
 
+        // simplest approach: wrap all mutations in a transaction. this will run the associated
+        // mutations and hooks serially.
+        const transactionOptions = { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 };
 
-
-        const execute = async (transactionalDb: TransactionalPrismaClient = db as any) => {
+        return await db.$transaction(async (transactionalDb: TransactionalPrismaClient = db as any) => {
             if (input.mutationType === "delete") {
                 return await mutationCore.deleteImpl(table, input.deleteId, ctx, input.deleteType, transactionalDb);
             }
@@ -30,10 +32,6 @@ export default resolver.pipe(
                 ctx,
                 transactionalDb,
             )).newModel;
-        };
-
-        return table.requiresTransactionalMutation
-            ? db.$transaction(tx => execute(tx))
-            : execute();
+        }, transactionOptions);
     }
 );

@@ -378,7 +378,10 @@ interface EventDateFieldProps {
 };
 
 export const EventDateField = (props: React.PropsWithChildren<EventDateFieldProps>) => {
-    const relativeTiming = CalcRelativeTiming(new Date(), props.dateRange);
+    const dashboardContext = useDashboardContext();
+
+    // why use band time here? shouldn't we display relative to the user's local time?
+    const relativeTiming = CalcRelativeTiming(new Date(), props.dateRange, dashboardContext.bandTimeZone);
 
     return <div className={`${props.className} ${relativeTiming.bucket} EventDateField container`}>
         {gIconMap.CalendarMonth()}

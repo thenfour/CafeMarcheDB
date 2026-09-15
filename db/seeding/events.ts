@@ -1,3 +1,4 @@
+import { loadBandTimeZone } from "src/server/dateTime";
 import { faker } from '@faker-js/faker';
 import { Prisma } from '@prisma/client';
 import { DateTimeRange, roundToNearest15Minutes } from '../../shared/time';
@@ -74,7 +75,8 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
 
     // create things out of order.
     segmentDateRanges = faker.helpers.shuffle(segmentDateRanges);
-    const eventRange = DateTimeRange.union(segmentDateRanges);
+    const bandTimeZone = await loadBandTimeZone(gState.prisma);
+    const eventRange = DateTimeRange.union(segmentDateRanges, bandTimeZone);
     //console.log(`= ${eventRange.toString()}`);
 
     const visibilityPermissionId = gState.randomVisibilityPermissionId();
@@ -94,7 +96,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
             startsAt: eventRange.getSpec().startsAtDateTime,
             durationMillis: eventRange.getSpec().durationMillis,
             isAllDay: eventRange.getSpec().isAllDay,
-            endDateTime: eventRange.getEndDateTime(),
+            endDateTime: eventRange.getInstantInterval(bandTimeZone)?.end ?? null,
 
             frontpageVisible: faker.datatype.boolean(0.5),
         }

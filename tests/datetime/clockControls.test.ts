@@ -32,6 +32,7 @@ function mount(start: Date, end: Date) {
   root = createRoot(container)
   const onChange = vi.fn()
   act(() => root!.render(React.createElement(DateTimeRangeControl, {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     value: new DateTimeRange({ startsAtDateTime: start, durationMillis: end.valueOf() - start.valueOf(), isAllDay: false }),
     onChange,
   })))

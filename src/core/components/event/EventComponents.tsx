@@ -1508,7 +1508,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
     const eventURI = dashboardContext.routingApi.getURIForEvent(event);
     const dateRange = API.events.getEventDateRange(event);
-    const eventTiming = dateRange.hitTestDateTime();
+    const eventTiming = dateRange.hitTestDateTime(null, dashboardContext.bandTimeZone);
 
     const visInfo = dashboardContext.getVisibilityInfo(event);
     const typeStyle = GetStyleVariablesForColor({

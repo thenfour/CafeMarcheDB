@@ -1,7 +1,7 @@
 // insertEvent
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, assert } from "blitz";
-import { Prisma } from "db";
+import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
@@ -12,7 +12,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (args: TinsertEventArgs, ctx: AuthenticatedCtx) => {
 
-        try {
+        return db.$transaction(async tx => {
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             assert(!!currentUser, "user required to insert an event")
 
@@ -36,7 +36,7 @@ export default resolver.pipe(
             };
 
             // create the root event,
-            const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx) as Prisma.EventGetPayload<{}>;
+            const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx, tx) as Prisma.EventGetPayload<{}>;
 
             const segmentFields: Prisma.EventSegmentUncheckedCreateInput = {
                 name: args.segment.name || "Set 1",
@@ -48,7 +48,7 @@ export default resolver.pipe(
             };
 
             // create the initial segment.
-            const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx) as db3.EventSegmentPayloadMinimum;
+            const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx, tx) as db3.EventSegmentPayloadMinimum;
 
             // create song lists
             if (args.songList) {
@@ -60,7 +60,7 @@ export default resolver.pipe(
                     name: "Setlist",
                     sortOrder: 0,
                 };
-                const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx) as db3.EventSongListPayload;
+                const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx, tx) as db3.EventSongListPayload;
                 // add songs.
                 for (let i = 0; i < args.songList.length; ++i) {
                     const s = args.songList[i]!;
@@ -72,7 +72,7 @@ export default resolver.pipe(
                         sortOrder: i,
                         subtitle: s.comment || "",
                     };
-                    await mutationCore.insertImpl(db3.xEventSongListSong, songFields, ctx);
+                    await mutationCore.insertImpl(db3.xEventSongListSong, songFields, ctx, tx);
                 }
             }
 
@@ -86,7 +86,7 @@ export default resolver.pipe(
                         attendanceId: r.attendanceId,
                         userId: r.userId,
                     };
-                    await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx);
+                    await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx, tx);
                 };
             }
 
@@ -94,10 +94,7 @@ export default resolver.pipe(
                 event: newEvent,
                 segment,
             };
-        } catch (e) {
-            console.log(e);
-            throw e;
-        }
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120_000 });
     }
 );
 
