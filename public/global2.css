@@ -2068,6 +2068,22 @@ table.songMetadata tr td .CMSmallButton:hover {
     margin-bottom: 2px;
 }
 
+/* on the attendance response picker, avoid so many nested borders of the name-value input control */
+.attendanceResponseInput .BasicNameValuePairContainer {
+    border: 0;
+}
+
+.attendanceResponseInput .BasicNameValuePairContainer>.name {
+    background-color: transparent;
+    opacity: 1;
+}
+
+.attendanceResponseInput .BasicNameValuePairContainer>.value {
+    background-color: transparent;
+    opacity: 1;
+    padding-top: 0;
+}
+
 .shareCalendarButton {
     display: flex;
 }
