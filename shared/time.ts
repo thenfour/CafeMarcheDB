@@ -1,5 +1,6 @@
 import dayjs, { Dayjs } from "dayjs";
 import weekOfYear from 'dayjs/plugin/weekOfYear';
+import { addCalendarDays, getBandDateTimeFields, getClockTimeOccurrences } from './dateTimePolicy';
 
 import { assert } from "blitz";
 
@@ -275,59 +276,88 @@ export const DateSortPredicateDesc = (a: Date | null, b: Date | null): number =>
 
 
 ////////////////////////////////////////////////////////////////
-export interface TimeOption {
-    beginMillisecondOfDay: number;
-    endMillisecondOfDay: number;
-    millisSinceStart: number;
-    time: Date;
-    label: string;
-    labelWithDuration: string;
-    index: number;
+export interface ClockTimeOption {
+    clockTime: string; // HH:mm; a civil clock value, never an instant.
+    millisecondOfDay: number;
 }
 
-
-
-
 export class TimeOptionsGenerator {
-    private options: TimeOption[] = [];
+    private options: ClockTimeOption[] = [];
 
-    constructor(minuteIncrement: number, startFromMinuteOfDay: number) {
-        if (minuteIncrement <= 0) {
+    constructor(minuteIncrement: number) {
+        if (!Number.isInteger(minuteIncrement) || minuteIncrement <= 0 || minuteIncrement > 1440) {
             throw new Error("Invalid minute increment.");
         }
-
-        startFromMinuteOfDay = floorToMinuteIntervalOfDay(startFromMinuteOfDay, minuteIncrement);
-
-        const startDate = new Date();
-        startDate.setHours(0, 0, 0, 0);
-        const startFromMillisOfDay = startFromMinuteOfDay * gMillisecondsPerMinute;
-        const millisecondIncrement = minuteIncrement * gMillisecondsPerMinute;
-        for (let millisCursor = 0; millisCursor < gMillisecondsPerDay; millisCursor += millisecondIncrement) {
-            const beginMillisecondOfDay = (startFromMillisOfDay + millisCursor) % gMillisecondsPerDay;
-            const endMillisecondOfDay = (beginMillisecondOfDay + millisecondIncrement); // do not wrap! otherwise last entry would have a 0 and wouldn't match queries.
-            const time = new Date(startDate.getTime() + beginMillisecondOfDay);
-            const label = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            this.options.push({
-                time,
-                label,
-                labelWithDuration: `${label} (${formatMillisecondsToDHMS(millisCursor)})`,
-                beginMillisecondOfDay,
-                endMillisecondOfDay,
-                millisSinceStart: millisCursor,
-                index: this.options.length,
-            });
+        for (let minute = 0; minute < 1440; minute += minuteIncrement) {
+            const hours = Math.floor(minute / 60).toString().padStart(2, "0");
+            const minutes = (minute % 60).toString().padStart(2, "0");
+            this.options.push({ clockTime: `${hours}:${minutes}`, millisecondOfDay: minute * gMillisecondsPerMinute });
         }
     }
 
-    getOptions(): TimeOption[] {
+    getOptions(): readonly ClockTimeOption[] {
         return this.options;
     }
+}
 
-    findTime(time: Date): TimeOption {
-        const millisecondOfDayToMatch = time.getHours() * 3600000 + time.getMinutes() * 60000;
-        return this.options.find((n) => n.beginMillisecondOfDay <= millisecondOfDayToMatch && n.endMillisecondOfDay > millisecondOfDayToMatch)!;
+export interface DateTimeOption {
+    instant: Date;
+    label: string;
+}
+
+// Build choices for the event date, using the explicit authoring timezone.
+// Each option owns the instant that will be saved, including a repeated hour.
+export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: string) {
+    const clocks = new TimeOptionsGenerator(15).getOptions();
+    const startFields = getBandDateTimeFields(start, timeZone);
+    const endFields = getBandDateTimeFields(end, timeZone);
+
+    const makeOption = (instant: Date, repeated: boolean, includeDuration: boolean): DateTimeOption => {
+        const fields = getBandDateTimeFields(instant, timeZone);
+        const clock = fields.time.replace(/:00\.000$/, "").replace(/\.000$/, "");
+        const offset = repeated ? ` (UTC${fields.offset})` : "";
+        const date = fields.date === startFields.date ? "" : ` on ${fields.date}`;
+        const elapsed = instant.valueOf() - start.valueOf();
+        const milliseconds = elapsed % 1000;
+        const duration = elapsed === 0 ? "0m" : [
+            elapsed >= 1000 ? formatMillisecondsToDHMS(elapsed) : "",
+            milliseconds ? `${milliseconds}ms` : "",
+        ].filter(Boolean).join(" ");
+        return { instant, label: `${clock}${offset}${date}${includeDuration ? ` (${duration})` : ""}` };
+    };
+
+    const startOptions: DateTimeOption[] = [];
+    const endOptions: DateTimeOption[] = [];
+    for (const clock of clocks) {
+        const starts = getClockTimeOccurrences({ date: startFields.date, time: clock.clockTime }, timeZone);
+        startOptions.push(...starts.map(instant => makeOption(instant, starts.length > 1, false)));
+
+        // Preserve the current end date. On the start date, an earlier clock
+        // rolls to tomorrow only when no remaining occurrence follows the start.
+        let ends = endFields.date === startFields.date ? starts
+            : getClockTimeOccurrences({ date: endFields.date, time: clock.clockTime }, timeZone);
+        const clockHasPassed = ends.length ? ends.every(instant => instant < start)
+            : clock.clockTime < startFields.time;
+        if (clockHasPassed && endFields.date === startFields.date) {
+            ends = getClockTimeOccurrences({ date: addCalendarDays(endFields.date, 1), time: clock.clockTime }, timeZone);
+        }
+        endOptions.push(...ends.filter(instant => instant >= start)
+            .map(instant => makeOption(instant, ends.length > 1, true)));
     }
+
+    const includeSelected = (options: DateTimeOption[], selected: Date, includeDuration: boolean): DateTimeOption => {
+        let option = options.find(value => value.instant.valueOf() === selected.valueOf());
+        if (!option) {
+            const fields = getBandDateTimeFields(selected, timeZone);
+            option = makeOption(new Date(selected), getClockTimeOccurrences(fields, timeZone).length > 1, includeDuration);
+            options.push(option);
+        }
+        options.sort((a, b) => a.instant.valueOf() - b.instant.valueOf());
+        return option;
+    };
+    const selectedStart = includeSelected(startOptions, start, false);
+    const selectedEnd = includeSelected(endOptions, end, true);
+    return { startOptions, endOptions, selectedStart, selectedEnd };
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -5,6 +5,7 @@ import {
   gMillisecondsPerDay,
   gMillisecondsPerHour,
   TimeOptionsGenerator,
+  getDateTimeRangeTimeOptions,
 } from "../../../shared/time"
 
 export interface AuthoringPolicyProbe {
@@ -59,9 +60,9 @@ function localDate(day: number[], hour: number, minute = 0): Date {
 function selectedClockHour(today: number[]): number {
   return withCurrentDate(localDate(today, 12), () => {
     // Editing an unrelated July event must not depend on today's DST boundary.
-    const options = new TimeOptionsGenerator(15, 0)
-    const selected = options.findTime(new Date(2026, 6, 10, 3))
-    return selected.time.getHours()
+    const options = new TimeOptionsGenerator(15)
+    const selected = options.getOptions().find(option => option.clockTime === "03:00")!
+    return selected.millisecondOfDay / 3_600_000
   })
 }
 
@@ -69,14 +70,12 @@ function selectEnd(caseName: "ordinary" | "spring" | "autumn", eventDay: number[
   return withCurrentDate(localDate(ordinaryDay, 12), () => {
     const start = localDate(eventDay, 1, 30)
     const expectedEnd = localDate(eventDay, 3, 30)
-    const options = new TimeOptionsGenerator(15, 90)
-    const selectedEnd = options.findTime(expectedEnd)
-    // This reproduces the date-control boundary contract: the control stores
-    // the selected option's millisSinceStart as the event's elapsed duration.
-    // It is not a mounted React/MUI interaction test.
+    const options = getDateTimeRangeTimeOptions(start, expectedEnd, timeZone)
+    const selectedEnd = options.endOptions.find(option => option.instant.valueOf() === expectedEnd.valueOf())!
+    // Exercise the same resolved choices and elapsed subtraction as the control.
     const range = new DateTimeRange({
       startsAtDateTime: start,
-      durationMillis: selectedEnd.millisSinceStart,
+      durationMillis: selectedEnd.instant.valueOf() - start.valueOf(),
       isAllDay: false,
     })
     return {

@@ -3,7 +3,7 @@
 2026-09-12, updated 2026-09-15. This report tracks the audit, executable regression
 baseline, band-timezone foundation, all-day calendar-feed correction, DT-01
 all-day hydration, DT-02/DT-08 timed hydration and point-relative labels, and
-DT-03 range aggregation. Event editors still need band-timezone integration;
+DT-03 range aggregation, and DT-04/DT-05 clock controls. Event editors still need band-timezone integration;
 lifecycle classification and SQL queries still need repairs.
 No existing event data or database schema has been changed. The Japan report has
 not been reproduced as a complete user journey, and none of these findings
@@ -120,12 +120,10 @@ band timezone to shared event authoring remains part of POL-01.
   checks, four late-night toggle checks, and four point-timestamp label checks.
   Fifty timed-range checks and six feed checks extend the regression coverage.
 
-DT-03 aggregation is repaired below. DT-04 clock options, DT-05 selected-end
-arithmetic, and band-timezone control integration remain open. The current
-control's `findTime` still displays the containing quarter-hour option for an
-off-grid instant; exact current selections must be presented when integrating
-the clock controls. This slice preserves the underlying values without adding
-implicit snapping or changing the persisted encoding.
+DT-03 aggregation and DT-04/DT-05 clock choices are repaired below. The clock
+controls now display exact off-grid selections as well as retaining their values.
+Band-timezone control integration remains open. These repairs retain the
+persisted encoding.
 
 ## Completed DT-03: calculate aggregate bounds in one representation
 
@@ -159,6 +157,38 @@ POL-01 and the server integration slice. The writer still caches the existing
 host-local all-day end and retains its existing exception handling. No stored
 events were rewritten and no existing aggregate caches were rebuilt.
 
+## Completed DT-04 / DT-05: resolve clock choices on the edited date
+
+- `TimeOptionsGenerator` now produces civil `HH:mm` values and their nominal
+  millisecond-of-day positions. It does not create local `Date` values or use
+  today's midnight. The quarter-hour grid stays unchanged across seasons.
+- `getDateTimeRangeTimeOptions` resolves those clocks on the edited dates using
+  an explicit timezone. Each displayed option carries the actual instant saved
+  by the control. End durations are calculated by subtracting the start instant,
+  so 01:30-03:30 can correctly show one or three elapsed hours across DST.
+- `getClockTimeOccurrences` keeps Temporal behind the shared policy module.
+  Dropdowns omit nonexistent clocks and distinguish repeated occurrences with
+  UTC offsets. This is explicit occurrence selection; free-form authoring's
+  existing `compatible` gap/fold policy remains unchanged.
+- The controls preserve the existing end date. On the start date, earlier clocks
+  roll to the following calendar date if no remaining occurrence follows the
+  start. Dates are shown beside overnight/multi-day choices. A later repeated
+  occurrence can remain on the same date even if its clock appears earlier.
+- Exact existing starts and ends, including off-grid minutes, seconds,
+  milliseconds, zero duration, and the second DST occurrence, remain selectable
+  and display accurately. Range edits use option instants directly. Choice
+  generation is memoized and omitted for all-day/TBD controls.
+- All eight remaining authoring expected failures are now ordinary passing
+  checks. Thirty-one additional option tests include Brussels, Los Angeles,
+  Sydney, and Lord Howe's half-hour transitions. Three jsdom tests mount the
+  real range control, MUI wrappers, and native selects to verify exact display,
+  no change on mount, and the saved start/end values. Unrelated query/dashboard
+  siblings are isolated.
+
+The component still passes the device timezone. Band-timezone date-picker
+integration, showing that zone beside the event editor, and lifecycle adoption
+remain part of POL-01. This slice does not change stored data or cached bounds.
+
 ## Executable evidence
 
 The date/time tests live under [tests/datetime](../tests/datetime). Native `Date` runs in
@@ -173,19 +203,22 @@ aggregation, and feed cases. Clocks are fixed where an operation depends on the 
 | [allDayHydration.test.ts](../tests/datetime/allDayHydration.test.ts) | 40 | 0 | Stored all-day dates, explicit local authoring, copies, serialization, and calendar boundaries in five zones |
 | [timedHydration.test.ts](../tests/datetime/timedHydration.test.ts) | 50 | 0 | Exact instants/durations, copies, DST occurrences, zero-duration display, and point labels in five zones |
 | [unionPolicy.test.ts](../tests/datetime/unionPolicy.test.ts) | 60 | 0 | Range algebra, full-list event aggregation, cancellation/TBD filtering, and actual writer bounds in five zones |
-| [authoringPolicy.test.ts](../tests/datetime/authoringPolicy.test.ts) | 24 | 8 | Real clock-option/range helpers and the control's selected-end/toggle calculations |
+| [authoringPolicy.test.ts](../tests/datetime/authoringPolicy.test.ts) | 32 | 0 | Real clock-option/range helpers and the control's selected-end/toggle calculations |
+| [clockOptions.test.ts](../tests/datetime/clockOptions.test.ts) | 31 | 0 | Civil clock grid, dated instants, gap/fold choices, precise selections, and overnight/multi-day ends |
+| [clockControls.test.ts](../tests/datetime/clockControls.test.ts) | 3 | 0 | Mounted range control and native select changes in jsdom |
 | [eventDateConsumers.test.ts](../tests/datetime/eventDateConsumers.test.ts) | 8 | 5 | Actual compact event-date React rendering with unrelated sibling imports isolated |
 | [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 29 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
 | [bandTimePolicy.test.ts](../tests/datetime/bandTimePolicy.test.ts) | 54 | 0 | Named-zone validation, band-time conversion, DST ambiguity, all-day bounds, and host-timezone independence |
 | [bandTimeZoneLoading.test.ts](../tests/datetime/bandTimeZoneLoading.test.ts) | 4 | 0 | Fresh server setting reads, default/error behavior, and dashboard delivery |
 | [bandTimeZoneWrites.test.ts](../tests/datetime/bandTimeZoneWrites.test.ts) | 25 | 0 | Generic and raw settings validation, partial edits, clears, and retained authorization |
-| Total | 357 | 16 | 373 checks; remaining failures repeat root causes across zones and boundaries |
+| Total | 399 | 8 | 407 checks; remaining failures repeat root causes across zones and boundaries |
 
 The original audit contained 134 checks: 90 ordinary passing checks and 44 known
 failures. Slice 1 adds 83 policy/loading/write checks and repairs the five feed failures.
 DT-01 adds 40 checks and repairs three more failures.
 DT-02/DT-08 add 56 checks and repair another 18 failures.
 DT-03 adds 60 checks and repairs two more failures.
+DT-04/DT-05 add 34 checks and repair eight more failures.
 [Setting authorization tests](../tests/authorization/settingAuthorization.test.ts)
 also cover default reads, valid persistence/readback, invalid updates leaving all
 branding values unchanged, and denied or stale permission grants.
@@ -217,7 +250,7 @@ try {
 }
 ```
 
-The expected strict result is 16 failing test cases and 357 passing test cases.
+The expected strict result is 8 failing test cases and 399 passing test cases.
 This is a reproduction command; those failures are the audit output, not test
 harness errors. Infrastructure/probe errors are outside expected-failure tests.
 
@@ -277,24 +310,25 @@ three dates. Self-union on the autumn transition preserves one calendar day.
 Tests also verify exact timed extrema, coverage, idempotence, and the writer's
 persisted bounds. No input sorting or schema change is required.
 
-**DT-04 - High: clock choices depend on the day the editor is opened.**
+**DT-04 - Resolved 2026-09-15: clock choices depended on the day the editor opened.**
 
-[TimeOptionsGenerator](../shared/time.ts#L301) builds nominal clock choices by
-adding elapsed milliseconds to today's local midnight. On the Brussels or
-Pacific spring clock-change day, a July event's selected 03:00 is presented as
-04:00. On the autumn change day it becomes 02:00, with duplicate clock labels.
-UTC and Tokyo controls pass. Clock-of-day options need a stable civil-time
-representation independent of today's elapsed day length.
+[The former TimeOptionsGenerator](../shared/time.ts) built nominal clock choices
+by adding elapsed milliseconds to today's local midnight. On the Brussels or
+Pacific spring clock-change day, a July event's selected 03:00 appeared as
+04:00. On the autumn change day it became 02:00, with duplicate clock labels.
+The grid now uses civil clock values. Resolved dropdowns use the edited date
+and explicit zone, with distinct offsets for repeated clocks and accurate
+labels for existing off-grid selections.
 
-**DT-05 - High: an end-time selection across DST saves a different end time.**
+**DT-05 - Resolved 2026-09-15: an end-time selection across DST saved a different end time.**
 
-[handleChangeEndTime2](../src/core/components/DateTime/DateTimeRangeControl.tsx#L361)
-stores the option's nominal clock distance as elapsed duration. In Brussels on
-29 March 2026, start 01:30 and selected end 03:30 result in end 04:30. On
-25 October, the same selection results in 02:30. Pacific equivalents also fail.
-Resolve the selected end date and clock in the authoring zone, then subtract
-absolute instants to obtain elapsed duration. Tests exercise this exact boundary
-calculation; they do not mount or interact with MUI.
+[The former end-time handler](../src/core/components/DateTime/DateTimeRangeControl.tsx)
+stored nominal clock distance as elapsed duration. In Brussels on 29 March
+2026, start 01:30 and selected end 03:30 saved end 04:30. On 25 October, the same
+selection saved 02:30. Pacific equivalents also failed. Options now carry dated
+instants, and the handler stores their actual elapsed difference from the start.
+Tests verify the one/three-hour cases, half-hour DST changes, overnight and
+multi-day ends, and the mounted select's change handler.
 
 **DT-06 - Medium: compact event labels discard event duration and all-day meaning.**
 
@@ -435,7 +469,9 @@ do not need a framework for elapsed-versus-calendar-day precision.
    labels, attendance timing, and calendar adapters consume semantic operations.
    Keep generic personal report/range pickers in the viewer timezone: they share
    lower-level controls with event editing and must not inherit band time
-   accidentally. Repair clock options and selected-end calculations together.
+   accidentally. **DT-04/DT-05 are completed:** clock options and selected-end
+   calculations now use resolved instants. Band-timezone date-picker integration,
+   compact labels, attendance timing, and calendar adapters remain open.
 4. **Align server aggregation, queries, and remaining feed behavior.** Cache
    absolute event bounds consistently and apply overlap queries. All-day feed
    serialization and timed feed hydration are repaired. Define recalculation of
@@ -469,16 +505,16 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
 
 ## Verification and limits
 
-- DT-03 verification on 2026-09-15: full `yarn test` passed 1,080 cases;
-  nine opt-in MySQL checks were skipped. The 373 date/time checks contain 357
-  ordinary checks and 16 executed expected failures. Strict date/time mode exposes
-  exactly those 16 remaining failures.
+- DT-04/DT-05 verification on 2026-09-15: full `yarn test` passed 1,114 cases;
+  nine opt-in MySQL checks were skipped. The 407 date/time checks contain 399
+  ordinary checks and 8 executed expected failures. Strict date/time mode exposes
+  exactly those 8 remaining failures (POL-01 and DT-06).
 - Focused ESLint for every changed TypeScript file and `git diff --check` passed.
   `yarn tsc --noEmit` reports TS2321/TS2345 in `src/auth/mutations/mergeUsers.ts:11`
   comparing Prisma client types. During DT-01, a compiler run substituting unchanged `HEAD`
   sources for the edited files and excluding the new tests reproduced both
   diagnostics. No new type diagnostics were reported. A production build was
-  not run for DT-01 through DT-03; slice 1's earlier typecheck and build passed.
+  not run for DT-01 through DT-05; slice 1's earlier typecheck and build passed.
 - Settings resolver tests use the existing in-memory database. It does not
   emulate transaction rollback; the bulk rejection case checks validation before
   writes. Production mutations retain their existing serializable transactions.
@@ -487,10 +523,11 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
   path. All-day cached-end assertions intentionally reflect current host-local
   bounds; band-timezone lifecycle integration remains open.
 - No production database, deployed server timezone, existing corrupted row count,
-  interactive MUI/calendar behavior, or external calendar application was tested.
-  Query findings are code traces, not claims of live SQL execution. Authoring
-  tests exercise boundary calculations and the explicit local-date factory
-  rather than mounted controls. DT-01 did not exercise the import UI interactively.
+  manual browser session, full date-picker/calendar journey, or external calendar
+  application was tested. Query findings are code traces, not claims of live SQL
+  execution. Authoring tests exercise boundary calculations and the explicit
+  local-date factory; the new clock tests additionally mount real controls in
+  jsdom. DT-01 did not exercise the import UI interactively.
 - Passing controls cover exact ordinary timed boundaries, TBD, local tomorrow,
   calendar-day membership, ascending date sorting, leap-year adjacency, 23/25-hour
   calendar days, and normal feed serialization. These are useful existing

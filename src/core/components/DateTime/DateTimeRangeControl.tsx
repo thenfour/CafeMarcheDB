@@ -4,7 +4,7 @@ import { FormControlLabel, LinearProgress, NoSsr, Popover, Switch, Tooltip } fro
 import { DateCalendar, DateView, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import { assert } from 'blitz';
 import dayjs, { Dayjs } from "dayjs";
-import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, getTimeOfDayInMinutes } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, DateTimeOption, getDateTimeRangeTimeOptions, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour } from "shared/time";
 import { gIconMap } from '../../db3/components/IconMap';
 import { KeyValueTable } from '../CMCoreComponents2';
 import { CalendarEventSpec } from './DateTimeTypes';
@@ -323,11 +323,13 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
     // sanitize input value
     const coalescedStartDateTime = value.getStartDateTime(new Date());
 
-    const startTimeOptions = new TimeOptionsGenerator(15, 0);
-    const endTimeOptions = new TimeOptionsGenerator(15, getTimeOfDayInMinutes(coalescedStartDateTime));
-
-    const startTime = startTimeOptions.findTime(coalescedStartDateTime);
-    const endTime = endTimeOptions.findTime(value.getEndDateTime(coalescedStartDateTime)); // selecting the end time will be EXCLUSIVE. so you select a 1-hour 10am-11am event, and the END time will be 11am; last time = 10:59.59.999
+    const startMillis = coalescedStartDateTime.valueOf();
+    const endMillis = value.getEndDateTime(coalescedStartDateTime).valueOf();
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const showTimeOptions = !value.isAllDay() && !value.isTBD();
+    const timeOptions = React.useMemo(() => !showTimeOptions ? null : getDateTimeRangeTimeOptions(
+        new Date(startMillis), new Date(endMillis), timeZone,
+    ), [showTimeOptions, startMillis, endMillis, timeZone]);
 
     const [coalescedFallbackStartDay, setCoalescedFallbackStartDay] = React.useState<Date>(coalescedStartDateTime);
 
@@ -356,13 +358,12 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
         props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), startsAtDateTime: newStartDateTime, durationMillis }));
     };
 
-    const handleChangeStartTime2 = (newTime: TimeOption) => {
-        const newDateTime = combineDateAndTime(coalescedStartDateTime, newTime.time);
-        props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: newDateTime }));
+    const handleChangeStartTime2 = (newTime: DateTimeOption) => {
+        props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: newTime.instant }));
     };
 
-    const handleChangeEndTime2 = (newTime: TimeOption) => {
-        props.onChange(new DateTimeRange({ ...value.getSpec(), durationMillis: newTime.millisSinceStart }));
+    const handleChangeEndTime2 = (newTime: DateTimeOption) => {
+        props.onChange(new DateTimeRange({ ...value.getSpec(), durationMillis: newTime.instant.valueOf() - startMillis }));
     };
 
     const handleAllDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -410,7 +411,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                                 @
                                 <div className="timePart field">
 
-                                    <CMDBSelect className="interactable startTime" value={startTime} onChange={handleChangeStartTime2} getOptionID={o => `id_${o.index}`} options={startTimeOptions.getOptions()} getOptionString={o => o.label} />
+                                    <CMDBSelect className="interactable startTime" value={timeOptions!.selectedStart} onChange={handleChangeStartTime2} getOptionID={o => String(o.instant.valueOf())} options={timeOptions!.startOptions} getOptionString={o => o.label} />
 
                                 </div>
                             </>)}
@@ -431,7 +432,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
 
                             {!value.isAllDay() && !value.isTBD() && (
                                 <div className="timePart field">
-                                    <CMDBSelect className="interactable endTime" value={endTime} onChange={handleChangeEndTime2} getOptionID={o => `id_${o.index}`} options={endTimeOptions.getOptions()} getOptionString={o => o.labelWithDuration} />
+                                    <CMDBSelect className="interactable endTime" value={timeOptions!.selectedEnd} onChange={handleChangeEndTime2} getOptionID={o => String(o.instant.valueOf())} options={timeOptions!.endOptions} getOptionString={o => o.label} />
                                 </div>
                             )}
 

@@ -66,6 +66,25 @@ export function bandDateTimeToInstant(fields: BandDateTimeFields, bandTimeZone: 
     return new Date(zoned.epochMilliseconds);
 }
 
+// A clock-choice list can offer both repeated occurrences explicitly and omit
+// skipped clocks. Free-form authoring still uses compatible disambiguation above.
+export function getClockTimeOccurrences(fields: BandDateTimeFields, timeZone: string): Date[] {
+    const dateTime = calendarDate(fields.date).toPlainDateTime(clockTime(fields.time));
+    const zone = BandTimeZoneSchema.parse(timeZone);
+    const candidates = [
+        dateTime.toZonedDateTime(zone, { disambiguation: "earlier" }),
+        dateTime.toZonedDateTime(zone, { disambiguation: "later" }),
+    ];
+    return candidates
+        .filter(candidate => candidate.toPlainDateTime().equals(dateTime))
+        .filter((candidate, index, values) => index === 0 || candidate.epochMilliseconds !== values[0]!.epochMilliseconds)
+        .map(candidate => new Date(candidate.epochMilliseconds));
+}
+
+export function addCalendarDays(date: string, days: number): string {
+    return calendarDate(date).add({ days }).toString();
+}
+
 // Formatting preserves the instant, including its exact occurrence during a
 // repeated hour. The offset lets a later editor retain that distinction.
 export function getBandDateTimeFields(instant: Date, bandTimeZone: string): BandDateTimeFields & { offset: string } {
