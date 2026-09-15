@@ -1,10 +1,10 @@
 # Date/time policy audit
 
 2026-09-12, updated 2026-09-15. This report tracks the audit, executable regression
-baseline, band-timezone foundation, all-day calendar-feed correction, and DT-01
-all-day hydration repair. Event editors still need band-timezone integration;
-timed hydration, union arithmetic, lifecycle classification, and SQL queries
-still need repairs.
+baseline, band-timezone foundation, all-day calendar-feed correction, DT-01
+all-day hydration, and DT-02/DT-08 timed hydration and point-relative labels.
+Event editors still need band-timezone integration; union arithmetic, lifecycle
+classification, and SQL queries still need repairs.
 No existing event data or database schema has been changed. The Japan report has
 not been reproduced as a complete user journey, and none of these findings
 establishes its historical cause.
@@ -87,34 +87,71 @@ general `DateTimeRange` hydration defect, subsequently repaired under DT-01 belo
   self-union, and year/leap-day/DST boundaries.
 
 This repair retains the existing database encoding and whole-day duration
-normalization. Timed snapping (DT-02), union arithmetic (DT-03), band-timezone
-authoring/lifecycle integration, and other findings remain separate repairs.
+normalization. Timed snapping is repaired in DT-02 below. Union arithmetic
+(DT-03), band-timezone authoring/lifecycle integration, and other findings remain
+separate repairs.
 The control adapters still use the device's local calendar fields; applying the
 band timezone to shared event authoring remains part of POL-01.
+
+## Completed DT-02 / DT-08: preserve timed values and separate point labels
+
+- Timed `DateTimeRange` construction now clones the exact start instant and
+  retains the supplied duration, including milliseconds and zero. Repeated spec
+  copies, JSON restoration, local-date adapter calls, timed self-unions, and TBD
+  union copies preserve both. Hydration never reconstructs local clock fields,
+  so it preserves either occurrence of a repeated DST hour.
+- The all-day toggle's selected 23:50 remains 23:50 on the selected day. The
+  control's quarter-hour choices and the existing explicit seeding rounder remain
+  authoring operations; the constructor no longer applies them implicitly.
+- Zero-duration values have no ongoing interval. Their start timestamp acts as
+  the calendar display anchor, preventing a midnight point from highlighting the
+  preceding date. `CalcRelativeTimingFromNow` now calls a shared calendar-label
+  routine directly; only the event-range entry point checks an ongoing interval.
+- The timed feed adapter inherits exact start/end instants. Real adapter and
+  serializer tests cover off-grid times, both zones' second DST occurrences, and
+  zero duration. Inputs retain milliseconds; the installed serializer emits
+  seconds. Timed ranges whose endpoints serialize to the same second omit
+  `DTEND`, representing a point as specified by
+  [RFC 5545 section 3.6.1](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.1);
+  an equal end would violate
+  [section 3.8.2.2](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.2).
+  These inputs and revision hashes agree across five server timezones.
+- Eighteen expected failures become ordinary passing checks: ten timed hydration
+  checks, four late-night toggle checks, and four point-timestamp label checks.
+  Fifty timed-range checks and six feed checks extend the regression coverage.
+
+DT-03 union arithmetic, DT-04 clock options, DT-05 selected-end arithmetic, and
+band-timezone control integration remain open. In particular, the current
+control's `findTime` still displays the containing quarter-hour option for an
+off-grid instant; exact current selections must be presented when integrating
+the clock controls. This slice preserves the underlying values without adding
+implicit snapping or changing the persisted encoding.
 
 ## Executable evidence
 
 The date/time tests live under [tests/datetime](../tests/datetime). Native `Date` runs in
 separate Node processes with `TZ` set before startup. This avoids relying on the
 developer machine's timezone or changing timezone globals inside a Vitest worker.
-The matrix covers UTC, Brussels, Tokyo, Los Angeles, and Sydney for feed-specific
-cases. Clocks are fixed where an operation depends on the current date.
+The matrix covers UTC, Brussels, Tokyo, Los Angeles, and Sydney for hydration
+and feed cases. Clocks are fixed where an operation depends on the current date.
 
 | Suite | Ordinary passing checks | Known failing checks in strict mode | Boundary exercised |
 | --- | ---: | ---: | --- |
-| [timePolicy.test.ts](../tests/datetime/timePolicy.test.ts) | 47 | 19 | Real shared range, arithmetic, classification, relative labels, and sorting helpers |
+| [timePolicy.test.ts](../tests/datetime/timePolicy.test.ts) | 61 | 5 | Real shared range, arithmetic, classification, relative labels, and sorting helpers |
 | [allDayHydration.test.ts](../tests/datetime/allDayHydration.test.ts) | 40 | 0 | Stored all-day dates, explicit local authoring, copies, serialization, and calendar boundaries in five zones |
-| [authoringPolicy.test.ts](../tests/datetime/authoringPolicy.test.ts) | 20 | 12 | Real clock-option/range helpers and the control's selected-end/toggle calculations |
+| [timedHydration.test.ts](../tests/datetime/timedHydration.test.ts) | 50 | 0 | Exact instants/durations, copies, DST occurrences, zero-duration display, and point labels in five zones |
+| [authoringPolicy.test.ts](../tests/datetime/authoringPolicy.test.ts) | 24 | 8 | Real clock-option/range helpers and the control's selected-end/toggle calculations |
 | [eventDateConsumers.test.ts](../tests/datetime/eventDateConsumers.test.ts) | 8 | 5 | Actual compact event-date React rendering with unrelated sibling imports isolated |
-| [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 23 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
+| [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 29 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
 | [bandTimePolicy.test.ts](../tests/datetime/bandTimePolicy.test.ts) | 54 | 0 | Named-zone validation, band-time conversion, DST ambiguity, all-day bounds, and host-timezone independence |
 | [bandTimeZoneLoading.test.ts](../tests/datetime/bandTimeZoneLoading.test.ts) | 4 | 0 | Fresh server setting reads, default/error behavior, and dashboard delivery |
 | [bandTimeZoneWrites.test.ts](../tests/datetime/bandTimeZoneWrites.test.ts) | 25 | 0 | Generic and raw settings validation, partial edits, clears, and retained authorization |
-| Total | 221 | 36 | 257 checks; remaining failures repeat root causes across zones and boundaries |
+| Total | 295 | 18 | 313 checks; remaining failures repeat root causes across zones and boundaries |
 
 The original audit contained 134 checks: 90 ordinary passing checks and 44 known
 failures. Slice 1 adds 83 policy/loading/write checks and repairs the five feed failures.
 DT-01 adds 40 checks and repairs three more failures.
+DT-02/DT-08 add 56 checks and repair another 18 failures.
 [Setting authorization tests](../tests/authorization/settingAuthorization.test.ts)
 also cover default reads, valid persistence/readback, invalid updates leaving all
 branding values unchanged, and denied or stale permission grants.
@@ -146,7 +183,7 @@ try {
 }
 ```
 
-The expected strict result is 36 failing test cases and 221 passing test cases.
+The expected strict result is 18 failing test cases and 295 passing test cases.
 This is a reproduction command; those failures are the audit output, not test
 harness errors. Infrastructure/probe errors are outside expected-failure tests.
 
@@ -169,23 +206,23 @@ Picker-date conversion is now separate from hydration of a stored calendar date.
 Reading an already normalized all-day spec preserves it. The existing database
 encoding is retained, with no schema migration or existing-data rewrite.
 
-**DT-02 - High: reading timed values rounds them and can select the wrong DST occurrence.**
+**DT-02 - Resolved 2026-09-15: reading timed values rounded them and could select the wrong DST occurrence.**
 
-[The constructor](../shared/time.ts#L388) snaps durations to 15 minutes and
-reconstructs starts through [roundToNearest15Minutes](../shared/time.ts#L173).
-Loading `07:47:12.345Z` with a 20-minute duration yields `08:00Z` and 15 minutes.
-In Brussels, the second `02:30` on 25 October 2026 (`01:30Z`) becomes the first
-occurrence (`00:30Z`), even though the persisted instant is unambiguous. The
-Pacific autumn transition reproduces the same loss.
+[The former constructor](../shared/time.ts) snapped durations to 15 minutes and
+reconstructed starts through `roundToNearest15Minutes`.
+Loading `07:47:12.345Z` with a 20-minute duration yielded `08:00Z` and 15 minutes.
+In Brussels, the second `02:30` on 25 October 2026 (`01:30Z`) became the first
+occurrence (`00:30Z`), even though the persisted instant was unambiguous. The
+Pacific autumn transition reproduced the same loss.
 
-The [all-day toggle](../src/core/components/DateTime/DateTimeRangeControl.tsx#L365)
-also combines the selected date with the current clock. At 23:50, turning all-day
-off changes 10 July to 11 July through the constructor's upward rounding; 23:45
-is the passing control.
+The [all-day toggle](../src/core/components/DateTime/DateTimeRangeControl.tsx)
+combines the selected date with the current clock. Previously, at 23:50, turning
+all-day off changed 10 July to 11 July through the constructor's upward rounding;
+23:45 was the passing control. Both now preserve their selected date and clock.
 
-Keep stored instants and durations exact. Any UI snapping should be an explicit
-authoring operation. Existing UTC instants must never be reconstructed from local
-clock fields merely to read them.
+The constructor now preserves timed instants and durations exactly, including
+zero durations and milliseconds. Copies preserve the specified DST occurrence.
+Any snapping is an explicit authoring operation; hydration does not perform it.
 
 **DT-03 - High: aggregate ranges can gain days or lose segments.**
 
@@ -248,17 +285,19 @@ values directly from stored calendar fields using shared policy operations.
 Regression tests verify correct exclusive ends and stable revision input across
 the tested server timezones. These historical failures depended on the server
 timezone; a subscriber traveling to Japan does not change it. Timed feed entries
-still use `DateTimeRange` and remain subject to DT-02.
+use `DateTimeRange` and now benefit from the DT-02 hydration repair.
 
-**DT-08 - Medium: point timestamps acquire an invented ongoing interval.**
+**DT-08 - Resolved with DT-02: point timestamps acquired an invented ongoing interval.**
 
-[CalcRelativeTimingFromNow](../shared/time.ts#L986) models an instant as a
-zero-duration event, but the range constructor expands zero to 15 minutes.
-A timestamp one minute in the past consequently says `Happening now`. This
-affects generic [DateValue](../src/core/components/DateTime/DateTimeComponents.tsx#L47)
+[CalcRelativeTimingFromNow](../shared/time.ts) formerly modeled an instant as a
+zero-duration event, while the range constructor expanded zero to 15 minutes.
+A timestamp one minute in the past consequently said `Happening now`, affecting
+generic [DateValue](../src/core/components/DateTime/DateTimeComponents.tsx#L47)
 tooltips and other creation/history timestamps as well as the compact event
-label. Keep point-relative descriptions separate from event lifecycle
-classification; both can remain in the existing shared date/time files.
+label. The constructor now preserves zero, and point-relative descriptions call
+the shared calendar-label routine without event lifecycle classification.
+Tests cover past, equal, and future points at a local midnight boundary.
+Compact labels still need the full event-range integration described in DT-06.
 
 **POL-01 - Partially resolved: band timezone is configured, but event consumers still need adoption.**
 
@@ -352,8 +391,9 @@ do not need a framework for elapsed-versus-calendar-day precision.
    union algebra, and remove the affected expected-failure markers. Introduce
    explicit semantic calendar-date and absolute-interval operations within the
    shared files. Avoid changing persisted schema merely to rename representations.
-   **DT-01 is completed:** all-day hydration and local authoring now have separate
-   boundaries. Timed precision and union algebra remain open.
+   **DT-01 and DT-02 are completed:** all-day hydration and local authoring have
+   separate boundaries, and timed hydration preserves exact values. Point labels
+   are separated under DT-08. DT-03 union algebra remains open.
 3. **Integrate existing controls and presentations.** Event editors, compact
    labels, attendance timing, and calendar adapters consume semantic operations.
    Keep generic personal report/range pickers in the viewer timezone: they share
@@ -361,8 +401,8 @@ do not need a framework for elapsed-versus-calendar-day precision.
    accidentally. Repair clock options and selected-end calculations together.
 4. **Align server aggregation, queries, and remaining feed behavior.** Cache
    absolute event bounds consistently and apply overlap queries. All-day feed
-   serialization is repaired; timed feed hydration still depends on the general
-   range repair. Define recalculation of derived all-day bounds when the band
+   serialization and timed feed hydration are repaired. Define recalculation of
+   derived all-day bounds when the band
    timezone changes before lifecycle consumers adopt that setting. Remove the
    remaining expected-failure markers as the behavior is repaired.
 5. **Verify persisted data and browser boundaries.** Inspect actual stored event
@@ -392,16 +432,18 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
 
 ## Verification and limits
 
-- DT-01 verification on 2026-09-15: full `yarn test` passed 964 cases; nine
-  opt-in MySQL checks were skipped. The 257 date/time checks contain 221 ordinary
-  checks and 36 executed expected failures. Strict date/time mode exposes exactly
-  those 36 remaining failures.
+- DT-02/DT-08 verification on 2026-09-15: full `yarn test` passed 1,020 cases;
+  nine opt-in MySQL checks were skipped. The 313 date/time checks contain 295
+  ordinary checks and 18 executed expected failures. Strict date/time mode exposes
+  exactly those 18 remaining failures.
+  After the final zero/subsecond feed serialization adjustment, the 42 feed and
+  feed-authorization checks passed again, along with focused ESLint and diff checks.
 - Focused ESLint for every changed TypeScript file and `git diff --check` passed.
   `yarn tsc --noEmit` reports TS2321/TS2345 in `src/auth/mutations/mergeUsers.ts:11`
-  comparing Prisma client types. A compiler run substituting unchanged `HEAD`
+  comparing Prisma client types. During DT-01, a compiler run substituting unchanged `HEAD`
   sources for the edited files and excluding the new tests reproduced both
   diagnostics. No new type diagnostics were reported. A production build was
-  not run for DT-01; slice 1's earlier typecheck and build passed.
+  not run for DT-01 or DT-02; slice 1's earlier typecheck and build passed.
 - Settings resolver tests use the existing in-memory database. It does not
   emulate transaction rollback; the bulk rejection case checks validation before
   writes. Production mutations retain their existing serializable transactions.

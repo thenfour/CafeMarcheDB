@@ -104,10 +104,20 @@ export const addEventToCalendar2 = (
         summary = `${icalSettings.eventNamePrefix}👍 ${event.name}`;
     }
 
+    // RFC 5545 sections 3.6.1/3.8.2.2
+    // https://datatracker.ietf.org/doc/html/rfc5545#section-3.6.1
+    // iCalendar has second precision and
+    // represent a timed point by omitting DTEND, which must otherwise be later
+    // than DTSTART. Keep exact input bounds for hashing and other consumers.
+
+    // so basically, if the event ends in the same second it starts, DTEND needs to be omitted.
+    // it's considered a point event if it's less than 1 second long.
+    const endsInStartSecond = !event.isAllDay
+        && Math.floor(event.end.valueOf() / 1000) === Math.floor(event.start.valueOf() / 1000);
     const calEvent = calendar.createEvent({
         allDay: event.isAllDay,
         start: event.start,
-        end: event.end,
+        end: endsInStartSecond ? undefined : event.end,
         summary: summary,//`CM: ${event.name}`,
         description: `${event.eventUri}\n\n${event.description}`,
         location: event.locationDescription,

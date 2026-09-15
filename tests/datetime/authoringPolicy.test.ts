@@ -26,11 +26,13 @@ describe.each(["Europe/Brussels", "America/Los_Angeles", "Asia/Tokyo", "UTC"])(
     it("preserves the selected day when turning all-day off at 23:45", () => {
       const toggle = result.allDayToggles.find(item => item.currentMinute === 45)!
       expect(toggle.actualDay).toEqual(toggle.expectedDay)
+      expect(toggle.actualClock).toEqual([23, 45])
     })
 
-    policyGap("preserves the selected day when turning all-day off at 23:50", () => {
+    it("preserves the selected day when turning all-day off at 23:50", () => {
       const toggle = result.allDayToggles.find(item => item.currentMinute === 50)!
       expect(toggle.actualDay).toEqual(toggle.expectedDay)
+      expect(toggle.actualClock).toEqual([23, 50])
     })
 
     const transitionCase = timeZone === "Europe/Brussels" || timeZone === "America/Los_Angeles"

@@ -66,6 +66,11 @@ async function main() {
     timedCrossingMidnight: await exportSegment("2026-07-10T23:30:00.000Z", oneHour, false),
     timedBrusselsSpring: await exportSegment("2026-03-29T00:30:00.000Z", oneHour, false),
     timedBrusselsAutumn: await exportSegment("2026-10-25T00:30:00.000Z", oneHour, false),
+    timedOffGrid: await exportSegment("2026-07-10T07:47:12.345Z", 1_200_789, false),
+    timedBrusselsSecondOccurrence: await exportSegment("2026-10-25T01:30:12.345Z", 1_200_789, false),
+    timedPacificSecondOccurrence: await exportSegment("2026-11-01T09:30:12.345Z", 1_200_789, false),
+    timedZeroDuration: await exportSegment("2026-07-10T07:47:12.345Z", 0, false),
+    timedSubsecond: await exportSegment("2026-07-10T07:47:12.345Z", 1, false),
     tbd: await exportSegment(null, oneDay, true),
   }
   process.stdout.write(JSON.stringify(result))

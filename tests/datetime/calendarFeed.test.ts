@@ -12,7 +12,8 @@ type ExportedSegment = {
 type FeedProbe = Record<
   "ordinaryAllDay" | "multipleAllDay" | "brusselsSpringAllDay" | "brusselsAutumnAllDay"
   | "sydneySpringEveAllDay" | "sydneySpringAllDay" | "sydneyAutumnAllDay"
-  | "timedCrossingMidnight" | "timedBrusselsSpring" | "timedBrusselsAutumn" | "tbd",
+  | "timedCrossingMidnight" | "timedBrusselsSpring" | "timedBrusselsAutumn" | "tbd"
+  | "timedOffGrid" | "timedBrusselsSecondOccurrence" | "timedPacificSecondOccurrence" | "timedZeroDuration" | "timedSubsecond",
   ExportedSegment
 > & { timeZone: string }
 
@@ -59,6 +60,30 @@ describe("calendar feed date/time policy", () => {
         expect(probe.tbd.dateLines).toEqual([])
         expect(probe.tbd.eventCount).toBe(0)
       })
+
+      it("DT-02: keeps exact timed feed inputs and serializes their seconds without quarter-hour snapping", () => {
+        const cases = [
+          [probe.timedOffGrid, "2026-07-10T07:47:12.345Z", "2026-07-10T08:07:13.134Z", "20260710T074712Z", "20260710T080713Z"],
+          [probe.timedBrusselsSecondOccurrence, "2026-10-25T01:30:12.345Z", "2026-10-25T01:50:13.134Z", "20261025T013012Z", "20261025T015013Z"],
+          [probe.timedPacificSecondOccurrence, "2026-11-01T09:30:12.345Z", "2026-11-01T09:50:13.134Z", "20261101T093012Z", "20261101T095013Z"],
+        ] as const
+        for (const [value, start, end, startLine, endLine] of cases) {
+          expect(value.start).toBe(start)
+          expect(value.end).toBe(end)
+          expect(value.dateLines).toEqual([`DTSTART:${startLine}`, `DTEND:${endLine}`])
+          expect(value.eventCount).toBe(1)
+        }
+        // RFC 5545 represents a timed point without DTEND; equal serialized
+        // endpoints would be invalid. Subsecond input bounds remain exact.
+        expect(probe.timedZeroDuration.start).toBe("2026-07-10T07:47:12.345Z")
+        expect(probe.timedZeroDuration.end).toBe("2026-07-10T07:47:12.345Z")
+        expect(probe.timedSubsecond.start).toBe("2026-07-10T07:47:12.345Z")
+        expect(probe.timedSubsecond.end).toBe("2026-07-10T07:47:12.346Z")
+        for (const value of [probe.timedZeroDuration, probe.timedSubsecond]) {
+          expect(value.dateLines).toEqual(["DTSTART:20260710T074712Z"])
+          expect(value.eventCount).toBe(1)
+        }
+      })
     })
   }
 
@@ -75,5 +100,13 @@ describe("calendar feed date/time policy", () => {
   it("DT-FEED-01: unchanged all-day input has the same revision hash in UTC and Sydney", () => {
     const reference = probes.get("UTC")!.sydneyAutumnAllDay
     expect(probes.get("Australia/Sydney")!.sydneyAutumnAllDay.inputHash).toBe(reference.inputHash)
+  })
+
+  it("DT-02: exact timed feed input and revision hashes are independent of server timezone", () => {
+    for (const zone of zones) {
+      for (const key of ["timedOffGrid", "timedBrusselsSecondOccurrence", "timedPacificSecondOccurrence", "timedZeroDuration", "timedSubsecond"] as const) {
+        expect(probes.get(zone)![key]).toEqual(probes.get("UTC")![key])
+      }
+    }
   })
 })

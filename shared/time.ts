@@ -366,7 +366,7 @@ export class DateTimeRange {
 
     // Authoring boundary for native Dates carrying a selected local calendar day.
     // Stored specs must go directly to the constructor, including copies from getSpec().
-    // Timed inputs retain the existing authoring normalization.
+    // Timed inputs already identify an instant and pass through unchanged.
     static fromLocalDate(args: DateTimeRangeSpec): DateTimeRange {
         return new DateTimeRange({
             ...args,
@@ -398,20 +398,13 @@ export class DateTimeRange {
                 return;
             }
 
-            // not all-day.
-            // snap duration to 15-minute increments.
-            const gIntervalLen = (gMillisecondsPerMinute * 15);
-            let intervals = Math.round(args.durationMillis / gIntervalLen);// all-day events have duration of 1-day increments always.
-            if (intervals < 1) intervals = 1; // 0-length ranges are not useful and cause complexity
-            const durationMillis = intervals * gIntervalLen;
-
-            // snap start time to 15-minute increment.
-            const startsAtDateTime = args.startsAtDateTime ? roundToNearest15Minutes(args.startsAtDateTime) : null;
-
+            // Hydration preserves the absolute instant and elapsed duration,
+            // including a repeated DST occurrence, sub-minute precision, and zero.
+            // Quarter-hour choices belong to authoring controls, not stored specs.
             this.spec = {
-                durationMillis,
-                startsAtDateTime,
-                isAllDay: args.isAllDay,
+                durationMillis: args.durationMillis,
+                startsAtDateTime: args.startsAtDateTime ? new Date(args.startsAtDateTime) : null,
+                isAllDay: false,
             };
             return;
         }
@@ -748,6 +741,9 @@ export class DateTimeRange {
             return null as any;
         }
         if (!this.isAllDay()) {
+            // A zero-duration value has no included interval; use its timestamp
+            // as the display anchor so a midnight point cannot highlight yesterday.
+            if (this.spec.durationMillis === 0) return new Date(startDate);
             return new Date(startDate.valueOf() + this.spec.durationMillis - 1);
         }
 
@@ -949,8 +945,14 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): Relativ
         return { bucket: RelativeTimingBucket.HappeningNow, label: range.isAllDay() ? "Today" : "Happening now" };
     }
 
-    // today can be in the past or present so do that first
-    const startDate = dayjs(range.getStartDateTime());
+    return getRelativeCalendarTiming(refTime, range.getStartDateTime()!, timing);
+}
+
+// Calendar-relative labels are shared by event ranges and point timestamps.
+// Only the event entry point above can supply an ongoing interval.
+function getRelativeCalendarTiming(refTime: Date, date: Date, timing: Timing): RelativeTimingInfo {
+    // today can be in the past or future so do that first
+    const startDate = dayjs(date);
     if (startDate.isSame(refTime, "day")) {
         return { bucket: RelativeTimingBucket.Today, label: "Today" };
     }
@@ -1000,5 +1002,6 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): Relativ
 
 
 export function CalcRelativeTimingFromNow(date: Date, now?: Date | undefined): RelativeTimingInfo {
-    return CalcRelativeTiming(now || new Date(), new DateTimeRange({ startsAtDateTime: date, isAllDay: false, durationMillis: 0 }));
+    const refTime = now || new Date();
+    return getRelativeCalendarTiming(refTime, date, date > refTime ? Timing.Future : Timing.Past);
 }

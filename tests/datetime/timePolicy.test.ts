@@ -56,15 +56,15 @@ describe.each(zones)("date/time policy in %s", zone => {
     expect(inZone(zone).sortedDates).toEqual(["2026-07-10T00:00:00.000Z", "2026-07-11T00:00:00.000Z", null])
   })
 
-  policyGap("DT-02: reading a timed start preserves minutes, seconds and milliseconds", () => {
+  it("DT-02: reading a timed start preserves minutes, seconds and milliseconds", () => {
     expect(inZone(zone).offGridStart).toBe("2026-07-10T07:47:12.345Z")
   })
 
-  policyGap("DT-02: reading a duration preserves its elapsed milliseconds", () => {
+  it("DT-02: reading a duration preserves its elapsed milliseconds", () => {
     expect(inZone(zone).offGridDuration).toBe(20 * 60_000)
   })
 
-  policyGap("DT-08: a historical timestamp is not an ongoing fifteen-minute event", () => {
+  it("DT-08: a historical timestamp is not an ongoing fifteen-minute event", () => {
     expect(inZone(zone).timestampLabelAfterOneMinute).not.toBe("Happening now")
   })
 })
@@ -110,11 +110,11 @@ describe("DST and event aggregate ranges", () => {
     expect(inZone("Europe/Brussels").identicalAutumnUnionDays).toBe(1)
   })
 
-  policyGap("DT-02: reading the second Brussels 02:30 preserves the specified UTC instant", () => {
+  it("DT-02: reading the second Brussels 02:30 preserves the specified UTC instant", () => {
     expect(inZone("Europe/Brussels").foldStart).toBe("2026-10-25T01:30:00.000Z")
   })
 
-  policyGap("DT-02: reading the second Pacific 01:30 preserves the specified UTC instant", () => {
+  it("DT-02: reading the second Pacific 01:30 preserves the specified UTC instant", () => {
     expect(inZone("America/Los_Angeles").pacificFoldStart).toBe("2026-11-01T09:30:00.000Z")
   })
 

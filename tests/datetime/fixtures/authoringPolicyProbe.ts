@@ -23,6 +23,7 @@ export interface AuthoringPolicyProbe {
     currentMinute: 45 | 50
     expectedDay: number[]
     actualDay: number[]
+    actualClock: number[]
   }>
 }
 
@@ -100,7 +101,7 @@ function turnOffAllDay(currentMinute: 45 | 50) {
       floorLocalToLocalDay(coalescedStartDateTime),
       new Date(),
     )
-    const updated = new DateTimeRange({
+    const updated = DateTimeRange.fromLocalDate({
       ...value.getSpec(),
       isAllDay: false,
       durationMillis: gMillisecondsPerHour,
@@ -111,6 +112,7 @@ function turnOffAllDay(currentMinute: 45 | 50) {
       currentMinute,
       expectedDay: [2026, 7, 10],
       actualDay: [actual.getFullYear(), actual.getMonth() + 1, actual.getDate()],
+      actualClock: [actual.getHours(), actual.getMinutes()],
     }
   })
 }
