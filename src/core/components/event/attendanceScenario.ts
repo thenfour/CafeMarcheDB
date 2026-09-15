@@ -25,7 +25,7 @@ export const attendanceScenarioSchema = z.object({
     eventName: z.string(),
     timing, cancelled: z.boolean(),
     segments: z.array(segmentSchema).max(3),
-    presentation: z.enum(["list", "detail", "both"]),
+    //presentation: z.enum(["list", "detail", "both"]),
     users: z.array(userSchema).min(1).max(8),
 });
 export type AttendanceScenario = z.infer<typeof attendanceScenarioSchema>;
@@ -38,8 +38,10 @@ export const scenarioAttendances: Prisma.EventAttendanceGetPayload<{}>[] = [
     { id: 1, text: "No", strength: 0, color: "attendance_no", iconName: "Cancel", description: "I cannot attend." },
     { id: 2, text: "Probably", strength: 66, color: "attendance_yes_maybe", iconName: "HelpOutline", description: "I will probably attend." },
     { id: 3, text: "Yes", strength: 100, color: "attendance_yes", iconName: "CheckCircleOutline", description: "I will attend." },
-].map((option, sortOrder) => ({ ...option, sortOrder, isActive: true, isDeleted: false,
-    personalText: "", pastText: "", pastPersonalText: "" }));
+].map((option, sortOrder) => ({
+    ...option, sortOrder, isActive: true, isDeleted: false,
+    personalText: "", pastText: "", pastPersonalText: ""
+}));
 
 export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxophone", "Percussion", "Tuba"].map((name, index) => ({
     id: index + 1, name, sortOrder: index, description: name, autoAssignFileLeafRegex: null,
@@ -52,7 +54,7 @@ export const createAttendanceScenario = (): AttendanceScenario => ({
     now: "2026-10-15T12:00:00.000Z",
     eventName: "Scenario concert", timing: "future", cancelled: false,
     segments: [{ cancelled: false, timing: "inherit" }, { cancelled: false, timing: "inherit" }],
-    presentation: "both",
+    //presentation: "both",
     users: [
         { name: "Alice", tagInvited: true, individualInvitation: null, instrumentCount: 1, primaryInstrumentId: 1, instrumentId: null, comment: "", responses: ["missing", "missing", "missing"] },
         { name: "Bob", tagInvited: true, individualInvitation: null, instrumentCount: 3, primaryInstrumentId: 1, instrumentId: null, comment: "", responses: [3, "missing", "missing"] },
@@ -95,8 +97,10 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
     const dateRange = getEventDateTimeRangeFromSegments(segments, [cancelledStatusId]);
     const event = {
         id: eventId, name: scenario.eventName, startsAt: dateRange.getStartDateTime(), segments,
-        responses: [{ id: -1, userId: user.id, instrumentId: person.instrumentId,
-            isInvited: person.individualInvitation, userComment: person.comment }],
+        responses: [{
+            id: -1, userId: user.id, instrumentId: person.instrumentId,
+            isInvited: person.individualInvitation, userComment: person.comment
+        }],
     };
     const eventUserResponse = getEventResponseForUser({
         user, event, userMap: [user], defaultInvitationUserIds: new Set(person.tagInvited ? [user.id] : []),
@@ -117,8 +121,10 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
 export function applyAttendanceScenarioChange(person: AttendanceScenarioUser, change: AttendanceChange): AttendanceScenarioUser {
     if (change.type === "comment") return { ...person, comment: change.comment };
     if (change.type === "instrument") return { ...person, instrumentId: instrumentId.parse(change.instrumentId) };
-    return { ...person, responses: person.responses.map((value, index) =>
-        index + 1 === change.segmentId ? response.parse(change.attendanceId) : value) };
+    return {
+        ...person, responses: person.responses.map((value, index) =>
+            index + 1 === change.segmentId ? response.parse(change.attendanceId) : value)
+    };
 }
 
 export function describeAttendanceVisibility(result: ReturnType<typeof buildAttendanceScenario>["attendance"]): string {

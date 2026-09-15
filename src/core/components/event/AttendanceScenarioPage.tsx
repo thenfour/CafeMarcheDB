@@ -21,43 +21,45 @@ const timingChoices = [["past", "Past"], ["ongoing", "Ongoing"], ["future", "Fut
 const UserSettings = ({ person, segmentCount, update }: {
     person: AttendanceScenarioUser; segmentCount: number; update: (patch: Partial<AttendanceScenarioUser>) => void;
 }) => <Stack spacing={2} sx={{ pt: 2 }}>
-    <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
-        <TextField size="small" label="User name" value={person.name} onChange={e => update({ name: e.target.value })} />
-        <FormControlLabel control={<Checkbox checked={person.tagInvited} onChange={(_, checked) => update({ tagInvited: checked })} />} label="Invited through tag" />
-        <TextField select size="small" label="Individual invitation" sx={{ minWidth: 180 }} value={String(person.individualInvitation)}
-            onChange={e => update({ individualInvitation: e.target.value === "null" ? null : e.target.value === "true" })}>
-            <MenuItem value="null">Not set</MenuItem><MenuItem value="true">Invited</MenuItem><MenuItem value="false">Not invited</MenuItem>
-        </TextField>
-    </Stack>
-    <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
-        <Choices label="Profile instruments" value={String(person.instrumentCount)} choices={[["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"]]}
-            onChange={value => update({ instrumentCount: Number(value) })} />
-        <TextField select size="small" label="Primary instrument" sx={{ minWidth: 180 }} value={person.primaryInstrumentId ?? "none"}
-            onChange={e => update({ primaryInstrumentId: e.target.value === "none" ? null : Number(e.target.value) })}>
-            <MenuItem value="none">None marked primary</MenuItem>
-            {scenarioInstruments.map(i => <MenuItem key={i.id} value={i.id}>{i.name}</MenuItem>)}
-        </TextField>
-        <TextField select size="small" label="Stored event instrument" sx={{ minWidth: 200 }} value={person.instrumentId ?? "default"}
-            onChange={e => update({ instrumentId: e.target.value === "default" ? null : Number(e.target.value) })}>
-            <MenuItem value="default">Default (no stored choice)</MenuItem>
-            {scenarioInstruments.map(i => <MenuItem key={i.id} value={i.id}>{i.name}{i.id > person.instrumentCount ? " (outside profile)" : ""}</MenuItem>)}
-        </TextField>
-    </Stack>
-    <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
-        {person.responses.slice(0, segmentCount).map((value, index) => <TextField key={index} select size="small" label={`Segment ${index + 1} response`}
-            sx={{ minWidth: 185 }} value={value === null ? "null" : value}
-            onChange={e => update({ responses: person.responses.map((previous, i) => i === index
-                ? e.target.value === "missing" ? "missing" : e.target.value === "null" ? null : Number(e.target.value) as 1 | 2 | 3 : previous) })}>
-            <MenuItem value="missing">Unanswered (no row)</MenuItem><MenuItem value="null">Unanswered (cleared)</MenuItem>
-            {scenarioAttendances.map(a => <MenuItem key={a.id} value={a.id}>{a.text}</MenuItem>)}
-        </TextField>)}
-        <Button size="small" onClick={() => update({ responses: ["missing", "missing", "missing"] })}>Unanswered</Button>
-        <Button size="small" onClick={() => update({ responses: [3, 3, 3] })}>All yes</Button>
-        <Button size="small" onClick={() => update({ responses: [1, 1, 1] })}>All no</Button>
-        <Button size="small" onClick={() => update({ responses: [3, 1, 2] })}>Mixed</Button>
-    </Stack>
-    <TextField size="small" label="Stored comment" multiline minRows={2} value={person.comment} onChange={e => update({ comment: e.target.value })} />
-</Stack>;
+        <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
+            <TextField size="small" label="User name" value={person.name} onChange={e => update({ name: e.target.value })} />
+            <FormControlLabel control={<Checkbox checked={person.tagInvited} onChange={(_, checked) => update({ tagInvited: checked })} />} label="Invited through tag" />
+            <TextField select size="small" label="Individual invitation" sx={{ minWidth: 180 }} value={String(person.individualInvitation)}
+                onChange={e => update({ individualInvitation: e.target.value === "null" ? null : e.target.value === "true" })}>
+                <MenuItem value="null">Not set</MenuItem><MenuItem value="true">Invited</MenuItem><MenuItem value="false">Not invited</MenuItem>
+            </TextField>
+        </Stack>
+        <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
+            <Choices label="Profile instruments" value={String(person.instrumentCount)} choices={[["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"]]}
+                onChange={value => update({ instrumentCount: Number(value) })} />
+            <TextField select size="small" label="Primary instrument" sx={{ minWidth: 180 }} value={person.primaryInstrumentId ?? "none"}
+                onChange={e => update({ primaryInstrumentId: e.target.value === "none" ? null : Number(e.target.value) })}>
+                <MenuItem value="none">None marked primary</MenuItem>
+                {scenarioInstruments.map(i => <MenuItem key={i.id} value={i.id}>{i.name}</MenuItem>)}
+            </TextField>
+            <TextField select size="small" label="Stored event instrument" sx={{ minWidth: 200 }} value={person.instrumentId ?? "default"}
+                onChange={e => update({ instrumentId: e.target.value === "default" ? null : Number(e.target.value) })}>
+                <MenuItem value="default">Default (no stored choice)</MenuItem>
+                {scenarioInstruments.map(i => <MenuItem key={i.id} value={i.id}>{i.name}{i.id > person.instrumentCount ? " (outside profile)" : ""}</MenuItem>)}
+            </TextField>
+        </Stack>
+        <Stack direction="row" gap={2} flexWrap="wrap" alignItems="center">
+            {person.responses.slice(0, segmentCount).map((value, index) => <TextField key={index} select size="small" label={`Segment ${index + 1} response`}
+                sx={{ minWidth: 185 }} value={value === null ? "null" : value}
+                onChange={e => update({
+                    responses: person.responses.map((previous, i) => i === index
+                        ? e.target.value === "missing" ? "missing" : e.target.value === "null" ? null : Number(e.target.value) as 1 | 2 | 3 : previous)
+                })}>
+                <MenuItem value="missing">Unanswered (no row)</MenuItem><MenuItem value="null">Unanswered (cleared)</MenuItem>
+                {scenarioAttendances.map(a => <MenuItem key={a.id} value={a.id}>{a.text}</MenuItem>)}
+            </TextField>)}
+            <Button size="small" onClick={() => update({ responses: ["missing", "missing", "missing"] })}>Unanswered</Button>
+            <Button size="small" onClick={() => update({ responses: [3, 3, 3] })}>All yes</Button>
+            <Button size="small" onClick={() => update({ responses: [1, 1, 1] })}>All no</Button>
+            <Button size="small" onClick={() => update({ responses: [3, 1, 2] })}>Mixed</Button>
+        </Stack>
+        <TextField size="small" label="Stored comment" multiline minRows={2} value={person.comment} onChange={e => update({ comment: e.target.value })} />
+    </Stack>;
 
 export const AttendanceScenarioPage = () => {
     const [scenario, setScenario] = React.useState(createAttendanceScenario);
@@ -99,8 +101,8 @@ export const AttendanceScenarioPage = () => {
                         onChange={value => update({ timing: value as AttendanceScenario["timing"] })} />
                     <FormControlLabel control={<Checkbox checked={scenario.cancelled} onChange={(_, checked) => update({ cancelled: checked })} />} label="Event cancelled" />
                 </Stack>
-                <Choices label="Presentation" value={scenario.presentation} choices={[["list", "List card"], ["detail", "Event detail"], ["both", "Both"]]}
-                    onChange={value => update({ presentation: value as AttendanceScenario["presentation"] })} />
+                {/* <Choices label="Presentation" value={scenario.presentation} choices={[["list", "List card"], ["detail", "Event detail"], ["both", "Both"]]}
+                    onChange={value => update({ presentation: value as AttendanceScenario["presentation"] })} /> */}
                 <details><summary>Event details and individual segment timing</summary>
                     <Stack spacing={2} sx={{ pt: 2 }}>
                         <Stack direction="row" gap={2} flexWrap="wrap">
@@ -142,7 +144,7 @@ export const AttendanceScenarioPage = () => {
             {scenario.users.map((person, index) => {
                 const { event, attendance } = buildAttendanceScenario(scenario, index);
                 const flags = Object.fromEntries(Object.entries(attendance).filter(([, value]) => typeof value === "boolean" || typeof value === "string"));
-                const modes = scenario.presentation === "both" ? ["list", "detail"] : [scenario.presentation];
+                const modes = ["list", "detail"];
                 return <Paper key={`${revision}-${index}-${resetKeys[index] || 0}`} variant="outlined" sx={{ p: 2 }} data-scenario-user={index}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
                         <Typography component="h2" variant="h6">{person.name}</Typography>
