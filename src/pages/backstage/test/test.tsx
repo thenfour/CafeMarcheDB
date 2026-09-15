@@ -61,7 +61,7 @@ const TestCalcRelativeTiming = () => {
         results,
         false,
         new Date("2020-07-07 18:00:00"),
-        new DateTimeRange({
+        DateTimeRange.fromLocalDate({
             startsAtDateTime: new Date("2020-07-07 18:00:00"),
             durationMillis: 0,
             isAllDay: true,

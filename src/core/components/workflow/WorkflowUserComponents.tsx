@@ -44,7 +44,8 @@ interface WorkflowDueDateValueProps {
 export const WorkflowDueDateValue = (props: WorkflowDueDateValueProps) => {
     if (props.dueDate === undefined) return null;
 
-    const range = new DateTimeRange({
+    // Workflow due dates come from the generic local-date picker, not event date storage.
+    const range = DateTimeRange.fromLocalDate({
         durationMillis: 0,
         isAllDay: true,
         startsAtDateTime: props.dueDate || null,

@@ -88,7 +88,7 @@ function selectEnd(caseName: "ordinary" | "spring" | "autumn", eventDay: number[
 
 function turnOffAllDay(currentMinute: 45 | 50) {
   return withCurrentDate(localDate(ordinaryDay, 23, currentMinute), () => {
-    const value = new DateTimeRange({
+    const value = DateTimeRange.fromLocalDate({
       startsAtDateTime: new Date(2026, 6, 10),
       durationMillis: gMillisecondsPerDay,
       isAllDay: true,

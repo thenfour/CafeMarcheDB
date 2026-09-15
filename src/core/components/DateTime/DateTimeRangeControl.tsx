@@ -226,7 +226,7 @@ export const DayControl = ({ readonly = false, coalescedFallbackValue, ...props 
         setCalendarAnchorEl(null);
     };
 
-    const range = props.range || new DateTimeRange({
+    const range = props.range || DateTimeRange.fromLocalDate({
         startsAtDateTime: coalescedDay,
         durationMillis: gMillisecondsPerDay,
         isAllDay: true,
@@ -333,7 +333,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
 
     const handleStartDateChange = (newValue: Date) => {
         setCoalescedFallbackStartDay(newValue);
-        props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: newValue }));
+        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), startsAtDateTime: newValue }));
     };
 
     const handleEndDateChange = (newEndDate: Date) => {
@@ -353,7 +353,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
         // assume these are aligned to day.
         const durationMillis = newEndDate.valueOf() - newStartDateTime.valueOf() + gMillisecondsPerDay;
 
-        props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: newStartDateTime, durationMillis }));
+        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), startsAtDateTime: newStartDateTime, durationMillis }));
     };
 
     const handleChangeStartTime2 = (newTime: TimeOption) => {
@@ -376,11 +376,11 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
             newStartDateTime = combineDateAndTime(newStartDateTime, new Date());
         }
         setCoalescedFallbackStartDay(newStartDateTime);
-        props.onChange(new DateTimeRange({ ...value.getSpec(), isAllDay: newAllDay, durationMillis: newDuration, startsAtDateTime: newStartDateTime }));
+        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), isAllDay: newAllDay, durationMillis: newDuration, startsAtDateTime: newStartDateTime }));
     };
 
     const handleTBDChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: e.target.checked ? coalescedFallbackStartDay : null }));
+        props.onChange(DateTimeRange.fromLocalDate({ ...value.getSpec(), startsAtDateTime: e.target.checked ? coalescedFallbackStartDay : null }));
     };
 
     // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.

@@ -344,7 +344,8 @@ export type DateTimeDisplayStrings = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeRangeSpec {
     // date or null = TBD.
-    // if isAllDay, then the time part is to be ignored. in this case the date shall be a UTC date.
+    // All-day specs carry calendar dates in UTC fields; the time part is ignored.
+    // Convert local picker dates with DateTimeRange.fromLocalDate before storing them.
     startsAtDateTime: Date | null;
     // the idea is that startDateTime + durationDays = END time (exclusive).
     // for isAllDay=false, that's obvious.
@@ -362,6 +363,19 @@ export interface DateTimeRangeHitTestResult {
 
 export class DateTimeRange {
     private spec: DateTimeRangeSpec;
+
+    // Authoring boundary for native Dates carrying a selected local calendar day.
+    // Stored specs must go directly to the constructor, including copies from getSpec().
+    // Timed inputs retain the existing authoring normalization.
+    static fromLocalDate(args: DateTimeRangeSpec): DateTimeRange {
+        return new DateTimeRange({
+            ...args,
+            startsAtDateTime: args.isAllDay && args.startsAtDateTime
+                ? floorLocalTimeToDayUTC(args.startsAtDateTime)
+                : args.startsAtDateTime,
+        });
+    }
+
     constructor(args?: DateTimeRangeSpec) {
         if (args) {
 
@@ -371,8 +385,10 @@ export class DateTimeRange {
                 if (days < 1) days = 1; // 0-length ranges are not useful and cause complexity
                 const durationMillis = days * gMillisecondsPerDay;
 
-                // all-day events also must start at midnight. use UTC tz for all-day events to keep a consistent midnight
-                const startsAtDateTime = args.startsAtDateTime ? floorLocalTimeToDayUTC(args.startsAtDateTime) : null;
+                // Hydrate the stored UTC calendar date without interpreting it in the
+                // host timezone. Clone before clearing the ignored time component.
+                const startsAtDateTime = args.startsAtDateTime ? new Date(args.startsAtDateTime) : null;
+                startsAtDateTime?.setUTCHours(0, 0, 0, 0);
 
                 this.spec = {
                     durationMillis,
@@ -834,7 +850,7 @@ export class DateTimeRange {
             let durationDays = (latestLast - earliestStart) / gMillisecondsPerDay; //Math.abs(startdjs.diff(enddjs, "day"));
             durationDays = Math.ceil(durationDays);
 
-            return new DateTimeRange({
+            return DateTimeRange.fromLocalDate({
                 startsAtDateTime: new Date(earliestStart),
                 isAllDay: true,
                 durationMillis: durationDays * gMillisecondsPerDay,

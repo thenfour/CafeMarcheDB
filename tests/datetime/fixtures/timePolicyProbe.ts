@@ -15,9 +15,9 @@ const dateParts = (value: Date | null) => value
   : null
 
 function allDay(year: number, month: number, day: number, days = 1) {
-  // This is the current picker-to-range boundary: a locally selected calendar
-  // date. Loading the persisted UTC date is deliberately tested separately.
-  return new DateTimeRange({
+  // A locally selected calendar date uses the explicit authoring boundary.
+  // Loading the persisted UTC date is deliberately tested separately.
+  return DateTimeRange.fromLocalDate({
     startsAtDateTime: new Date(year, month - 1, day, 12),
     durationMillis: days * gMillisecondsPerDay,
     isAllDay: true,

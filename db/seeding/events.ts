@@ -359,7 +359,7 @@ function generateRandomSegments(config: EventSeedingConfig): DateTimeRange[] {
             // Update lastEndDate for the next segment
             lastEndDate = new Date(startsAt.getTime() + durationMillis);
 
-            s = new DateTimeRange({
+            s = DateTimeRange.fromLocalDate({
                 durationMillis,
                 isAllDay,
                 startsAtDateTime: startsAt,

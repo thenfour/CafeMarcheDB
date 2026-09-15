@@ -4,7 +4,7 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { SplitQuickFilter } from "shared/quickFilter";
-import { gMillisecondsPerDay } from "shared/time";
+import { floorLocalTimeToDayUTC, gMillisecondsPerDay } from "shared/time";
 import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
@@ -200,7 +200,7 @@ export default resolver.pipe(
                 isAllDay: true, // always.
                 durationMillis: gMillisecondsPerDay, // always.
                 name: "Segment 1", // always.
-                startsAt: new Date(),
+                startsAt: floorLocalTimeToDayUTC(new Date()),
             },
             responses: [],
             songList: [],
@@ -260,7 +260,9 @@ export default resolver.pipe(
             const fallbackYear = extractYear(args.config) || 2023;
             ret.log.push(`fallbackYear: ${fallbackYear}`);
             ret.log.push(`extractDate: ${extractDate(eventTxt, fallbackYear)}`);
-            ret.segment.startsAt = extractDate(eventTxt, fallbackYear) || new Date();
+            // The parser returns a server-local calendar date; transport it using
+            // the same UTC date encoding as stored all-day segments.
+            ret.segment.startsAt = floorLocalTimeToDayUTC(extractDate(eventTxt, fallbackYear) || new Date());
 
             // extract event name.
             ret.event.name = extractFirstNonEmptyLine(eventTxt) || "";

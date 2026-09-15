@@ -6,7 +6,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
-import { DateTimeRange, gMillisecondsPerDay } from "shared/time";
+import { DateTimeRange, floorLocalTimeToDayUTC, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -48,7 +48,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
         const ret = db3.xEventSegment.createNew(currentUser) as Partial<db3.EventSegmentPayload>;
         ret.isAllDay = true;
-        ret.startsAt = new Date();
+        ret.startsAt = floorLocalTimeToDayUTC(new Date());
         ret.durationMillis = BigInt(gMillisecondsPerDay);
         return ret as any;
     });
@@ -56,7 +56,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
     React.useEffect(() => {
         setSegmentValue({
             ...segmentValue,
-            startsAt: props.serverData?.segment.startsAt || new Date(),
+            startsAt: props.serverData?.segment.startsAt || floorLocalTimeToDayUTC(new Date()),
             durationMillis: BigInt(props.serverData?.segment.durationMillis || gMillisecondsPerDay),
         });
         setEventValue({

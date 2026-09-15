@@ -75,15 +75,15 @@ describe("persisted all-day calendar dates", () => {
     expect(inZone(zone).displayedAllDayDate).toEqual([2026, 7, 10])
   })
 
-  policyGap("DT-01: loading a UTC-encoded calendar date west of UTC preserves that date", () => {
+  it("DT-01: loading a UTC-encoded calendar date west of UTC preserves that date", () => {
     expect(inZone("America/Los_Angeles").loadedDate).toBe("2026-07-10T00:00:00.000Z")
   })
 
-  policyGap("DT-01: reconstructing a range from its spec is idempotent", () => {
+  it("DT-01: reconstructing a range from its spec is idempotent", () => {
     expect(inZone("America/Los_Angeles").loadedAgainDate).toBe(inZone("America/Los_Angeles").loadedDate)
   })
 
-  policyGap("DT-01: the displayed all-day date agrees with its persisted calendar date", () => {
+  it("DT-01: the displayed all-day date agrees with its persisted calendar date", () => {
     expect(inZone("America/Los_Angeles").displayedAllDayDate).toEqual([2026, 7, 10])
   })
 })
