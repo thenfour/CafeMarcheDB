@@ -15,7 +15,7 @@ import { useSearchableList } from 'src/core/hooks/useSearchableList';
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { EventListItem } from "./event/EventComponents";
 import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClientBaseTypes";
-import { CalendarDisplayRange, DateToYYYYMMDD } from "@/shared/time";
+import { CalendarDisplayRange, getLocalCalendarWindow } from "@/shared/time";
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 import { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
@@ -309,14 +309,15 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
 
     // calculate min & max dates for querying.
     const minDate = new Date(year, month, -8);
-    const maxDate = new Date(year, month + 1, 8);
+    const endDateExclusive = new Date(year, month + 1, 9);
 
     // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
         refreshSerial,
 
         // in dto...
-        quickFilter: `${DateToYYYYMMDD(minDate)}-${DateToYYYYMMDD(maxDate)}`,
+        quickFilter: "",
+        calendarWindow: getLocalCalendarWindow(minDate, endDateExclusive),
 
         orderByColumn: EventOrderByColumnOptions.startsAt,
         orderByDirection: 'asc',

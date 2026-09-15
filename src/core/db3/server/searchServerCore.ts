@@ -1,3 +1,4 @@
+import { calendarWindowSql } from "./calendarWindowSql";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // generalized version of search results.
@@ -137,6 +138,10 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
 
     // each criterion will supply the info we need to construct the correct query.
     const whereAnd: string[] = [];
+    if (args.calendarWindow) {
+        if (table.tableName !== "Event") throw new Error("Calendar windows are only supported for event searches.");
+        whereAnd.push(calendarWindowSql(args.calendarWindow));
+    }
 
     const qfTokens = SplitQuickFilter(args.quickFilter);
     for (let itok = 0; itok < qfTokens.length; ++itok) {

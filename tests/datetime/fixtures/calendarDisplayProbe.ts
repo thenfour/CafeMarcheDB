@@ -1,6 +1,6 @@
 import React from "react"
 import { JSDOM } from "jsdom"
-import { DateTimeRange } from "../../../shared/time"
+import { DateTimeRange, getLocalCalendarWindow } from "../../../shared/time"
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { pretendToBeVisual: true })
 Object.defineProperties(globalThis, {
@@ -80,6 +80,7 @@ const allDayCases = {
 const allDay = Object.fromEntries(Object.entries(allDayCases).map(([name, [date, days]]) =>
   [name, probe(new Date(`${date}T00:00:00.000Z`), days * 86_400_000, true)!]))
 const result = {
+  localWindow: getLocalCalendarWindow(new Date(2026, 6, 11), new Date(2026, 6, 12)),
   allDay,
   tokyoMidnight: probe(new Date("2026-07-10T15:30:00.000Z"), 3_600_000, false)!,
   overnight: probe(new Date(2026, 6, 10, 23), 2 * 3_600_000, false)!,

@@ -7,6 +7,19 @@ describe.each(["Europe/Brussels", "America/Los_Angeles", "Asia/Tokyo", "Australi
     let result: CalendarDisplayProbe
     beforeAll(() => { result = runTimeZoneProbe("tests/datetime/fixtures/calendarDisplayProbe.ts", timeZone) })
 
+    it("builds the search window from the viewer's local calendar dates", () => {
+      const expectedStarts = {
+        "Europe/Brussels": "2026-07-10T22:00:00.000Z",
+        "America/Los_Angeles": "2026-07-11T07:00:00.000Z",
+        "Asia/Tokyo": "2026-07-10T15:00:00.000Z",
+        "Australia/Sydney": "2026-07-10T14:00:00.000Z",
+        "UTC": "2026-07-11T00:00:00.000Z",
+      }
+      expect(result.localWindow.startDate).toBe("2026-07-11")
+      expect(result.localWindow.endDateExclusive).toBe("2026-07-12")
+      expect(result.localWindow.startInstant).toBe(expectedStarts[timeZone])
+    })
+
     it.each([
       ["single", ["2026-07-10"], "2026-07-11"],
       ["multi", ["2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13"], "2026-07-14"],

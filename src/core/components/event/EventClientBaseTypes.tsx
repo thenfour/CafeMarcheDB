@@ -1,3 +1,4 @@
+import { CalendarWindow } from "shared/dateTimePolicy";
 import { SortDirection } from "@/shared/rootroot";
 import { DiscreteCriterion } from "../../db3/shared/apiTypes";
 
@@ -14,6 +15,7 @@ export enum EventOrderByColumnNames {
 export type EventOrderByColumnOption = keyof typeof EventOrderByColumnOptions;// "startsAt" | "name";
 
 export interface EventsFilterSpec {
+    calendarWindow?: CalendarWindow;
     //pageSize: number;
     //page: number;
     quickFilter: string;

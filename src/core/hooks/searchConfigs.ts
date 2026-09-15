@@ -46,6 +46,7 @@ export const eventSearchConfig: SearchableListConfig<
     EnrichedSearchEventPayload
 > = {
     getQueryArgs: (filterSpec: EventsFilterSpec, offset: number, take: number) => ({
+        calendarWindow: filterSpec.calendarWindow,
         offset,
         take,
         tableID: db3.xEvent.tableID,

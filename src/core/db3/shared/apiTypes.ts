@@ -1,3 +1,4 @@
+import { CalendarWindow, CalendarWindowSchema } from "shared/dateTimePolicy";
 
 import { Prisma } from "db";
 import { z } from "zod";
@@ -718,6 +719,7 @@ export interface GetSearchResultsSortModel {
 };
 
 export interface GetSearchResultsInput {
+    calendarWindow?: CalendarWindow;
     tableID: string;
     includeDeleted?: boolean;
 
@@ -758,6 +760,7 @@ const ZGetSearchResultsSortModel = z.object({
 
 // Zod schema for GetSearchResultsInput
 export const ZGetSearchResultsInput = z.object({
+    calendarWindow: CalendarWindowSchema.optional(),
     tableID: ZDBSymbol,
     includeDeleted: z.boolean().optional(),
 

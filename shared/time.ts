@@ -1,6 +1,6 @@
 import dayjs, { Dayjs } from "dayjs";
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { addCalendarDays, getBandDateTimeFields, getClockTimeOccurrences } from './dateTimePolicy';
+import { addCalendarDays, CalendarWindow, getBandDateTimeFields, getCalendarWindow, getClockTimeOccurrences } from './dateTimePolicy';
 
 import { assert } from "blitz";
 
@@ -119,6 +119,21 @@ export function formatSongLength(totalSeconds: number): string | null {
     const seconds = Math.floor(totalSeconds % 60);
     const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds.toString();
     return `${minutes}:${formattedSeconds}`;
+}
+
+// Helper function to convert a Date object to a YYYY-MM-DD string format
+export const DateToHyphenatedYYYYMMDD = (date: Date) =>
+    `${date.getFullYear().toString().padStart(4, "0")}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+
+// Native Dates here carry selected local calendar days; the end day is exclusive.
+export function getLocalCalendarWindow(start: Date, endExclusive: Date): CalendarWindow {
+    return getCalendarWindow(
+        {
+            startDate: DateToHyphenatedYYYYMMDD(start),
+            endDateExclusive: DateToHyphenatedYYYYMMDD(endExclusive)
+        },
+        Intl.DateTimeFormat().resolvedOptions().timeZone //
+    );
 }
 
 // M:S format

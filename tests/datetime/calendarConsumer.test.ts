@@ -6,19 +6,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 // mounted with this display contract in calendarDisplay's five-zone probes.
 vi.mock("react-big-calendar", () => ({ Calendar: vi.fn(() => null), momentLocalizer: () => ({}) }))
 vi.mock("src/core/db3/components/IconMap", () => ({ gCharMap: { LeftTriangle: () => "<", RightTriangle: () => ">" } }))
-vi.mock("src/core/components/CMCoreComponents", () => ({}))
-vi.mock("src/core/components/CMCoreComponents2", () => ({ AdminInspectObject: () => null }))
-vi.mock("src/core/components/AppContext", () => ({}))
+vi.mock("src/core/components/CMCoreComponents", () => ({ CMSinglePageSurfaceCard: ({ children }: React.PropsWithChildren) => children }))
+vi.mock("src/core/components/CMCoreComponents2", () => ({ AdminInspectObject: () => null, useURLState: () => ["202607", () => {}] }))
+vi.mock("src/core/components/AppContext", () => ({ AppContextMarker: ({ children }: React.PropsWithChildren) => children }))
 vi.mock("src/core/components/event/EventComponentsBase", () => ({}))
 vi.mock("src/core/components/event/EventComponents", () => ({}))
-vi.mock("src/core/hooks/useSearchableList", () => ({}))
-vi.mock("src/core/hooks/searchConfigs", () => ({}))
+vi.mock("src/core/hooks/useSearchableList", () => ({ useSearchableList: vi.fn(() => ({ enrichedItems: [], results: {} })) }))
+vi.mock("src/core/hooks/searchConfigs", () => ({ eventSearchConfig: {} }))
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({
   eventStatus: { getById: (id: number) => id === 9 ? { significance: "Cancelled" } : undefined },
 }) }))
 
 import { Calendar } from "react-big-calendar"
-import { BigEventCalendarMonth, BigEventCalendarMonthProps } from "src/core/components/EventCalendar"
+import { BigEventCalendarInner, BigEventCalendarMonth, BigEventCalendarMonthProps } from "src/core/components/EventCalendar"
+import { useSearchableList } from "src/core/hooks/useSearchableList"
+import type { EventsFilterSpec } from "src/core/components/event/EventClientBaseTypes"
 
 beforeEach(() => { vi.mocked(Calendar).mockClear() })
 
@@ -45,6 +47,17 @@ function render() {
 }
 
 describe("month calendar consumer", () => {
+  it("requests its padded month with explicit viewer and calendar bounds", () => {
+    renderToStaticMarkup(React.createElement(BigEventCalendarInner, {}))
+    const filter = vi.mocked(useSearchableList).mock.calls[0]![0] as EventsFilterSpec
+    expect(filter.quickFilter).toBe("")
+    expect(filter.calendarWindow).toEqual({
+      startDate: "2026-06-22", endDateExclusive: "2026-08-09",
+      startInstant: new Date(2026, 5, 22).toISOString(),
+      endInstantExclusive: new Date(2026, 7, 9).toISOString(),
+    })
+  })
+
   it("passes matching semantic endpoints and excludes TBD/cancelled segments", () => {
     const { calendar } = render()
     expect(calendar.events.map((item: any) => item.segment.id)).toEqual([1, 2])

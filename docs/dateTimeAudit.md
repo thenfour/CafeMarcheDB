@@ -4,7 +4,7 @@
 baseline, band-timezone foundation, all-day calendar-feed correction, DT-01
 all-day hydration, DT-02/DT-08 timed hydration and point-relative labels,
 DT-03 range aggregation, DT-04/DT-05 clock controls, DT-06 compact labels,
-and DT-09 month-calendar display.
+DT-09 month-calendar display, and DT-10 calendar-window queries.
 Event editors still need band-timezone integration;
 lifecycle classification and SQL queries still need repairs.
 No existing event data or database schema has been changed. The Japan report has
@@ -228,7 +228,34 @@ Adopting the configured band timezone remains POL-01.
   values, TBD/cancelled filtering, and selection callback data.
 
 This is a display adapter. Band-timezone lifecycle adoption remains POL-01;
-calendar query bounds and overlap selection remain DT-10.
+calendar query bounds and overlap selection are handled by DT-10 below.
+
+## Completed DT-10: explicit calendar windows and segment overlap
+
+- Month and picker requests now carry a validated `calendarWindow`: inclusive
+  start/exclusive end calendar dates, plus the corresponding absolute viewer
+  midnight bounds. Each midnight resolves independently across DST. These
+  requests no longer encode dates as quick-filter text; ordinary text/year
+  searches retain their existing behavior.
+- The search core applies one `EXISTS` predicate over uncancelled segments to
+  result rows, counts, and facets, alongside existing authorization/visibility
+  filters. Timed segments use absolute overlap; all-day segments use stored
+  calendar dates and normalized day counts. TBD does not match. Zero-duration
+  timed points match their containing window, including its start but not end.
+- Cached event starts no longer decide calendar membership. An event starting
+  in June with a July segment is returned for July. Picker highlights also use
+  individual known, uncancelled segments, preserving zero duration and avoiding
+  highlighting gaps between segments.
+- Six real MySQL tests execute the production overlap predicate against a
+  disposable database, including three SQL session zones, exact/millisecond
+  edges, Tokyo midnight, later segments, all-day dates, and 23/25-hour DST days.
+  The runner creates and drops only its uniquely named local test database.
+  Additional tests cover validation, five viewer-zone request builders, actual
+  month/picker request plumbing, and search-core rows/counts/facets wiring.
+
+The existing 100-event page limit in these calendar consumers remains a separate
+loading limit. All-day lifecycle/cached bounds remain POL-01, and status facets
+and dashboard interval classification remain DT-11.
 
 ## Executable evidence
 
@@ -248,13 +275,22 @@ aggregation, and feed cases. Clocks are fixed where an operation depends on the 
 | [clockOptions.test.ts](../tests/datetime/clockOptions.test.ts) | 31 | 0 | Civil clock grid, dated instants, gap/fold choices, precise selections, and overnight/multi-day ends |
 | [clockControls.test.ts](../tests/datetime/clockControls.test.ts) | 3 | 0 | Mounted range control and native select changes in jsdom |
 | [eventDateConsumers.test.ts](../tests/datetime/eventDateConsumers.test.ts) | 49 | 0 | Actual compact label rendering, interval edges, all-day dates, overnight events, and reference years in four viewer zones |
-| [calendarDisplay.test.ts](../tests/datetime/calendarDisplay.test.ts) | 70 | 0 | Display ranges and real month-widget day spans in five viewer zones |
-| [calendarConsumer.test.ts](../tests/datetime/calendarConsumer.test.ts) | 2 | 0 | Production month accessors, TBD/cancelled filtering, and selection data |
+| [calendarDisplay.test.ts](../tests/datetime/calendarDisplay.test.ts) | 75 | 0 | Display ranges, real month-widget day spans, and local search windows in five viewer zones |
+| [calendarConsumer.test.ts](../tests/datetime/calendarConsumer.test.ts) | 3 | 0 | Production month accessors, request bounds, TBD/cancelled filtering, and selection data |
+| [calendarWindow.test.ts](../tests/datetime/calendarWindow.test.ts) | 15 | 0 | Explicit window policy, DST boundaries, and request/SQL input validation |
+| [calendarWindowConsumers.test.ts](../tests/datetime/calendarWindowConsumers.test.ts) | 2 | 0 | Mounted picker lookup, search-config propagation, and segment highlights |
 | [calendarFeed.test.ts](../tests/datetime/calendarFeed.test.ts) | 29 | 0 | Actual application feed adapter and installed `ical-generator` serialization |
 | [bandTimePolicy.test.ts](../tests/datetime/bandTimePolicy.test.ts) | 54 | 0 | Named-zone validation, band-time conversion, DST ambiguity, all-day bounds, and host-timezone independence |
 | [bandTimeZoneLoading.test.ts](../tests/datetime/bandTimeZoneLoading.test.ts) | 4 | 0 | Fresh server setting reads, default/error behavior, and dashboard delivery |
 | [bandTimeZoneWrites.test.ts](../tests/datetime/bandTimeZoneWrites.test.ts) | 25 | 0 | Generic and raw settings validation, partial edits, clears, and retained authorization |
-| Total | 512 | 3 | 515 checks; remaining failures cover POL-01 lifecycle boundaries |
+| Total | 535 | 3 | 538 standard checks; remaining failures cover POL-01 lifecycle boundaries |
+
+An additional six [MySQL overlap checks](../tests/datetime/calendarWindow.mysql.test.ts)
+are opt-in and skipped by the standard command. They passed via
+`node scripts/test-datetime-mysql.cjs`, which requires a local MySQL server with
+permission to create and drop a disposable test database. The suite executes
+the production SQL predicate; separate search-core tests verify its integration
+with row, count, facet, and visibility queries.
 
 The original audit contained 134 checks: 90 ordinary passing checks and 44 known
 failures. Slice 1 adds 83 policy/loading/write checks and repairs the five feed failures.
@@ -264,6 +300,8 @@ DT-03 adds 60 checks and repairs two more failures.
 DT-04/DT-05 add 34 checks and repair eight more failures.
 DT-06 adds 36 checks and repairs five more failures.
 DT-09 adds 72 checks for a previously code-traced finding.
+DT-10 adds 23 standard date/time checks, six opt-in MySQL checks, and two
+search-core integration checks in the authorization suite.
 [Setting authorization tests](../tests/authorization/settingAuthorization.test.ts)
 also cover default reads, valid persistence/readback, invalid updates leaving all
 branding values unchanged, and denied or stale permission grants.
@@ -295,7 +333,8 @@ try {
 }
 ```
 
-The expected strict result is 3 failing test cases and 512 passing test cases.
+The expected strict result is 3 failing test cases and 535 passing test cases,
+with six opt-in MySQL checks skipped.
 This is a reproduction command; those failures are the audit output, not test
 harness errors. Infrastructure/probe errors are outside expected-failure tests.
 
@@ -434,31 +473,31 @@ range end. An all-day UTC date was therefore interpreted as a local timed start,
 including the previous local day west of UTC. Both endpoints now come from
 `getCalendarDisplayRange()`, and TBD segments are excluded from placement.
 Tests mount the installed `react-big-calendar` and inspect its rendered day
-spans in UTC, Brussels, Los Angeles, Tokyo, and Sydney. Query findings below
-remain code traces with real SQL integration tests still needed.
+spans in UTC, Brussels, Los Angeles, Tokyo, and Sydney. DT-10 now has local
+MySQL evidence as described below; DT-11 remains a code trace.
 
-**DT-10 - Medium: calendar queries lose viewer boundaries and miss overlapping segments.**
+**DT-10 - Resolved 2026-09-15: calendar queries lost viewer boundaries and missed overlapping segments.**
 
 The [month calendar](../src/core/components/EventCalendar.tsx#L307) and
 [picker event lookup](../src/core/components/DateTime/useEventsForDateRange.tsx#L25)
-send `YYYYMMDD-YYYYMMDD` quick-filter strings through
+formerly sent `YYYYMMDD-YYYYMMDD` quick-filter strings through
 [eventSearchConfig](../src/core/hooks/searchConfigs.ts#L51). The
 [SQL date filter](../src/core/db3/shared/db3basicFields.ts#L1477) uses
 `DATE(startsAt) BETWEEN ...`, without viewer-zone instant bounds or an end bound
 for overlap selection.
 
 For stored UTC timed values, a Tokyo 11 July 00:30 event has a 10 July UTC start.
-A request for 11 July therefore excludes it even though the tested label says
+A date-token request for 11 July therefore excluded it even though the tested label says
 11 July and `Today`. Month-view padding hides many boundary cases, so this is
 not proof of the historical month-calendar report. Separately, an event with
-a 1 June first segment and a 10 July later segment is outside July's padded
+a 1 June first segment and a 10 July later segment was outside July's padded
 start-date query even though the calendar renders individual segments.
 
-Use a structured calendar-window query carrying explicit instant bounds and
-date-only bounds. Select overlapping relevant segments or event intervals as
-appropriate to the view. Test the real MySQL query against boundary fixtures;
-the existing in-memory Prisma harness does not execute this SQL. Simple
-year-number searches can remain as they are, with adjacent-year continuity.
+Both consumers now send structured instant and date-only bounds. The server
+selects overlapping uncancelled segments via the shared search filter, preserving
+the existing event visibility rules. The production overlap predicate passes
+real MySQL boundary tests; search-core tests verify row/count/facet integration.
+Simple year-number searches retain their existing behavior.
 
 **DT-11 - Medium: database status filters disagree with interval classification.**
 
@@ -522,8 +561,9 @@ do not need a framework for elapsed-versus-calendar-day precision.
    date-picker integration and attendance timing remain open.
 4. **Align server aggregation, queries, and remaining feed behavior.** Cache
    absolute event bounds consistently and apply overlap queries. All-day feed
-   serialization and timed feed hydration are repaired. Define recalculation of
-   derived all-day bounds when the band
+   serialization and timed feed hydration are repaired.
+   **DT-10 is completed:** calendar queries use explicit viewer/date bounds and
+   segment overlap. Define recalculation of derived all-day bounds when the band
    timezone changes before lifecycle consumers adopt that setting. Remove the
    remaining expected-failure markers as the behavior is repaired.
 5. **Verify persisted data and browser boundaries.** Inspect actual stored event
@@ -553,16 +593,14 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
 
 ## Verification and limits
 
-- DT-09 verification on 2026-09-15: full `yarn test` passed 1,222 cases;
-  nine opt-in MySQL checks were skipped. The 515 date/time checks contain 512
+- DT-10 verification on 2026-09-15: full `yarn test` passed 1,247 cases;
+  fifteen opt-in MySQL checks were skipped. The 538 standard date/time checks contain 535
   ordinary checks and 3 executed expected failures. Strict date/time mode exposes
   exactly those 3 remaining failures (POL-01).
-- Focused ESLint for every changed TypeScript file and `git diff --check` passed.
-  `yarn tsc --noEmit` reports TS2321/TS2345 in `src/auth/mutations/mergeUsers.ts:11`
-  comparing Prisma client types. During DT-01, a compiler run substituting unchanged `HEAD`
-  sources for the edited files and excluding the new tests reproduced both
-  diagnostics. No new type diagnostics were reported. A production build was
-  not run for these correction slices; slice 1's earlier typecheck and build passed.
+- Focused ESLint for every changed TypeScript file, `git diff --check`, and
+  `yarn tsc --noEmit` passed. The production `yarn build` also passed.
+  The earlier TS2321/TS2345 Prisma comparison errors
+  in `mergeUsers.ts` did not recur on the current tree; no merge code was changed.
 - Settings resolver tests use the existing in-memory database. It does not
   emulate transaction rollback; the bulk rejection case checks validation before
   writes. Production mutations retain their existing serializable transactions.
@@ -576,10 +614,16 @@ recalculation after setting changes. Slice 1 refreshes configuration only.
   real month component's calendar props and selection callback, with the widget
   and unrelated UI dependencies isolated. These do not exercise live queries,
   attendance rendering, or a manual browser calendar journey.
+- DT-10's six MySQL tests passed via `node scripts/test-datetime-mysql.cjs`.
+  The runner created a fresh local schema, seeded only synthetic events, executed
+  the production overlap predicate, and dropped that database afterward.
+  Search-core tests separately capture SQL for rows/counts/facets and verify that
+  segment overlap and visibility predicates coexist. They do not execute an
+  authenticated browser-to-MySQL journey or a production-scale query plan.
 - No production database, deployed server timezone, existing corrupted row count,
   manual browser session, full date-picker/calendar journey, or external calendar
-  application was tested. Query findings are code traces, not claims of live SQL
-  execution. Authoring tests exercise boundary calculations and the explicit
+  application was tested. DT-11 remains a code trace; DT-10 has the local MySQL
+  evidence described above. Authoring tests exercise boundary calculations and the explicit
   local-date factory; the new clock tests additionally mount real controls in
   jsdom. DT-01 did not exercise the import UI interactively.
 - Passing controls cover exact ordinary timed boundaries, TBD, local tomorrow,

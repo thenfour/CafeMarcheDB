@@ -12,6 +12,7 @@ vi.mock("db", async () => {
 import db from "db";
 import type { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
+import { getCalendarWindow } from "shared/dateTimePolicy";
 import * as db3 from "src/core/db3/db3";
 import { GetSearchResultsCore } from "src/core/db3/server/searchServerCore";
 import { GetSearchResultsInput, DiscreteCriterionFilterType, ZGetSearchResultsInput } from "src/core/db3/shared/apiTypes";
@@ -35,6 +36,34 @@ describe("search recovery capability", () => {
     beforeEach(() => {
         authorizationTestDb.reset({ user: [actor, activeUser, deletedUser] });
         vi.spyOn(console, "error").mockImplementation(() => undefined);
+    });
+
+    it("applies calendar segment overlap to rows, counts and facets alongside visibility", async () => {
+        const statements: string[] = [];
+        rawQuery.mockImplementation(async (sql: any) => {
+            const statement = sql.strings.join("");
+            statements.push(statement);
+            return /count\(\*\) as rowCount/i.test(statement) ? [{ rowCount: BigInt(0) }] : [];
+        });
+        await GetSearchResultsCore(query({
+            tableID: "Event", quickFilter: "",
+            calendarWindow: getCalendarWindow({ startDate: "2026-07-11", endDateExclusive: "2026-07-12" }, "Asia/Tokyo"),
+            discreteCriteria: [{ db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] }],
+        }), createAuthorizationTestContext(actor) as AuthenticatedCtx);
+        expect(statements.length).toBeGreaterThanOrEqual(3);
+        for (const statement of statements) {
+            expect(statement).toContain("FROM EventSegment CS");
+            expect(statement).toContain("CS.eventId = P.id");
+            expect(statement).toContain("2026-07-10 15:00:00.000");
+            expect(statement).toContain("P.isDeleted = false");
+        }
+    });
+
+    it("rejects calendar windows on other search tables before SQL", async () => {
+        await expect(GetSearchResultsCore(query({
+            calendarWindow: getCalendarWindow({ startDate: "2026-07-11", endDateExclusive: "2026-07-12" }, "UTC"),
+        }), createAuthorizationTestContext(actor) as AuthenticatedCtx)).rejects.toThrow("only supported for event searches");
+        expect(rawQuery).not.toHaveBeenCalled();
     });
 
     it("advertises recovery only for users, independently of other table recovery permissions", () => {

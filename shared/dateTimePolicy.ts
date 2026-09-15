@@ -36,6 +36,39 @@ export interface InstantInterval {
     end: Date; // exclusive
 }
 
+// Calendar searches carry both representations: date-only events use calendar
+// bounds, while timed events use the viewer's absolute midnight boundaries.
+// dates are in format YYYY-MM-DD
+
+export const CalendarDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const CalendarWindowSchema = z.object({
+    startDate: CalendarDateSchema,
+    endDateExclusive: CalendarDateSchema,
+    startInstant: z.string().datetime(),
+    endInstantExclusive: z.string().datetime(),
+}).strict().superRefine((value, ctx) => {
+    try {
+        const calIsPositiveDuration = Temporal.PlainDate.compare(calendarDate(value.startDate), calendarDate(value.endDateExclusive)) < 0;
+        const instIsPositiveDuration = Temporal.Instant.compare(Temporal.Instant.from(value.startInstant), Temporal.Instant.from(value.endInstantExclusive)) < 0;
+        if (!calIsPositiveDuration || !instIsPositiveDuration) {
+            throw new RangeError("Empty or reversed calendar window.");
+        }
+    } catch {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Use valid, increasing calendar and instant bounds." });
+    }
+});
+export type CalendarWindow = z.infer<typeof CalendarWindowSchema>;
+
+export function getCalendarWindow(dates: CalendarDateRange, viewerTimeZone: string): CalendarWindow {
+    const interval = getAllDayInterval(dates, viewerTimeZone);
+    return CalendarWindowSchema.parse({
+        ...dates,
+        startInstant: interval.start.toISOString(),
+        endInstantExclusive: interval.end.toISOString(),
+    });
+}
+
 export interface BandDateTimeFields {
     date: string; // ISO YYYY-MM-DD
     time: string; // HH:mm, with optional seconds and milliseconds
