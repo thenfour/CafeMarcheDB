@@ -18,6 +18,7 @@ export interface MarkdownEditorCommandApi {
     textArea: HTMLTextAreaElement;
     controlledTextArea: ControlledTextAreaAPI;
     nativeFileInputRef: HTMLInputElement;
+    allowUploads?: boolean;
     saveProgress: () => Promise<void>;
     //contextMap: MarkdownContextMap;
     invocationTriggerMap: MarkdownCommandInvocationTriggerMap;

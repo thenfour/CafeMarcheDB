@@ -44,8 +44,11 @@ export async function commitUserMerge(db: PrismaClient, ctx: Ctx, input: z.infer
             await tx.user.update({
                 where: { id: context.retiringUserId },
                 data: {
-                    isDeleted: true, mergedIntoUserId: context.mainUserId, mergedAt: new Date(),
-                    mergeConfirmationHash: input.confirmation, hashedPassword: null, calendarFeedToken: null,
+                    isDeleted: true,
+                    mergedIntoUserId: context.mainUserId,
+                    mergedAt: new Date(),
+                    hashedPassword: null,
+                    calendarFeedToken: null,
                 },
             });
 

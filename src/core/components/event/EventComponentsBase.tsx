@@ -2,7 +2,7 @@
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { DateTimeRange, Timing } from 'shared/time';
-import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
+import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCalculation";
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -191,129 +191,25 @@ export interface CalcEventAttendanceArgs {
     userMap: UserInstrumentList,
 };
 
-export interface EventAttendanceResult {
-    eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
-    segmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
-    uncancelledSegmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
+export { type EventAttendanceResult } from "./attendanceCalculation";
 
-    noSegments: boolean;
-    eventIsCancelled: boolean;
-    eventTiming: Timing;
-    eventIsPast: boolean;
-
-    uncancelledSegments: db3.EventSegmentPayloadMinimum[];
-
-    isInvited: boolean;
-    isSingleSegment: boolean;
-
-    allAttendances: Prisma.EventAttendanceGetPayload<{}>[];
-    allUncancelledSegmentAttendances: Prisma.EventAttendanceGetPayload<{}>[];
-
-    anyAnswered: boolean;
-    allUncancelledSegmentsAnswered: boolean;
-    allAffirmative: boolean;
-    allUncancelledSegmentsAffirmative: boolean;
-    someUncancelledSegmentResponsesAffirmative: boolean;
-    allUncancelledSegmentResponsesNegative: boolean;
-
-    alertFlag: boolean;
-    minimalBecauseNotAlert: boolean;
-    visible: boolean;
-
-    allowViewMode: boolean;
-
-    allowInstrumentSelect: boolean;
-};
-
-// breaks out all the logic from the alert control into a function
-// eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
-// segmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
+// Production context adapter; the calculation itself has no React dependencies.
 export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttendanceResult => {
     const dashboardContext = useDashboardContext();
     const user = dashboardContext.currentUser!;
-
-    //const alertOnly = CoalesceBool(props.alertOnly, false);
     if (!props.eventData.responseInfo) throw new Error("no response info");
-
-    const segmentUserResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));
-    const cancelledStatusIds = db3.getCancelledStatusIds(dashboardContext.eventStatus.items);
-    segmentUserResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment, cancelledStatusIds));
-
-    //const cancelledStatusIds = dashboardContext.eventStatus.items.filter(s => s.significance === db3.EventStatusSignificance.Cancelled).map(x => x.id);
-    const isCancelledSegment = (seg: Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>) => {
-        if (!seg.statusId) return false;
-        return cancelledStatusIds.includes(seg.statusId);
-    };
-    const uncancelledSegments = props.eventData.event.segments.filter(s => !isCancelledSegment(s));
-
-    const ret: EventAttendanceResult = {
-        eventUserResponse: props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap)!,
-        segmentUserResponses,
-        uncancelledSegmentUserResponses: segmentUserResponses.filter(s => !isCancelledSegment(s.segment)),
-
-        uncancelledSegments,
-
-        noSegments: (uncancelledSegments.length < 1),
-        eventIsCancelled: (props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled),
+    const eventUserResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
+    assert(!!eventUserResponse, "getEventResponseForUser should always return an event response");
+    return calculateEventAttendance({
+        eventUserResponse,
+        segmentUserResponses: Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user)),
+        segments: props.eventData.event.segments,
         eventTiming: props.eventData.eventTiming,
-        eventIsPast: props.eventData.eventTiming === Timing.Past,
-
-        isInvited: false,
-        isSingleSegment: false,
-
-        allAttendances: [],
-        allUncancelledSegmentAttendances: [],
-
-        anyAnswered: false,
-        allUncancelledSegmentsAnswered: false,
-        allAffirmative: false,
-        allUncancelledSegmentsAffirmative: false,
-        someUncancelledSegmentResponsesAffirmative: false,
-        allUncancelledSegmentResponsesNegative: false,
-
-        alertFlag: false,
-        minimalBecauseNotAlert: false,
-        visible: false,
-
-        allowViewMode: false,
-
-        allowInstrumentSelect: false,
-    };
-
-    //const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
-    assert(!!ret.eventUserResponse, "getEventResponseForUser should be designed to always return an event response obj");
-
-    ret.isInvited = ret.eventUserResponse.isInvited;
-    ret.isSingleSegment = uncancelledSegments.length === 1;// ret.segmentUserResponses.length === 1;
-
-    ret.allAttendances = ret.segmentUserResponses.map(sr => dashboardContext.eventAttendance.getById(sr.response.attendanceId)!);
-    ret.allUncancelledSegmentAttendances = ret.uncancelledSegmentUserResponses.map(sr => dashboardContext.eventAttendance.getById(sr.response.attendanceId)!);
-
-    ret.anyAnswered = ret.allAttendances.some(r => !!r);
-
-    ret.allUncancelledSegmentsAnswered = ret.allUncancelledSegmentAttendances.every(r => !!r);
-
-    ret.allAffirmative = ret.allAttendances.every(isAttendanceGoing);
-    ret.allUncancelledSegmentsAffirmative = ret.allUncancelledSegmentAttendances.every(isAttendanceGoing);
-    ret.someUncancelledSegmentResponsesAffirmative = ret.allUncancelledSegmentAttendances.some(isAttendanceGoing);
-    ret.allUncancelledSegmentResponsesNegative = ret.allUncancelledSegmentAttendances.every(isAttendanceNotGoing);
-
-    ret.alertFlag = ret.isInvited && !ret.allUncancelledSegmentsAnswered && !ret.eventIsPast && !ret.eventIsCancelled;
-    ret.visible = !ret.eventIsCancelled && !ret.noSegments && (ret.anyAnswered || ret.isInvited);
-
-    // there are really just 2 modes here for simplicity
-    // view (compact, instrument & segments on same line)
-    // edit (full, instrument & segments on separate lines with full text)
-    ret.allowViewMode = !ret.alertFlag;
-    //const editMode = userSelectedEdit || !allowViewMode;
-
-    // try to make the process slightly more linear by first asking about attendance. when you've answered that, THEN ask on what instrument.
-    // also don't ask about instrument if all answers are negative.
-    ret.allowInstrumentSelect = ret.allUncancelledSegmentsAnswered && ret.someUncancelledSegmentResponsesAffirmative;
-
-    return ret;
+        eventIsCancelled: props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled,
+        cancelledStatusIds: db3.getCancelledStatusIds(dashboardContext.eventStatus.items),
+        attendances: dashboardContext.eventAttendance.items,
+    });
 };
-
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

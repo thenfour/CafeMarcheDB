@@ -183,6 +183,7 @@ export const gMenuSections: MenuSection[] = [
                     backstageLink("serverHealth", { renderIcon: () => <SettingsIcon /> }),
                     backstageLink("calendarPreview", { renderIcon: () => gIconMap.CalendarMonth() }),
                     backstageLink("gallery", { renderIcon: () => <CollectionsIcon /> }),
+                    backstageLink("attendanceTest", { renderIcon: gIconMap.CalendarMonth }),
                     backstageLink("colorEditor", { renderIcon: () => <Palette /> }),
                 ]
             },

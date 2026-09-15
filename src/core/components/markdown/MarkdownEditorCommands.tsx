@@ -192,6 +192,7 @@ const CharacterSizeCommand: MarkdownEditorCommand = {
 // if existing, select & show dialog. if not, show file picker dialog.
 const FileAttachCommand: MarkdownEditorCommand = {
     id: "fileAttach",
+    isEnabled: api => api.allowUploads !== false,
     toolbarTooltip: "File attach",
     toolbarIcon:
         <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-paperclip Button-visual">

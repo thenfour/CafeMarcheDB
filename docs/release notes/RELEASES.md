@@ -42,6 +42,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #686 UI improvements / tweaks
   - #631 #684 various improvements to metronome (timing stability, edge case bugs, transition continuity)
   - #481 ability to merge duplicate user identities
+  - #674 fixed some issues related to document editing
 
 ## security hardening
 

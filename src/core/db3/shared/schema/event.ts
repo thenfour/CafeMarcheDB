@@ -131,6 +131,18 @@ export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayl
     });
 }
 
+export const getEventDateTimeRangeFromSegments = (
+    segments: { startsAt: Date | null; durationMillis: bigint; isAllDay: boolean; statusId: number | null }[],
+    cancelledStatusIds: number[],
+) => {
+    let range = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
+    for (const segment of segments) {
+        if (segment.statusId && cancelledStatusIds.includes(segment.statusId)) continue;
+        range = range.unionWith(getEventSegmentDateTimeRange(segment));
+    }
+    return range;
+};
+
 
 export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) => {
     const r = getEventSegmentDateTimeRange(segment);

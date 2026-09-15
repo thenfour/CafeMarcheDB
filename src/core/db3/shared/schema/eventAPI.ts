@@ -53,7 +53,14 @@ export function createMockEventSegmentUserResponse
 
 
 
-export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, data: DashboardContextDataBase): (db3.InstrumentPayload | null) {
+// Response preparation needs only an instrument lookup, not a dashboard or DB.
+export interface EventResponseInstrumentLookup {
+    instrument: {
+        getById: (id: number | null | undefined) => db3.InstrumentPayload | null
+    };
+}
+
+export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, data: EventResponseInstrumentLookup): (db3.InstrumentPayload | null) {
     if (user.instruments.length < 1) return null;
     const p = user.instruments.find(i => i.isPrimary);
     if (p) {
@@ -62,7 +69,7 @@ export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, d
     return data.instrument.getById(user.instruments[0]!.instrumentId);
 }
 
-export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: number, data: DashboardContextDataBase, users: UserInstrumentList): (db3.InstrumentPayload | null) {
+export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: number, data: EventResponseInstrumentLookup, users: UserInstrumentList): (db3.InstrumentPayload | null) {
     if (response.instrumentId != null) {
         return data.instrument.getById(response.instrumentId);
     }
@@ -75,7 +82,7 @@ export interface createMockEventUserResponseArgs<TEvent extends db3.EventRespons
     userId: number,
     event: TEvent;
     defaultInvitees: Set<number>;
-    dashboardContext: DashboardContextDataBase;
+    dashboardContext: EventResponseInstrumentLookup;
     users: UserInstrumentList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
 };
@@ -133,7 +140,7 @@ export interface GetEventResponseForUserArgs<
     user: db3.UserWithInstrumentsPayload;
     event: TEvent;
     defaultInvitationUserIds: Set<number>;
-    dashboardContext: DashboardContextDataBase;
+    dashboardContext: EventResponseInstrumentLookup;
     userMap: UserInstrumentList;
     makeMockEventUserResponse: fn_makeMockEventUserResponse<TEvent, TEventResponse>;
 };

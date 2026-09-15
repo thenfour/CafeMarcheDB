@@ -65,6 +65,8 @@ const renderMarkdownPreviewLayoutIcon = (layout: MarkdownPreviewLayout) => {
 //////////////////////////////////////////////////
 interface Markdown3EditorPropsBase {
     readonly?: boolean;
+    /** Disable server file uploads in local-only editors such as the attendance sandbox. */
+    allowUploads?: boolean;
     value?: string;
     initialValue?: string;
     autoFocus?: boolean;
@@ -243,6 +245,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         dashboardContext: dashboardContext,
         textArea: textAreaRef.current!,
         nativeFileInputRef: nativeFileInputRef!,
+        allowUploads: props.allowUploads,
         saveProgress: async () => {
             if (props.handleSave) {
                 await props.handleSave();
@@ -264,7 +267,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
 
     // ok when you upload, the gallery item component is created.
     const handleFileSelect = (files: FileList) => {
-        if (!files.length) return;
+        if (props.allowUploads === false || !files.length) return;
         setUploadProgress(0);
 
         void snackbar.invokeAsync(async () => {

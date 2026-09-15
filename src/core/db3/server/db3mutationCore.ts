@@ -7,7 +7,6 @@ import * as mm from 'music-metadata';
 import { nanoid } from 'nanoid';
 import { ComputeChangePlan, getIntersectingFields } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { DateTimeRange } from "shared/time";
 import { CoalesceBool, ObjectDiff, sanitize } from "shared/utils";
 import { TWorkflowChange } from "shared/workflowEngine";
 import sharp from "sharp";
@@ -107,13 +106,7 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
 
         const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
 
-        let range = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
-        for (const segment of segments) {
-            const isCancelledSegment = segment.statusId && cancelledStatusIds.includes(segment.statusId);
-            if (isCancelledSegment) continue;
-            const r = db3.getEventSegmentDateTimeRange(segment);
-            range = range.unionWith(r);
-        }
+        const range = db3.getEventDateTimeRangeFromSegments(segments, cancelledStatusIds);
 
         // NOTE: this is going to be the wrong date! we need to calculate the date still.
         let existingEvent = ((await transactionalDb.event.findFirst({
