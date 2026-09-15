@@ -74,11 +74,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
 
     // create things out of order.
     segmentDateRanges = faker.helpers.shuffle(segmentDateRanges);
-    let eventRange = new DateTimeRange({ durationMillis: 0, isAllDay: false, startsAtDateTime: null });
-    segmentDateRanges.forEach(r => {
-        //console.log(` + (${r.toString()}`);
-        eventRange = eventRange.unionWith(r);
-    });
+    const eventRange = DateTimeRange.union(segmentDateRanges);
     //console.log(`= ${eventRange.toString()}`);
 
     const visibilityPermissionId = gState.randomVisibilityPermissionId();

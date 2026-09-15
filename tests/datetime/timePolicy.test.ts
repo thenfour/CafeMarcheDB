@@ -106,7 +106,7 @@ describe("DST and event aggregate ranges", () => {
     expect(inZone("Europe/Brussels").autumnDayElapsedHours).toBe(25)
   })
 
-  policyGap("DT-03: unioning an all-day event with itself preserves one day on the autumn transition", () => {
+  it("DT-03: unioning an all-day event with itself preserves one day on the autumn transition", () => {
     expect(inZone("Europe/Brussels").identicalAutumnUnionDays).toBe(1)
   })
 
@@ -118,7 +118,7 @@ describe("DST and event aggregate ranges", () => {
     expect(inZone("America/Los_Angeles").pacificFoldStart).toBe("2026-11-01T09:30:00.000Z")
   })
 
-  policyGap("DT-03: an event aggregate covers every segment regardless of segment order", () => {
+  it("DT-03: an event aggregate covers every segment regardless of segment order", () => {
     const unions = inZone("UTC").mixedUnions
     expect({
       sameBoundsForEveryOrder: new Set(unions.map(range => `${range.start}/${range.end}`)).size === 1,

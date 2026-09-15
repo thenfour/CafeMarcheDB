@@ -135,12 +135,10 @@ export const getEventDateTimeRangeFromSegments = (
     segments: { startsAt: Date | null; durationMillis: bigint; isAllDay: boolean; statusId: number | null }[],
     cancelledStatusIds: number[],
 ) => {
-    let range = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
-    for (const segment of segments) {
-        if (segment.statusId && cancelledStatusIds.includes(segment.statusId)) continue;
-        range = range.unionWith(getEventSegmentDateTimeRange(segment));
-    }
-    return range;
+    const ranges = segments
+        .filter(segment => !segment.statusId || !cancelledStatusIds.includes(segment.statusId))
+        .map(getEventSegmentDateTimeRange);
+    return DateTimeRange.union(ranges);
 };
 
 
@@ -151,12 +149,7 @@ export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ s
 
 
 export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
-    const d = event.segments.reduce((acc, seg) => {
-        // we want NULLs to count as maximum. The idea is that the date is not "yet" determined.
-        const range = getEventSegmentDateTimeRange(seg);
-        return range.unionWith(acc);
-    }, new DateTimeRange());
-    return d.getStartDateTime();
+    return DateTimeRange.union(event.segments.map(getEventSegmentDateTimeRange)).getStartDateTime();
 };
 
 export const xEventType = new db3.xTable({

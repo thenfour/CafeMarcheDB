@@ -808,57 +808,48 @@ export class DateTimeRange {
         return Timing.Present;
     };
 
-    unionWith(rhs: DateTimeRange): DateTimeRange {
-        // between TBD and isAllDay, and the fact that our spec cannot represent certain things
-        // (like known beginning but no known end, or different all-day-ness between start & end),
-        // there's some discretion in doing this.
-
-        if (rhs.isTBD()) {
-            if (this.isTBD()) {
-                return new DateTimeRange({ startsAtDateTime: null, isAllDay: true, durationMillis: 0 }); // both TBD.
-            }
-            // RHS is TBD but this is not. just return the range which is known.
-            return new DateTimeRange(this.spec);
-        } else {
-            if (this.isTBD()) {
-                // this is TBD but RHS is not.
-                return new DateTimeRange(rhs.getSpec());
-            }
+    // Calendar bounds use UTC date markers, not elapsed local-midnight instants.
+    // Timed ranges contribute the local dates they touch; a midnight exclusive
+    // end does not add another day. A zero-duration point contributes its own date.
+    private getCalendarBoundsUtc(): { start: number; end: number } {
+        if (this.spec.isAllDay) {
+            const start = this.spec.startsAtDateTime!.valueOf();
+            return { start, end: start + this.spec.durationMillis };
         }
+        return {
+            start: floorLocalTimeToDayUTC(this.spec.startsAtDateTime!).valueOf(),
+            end: floorLocalTimeToDayUTC(this.getLastDateTime()!).valueOf() + gMillisecondsPerDay,
+        };
+    }
 
-        // no TBD.
-        const now = new Date();
-
-        // success of this function is mesaured in some specific cases:
-        // - identical 1-day events == the same 1-day event
-        // - a 1-day event + similar <1day event == a 1-day event. (1-day + [midnight - 11:59] = 1-day.)
-        // - ...
-        const earliestStart = Math.min(this.getStartDateTime(now).valueOf(), rhs.getStartDateTime(now).valueOf());
-        const isAllDay = this.isAllDay() || rhs.isAllDay(); // if either is all-day, then the union becomes all-day.
-
-        if (isAllDay) {
-            const latestLast = Math.max(this.getLastDateTime(now).valueOf(), rhs.getLastDateTime(now).valueOf());
-            // operate in all-day terms. how do we convert a range from !allday to all-day?
-            // look at the days it touches. if it even covers 1 millisecond of a day, include that day.
-            //let start = new Date(earliestStart);
-            //let end = new Date(latestLast);
-            // count days in duration, ceil, convert to duration millis
-            let durationDays = (latestLast - earliestStart) / gMillisecondsPerDay; //Math.abs(startdjs.diff(enddjs, "day"));
-            durationDays = Math.ceil(durationDays);
-
-            return DateTimeRange.fromLocalDate({
-                startsAtDateTime: new Date(earliestStart),
-                isAllDay: true,
-                durationMillis: durationDays * gMillisecondsPerDay,
-            });
+    // Aggregate original ranges together: decide the representation before taking
+    // extrema. Pairwise timed hulls can lose a terminal midnight point's calendar
+    // date before an all-day range is encountered.
+    static union(ranges: readonly DateTimeRange[]): DateTimeRange {
+        const knownRanges = ranges.filter(range => !range.isTBD());
+        if (knownRanges.length === 0) {
+            return new DateTimeRange({ startsAtDateTime: null, isAllDay: true, durationMillis: 0 });
         }
-
-        const latestEnd = Math.max(this.getEndDateTime(now).valueOf(), rhs.getEndDateTime(now).valueOf());
+        const isAllDay = knownRanges.some(range => range.isAllDay());
+        let start = Infinity;
+        let end = -Infinity;
+        for (const range of knownRanges) {
+            const bounds = isAllDay ? range.getCalendarBoundsUtc() : {
+                start: range.spec.startsAtDateTime!.valueOf(),
+                end: range.spec.startsAtDateTime!.valueOf() + range.spec.durationMillis,
+            };
+            start = Math.min(start, bounds.start);
+            end = Math.max(end, bounds.end);
+        }
         return new DateTimeRange({
-            startsAtDateTime: new Date(earliestStart),
-            isAllDay: false,
-            durationMillis: latestEnd - earliestStart,
+            startsAtDateTime: new Date(start),
+            isAllDay,
+            durationMillis: end - start,
         });
+    }
+
+    unionWith(rhs: DateTimeRange): DateTimeRange {
+        return DateTimeRange.union([this, rhs]);
     }
 };
 
