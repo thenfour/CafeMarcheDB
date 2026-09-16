@@ -88,7 +88,7 @@ function collect() {
       start: tbd.getStartDateTime(),
       end: tbd.getEndDateTime(),
       timing: tbd.hitTestDateTime(today),
-      relative: CalcRelativeTiming(today, tbd, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels" }),
+      relative: CalcRelativeTiming(today, tbd, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels", locale: "en-US" }),
     },
     allDayBandBoundaries: bandBoundaryInstants.map(now => authored.hitTestDateTime(new Date(now))),
     springDayElapsedHours: (springDay.getEndDateTime()!.valueOf() - springDay.getStartDateTime()!.valueOf()) / gMillisecondsPerHour,
@@ -98,8 +98,8 @@ function collect() {
     pacificFoldStart: iso(pacificFold.getStartDateTime()),
     mixedUnions,
     midnightEndMembership: [10, 11].map(day => getRangeCalendarDates(localMidnightEnd, timeZone)!.hitTest(new CalendarDate(`2026-07-${day}`, timeZone)).inRange),
-    tomorrowLabel: CalcRelativeTiming(localNearMidnight, tomorrow, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels" }).label,
-    todayLabelAgreesWithCalendar: CalcRelativeTiming(today, authored, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels" }).label === "Today"
+    tomorrowLabel: CalcRelativeTiming(localNearMidnight, tomorrow, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels", locale: "en-US" }).label,
+    todayLabelAgreesWithCalendar: CalcRelativeTiming(today, authored, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels", locale: "en-US" }).label === "Today"
       && getRangeCalendarDates(authored, "Europe/Brussels")!.hitTest(CalendarDate.fromInstant({ value: today, timeZone: "Europe/Brussels" })).inRange,
     timestampLabelAfterOneMinute: CalcRelativeTimingFromNow(timestamp, new Date(timestamp.valueOf() + minute)).label,
     sortedDates: [null, new Date("2026-07-11T00:00:00Z"), new Date("2026-07-10T00:00:00Z")]

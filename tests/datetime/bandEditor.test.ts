@@ -8,7 +8,11 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 
 vi.mock("src/core/components/CMCoreComponents2", () => ({ KeyValueTable: () => null }))
 vi.mock("src/core/components/DateTime/useEventsForDateRange", () => ({ useEventsForDateRange: () => ({ events: [], loading: false }) }))
-vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ bandTimeZone: "Asia/Tokyo" }) }))
+
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({
+  useDashboardContext: () => ({ bandTimeZone: "Asia/Tokyo" })
+}));
+
 import { EventDateTimeRangeControl } from "src/core/components/DateTime/DateTimeRangeControl"
 import { DateTimeRange } from "shared/time"
 

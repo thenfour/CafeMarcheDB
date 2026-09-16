@@ -20,24 +20,6 @@ function formatShortDate(date: Date, locale: string = navigator.language): strin
         .join(" ");
 }
 
-// export interface EventShortDateProps {
-//     event: Prisma.EventGetPayload<{
-//         select: {
-//             startsAt: true;
-//         }
-//     }>;
-// };
-
-// export const EventShortDate = ({ event }: EventShortDateProps) => {
-//     if (!event.startsAt) return null;
-//     const relativeTiming = CalcRelativeTimingFromNow(event.startsAt);
-//     return <>
-//         {formatShortDate(event.startsAt)}
-//         <span className={`EventDateField container ${relativeTiming.bucket}`}><span className="RelativeIndicator">{relativeTiming.label}</span></span>
-//     </>
-// };
-
-
 interface DateValueProps {
     value: Date | undefined | null;
     className?: string;

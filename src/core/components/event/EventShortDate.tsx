@@ -24,6 +24,7 @@ export interface EventShortDateProps {
     locale?: string;
 }
 
+// for simplicity in unit tests, don't use dashboardContext.
 export const EventShortDate = ({ dateRange, now, locale = navigator.language }: EventShortDateProps) => {
     const dashboardContext = useDashboardContext();
     const start = dateRange.getStartDateTime();

@@ -13,9 +13,12 @@ function renderEvent(startsAt: string | null, durationMillis: number, isAllDay: 
     durationMillis,
     isAllDay,
   })
-  return renderToStaticMarkup(React.createElement(EventShortDate, {
-    dateRange, now: new Date(refTime), locale: "en-US", bandTimeZone: "Europe/Brussels",
-  }))
+  return renderToStaticMarkup(React.createElement(EventShortDate,
+    {
+      dateRange,
+      now: new Date(refTime),
+      locale: "en-US",
+    }))
 }
 
 const start = "2026-07-10T16:00:00.000Z"
