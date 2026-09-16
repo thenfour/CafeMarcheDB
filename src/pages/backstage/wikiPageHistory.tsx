@@ -155,7 +155,15 @@ const WikiRevisionHistoryPageContent = () => {
                 {revisions.map((rev, index) => {
                     // find the prev revision (the next in the array)
                     const prevRev = revisions[index + 1] || null;
-                    const timing = CalcRelativeTiming(new Date(), new DateTimeRange({ startsAtDateTime: rev.createdAt, isAllDay: false, durationMillis: 0 }));
+                    const timing = CalcRelativeTiming(
+                        new Date(),
+                        new DateTimeRange({
+                            startsAtDateTime: rev.createdAt,
+                            isAllDay: false,
+                            durationMillis: 0,
+                        }),
+                        dashboardContext.eventDatePresentation // this function is kinda being co-opted; band's tz is not really relevant here but easier to reuse CalcRelativeTiming for this too.
+                    );
                     const timeLabel = rev.createdAt.toLocaleString();
                     return <tr
                         key={rev.id}

@@ -5,13 +5,14 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { Button, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, TextField, Tooltip } from "@mui/material";
 import React, { useContext } from "react";
-import { DateTimeRange, DateToYYYYMMDDHHMMSS } from "shared/time";
+import { formatZonedDate } from "shared/dateTimePresentation";
+import { CalcRelativeTimingFromNow, DateToYYYYMMDDHHMMSS } from "shared/time";
 import { CoerceToString, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "../../db3/DB3Client";
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { DB3MultiSelect } from "../../db3/components/db3Select";
 import * as db3 from "../../db3/db3";
-import { AdminInspectObject, AnimatedCircularProgress, CMSmallButton, DialogActionsCM, EventDateField, Pre } from "../CMCoreComponents2";
+import { AdminInspectObject, AnimatedCircularProgress, CMSmallButton, DialogActionsCM, Pre } from "../CMCoreComponents2";
 import { CMSelectDisplayStyle } from "../select/CMSelect";
 import { CMTextField } from "../CMTextField";
 import { SettingMarkdown } from "../SettingMarkdown";
@@ -44,22 +45,16 @@ interface WorkflowDueDateValueProps {
 export const WorkflowDueDateValue = (props: WorkflowDueDateValueProps) => {
     if (props.dueDate === undefined) return null;
 
-    // Workflow due dates come from the generic local-date picker, not event date storage.
-    const range = DateTimeRange.fromLocalDate({
-        durationMillis: 0,
-        isAllDay: true,
-        startsAtDateTime: props.dueDate || null,
-    });
-
     const isOverdue = (props.dueDate <= new Date());
+    const relative = CalcRelativeTimingFromNow(props.dueDate);
+    const dateLabel = formatZonedDate({ value: props.dueDate, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }, "en-GB", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric",
+    });
 
     return <div className={`dueDateContainer ${isOverdue ? "overdue" : ""}`} style={{ display: "flex" }}>
         {isOverdue && <>⚠️</>}
         <div>Due date</div>
-        <EventDateField
-            dateRange={range}
-            className={`WorkflowNodeDueDateValue ${isOverdue ? "overdue" : ""}`}
-        />
+        <span className={`WorkflowNodeDueDateValue ${isOverdue ? "overdue" : ""}`}>{dateLabel} <span className="RelativeIndicator">{relative.label}</span></span>
     </div>;
 };
 

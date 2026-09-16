@@ -11,39 +11,40 @@ import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/Dash
 import { SnackbarContext } from "./SnackbarContext";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { ActivityFeature } from "./featureReports/activityTracking";
+import { localTimeZone } from "@/shared/time";
 
 type CreatedUpdatedObj = {
-  id: number;
-  createdAt?: Date | null | undefined;
-  updatedAt?: Date | null | undefined;
-  createdByUserId?: number | null | undefined;
-  updatedByUserId?: number | null | undefined;
+    id: number;
+    createdAt?: Date | null | undefined;
+    updatedAt?: Date | null | undefined;
+    createdByUserId?: number | null | undefined;
+    updatedByUserId?: number | null | undefined;
 };
 
 export const CreatedUpdatedView = (props: { obj: CreatedUpdatedObj, caption: string }) => {
-  const { id, createdAt, createdByUserId, updatedAt, updatedByUserId } = props.obj;
-  return <AdminInspectObject src={{
-    id,
-    createdAt,
-    createdByUserId,
-    updatedAt,
-    updatedByUserId,
-  }} label={props.caption} />
+    const { id, createdAt, createdByUserId, updatedAt, updatedByUserId } = props.obj;
+    return <AdminInspectObject src={{
+        id,
+        createdAt,
+        createdByUserId,
+        updatedAt,
+        updatedByUserId,
+    }} label={props.caption} />
 };
 
 
 
 export interface EventAttendanceControlProps {
-  eventData: EventWithMetadata<
-    EnrichedSearchEventPayload,
-    db3.EventResponses_MinimalEventUserResponse,
-    db3.EventResponses_MinimalEventSegment,
-    db3.EventResponses_MinimalEventSegmentUserResponse
-  >;
-  onRefetch: () => void,
-  userMap: UserInstrumentList,
-  minimalWhenNotAlert: boolean,
-  //alertOnly?: boolean; // when true, the control hides unless it's an alert.
+    eventData: EventWithMetadata<
+        EnrichedSearchEventPayload,
+        db3.EventResponses_MinimalEventUserResponse,
+        db3.EventResponses_MinimalEventSegment,
+        db3.EventResponses_MinimalEventSegmentUserResponse
+    >;
+    onRefetch: () => void,
+    userMap: UserInstrumentList,
+    minimalWhenNotAlert: boolean,
+    //alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
@@ -87,6 +88,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             instruments: dashboardContext.instrument.items,
             onSave,
             allowUploads: true,
+            datePresentation: dashboardContext.eventDatePresentation,
             commentDialogTitle: <SettingMarkdown setting="EventAttendanceCommentDialog_TitleMarkdown" />,
             commentDialogDescription: <SettingMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />,
         }} />;

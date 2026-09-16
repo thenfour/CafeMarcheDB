@@ -4,6 +4,8 @@ import { BlitzPage } from "@blitzjs/auth";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, RelativeTimingInfo, gMillisecondsPerHour } from "shared/time";
+import { DashboardContextDataBase } from "@/src/core/components/dashboardContext/dashboardContextTypes";
+import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 
 interface TestResult {
     pass: boolean,
@@ -13,11 +15,13 @@ interface TestResult {
     actual: string,
 };
 
-function CalcRelativeTimingTest(name: string, results: TestResult[], brk: boolean, refTime: Date, range: DateTimeRange, expected: RelativeTimingInfo) {
+function CalcRelativeTimingTest(dashboardContext: DashboardContextDataBase, name: string, results: TestResult[], brk: boolean, refTime: Date, range: DateTimeRange, expected: RelativeTimingInfo) {
     if (brk) {
         debugger;
     }
-    const actual = CalcRelativeTiming(refTime, range);
+    const actual = CalcRelativeTiming(refTime, range,
+        dashboardContext.eventDatePresentation
+    );
     //const name = `${refTime.toISOString()} vs ${range.toString()}`;
     let pass = true;
     if (actual.bucket !== expected.bucket) {
@@ -53,15 +57,17 @@ function CalcRelativeTimingTest(name: string, results: TestResult[], brk: boolea
 
 
 const TestCalcRelativeTiming = () => {
+    const dashboardContext = useDashboardContext();
 
     const results: TestResult[] = [];
     // happening now
     CalcRelativeTimingTest(
+        dashboardContext,
         "happening now",
         results,
         false,
         new Date("2020-07-07 18:00:00"),
-        DateTimeRange.fromLocalDate({
+        new DateTimeRange({
             startsAtDateTime: new Date("2020-07-07 18:00:00"),
             durationMillis: 0,
             isAllDay: true,
@@ -72,6 +78,7 @@ const TestCalcRelativeTiming = () => {
 
     // today (later)
     CalcRelativeTimingTest(
+        dashboardContext,
         "today (later)",
         results,
         false,
@@ -87,6 +94,7 @@ const TestCalcRelativeTiming = () => {
 
     // today (earlier)
     CalcRelativeTimingTest(
+        dashboardContext,
         "today (earlier)",
         results,
         false,
@@ -102,6 +110,7 @@ const TestCalcRelativeTiming = () => {
 
     // yesterday (but later in the day)
     CalcRelativeTimingTest(
+        dashboardContext,
         "yesterday (but later in the day)",
         results,
         false,
@@ -117,6 +126,7 @@ const TestCalcRelativeTiming = () => {
 
     // yesterday (but earlier in the day)
     CalcRelativeTimingTest(
+        dashboardContext,
         "yesterday (but earlier in the day)",
         results,
         false,
@@ -131,6 +141,7 @@ const TestCalcRelativeTiming = () => {
     });
 
     CalcRelativeTimingTest(
+        dashboardContext,
         "2 days ago (threshold of yesterday)",
         results,
         false,
@@ -145,6 +156,7 @@ const TestCalcRelativeTiming = () => {
     });
 
     CalcRelativeTimingTest(
+        dashboardContext,
         "5 days ago",
         results,
         false,
@@ -159,6 +171,7 @@ const TestCalcRelativeTiming = () => {
     });
 
     CalcRelativeTimingTest(
+        dashboardContext,
         "6 days (1 week) ago",
         results,
         false,
@@ -173,6 +186,7 @@ const TestCalcRelativeTiming = () => {
     });
 
     CalcRelativeTimingTest(
+        dashboardContext,
         "last week (but earlier in the week)",
         results,
         false,
@@ -187,6 +201,7 @@ const TestCalcRelativeTiming = () => {
     });
 
     CalcRelativeTimingTest(
+        dashboardContext,
         "2 fridays ago",
         results,
         false,
@@ -202,6 +217,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2020/7/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "3 mondays ago",
         results,
         false,
@@ -217,6 +233,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2020/7/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "6 weeks",
         results,
         false,
@@ -232,6 +249,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2020/7/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "2 months (7 weeks)",
         results,
         false,
@@ -247,6 +265,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2020/7/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "18 months",
         results,
         false,
@@ -262,6 +281,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2020/7/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "2 years",
         results,
         false,
@@ -279,6 +299,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "Tomorrow",
         results,
         false,
@@ -294,6 +315,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "Tomorrow (later)",
         results,
         false,
@@ -309,6 +331,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "in 2 days",
         results,
         false,
@@ -324,6 +347,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "in 5 days",
         results,
         false,
@@ -339,6 +363,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "next week",
         results,
         false,
@@ -354,6 +379,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "in 2 weeks (earlier in week)",
         results,
         false,
@@ -369,6 +395,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "in 2 weeks (later in week)",
         results,
         false,
@@ -384,6 +411,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "in 6 weeks",
         results,
         false,
@@ -399,6 +427,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "next month",
         results,
         false,
@@ -414,6 +443,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "in 2 months",
         results,
         false,
@@ -429,6 +459,7 @@ const TestCalcRelativeTiming = () => {
 
     // https://calendar.google.com/calendar/u/0/r/month/2024/5/1?tab=mc
     CalcRelativeTimingTest(
+        dashboardContext,
         "in 2 months",
         results,
         false,

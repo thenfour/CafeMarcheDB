@@ -1,11 +1,11 @@
+import { getLegacyAllDayCalendarDates } from "src/server/migrateEventUtcSpans";
+import { CalendarDate } from "shared/dateTimePolicy";
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
   BandTimeZoneSchema,
   bandDateTimeToInstant,
-  calendarDateToUtcDate,
   getAllDayInterval,
   getBandDateTimeFields,
-  getStoredAllDayCalendarRange,
   resolveBandTimeZone,
 } from "shared/dateTimePolicy"
 import { runTimeZoneProbe } from "./support/runTimeZoneProbe"
@@ -137,13 +137,13 @@ describe("all-day policy separates calendar dates from absolute boundaries", () 
   })
 
   it("keeps adjacent years contiguous in the stored calendar-date representation", () => {
-    expect(getStoredAllDayCalendarRange(new Date("2024-12-31T00:00Z"), 2 * 86_400_000))
+    expect(getLegacyAllDayCalendarDates(new Date("2024-12-31T00:00Z"), 2 * 86_400_000))
       .toEqual({ startDate: "2024-12-31", endDateExclusive: "2025-01-02" })
-    expect(calendarDateToUtcDate("2025-01-01").toISOString()).toBe("2025-01-01T00:00:00.000Z")
+    expect(new CalendarDate("2025-01-01", "UTC").toStartInstant().toISOString()).toBe("2025-01-01T00:00:00.000Z")
   })
 
   it("preserves the legacy minimum one-day interpretation at the storage boundary", () => {
-    expect(getStoredAllDayCalendarRange(new Date("2026-07-10T00:00Z"), 0))
+    expect(getLegacyAllDayCalendarDates(new Date("2026-07-10T00:00Z"), 0))
       .toEqual({ startDate: "2026-07-10", endDateExclusive: "2026-07-11" })
   })
 })

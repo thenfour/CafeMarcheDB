@@ -48,17 +48,17 @@ describe.each(["UTC", "Europe/Brussels", "Asia/Tokyo", "America/Los_Angeles", "A
     })
 
     it("excludes cancelled and TBD segments from the known aggregate", () => {
-      expect(result.filtered).toEqual({ start: "2026-07-09T00:00:00.000Z", duration: 3 * 86_400_000, allDay: true })
+      expect(result.filtered).toEqual({ start: "2026-07-08T22:00:00.000Z", duration: 50 * 3_600_000, allDay: false })
     })
 
     it("keeps empty, all-TBD and all-cancelled collections undated", () => {
-      for (const value of [result.empty, result.allTbd, result.allCancelled]) expect(value).toEqual({ start: null, duration: 86_400_000, allDay: true })
+      for (const value of [result.empty, result.allTbd, result.allCancelled]) expect(value).toEqual({ start: null, duration: 0, allDay: true })
     })
 
     it("persists complete aggregate bounds through the actual writer for every segment order", () => {
       expect(result.writerUsesEventFilter).toBe(true)
       expect(result.writes).toHaveLength(6)
-      for (const value of result.writes) expect(value).toEqual({ start: "2026-07-09T00:00:00.000Z", duration: 3 * 86_400_000, allDay: true, end: result.expectedWriteEnd })
+      for (const value of result.writes) expect(value).toEqual({ start: "2026-07-08T22:00:00.000Z", duration: 50 * 3_600_000, allDay: false, end: result.expectedWriteEnd })
     })
 
     it("does not inject the current time into the minimum segment date", () => {

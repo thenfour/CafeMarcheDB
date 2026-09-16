@@ -1,6 +1,6 @@
+import { CalendarDate, CalendarRange } from "shared/dateTimePolicy";
 // @vitest-environment jsdom
 import React from "react"
-import dayjs from "dayjs"
 import { act } from "react-dom/test-utils"
 import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 vi.mock("src/core/hooks/useSearchableList", () => ({ useSearchableList: vi.fn() }))
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => {
   const eventStatus = { items: [{ id: 9, significance: "Cancelled" }], getById: (id: number | null) => id === 9 ? { significance: "Cancelled" } : undefined }
-  return { useDashboardContext: () => ({ eventStatus }) }
+  return { useDashboardContext: () => ({ eventStatus, bandTimeZone: "Europe/Brussels" }) }
 })
 
 import { useEventsForDateRange } from "src/core/components/DateTime/useEventsForDateRange"
@@ -38,7 +38,7 @@ function mount(range: DateTimeRange, timeZone?: string) {
     ] }], results: {} as any, loading: false, loadMoreData: vi.fn(),
   })
   let output: ReturnType<typeof useEventsForDateRange>
-  function Probe() { output = useEventsForDateRange(range, timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone); return null }
+  function Probe() { output = useEventsForDateRange(new CalendarRange(new CalendarDate("2026-07-11", timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone), new CalendarDate("2026-07-12", timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone))); return null }
   const container = document.createElement("div")
   const root = createRoot(container)
   unmount = () => { act(() => root.unmount()); container.remove() }
@@ -52,8 +52,8 @@ describe("picker calendar-window consumer", () => {
     const { args, output } = mount(new DateTimeRange({ startsAtDateTime: new Date(2026, 6, 11), durationMillis: 0, isAllDay: false }), "Asia/Tokyo")
     expect(args.calendarWindow).toEqual({ startDate: "2026-07-11", endDateExclusive: "2026-07-12",
       startInstant: "2026-07-10T15:00:00.000Z", endInstantExclusive: "2026-07-11T15:00:00.000Z" })
-    expect(output.events[1]!.dateRange.hitTestDay(dayjs(new Date(2026, 6, 11))).inRange).toBe(true)
-    expect(output.events[1]!.dateRange.hitTestDay(dayjs(new Date(2026, 6, 10))).inRange).toBe(false)
+    expect(output.events[1]!.dateRange.hitTest(new CalendarDate("2026-07-11", output.events[1]!.dateRange.start.timeZone)).inRange).toBe(true)
+    expect(output.events[1]!.dateRange.hitTest(new CalendarDate("2026-07-10", output.events[1]!.dateRange.start.timeZone)).inRange).toBe(false)
   })
 
   it("carries an exclusive local-day window through the production search config", () => {
@@ -68,12 +68,12 @@ describe("picker calendar-window consumer", () => {
     const { output } = mount(new DateTimeRange({ startsAtDateTime: new Date(2026, 6, 11), durationMillis: 0, isAllDay: false }))
     expect(output.events.map(event => event.id)).toEqual(["1", "1"])
     // Highlight ranges represent calendar days after projection into the explicit zone.
-    expect(output.events[1]!.dateRange.getSpec().durationMillis).toBe(86_400_000)
+    expect(output.events[1]!.dateRange.dayCount).toBe(1)
     const source = vi.mocked(useSearchableList).mock.results[0]!.value.enrichedItems[0].segments[1]
     expect(source.durationMillis).toBe(BigInt(0))
-    expect(output.events[1]!.dateRange.getStartDateTime()).toEqual(new Date(2026, 6, 11))
-    expect(output.events.some(event => event.dateRange.hitTestDay(dayjs(new Date(2026, 6, 10))).inRange)).toBe(false)
-    expect(output.events[1]!.dateRange.hitTestDay(dayjs(new Date(2026, 6, 11))).inRange).toBe(true)
+    expect(output.events[1]!.dateRange.start.date).toBe("2026-07-11")
+    expect(output.events.some(event => event.dateRange.hitTest(new CalendarDate("2026-07-10", output.events[1]!.dateRange.start.timeZone)).inRange)).toBe(false)
+    expect(output.events[1]!.dateRange.hitTest(new CalendarDate("2026-07-11", output.events[1]!.dateRange.start.timeZone)).inRange).toBe(true)
     expect(output.error).toBeNull()
   })
 })

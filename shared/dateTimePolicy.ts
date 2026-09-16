@@ -31,9 +31,60 @@ export interface CalendarDateRange {
     endDateExclusive: string; // ISO YYYY-MM-DD, exclusive
 }
 
+// kinda like DateTimeRange, but this is more of a simple value type to pass around
 export interface InstantInterval {
     start: Date;
     end: Date; // exclusive
+}
+
+export interface ZonedDate {
+    readonly value: Date;
+    readonly timeZone: string;
+}
+
+/** A calendar day in a named zone; never a Date pretending to be an instant. */
+export class CalendarDate {
+    readonly date: string;
+    readonly timeZone: string;
+    constructor(date: string, timeZone: string) {
+        this.date = calendarDate(date).toString();
+        this.timeZone = BandTimeZoneSchema.parse(timeZone);
+    }
+    static fromInstant({ value, timeZone }: ZonedDate): CalendarDate {
+        return new CalendarDate(getBandDateTimeFields(value, timeZone).date, timeZone);
+    }
+    addDays(days: number): CalendarDate { return new CalendarDate(addCalendarDays(this.date, days), this.timeZone); }
+    daysUntil(other: CalendarDate): number {
+        this.requireSameZone(other);
+        return calendarDate(this.date).until(calendarDate(other.date)).days;
+    }
+    requireSameZone(other: CalendarDate): void {
+        if (this.timeZone !== other.timeZone) throw new RangeError("Calendar dates must use the same timezone.");
+    }
+    toStartInstant(): Date {
+        return new Date(calendarDate(this.date).toZonedDateTime(this.timeZone).epochMilliseconds);
+    }
+}
+
+export interface CalendarDayHitTest { inRange: boolean; isFirstDay: boolean; isLastDay: boolean; }
+
+// construct with getRangeCalendarDates
+export class CalendarRange {
+    constructor(readonly start: CalendarDate, readonly endExclusive: CalendarDate) {
+        start.requireSameZone(endExclusive);
+        if (start.date >= endExclusive.date) throw new RangeError("Calendar range must contain at least one day.");
+    }
+    get last(): CalendarDate { return this.endExclusive.addDays(-1); }
+    get dayCount(): number { return this.start.daysUntil(this.endExclusive); }
+    get dates(): CalendarDateRange { return { startDate: this.start.date, endDateExclusive: this.endExclusive.date }; }
+    hitTest(day: CalendarDate): CalendarDayHitTest {
+        this.start.requireSameZone(day);
+        return {
+            inRange: day.date >= this.start.date && day.date < this.endExclusive.date,
+            isFirstDay: day.date === this.start.date,
+            isLastDay: day.date === this.last.date,
+        };
+    }
 }
 
 // Calendar searches carry both representations: date-only events use calendar
@@ -74,6 +125,7 @@ export interface BandDateTimeFields {
     time: string; // HH:mm, with optional seconds and milliseconds
 }
 
+// parses YYYY-MM-DD formatted calendar date into a Temporal.PlainDate object.
 function calendarDate(value: string): Temporal.PlainDate {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         throw new RangeError("Expected a calendar date in YYYY-MM-DD format.");
@@ -81,6 +133,7 @@ function calendarDate(value: string): Temporal.PlainDate {
     return Temporal.PlainDate.from(value);
 }
 
+// parses HH:mm[:ss[.SSS]] formatted clock time into a Temporal.PlainTime object.
 function clockTime(value: string): Temporal.PlainTime {
     if (!/^\d{2}:[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?$/.test(value)) {
         throw new RangeError("Expected a clock time in HH:mm or HH:mm:ss.SSS format.");
@@ -130,8 +183,8 @@ export function getBandDateTimeFields(instant: Date, bandTimeZone: string): Band
     };
 }
 
-// Calendar dates stay fixed for display; only their lifecycle boundaries use the
-// band timezone. Resolve each day separately: DST days need not last 24 hours.
+// Resolve authored calendar bounds once, before storing the UTC span.
+// Resolve each midnight separately: DST days need not last 24 hours.
 export function getAllDayInterval(range: CalendarDateRange, bandTimeZone: string): InstantInterval {
     const startDate = calendarDate(range.startDate);
     const endDate = calendarDate(range.endDateExclusive);
@@ -143,24 +196,4 @@ export function getAllDayInterval(range: CalendarDateRange, bandTimeZone: string
         start: new Date(startDate.toZonedDateTime(timeZone).epochMilliseconds),
         end: new Date(endDate.toZonedDateTime(timeZone).epochMilliseconds),
     };
-}
-
-// The current database encodes all-day calendar dates at UTC midnight and day
-// counts in nominal 24-hour units. Interpret those UTC fields directly; applying
-// the host timezone here would change the selected day. Preserve the existing
-// whole-day/minimum-one-day normalization at this legacy storage boundary.
-export function getStoredAllDayCalendarRange(startsAt: Date, durationMillis: number): CalendarDateRange {
-    if (!Number.isFinite(durationMillis)) throw new RangeError("Invalid all-day duration.");
-    const startDate = calendarDate(startsAt.toISOString().slice(0, 10));
-    const days = Math.max(1, Math.round(durationMillis / 86_400_000));
-    return {
-        startDate: startDate.toString(),
-        endDateExclusive: startDate.add({ days }).toString(),
-    };
-}
-
-// Some boundary libraries (including the existing iCalendar adapter) accept a
-// Date to carry calendar fields. This UTC encoding is not the band's midnight.
-export function calendarDateToUtcDate(value: string): Date {
-    return new Date(calendarDate(value).toZonedDateTime("UTC").epochMilliseconds);
 }

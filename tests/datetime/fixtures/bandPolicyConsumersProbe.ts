@@ -1,8 +1,10 @@
+import { createAllDayRange } from "shared/time";
+import { addCalendarDays } from "shared/dateTimePolicy";
 import { DateTimeRange, CalcRelativeTiming, changeDateTimeRangeStartDate, changeDateTimeRangeAllDay } from "../../../shared/time"
 import { RecalcEventDateRangeAndIncrementRevision } from "../../../src/core/db3/server/db3mutationCore"
 
 const day = 86_400_000
-const allDay = (date: string) => new DateTimeRange({ startsAtDateTime: new Date(`${date}T00:00:00Z`), durationMillis: day, isAllDay: true })
+const allDay = (date: string, timeZone = "Europe/Brussels") => createAllDayRange({ startDate: date, endDateExclusive: addCalendarDays(date, 1) }, timeZone)
 const timed = (start: string) => new DateTimeRange({ startsAtDateTime: new Date(start), durationMillis: 1_200_789, isAllDay: false })
 const snapshot = (range: DateTimeRange) => ({ ...range.getSpec(), startsAtDateTime: range.getSpec().startsAtDateTime?.toISOString() })
 const event = allDay("2026-07-10")
@@ -13,8 +15,8 @@ const bounds = [
 ].map(([zone, start, end]) => ({
   zone,
   timing: [Date.parse(start!) - 1, Date.parse(start!), Date.parse(end!) - 1, Date.parse(end!)]
-    .map(time => event.hitTestDateTime(new Date(time), zone)),
-  interval: event.getInstantInterval(zone!)!,
+    .map(time => allDay("2026-07-10", zone!).hitTestDateTime(new Date(time))),
+  interval: allDay("2026-07-10", zone!).getBounds()!,
 }))
 const fold = timed("2026-10-25T01:30:12.345Z")
 const late = timed("2026-07-10T22:30:12.345Z")
@@ -32,13 +34,13 @@ async function collect() {
   } })
   return {
     bounds,
-    spring: allDay("2026-03-29").getInstantInterval("Europe/Brussels"),
-    fall: allDay("2026-10-25").getInstantInterval("Europe/Brussels"),
-    foldInterval: fold.getInstantInterval("Asia/Tokyo"),
-    ongoingLabel: CalcRelativeTiming(new Date("2026-07-09T23:00:00Z"), event, "Europe/Brussels"),
-    endedLabel: CalcRelativeTiming(new Date("2026-07-10T23:00:00Z"), event, "Europe/Brussels"),
-    mixed: snapshot(DateTimeRange.union([event, late], "Europe/Brussels")),
-    mixedWestern: snapshot(DateTimeRange.union([event, late], "America/Los_Angeles")),
+    spring: allDay("2026-03-29").getBounds(),
+    fall: allDay("2026-10-25").getBounds(),
+    foldInterval: fold.getBounds(),
+    ongoingLabel: CalcRelativeTiming(new Date("2026-07-09T23:00:00Z"), event, { viewerTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, bandTimeZone: "Europe/Brussels" }),
+    endedLabel: CalcRelativeTiming(new Date("2026-07-10T23:00:00Z"), event, { viewerTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, bandTimeZone: "Europe/Brussels" }),
+    mixed: snapshot(DateTimeRange.union([event, late])),
+    mixedWestern: snapshot(DateTimeRange.union([event, late])),
     changedDate: snapshot(changeDateTimeRangeStartDate(late, "2026-07-12", "Europe/Brussels")),
     sameFoldDate: snapshot(changeDateTimeRangeStartDate(fold, "2026-10-25", "Europe/Brussels")),
     gap: snapshot(changeDateTimeRangeStartDate(timed("2026-03-28T01:30:00Z"), "2026-03-29", "Europe/Brussels")),

@@ -1,5 +1,6 @@
-import { addCalendarDays, BandTimeZoneSchema, calendarDateToUtcDate, getAllDayInterval, getBandDateTimeFields } from "@/shared/dateTimePolicy";
-import { DateTimeRange, DateTimeRangeSpec, localDateToCalendarDate } from "@/shared/time";
+import { getRangeCalendarDates, formatEventDateRange, formatEventDateRangeTranslations } from "shared/dateTimePresentation";
+import { CalendarDate, BandTimeZoneSchema, getBandDateTimeFields } from "@/shared/dateTimePolicy";
+import { DateTimeRange, DateTimeRangeSpec, createAllDayRange } from "@/shared/time";
 import { DateTimeRangeControl, DayControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
@@ -17,9 +18,9 @@ const presets: { label: string; spec: DateTimeRangeSpec }[] = [
     { label: "Timed: Brussels spring clock change", spec: { startsAtDateTime: new Date("2026-03-29T00:30:00Z"), durationMillis: hour, isAllDay: false } },
     { label: "Timed: Brussels repeated hour, earlier occurrence", spec: { startsAtDateTime: new Date("2026-10-25T00:30:00Z"), durationMillis: hour, isAllDay: false } },
     { label: "Timed: Brussels repeated hour, later occurrence", spec: { startsAtDateTime: new Date("2026-10-25T01:30:00Z"), durationMillis: hour, isAllDay: false } },
-    { label: "All-day: Brussels spring day (23 elapsed hours)", spec: { startsAtDateTime: new Date("2026-03-29T00:00:00Z"), durationMillis: day, isAllDay: true } },
-    { label: "All-day: Brussels autumn day (25 elapsed hours)", spec: { startsAtDateTime: new Date("2026-10-25T00:00:00Z"), durationMillis: day, isAllDay: true } },
-    { label: "All-day: spans New Year", spec: { startsAtDateTime: new Date("2026-12-31T00:00:00Z"), durationMillis: 3 * day, isAllDay: true } },
+    { label: "All-day: Brussels spring day (23 elapsed hours)", spec: { startsAtDateTime: new Date("2026-03-28T23:00:00Z"), durationMillis: 23 * hour, isAllDay: true } },
+    { label: "All-day: Brussels autumn day (25 elapsed hours)", spec: { startsAtDateTime: new Date("2026-10-24T22:00:00Z"), durationMillis: 25 * hour, isAllDay: true } },
+    { label: "All-day: spans New Year", spec: { startsAtDateTime: new Date("2026-12-30T23:00:00Z"), durationMillis: 3 * day, isAllDay: true } },
     { label: "Timed: zero duration", spec: { startsAtDateTime: new Date("2026-07-10T22:00:00Z"), durationMillis: 0, isAllDay: false } },
     { label: "TBD", spec: { startsAtDateTime: null, durationMillis: hour, isAllDay: false } },
 ];
@@ -51,7 +52,7 @@ export const DateTestPageCtrl = () => {
     const dashboard = useDashboardContext();
     const deviceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const [selectedRange, setSelectedRange] = React.useState(() => new DateTimeRange(presets[0]!.spec));
-    const [selectedDate, setSelectedDate] = React.useState<Date | null>(() => new Date(2026, 6, 10));
+    const [selectedDate, setSelectedDate] = React.useState("2026-07-10");
     const [timeZoneA, setTimeZoneA] = React.useState(dashboard.bandTimeZone);
     const [timeZoneB, setTimeZoneB] = React.useState("Asia/Tokyo");
     const [locale, setLocale] = React.useState("en-GB");
@@ -60,8 +61,8 @@ export const DateTestPageCtrl = () => {
     const [sampleName, setSampleName] = React.useState(presets[0]!.label);
     const [editorReset, setEditorReset] = React.useState(0);
     const spec = selectedRange.getSpec();
-    const interval = selectedRange.getInstantInterval(lifecycleTimeZone);
-    const selectedDay = selectedDate ? localDateToCalendarDate(selectedDate) : null;
+    const interval = selectedRange.getBounds();
+    const selectedDay = selectedDate;
 
     const editRange = (source: string, next: DateTimeRange) => {
         setEditHistory(history => [`${source}: ${selectedRange.toSerializableString()} ? ${next.toSerializableString()}`, ...history].slice(0, 6));
@@ -70,33 +71,35 @@ export const DateTestPageCtrl = () => {
     const loadPreset = (index: number) => {
         const preset = presets[index]!;
         setSelectedRange(new DateTimeRange(preset.spec));
+        setLifecycleTimeZone("Europe/Brussels");
         setSampleName(preset.label);
         setEditHistory([]);
         setEditorReset(reset => reset + 1);
     };
 
     const renderForTZ = (panel: string, timeZone: string, onChange: (zone: string) => void, locale: string) => {
-        const calendarDates = selectedRange.getCalendarDateRange(timeZone);
-        const midnight = selectedDay ? getAllDayInterval({ startDate: selectedDay, endDateExclusive: addCalendarDays(selectedDay, 1) }, timeZone).start : null;
-        const fields = !spec.isAllDay && spec.startsAtDateTime ? getBandDateTimeFields(spec.startsAtDateTime, timeZone) : null;
+        const calendarDates = getRangeCalendarDates(selectedRange, timeZone);
+        const calendarDate = new CalendarDate(selectedDate, timeZone);
+        const midnight = calendarDate.toStartInstant();
+        const fields = spec.startsAtDateTime ? getBandDateTimeFields(spec.startsAtDateTime, timeZone) : null;
         return <section aria-label={panel} style={{ border: "1px solid #8886", borderRadius: 8, padding: 20, minWidth: 0 }}>
             <h2>{panel}</h2>
             <ZoneSelector label={`${panel}: display / editing timezone`} value={timeZone} onChange={onChange} />
             <Values rows={[
-                ["Explicit display", selectedRange.toDisplayString({ displayTimeZone: timeZone, locale })],
-                ["Calendar dates touched (exclusive end)", calendarDates ? `${calendarDates.startDate} ? ${calendarDates.endDateExclusive}` : null],
+                ["Explicit display", formatEventDateRange(selectedRange, { viewerTimeZone: timeZone, bandTimeZone: lifecycleTimeZone, locale })],
+                ["Calendar dates touched (exclusive end)", calendarDates ? `${calendarDates.start.date} → ${calendarDates.endExclusive.date}` : null],
                 ["Start clock and offset", fields ? `${fields.date} ${fields.time} ${fields.offset}` : spec.isAllDay ? "Calendar dates only" : null],
             ]} />
             <h3>Edit the shared range</h3>
-            <DateTimeRangeControl key={editorReset} value={selectedRange} onChange={next => editRange(panel, next)} timeZone={timeZone} />
-            <p>Changing this panel?s timezone changes its presentation. Editing a date or clock updates the shared sample.</p>
+            <DateTimeRangeControl key={editorReset} value={selectedRange} onChange={next => editRange(panel, next)} timeZone={spec.isAllDay ? lifecycleTimeZone : timeZone} />
+            <p>Changing this panel's timezone changes its presentation. Editing a date or clock updates the shared sample.</p>
             <h3>Standalone DayControl</h3>
-            <DayControl value={selectedDate} onChange={setSelectedDate} timeZone={timeZone} otherValue={null} />
+            <DayControl value={calendarDate} coalescedFallbackValue={calendarDate} onChange={date => setSelectedDate(date.date)} otherValue={null} />
             <Values rows={[
                 ["Selected calendar date", selectedDay],
-                ["Midnight in this panel?s zone ? UTC", midnight?.toISOString()],
+                ["Midnight in this panel's zone → UTC", midnight?.toISOString()],
             ]} />
-            <p>DayControl receives calendar fields in a device-local Date carrier. Its timezone sets calendar context; the value is already a selected day.</p>
+            <p>DayControl receives a CalendarDate containing the selected day and its timezone.</p>
         </section>;
     };
 
@@ -110,7 +113,7 @@ export const DateTestPageCtrl = () => {
         </select></label>
         <p>Both editors share one sample. These edits stay on this page; they do not save an event or change the band setting.</p>
         <label>Load a sample: <select aria-label="Load a sample" value="" onChange={event => loadPreset(Number(event.target.value))}>
-            <option value="" disabled>Choose a sample?</option>
+            <option value="" disabled>Choose a sample</option>
             {presets.map((preset, index) => <option key={preset.label} value={index}>{preset.label}</option>)}
         </select></label>
         <p>{sampleName}</p>
@@ -120,15 +123,15 @@ export const DateTestPageCtrl = () => {
                 ["Stored start (UTC ISO)", spec.startsAtDateTime?.toISOString()],
                 ["Stored duration (ms)", spec.durationMillis],
                 ["Stored all-day flag", String(spec.isAllDay)],
-                ["toString() ? runtime local", selectedRange.toString()],
-                ["Explicit UTC display", selectedRange.toDisplayString({ displayTimeZone: "UTC", locale })],
-                ["Explicit device display", selectedRange.toDisplayString({ displayTimeZone: deviceTimeZone, locale })],
-                ["Selected DayControl carrier: Date.toString()", selectedDate?.toString()],
-                ["Selected DayControl carrier: ISO (not event storage)", selectedDate?.toISOString()],
-                ["Selected day encoded for all-day storage", selectedDay ? calendarDateToUtcDate(selectedDay).toISOString() : null],
+                ["Explicit UTC display", formatEventDateRange(selectedRange, { viewerTimeZone: "UTC", bandTimeZone: lifecycleTimeZone, locale })],
+                ["Explicit device display", formatEventDateRange(selectedRange, { viewerTimeZone: deviceTimeZone, bandTimeZone: lifecycleTimeZone, locale })],
             ]} />
-            {spec.isAllDay && <p>The stored start encodes a calendar date. Duration counts nominal 24-hour days; the lifecycle below can have a different elapsed duration.</p>}
-            <details><summary>Legacy toDisplayStrings() ? runtime local</summary><pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(selectedRange.toDisplayStrings(), null, 2)}</pre></details>
+            {spec.isAllDay && <p>Both bounds are real UTC instants. The stored duration is the actual elapsed time, including DST.</p>}
+            <details><summary>Explicit multilingual formatting</summary>
+                <pre style={{ whiteSpace: "pre-wrap" }}>
+                    {JSON.stringify(formatEventDateRangeTranslations(selectedRange, { viewerTimeZone: deviceTimeZone, bandTimeZone: lifecycleTimeZone, locale }), null, 2)}
+                </pre>
+            </details>
             <details><summary>Serialized range</summary><pre style={{ whiteSpace: "pre-wrap" }}>{selectedRange.toSerializableString()}</pre></details>
         </section>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 460px), 1fr))", gap: 20 }}>
@@ -137,8 +140,14 @@ export const DateTestPageCtrl = () => {
         </div>
         <section aria-label="Lifecycle" style={{ marginTop: 24 }}>
             <h2>Shared lifecycle</h2>
-            <p>This separate setting simulates the band?s lifecycle timezone. It affects all-day boundaries; timed instants stay fixed.</p>
-            <ZoneSelector label="Simulated band lifecycle timezone" value={lifecycleTimeZone} onChange={setLifecycleTimeZone} />
+            <p>Changing the simulated band timezone reauthors all-day bounds while preserving the selected calendar dates. Presentation changes above leave these bounds fixed.</p>
+            <ZoneSelector label="Simulated band lifecycle timezone" value={lifecycleTimeZone} onChange={nextZone => {
+                if (selectedRange.isAllDay() && !selectedRange.isTBD()) {
+                    const dates = getRangeCalendarDates(selectedRange, lifecycleTimeZone)!;
+                    editRange("Band timezone reanchor", createAllDayRange(dates.dates, nextZone));
+                }
+                setLifecycleTimeZone(nextZone);
+            }} />
             <Values rows={[
                 ["Absolute start, inclusive", interval?.start.toISOString()],
                 ["Absolute end, exclusive", interval?.end.toISOString()],

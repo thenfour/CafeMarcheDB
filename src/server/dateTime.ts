@@ -1,3 +1,6 @@
+import { createAllDayRange } from "shared/time";
+import { getRangeCalendarDates } from "shared/dateTimePresentation";
+import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
 import db from "db";
 import { resolveBandTimeZone } from "shared/dateTimePolicy";
 import { Setting } from "shared/settingKeys";
@@ -16,7 +19,7 @@ export function isBandTimeZoneSetting(name: string | undefined): boolean {
 }
 
 // Read-only calculation shared by the review command and transactional refresh.
-export async function calculateEventDateBounds(client: TransactionalPrismaClient, eventId: number, timeZone?: string) {
+export async function calculateEventDateBounds(client: TransactionalPrismaClient, eventId: number) {
     // todo: optimize. either join or pass in the cancelled statuses to avoid an extra query.
     const segments = await client.eventSegment.findMany({
         where: { eventId },
@@ -27,17 +30,12 @@ export async function calculateEventDateBounds(client: TransactionalPrismaClient
     });
     return getEventDateBoundsFromSegments(
         segments,
-        cancelled.map(status => status.id), timeZone ?? await loadBandTimeZone(client)
+        cancelled.map(status => status.id)
     );
 }
 
-// called when changing the band timezone.
-// dates are stored as UTC instants in the database; simple.
-// however the definition of "all-day" -- as in, which exact bounds does that represent --
-// are dependent on the band's timezone setting.
-// that way the event's bounds are precise, and agreed by everyone.
+// Refresh derived bounds after stored segment instants change.
 export async function recalculateEventDateBounds(client: TransactionalPrismaClient): Promise<void> {
-    const timeZone = await loadBandTimeZone(client);
     const events = await client.event.findMany({
         select: {
             id: true,
@@ -50,7 +48,7 @@ export async function recalculateEventDateBounds(client: TransactionalPrismaClie
     });
     for (const event of events) {
         // this incurs more db queres; consider optimizing by joins.
-        const data = await calculateEventDateBounds(client, event.id, timeZone);
+        const data = await calculateEventDateBounds(client, event.id);
 
         const startsAtChanged = event.startsAt?.valueOf() !== data.startsAt?.valueOf();
         const durationChanged = Number(event.durationMillis) !== data.durationMillis;
@@ -63,4 +61,18 @@ export async function recalculateEventDateBounds(client: TransactionalPrismaClie
             });
         }
     }
+}
+
+/** Caller owns the transaction containing the setting write and this reanchor. */
+export async function reanchorAllDayEvents(client: TransactionalPrismaClient, oldTimeZone: string, newTimeZone: string): Promise<void> {
+    if (oldTimeZone === newTimeZone) return;
+    const segments = await client.eventSegment.findMany({ where: { isAllDay: true, startsAt: { not: null } } });
+    for (const segment of segments) {
+        const dates = getRangeCalendarDates(getEventSegmentDateTimeRange(segment), oldTimeZone)!;
+        const spec = createAllDayRange(dates.dates, newTimeZone).getSpec();
+        await client.eventSegment.update({ where: { id: segment.id }, data: {
+            startsAt: spec.startsAtDateTime, durationMillis: spec.durationMillis,
+        } });
+    }
+    await recalculateEventDateBounds(client);
 }

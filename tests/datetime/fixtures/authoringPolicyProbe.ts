@@ -1,9 +1,6 @@
+import { createAllDayRange, changeDateTimeRangeAllDay } from "shared/time";
 import {
-  combineDateAndTime,
   DateTimeRange,
-  floorLocalToLocalDay,
-  gMillisecondsPerDay,
-  gMillisecondsPerHour,
   TimeOptionsGenerator,
   getDateTimeRangeTimeOptions,
 } from "../../../shared/time"
@@ -88,24 +85,8 @@ function selectEnd(caseName: "ordinary" | "spring" | "autumn", eventDay: number[
 
 function turnOffAllDay(currentMinute: 45 | 50) {
   return withCurrentDate(localDate(ordinaryDay, 23, currentMinute), () => {
-    const value = DateTimeRange.fromLocalDate({
-      startsAtDateTime: new Date(2026, 6, 10),
-      durationMillis: gMillisecondsPerDay,
-      isAllDay: true,
-    })
-    // Follow handleAllDayChange's production boundary arithmetic. Like the end
-    // selection above, this checks the control contract without mounting React.
-    const coalescedStartDateTime = value.getStartDateTime(new Date())
-    const newStartDateTime = combineDateAndTime(
-      floorLocalToLocalDay(coalescedStartDateTime),
-      new Date(),
-    )
-    const updated = DateTimeRange.fromLocalDate({
-      ...value.getSpec(),
-      isAllDay: false,
-      durationMillis: gMillisecondsPerHour,
-      startsAtDateTime: newStartDateTime,
-    })
+    const value = createAllDayRange({ startDate: "2026-07-10", endDateExclusive: "2026-07-11" }, timeZone)
+    const updated = changeDateTimeRangeAllDay(value, false, timeZone, new Date())
     const actual = updated.getStartDateTime()!
     return {
       currentMinute,

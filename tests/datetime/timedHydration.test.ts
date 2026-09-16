@@ -25,7 +25,7 @@ describe.each(["UTC", "Europe/Brussels", "Asia/Tokyo", "America/Los_Angeles", "A
       }
     })
 
-    it("passes timed inputs through the local-date adapter without reconstructing clock fields", () => {
+    it("copies timed inputs without reconstructing clock fields", () => {
       for (const value of result.values) expect(value.authoring).toEqual(value.expected)
     })
 
@@ -52,7 +52,6 @@ describe.each(["UTC", "Europe/Brussels", "Asia/Tokyo", "America/Los_Angeles", "A
     it("uses a midnight point's own calendar day as its display anchor", () => {
       const point = result.midnightPoint
       expect(point.end).toBe(point.start)
-      expect(point.last).toBe(point.start)
       expect(point.days).toEqual([false, true, false])
       expect(point.timing).toEqual(["Future", "Past", "Past"])
     })

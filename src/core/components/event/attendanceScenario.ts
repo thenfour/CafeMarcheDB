@@ -71,8 +71,16 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
     const person = scenario.users[userIndex]!;
     const now = new Date(scenario.now);
     const user: db3.UserWithInstrumentsPayload = {
-        id: -(userIndex + 1), name: person.name, isSysAdmin: false, isDeleted: false,
-        email: "", phone: "", createdAt: now, roleId: null, cssClass: null, tags: [],
+        id: -(userIndex + 1),
+        name: person.name,
+        isSysAdmin: false,
+        isDeleted: false,
+        email: "",
+        phone: "",
+        createdAt: now,
+        roleId: null,
+        cssClass: null,
+        tags: [],
         instruments: scenarioInstruments.slice(0, person.instrumentCount).map(instrument => ({
             id: instrument.id, instrumentId: instrument.id, userId: -(userIndex + 1), isPrimary: instrument.id === person.primaryInstrumentId,
         })),
@@ -85,7 +93,9 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         return {
             id, eventId, name: `Segment ${id}`, description: "", uid: `scenario-segment-${id}`,
             startsAt: when === "tbd" ? null : new Date(now.valueOf() + offset + index * 15 * 60_000),
-            isAllDay: false, durationMillis: BigInt(2 * hour), statusId: config.cancelled ? cancelledStatusId : null,
+            isAllDay: false,
+            durationMillis: BigInt(2 * hour),
+            statusId: config.cancelled ? cancelledStatusId : null,
             responses: attendanceId === "missing" ? [] : [{
                 id, eventSegmentId: id, userId: user.id, attendanceId,
                 createdAt: now, updatedAt: now, createdByUserId: null, updatedByUserId: null,

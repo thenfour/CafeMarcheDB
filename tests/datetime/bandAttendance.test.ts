@@ -19,7 +19,7 @@ import { CalculateEventMetadata, CalcEventAttendance } from "src/core/components
 
 const context = { bandTimeZone: "Asia/Tokyo", currentUser: { id: 1 }, eventStatus: { items: [] }, eventAttendance: { items: [] },
   routingApi: { getURIForEvent: () => "/event/1" } }
-const event = { id: 1, name: "All-day", startsAt: new Date("2026-07-10T00:00:00Z"), durationMillis: BigInt(86_400_000),
+const event = { id: 1, name: "All-day", startsAt: new Date("2026-07-09T15:00:00Z"), durationMillis: BigInt(86_400_000),
   isAllDay: true, segments: [{ id: 1, statusId: null }] }
 afterEach(() => { vi.useRealTimers() })
 

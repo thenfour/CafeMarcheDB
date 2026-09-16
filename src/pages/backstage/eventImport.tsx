@@ -1,4 +1,5 @@
-import { calendarDateToUtcDate, getBandDateTimeFields } from "shared/dateTimePolicy";
+import { createAllDayRange } from "shared/time";
+import { CalendarDate } from "shared/dateTimePolicy";
 import { TAnyModel } from "@/shared/rootroot";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -49,16 +50,17 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
         const ret = db3.xEventSegment.createNew(currentUser) as Partial<db3.EventSegmentPayload>;
         ret.isAllDay = true;
-        ret.startsAt = calendarDateToUtcDate(getBandDateTimeFields(new Date(), dashboardContext.bandTimeZone).date);
-        ret.durationMillis = BigInt(gMillisecondsPerDay);
+        ret.startsAt = CalendarDate.fromInstant({ value: new Date(), timeZone: dashboardContext.bandTimeZone }).toStartInstant();
+        const date = CalendarDate.fromInstant({ value: new Date(), timeZone: dashboardContext.bandTimeZone });
+        ret.durationMillis = BigInt(createAllDayRange({ startDate: date.date, endDateExclusive: date.addDays(1).date }, date.timeZone).getDurationMillis());
         return ret as any;
     });
 
     React.useEffect(() => {
         setSegmentValue({
             ...segmentValue,
-            startsAt: props.serverData?.segment.startsAt || calendarDateToUtcDate(getBandDateTimeFields(new Date(), dashboardContext.bandTimeZone).date),
-            durationMillis: BigInt(props.serverData?.segment.durationMillis || gMillisecondsPerDay),
+            startsAt: props.serverData?.segment.startsAt || CalendarDate.fromInstant({ value: new Date(), timeZone: dashboardContext.bandTimeZone }).toStartInstant(),
+            durationMillis: BigInt(props.serverData?.segment.durationMillis ?? segmentValue.durationMillis),
         });
         setEventValue({
             ...eventValue,

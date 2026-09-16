@@ -1,3 +1,4 @@
+import { formatEventDateRange } from "shared/dateTimePresentation";
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
@@ -379,13 +380,13 @@ interface EventDateFieldProps {
 
 export const EventDateField = (props: React.PropsWithChildren<EventDateFieldProps>) => {
     const dashboardContext = useDashboardContext();
+    const presentation = dashboardContext.eventDatePresentation;
 
-    // why use band time here? shouldn't we display relative to the user's local time?
-    const relativeTiming = CalcRelativeTiming(new Date(), props.dateRange, dashboardContext.bandTimeZone);
+    const relativeTiming = CalcRelativeTiming(new Date(), props.dateRange, presentation);
 
     return <div className={`${props.className} ${relativeTiming.bucket} EventDateField container`}>
         {gIconMap.CalendarMonth()}
-        <span className={`DatePart`}>{props.dateRange.toString()}</span>
+        <span className={`DatePart`}>{formatEventDateRange(props.dateRange, presentation)}</span>
         <span className={`RelativeIndicator`}>{relativeTiming.label}</span>
         {props.children}
     </div>;

@@ -1,3 +1,4 @@
+import { formatEventDateRange } from "shared/dateTimePresentation";
 import { CMTable, CMTableSlot } from "@/src/core/components/CMTable";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -74,8 +75,14 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                     });
                     //return <EventDateField dateRange={range} />;
 
-                    const relativeTiming = CalcRelativeTiming(new Date(), range);
-                    return <>{range.toString()} {relativeTiming.label}</>; // todo
+                    const relativeTiming = CalcRelativeTiming(
+                        new Date(),
+                        range,
+                        dashboardContext.eventDatePresentation);
+                    return <>{
+                        formatEventDateRange(range,
+                            dashboardContext.eventDatePresentation)
+                    } {relativeTiming.label}</>;
                 }
             },
             {

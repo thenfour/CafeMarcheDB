@@ -53,10 +53,17 @@ describe("band event editor", () => {
   it("preserves the band date through all-day and TBD toggles", () => {
     const changed = mount(timed())
     act(() => Simulate.change(container.querySelector<HTMLInputElement>(".allDayControl input")!, { target: { checked: true } } as any))
-    expect(changed.mock.calls[0]![0].getSpec()).toMatchObject({ startsAtDateTime: new Date("2026-07-11T00:00:00Z"), isAllDay: true })
+    expect(changed.mock.calls[0]![0].getSpec()).toMatchObject({ startsAtDateTime: new Date("2026-07-10T15:00:00Z"), isAllDay: true })
     act(() => Simulate.change(container.querySelector<HTMLInputElement>(".tbdControl input")!, { target: { checked: false } } as any))
     act(() => Simulate.change(container.querySelector<HTMLInputElement>(".tbdControl input")!, { target: { checked: true } } as any))
-    expect(changed.mock.calls[2]![0].getSpec().startsAtDateTime).toEqual(new Date("2026-07-11T00:00:00Z"))
+    expect(changed.mock.calls[2]![0].getSpec().startsAtDateTime).toEqual(new Date("2026-07-10T15:00:00Z"))
+  })
+  it("authors a real full day when determining a new zero-duration TBD value", () => {
+    const changed = mount(new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true }))
+    act(() => Simulate.change(container.querySelector<HTMLInputElement>(".tbdControl input")!, { target: { checked: true } } as any))
+    const range = changed.mock.calls[0]![0] as DateTimeRange
+    expect(range.getDurationMillis()).toBe(86_400_000)
+    expect(range.getStartDateTime()!.getUTCHours()).toBe(15) // Tokyo midnight
   })
   it("changes the calendar day while retaining the precise band clock", () => {
     const changed = mount(timed())

@@ -7,8 +7,10 @@ DT-03 range aggregation, DT-04/DT-05 clock controls, DT-06 compact labels,
 DT-09 month-calendar display, DT-10 calendar-window queries, and POL-01 band-timezone
 authoring, lifecycle and derived bounds. DT-11 status facets and dashboard relevance
 are deferred by agreement. Earlier completed-slice notes retain their historical
-context; the POL-01 section describes the final integration.
-No existing event data or database schema has been changed. The Japan report has
+context; [Event UTC spans](eventUtcSpans.md) describes the current representation
+and supersedes the earlier calendar-marker storage and expanding-union rules.
+A schema migration and reviewed data-conversion command are now required for
+existing databases; neither has been applied to the application's database here. The Japan report has
 not been reproduced as a complete user journey, and none of these findings
 establishes its historical cause.
 
@@ -18,14 +20,21 @@ establishes its historical cause.
 | --- | --- |
 | Shared event schedule authoring | Create/edit in the band's named timezone, initially `Europe/Brussels`. Show that timezone beside the editor. Both timed and all-day editing use this context. |
 | Timed display | Present stored absolute instants in the viewer's device timezone. |
-| All-day display | Preserve selected calendar dates worldwide. Treat the period as calendar days, with an exclusive end date. |
-| All-day lifecycle | Resolve each midnight boundary in the band timezone into an absolute instant. Everyone observes the same ongoing interval. |
+| All-day display | Project the stored span into the band's timezone to preserve its selected calendar dates worldwide, with an exclusive end date. |
+| All-day lifecycle | Resolve both band midnights at authoring and store the actual UTC start and elapsed duration. Lifecycle comparisons require no timezone. |
 | Event lifecycle | Start inclusive, end exclusive. TBD is never ongoing. Attendance uses the overall aggregate event interval; gaps normally remain inside it. |
 | Calendar membership and relative dates | Use the viewer's displayed calendar days. `Today` must agree with calendar placement; it is a different fact from globally shared `Ongoing`. |
 | Date-range queries | Select overlapping timed intervals using explicit viewer-local bounds converted to UTC, and all-day entries using calendar-date bounds. Preserve simple, contiguous year-range queries. |
 | Calendar feeds | Timed entries convey absolute instants. All-day entries convey selected dates with an exclusive date-only end. Ordinary all-day feeds do not encode the application's band-time lifecycle interval. |
 | Public advertised text | Frontpage date/time strings are editorial text and are outside timezone correction. |
 | Containment | Utilities own mechanics; a small shared policy module owns semantic choices; existing date/time components adapt inputs and presentation. Tests specify behavior. |
+
+`DateTimeRange` now preserves exact UTC bounds for both timed and all-day values.
+Its union never expands dates or loses milliseconds. String formatting lives in
+`shared/dateTimePresentation.ts`; all-day intent and hiding clocks on long timed
+spans are separate presentation decisions. A band-timezone setting change
+atomically reanchors all-day segments and recalculates aggregates. See the
+[conversion and deployment steps](eventUtcSpans.md#existing-database-conversion).
 
 The iCalendar date-only/exclusive-end contract is specified by
 [RFC 5545 section 3.6.1](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.1).
@@ -255,43 +264,39 @@ The existing 100-event page limit in these calendar consumers remains a separate
 loading limit. All-day lifecycle/cached bounds remain POL-01, and status facets
 and dashboard interval classification remain DT-11.
 
-## Completed POL-01: enforce band authoring and shared lifecycle
+## Completed POL-01: band authoring with scalar UTC storage
 
-- Shared event editors use `dashboardContext.bandTimeZone` and display the zone
-  beside the controls. Start dates, clocks, all-day toggles, TBD restoration,
-  fallback dates, picker highlights and picker queries use that context.
-  Generic personal date/range pickers keep device-local semantics. The import
-  parser transports UTC calendar-date markers and defaults to the band date.
-- Existing timed instants, seconds/milliseconds, durations and repeated-hour
-  occurrences survive loading and unchanged selections. Newly authored ambiguous
-  dates use the shared compatible DST policy. Timed presentation remains viewer-local;
-  all-day presentation preserves calendar dates.
-- Event metadata, search/relevant cards, compact labels and attendance use the
-  configured band-midnight interval for all-day lifecycle, with inclusive start
-  and exclusive end. Relative `Today` remains a viewer-calendar fact; it can differ
-  from the globally shared ongoing bucket. Attendance retains the aggregate interval,
-  including gaps between its segments.
-- Mixed timed/all-day aggregation projects timed dates in the band timezone.
-  Cached `endDateTime` is an absolute band-midnight boundary for all-day aggregates.
-  Event/segment writes now propagate recalculation failures and use transactions.
-- Generic, bulk, branding and raw Settings writes refresh derived bounds in the
-  same serializable transaction, including clear/default and rename/delete paths.
-  Failure rolls back configuration, prior bound updates and audit records.
-  Unchanged events are skipped; authored segments and calendar revisions are untouched.
-  Calendar feed dates remain date-only values, independent of the band lifecycle.
+- Shared event editors resolve calendar dates and clocks in the configured band
+  timezone. `CalendarDate`/`CalendarRange` carry calendar semantics explicitly;
+  widget-specific native Date carriers stay at the external adapter boundary.
+- Stored starts and elapsed durations identify the actual UTC span for timed and
+  all-day events. Hydration preserves exact milliseconds, including both repeated
+  DST occurrences. Hit testing takes a required instant and no timezone.
+- Compact timed displays use the viewer zone. All-day displays retain the band's
+  selected dates. Relative Today/Tomorrow compare the displayed dates with the
+  viewer's calendar; absolute lifecycle classification stays independent.
+- Mixed aggregation takes the exact minimum start and maximum end. It retains
+  gaps and never expands to calendar boundaries. Only wholly all-day unions keep
+  all-day intent. Long timed spans can hide clocks without changing their bounds.
+- Generic, bulk, branding and raw setting writes reanchor all-day segment starts
+  and durations using their dates in the old band zone, then refresh aggregates
+  in the same transaction. Timed segments remain fixed. Failures roll back the
+  setting, segment changes, aggregate changes and setting activity log.
+- Feed generation and calendar-window searches read zone and segment data from
+  one repeatable-read snapshot. Date-only feeds keep their selected dates.
 
-### Existing derived bounds at deployment
+### Existing storage and aggregates at deployment
 
-Run `node scripts/recalculate-event-date-bounds.cjs` to review event IDs and
-before/after values without writing. After reviewing that report, run the same
-command with `--apply` to refresh the four derived aggregate fields in one
-transaction. No authored segment values or calendar revisions are changed.
-The implementation's local dry run inspected 430 events and proposed 37 aggregate
-corrections; it did not apply them. Review each target database independently.
+The current representation requires both the schema migration and the reviewed
+`migrate-event-utc-spans.cjs` conversion, with application writers stopped. See
+[the full migration procedure](eventUtcSpans.md#existing-database-conversion).
+The older `recalculate-event-date-bounds.cjs` command only repairs aggregates
+**after** conversion; it cannot convert legacy all-day segment storage.
+No application database data or schema was changed during implementation.
 
-DT-11 remains deferred: database status facets and broad dashboard relevance still
-use their older predicates. This slice does not claim those queries implement the
-shared interval policy.
+DT-11 remains deferred: status facets and broad dashboard relevance retain their
+older predicates. The scalar representation gives their stored endpoints a common
+meaning, but does not correct their remaining classification rules.
 
 ## Executable evidence
 
@@ -525,9 +530,8 @@ the start against `CURDATE()`. An event that finished earlier today can still
 be `Future`, while an event that started yesterday and is ongoing can be `Past`.
 [Dashboard relevance](../src/auth/queries/getDashboardData.ts#L94) uses an
 inclusive end (`endDateTime >= now`) rather than the agreed exclusive end.
-It also compares the all-day UTC date marker as a start against the cached end.
-POL-01 now writes the end in band time, but DT-11 must still give both SQL endpoints
-the same absolute meaning and use an exclusive end.
+The UTC-span migration gives both stored endpoints the same absolute meaning.
+DT-11 must still use an exclusive end and correct its remaining status rules.
 
 Move shared status semantics into policy and apply equivalent explicit bounds
 in SQL. The database clock/timezone should not supply an alternative definition

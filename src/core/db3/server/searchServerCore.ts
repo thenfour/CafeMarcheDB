@@ -1,3 +1,5 @@
+import type { TransactionalPrismaClient } from "../shared/apiTypes";
+import { loadBandTimeZone } from "src/server/dateTime";
 import { calendarWindowSql } from "./calendarWindowSql";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
@@ -124,7 +126,8 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
     args: GetSearchResultsInput,
     excludeCriterionColumn: string | null,
     sortElements: SortQueryElements,
-    publicData: db3.DB3Authorization
+    publicData: db3.DB3Authorization,
+    calendarPredicate: string | null,
 ): CalculateFilterQueryResult {
     const table = db3.GetTableById(args.tableID);
     if (!table) {
@@ -140,7 +143,7 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
     const whereAnd: string[] = [];
     if (args.calendarWindow) {
         if (table.tableName !== "Event") throw new Error("Calendar windows are only supported for event searches.");
-        whereAnd.push(calendarWindowSql(args.calendarWindow));
+        whereAnd.push(calendarPredicate!);
     }
 
     const qfTokens = SplitQuickFilter(args.quickFilter);
@@ -205,6 +208,13 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
 //     resolver.authorize(Permission.visibility_members), // ? right or?
 //     resolver.zod(ZGetSearchResultsInput),
 export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: AuthenticatedCtx): Promise<SearchResultsRet> {
+    if (!args.calendarWindow) return getSearchResults(args, ctx, db);
+    return db.$transaction(tx => getSearchResults(args, ctx, tx), {
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000,
+    });
+}
+
+async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedCtx, database: TransactionalPrismaClient): Promise<SearchResultsRet> {
     try {
         const rootsw = new Stopwatch();
         const ret: SearchResultsRet = MakeEmptySearchResultsRet();//{
@@ -226,8 +236,10 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
         }
 
         const sortElements = ProcessSortModel(table, args);
+        const bandTimeZone = await loadBandTimeZone(database);
+        const calendarPredicate = args.calendarWindow ? calendarWindowSql(args.calendarWindow, bandTimeZone) : null;
 
-        const filterResult = calculateFilterQuery(u, args, null, sortElements, publicData);
+        const filterResult = calculateFilterQuery(u, args, null, sortElements, publicData, calendarPredicate);
         ret.filterQueryResult = filterResult;
 
         const queries: Promise<any>[] = [];
@@ -239,7 +251,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
                 throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
             }
 
-            const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements, publicData);
+            const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements, publicData, calendarPredicate);
 
             const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filterResult.sqlSelect, filterResult2.sqlSelect, criterion);
             // no facet info to be done on this column
@@ -247,7 +259,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
 
             const proc = async () => {
                 const sw = new Stopwatch();
-                const result: TAnyModel[] = await db.$queryRaw(Prisma.raw(facetInfoQuery.sql));
+                const result: TAnyModel[] = await database.$queryRaw(Prisma.raw(facetInfoQuery.sql));
                 const tr = result.map(r => facetInfoQuery.transformResult(r));
                 ret.facets.push({
                     db3Column: criterion.db3Column,
@@ -292,7 +304,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
                         ${args.offset},${args.take}
                         `;
 
-            const r: { id: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
+            const r: { id: number }[] = await database.$queryRaw(Prisma.raw(paginatedResultQuery));
             resultIds = r.map(x => x.id);
             ret.queryMetrics.push({
                 title: `paginated results`,
@@ -315,7 +327,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
                 from
                     FilteredItems
                     `;
-            const rowCountResult: [{ rowCount: bigint }] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
+            const rowCountResult: [{ rowCount: bigint }] = await database.$queryRaw(Prisma.raw(totalRowCountQuery));
             ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
             ret.queryMetrics.push({
                 title: "total row count",
@@ -346,7 +358,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
         //         order by
         //             ${orderBy.join(`,\n`)}
         //             `;
-        //     const r: { id: bigint }[] = await db.$queryRaw(Prisma.raw(query));
+        //     const r: { id: bigint }[] = await database.$queryRaw(Prisma.raw(query));
         //     //ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
         //     ret.queryMetrics.push({
         //         title: "all row IDs in order",
@@ -380,7 +392,7 @@ export async function GetSearchResultsCore(args: GetSearchResultsInput, ctx: Aut
                     pks: resultIds,
                 },
                 orderBy: undefined,
-            }, authorization);
+            }, authorization, database);
             ret.queryMetrics.push({
                 title: "db3 verbose items",
                 millis: queryResult.executionTimeMillis,

@@ -30,7 +30,7 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSear
         color: event.type?.color || null,
     });
 
-    const eventTiming = dateRange.hitTestDateTime(now, dashboardContext.bandTimeZone);
+    const eventTiming = dateRange.hitTestDateTime(now);
 
     const classes = [
         "SubtleEventCard",
@@ -49,7 +49,7 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSear
                 <div className="SubtleEventCardDate">
                     <RelevanceClassOverrideIndicator event={event} colorStyle="subtle" />
                     <EventStatusMinimal statusId={event.statusId} />
-                    <EventShortDate dateRange={dateRange} now={now} timeZone={dashboardContext.bandTimeZone} />
+                    <EventShortDate dateRange={dateRange} now={now} />
                 </div>
             </CMLink>
             <div className='SearchItemBigCardLinkContainer'>
@@ -118,7 +118,11 @@ export const RelevantEvents = () => {
 
     let eventsWithTiming = enrichedEvents.map(event => {
         const dateRange = API.events.getEventDateRange(event);
-        const relativeTiming = CalcRelativeTiming(now, dateRange, dashboardContext.bandTimeZone);
+        const relativeTiming = CalcRelativeTiming(
+            now,
+            dateRange,
+            dashboardContext.eventDatePresentation,
+        );
         let sortValue = 0;
         let worthyOfHighlight = false;
         switch (relativeTiming.bucket) {

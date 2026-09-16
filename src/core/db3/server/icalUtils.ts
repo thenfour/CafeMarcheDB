@@ -1,3 +1,4 @@
+import { getRangeCalendarDates } from "shared/dateTimePresentation";
 import { ServerApi } from "@/src/server/serverApi";
 import { hash256 } from "@blitzjs/auth";
 import { Prisma } from "db";
@@ -5,7 +6,7 @@ import { ICalEventStatus } from "ical-generator";
 import { markdownToPlainText } from "shared/markdownUtils";
 import { slugify } from "shared/rootroot";
 import { DateTimeRange } from "shared/time";
-import { calendarDateToUtcDate, getStoredAllDayCalendarRange } from "shared/dateTimePolicy";
+import { CalendarDate } from "shared/dateTimePolicy";
 import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
@@ -154,8 +155,9 @@ type GetEventSegmentCalendarInputArgs = {
     event: Partial<EventForCal>;
     segment: EventSegmentForCal;
     descriptionText: string;
+    bandTimeZone: string;
 };
-export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, ...args }: GetEventSegmentCalendarInputArgs): EventCalendarInput | null => {
+export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, bandTimeZone, ...args }: GetEventSegmentCalendarInputArgs): EventCalendarInput | null => {
     if (!segment.startsAt) return null;
     const isAllDay = CoalesceBool(segment.isAllDay, true);
 
@@ -172,9 +174,17 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
     if (isAllDay) {
         // All-day feeds carry the selected dates, not the band's absolute
         // midnight interval. Supply both calendar bounds without host-local math.
-        const dates = getStoredAllDayCalendarRange(segment.startsAt, Number(segment.durationMillis));
-        start = calendarDateToUtcDate(dates.startDate);
-        end = calendarDateToUtcDate(dates.endDateExclusive);
+        const dates = getRangeCalendarDates(new DateTimeRange({
+            startsAtDateTime: segment.startsAt,
+            durationMillis: Number(segment.durationMillis),
+            isAllDay: true,
+        }), bandTimeZone)!.dates;
+        // "cast" to UTC and obtain the start instant of the calendar date.
+        // this is explicit in https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.1
+        // > DTSTART is inclusive; DTEND is exclusive, including for multi-day date-only events.
+        // > DATE contains only year/month/day, and TZID must not be applied to it. There is no T000000Z suffix.
+        start = new CalendarDate(dates.startDate, "UTC").toStartInstant();
+        end = new CalendarDate(dates.endDateExclusive, "UTC").toStartInstant();
     } else {
         const dateRange = new DateTimeRange({
             startsAtDateTime: segment.startsAt,
@@ -225,7 +235,7 @@ type GetEventCalendarInputResult = {
     inputHash: string;
     segments: EventCalendarInput[];
 };
-export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[]): GetEventCalendarInputResult | null => {
+export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[], bandTimeZone: string): GetEventCalendarInputResult | null => {
     // if you pass in something that is insufficient for using as an event.
     // it's theoretical because it's always going to be an event object.
     if (event.revision === undefined) return null;
@@ -247,6 +257,7 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStat
             segment,
             event,
             descriptionText,
+            bandTimeZone,
         }));
 
     const validSegments = segmentsForCalendar.filter(e => !!e);

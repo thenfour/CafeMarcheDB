@@ -30,7 +30,7 @@ describe("structured calendar windows", () => {
     { endInstantExclusive: "invalid" }, { endInstantExclusive: "2026-07-09T00:00:00Z" },
   ])("rejects invalid or reversed bounds %j before SQL", invalid => {
     expect(() => CalendarWindowSchema.parse({ ...window, ...invalid })).toThrow()
-    expect(() => calendarWindowSql({ ...window, ...invalid })).toThrow()
+    expect(() => calendarWindowSql({ ...window, ...invalid }, "Europe/Brussels")).toThrow()
   })
 
   it("retains the window through the real search request schema", () => {

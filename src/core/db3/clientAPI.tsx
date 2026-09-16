@@ -118,11 +118,6 @@ const gUsersAPI = new UsersAPI();
 class EventsAPI {
 
 
-    getEventSegmentFormattedDateRange(segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay: true, } }>) {
-        return db3.getEventSegmentDateTimeRange(segment).toString();
-        //return "daterangehere";
-    }
-
     getEventDateRange(event: Prisma.EventGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay: true, } }>) {
         return new DateTimeRange({
             startsAtDateTime: event.startsAt,

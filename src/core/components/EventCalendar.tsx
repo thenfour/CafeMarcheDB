@@ -1,3 +1,4 @@
+import { CalendarDisplayRange, getCalendarWidgetRange, getWidgetCalendarWindow } from "./DateTime/calendarWidgetAdapter";
 import { NoSsr, Tooltip } from "@mui/material";
 import dayjs from "dayjs";
 import moment from 'moment';
@@ -15,11 +16,11 @@ import { useSearchableList } from 'src/core/hooks/useSearchableList';
 import { eventSearchConfig } from 'src/core/hooks/searchConfigs';
 import { EventListItem } from "./event/EventComponents";
 import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClientBaseTypes";
-import { CalendarDisplayRange, getLocalCalendarWindow } from "@/shared/time";
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 import { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
+import { localTimeZone } from "@/shared/time";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -197,7 +198,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     });
 
     const segments: TCalendarEventItem[] = eventsWithMore.flatMap(event => event.uncancelledSegments.flatMap(segment => {
-        const calendarRange = db3.getEventSegmentDateTimeRange(segment).getCalendarDisplayRange();
+        const calendarRange = getCalendarWidgetRange(db3.getEventSegmentDateTimeRange(segment), dashboardContext.bandTimeZone);
         if (!calendarRange) return [];
         return [{
             segment,
@@ -317,7 +318,7 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
 
         // in dto...
         quickFilter: "",
-        calendarWindow: getLocalCalendarWindow(minDate, endDateExclusive),
+        calendarWindow: getWidgetCalendarWindow(minDate, endDateExclusive, localTimeZone()),
 
         orderByColumn: EventOrderByColumnOptions.startsAt,
         orderByDirection: 'asc',

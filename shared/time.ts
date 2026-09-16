@@ -1,10 +1,12 @@
-import dayjs, { Dayjs } from "dayjs";
+import { EventDatePresentation, eventPresentationTimeZone, getRangeCalendarDates } from './dateTimePresentation';
+import dayjs from "dayjs";
+import utc from 'dayjs/plugin/utc';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { BandTimeZoneSchema, addCalendarDays, CalendarWindow, CalendarDateRange, InstantInterval, getAllDayInterval, getStoredAllDayCalendarRange, calendarDateToUtcDate, bandDateTimeToInstant, getCalendarWindow, getBandDateTimeFields, getClockTimeOccurrences } from './dateTimePolicy';
+import { CalendarDate, addCalendarDays, CalendarDateRange, InstantInterval, getAllDayInterval, bandDateTimeToInstant, getBandDateTimeFields, getClockTimeOccurrences } from './dateTimePolicy';
 
-import { assert } from "blitz";
 
 dayjs.extend(weekOfYear);
+dayjs.extend(utc);
 
 
 export const gMillisecondsPerMinute = 60 * 1000;
@@ -125,50 +127,26 @@ export function formatSongLength(totalSeconds: number): string | null {
 export const DateToHyphenatedYYYYMMDD = (date: Date) =>
     `${date.getFullYear().toString().padStart(4, "0")}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
 
-// Native Dates here carry selected local calendar days; the end day is exclusive.
-export function getLocalCalendarWindow(start: Date, endExclusive: Date, timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone): CalendarWindow {
-    return getCalendarWindow(
-        {
-            startDate: DateToHyphenatedYYYYMMDD(start),
-            endDateExclusive: DateToHyphenatedYYYYMMDD(endExclusive)
-        },
-        timeZone
-    );
-}
-
-export function localDateToCalendarDate(date: Date): string {
-    return DateToHyphenatedYYYYMMDD(date);
-}
-
-// Calendar widgets carry selected dates in host-local Date fields. This range
-// describes which days to paint in an explicitly chosen authoring timezone.
-export function getDateTimeRangeCalendarProjection(range: DateTimeRange, timeZone: string): DateTimeRange {
-    const dates = range.getCalendarDateRange(timeZone);
-    return new DateTimeRange({
-        isAllDay: true,
-        startsAtDateTime: dates ? calendarDateToUtcDate(dates.startDate) : null,
-        durationMillis: dates ? calendarDateToUtcDate(dates.endDateExclusive).valueOf() - calendarDateToUtcDate(dates.startDate).valueOf() : 0,
-    });
-}
-
 export function changeDateTimeRangeStartDate(range: DateTimeRange, date: string, timeZone: string): DateTimeRange {
     const spec = range.getSpec();
-    if (spec.isAllDay) return new DateTimeRange({ ...spec, startsAtDateTime: calendarDateToUtcDate(date) });
+    if (spec.isAllDay) {
+        const dates = getRangeCalendarDates(range, timeZone)!;
+        return createAllDayRange({ startDate: date, endDateExclusive: addCalendarDays(date, dates.dayCount) }, timeZone);
+    }
     const fields = getBandDateTimeFields(spec.startsAtDateTime!, timeZone);
-    // Re-selecting the same date must retain an existing later fold occurrence.
     return new DateTimeRange({
-        ...spec, startsAtDateTime: fields.date === date
-            ? spec.startsAtDateTime : bandDateTimeToInstant({ date, time: fields.time }, timeZone)
+        ...spec, startsAtDateTime: fields.date === date ? spec.startsAtDateTime
+            : bandDateTimeToInstant({ date, time: fields.time }, timeZone)
     });
 }
 
 export function changeDateTimeRangeAllDay(range: DateTimeRange, isAllDay: boolean, timeZone: string, now: Date): DateTimeRange {
-    const date = range.getCalendarDateRange(timeZone)?.startDate ?? getBandDateTimeFields(now, timeZone).date;
-    return new DateTimeRange({
-        isAllDay, durationMillis: isAllDay ? gMillisecondsPerDay : gMillisecondsPerHour,
-        startsAtDateTime: isAllDay ? calendarDateToUtcDate(date)
-            : bandDateTimeToInstant({ date, time: getBandDateTimeFields(now, timeZone).time }, timeZone),
-    });
+    const date = getRangeCalendarDates(range, timeZone)?.start.date ?? getBandDateTimeFields(now, timeZone).date;
+    return isAllDay ? createAllDayRange({ startDate: date, endDateExclusive: addCalendarDays(date, 1) }, timeZone)
+        : new DateTimeRange({
+            isAllDay: false, durationMillis: gMillisecondsPerHour,
+            startsAtDateTime: bandDateTimeToInstant({ date, time: getBandDateTimeFields(now, timeZone).time }, timeZone)
+        });
 }
 
 // M:S format
@@ -356,17 +334,26 @@ export interface DateTimeOption {
 }
 
 // Build choices for the event date, using the explicit authoring timezone.
-// Each option owns the instant that will be saved, including a repeated hour.
+// Each option owns the instant that will be saved, including a repeated hour for weird DST transitions
 export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: string) {
     const clocks = new TimeOptionsGenerator(15).getOptions();
     const startFields = getBandDateTimeFields(start, timeZone);
     const endFields = getBandDateTimeFields(end, timeZone);
 
+    // some instants occur multiple times due to repeated hours (e.g., during daylight saving time transitions)
     const makeOption = (instant: Date, repeated: boolean, includeDuration: boolean): DateTimeOption => {
         const fields = getBandDateTimeFields(instant, timeZone);
         const clock = fields.time.replace(/:00\.000$/, "").replace(/\.000$/, "");
-        const offset = repeated ? ` (UTC${fields.offset})` : "";
-        const date = fields.date === startFields.date ? "" : ` on ${fields.date}`;
+
+        // offset is interesting informationally, to disambiguate repeated hours, but visually confusing,
+        // and takes too much space for example in the datetime range dropdown,
+        // which is already quite wide, and must be fixed-width (max width should stay small)
+        //const offset = repeated ? ` (UTC${fields.offset})` : "";
+        const offset = "";//repeated ? "*" : "";
+        // this is also visually verbose; these timings are ordered and always within a day so it should be clear
+        // without specifying this date. for the sake of UI space, omit.
+        //const date = fields.date === startFields.date ? "" : ` on ${fields.date}`;
+        const date = "";
         const elapsed = instant.valueOf() - start.valueOf();
         const milliseconds = elapsed % 1000;
         const duration = elapsed === 0 ? "0m" : [
@@ -411,595 +398,72 @@ export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: st
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type DateTimeDisplayString = {
-    date: string;
-    time?: string | undefined;
-};
-export type DateTimeDisplayStrings = {
-    en: DateTimeDisplayString,
-    fr: DateTimeDisplayString,
-    nl: DateTimeDisplayString,
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeRangeSpec {
-    // date or null = TBD.
-    // All-day specs carry calendar dates in UTC fields; the time part is ignored.
-    // Convert local picker dates with DateTimeRange.fromLocalDate before storing them.
     startsAtDateTime: Date | null;
-    // the idea is that startDateTime + durationDays = END time (exclusive).
-    // for isAllDay=false, that's obvious.
-    // for isAllDay=true, this should be treated as (durationDays * gMillisecondsPerDay). it is NOT safe to just add startDateTime + durationMillis in this case, 
-    // because not all days are exactly the same duration, but for isAllDay=true, we want to always land on day boundaries.
     durationMillis: number;
     isAllDay: boolean;
-};
-
-export interface DateTimeRangeHitTestResult {
-    inRange: boolean, // is the given datetime in the range? (false for TBD)
-    isFirstDay: boolean, // does the given day represent the DAY of the beginning of the range?
-    isLastDay: boolean, // does the given day represent the DAY of the end of the range? for a 1-day event on 12 Oct, testing any datetime with 12 Oct as the day will return true.
 }
 
-// A calendar widget consumes native Dates in the viewer timezone. For all-day
-// events these are calendar-date carriers, not absolute lifecycle boundaries.
-export interface CalendarDisplayRange {
-    start: Date;
-    end: Date; // exclusive
-    allDay: boolean;
-}
-
+/** An exact half-open UTC span. All-day intent never changes its arithmetic. */
 export class DateTimeRange {
-    private spec: DateTimeRangeSpec;
+    private readonly spec: DateTimeRangeSpec;
 
-    // Authoring boundary for native Dates carrying a selected local calendar day.
-    // Stored specs must go directly to the constructor, including copies from getSpec().
-    // Timed inputs already identify an instant and pass through unchanged.
-    static fromLocalDate(args: DateTimeRangeSpec): DateTimeRange {
-        return new DateTimeRange({
-            ...args,
-            startsAtDateTime: args.isAllDay && args.startsAtDateTime
-                ? floorLocalTimeToDayUTC(args.startsAtDateTime)
-                : args.startsAtDateTime,
-        });
+    constructor(args: DateTimeRangeSpec = { startsAtDateTime: new Date(), durationMillis: gMillisecondsPerHour, isAllDay: false }) {
+        if (!Number.isSafeInteger(args.durationMillis) || args.durationMillis < 0) throw new RangeError("Invalid elapsed duration.");
+        if (args.startsAtDateTime && !Number.isFinite(new Date(args.startsAtDateTime.valueOf() + args.durationMillis).valueOf())) throw new RangeError("Invalid instant.");
+        this.spec = { ...args, startsAtDateTime: args.startsAtDateTime ? new Date(args.startsAtDateTime) : null };
     }
 
-    constructor(args?: DateTimeRangeSpec) {
-        if (args) {
+    toSerializableString(): string { return JSON.stringify(this.spec); }
+    getSpec(): DateTimeRangeSpec { return { ...this.spec, startsAtDateTime: this.getStartDateTime() }; }
+    isTBD(): boolean { return this.spec.startsAtDateTime === null; }
+    isAllDay(): boolean { return this.spec.isAllDay; }
+    getDurationMillis(): number { return this.isTBD() ? 0 : this.spec.durationMillis; }
 
-            // sanitize spec to conform to assertions.
-            if (args.isAllDay) {
-                let days = Math.round(args.durationMillis / gMillisecondsPerDay);// all-day events have duration of 1-day increments always.
-                if (days < 1) days = 1; // 0-length ranges are not useful and cause complexity
-                const durationMillis = days * gMillisecondsPerDay;
-
-                // Hydrate the stored UTC calendar date without interpreting it in the
-                // host timezone. Clone before clearing the ignored time component.
-                const startsAtDateTime = args.startsAtDateTime ? new Date(args.startsAtDateTime) : null;
-                startsAtDateTime?.setUTCHours(0, 0, 0, 0);
-
-                this.spec = {
-                    durationMillis,
-                    startsAtDateTime,
-                    isAllDay: args.isAllDay,
-                };
-                return;
-            }
-
-            // Hydration preserves the absolute instant and elapsed duration,
-            // including a repeated DST occurrence, sub-minute precision, and zero.
-            // Quarter-hour choices belong to authoring controls, not stored specs.
-            this.spec = {
-                durationMillis: args.durationMillis,
-                startsAtDateTime: args.startsAtDateTime ? new Date(args.startsAtDateTime) : null,
-                isAllDay: false,
-            };
-            return;
-        }
-
-        this.spec = {
-            durationMillis: gMillisecondsPerHour,
-            isAllDay: false,
-            startsAtDateTime: new Date(),
-        };
+    getStartDateTime(): Date | null {
+        return this.spec.startsAtDateTime ? new Date(this.spec.startsAtDateTime) : null;
     }
 
-    toSerializableString(): string {
-        return JSON.stringify(this.spec);
+    getEndDateTime(): Date | null {
+        const start = this.spec.startsAtDateTime;
+        return start ? new Date(start.valueOf() + this.spec.durationMillis) : null;
     }
 
-    getSpec(): DateTimeRangeSpec {
-        return this.spec;
+    getBounds(): InstantInterval | null {
+        const start = this.getStartDateTime();
+        return start ? { start, end: this.getEndDateTime()! } : null;
     }
 
-    isTBD() {
-        return !this.spec.startsAtDateTime;
-    }
-
-    isAllDay() {
-        return this.spec.isAllDay;
-    }
-
-    // returns the same concept as spec.durationMillis really.
-    getDurationMillis(): number {
-        if (!this.spec.startsAtDateTime) {
-            return 0; // TBD should probably return null, but this seems reasonable too.
-        }
-        if (!this.isAllDay()) {
-            return this.spec.durationMillis;
-        }
-        // all-day event. means the duration should be aligned to day.
-        assert(this.spec.durationMillis % gMillisecondsPerDay === 0, "for all-day events, durationMillis is expected to be aligned to day-long intervals.");
-        return this.spec.durationMillis;
-        // const start = this.getStartDateTime()!;
-        // const end = this.getEndDateTime()!;
-        //return (Math.round((end.valueOf() - start.valueOf()) / gMillisecondsPerDay) + 1) * gMillisecondsPerDay;
-    }
-
-    getDurationDays(): number {
-        if (!this.spec.startsAtDateTime) {
-            return 0; // TBD should probably return null, but this seems reasonable too.
-        }
-        // all-day event. means the duration should be aligned to day.
-        if (this.isAllDay()) {
-            assert(this.spec.durationMillis % gMillisecondsPerDay === 0, "for all-day events, durationMillis is expected to be aligned to day-long intervals.");
-        }
-
-        return this.spec.durationMillis / gMillisecondsPerDay;
-    }
-
-    // local timezone assumed for display
-    // All-day calendar dates remain fixed. For an explicit display
-    // timezone and locale, use toDisplayString instead.
-    public toString(): string {
-        if (this.isTBD()) {
-            return "TBD";
-        }
-
-        // returns the time part, either as HH or HH:MM
-        const formatTime = (date: Date): string => {
-            const hour = dayjs(date).hour();
-            const minutes = dayjs(date).minute();
-            if (minutes === 0) {
-                return `${hour}`; // Return only hour with 'h' if minutes are 0
-            }
-            return `${hour}:${minutes.toString().padStart(2, '0')}`; // Return full time with minutes and 'h' suffix
-        };
-
-        // formatting:
-        // https://day.js.org/docs/en/display/format
-        // dddd = weekday
-        // D    = day of month (1-31)
-        // MMMM = full month name
-        // YYYY = 4-digit year
-
-        // for tooltip kinda things we want a short and long version
-        // ALL-DAY styles:
-        // SHORT:                                    LONG: (actually just a fixed long verbose format + duration)    Note:               
-        // -----------------                         -------                                                                        
-        // Wednesday 29 June 2024                    Wednesday 29 June 2024 (1d)                                     same year, month, day
-        // 29-30 June 2024                           Wednesday 29 June 2024 - Thursday 30 June 2024 (2d)             same year, month                
-        // 29 June - 3 July 2024                     Wednesday 29 June 2024 - Wednesday 5 July 2024 (7d)             same year               
-        // 29 December 2024 - 2 January 2025         Wednesday 29 December 2024 - Saturday 2 January 2025 (3d)       else               
-
-        // NOT-ALL-DAY STYLES:
-        // SHORT:                                               Note:
-        // -----------------                                    -------
-        // Wednesday 29 June 2024 @ 20-22h                      same year, month, day, zerominutes
-        // Wednesday 29 June 2024 @ 20:15-22:30h                same year, month, day
-        // 31 December 2024 @ 20:30 - 2 January 2025 @ 18:30    else (worst case)
-
-        const startDate = this.getStartDateTime()!;
-        const startDateDjs = dayjs(startDate);
-        // in fact a "same day" means the duration is <= 24 hours. Why? because events can start at 10pm and last 4 hours.
-        // using the date would make this look like it spans 2 days. but it's clearer/more intuitive to count that as the same day.
-        //const isSameDay = startDateDjs.isSame(endDateDjs, 'day');
-        const isSameDay = this.getDurationDays() <= 1.00001;
-
-        // treat non-same-day events the same as all-day. basically we don't want to show time when spanning days because it's too verbose.
-        // this scenario doesn't actually happen from user-input because non-all-day events don't span across days. but it does happen when
-        // joining dateranges.
-
-        if (this.isAllDay() || !isSameDay) {
-            const lastDate = this.getLastDateTime()!;
-            const lastDateDjs = dayjs(lastDate);
-
-            if (isSameDay) {
-                return startDateDjs.format(`dddd, D MMMM YYYY`); // Wednesday 29 June 2024
-            }
-            const isSameMonth = startDateDjs.isSame(lastDateDjs, 'month');
-            if (isSameMonth) {
-                // 29-30 June 2024
-                return `${startDateDjs.format(`D`)} - ${lastDateDjs.format(`D MMMM YYYY`)}`;
-            }
-            const isSameYear = startDateDjs.isSame(lastDateDjs, 'year');
-            if (isSameYear) {
-                // 29 June - 3 July 2024
-                return `${startDateDjs.format(`D MMMM`)} - ${lastDateDjs.format(`D MMMM YYYY`)}`;
-            }
-
-            // 29 December 2024 - 2 January 2025
-            return `${startDateDjs.format(`D MMMM YYYY`)} - ${lastDateDjs.format(`D MMMM YYYY`)}`;
-        }
-
-        // for non-all-day events, we need to use "END" otherwise it shows as 1:59
-        const endDate = this.getEndDateTime()!;
-
-        // not all-day (time specified)
-        if (isSameDay) {
-            return `${startDateDjs.format(`dddd, D MMMM YYYY`)} @ ${formatTime(startDate)}-${formatTime(endDate)}h`;
-        }
-
-        assert(false, "unreachable");
-    }
-
-    // Explicit presentation boundary. Timed values are instants; all-day values
-    // are calendar dates, formatted in UTC only to preserve their encoded fields.
-    // Display choices never affect storage or the band's lifecycle interval.
-    public toDisplayString({ displayTimeZone, locale }: { displayTimeZone: string; locale: string }): string//
-    {
-        // Validate the requested zone even for all-day/TBD values.
-        const timeZone = BandTimeZoneSchema.parse(displayTimeZone);
-        const dateFormatter = new Intl.DateTimeFormat(locale, {
-            timeZone: this.isAllDay() ? "UTC" : timeZone,
-            weekday: "short", day: "numeric", month: "short", year: "numeric",
-        });
-        const timeFormatter = new Intl.DateTimeFormat(locale, {
-            timeZone, hour: "2-digit", minute: "2-digit", second: "2-digit",
-            fractionalSecondDigits: 3, hourCycle: "h23", timeZoneName: "shortOffset",
-        });
-        if (this.isTBD()) return "TBD";
-        if (this.isAllDay()) {
-            const dates = this.getCalendarDateRange(displayTimeZone)!;
-            const start = dateFormatter.format(calendarDateToUtcDate(dates.startDate));
-            const lastDate = addCalendarDays(dates.endDateExclusive, -1);
-            return dates.startDate === lastDate ? `${start} (all day)`
-                : `${start} ? ${dateFormatter.format(calendarDateToUtcDate(lastDate))} (all day)`;
-        }
-        const { start, end } = this.getInstantInterval(displayTimeZone)!;
-        const format = (instant: Date) => `${dateFormatter.format(instant)} @ ${timeFormatter.format(instant)}`;
-        return start.valueOf() === end.valueOf() ? format(start) : `${format(start)} ? ${format(end)}`;
-    }
-
-    // Legacy multilingual presentation still uses the runtime timezone implicitly.
-    public toDisplayStrings(): {
-        en: { date: string; time?: string };
-        fr: { date: string; time?: string };
-        nl: { date: string; time?: string };
-    } {
-        if (this.isTBD()) {
-            return {
-                en: { date: 'TBD' },
-                fr: { date: 'À déterminer' },
-                nl: { date: 'Nog te bepalen' },
-            };
-        }
-
-        const startDate = dayjs(this.getStartDateTime()!);
-        const endDate = dayjs(this.getEndDateTime()!);
-        const durationDays = this.getDurationDays();
-
-        const isAllDay = this.isAllDay();
-        const isSameDay = durationDays <= 1.0;
-        const isSameMonth = startDate.isSame(endDate, 'month');
-        const isSameYear = startDate.isSame(endDate, 'year');
-
-        const locales = ['en', 'fr', 'nl'] as const;
-
-        const result: {
-            en: { date: string; time?: string };
-            fr: { date: string; time?: string };
-            nl: { date: string; time?: string };
-        } = {
-            en: { date: '', time: undefined },
-            fr: { date: '', time: undefined },
-            nl: { date: '', time: undefined },
-        };
-
-        for (const locale of locales) {
-            const formatDate = (
-                date: dayjs.Dayjs,
-                options: Intl.DateTimeFormatOptions,
-                datePartsOrder: Intl.DateTimeFormatPartTypes[]
-            ): string => {
-                const formatter = new Intl.DateTimeFormat(`${locale}-BE`, options);
-                const parts = formatter.formatToParts(date.toDate());
-                const dateStr = datePartsOrder
-                    .map((partType) => parts.find((part) => part.type === partType)?.value)
-                    .filter(Boolean)
-                    .join(' ');
-                return dateStr;
-            };
-
-            const formatTime = (date: dayjs.Dayjs): string => {
-                const hour = date.hour();
-                const minutes = date.minute();
-                const suffix = locale === 'nl' ? 'u' : 'h';
-                if (minutes === 0) {
-                    return `${hour}${suffix}`; // Return only hour with suffix if minutes are 0
-                }
-                return `${hour}:${minutes.toString().padStart(2, '0')}${suffix}`;
-            };
-
-            let dateStr = '';
-            let timeStr: string | undefined = undefined;
-
-            if (isAllDay) {
-                if (isSameDay) {
-                    // Single-day all-day event
-                    dateStr = formatDate(
-                        startDate,
-                        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
-                        ['weekday', 'day', 'month', 'year']
-                    );
-                } else if (isSameMonth) {
-                    // Multi-day event within the same month
-                    const startDay = formatDate(startDate, { day: 'numeric' }, ['day']);
-                    const endDateStr = formatDate(
-                        endDate,
-                        { day: 'numeric', month: 'long', year: 'numeric' },
-                        ['day', 'month', 'year']
-                    );
-                    dateStr = `${startDay} - ${endDateStr}`;
-                } else if (isSameYear) {
-                    // Multi-day event within the same year
-                    const startDateStr = formatDate(
-                        startDate,
-                        { day: 'numeric', month: 'long' },
-                        ['day', 'month']
-                    );
-                    const endDateStr = formatDate(
-                        endDate,
-                        { day: 'numeric', month: 'long', year: 'numeric' },
-                        ['day', 'month', 'year']
-                    );
-                    dateStr = `${startDateStr} - ${endDateStr}`;
-                } else {
-                    // Multi-day event spanning different years
-                    const startDateStr = formatDate(
-                        startDate,
-                        { day: 'numeric', month: 'long', year: 'numeric' },
-                        ['day', 'month', 'year']
-                    );
-                    const endDateStr = formatDate(
-                        endDate,
-                        { day: 'numeric', month: 'long', year: 'numeric' },
-                        ['day', 'month', 'year']
-                    );
-                    dateStr = `${startDateStr} - ${endDateStr}`;
-                }
-            } else {
-                if (isSameDay) {
-                    // Single-day event with specific times
-                    dateStr = formatDate(
-                        startDate,
-                        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
-                        ['weekday', 'day', 'month', 'year']
-                    );
-                    timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
-                } else {
-                    // Multi-day event with specific times
-                    const startDateStr = formatDate(
-                        startDate,
-                        { day: 'numeric', month: 'long', year: 'numeric' },
-                        ['day', 'month', 'year']
-                    );
-                    const endDateStr = formatDate(
-                        endDate,
-                        { day: 'numeric', month: 'long', year: 'numeric' },
-                        ['day', 'month', 'year']
-                    );
-                    dateStr = `${startDateStr} - ${endDateStr}`;
-                    timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
-                }
-            }
-
-            result[locale] = {
-                date: dateStr,
-                time: timeStr,
-            };
-        }
-
-        return result;
-    }
-
-    durationToString() {
-        return formatMillisecondsToDHMS(this.getDurationMillis());
+    hitTestDateTime(instant: Date): Timing {
+        if (!Number.isFinite(instant.valueOf())) throw new RangeError("Invalid comparison instant.");
+        const bounds = this.getBounds();
+        if (!bounds || instant < bounds.start) return Timing.Future;
+        return instant >= bounds.end ? Timing.Past : Timing.Present;
     }
 
     isLessThan(rhs: DateTimeRange | null): boolean {
-        if (this.isTBD()) return false; // TBD is considered late; in all cases it cannot be EARLIER (less than) rhs.
-        if (rhs === null || rhs.isTBD()) {
-            return true; // we have a date, but RHS does not. this < RHS always.
-        }
-        // both dates exist; no point in being more detailed than just comparing the start times.
-        const lhsStart = this.getStartDateTime()!;
-        const rhsStart = rhs.getStartDateTime()!;
-        return lhsStart.valueOf() < rhsStart.valueOf();
+        return !this.isTBD() && (!rhs || rhs.isTBD() || this.spec.startsAtDateTime! < rhs.spec.startsAtDateTime!);
     }
 
-    // returns a datetime representing the start date + time.
-    // returns null if "TBD"
-    // if all-day, date part is correct and time is midnight.
-    // NOTE that for all-day events there is no concept of timezone, but the time returned will have the local timezone, for consistency & simplicity with rest of codebase.
-    getStartDateTime<T extends Date | undefined>(fallbackValue?: T): T extends Date ? Date : Date | null {
-        if (!this.spec.startsAtDateTime) {
-            return fallbackValue || null as any;
-        }
-        if (this.isAllDay()) {
-            //return floorToDayUTC(this.spec.startsAtDateTime) as T extends Date ? Date : Date | null;
-            return getLocalMidnightFromUTCMidnight(this.spec.startsAtDateTime);
-        }
-        return this.spec.startsAtDateTime as T extends Date ? Date : Date | null;
-    }
-
-    // returns a valid date/time for the end of the period.
-    // it's trickier than it seems, because "end" can sometimes want to be inclusive or exclusive depending on how it's to be used.
-    // for example a 1-day all-day event that starts on 12-Oct. Is the "end" midnight of 13-oct? Or 11:59.59.999 of 12-Oct?
-    // this will follow idiomatic "END" meaning. therefore it returns effectively (startDateTime + days(durationMillis/gMillisecondsPerDay))
-    // and this date will always fall JUST past the end of the range.
-    getEndDateTime<T extends Date | undefined>(fallbackStartDate?: T): T extends Date ? Date : Date | null {
-        const startDate = this.getStartDateTime(fallbackStartDate);
-        if (!startDate) {
-            return null as any;
-        }
-        if (!this.isAllDay()) {
-            return new Date(startDate.valueOf() + this.spec.durationMillis);
-        }
-
-        const durationDays = this.getDurationDays();
-        let ret = dayjs(startDate);
-        ret = ret.add(durationDays, "day");
-        return ret.toDate();
-    }
-
-    getCalendarDisplayRange(): CalendarDisplayRange | null {
-        const start = this.getStartDateTime();
-        const end = this.getEndDateTime();
-        if (!start || !end) return null; // TBD has no calendar placement.
-        return { start, end, allDay: this.isAllDay() };
-    }
-
-    // returns a valid date/time for the last valid time of the period (this date will be IN range)
-    getLastDateTime<T extends Date | undefined>(fallbackStartDate?: T): T extends Date ? Date : Date | null {
-        const startDate = this.getStartDateTime(fallbackStartDate);
-        if (!startDate) {
-            return null as any;
-        }
-        if (!this.isAllDay()) {
-            // A zero-duration value has no included interval; use its timestamp
-            // as the display anchor so a midnight point cannot highlight yesterday.
-            if (this.spec.durationMillis === 0) return new Date(startDate);
-            return new Date(startDate.valueOf() + this.spec.durationMillis - 1);
-        }
-
-        const durationDays = this.getDurationDays();
-        let ret = dayjs(startDate);
-        ret = ret.add(durationDays, "day");
-
-        assert(ret.millisecond() === 0, "expecting this time to land on a midnight boundary.");
-        assert(ret.second() === 0, "expecting this time to land on a midnight boundary.");
-        assert(ret.minute() === 0, "expecting this time to land on a midnight boundary.");
-        assert(ret.hour() === 0, "expecting this time to land on a midnight boundary.");
-
-        ret = ret.add(-1, "millisecond");
-
-        return ret.toDate();
-    }
-
-    // test a DAY and report significance
-    hitTestDay(day: Dayjs): DateTimeRangeHitTestResult {
-        const ret: DateTimeRangeHitTestResult = {
-            inRange: false,
-            isFirstDay: false,
-            isLastDay: false,
-        };
-
-        const rangeBeginDate = this.getStartDateTime();
-        if (!rangeBeginDate) return ret;
-        const rangeBeginDjs = dayjs(rangeBeginDate);
-
-        const rangeLastDate = this.getLastDateTime();
-        if (!rangeLastDate) return ret;
-        const rangeLastDjs = dayjs(rangeLastDate);
-
-        const rangeEndDate = this.getEndDateTime();
-        if (!rangeEndDate) return ret;
-        //const rangeEndDjs = dayjs(rangeEndDate);
-
-        if (rangeBeginDjs.isSame(day, "day")) {
-            //ret.inRange = true;
-            ret.isFirstDay = true;
-        }
-        if (rangeLastDjs.isSame(day, "day")) {
-            //ret.inRange = true;
-            ret.isLastDay = true;
-        }
-        if (ret.isFirstDay || ret.isLastDay || isInRange(day.valueOf(), rangeBeginDate.valueOf(), rangeEndDate.valueOf())) {
-            ret.inRange = true;
-        }
-
-        return ret;
-    }
-
-    getCalendarDateRange(timeZone: string): CalendarDateRange | null {
-        if (!this.spec.startsAtDateTime) return null;
-        if (this.isAllDay()) return getStoredAllDayCalendarRange(this.spec.startsAtDateTime, this.spec.durationMillis);
-        return {
-            startDate: getBandDateTimeFields(this.spec.startsAtDateTime, timeZone).date,
-            endDateExclusive: addCalendarDays(getBandDateTimeFields(this.getLastDateTime()!, timeZone).date, 1),
-        };
-    }
-
-    getInstantInterval(timeZone: string): InstantInterval | null {
-        if (!this.spec.startsAtDateTime) return null;
-        return this.isAllDay() ? getAllDayInterval(this.getCalendarDateRange(timeZone)!, timeZone) : {
-            start: new Date(this.spec.startsAtDateTime),
-            end: new Date(this.spec.startsAtDateTime.valueOf() + this.spec.durationMillis),
-        };
-    }
-
-    hitTestDateTime = (lhs?: Date | null, timeZone?: string): Timing => {
-        const lhsx = lhs || new Date();
-        const interval = timeZone ? this.getInstantInterval(timeZone) : null;
-        const start = timeZone ? interval?.start ?? null : this.getStartDateTime();
-        if (start === null) return Timing.Future; // TBD = future
-        if (lhsx < start) return Timing.Future; // test date is before start; this range is in the future
-
-        const end = timeZone ? interval!.end : this.getEndDateTime();
-        if (end === null) throw new Error("TBD should have been handled already");
-        if (lhsx >= end) return Timing.Past;
-        return Timing.Present;
-    };
-
-    // Calendar bounds use UTC date markers, not elapsed local-midnight instants.
-    // Timed ranges contribute dates in the supplied zone (host-local if omitted); a midnight exclusive
-    // end does not add another day. A zero-duration point contributes its own date.
-    private getCalendarBoundsUtc(timeZone?: string): { start: number; end: number } {
-        if (timeZone) {
-            const dates = this.getCalendarDateRange(timeZone)!;
-            return { start: calendarDateToUtcDate(dates.startDate).valueOf(), end: calendarDateToUtcDate(dates.endDateExclusive).valueOf() };
-        }
-        if (this.spec.isAllDay) {
-            const start = this.spec.startsAtDateTime!.valueOf();
-            return { start, end: start + this.spec.durationMillis };
-        }
-        return {
-            start: floorLocalTimeToDayUTC(this.spec.startsAtDateTime!).valueOf(),
-            end: floorLocalTimeToDayUTC(this.getLastDateTime()!).valueOf() + gMillisecondsPerDay,
-        };
-    }
-
-    // Aggregate original ranges together: decide the representation before taking
-    // extrema. Pairwise timed hulls can lose a terminal midnight point's calendar
-    // date before an all-day range is encountered.
-    static union(ranges: readonly DateTimeRange[], timeZone?: string): DateTimeRange {
-        const knownRanges = ranges.filter(range => !range.isTBD());
-        if (knownRanges.length === 0) {
-            return new DateTimeRange({ startsAtDateTime: null, isAllDay: true, durationMillis: 0 });
-        }
-        const isAllDay = knownRanges.some(range => range.isAllDay());
-        let start = Infinity;
-        let end = -Infinity;
-        for (const range of knownRanges) {
-            const bounds = isAllDay ? range.getCalendarBoundsUtc(timeZone) : {
-                start: range.spec.startsAtDateTime!.valueOf(),
-                end: range.spec.startsAtDateTime!.valueOf() + range.spec.durationMillis,
-            };
-            start = Math.min(start, bounds.start);
-            end = Math.max(end, bounds.end);
-        }
+    /** Smallest enclosing span, including gaps between its members. */
+    static union(ranges: readonly DateTimeRange[]): DateTimeRange {
+        const known = ranges.filter(range => !range.isTBD());
+        if (!known.length) return new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
+        const start = Math.min(...known.map(range => range.spec.startsAtDateTime!.valueOf()));
+        const end = Math.max(...known.map(range => range.spec.startsAtDateTime!.valueOf() + range.spec.durationMillis));
         return new DateTimeRange({
-            startsAtDateTime: new Date(start),
-            isAllDay,
-            durationMillis: end - start,
+            startsAtDateTime: new Date(start), durationMillis: end - start,
+            isAllDay: known.every(range => range.isAllDay())
         });
     }
 
-    unionWith(rhs: DateTimeRange): DateTimeRange {
-        return DateTimeRange.union([this, rhs]);
-    }
-};
+    unionWith(rhs: DateTimeRange): DateTimeRange { return DateTimeRange.union([this, rhs]); }
+}
+
+export function createAllDayRange(dates: CalendarDateRange, timeZone: string): DateTimeRange {
+    const { start, end } = getAllDayInterval(dates, timeZone);
+    return new DateTimeRange({ startsAtDateTime: start, durationMillis: end.valueOf() - start.valueOf(), isAllDay: true });
+}
 
 // true if lhs < rhs.
 // NULL is considered LATE, because it suggests TBD in the future.
@@ -1065,42 +529,49 @@ export interface RelativeTimingInfo {
     label: string, // e.g. "in 4 months", "today", "last week", "2 weeks ago"
 };
 
-// Relative labels use viewer calendar days; lifecycle uses the supplied zone.
-export function CalcRelativeTiming(refTime: Date, range: DateTimeRange, timeZone?: string): RelativeTimingInfo {
+// Compare the dates printed on the viewer's calendar. All-day placement retains
+// the band's selected dates; "today" is the viewer's date. Lifecycle is separate.
+//
+// why is context needed?
+// because we're comparing date ranges and calendar-relative things, where we select
+// bands or viewer's timezones based on isAllDay and other context.
+export function CalcRelativeTiming(refTime: Date, range: DateTimeRange, context: EventDatePresentation): RelativeTimingInfo {
     // Check if the range is TBD
     if (range.isTBD()) {
-        return { bucket: RelativeTimingBucket.TBD, label: "TBD" };
+        return {
+            bucket: RelativeTimingBucket.TBD,
+            label: "TBD",
+        };
     }
 
-    const timing = range.hitTestDateTime(refTime, timeZone);
-    if (range.isAllDay()) {
-        const calendarTiming = range.getStartDateTime()! < refTime ? Timing.Past : Timing.Future;
-        const relative = range.hitTestDay(dayjs(refTime)).inRange
-            ? { bucket: RelativeTimingBucket.Today, label: "Today" }
-            : getRelativeCalendarTiming(refTime, range.getStartDateTime()!, calendarTiming);
-        return { ...relative, bucket: timing === Timing.Present ? RelativeTimingBucket.HappeningNow : relative.bucket };
+    const timing = range.hitTestDateTime(refTime);
+    if (!range.isAllDay() && timing === Timing.Present) {
+        return {
+            bucket: RelativeTimingBucket.HappeningNow,
+            label: "Happening now",
+        };
     }
-    if (timing === Timing.Present) {
-        return { bucket: RelativeTimingBucket.HappeningNow, label: "Happening now" };
-    }
-
-    return getRelativeCalendarTiming(refTime, range.getStartDateTime()!, timing);
+    const dates = getRangeCalendarDates(range, eventPresentationTimeZone(range, context))!;
+    const today = CalendarDate.fromInstant({ value: refTime, timeZone: context.viewerTimeZone });
+    if (range.isAllDay() && dates.start.date <= today.date && today.date < dates.endExclusive.date) return { bucket: RelativeTimingBucket.Today, label: "Today" };
+    return getRelativeCalendarTiming(today, dates.start);
 }
 
 // Calendar-relative labels are shared by event ranges and point timestamps.
 // Only the event entry point above can supply an ongoing interval.
-function getRelativeCalendarTiming(refTime: Date, date: Date, timing: Timing): RelativeTimingInfo {
+function getRelativeCalendarTiming(refDate: CalendarDate, date: CalendarDate): RelativeTimingInfo {
     // today can be in the past or future so do that first
-    const startDate = dayjs(date);
+    const refTime = dayjs.utc(refDate.date);
+    const startDate = dayjs.utc(date.date);
     if (startDate.isSame(refTime, "day")) {
         return { bucket: RelativeTimingBucket.Today, label: "Today" };
     }
 
-    const refTimeN = dayjs(floorLocalToLocalDay(refTime));
-    const startDateN = dayjs(floorLocalToLocalDay(startDate.toDate()));
+    const refTimeN = refTime.startOf("day");
+    const startDateN = startDate.startOf("day");
     const diffDays = Math.abs(startDateN.diff(refTimeN, "day"));
 
-    if (timing === Timing.Past) {
+    if (startDate.isBefore(refTime, "day")) {
         const yesterday = dayjs(refTimeN).add(-1, "d");
         const diffWeeks = Math.abs(calculateCalendarWeeksDistance(startDate, dayjs(refTime)));
 
@@ -1139,8 +610,14 @@ function getRelativeCalendarTiming(refTime: Date, date: Date, timing: Timing): R
 }
 
 
+export const localTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 
 export function CalcRelativeTimingFromNow(date: Date, now?: Date | undefined): RelativeTimingInfo {
     const refTime = now || new Date();
-    return getRelativeCalendarTiming(refTime, date, date > refTime ? Timing.Future : Timing.Past);
+    const timeZone = localTimeZone();
+    return getRelativeCalendarTiming(
+        CalendarDate.fromInstant({ value: refTime, timeZone }),
+        CalendarDate.fromInstant({ value: date, timeZone })
+    );
 }

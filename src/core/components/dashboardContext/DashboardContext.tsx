@@ -1,4 +1,4 @@
-import { partition, zip } from '@/shared/arrayUtils';
+import { localTimeZone } from "@/shared/time";
 import { shouldShowAdminControls } from '@/shared/adminControls';
 import { ClientSession, getAntiCSRFToken, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
@@ -22,6 +22,7 @@ import { DashboardContextDataBase } from './dashboardContextTypes';
 import { enrichInstrument } from '@db3/shared/schema/enrichedInstrumentTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
 import { isAttendanceGoing } from 'shared/eventAttendance';
+import { partition, zip } from "@/shared/arrayUtils";
 
 type CmdbWindow = Window & {
     cmdbDashboardContext?: DashboardContextData;
@@ -175,6 +176,15 @@ export class DashboardContextData extends DashboardContextDataBase {
     }
 
     brand: DbBrandConfig = DefaultDbBrandConfig;
+
+    localTimeZone: string = localTimeZone();
+    userLocale: string = typeof navigator === "undefined" ? "en" : navigator.language;
+
+    eventDatePresentation: {
+        bandTimeZone: string;
+        viewerTimeZone: string;
+        locale: string;
+    }
 };
 
 
@@ -245,6 +255,13 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.bandTimeZone = dashboardData.bandTimeZone;
     valueRef.current.userSettings = dashboardData.userSettings;
     valueRef.current.brand = brand;
+    valueRef.current.localTimeZone = localTimeZone();
+    valueRef.current.userLocale = typeof navigator === "undefined" ? "en" : navigator.language;
+    valueRef.current.eventDatePresentation = {
+        bandTimeZone: valueRef.current.bandTimeZone,
+        viewerTimeZone: valueRef.current.localTimeZone,
+        locale: valueRef.current.userLocale,
+    };
 
     // establish singleton for use by non-react code
     getCmdbWindow().cmdbDashboardContext = valueRef.current;

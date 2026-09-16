@@ -1,4 +1,5 @@
-import { loadBandTimeZone, isBandTimeZoneSetting, recalculateEventDateBounds } from "src/server/dateTime";
+import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
+import { loadBandTimeZone, isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
 import { AuthenticatedCtx, AuthorizationError, Ctx, assert } from "blitz";
@@ -107,7 +108,7 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
     const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
 
     const bandTimeZone = await loadBandTimeZone(transactionalDb);
-    const dateUpdates = db3.getEventDateBoundsFromSegments(segments, cancelledStatusIds, bandTimeZone);
+    const dateUpdates = db3.getEventDateBoundsFromSegments(segments, cancelledStatusIds);
 
     let existingEvent = ((await transactionalDb.event.findFirst({
         where: {
@@ -122,7 +123,7 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
     const existingRevision = existingEvent.revision;
     if (existingRevision === undefined) return;
 
-    const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds)!;
+    const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds, bandTimeZone)!;
     const newHash = calInp.inputHash || "-";
     const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 
@@ -202,7 +203,7 @@ export const CallMutateEventHooks = async (args: {
             // another way to think of it is "all day" is a day-long time range in a specific timezone.
             // when that timezone changes, the stored UTC representation changes.
             if (isBandTimeZoneSetting(args.model.name) || isBandTimeZoneSetting(args.oldModel?.name)) {
-                await recalculateEventDateBounds(transactionalDb);
+                await reanchorAllDayEvents(transactionalDb, (isBandTimeZoneSetting(args.oldModel?.name) ? args.oldModel?.value?.trim() || DEFAULT_BAND_TIME_ZONE : DEFAULT_BAND_TIME_ZONE), await loadBandTimeZone(transactionalDb));
             }
             clearBrandCache();
             return;
@@ -474,6 +475,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         await CallMutateEventHooks({
             tableNameOrSpecialMutationKey: table.tableName,
             model: oldValues,
+            oldModel: oldValues,
             db: transactionalDb,
         });
 

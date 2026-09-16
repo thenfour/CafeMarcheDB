@@ -14,6 +14,7 @@ vi.mock("src/core/components/event/EventComponents", () => ({}))
 vi.mock("src/core/hooks/useSearchableList", () => ({ useSearchableList: vi.fn(() => ({ enrichedItems: [], results: {} })) }))
 vi.mock("src/core/hooks/searchConfigs", () => ({ eventSearchConfig: {} }))
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({
+  bandTimeZone: "Europe/Brussels",
   eventStatus: { getById: (id: number) => id === 9 ? { significance: "Cancelled" } : undefined },
 }) }))
 
@@ -26,10 +27,10 @@ beforeEach(() => { vi.mocked(Calendar).mockClear() })
 
 function render() {
   const segments = [
-    { id: 1, name: "All day", startsAt: new Date("2026-07-10T00:00:00.000Z"), durationMillis: BigInt(86_400_000), isAllDay: true, statusId: null },
+    { id: 1, name: "All day", startsAt: new Date("2026-07-09T22:00:00.000Z"), durationMillis: BigInt(86_400_000), isAllDay: true, statusId: null },
     { id: 2, name: "Timed", startsAt: new Date("2026-07-10T15:30:12.345Z"), durationMillis: BigInt(1_200_789), isAllDay: false, statusId: null },
     { id: 3, name: "TBD", startsAt: null, durationMillis: BigInt(86_400_000), isAllDay: true, statusId: null },
-    { id: 4, name: "Cancelled", startsAt: new Date("2026-07-10T00:00:00.000Z"), durationMillis: BigInt(86_400_000), isAllDay: true, statusId: 9 },
+    { id: 4, name: "Cancelled", startsAt: new Date("2026-07-09T22:00:00.000Z"), durationMillis: BigInt(86_400_000), isAllDay: true, statusId: 9 },
   ]
   const event = { id: 10, name: "Rehearsal", segments }
   const result = {}

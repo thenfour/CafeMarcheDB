@@ -443,7 +443,7 @@ describe("BA-S003 event attendance ownership", () => {
     authorizationTestDb.reset({
       user: [actor],
       event: [makeEvent()],
-      eventSegment: [{ id: 101, eventId: 100 }],
+      eventSegment: [{ id: 101, eventId: 100, startsAt: null, durationMillis: BigInt(0), isAllDay: false, dateTimeVersion: 2 }],
       eventSegmentUserResponse: [],
       eventUserResponse: [],
       eventStatus: [],
@@ -523,7 +523,7 @@ describe("BA-S003 event attendance ownership", () => {
     authorizationTestDb.reset({
       user: [actor, target],
       event: [makeEvent()],
-      eventSegment: [{ id: 101, eventId: 100 }],
+      eventSegment: [{ id: 101, eventId: 100, startsAt: null, durationMillis: BigInt(0), isAllDay: false, dateTimeVersion: 2 }],
       eventSegmentUserResponse: [{
         id: 201,
         userId: target.id,

@@ -41,9 +41,9 @@ describe("manual date explorer", () => {
   it("changes presentation timezone without changing the stored sample and rejects invalid zones", () => {
     mount()
     const before = value("Stored start (UTC ISO)")
-    expect(container.querySelector('[aria-label="Panel B"]')!.textContent).toContain("00:30:12.345 GMT+9")
+    expect(container.querySelector('[aria-label="Panel B"]')!.textContent).toContain("00:30:12.345 +09:00")
     changeZone("Panel B: display / editing timezone", "UTC")
-    expect(container.querySelector('[aria-label="Panel B"]')!.textContent).toContain("15:30:12.345 GMT")
+    expect(container.querySelector('[aria-label="Panel B"]')!.textContent).toContain("15:30:12.345 +00:00")
     expect(value("Stored start (UTC ISO)")).toBe(before)
     expect(container.textContent).toContain("Recent editor writes (0)")
     changeZone("Panel B: display / editing timezone", "Moon/Base")
@@ -63,7 +63,7 @@ describe("manual date explorer", () => {
     mount()
     const presets = container.querySelector<HTMLSelectElement>('[aria-label="Load a sample"]')!
     act(() => Simulate.change(presets, { target: { value: "5" } } as any))
-    expect(value("Stored start (UTC ISO)")).toBe("2026-03-29T00:00:00.000Z")
+    expect(value("Stored start (UTC ISO)")).toBe("2026-03-28T23:00:00.000Z")
     expect(value("Elapsed hours")).toBe("23")
     changeZone("Panel B: display / editing timezone", "UTC")
     expect(value("Elapsed hours")).toBe("23")

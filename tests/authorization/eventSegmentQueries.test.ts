@@ -21,7 +21,7 @@ import { invokeResolver } from "./support/resolverHarness"
 const makeSegment = (id: number, eventId: number) => ({
   id, eventId, name: `Segment ${id}`, description: "",
   uid: id === 1 ? "segment-uid" : null, statusId: null, startsAt: null,
-  durationMillis: BigInt(60_000), isAllDay: false,
+  durationMillis: BigInt(60_000), isAllDay: false, dateTimeVersion: 2,
 } satisfies Prisma.EventSegmentGetPayload<{}>)
 
 const segments = [makeSegment(1, 10), makeSegment(2, 20)]

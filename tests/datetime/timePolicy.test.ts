@@ -20,8 +20,8 @@ describe.each(zones)("date/time policy in %s", zone => {
     expect(inZone(zone).timeZone).toBe(zone)
   })
 
-  it("captures an authored all-day calendar date without a time offset", () => {
-    expect(inZone(zone).authoredDate).toBe("2026-07-10T00:00:00.000Z")
+  it("captures an authored all-day calendar date as its actual band midnight instant", () => {
+    expect(inZone(zone).authoredDate).toBe("2026-07-09T22:00:00.000Z")
   })
 
   it("preserves ordinary timed instants and elapsed durations across viewers", () => {
@@ -70,12 +70,12 @@ describe.each(zones)("date/time policy in %s", zone => {
 
 describe("persisted all-day calendar dates", () => {
   it.each(zones.filter(zone => zone !== "America/Los_Angeles"))("preserves the stored date in %s", zone => {
-    expect(inZone(zone).loadedDate).toBe("2026-07-10T00:00:00.000Z")
+    expect(inZone(zone).loadedDate).toBe("2026-07-09T22:00:00.000Z")
     expect(inZone(zone).displayedAllDayDate).toEqual([2026, 7, 10])
   })
 
-  it("DT-01: loading a UTC-encoded calendar date west of UTC preserves that date", () => {
-    expect(inZone("America/Los_Angeles").loadedDate).toBe("2026-07-10T00:00:00.000Z")
+  it("DT-01: loading a UTC all-day instant west of UTC preserves that date", () => {
+    expect(inZone("America/Los_Angeles").loadedDate).toBe("2026-07-09T22:00:00.000Z")
   })
 
   it("DT-01: reconstructing a range from its spec is idempotent", () => {
@@ -106,7 +106,7 @@ describe("DST and event aggregate ranges", () => {
   })
 
   it("DT-03: unioning an all-day event with itself preserves one day on the autumn transition", () => {
-    expect(inZone("Europe/Brussels").identicalAutumnUnionDays).toBe(1)
+    expect(inZone("Europe/Brussels").identicalAutumnUnionHours).toBe(25)
   })
 
   it("DT-02: reading the second Brussels 02:30 preserves the specified UTC instant", () => {
@@ -126,6 +126,6 @@ describe("DST and event aggregate ranges", () => {
   })
 
   it.each(["UTC", "Europe/Brussels", "Asia/Tokyo"])("keeps adjacent leap-year dates contiguous in %s", zone => {
-    expect(inZone(zone).leapDayUnionDays).toBe(2)
+    expect(inZone(zone).leapDayUnionHours).toBe(48)
   })
 })

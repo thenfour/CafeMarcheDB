@@ -1,4 +1,4 @@
-import { isBandTimeZoneSetting, recalculateEventDateBounds } from "src/server/dateTime";
+import { isBandTimeZoneSetting, reanchorAllDayEvents, loadBandTimeZone } from "src/server/dateTime";
 import type { Ctx } from "@blitzjs/next";
 import {
     ChangeAction,
@@ -37,7 +37,11 @@ export const writeSettingValue = async (args: {
     }
     const refreshBounds = async () => {
         if (isBandTimeZoneSetting(args.name) || isBandTimeZoneSetting(oldValue?.name)) {
-            await recalculateEventDateBounds(args.db);
+            await reanchorAllDayEvents(
+                args.db,
+                resolveBandTimeZone(oldValue?.value?.trim()),
+                await loadBandTimeZone(args.db)
+            );
         }
     };
     const shouldDelete = args.value === null || args.value === undefined || args.value === "";

@@ -1,8 +1,10 @@
+import { CalendarDate, addCalendarDays, getAllDayInterval } from "shared/dateTimePolicy";
+import { createAllDayRange } from "shared/time";
 import { DateTimeRange, gMillisecondsPerDay } from "../../../shared/time"
 
 const iso = (value: Date | null) => value?.toISOString() ?? null
 const localDay = (value: Date | null) => value
-  ? [value.getFullYear(), value.getMonth() + 1, value.getDate()]
+  ? CalendarDate.fromInstant({ value, timeZone: "Europe/Brussels" }).date.split("-").map(Number)
   : null
 
 const cases = [
@@ -30,8 +32,9 @@ function collect() {
   const tbd = new DateTimeRange({ startsAtDateTime: null, durationMillis: gMillisecondsPerDay, isAllDay: true })
   const dates = cases.map(({ date, days, end }) => {
     const start = date.split("-").map(Number)
-    const stored = `${date}T00:00:00.000Z`
-    const duration = days * gMillisecondsPerDay
+    const bounds = getAllDayInterval({ startDate: date, endDateExclusive: addCalendarDays(date, days) }, "Europe/Brussels")
+    const stored = bounds.start.toISOString()
+    const duration = bounds.end.valueOf() - bounds.start.valueOf()
     const input = new Date(stored)
     const loaded = new DateTimeRange({ startsAtDateTime: input, durationMillis: duration, isAllDay: true })
     let copy = loaded
@@ -42,7 +45,7 @@ function collect() {
     const authored = [0, 12, 23].map(hour => {
       const selection = new Date(start[0]!, start[1]! - 1, start[2]!, hour, 30)
       const original = selection.valueOf()
-      const range = DateTimeRange.fromLocalDate({ startsAtDateTime: selection, durationMillis: duration, isAllDay: true })
+      const range = createAllDayRange({ startDate: date, endDateExclusive: addCalendarDays(date, days) }, "Europe/Brussels")
       return { value: snapshot(new DateTimeRange(range.getSpec())), inputUnchanged: selection.valueOf() === original }
     })
     return {
@@ -56,14 +59,14 @@ function collect() {
       authored,
     }
   })
-  const regular = new DateTimeRange({ startsAtDateTime: new Date("2026-07-10T00:00:00.000Z"), durationMillis: gMillisecondsPerDay, isAllDay: true })
+  const regular = createAllDayRange({ startDate: "2026-07-10", endDateExclusive: "2026-07-11" }, "Europe/Brussels")
   const withTime = new Date("2026-07-10T23:45:12.345Z")
   const normalized = new DateTimeRange({ startsAtDateTime: withTime, durationMillis: gMillisecondsPerDay, isAllDay: true })
   return {
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     dates,
     ordinarySelfUnion: snapshot(regular.unionWith(regular)),
-    tbd: snapshot(DateTimeRange.fromLocalDate(tbd.getSpec())),
+    tbd: snapshot(new DateTimeRange(tbd.getSpec())),
     ignoredTime: { stored: iso(normalized.getSpec().startsAtDateTime), input: iso(withTime) },
   }
 }

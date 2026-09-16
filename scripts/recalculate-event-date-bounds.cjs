@@ -1,4 +1,5 @@
 // Preview derived event corrections by default. --apply writes them atomically.
+// node scripts/recalculate-event-date-bounds.cjs [--apply]
 require("@next/env").loadEnvConfig(process.cwd());
 require("ts-node").register({ transpileOnly: true, compilerOptions: { module: "CommonJS", jsx: "react-jsx" } });
 require("tsconfig-paths/register");
@@ -14,18 +15,23 @@ async function main() {
     const apply = args.includes("--apply");
     const result = await db.$transaction(async tx => {
         const timeZone = await loadBandTimeZone(tx);
-        const events = await tx.event.findMany({ orderBy: { id: "asc" }, select: {
-            id: true, startsAt: true, durationMillis: true, isAllDay: true, endDateTime: true,
-        } });
+        const events = await tx.event.findMany({
+            orderBy: { id: "asc" },
+            select: {
+                id: true, startsAt: true, durationMillis: true, isAllDay: true, endDateTime: true,
+            }
+        });
         const changes = [];
         for (const event of events) {
-            const update = await calculateEventDateBounds(tx, event.id, timeZone);
+            const update = await calculateEventDateBounds(tx, event.id);
             if (!update) continue;
             const before = {};
             const after = {};
             for (const [key, value] of Object.entries(update)) {
                 // Prisma reads BIGINT durations but accepts a number when writing.
-                if (serialize(key === "durationMillis" ? String(event[key]) : event[key]) === serialize(key === "durationMillis" ? String(value) : value)) continue;
+                if (serialize(key === "durationMillis" ? String(event[key]) : event[key]) === serialize(key === "durationMillis" ? String(value) : value)) {
+                    continue;
+                }
                 before[key] = event[key];
                 after[key] = value;
             }

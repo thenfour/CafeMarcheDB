@@ -710,6 +710,19 @@ model EventSegment {
   durationMillis BigInt
   isAllDay       Boolean   @default(true)
 
+  // 1 = legacy all-day calendar markers
+  //     for all-day events, the start date was always at a UTC 0:00 boundary.
+  // 2 = actual UTC span (2026-9-16)
+  //     this changes all-day events' startsAt and durationMillis to represent the actual
+  //     span of the event which represents "all day" from the perspective of the band's
+  //     timezone.
+  //     this:
+  //     - let's everyone see the same objectvie time range for the event
+  //     - places the event in the band's timezone instead of UTC, which will feel more natural.
+  //       for example a band located in New York used to have all-day events' bounds
+  //       changing in the middle of the day, NYC-time. that boundary is now placed better.
+  dateTimeVersion Int @default(2)
+
   responses EventSegmentUserResponse[]
   actions   Action[]
 
@@ -1111,7 +1124,7 @@ model WikiPage {
   slug      String  @db.VarChar(768) // slugified name. actual display name can be changed in Revision
   namespace String? @db.VarChar(768) // the namespace part of the slug; for example "EventDescription"
 
-  contentVersion    Int @default(0) // Increments on every content save, including consolidated revisions.
+  contentVersion    Int               @default(0) // Increments on every content save, including consolidated revisions.
   currentRevisionId Int?
   currentRevision   WikiPageRevision? @relation(name: "CurrentRevision", fields: [currentRevisionId], references: [id], onDelete: SetNull)
 

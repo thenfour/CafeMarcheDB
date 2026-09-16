@@ -1,3 +1,4 @@
+import { loadBandTimeZone } from "src/server/dateTime";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
@@ -150,8 +151,9 @@ export const addEventToCalendar = async (
     eventAttendanceIdsRepresentingGoing: number[],
     cancelledStatusIds: number[],
     icalSettings: ICalSettings,
+    bandTimeZone: string,
 ): Promise<ICalEvent[]> => {
-    const inputs = GetEventCalendarInput(event, cancelledStatusIds)!;
+    const inputs = GetEventCalendarInput(event, cancelledStatusIds, bandTimeZone)!;
 
     return inputs
         .segments
@@ -186,16 +188,21 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
         eventUids: type === "event" ? [(args as CalExportCoreArgsSingleEvent).eventUid] : undefined,
     };
 
-    const eventsRaw = await queryTable({
-        tableName: table.tableName,
-        tableID: table.tableID,
-        filter: {
-            items: [],
-            tableParams: eventsTableParams,
-        },
-        cmdbQueryContext: `CalExportCore`,
-        orderBy: undefined,
-    }, await loadUserAuthorization(currentUser));
+    const authorization = await loadUserAuthorization(currentUser);
+    const { eventsRaw, bandTimeZone } = await db.$transaction(async tx => {
+        const bandTimeZone = await loadBandTimeZone(tx);
+        const eventsRaw = await queryTable({
+            tableName: table.tableName,
+            tableID: table.tableID,
+            filter: {
+                items: [],
+                tableParams: eventsTableParams,
+            },
+            cmdbQueryContext: `CalExportCore`,
+            orderBy: undefined,
+        }, authorization, tx);
+        return { eventsRaw, bandTimeZone };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 });
 
     // don't error if 0 events. this is a calendar-of-events and 0 events is valid.
 
@@ -233,7 +240,7 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
             cancelledStatusIds: cancelledStatuses,
             attendanceById,
         })) continue;
-        await addEventToCalendar(cal, currentUser, event, event, goingAttendanceIds, cancelledStatusIds, settings);
+        await addEventToCalendar(cal, currentUser, event, event, goingAttendanceIds, cancelledStatusIds, settings, bandTimeZone);
     }
 
     return cal;

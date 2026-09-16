@@ -4,9 +4,14 @@ vi.mock("db", async () => {
     const prisma = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
     const { authorizationTestDb } = await import("./support/inMemoryPrisma");
     const rawQuery = vi.fn();
-    return { ...prisma, default: new Proxy(authorizationTestDb, {
-        get: (target, key) => key === "$queryRaw" ? rawQuery : Reflect.get(target, key),
-    }) };
+    const proxy = new Proxy(authorizationTestDb, {
+        get: (target, key) => {
+            if (key === "$queryRaw") return rawQuery;
+            if (key === "$transaction") return (action: (tx: typeof target) => unknown) => action(proxy);
+            return Reflect.get(target, key);
+        },
+    });
+    return { ...prisma, default: proxy };
 });
 
 import db from "db";

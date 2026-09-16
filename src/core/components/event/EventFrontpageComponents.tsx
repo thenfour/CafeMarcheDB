@@ -1,3 +1,4 @@
+import { formatEventDateRangeTranslations } from "shared/dateTimePresentation";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
 import { Button, DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
@@ -357,7 +358,8 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         durationMillis: Number(props.event.durationMillis),
         isAllDay: props.event.isAllDay,
     });
-    let dateTimeDisplayStrings = dateRange.toDisplayStrings();
+    const presentation = dashboardContext.eventDatePresentation;
+    let dateTimeDisplayStrings = formatEventDateRangeTranslations(dateRange, { ...presentation, viewerTimeZone: presentation.bandTimeZone });
 
     const dateResetter = () => ({
         en: dateTimeDisplayStrings.en.date,

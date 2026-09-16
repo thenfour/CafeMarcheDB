@@ -39,7 +39,7 @@ const Harness = ({ initial, userIndex = 1, minimal = false }: { initial: Attenda
     currentScenario = scenario;
     const { attendance, event } = buildAttendanceScenario(scenario, userIndex);
     return React.createElement(AttendanceControlView, { attendance, event, minimalWhenNotAlert: minimal, environment: {
-        attendances: scenarioAttendances, instruments: scenarioInstruments, allowUploads: false,
+        attendances: scenarioAttendances, instruments: scenarioInstruments, allowUploads: false, datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
         commentDialogTitle: "Comment", commentDialogDescription: "Local comment",
         onSave: async (change: AttendanceChange) => {
             saves(change);

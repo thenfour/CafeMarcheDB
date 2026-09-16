@@ -1,3 +1,5 @@
+import { createAllDayRange } from "shared/time";
+import { addCalendarDays } from "shared/dateTimePolicy";
 import { PrismaClient } from "@prisma/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { getCalendarWindow } from "shared/dateTimePolicy"
@@ -9,9 +11,10 @@ describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
   beforeAll(async () => {
     if (!url || !/^\/cmdb_datetime_test_[a-f0-9]{16}$/.test(new URL(url).pathname)) throw new Error("A disposable datetime-test database is required.")
     await db.eventStatus.create({ data: { id: 9, label: "Cancelled", description: "", significance: "Cancelled" } })
-    const segment = (start: string | null, duration: number, allDay = false, statusId: number | null = null) => ({
-      name: "Segment", description: "", startsAt: start ? new Date(start) : null, durationMillis: BigInt(duration), isAllDay: allDay, statusId,
-    })
+    const segment = (start: string | null, duration: number, allDay = false, statusId: number | null = null) => {
+      const authored = allDay && start ? createAllDayRange({ startDate: start.slice(0, 10), endDateExclusive: addCalendarDays(start.slice(0, 10), Math.max(1, Math.round(duration / 86400000))) }, "Europe/Brussels") : null
+      return { name: "Segment", description: "", startsAt: authored ? authored.getStartDateTime() : start ? new Date(start) : null, durationMillis: BigInt(authored ? authored.getDurationMillis() : duration), isAllDay: allDay, statusId,
+    } }
     const hour = 3_600_000
     const day = 86_400_000
     const fixtures = [
@@ -45,7 +48,7 @@ describe.skipIf(!url)("calendar overlap SQL with real MySQL", () => {
   afterAll(async () => db.$disconnect())
 
   async function matches(zone: string, date = "2026-07-11", end = "2026-07-12", sessionZone = "+00:00") {
-    const predicate = calendarWindowSql(getCalendarWindow({ startDate: date, endDateExclusive: end }, zone))
+    const predicate = calendarWindowSql(getCalendarWindow({ startDate: date, endDateExclusive: end }, zone), "Europe/Brussels")
     return db.$transaction(async tx => {
       await tx.$executeRawUnsafe(`SET time_zone = '${sessionZone}'`)
       const rows = await tx.$queryRawUnsafe<{ name: string }[]>(`SELECT P.name FROM Event P WHERE ${predicate} ORDER BY P.name`)

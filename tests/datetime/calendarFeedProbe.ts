@@ -1,3 +1,5 @@
+import { createAllDayRange } from "shared/time";
+import { addCalendarDays } from "shared/dateTimePolicy";
 import "tsconfig-paths/register"
 import { createCalendar, addEventToCalendar2 } from "../../src/core/db3/server/ical"
 import {
@@ -19,12 +21,13 @@ const settings = {
 }
 
 async function exportSegment(startsAt: string | null, durationMillis: number, isAllDay: boolean) {
+  const authored = isAllDay && startsAt ? createAllDayRange({ startDate: startsAt.slice(0, 10), endDateExclusive: addCalendarDays(startsAt.slice(0, 10), durationMillis / 86400000) }, "Europe/Brussels") : null
   const segment: EventSegmentForCal = {
     id: 1,
     name: "Set",
     description: "",
-    startsAt: startsAt === null ? null : new Date(startsAt),
-    durationMillis: BigInt(durationMillis),
+    startsAt: authored ? authored.getStartDateTime() : startsAt === null ? null : new Date(startsAt),
+    durationMillis: BigInt(authored ? authored.getDurationMillis() : durationMillis),
     isAllDay,
     uid: "date-policy-segment",
     statusId: null,
@@ -38,7 +41,7 @@ async function exportSegment(startsAt: string | null, durationMillis: number, is
     songLists: [],
     status: { significance: null },
   }
-  const input = GetEventSegmentCalendarInput({ segment, event, descriptionText: "" })
+  const input = GetEventSegmentCalendarInput({ segment, event, descriptionText: "", bandTimeZone: "Europe/Brussels" })
   const calendar = await createCalendar({ icalSettings: settings })
   addEventToCalendar2(calendar, null, input, event as never, [], settings)
   const lines = calendar.toString().split(/\r?\n/)
@@ -47,7 +50,7 @@ async function exportSegment(startsAt: string | null, durationMillis: number, is
     end: input?.end.toISOString() ?? null,
     dateLines: lines.filter(line => /^DT(?:START|END)[;:]/.test(line)),
     eventCount: lines.filter(line => line === "BEGIN:VEVENT").length,
-    inputHash: GetEventCalendarInput(event, [])!.inputHash,
+    inputHash: GetEventCalendarInput(event, [], "Europe/Brussels")!.inputHash,
   }
 }
 

@@ -1,3 +1,4 @@
+import { EventDateRangeText } from "src/core/components/DateTime/EventDateRangeText";
 
 // xTable is server-side code; for client-side things we enrich it here.
 // so all UI stuff, react stuff, any behavioral stuff on the client should be here.
@@ -58,7 +59,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             type: "custom",
             renderCell: (params: GridRenderCellParams) => {
                 // renders only the value (because the grid header shows the name)
-                return <div>{db3.getEventSegmentDateTimeRange(params.row).toString()}</div>;
+                return <EventDateRangeText range={db3.getEventSegmentDateTimeRange(params.row)} />;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 // renders only the editor
@@ -83,7 +84,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         className: params.className,
         isReadOnly: true,
         validationResult: undefined,
-        value: <div>{db3.getEventSegmentDateTimeRange(params.row as any).toString()}</div>,
+        value: <EventDateRangeText range={db3.getEventSegmentDateTimeRange(params.row as any)} />,
     });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {

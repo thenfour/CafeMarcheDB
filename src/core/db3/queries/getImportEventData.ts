@@ -1,4 +1,4 @@
-import { calendarDateToUtcDate, getBandDateTimeFields } from "shared/dateTimePolicy";
+import { CalendarDate } from "shared/dateTimePolicy";
 import { loadBandTimeZone } from "src/server/dateTime";
 
 import { resolver } from "@blitzjs/rpc";
@@ -6,7 +6,7 @@ import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 import { SplitQuickFilter } from "shared/quickFilter";
-import { gMillisecondsPerDay } from "shared/time";
+import { createAllDayRange } from "shared/time";
 import * as db3 from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
@@ -94,7 +94,7 @@ const extractYear = (text: string): number | null => {
 };
 
 
-const extractDate = (text: string, fallbackYear: number): Date | null => {
+const extractDate = (text: string, fallbackYear: number): string | null => {
     // Define regex patterns to match various date formats including shorthand month names
     const datePatterns = [
         /\b(\d{1,2})\s+(\w+)\s+(\d{4})\b/i,       // 25 October 2024
@@ -148,11 +148,9 @@ const extractDate = (text: string, fallbackYear: number): Date | null => {
                 year = fallbackYear;
             }
 
-            // Validate the date
-            const date = new Date(Date.UTC(year!, month!, day!));
-            if (date.getUTCDate() === day! && date.getUTCMonth() === month! && date.getUTCFullYear() === year!) {
-                return date;
-            }
+            try {
+                return new CalendarDate(`${year!}-${String(month! + 1).padStart(2, "0")}-${String(day!).padStart(2, "0")}`, "UTC").date;
+            } catch { /* Try the next recognized date pattern. */ }
         }
     }
     return null;
@@ -186,7 +184,9 @@ export default resolver.pipe(
     async (args: TGetImportEventDataArgs, ctx: AuthenticatedCtx): Promise<TGetImportEventDataRet> => {
         const currentUser = await getCurrentUserCore(ctx);
         if (!currentUser) throw new Error("Current user was not found.");
-        const today = calendarDateToUtcDate(getBandDateTimeFields(new Date(), await loadBandTimeZone()).date);
+        const bandTimeZone = await loadBandTimeZone();
+        const today = CalendarDate.fromInstant({ value: new Date(), timeZone: bandTimeZone });
+        const todayRange = createAllDayRange({ startDate: today.date, endDateExclusive: today.addDays(1).date }, bandTimeZone);
         // start with defaults.
         const ret: TGetImportEventDataRet = {
             log: [],
@@ -201,9 +201,9 @@ export default resolver.pipe(
             },
             segment: {
                 isAllDay: true, // always.
-                durationMillis: gMillisecondsPerDay, // always.
+                durationMillis: todayRange.getDurationMillis(),
                 name: "Segment 1", // always.
-                startsAt: today,
+                startsAt: today.toStartInstant(),
             },
             responses: [],
             songList: [],
@@ -265,7 +265,10 @@ export default resolver.pipe(
             ret.log.push(`extractDate: ${extractDate(eventTxt, fallbackYear)}`);
             // The parser returns a UTC calendar-date marker; transport it using
             // the same UTC date encoding as stored all-day segments.
-            ret.segment.startsAt = extractDate(eventTxt, fallbackYear) || today;
+            const selectedDay = new CalendarDate(extractDate(eventTxt, fallbackYear) || today.date, bandTimeZone);
+            const selectedRange = createAllDayRange({ startDate: selectedDay.date, endDateExclusive: selectedDay.addDays(1).date }, bandTimeZone);
+            ret.segment.startsAt = selectedRange.getStartDateTime();
+            ret.segment.durationMillis = selectedRange.getDurationMillis();
 
             // extract event name.
             ret.event.name = extractFirstNonEmptyLine(eventTxt) || "";

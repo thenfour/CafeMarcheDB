@@ -3,7 +3,7 @@ import type { AllDayHydrationProbe } from "./fixtures/allDayHydrationProbe"
 import { runTimeZoneProbe } from "./support/runTimeZoneProbe"
 
 describe.each(["UTC", "Europe/Brussels", "Asia/Tokyo", "America/Los_Angeles", "Australia/Sydney"])(
-  "DT-01 all-day storage and local authoring in %s",
+  "DT-01 all-day UTC hydration and calendar authoring in %s",
   timeZone => {
     let result: AllDayHydrationProbe
     beforeAll(() => {
@@ -38,7 +38,7 @@ describe.each(["UTC", "Europe/Brussels", "Asia/Tokyo", "America/Los_Angeles", "A
       for (const value of result.dates) expect(value.copiedThroughTbd).toEqual([value.expected, value.expected])
     })
 
-    it("encodes a locally calculated union start back into the stored calendar date", () => {
+    it("preserves the stored instant through a self-union", () => {
       expect(result.ordinarySelfUnion).toEqual(result.dates[0]!.expected)
     })
 
@@ -46,8 +46,8 @@ describe.each(["UTC", "Europe/Brussels", "Asia/Tokyo", "America/Los_Angeles", "A
       expect(result.tbd).toEqual({ stored: null, duration: 86_400_000, start: null, end: null, isAllDay: true })
     })
 
-    it("ignores the time component using UTC fields without mutating caller Dates", () => {
-      expect(result.ignoredTime).toEqual({ stored: "2026-07-10T00:00:00.000Z", input: "2026-07-10T23:45:12.345Z" })
+    it("preserves the exact time component without mutating caller Dates", () => {
+      expect(result.ignoredTime).toEqual({ stored: "2026-07-10T23:45:12.345Z", input: "2026-07-10T23:45:12.345Z" })
       for (const value of result.dates) expect(value.inputAfterLoading).toBe(value.expected.stored)
     })
   },

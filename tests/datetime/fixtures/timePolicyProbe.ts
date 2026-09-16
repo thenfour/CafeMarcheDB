@@ -1,10 +1,12 @@
-import dayjs from "dayjs"
+import { createAllDayRange } from "shared/time";
+import { CalendarDate } from "shared/dateTimePolicy";
+import { getRangeCalendarDates } from "shared/dateTimePresentation";
+const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 import {
   CalcRelativeTiming,
   CalcRelativeTimingFromNow,
   DateSortPredicateAsc,
   DateTimeRange,
-  gMillisecondsPerDay,
   gMillisecondsPerHour,
 } from "shared/time"
 
@@ -15,13 +17,8 @@ const dateParts = (value: Date | null) => value
   : null
 
 function allDay(year: number, month: number, day: number, days = 1) {
-  // A locally selected calendar date uses the explicit authoring boundary.
-  // Loading the persisted UTC date is deliberately tested separately.
-  return DateTimeRange.fromLocalDate({
-    startsAtDateTime: new Date(year, month - 1, day, 12),
-    durationMillis: days * gMillisecondsPerDay,
-    isAllDay: true,
-  })
+  const date = new CalendarDate(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`, "Europe/Brussels")
+  return createAllDayRange({ startDate: date.date, endDateExclusive: date.addDays(days).date }, date.timeZone)
 }
 
 function timed(start: string | Date, durationMillis: number) {
@@ -34,11 +31,7 @@ function timed(start: string | Date, durationMillis: number) {
 
 function collect() {
   const authored = allDay(2026, 7, 10)
-  const loaded = new DateTimeRange({
-    startsAtDateTime: new Date("2026-07-10T00:00:00.000Z"),
-    durationMillis: gMillisecondsPerDay,
-    isAllDay: true,
-  })
+  const loaded = new DateTimeRange(authored.getSpec())
   const loadedAgain = new DateTimeRange(loaded.getSpec())
   const regular = timed("2026-07-10T07:45:00.000Z", gMillisecondsPerHour)
   const offGrid = timed("2026-07-10T07:47:12.345Z", 20 * minute)
@@ -84,7 +77,7 @@ function collect() {
     authoredDate: iso(authored.getSpec().startsAtDateTime),
     loadedDate: iso(loaded.getSpec().startsAtDateTime),
     loadedAgainDate: iso(loadedAgain.getSpec().startsAtDateTime),
-    displayedAllDayDate: dateParts(loaded.getStartDateTime()),
+    displayedAllDayDate: getRangeCalendarDates(loaded, "Europe/Brussels")!.start.date.split("-").map(Number),
     timedStart: iso(regular.getStartDateTime()),
     timedEnd: iso(regular.getEndDateTime()),
     timedBoundaries: ["2026-07-10T07:44:59.999Z", "2026-07-10T07:45:00.000Z", "2026-07-10T08:44:59.999Z", "2026-07-10T08:45:00.000Z"]
@@ -95,23 +88,23 @@ function collect() {
       start: tbd.getStartDateTime(),
       end: tbd.getEndDateTime(),
       timing: tbd.hitTestDateTime(today),
-      relative: CalcRelativeTiming(today, tbd),
+      relative: CalcRelativeTiming(today, tbd, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels" }),
     },
-    allDayBandBoundaries: bandBoundaryInstants.map(now => authored.hitTestDateTime(new Date(now), "Europe/Brussels")),
+    allDayBandBoundaries: bandBoundaryInstants.map(now => authored.hitTestDateTime(new Date(now))),
     springDayElapsedHours: (springDay.getEndDateTime()!.valueOf() - springDay.getStartDateTime()!.valueOf()) / gMillisecondsPerHour,
     autumnDayElapsedHours: (autumnDay.getEndDateTime()!.valueOf() - autumnDay.getStartDateTime()!.valueOf()) / gMillisecondsPerHour,
-    identicalAutumnUnionDays: union.getDurationDays(),
+    identicalAutumnUnionHours: union.getDurationMillis() / gMillisecondsPerHour,
     foldStart: iso(fold.getStartDateTime()),
     pacificFoldStart: iso(pacificFold.getStartDateTime()),
     mixedUnions,
-    midnightEndMembership: [10, 11].map(day => localMidnightEnd.hitTestDay(dayjs(new Date(2026, 6, day))).inRange),
-    tomorrowLabel: CalcRelativeTiming(localNearMidnight, tomorrow).label,
-    todayLabelAgreesWithCalendar: CalcRelativeTiming(today, authored).label === "Today"
-      && authored.hitTestDay(dayjs(today)).inRange,
+    midnightEndMembership: [10, 11].map(day => getRangeCalendarDates(localMidnightEnd, timeZone)!.hitTest(new CalendarDate(`2026-07-${day}`, timeZone)).inRange),
+    tomorrowLabel: CalcRelativeTiming(localNearMidnight, tomorrow, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels" }).label,
+    todayLabelAgreesWithCalendar: CalcRelativeTiming(today, authored, { viewerTimeZone: timeZone, bandTimeZone: "Europe/Brussels" }).label === "Today"
+      && getRangeCalendarDates(authored, "Europe/Brussels")!.hitTest(CalendarDate.fromInstant({ value: today, timeZone: "Europe/Brussels" })).inRange,
     timestampLabelAfterOneMinute: CalcRelativeTimingFromNow(timestamp, new Date(timestamp.valueOf() + minute)).label,
     sortedDates: [null, new Date("2026-07-11T00:00:00Z"), new Date("2026-07-10T00:00:00Z")]
       .sort(DateSortPredicateAsc).map(iso),
-    leapDayUnionDays: allDay(2024, 2, 28).unionWith(allDay(2024, 2, 29)).getDurationDays(),
+    leapDayUnionHours: allDay(2024, 2, 28).unionWith(allDay(2024, 2, 29)).getDurationMillis() / gMillisecondsPerHour,
   }
 }
 

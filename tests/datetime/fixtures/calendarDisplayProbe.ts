@@ -1,6 +1,9 @@
+import { createAllDayRange } from "shared/time";
+import { addCalendarDays } from "shared/dateTimePolicy";
+import { getCalendarWidgetRange, getWidgetCalendarWindow } from "src/core/components/DateTime/calendarWidgetAdapter";
 import React from "react"
 import { JSDOM } from "jsdom"
-import { DateTimeRange, getLocalCalendarWindow } from "../../../shared/time"
+import { DateTimeRange } from "../../../shared/time"
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { pretendToBeVisual: true })
 Object.defineProperties(globalThis, {
@@ -29,7 +32,7 @@ function localDate(date: Date): string {
 }
 
 function probe(startsAt: Date | null, durationMillis: number, isAllDay: boolean) {
-  const range = new DateTimeRange({ startsAtDateTime: startsAt, durationMillis, isAllDay }).getCalendarDisplayRange()
+  const range = getCalendarWidgetRange(new DateTimeRange({ startsAtDateTime: startsAt, durationMillis, isAllDay }), "Europe/Brussels")
   if (!range) return null
   const container = document.createElement("div")
   document.body.appendChild(container)
@@ -78,9 +81,9 @@ const allDayCases = {
   sydneyFall: ["2026-04-04", 3],
 } as const
 const allDay = Object.fromEntries(Object.entries(allDayCases).map(([name, [date, days]]) =>
-  [name, probe(new Date(`${date}T00:00:00.000Z`), days * 86_400_000, true)!]))
+  [name, (() => { const range = createAllDayRange({ startDate: date, endDateExclusive: addCalendarDays(date, days) }, "Europe/Brussels"); return probe(range.getStartDateTime(), range.getDurationMillis(), true)! })()]))
 const result = {
-  localWindow: getLocalCalendarWindow(new Date(2026, 6, 11), new Date(2026, 6, 12)),
+  localWindow: getWidgetCalendarWindow(new Date(2026, 6, 11), new Date(2026, 6, 12), Intl.DateTimeFormat().resolvedOptions().timeZone),
   allDay,
   tokyoMidnight: probe(new Date("2026-07-10T15:30:00.000Z"), 3_600_000, false)!,
   overnight: probe(new Date(2026, 6, 10, 23), 2 * 3_600_000, false)!,

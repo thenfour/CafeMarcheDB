@@ -1,3 +1,4 @@
+import { EventDateRangeText } from "../DateTime/EventDateRangeText";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
@@ -12,7 +13,6 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { API } from '../../db3/clientAPI';
 import { gCharMap, gIconMap } from "../../db3/components/IconMap";
 import { DB3EditObjectDialog } from '../../db3/components/db3NewObjectDialog';
 import clearEventSegmentResponses from "../../db3/mutations/clearEventSegmentResponses";
@@ -191,7 +191,9 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 
     return <div className={`EventSegmentPanel segment statusSignificance_${status?.significance}`}>
         <div className="header">
-            <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
+            <div className="dateRange">
+                <EventDateRangeText range={db3.getEventSegmentDateTimeRange(props.segment)} />
+            </div>
             <div style={{ display: "flex" }}>
                 <EventStatusValue statusId={props.segment.statusId} size="small" />
                 {!props.readonly && editAuthorized && <Button className="editButton" onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}

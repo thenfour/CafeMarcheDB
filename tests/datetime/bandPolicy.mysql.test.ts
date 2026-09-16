@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client"
+import { readFileSync } from "node:fs"
 import type { Ctx } from "@blitzjs/next"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import { CreateChangeContext } from "shared/activityLog"
@@ -6,6 +7,9 @@ import { Setting } from "shared/settingKeys"
 import { writeSettingValue } from "src/auth/server/settingWrite"
 import { CallMutateEventHooks } from "src/core/db3/server/db3mutationCore"
 import { recalculateEventDateBounds, calculateEventDateBounds } from "src/server/dateTime"
+import { migrateEventUtcSpans } from "src/server/migrateEventUtcSpans"
+import { getRangeCalendarDates } from "shared/dateTimePresentation"
+import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event"
 
 const url = process.env.DATETIME_TEST_DATABASE_URL
 const db = new PrismaClient({ datasourceUrl: url })
@@ -25,7 +29,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     await db.change.deleteMany()
     await db.setting.create({ data: { name: Setting.BandTimeZone, value: "Europe/Brussels" } })
     const segment = (allDay: boolean) => ({ name: "Segment", description: "", isAllDay: allDay,
-      startsAt: new Date(allDay ? "2026-07-10T00:00:00Z" : "2026-07-10T22:30:12.345Z"),
+      startsAt: new Date(allDay ? "2026-07-09T22:00:00Z" : "2026-07-10T22:30:12.345Z"),
       durationMillis: BigInt(allDay ? day : 1_200_789) })
     for (const [id, segments] of [[5001, [segment(true)]], [5002, [segment(false)]], [5003, [segment(true), segment(false)]]] as const) {
       await db.event.create({ data: { id, name: "Policy fixture", locationDescription: "", revision: 1, segments: { create: [...segments] } } })
@@ -47,21 +51,22 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
   const changeZone = (value: string | null) => db.$transaction(tx => writeSettingValue({ db: tx, ctx: {} as Ctx,
     changeContext: CreateChangeContext("band-policy-test"), name: Setting.BandTimeZone, value }), transactionOptions)
 
-  it("refreshes absolute ends and mixed band dates without rewriting authored segments or timed events", async () => {
+  it("reanchors all-day segments and exact mixed bounds while preserving timed segments", async () => {
     const before = await events()
     const authored = await segments()
     expect(before[0]!.endDateTime!.toISOString()).toBe("2026-07-10T22:00:00.000Z")
-    expect(before[2]!.durationMillis).toBe(BigInt(2 * day))
+    expect(before[2]!.durationMillis).toBe(BigInt(89_413_134))
     await changeZone("America/Los_Angeles")
     const after = await events()
     expect(after[0]!.endDateTime!.toISOString()).toBe("2026-07-11T07:00:00.000Z")
-    expect(after[0]!.startsAt).toEqual(before[0]!.startsAt)
+    expect(after[0]!.startsAt!.toISOString()).toBe("2026-07-10T07:00:00.000Z")
     expect(after[0]!.revision).toBe(before[0]!.revision) // all-day calendar feed remains the same
     expect(after[1]).toEqual(before[1])
     expect(after[2]!.durationMillis).toBe(BigInt(day))
     expect(after[2]!.endDateTime!.toISOString()).toBe("2026-07-11T07:00:00.000Z")
     expect(after[2]!.revision).toBe(before[2]!.revision)
-    expect(await segments()).toEqual(authored)
+    expect((await segments()).filter(segment => !segment.isAllDay)).toEqual(authored.filter(segment => !segment.isAllDay))
+    expect((await segments()).filter(segment => segment.isAllDay).map(segment => segment.startsAt!.toISOString())).toEqual(["2026-07-10T07:00:00.000Z", "2026-07-10T07:00:00.000Z"])
     expect(await db.change.count()).toBe(1)
   })
 
@@ -87,13 +92,14 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
       await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "Setting", model, db: tx })
       expect((await tx.event.findUnique({ where: { id: 5001 } }))!.endDateTime!.toISOString()).toBe("2026-07-11T07:00:00.000Z")
       await tx.setting.delete({ where: { id: model.id } })
-      await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "Setting", model, db: tx })
+      await CallMutateEventHooks({ tableNameOrSpecialMutationKey: "Setting", model, oldModel: model, db: tx })
       expect((await tx.event.findUnique({ where: { id: 5001 } }))!.endDateTime!.toISOString()).toBe("2026-07-10T22:00:00.000Z")
     }, transactionOptions)
   })
 
   it("rolls back configuration, prior aggregate writes and audit when recalculation fails", async () => {
     const before = await events()
+    const segmentsBefore = await segments()
     let writes = 0
     await expect(db.$transaction(async tx => {
       const failingDb = new Proxy(tx, { get(target, key) {
@@ -112,6 +118,7 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     expect(writes).toBe(2)
     expect((await db.setting.findFirst())!.value).toBe("Europe/Brussels")
     expect(await events()).toEqual(before)
+    expect(await segments()).toEqual(segmentsBefore)
     expect(await db.change.count()).toBe(0)
   })
 
@@ -125,5 +132,57 @@ describe.skipIf(!url)("band policy writes with real MySQL", () => {
     await db.$transaction(tx => recalculateEventDateBounds(tx), transactionOptions)
     expect((await events())[0]!.endDateTime).toEqual(preview!.endDateTime)
     expect(await segments()).toEqual(authored)
+  })
+
+  it("previews, converts and safely reruns the versioned storage migration", async () => {
+    await db.eventSegment.updateMany({ where: { eventId: { in: eventIds } }, data: { dateTimeVersion: 1 } })
+    await db.eventSegment.updateMany({ where: { eventId: { in: eventIds }, isAllDay: true },
+      data: { startsAt: new Date("2026-03-29T00:00:00Z"), durationMillis: BigInt(day) } })
+    const before = await segments()
+    const preview = await db.$transaction(tx => migrateEventUtcSpans(tx, false), transactionOptions)
+    expect(preview.changes).toHaveLength(4)
+    expect(await segments()).toEqual(before)
+    const applied = await db.$transaction(tx => migrateEventUtcSpans(tx, true), transactionOptions)
+    expect(applied.changes).toEqual(preview.changes)
+    const after = await segments()
+    expect(after.every(segment => segment.dateTimeVersion === 2)).toBe(true)
+    for (const segment of after.filter(segment => segment.isAllDay)) {
+      expect(segment.startsAt!.toISOString()).toBe("2026-03-28T23:00:00.000Z")
+      expect(segment.durationMillis).toBe(BigInt(23 * 3_600_000))
+    }
+    const again = await db.$transaction(tx => migrateEventUtcSpans(tx, true), transactionOptions)
+    expect(again.changes).toEqual([])
+    expect(again.aggregates).toEqual([])
+    expect(await segments()).toEqual(after)
+  })
+
+  it("preserves selected calendar dates while a setting change alters elapsed DST duration", async () => {
+    await db.eventSegment.updateMany({ where: { eventId: { in: eventIds }, isAllDay: true },
+      data: { startsAt: new Date("2026-03-28T23:00:00Z"), durationMillis: BigInt(23 * 3_600_000) } })
+    await changeZone("Asia/Tokyo")
+    for (const segment of (await segments()).filter(segment => segment.isAllDay)) {
+      expect(segment.startsAt!.toISOString()).toBe("2026-03-28T15:00:00.000Z")
+      expect(segment.durationMillis).toBe(BigInt(day))
+      expect(getRangeCalendarDates(getEventSegmentDateTimeRange(segment), "Asia/Tokyo")!.dates)
+        .toEqual({ startDate: "2026-03-29", endDateExclusive: "2026-03-30" })
+    }
+  })
+
+  it("the actual schema migration distinguishes existing rows from new rows", async () => {
+    // This table lives only in the runner's disposable database.
+    await db.$executeRawUnsafe("CREATE TABLE LegacySegment LIKE EventSegment")
+    try {
+      await db.$executeRawUnsafe("ALTER TABLE LegacySegment DROP COLUMN dateTimeVersion")
+      const insert = "INSERT INTO LegacySegment (eventId, name, description, durationMillis) VALUES (5001, 'fixture', '', 86400000)"
+      await db.$executeRawUnsafe(insert)
+      const migration = readFileSync("db/migrations/20260915230000_event_utc_spans/migration.sql", "utf8")
+        .replace(/--[^\n]*/g, "").replace(/EventSegment/g, "LegacySegment")
+      for (const statement of migration.split(";").map(sql => sql.trim()).filter(Boolean)) await db.$executeRawUnsafe(statement)
+      await db.$executeRawUnsafe(insert)
+      const rows = await db.$queryRawUnsafe<{ dateTimeVersion: number }[]>("SELECT dateTimeVersion FROM LegacySegment ORDER BY id")
+      expect(rows.map(row => row.dateTimeVersion)).toEqual([1, 2])
+    } finally {
+      await db.$executeRawUnsafe("DROP TABLE LegacySegment")
+    }
   })
 })

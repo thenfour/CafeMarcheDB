@@ -1,3 +1,4 @@
+import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
 import { Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
 import type { Prisma } from "@prisma/client";
@@ -29,6 +30,7 @@ export interface AttendanceControlEnvironment {
     commentDialogTitle: React.ReactNode;
     commentDialogDescription: React.ReactNode;
     allowUploads: boolean;
+    datePresentation: EventDatePresentation;
 }
 
 export interface AttendanceControlViewProps {
@@ -176,7 +178,7 @@ export const AttendanceControlView = ({ attendance: y, environment, ...props }: 
                 {y.allowInstrumentSelect && <div className="instrument"><InstrumentControl response={y.eventUserResponse} environment={environment} /></div>}
                 <div className="segmentList">{y.uncancelledSegmentUserResponses.map(segment => <NameValuePair
                     key={segment.segment.id} className={y.isSingleSegment ? "bare" : ""} isReadOnly={false}
-                    name={y.isSingleSegment ? null : <>{segment.segment.name} ({getEventSegmentDateTimeRange(segment.segment).toString()})</>}
+                    name={y.isSingleSegment ? null : <>{segment.segment.name} ({formatEventDateRange(getEventSegmentDateTimeRange(segment.segment), environment.datePresentation)})</>}
                     value={<>
                         <AnswerControl segment={segment} environment={environment} forceEditMode onReadonlyClick={() => setUserSelectedEdit(true)} />
                         <div className="helpText">{findAttendance(segment.response.attendanceId)?.description}</div>

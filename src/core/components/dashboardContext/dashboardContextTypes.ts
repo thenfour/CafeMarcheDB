@@ -35,6 +35,15 @@ export abstract class DashboardContextDataBase {
     serverBaseUri: string;
     serverStartupState: ServerStartInfo | null; // null if not available (non-admins)
 
+    localTimeZone: string;
+    userLocale: string = typeof navigator === "undefined" ? "en" : navigator.language;
+
+    eventDatePresentation: {
+        bandTimeZone: string;
+        viewerTimeZone: string;
+        locale: string;
+    }
+
     getAbsoluteUri = (relativePath: string): string => {
         // if relativePath is already absolute, return it as-is.
         if (isAbsoluteUri(relativePath)) {

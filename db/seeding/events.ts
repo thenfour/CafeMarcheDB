@@ -1,3 +1,5 @@
+import { createAllDayRange } from "shared/time";
+import { CalendarDate } from "shared/dateTimePolicy";
 import { loadBandTimeZone } from "src/server/dateTime";
 import { faker } from '@faker-js/faker';
 import { Prisma } from '@prisma/client';
@@ -75,8 +77,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
 
     // create things out of order.
     segmentDateRanges = faker.helpers.shuffle(segmentDateRanges);
-    const bandTimeZone = await loadBandTimeZone(gState.prisma);
-    const eventRange = DateTimeRange.union(segmentDateRanges, bandTimeZone);
+    const eventRange = DateTimeRange.union(segmentDateRanges);
     //console.log(`= ${eventRange.toString()}`);
 
     const visibilityPermissionId = gState.randomVisibilityPermissionId();
@@ -96,7 +97,7 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
             startsAt: eventRange.getSpec().startsAtDateTime,
             durationMillis: eventRange.getSpec().durationMillis,
             isAllDay: eventRange.getSpec().isAllDay,
-            endDateTime: eventRange.getInstantInterval(bandTimeZone)?.end ?? null,
+            endDateTime: eventRange.getBounds()?.end ?? null,
 
             frontpageVisible: faker.datatype.boolean(0.5),
         }
@@ -329,7 +330,7 @@ function randomDateInRange(minDate: Date, maxDate: Date): Date {
     return new Date(minTime + Math.random() * (maxTime - minTime));
 }
 
-function generateRandomSegments(config: EventSeedingConfig): DateTimeRange[] {
+function generateRandomSegments(config: EventSeedingConfig, bandTimeZone: string): DateTimeRange[] {
     const segments: DateTimeRange[] = [];
     const segmentCount = faker.number.int({ min: 0, max: 4 });
 
@@ -357,11 +358,16 @@ function generateRandomSegments(config: EventSeedingConfig): DateTimeRange[] {
             // Update lastEndDate for the next segment
             lastEndDate = new Date(startsAt.getTime() + durationMillis);
 
-            s = DateTimeRange.fromLocalDate({
+            s = new DateTimeRange({
                 durationMillis,
                 isAllDay,
                 startsAtDateTime: startsAt,
             });
+            if (isAllDay) {
+                const date = CalendarDate.fromInstant({ value: startsAt, timeZone: bandTimeZone });
+                s = createAllDayRange({ startDate: date.date, endDateExclusive: date.addDays(durationMillis / 86_400_000).date }, date.timeZone);
+            }
+            lastEndDate = s.getEndDateTime();
 
         }
         //console.log(`= ${s.toString()}`);
@@ -373,7 +379,7 @@ function generateRandomSegments(config: EventSeedingConfig): DateTimeRange[] {
 }
 
 
-function GenerateEventsAndSegments(gState: SeedingState, config: EventSeedingConfig): Event[] {
+function GenerateEventsAndSegments(gState: SeedingState, config: EventSeedingConfig, bandTimeZone: string): Event[] {
     const events: Event[] = [];
     const rehearsalType = gState.gAllEventTypes.find(i => i.significance === "Rehearsal")!;
 
@@ -384,7 +390,7 @@ function GenerateEventsAndSegments(gState: SeedingState, config: EventSeedingCon
     // Generate regular events
     for (let i = 0; i < totalEvents; i++) {
         events.push({
-            segments: generateRandomSegments(config),
+            segments: generateRandomSegments(config, bandTimeZone),
             name: generateEventName(),
             typeId: faker.helpers.arrayElement([null, ...(gState.gAllEventTypes.map(i => i.id))]),
         });
@@ -417,7 +423,7 @@ function GenerateEventsAndSegments(gState: SeedingState, config: EventSeedingCon
 
 export const SeedEvents_VeryRandom = async (gState: SeedingState) => {
 
-    let eventDates = GenerateEventsAndSegments(gState, gState.config.events);
+    let eventDates = GenerateEventsAndSegments(gState, gState.config.events, await loadBandTimeZone(gState.prisma));
     console.log(`creating ${eventDates.length} events...`);
 
     eventDates = faker.helpers.shuffle(eventDates);

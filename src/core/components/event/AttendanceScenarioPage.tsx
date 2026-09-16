@@ -163,7 +163,10 @@ export const AttendanceScenarioPage = () => {
                             <Typography variant="overline" component="h3">{mode === "list" ? "List card" : "Event detail"}</Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{describeAttendanceVisibility(attendance)}</Typography>
                             <AttendanceControlView attendance={attendance} event={event} minimalWhenNotAlert={mode === "list"} environment={{
-                                attendances: scenarioAttendances, instruments: scenarioInstruments, allowUploads: false,
+                                attendances: scenarioAttendances,
+                                instruments: scenarioInstruments,
+                                allowUploads: false,
+                                datePresentation: { bandTimeZone: "UTC", viewerTimeZone: "UTC", locale: "en" },
                                 commentDialogTitle: "Attendance comment", commentDialogDescription: <Typography paragraph>Leave a comment for this event. This preview saves locally.</Typography>,
                                 onSave: async change => {
                                     setScenario(previous => ({ ...previous, users: previous.users.map((user, i) => i === index ? applyAttendanceScenarioChange(user, change) : user) }));

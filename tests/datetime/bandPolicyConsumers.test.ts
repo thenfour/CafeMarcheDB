@@ -16,17 +16,17 @@ describe.each(["UTC", "Europe/Brussels", "America/Los_Angeles", "Asia/Tokyo", "A
     expect(result.foldInterval).toEqual({ start: "2026-10-25T01:30:12.345Z", end: "2026-10-25T01:50:13.134Z" })
   })
   it("distinguishes viewer calendar labels from globally ongoing", () => {
-    expect(result.ongoingLabel.bucket).toBe("HappeningNow")
+    expect(result.ongoingLabel.bucket).toBe(["UTC", "America/Los_Angeles"].includes(zone) ? "Tomorrow" : "Today")
     expect(result.ongoingLabel.label).toBe(["UTC", "America/Los_Angeles"].includes(zone) ? "Tomorrow" : "Today")
     expect(result.endedLabel.label).toBe(["UTC", "America/Los_Angeles"].includes(zone) ? "Today" : "Yesterday")
     expect(result.endedLabel.bucket).not.toBe("HappeningNow")
   })
-  it("projects mixed aggregate dates in the configured band zone", () => {
-    expect(result.mixed).toEqual({ startsAtDateTime: "2026-07-10T00:00:00.000Z", durationMillis: 2 * 86_400_000, isAllDay: true })
-    expect(result.mixedWestern.durationMillis).toBe(86_400_000)
+  it("keeps mixed aggregate bounds independent of presentation", () => {
+    expect(result.mixed).toEqual({ startsAtDateTime: "2026-07-09T22:00:00.000Z", durationMillis: 89_413_134, isAllDay: false })
+    expect(result.mixedWestern).toEqual(result.mixed)
   })
-  it("persists band-derived mixed bounds through the real aggregate writer", () => {
-    expect(result.persisted).toMatchObject({ startsAt: "2026-07-10T00:00:00.000Z", durationMillis: 2 * 86_400_000, isAllDay: true, endDateTime: "2026-07-11T22:00:00.000Z" })
+  it("persists exact mixed bounds through the real aggregate writer", () => {
+    expect(result.persisted).toMatchObject({ startsAt: "2026-07-09T22:00:00.000Z", durationMillis: 89_413_134, isAllDay: false, endDateTime: "2026-07-10T22:50:13.134Z" })
   })
   it("changes a start date while retaining band clock time and precise duration", () => {
     expect(result.changedDate.startsAtDateTime).toBe("2026-07-11T22:30:12.345Z")
@@ -38,7 +38,7 @@ describe.each(["UTC", "Europe/Brussels", "America/Los_Angeles", "Asia/Tokyo", "A
     expect(result.foldAuthoring.startsAtDateTime).toBe("2026-10-25T00:30:00.000Z")
   })
   it("preserves the selected band calendar date across all-day toggles", () => {
-    expect(result.toAllDay.startsAtDateTime).toBe("2026-07-11T00:00:00.000Z")
+    expect(result.toAllDay.startsAtDateTime).toBe("2026-07-10T22:00:00.000Z")
     expect(result.toTimed.startsAtDateTime).toBe("2026-07-11T21:59:12.000Z")
   })
 })

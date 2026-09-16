@@ -123,7 +123,12 @@ export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
 
 
 
-export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) => {
+export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>
+    //& { dateTimeVersion?: number }
+) => {
+    // if (segment.dateTimeVersion !== undefined && segment.dateTimeVersion !== 2) {
+    //     throw new Error("Event dates require migration. Run scripts/migrate-event-utc-spans.cjs before serving this database.");
+    // }
     return new DateTimeRange({
         startsAtDateTime: segment.startsAt,
         durationMillis: Number(segment.durationMillis),
@@ -134,32 +139,30 @@ export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayl
 export const getEventDateTimeRangeFromSegments = (
     segments: { startsAt: Date | null; durationMillis: bigint; isAllDay: boolean; statusId: number | null }[],
     cancelledStatusIds: number[],
-    timeZone?: string,
 ) => {
     const ranges = segments
         .filter(segment => !segment.statusId || !cancelledStatusIds.includes(segment.statusId))
         .map(getEventSegmentDateTimeRange);
-    return DateTimeRange.union(ranges, timeZone);
+    return DateTimeRange.union(ranges);
 };
 
 
-// Persisted aggregate dates retain their storage representation; the cached end
-// is always an absolute lifecycle boundary in the configured band zone.
+// Aggregates enclose the exact UTC bounds of every uncancelled segment.
 export function getEventDateBoundsFromSegments(
-    segments: Parameters<typeof getEventDateTimeRangeFromSegments>[0], cancelledStatusIds: number[], timeZone: string,
+    segments: Parameters<typeof getEventDateTimeRangeFromSegments>[0], cancelledStatusIds: number[],
 ) {
-    const range = getEventDateTimeRangeFromSegments(segments, cancelledStatusIds, timeZone);
+    const range = getEventDateTimeRangeFromSegments(segments, cancelledStatusIds);
     const spec = range.getSpec();
     return {
         startsAt: spec.startsAtDateTime, durationMillis: spec.durationMillis, isAllDay: spec.isAllDay,
-        endDateTime: range.getInstantInterval(timeZone)?.end ?? null
+        endDateTime: range.getBounds()?.end ?? null
     };
 }
 
-export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>, timeZone: string) => {
-    const r = getEventSegmentDateTimeRange(segment);
-    return r.hitTestDateTime(null, timeZone);
-}
+// export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>, now: Date) => {
+//     const r = getEventSegmentDateTimeRange(segment);
+//     return r.hitTestDateTime(now);
+// }
 
 
 export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
@@ -901,6 +904,15 @@ export const xEventSegment = new db3.xTable({
         // Prisma generates this stable identifier; expose it without allowing edits.
         new GhostField({
             memberName: "uid",
+            authMap: {
+                ...xEventAuthMap_R_EOwn_EManagers,
+                PreInsert: Permission.never_grant,
+                PreMutate: Permission.never_grant,
+                PreMutateAsOwner: Permission.never_grant,
+            },
+        }),
+        new GhostField({
+            memberName: "dateTimeVersion",
             authMap: {
                 ...xEventAuthMap_R_EOwn_EManagers,
                 PreInsert: Permission.never_grant,

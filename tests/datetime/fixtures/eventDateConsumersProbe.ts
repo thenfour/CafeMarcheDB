@@ -1,3 +1,5 @@
+import { createAllDayRange } from "shared/time";
+import { addCalendarDays } from "shared/dateTimePolicy";
 import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { DateTimeRange } from "../../../shared/time"
@@ -6,13 +8,13 @@ import { EventShortDate } from "../../../src/core/components/event/EventShortDat
 // Render the production component with an explicit reference time and locale.
 // The child process supplies the viewer timezone; no modules or clocks are mocked.
 function renderEvent(startsAt: string | null, durationMillis: number, isAllDay: boolean, refTime: string) {
-  const dateRange = new DateTimeRange({
+  const dateRange = isAllDay && startsAt ? createAllDayRange({ startDate: startsAt.slice(0, 10), endDateExclusive: addCalendarDays(startsAt.slice(0, 10), durationMillis / 86400000) }, "Europe/Brussels") : new DateTimeRange({
     startsAtDateTime: startsAt === null ? null : new Date(startsAt),
     durationMillis,
     isAllDay,
   })
   return renderToStaticMarkup(React.createElement(EventShortDate, {
-    dateRange, now: new Date(refTime), locale: "en-US", timeZone: "Europe/Brussels",
+    dateRange, now: new Date(refTime), locale: "en-US", bandTimeZone: "Europe/Brussels",
   }))
 }
 

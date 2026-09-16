@@ -1,4 +1,5 @@
-import dayjs from "dayjs"
+import { CalendarDate } from "shared/dateTimePolicy";
+import { getRangeCalendarDates } from "shared/dateTimePresentation";
 import { CalcRelativeTimingFromNow, DateTimeRange } from "../../../shared/time"
 
 const cases = [
@@ -35,7 +36,7 @@ function collect() {
     for (let i = 0; i < 10; i++) copy = new DateTimeRange(copy.getSpec())
     const serialized = JSON.parse(copy.toSerializableString())
     const restored = new DateTimeRange({ ...serialized, startsAtDateTime: new Date(serialized.startsAtDateTime) })
-    const authoring = DateTimeRange.fromLocalDate(range.getSpec())
+    const authoring = new DateTimeRange(range.getSpec())
     const boundaries = [input.valueOf() - 1, input.valueOf(), expectedEnd.valueOf() - 1, expectedEnd.valueOf()]
       .map(time => range.hitTestDateTime(new Date(time)))
     input.setTime(0)
@@ -61,8 +62,7 @@ function collect() {
     midnightPoint: {
       start: iso(point.getStartDateTime()),
       end: iso(point.getEndDateTime()),
-      last: iso(point.getLastDateTime()),
-      days: [9, 10, 11].map(day => point.hitTestDay(dayjs(new Date(2026, 6, day))).inRange),
+      days: [9, 10, 11].map(day => getRangeCalendarDates(point, Intl.DateTimeFormat().resolvedOptions().timeZone)!.hitTest(new CalendarDate(`2026-07-${String(day).padStart(2, "0")}`, Intl.DateTimeFormat().resolvedOptions().timeZone)).inRange),
       timing: [-1, 0, 1].map(delta => point.hitTestDateTime(new Date(midnight.valueOf() + delta))),
     },
     pointLabels,
