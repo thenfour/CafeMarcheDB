@@ -25,10 +25,10 @@ describe.each(["Europe/Brussels", "America/Los_Angeles", "Asia/Tokyo", "UTC"])(
       expect(toggle.actualClock).toEqual([23, 45])
     })
 
-    it("preserves the selected day when turning all-day off at 23:50", () => {
+    it("preserves the selected day and snaps when turning all-day off at 23:50", () => {
       const toggle = result.allDayToggles.find(item => item.currentMinute === 50)!
       expect(toggle.actualDay).toEqual(toggle.expectedDay)
-      expect(toggle.actualClock).toEqual([23, 50])
+      expect(toggle.actualClock).toEqual([23, 45])
     })
 
     it("presents July's 03:00 correctly when editing on the spring clock-change day", () => {

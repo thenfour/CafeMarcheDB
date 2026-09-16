@@ -39,7 +39,7 @@ function mount(start: Date, end: Date, timeZone = Intl.DateTimeFormat().resolved
   return { onChange, startSelect: container.querySelector<HTMLSelectElement>("select.startTime")!, endSelect: container.querySelector<HTMLSelectElement>("select.endTime")! }
 }
 
-function valueToReadibleStr(value: string | number) {
+function valueToReadableString(value: string | number) {
   if (typeof value === "number") {
     return new Date(value).toISOString()
   }
@@ -55,32 +55,26 @@ describe("mounted clock controls", () => {
       .filter(option => option.textContent === "02:30")
     expect(repeatedClockOptions).toHaveLength(1)
 
-    // following test fails:
-    // - Expected   "2026-10-25T01:30:00.000Z"
-    // + Received   "2026-10-25T00:30:00.000Z"
-    expect(valueToReadibleStr(repeatedClockOptions[0]!.value))
-      .toBe(valueToReadibleStr(start.valueOf()))
+    expect(valueToReadableString(repeatedClockOptions[0]!.value))
+      .toBe(valueToReadableString(start.valueOf()))
 
     expect(controls.startSelect.value).toBe(String(start.valueOf()))
   })
 
-  it("displays existing start & end times by rounding to nearest 15-minute boundary", () => {
+  it("displays precise existing start and end times on nearest 15-minute boundaries", () => {
     const start = new Date(2026, 6, 10, 7, 47, 12, 345)
     const end = new Date(start.valueOf() + 1_200_789)
     const controls = mount(start, end)
     expect(controls.onChange).not.toHaveBeenCalled()
 
-    // following test fails:
-    // - Expected   "2026-07-10T05:45:00.000Z"
-    // + Received   "2026-07-10T06:00:00.000Z"    
-    expect(valueToReadibleStr(controls.startSelect.value))
-      .toBe(valueToReadibleStr(new Date(2026, 6, 10, 7, 45).valueOf()))
+    expect(valueToReadableString(controls.startSelect.value))
+      .toBe(valueToReadableString(new Date(2026, 6, 10, 7, 45).valueOf()))
 
     expect(controls.startSelect.selectedOptions[0]!.textContent)
       .toBe("07:45")
-    expect(valueToReadibleStr(controls.endSelect.value))
-      .toBe(valueToReadibleStr(end.valueOf()))
-    expect(controls.endSelect.selectedOptions[0]!.textContent).toContain("20m 789ms")
+    expect(valueToReadableString(controls.endSelect.value))
+      .toBe(valueToReadableString(new Date(2026, 6, 10, 8).valueOf()))
+    expect(controls.endSelect.selectedOptions[0]!.textContent).toContain("15m")
   })
 
   it("saves the selected end instant as elapsed duration, including the host DST transition", () => {
@@ -97,7 +91,7 @@ describe("mounted clock controls", () => {
     expect(changed.getStartDateTime()).toEqual(start)
   })
 
-  it("saves the selected start instant and preserves the existing precise duration", () => {
+  it("saves the selected start instant and preserves the snapped displayed duration", () => {
     const start = new Date(2026, 6, 10, 7, 47, 12, 345)
     const selected = new Date(2026, 6, 10, 8, 15)
     const controls = mount(start, new Date(start.valueOf() + 1_200_789))
@@ -107,6 +101,7 @@ describe("mounted clock controls", () => {
     })
     const changed: DateTimeRange = controls.onChange.mock.calls[0]![0]
     expect(changed.getStartDateTime()).toEqual(selected)
-    expect(changed.getSpec().durationMillis).toBe(1_200_789)
+    expect(changed.getSpec().durationMillis).toBe(15 * 60_000)
+    expect(changed.getEndDateTime()).toEqual(new Date(2026, 6, 10, 8, 30))
   })
 })

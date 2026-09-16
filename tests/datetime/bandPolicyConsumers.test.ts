@@ -37,8 +37,8 @@ describe.each(["UTC", "Europe/Brussels", "America/Los_Angeles", "Asia/Tokyo", "A
     expect(result.gap.startsAtDateTime).toBe("2026-03-29T01:30:00.000Z")
     expect(result.foldAuthoring.startsAtDateTime).toBe("2026-10-25T00:30:00.000Z")
   })
-  it("preserves the selected band calendar date across all-day toggles", () => {
+  it("preserves the selected band calendar date and snaps timed authoring", () => {
     expect(result.toAllDay.startsAtDateTime).toBe("2026-07-10T22:00:00.000Z")
-    expect(result.toTimed.startsAtDateTime).toBe("2026-07-11T21:59:12.000Z")
+    expect(result.toTimed.startsAtDateTime).toBe("2026-07-11T21:45:00.000Z")
   })
 })

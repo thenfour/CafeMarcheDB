@@ -17,6 +17,18 @@ import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 
 const roundedNow = () => roundToNearest15Minutes(new Date());
 
+const snapTimedRangeTo15Minutes = (range: DateTimeRange) => {
+    if (range.isAllDay() || range.isTBD()) return range;
+
+    const start = roundToNearest15Minutes(range.getStartDateTime()!);
+    const end = roundToNearest15Minutes(range.getEndDateTime()!);
+    return new DateTimeRange({
+        ...range.getSpec(),
+        startsAtDateTime: start,
+        durationMillis: end.valueOf() - start.valueOf(),
+    });
+};
+
 interface CustomDayProps {
     otherDay: Dayjs | null;
     range: CalendarRange;
@@ -313,18 +325,19 @@ export interface DateTimeRangeControlProps {
 //
 export const DateTimeRangeControl = ({ value, timeZone, ...props }: DateTimeRangeControlProps) => {
     const [fallbackRange, setFallbackRange] = React.useState<DateTimeRange>(() => {
-        if (!value.isTBD()) return value;
-        if (!value.isAllDay()) return new DateTimeRange({
-            ...value.getSpec(),
-            startsAtDateTime: roundedNow(),
-        });
+        if (!value.isTBD()) return snapTimedRangeTo15Minutes(value);
+        if (!value.isAllDay()) return snapTimedRangeTo15Minutes(new DateTimeRange({
+            ...value.getSpec(), startsAtDateTime: roundedNow(),
+        }));
         const today = CalendarDate.fromInstant({
             value: roundedNow(),
             timeZone,
         });
         return createAllDayRange({ startDate: today.date, endDateExclusive: today.addDays(1).date }, timeZone);
     });
-    const coalesced = value.isTBD() ? fallbackRange : value;
+    // Precise stored values remain valid, but this editor presents and emits only
+    // quarter-hour boundaries. Merely mounting it does not rewrite persisted data.
+    const coalesced = snapTimedRangeTo15Minutes(value.isTBD() ? fallbackRange : value);
     const calendarRange = getRangeCalendarDates(coalesced, timeZone)!;
     const startDay = calendarRange.start;
     const lastDay = calendarRange.last;
@@ -332,7 +345,7 @@ export const DateTimeRangeControl = ({ value, timeZone, ...props }: DateTimeRang
     const endMillis = coalesced.getEndDateTime()!.valueOf();
     const showTimeOptions = !value.isAllDay() && !value.isTBD();
     const timeOptions = React.useMemo(() => !showTimeOptions ? null : getDateTimeRangeTimeOptions(
-        roundToNearest15Minutes(new Date(startMillis)),
+        new Date(startMillis),
         new Date(endMillis),
         timeZone,
         // Repeated clocks are rare, and duplicate-looking choices plus offset labels
@@ -355,11 +368,11 @@ export const DateTimeRangeControl = ({ value, timeZone, ...props }: DateTimeRang
     };
 
     const handleChangeStartTime2 = (newTime: DateTimeOption) => {
-        props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: newTime.instant }));
+        props.onChange(new DateTimeRange({ ...coalesced.getSpec(), startsAtDateTime: newTime.instant }));
     };
 
     const handleChangeEndTime2 = (newTime: DateTimeOption) => {
-        props.onChange(new DateTimeRange({ ...value.getSpec(), durationMillis: newTime.instant.valueOf() - startMillis }));
+        props.onChange(new DateTimeRange({ ...coalesced.getSpec(), durationMillis: newTime.instant.valueOf() - startMillis }));
     };
 
     const handleAllDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -155,10 +155,16 @@ export function changeDateTimeRangeAllDayWithRounding(range: DateTimeRange, next
     // changing to non-all-day; use same calendar day, at current time, for 1 hour.
     const date = getRangeCalendarDates(range, timeZone)?.start.date ?? getBandDateTimeFields(now, timeZone).date;
     const startsAt = bandDateTimeToInstant({ date, time: getBandDateTimeFields(now, timeZone).time }, timeZone);
+    let roundedStartsAt = startsAt ? roundToNearest15Minutes(startsAt) : null;
+    if (roundedStartsAt && getBandDateTimeFields(roundedStartsAt, timeZone).date !== date) {
+        // The nearest boundary after 23:52:30 is tomorrow's midnight. Keep the
+        // selected all-day calendar date by using its final quarter-hour instead.
+        roundedStartsAt = bandDateTimeToInstant({ date, time: "23:45" }, timeZone);
+    }
     return new DateTimeRange({
         isAllDay: false,
         durationMillis: gMillisecondsPerHour,
-        startsAtDateTime: startsAt ? roundToNearest15Minutes(startsAt) : null,
+        startsAtDateTime: roundedStartsAt,
     });
 }
 
@@ -214,9 +220,8 @@ export function floorToMinuteIntervalOfDay(minuteOfDay: number, intervalInMinute
 }
 
 export function roundToNearest15Minutes(date: Date) {
-    const roundedMinutes = Math.ceil(date.getMinutes() / 15) * 15;
-    const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes);
-    return roundedDate;
+    const intervalMillis = 15 * gMillisecondsPerMinute;
+    return new Date(Math.round(date.valueOf() / intervalMillis) * intervalMillis);
 }
 
 

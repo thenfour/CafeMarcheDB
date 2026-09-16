@@ -1744,19 +1744,23 @@ in particular the date range picker is wide.*/
 /* --------------------------------------------------- */
 .eventAttendanceControl {
     max-width: 650px;
-    background-color: #eee;
-    padding: 0 6px;
-    border-radius: 3px;
-    border: 2px solid #ddd;
-    border-left: 8px solid #ddd;
     margin: 4px;
+    background-color: #eee;
+    border-radius: 3px;
+    padding: 10px 13px;
+
+    border: 0;
+    /* border: 2px solid #ddd;
+    border-left: 8px solid #ddd; */
+
+    /* padding: 0 6px; */
 }
 
 .eventAttendanceControl.alert {
     background-color: #fee;
     /* padding: 4px; */
-    border: 2px solid #f88;
-    border-left: 8px solid #f88;
+    /* border: 2px solid #f88;
+    border-left: 8px solid #f88; */
 }
 
 .eventAttendanceControl .eventName {
@@ -2410,7 +2414,7 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
 }
 
 .ownAttendanceComment .clickToAddComment {
-    color: #ccc;
+    color: #0007;
     font-style: italic;
 }
 

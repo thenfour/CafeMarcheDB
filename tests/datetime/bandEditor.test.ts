@@ -41,10 +41,10 @@ function mount(initial: DateTimeRange) {
 const timed = () => new DateTimeRange({ startsAtDateTime: new Date("2026-07-10T15:30:12.345Z"), durationMillis: 1_200_789, isAllDay: false })
 
 describe("band event editor", () => {
-  it("renders the band date, clock and zone without modifying the stored instant", () => {
+  it("renders the band date and snapped clock without modifying the stored instant", () => {
     const changed = mount(timed())
     expect(container.querySelector(".startDate")!.textContent).toContain("11")
-    expect(container.querySelector<HTMLSelectElement>(".startTime")!.selectedOptions[0]!.textContent).toBe("00:30:12.345")
+    expect(container.querySelector<HTMLSelectElement>(".startTime")!.selectedOptions[0]!.textContent).toBe("00:30")
     expect(container.textContent).toContain("Time zone: Asia/Tokyo")
     expect(changed).not.toHaveBeenCalled()
   })
@@ -52,7 +52,7 @@ describe("band event editor", () => {
     const changed = mount(timed())
     const select = container.querySelector<HTMLSelectElement>(".startTime")!
     act(() => { select.value = String(Date.parse("2026-07-10T15:45:00Z")); select.dispatchEvent(new Event("change", { bubbles: true })) })
-    expect(changed.mock.calls[0]![0].getSpec()).toMatchObject({ startsAtDateTime: new Date("2026-07-10T15:45:00Z"), durationMillis: 1_200_789 })
+    expect(changed.mock.calls[0]![0].getSpec()).toMatchObject({ startsAtDateTime: new Date("2026-07-10T15:45:00Z"), durationMillis: 15 * 60_000 })
   })
   it("preserves the band date through all-day and TBD toggles", () => {
     const changed = mount(timed())
@@ -69,12 +69,12 @@ describe("band event editor", () => {
     expect(range.getDurationMillis()).toBe(86_400_000)
     expect(range.getStartDateTime()!.getUTCHours()).toBe(15) // Tokyo midnight
   })
-  it("changes the calendar day while retaining the precise band clock", () => {
+  it("changes the calendar day while retaining the snapped band clock and duration", () => {
     const changed = mount(timed())
     act(() => Simulate.click(container.querySelector(".startDate")!))
     const day = [...document.querySelectorAll<HTMLButtonElement>(".MuiPickersDay-root")].find(button => button.textContent === "12")!
     expect(day).toBeDefined()
     act(() => Simulate.click(day))
-    expect(changed.mock.calls[0]![0].getSpec()).toMatchObject({ startsAtDateTime: new Date("2026-07-11T15:30:12.345Z"), durationMillis: 1_200_789 })
+    expect(changed.mock.calls[0]![0].getSpec()).toMatchObject({ startsAtDateTime: new Date("2026-07-11T15:30:00Z"), durationMillis: 15 * 60_000 })
   })
 })

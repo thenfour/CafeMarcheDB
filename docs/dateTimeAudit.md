@@ -109,9 +109,10 @@ band timezone to shared event authoring remains part of POL-01.
   copies, JSON restoration, local-date adapter calls, timed self-unions, and TBD
   union copies preserve both. Hydration never reconstructs local clock fields,
   so it preserves either occurrence of a repeated DST hour.
-- The all-day toggle's selected 23:50 remains 23:50 on the selected day. The
-  control's quarter-hour choices and the existing explicit seeding rounder remain
-  authoring operations; the constructor no longer applies them implicitly.
+- The range control presents timed starts and ends on nearest quarter-hour
+  boundaries and emits that snapped presentation range after an edit. Mounting
+  the control does not rewrite a precise stored value. The constructor remains
+  lossless and does not apply this authoring policy implicitly.
 - Zero-duration values have no ongoing interval. Their start timestamp acts as
   the calendar display anchor, preventing a midnight point from highlighting the
   preceding date. `CalcRelativeTimingFromNow` now calls a shared calendar-label
@@ -183,10 +184,11 @@ events were rewritten and no existing aggregate caches were rebuilt.
   roll to the following calendar date if no remaining occurrence follows the
   start. Dates are shown beside overnight/multi-day choices. A later repeated
   occurrence can remain on the same date even if its clock appears earlier.
-- Exact existing starts and ends, including off-grid minutes, seconds,
-  milliseconds, zero duration, and the second DST occurrence, remain selectable
-  and display accurately. Range edits use option instants directly. Choice
-  generation is memoized and omitted for all-day/TBD controls.
+- The low-level option generator can retain exact off-grid values. The range
+  control intentionally snaps both endpoints for presentation, while retaining
+  an already aligned second DST occurrence. Range edits use the snapped option
+  instants directly. Choice generation is memoized and omitted for all-day/TBD
+  controls.
 - All eight remaining authoring expected failures are now ordinary passing
   checks. Thirty-one additional option tests include Brussels, Los Angeles,
   Sydney, and Lord Howe's half-hour transitions. Three jsdom tests mount the
@@ -394,13 +396,14 @@ occurrence (`00:30Z`), even though the persisted instant was unambiguous. The
 Pacific autumn transition reproduced the same loss.
 
 The [all-day toggle](../src/core/components/DateTime/DateTimeRangeControl.tsx)
-combines the selected date with the current clock. Previously, at 23:50, turning
-all-day off changed 10 July to 11 July through the constructor's upward rounding;
-23:45 was the passing control. Both now preserve their selected date and clock.
+combines the selected date with the current clock, then applies the control's
+quarter-hour authoring policy. At 23:50 it selects 23:45; at 23:59 it also uses
+23:45 rather than moving the selected calendar date to tomorrow.
 
 The constructor now preserves timed instants and durations exactly, including
 zero durations and milliseconds. Copies preserve the specified DST occurrence.
-Any snapping is an explicit authoring operation; hydration does not perform it.
+Snapping is an explicit range-control authoring/presentation operation;
+hydration does not perform it and merely mounting the editor emits no change.
 
 **DT-03 - Resolved 2026-09-15: aggregate ranges could gain days or lose segments.**
 
