@@ -328,6 +328,9 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
         new Date(startMillis),
         new Date(endMillis),
         timeZone,
+        // Repeated clocks are rare, and duplicate-looking choices plus offset labels
+        // make these fixed-width selects needlessly wide and confusing.
+        "takeFirst"
     ), [showTimeOptions, startMillis, endMillis, timeZone]);
 
     const handleStartDateChange = (newValue: CalendarDate) => {

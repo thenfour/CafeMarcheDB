@@ -2,7 +2,7 @@ import { EventDatePresentation, eventPresentationTimeZone, getRangeCalendarDates
 import dayjs from "dayjs";
 import utc from 'dayjs/plugin/utc';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { CalendarDate, addCalendarDays, CalendarDateRange, InstantInterval, getAllDayInterval, bandDateTimeToInstant, getBandDateTimeFields, getClockTimeOccurrences } from './dateTimePolicy';
+import { CalendarDate, addCalendarDays, CalendarDateRange, InstantInterval, getAllDayInterval, bandDateTimeToInstant, getBandDateTimeFields, getClockTimeOccurrences, type RepeatPolicy } from './dateTimePolicy';
 
 
 dayjs.extend(weekOfYear);
@@ -335,7 +335,7 @@ export interface DateTimeOption {
 
 // Build choices for the event date, using the explicit authoring timezone.
 // Each option owns the instant that will be saved, including a repeated hour for weird DST transitions
-export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: string) {
+export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: string, repeatPolicy: RepeatPolicy) {
     const clocks = new TimeOptionsGenerator(15).getOptions();
     const startFields = getBandDateTimeFields(start, timeZone);
     const endFields = getBandDateTimeFields(end, timeZone);
@@ -344,14 +344,8 @@ export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: st
     const makeOption = (instant: Date, repeated: boolean, includeDuration: boolean): DateTimeOption => {
         const fields = getBandDateTimeFields(instant, timeZone);
         const clock = fields.time.replace(/:00\.000$/, "").replace(/\.000$/, "");
-
-        // offset is interesting informationally, to disambiguate repeated hours, but visually confusing,
-        // and takes too much space for example in the datetime range dropdown,
-        // which is already quite wide, and must be fixed-width (max width should stay small)
-        //const offset = repeated ? ` (UTC${fields.offset})` : "";
-        const offset = "";//repeated ? "*" : "";
-        // this is also visually verbose; these timings are ordered and always within a day so it should be clear
-        // without specifying this date. for the sake of UI space, omit.
+        const offset = repeated ? ` (UTC${fields.offset})` : "";
+        // this is too wide.
         //const date = fields.date === startFields.date ? "" : ` on ${fields.date}`;
         const date = "";
         const elapsed = instant.valueOf() - start.valueOf();
@@ -366,17 +360,17 @@ export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: st
     const startOptions: DateTimeOption[] = [];
     const endOptions: DateTimeOption[] = [];
     for (const clock of clocks) {
-        const starts = getClockTimeOccurrences({ date: startFields.date, time: clock.clockTime }, timeZone);
+        const starts = getClockTimeOccurrences({ date: startFields.date, time: clock.clockTime }, timeZone, repeatPolicy);
         startOptions.push(...starts.map(instant => makeOption(instant, starts.length > 1, false)));
 
         // Preserve the current end date. On the start date, an earlier clock
         // rolls to tomorrow only when no remaining occurrence follows the start.
         let ends = endFields.date === startFields.date ? starts
-            : getClockTimeOccurrences({ date: endFields.date, time: clock.clockTime }, timeZone);
+            : getClockTimeOccurrences({ date: endFields.date, time: clock.clockTime }, timeZone, repeatPolicy);
         const clockHasPassed = ends.length ? ends.every(instant => instant < start)
             : clock.clockTime < startFields.time;
         if (clockHasPassed && endFields.date === startFields.date) {
-            ends = getClockTimeOccurrences({ date: addCalendarDays(endFields.date, 1), time: clock.clockTime }, timeZone);
+            ends = getClockTimeOccurrences({ date: addCalendarDays(endFields.date, 1), time: clock.clockTime }, timeZone, repeatPolicy);
         }
         endOptions.push(...ends.filter(instant => instant >= start)
             .map(instant => makeOption(instant, ends.length > 1, true)));
@@ -386,7 +380,17 @@ export function getDateTimeRangeTimeOptions(start: Date, end: Date, timeZone: st
         let option = options.find(value => value.instant.valueOf() === selected.valueOf());
         if (!option) {
             const fields = getBandDateTimeFields(selected, timeZone);
-            option = makeOption(new Date(selected), getClockTimeOccurrences(fields, timeZone).length > 1, includeDuration);
+            const occurrences = getClockTimeOccurrences(fields, timeZone, repeatPolicy);
+
+            // A stored value may be the hidden second occurrence. Keep that exact
+            // instant selected without showing two indistinguishable clock choices.
+            if (repeatPolicy === "takeFirst" && occurrences.length === 1) {
+                const representedIndex = options.findIndex(value =>
+                    value.instant.valueOf() === occurrences[0]!.valueOf());
+                if (representedIndex !== -1) options.splice(representedIndex, 1);
+            }
+
+            option = makeOption(new Date(selected), occurrences.length > 1, includeDuration);
             options.push(option);
         }
         options.sort((a, b) => a.instant.valueOf() - b.instant.valueOf());

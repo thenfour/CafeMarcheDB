@@ -67,7 +67,7 @@ function selectEnd(caseName: "ordinary" | "spring" | "autumn", eventDay: number[
   return withCurrentDate(localDate(ordinaryDay, 12), () => {
     const start = localDate(eventDay, 1, 30)
     const expectedEnd = localDate(eventDay, 3, 30)
-    const options = getDateTimeRangeTimeOptions(start, expectedEnd, timeZone)
+    const options = getDateTimeRangeTimeOptions(start, expectedEnd, timeZone, "showAll")
     const selectedEnd = options.endOptions.find(option => option.instant.valueOf() === expectedEnd.valueOf())!
     // Exercise the same resolved choices and elapsed subtraction as the control.
     const range = new DateTimeRange({

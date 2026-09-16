@@ -152,19 +152,22 @@ export function bandDateTimeToInstant(fields: BandDateTimeFields, bandTimeZone: 
     return new Date(zoned.epochMilliseconds);
 }
 
+export type RepeatPolicy = "showAll" | "takeFirst";
+
 // A clock-choice list can offer both repeated occurrences explicitly and omit
 // skipped clocks. Free-form authoring still uses compatible disambiguation above.
-export function getClockTimeOccurrences(fields: BandDateTimeFields, timeZone: string): Date[] {
+export function getClockTimeOccurrences(fields: BandDateTimeFields, timeZone: string, repeatPolicy: RepeatPolicy): Date[] {
     const dateTime = calendarDate(fields.date).toPlainDateTime(clockTime(fields.time));
     const zone = BandTimeZoneSchema.parse(timeZone);
     const candidates = [
         dateTime.toZonedDateTime(zone, { disambiguation: "earlier" }),
         dateTime.toZonedDateTime(zone, { disambiguation: "later" }),
     ];
-    return candidates
+    const occurrences = candidates
         .filter(candidate => candidate.toPlainDateTime().equals(dateTime))
         .filter((candidate, index, values) => index === 0 || candidate.epochMilliseconds !== values[0]!.epochMilliseconds)
         .map(candidate => new Date(candidate.epochMilliseconds));
+    return repeatPolicy === "takeFirst" ? occurrences.slice(0, 1) : occurrences;
 }
 
 export function addCalendarDays(date: string, days: number): string {

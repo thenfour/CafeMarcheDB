@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { getClockTimeOccurrences, getBandDateTimeFields } from "shared/dateTimePolicy"
+import { getClockTimeOccurrences, getBandDateTimeFields, type RepeatPolicy } from "shared/dateTimePolicy"
 import { getDateTimeRangeTimeOptions, TimeOptionsGenerator } from "shared/time"
 
 afterEach(() => { vi.useRealTimers() })
@@ -25,28 +25,41 @@ describe("DT-04 civil clock grid", () => {
     vi.useFakeTimers()
     const start = new Date("2026-07-10T07:47:12.345Z")
     const end = new Date("2026-07-10T08:07:13.134Z")
-    const expected = getDateTimeRangeTimeOptions(start, end, "Europe/Brussels")
+    const expected = getDateTimeRangeTimeOptions(start, end, "Europe/Brussels", "showAll")
     for (const now of ["2026-01-01", "2026-03-29", "2026-10-25"]) {
       vi.setSystemTime(new Date(`${now}T12:00:00Z`))
-      expect(getDateTimeRangeTimeOptions(start, end, "Europe/Brussels")).toEqual(expected)
+      expect(getDateTimeRangeTimeOptions(start, end, "Europe/Brussels", "showAll")).toEqual(expected)
     }
   })
 })
 
-const transitions = [
-  { zone: "Europe/Brussels", day: "2026-03-29", start: "2026-03-29T00:30:00Z", end: "2026-03-29T01:30:00Z", count: 92, duration: "1h" },
-  { zone: "Europe/Brussels", day: "2026-10-25", start: "2026-10-24T23:30:00Z", end: "2026-10-25T02:30:00Z", count: 100, duration: "3h" },
-  { zone: "America/Los_Angeles", day: "2026-03-08", start: "2026-03-08T09:30:00Z", end: "2026-03-08T10:30:00Z", count: 92, duration: "1h" },
-  { zone: "America/Los_Angeles", day: "2026-11-01", start: "2026-11-01T08:30:00Z", end: "2026-11-01T11:30:00Z", count: 100, duration: "3h" },
-  { zone: "Australia/Sydney", day: "2026-10-04", start: "2026-10-03T15:30:00Z", end: "2026-10-03T16:30:00Z", count: 92, duration: "1h" },
-  { zone: "Australia/Sydney", day: "2026-04-05", start: "2026-04-04T14:30:00Z", end: "2026-04-04T17:30:00Z", count: 100, duration: "3h" },
-  { zone: "Australia/Lord_Howe", day: "2026-10-04", start: "2026-10-03T15:00:00Z", end: "2026-10-03T16:30:00Z", count: 94, duration: "1h 30m" },
-  { zone: "Australia/Lord_Howe", day: "2026-04-05", start: "2026-04-04T14:30:00Z", end: "2026-04-04T17:00:00Z", count: 98, duration: "2h 30m" },
-]
+const transitions: {
+  repeatPolicy: RepeatPolicy,
+  zone: string,
+  day: string,
+  start: string,
+  end: string,
+  count: number,
+  duration: string
+}[] = [
+    { repeatPolicy: "showAll", zone: "Europe/Brussels", day: "2026-03-29", start: "2026-03-29T00:30:00Z", end: "2026-03-29T01:30:00Z", count: 92, duration: "1h" },
+    { repeatPolicy: "showAll", zone: "Europe/Brussels", day: "2026-10-25", start: "2026-10-24T23:30:00Z", end: "2026-10-25T02:30:00Z", count: 100, duration: "3h" },
+    { repeatPolicy: "takeFirst", zone: "Europe/Brussels", day: "2026-10-25", start: "2026-10-24T23:30:00Z", end: "2026-10-25T02:30:00Z", count: 96, duration: "3h" },
 
-describe.each(transitions)("resolved clocks in $zone on $day", fixture => {
-  it("offers each real quarter-hour occurrence with a unique label and instant", () => {
-    const choices = getDateTimeRangeTimeOptions(new Date(fixture.start), new Date(fixture.end), fixture.zone)
+    { repeatPolicy: "showAll", zone: "America/Los_Angeles", day: "2026-03-08", start: "2026-03-08T09:30:00Z", end: "2026-03-08T10:30:00Z", count: 92, duration: "1h" },
+    { repeatPolicy: "showAll", zone: "America/Los_Angeles", day: "2026-11-01", start: "2026-11-01T08:30:00Z", end: "2026-11-01T11:30:00Z", count: 100, duration: "3h" },
+
+    { repeatPolicy: "showAll", zone: "Australia/Sydney", day: "2026-10-04", start: "2026-10-03T15:30:00Z", end: "2026-10-03T16:30:00Z", count: 92, duration: "1h" },
+    { repeatPolicy: "showAll", zone: "Australia/Sydney", day: "2026-04-05", start: "2026-04-04T14:30:00Z", end: "2026-04-04T17:30:00Z", count: 100, duration: "3h" },
+
+    { repeatPolicy: "showAll", zone: "Australia/Lord_Howe", day: "2026-10-04", start: "2026-10-03T15:00:00Z", end: "2026-10-03T16:30:00Z", count: 94, duration: "1h 30m" },
+    { repeatPolicy: "showAll", zone: "Australia/Lord_Howe", day: "2026-04-05", start: "2026-04-04T14:30:00Z", end: "2026-04-04T17:00:00Z", count: 98, duration: "2h 30m" },
+    { repeatPolicy: "takeFirst", zone: "Australia/Lord_Howe", day: "2026-04-05", start: "2026-04-04T14:30:00Z", end: "2026-04-04T17:00:00Z", count: 96, duration: "2h 30m" },
+  ]
+
+describe.each(transitions)("resolved clocks in $zone on $day with repeat policy $repeatPolicy", fixture => {
+  it("offers each policy-selected quarter-hour with a unique label and instant", () => {
+    const choices = getDateTimeRangeTimeOptions(new Date(fixture.start), new Date(fixture.end), fixture.zone, fixture.repeatPolicy)
     expect(choices.startOptions).toHaveLength(fixture.count)
     expect(new Set(choices.startOptions.map(option => option.label)).size).toBe(fixture.count)
     expect(new Set(choices.startOptions.map(option => option.instant.valueOf())).size).toBe(fixture.count)
@@ -54,7 +67,7 @@ describe.each(transitions)("resolved clocks in $zone on $day", fixture => {
   })
 
   it("DT-05: displays 03:30 with the actual elapsed duration and the correct saved instant", () => {
-    const choices = getDateTimeRangeTimeOptions(new Date(fixture.start), new Date(fixture.end), fixture.zone)
+    const choices = getDateTimeRangeTimeOptions(new Date(fixture.start), new Date(fixture.end), fixture.zone, fixture.repeatPolicy)
     const end = choices.endOptions.find(option => option.label === `03:30 (${fixture.duration})`)!
     expect(end.instant.toISOString()).toBe(new Date(fixture.end).toISOString())
     expect(choices.endOptions.every(option => option.instant >= new Date(fixture.start))).toBe(true)
@@ -63,26 +76,36 @@ describe.each(transitions)("resolved clocks in $zone on $day", fixture => {
 
 describe("precise and dated selections", () => {
   it("omits skipped clocks and distinguishes both occurrences of a repeated clock", () => {
-    expect(getClockTimeOccurrences({ date: "2026-03-29", time: "02:30" }, "Europe/Brussels")).toEqual([])
-    expect(getClockTimeOccurrences({ date: "2026-10-25", time: "02:30" }, "Europe/Brussels").map(value => value.toISOString()))
+    expect(getClockTimeOccurrences({ date: "2026-03-29", time: "02:30" }, "Europe/Brussels", "showAll")).toEqual([])
+    expect(getClockTimeOccurrences({ date: "2026-10-25", time: "02:30" }, "Europe/Brussels", "showAll").map(value => value.toISOString()))
       .toEqual(["2026-10-25T00:30:00.000Z", "2026-10-25T01:30:00.000Z"])
-    const choices = getDateTimeRangeTimeOptions(new Date("2026-10-25T01:30:00Z"), new Date("2026-10-25T02:00:00Z"), "Europe/Brussels")
+    const choices = getDateTimeRangeTimeOptions(new Date("2026-10-25T01:30:00Z"), new Date("2026-10-25T02:00:00Z"), "Europe/Brussels", "showAll")
     expect(choices.startOptions.filter(option => option.label.startsWith("02:30")).map(option => option.label))
       .toEqual(["02:30 (UTC+02:00)", "02:30 (UTC+01:00)"])
     expect(choices.selectedStart.label).toBe("02:30 (UTC+01:00)")
   })
 
+  it("takes only the first occurrence of a repeated clock on demand", () => {
+    expect(getClockTimeOccurrences({ date: "2026-10-25", time: "02:30" }, "Europe/Brussels", "takeFirst")
+      .map(value => value.toISOString()))
+      .toEqual(["2026-10-25T00:30:00.000Z"])
+  })
+
+  it("keeps a stored second occurrence without adding a duplicate-looking choice", () => {
+    const choices = getDateTimeRangeTimeOptions(new Date("2026-10-25T01:30:00Z"), new Date("2026-10-25T02:00:00Z"), "Europe/Brussels", "takeFirst")
+    const repeatedClockOptions = choices.startOptions.filter(option => option.label === "02:30")
+    expect(choices.startOptions).toHaveLength(96)
+    expect(repeatedClockOptions).toHaveLength(1)
+    expect(repeatedClockOptions[0]!.instant.toISOString()).toBe("2026-10-25T01:30:00.000Z")
+    expect(choices.selectedStart).toBe(repeatedClockOptions[0])
+  })
+
   it("retains off-grid seconds, milliseconds and the existing repeated-hour occurrence", () => {
     const start = new Date("2026-10-25T01:30:12.345Z")
     const end = new Date("2026-10-25T01:50:13.134Z")
-    const choices = getDateTimeRangeTimeOptions(start, end, "Europe/Brussels")
-    // if we support repeated-hour markers,
-    //expect(choices.selectedStart.label).toBe("02:30:12.345 (UTC+01:00)")
-    //expect(choices.selectedEnd.label).toBe("02:50:13.134 (UTC+01:00) (20m 789ms)")
-
-    // but we don't so...
-    expect(choices.selectedStart.label).toBe("02:30:12.345")
-    expect(choices.selectedEnd.label).toBe("02:50:13.134 (20m 789ms)")
+    const choices = getDateTimeRangeTimeOptions(start, end, "Europe/Brussels", "showAll")
+    expect(choices.selectedStart.label).toBe("02:30:12.345 (UTC+01:00)")
+    expect(choices.selectedEnd.label).toBe("02:50:13.134 (UTC+01:00) (20m 789ms)")
 
     expect(choices.selectedStart.instant).toEqual(start)
     expect(choices.selectedEnd.instant).toEqual(end)
@@ -91,33 +114,33 @@ describe("precise and dated selections", () => {
     expect(start.toISOString()).toBe("2026-10-25T01:30:12.345Z")
   })
 
-  it("wraps earlier end clocks to the next calendar date and labels that date", () => {
-    const choices = getDateTimeRangeTimeOptions(new Date("2026-07-10T21:30:00Z"), new Date("2026-07-10T21:45:00Z"), "Europe/Brussels")
-    const midnight = choices.endOptions.find(option => option.label === "00:30 on 2026-07-11 (1h)")!
+  it("wraps earlier end clocks to the next calendar date and doesn't label that date", () => {
+    const choices = getDateTimeRangeTimeOptions(new Date("2026-07-10T21:30:00Z"), new Date("2026-07-10T21:45:00Z"), "Europe/Brussels", "showAll")
+    const midnight = choices.endOptions.find(option => option.label === "00:30 (1h)")!
     expect(midnight.instant.toISOString()).toBe("2026-07-10T22:30:00.000Z")
   })
 
   it("offers tomorrow's early clock even if that clock was skipped earlier today", () => {
-    const choices = getDateTimeRangeTimeOptions(new Date("2026-03-29T15:00:00Z"), new Date("2026-03-29T16:00:00Z"), "Europe/Brussels")
-    const end = choices.endOptions.find(option => option.label === "02:30 on 2026-03-30 (9h 30m)")!
+    const choices = getDateTimeRangeTimeOptions(new Date("2026-03-29T15:00:00Z"), new Date("2026-03-29T16:00:00Z"), "Europe/Brussels", "showAll")
+    const end = choices.endOptions.find(option => option.label === "02:30 (9h 30m)")!
     expect(end.instant.toISOString()).toBe("2026-03-30T00:30:00.000Z")
   })
 
   it("keeps a later repeated occurrence on the same date even when its clock is earlier", () => {
-    const choices = getDateTimeRangeTimeOptions(new Date("2026-10-25T00:45:00Z"), new Date("2026-10-25T01:15:00Z"), "Europe/Brussels")
+    const choices = getDateTimeRangeTimeOptions(new Date("2026-10-25T00:45:00Z"), new Date("2026-10-25T01:15:00Z"), "Europe/Brussels", "showAll")
     const end = choices.endOptions.find(option => option.label === "02:15 (UTC+01:00) (30m)")!
     expect(end.instant.toISOString()).toBe("2026-10-25T01:15:00.000Z")
   })
 
   it("keeps the existing end date when changing the clock of a multi-day range", () => {
-    const choices = getDateTimeRangeTimeOptions(new Date("2026-07-10T07:00:00Z"), new Date("2026-07-12T01:30:00Z"), "Europe/Brussels")
-    const end = choices.endOptions.find(option => option.label === "04:00 on 2026-07-12 (1d 19h)")!
+    const choices = getDateTimeRangeTimeOptions(new Date("2026-07-10T07:00:00Z"), new Date("2026-07-12T01:30:00Z"), "Europe/Brussels", "showAll")
+    const end = choices.endOptions.find(option => option.label === "04:00 (1d 19h)")!
     expect(end.instant.toISOString()).toBe("2026-07-12T02:00:00.000Z")
   })
 
   it("keeps a precise zero-duration value available without rounding", () => {
     const instant = new Date("2026-07-10T21:50:00.001Z")
-    const choices = getDateTimeRangeTimeOptions(instant, instant, "Europe/Brussels")
+    const choices = getDateTimeRangeTimeOptions(instant, instant, "Europe/Brussels", "showAll")
     expect(choices.selectedEnd.label).toBe("23:50:00.001 (0m)")
     expect(choices.selectedEnd.instant).toEqual(instant)
   })

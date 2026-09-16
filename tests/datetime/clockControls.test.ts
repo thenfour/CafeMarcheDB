@@ -26,13 +26,13 @@ afterEach(() => {
   else Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT")
 })
 
-function mount(start: Date, end: Date) {
+function mount(start: Date, end: Date, timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone) {
   container = document.createElement("div")
   document.body.appendChild(container)
   root = createRoot(container)
   const onChange = vi.fn()
   act(() => root!.render(React.createElement(DateTimeRangeControl, {
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timeZone,
     value: new DateTimeRange({ startsAtDateTime: start, durationMillis: end.valueOf() - start.valueOf(), isAllDay: false }),
     onChange,
   })))
@@ -40,6 +40,16 @@ function mount(start: Date, end: Date) {
 }
 
 describe("mounted clock controls", () => {
+  it("shows one compact choice while retaining a stored second clock occurrence", () => {
+    const start = new Date("2026-10-25T01:30:00Z")
+    const controls = mount(start, new Date("2026-10-25T02:00:00Z"), "Europe/Brussels")
+    const repeatedClockOptions = Array.from(controls.startSelect.options)
+      .filter(option => option.textContent === "02:30")
+    expect(repeatedClockOptions).toHaveLength(1)
+    expect(repeatedClockOptions[0]!.value).toBe(String(start.valueOf()))
+    expect(controls.startSelect.value).toBe(String(start.valueOf()))
+  })
+
   it("displays exact existing times without emitting a change on mount", () => {
     const start = new Date(2026, 6, 10, 7, 47, 12, 345)
     const end = new Date(start.valueOf() + 1_200_789)
