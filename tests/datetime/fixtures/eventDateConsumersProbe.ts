@@ -4,6 +4,20 @@ import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { DateTimeRange } from "../../../shared/time"
 import { EventShortDate } from "../../../src/core/components/event/EventShortDate"
+import {
+  DashboardContext,
+  DashboardContextData,
+} from "../../../src/core/components/dashboardContext/DashboardContext"
+
+const dashboardContext = new DashboardContextData()
+dashboardContext.bandTimeZone = "Europe/Brussels"
+dashboardContext.localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+dashboardContext.userLocale = "en-US"
+dashboardContext.eventDatePresentation = {
+  bandTimeZone: dashboardContext.bandTimeZone,
+  viewerTimeZone: dashboardContext.localTimeZone,
+  locale: dashboardContext.userLocale,
+}
 
 // Render the production component with an explicit reference time and locale.
 // The child process supplies the viewer timezone; no modules or clocks are mocked.
@@ -13,12 +27,15 @@ function renderEvent(startsAt: string | null, durationMillis: number, isAllDay: 
     durationMillis,
     isAllDay,
   })
-  return renderToStaticMarkup(React.createElement(EventShortDate,
-    {
+  return renderToStaticMarkup(React.createElement(
+    DashboardContext.Provider,
+    { value: { data: dashboardContext } },
+    React.createElement(EventShortDate, {
       dateRange,
       now: new Date(refTime),
       locale: "en-US",
-    }))
+    }),
+  ))
 }
 
 const start = "2026-07-10T16:00:00.000Z"
