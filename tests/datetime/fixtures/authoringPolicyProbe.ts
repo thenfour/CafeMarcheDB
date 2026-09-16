@@ -1,9 +1,9 @@
-import { createAllDayRange, changeDateTimeRangeAllDay } from "shared/time";
+import { changeDateTimeRangeAllDayWithRounding, createAllDayRange } from "shared/time";
 import {
   DateTimeRange,
   TimeOptionsGenerator,
   getDateTimeRangeTimeOptions,
-} from "../../../shared/time"
+} from "../../../shared/time";
 
 export interface AuthoringPolicyProbe {
   timeZone: string
@@ -86,7 +86,7 @@ function selectEnd(caseName: "ordinary" | "spring" | "autumn", eventDay: number[
 function turnOffAllDay(currentMinute: 45 | 50) {
   return withCurrentDate(localDate(ordinaryDay, 23, currentMinute), () => {
     const value = createAllDayRange({ startDate: "2026-07-10", endDateExclusive: "2026-07-11" }, timeZone)
-    const updated = changeDateTimeRangeAllDay(value, false, timeZone, new Date())
+    const updated = changeDateTimeRangeAllDayWithRounding(value, false, timeZone, new Date())
     const actual = updated.getStartDateTime()!
     return {
       currentMinute,

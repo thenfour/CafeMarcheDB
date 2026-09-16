@@ -1,5 +1,5 @@
 import { getRangeCalendarDates, formatCalendarDate } from "shared/dateTimePresentation";
-import { createAllDayRange } from "shared/time";
+import { createAllDayRange, roundToNearest15Minutes } from "shared/time";
 import * as React from 'react';
 //import * as DB3Client from "src/core/db3/DB3Client"; <-- dependency cycle.
 import { FormControlLabel, LinearProgress, NoSsr, Popover, Switch, Tooltip } from "@mui/material";
@@ -9,11 +9,13 @@ import { DateTimeRange, DateTimeOption, getDateTimeRangeTimeOptions } from "shar
 import { gIconMap } from '../../db3/components/IconMap';
 import { CalendarEventSpec } from './DateTimeTypes';
 import { useEventsForDateRange } from './useEventsForDateRange';
-import { changeDateTimeRangeStartDate, changeDateTimeRangeAllDay } from 'shared/time';
+import { changeDateTimeRangeStartDate, changeDateTimeRangeAllDayWithRounding } from 'shared/time';
 import { CalendarDate, CalendarRange, CalendarDayHitTest, getBandDateTimeFields } from 'shared/dateTimePolicy';
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { gGeneralPaletteList, StandardVariationSpec } from '../color/palette';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
+
+const roundedNow = () => roundToNearest15Minutes(new Date());
 
 interface CustomDayProps {
     otherDay: Dayjs | null;
@@ -309,12 +311,17 @@ export interface DateTimeRangeControlProps {
 //     [ ] All-day
 //     [x] Different start & end days
 //
-export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlProps) => {
-    const timeZone = props.timeZone;
+export const DateTimeRangeControl = ({ value, timeZone, ...props }: DateTimeRangeControlProps) => {
     const [fallbackRange, setFallbackRange] = React.useState<DateTimeRange>(() => {
         if (!value.isTBD()) return value;
-        if (!value.isAllDay()) return new DateTimeRange({ ...value.getSpec(), startsAtDateTime: new Date() });
-        const today = CalendarDate.fromInstant({ value: new Date(), timeZone });
+        if (!value.isAllDay()) return new DateTimeRange({
+            ...value.getSpec(),
+            startsAtDateTime: roundedNow(),
+        });
+        const today = CalendarDate.fromInstant({
+            value: roundedNow(),
+            timeZone,
+        });
         return createAllDayRange({ startDate: today.date, endDateExclusive: today.addDays(1).date }, timeZone);
     });
     const coalesced = value.isTBD() ? fallbackRange : value;
@@ -325,7 +332,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
     const endMillis = coalesced.getEndDateTime()!.valueOf();
     const showTimeOptions = !value.isAllDay() && !value.isTBD();
     const timeOptions = React.useMemo(() => !showTimeOptions ? null : getDateTimeRangeTimeOptions(
-        new Date(startMillis),
+        roundToNearest15Minutes(new Date(startMillis)),
         new Date(endMillis),
         timeZone,
         // Repeated clocks are rare, and duplicate-looking choices plus offset labels
@@ -356,7 +363,12 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
     };
 
     const handleAllDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const updated = changeDateTimeRangeAllDay(coalesced, e.target.checked, timeZone, new Date());
+        const updated = changeDateTimeRangeAllDayWithRounding(
+            coalesced,
+            e.target.checked,
+            timeZone,
+            new Date()
+        );
         setFallbackRange(updated);
         props.onChange(updated);
     };

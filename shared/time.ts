@@ -140,13 +140,26 @@ export function changeDateTimeRangeStartDate(range: DateTimeRange, date: string,
     });
 }
 
-export function changeDateTimeRangeAllDay(range: DateTimeRange, isAllDay: boolean, timeZone: string, now: Date): DateTimeRange {
+export function changeDateTimeRangeAllDayWithRounding(range: DateTimeRange, nextIsAllDay: boolean, timeZone: string, now: Date): DateTimeRange {
+
+    if (nextIsAllDay) {
+        // changing to all-day
+        const dates = getRangeCalendarDates(range, timeZone)!;
+        return createAllDayRange({
+            startDate: dates.start.date, // keep same day
+            endDateExclusive: addCalendarDays(dates.start.date, 1), // use 1 calendar day length
+        },
+            timeZone);
+    }
+
+    // changing to non-all-day; use same calendar day, at current time, for 1 hour.
     const date = getRangeCalendarDates(range, timeZone)?.start.date ?? getBandDateTimeFields(now, timeZone).date;
-    return isAllDay ? createAllDayRange({ startDate: date, endDateExclusive: addCalendarDays(date, 1) }, timeZone)
-        : new DateTimeRange({
-            isAllDay: false, durationMillis: gMillisecondsPerHour,
-            startsAtDateTime: bandDateTimeToInstant({ date, time: getBandDateTimeFields(now, timeZone).time }, timeZone)
-        });
+    const startsAt = bandDateTimeToInstant({ date, time: getBandDateTimeFields(now, timeZone).time }, timeZone);
+    return new DateTimeRange({
+        isAllDay: false,
+        durationMillis: gMillisecondsPerHour,
+        startsAtDateTime: startsAt ? roundToNearest15Minutes(startsAt) : null,
+    });
 }
 
 // M:S format

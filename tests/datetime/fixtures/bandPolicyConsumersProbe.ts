@@ -1,7 +1,7 @@
-import { createAllDayRange } from "shared/time";
 import { addCalendarDays } from "shared/dateTimePolicy";
-import { DateTimeRange, CalcRelativeTiming, changeDateTimeRangeStartDate, changeDateTimeRangeAllDay } from "../../../shared/time"
-import { RecalcEventDateRangeAndIncrementRevision } from "../../../src/core/db3/server/db3mutationCore"
+import { changeDateTimeRangeAllDayWithRounding, createAllDayRange } from "shared/time";
+import { CalcRelativeTiming, changeDateTimeRangeStartDate, DateTimeRange } from "../../../shared/time";
+import { RecalcEventDateRangeAndIncrementRevision } from "../../../src/core/db3/server/db3mutationCore";
 
 const day = 86_400_000
 const allDay = (date: string, timeZone = "Europe/Brussels") => createAllDayRange({ startDate: date, endDateExclusive: addCalendarDays(date, 1) }, timeZone)
@@ -24,14 +24,20 @@ const late = timed("2026-07-10T22:30:12.345Z")
 async function collect() {
   process.env.CMDB_BASE_URL = "https://band.test"
   let persisted: unknown
-  const segments = [event, late].map((range, id) => ({ id, eventId: 1, name: "Segment", startsAt: range.getSpec().startsAtDateTime,
-    durationMillis: BigInt(range.getDurationMillis()), isAllDay: range.isAllDay(), statusId: null }))
-  await RecalcEventDateRangeAndIncrementRevision({ eventId: 1, updatingEventModel: {}, db: {
-    setting: { findFirst: async () => ({ value: "Europe/Brussels" }) },
-    eventSegment: { findMany: async () => segments }, eventStatus: { findMany: async () => [] },
-    event: { findFirst: async () => ({ id: 1, revision: 1, name: "Event", locationDescription: "", segments, songLists: [] }),
-      update: async ({ data }: { data: unknown }) => { persisted = data } },
-  } })
+  const segments = [event, late].map((range, id) => ({
+    id, eventId: 1, name: "Segment", startsAt: range.getSpec().startsAtDateTime,
+    durationMillis: BigInt(range.getDurationMillis()), isAllDay: range.isAllDay(), statusId: null
+  }))
+  await RecalcEventDateRangeAndIncrementRevision({
+    eventId: 1, updatingEventModel: {}, db: {
+      setting: { findFirst: async () => ({ value: "Europe/Brussels" }) },
+      eventSegment: { findMany: async () => segments }, eventStatus: { findMany: async () => [] },
+      event: {
+        findFirst: async () => ({ id: 1, revision: 1, name: "Event", locationDescription: "", segments, songLists: [] }),
+        update: async ({ data }: { data: unknown }) => { persisted = data }
+      },
+    }
+  })
   return {
     bounds,
     spring: allDay("2026-03-29").getBounds(),
@@ -45,8 +51,8 @@ async function collect() {
     sameFoldDate: snapshot(changeDateTimeRangeStartDate(fold, "2026-10-25", "Europe/Brussels")),
     gap: snapshot(changeDateTimeRangeStartDate(timed("2026-03-28T01:30:00Z"), "2026-03-29", "Europe/Brussels")),
     foldAuthoring: snapshot(changeDateTimeRangeStartDate(timed("2026-10-24T00:30:00Z"), "2026-10-25", "Europe/Brussels")),
-    toAllDay: snapshot(changeDateTimeRangeAllDay(late, true, "Europe/Brussels", new Date("2026-07-09T21:59:12Z"))),
-    toTimed: snapshot(changeDateTimeRangeAllDay(allDay("2026-07-11"), false, "Europe/Brussels", new Date("2026-07-09T21:59:12Z"))),
+    toAllDay: snapshot(changeDateTimeRangeAllDayWithRounding(late, true, "Europe/Brussels", new Date("2026-07-09T21:59:12Z"))),
+    toTimed: snapshot(changeDateTimeRangeAllDayWithRounding(allDay("2026-07-11"), false, "Europe/Brussels", new Date("2026-07-09T21:59:12Z"))),
     persisted,
   }
 }

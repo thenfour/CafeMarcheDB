@@ -1,10 +1,10 @@
 import { getRangeCalendarDates, formatEventDateRange, formatEventDateRangeTranslations } from "shared/dateTimePresentation";
 import { CalendarDate, BandTimeZoneSchema, getBandDateTimeFields } from "@/shared/dateTimePolicy";
-import { DateTimeRange, DateTimeRangeSpec, createAllDayRange } from "@/shared/time";
+import { DateTimeRange, DateTimeRangeSpec, createAllDayRange, gMillisecondsPerDay, gMillisecondsPerHour } from "@/shared/time";
 import { DateTimeRangeControl, DayControl } from "@/src/core/components/DateTime/DateTimeRangeControl";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
-import { Autocomplete, NoSsr, TextField } from "@mui/material";
+import { Autocomplete, Button, NoSsr, TextField } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { makeServerSidePermissionGuard } from "src/auth/server/serverPageAuthorization";
@@ -119,6 +119,14 @@ export const DateTestPageCtrl = () => {
         <p>{sampleName}</p>
         <section aria-label="Storage and runtime" style={{ border: "1px solid #8886", borderRadius: 8, padding: 20, marginBottom: 20 }}>
             <h2>Storage and runtime</h2>
+            <Button onClick={() => {
+                setSelectedRange(new DateTimeRange({
+                    isAllDay: false,
+                    startsAtDateTime: new Date(),
+                    durationMillis: Math.floor(Math.random() * gMillisecondsPerDay) // random duration up to 24 hour
+                }));
+
+            }}>Reset range to Now + random</Button>
             <Values rows={[
                 ["Stored start (UTC ISO)", spec.startsAtDateTime?.toISOString()],
                 ["Stored duration (ms)", spec.durationMillis],
