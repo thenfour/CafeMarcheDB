@@ -9,17 +9,17 @@ import * as db3 from "src/core/db3/db3";
 import { useDb3Query } from "../../db3/DB3Client";
 import getUserTagWithAssignments from "../../db3/queries/getUserTagWithAssignments";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "../../db3/shared/apiTypes";
+import { EnrichedSearchEventPayload, enrichSearchResultEvent } from "../../db3/shared/schema/enrichedEventTypes";
 import { AppContextMarker } from "../AppContext";
 import { CMLink } from "../CMLink";
+import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
+import { StandardVariationSpec } from "../color/palette";
+import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { SearchItemBigCardLink } from "../SearchItemBigCardLink";
 import { EventStatusMinimal } from "./EventChips";
 import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { RelevanceClassOverrideIndicator } from "./EventRelevanceOverrideComponents";
-import { StandardVariationSpec } from "../color/palette";
-import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { EnrichedSearchEventPayload, enrichSearchResultEvent } from "../../db3/shared/schema/enrichedEventTypes";
 import { EventShortDate } from "./EventShortDate";
 
 export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSearchEventPayload, dateRange: DateTimeRange, now: Date }) => {
@@ -44,10 +44,10 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSear
         <div className={classes.join(" ")} style={typeStyle.style} >
             <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={dashboardContext.routingApi.getURIForEvent(event)} className="SubtleEventCardLink">
                 <div className="SubtleEventCardTitle">
+                    <RelevanceClassOverrideIndicator event={event} colorStyle="subtle" />
                     <div>{event.name}</div>
                 </div>
                 <div className="SubtleEventCardDate">
-                    <RelevanceClassOverrideIndicator event={event} colorStyle="subtle" />
                     <EventStatusMinimal statusId={event.statusId} />
                     <EventShortDate dateRange={dateRange} now={now} />
                 </div>
@@ -90,11 +90,12 @@ function MakeMockSearchResultsRetFromEvents(events: EnrichedSearchEventPayload[]
 
 const gHighlightEvent = false;
 
-export const RelevantEvents = () => {
+const RelevantEventsWithDashboardContext = ({
+    dashboardContext,
+}: {
+    dashboardContext: NonNullable<ReturnType<typeof useDashboardContext>>,
+}) => {
     const [now, setNow] = React.useState<Date>(new Date());
-    const dashboardContext = useDashboardContext();
-    if (!dashboardContext) return null;
-    if (dashboardContext.relevantEventIds.length < 1) return null;
 
     const tableClient = useDb3Query<db3.EventVerbose_Event>({
         schema: db3.xEventVerbose, filterSpec: {
@@ -113,6 +114,8 @@ export const RelevantEvents = () => {
     const [userTagWithAssignments, _] = useQuery(getUserTagWithAssignments, {
         userTagIds: relevantUserTagIds,
     });
+
+    if (dashboardContext.relevantEventIds.length < 1) return null;
 
     // allow 1 single "happening now" event.
 
@@ -184,4 +187,10 @@ export const RelevantEvents = () => {
             }
         </AppContextMarker>
     </div>;
+};
+
+export const RelevantEvents = () => {
+    const dashboardContext = useDashboardContext();
+    if (!dashboardContext) return null;
+    return <RelevantEventsWithDashboardContext dashboardContext={dashboardContext} />;
 };

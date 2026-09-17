@@ -4,6 +4,17 @@ import { compareEventSegments } from "src/core/db3/shared/schema/prismArgs";
 import { Timing } from "shared/time";
 import { isAttendanceGoing, isAttendanceNotGoing } from "shared/eventAttendance";
 
+type Segment = Prisma.EventSegmentGetPayload<{
+    select: {
+        id: true,
+        name: true,
+        statusId: true,
+        startsAt: true,
+        durationMillis: true,
+        isAllDay: true,
+    }
+}>;
+
 export interface EventAttendanceResult {
     eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
     segmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
@@ -14,7 +25,7 @@ export interface EventAttendanceResult {
     eventTiming: Timing;
     eventIsPast: boolean;
 
-    uncancelledSegments: db3.EventSegmentPayloadMinimum[];
+    uncancelledSegments: Segment[];
 
     isInvited: boolean;
     isSingleSegment: boolean;
@@ -41,7 +52,7 @@ export interface EventAttendanceResult {
 export interface EventAttendanceCalculationInput {
     eventUserResponse: EventAttendanceResult["eventUserResponse"];
     segmentUserResponses: EventAttendanceResult["segmentUserResponses"];
-    segments: db3.EventSegmentPayloadMinimum[];
+    segments: Segment[];//(Omit<db3.EventSegmentPayloadMinimum, "dateTimeVersion">)[];
     eventTiming: Timing;
     eventIsCancelled: boolean;
     cancelledStatusIds: number[];

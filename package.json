@@ -11,6 +11,7 @@
     "dev": "blitz dev --port 10455",
     "build": "blitz build",
     "start": "blitz start --port 10455",
+    "typecheck": "tsc --noEmit",
     "studio": "blitz prisma studio",
     "lint": "eslint --ignore-path .gitignore --ext .js,.ts,.tsx .",
     "test": "vitest run",

@@ -48,7 +48,14 @@ export const generateFibonacci = (max: number): number[] => {
 BigInt.prototype.toJSON = function (): number {
     return this.toString();
 };
-export function BigintToNumber(x: BigInt): number {
+export function BigintToNumber(x: bigint | number): number {
+    if (typeof x === "number") return x;
+    return new Number(x).valueOf();
+};
+
+export function BigintToNumberNullable(x: bigint | number | null): number | null {
+    if (x === null) return null;
+    if (typeof x === "number") return x;
     return new Number(x).valueOf();
 };
 

@@ -122,8 +122,13 @@ export function buildAttendanceScenario(scenario: AttendanceScenario, userIndex:
         makeMockEventSegmentResponse: () => ({ id: -1, userId: user.id, attendanceId: null }),
     })!);
     const attendance = calculateEventAttendance({
-        eventUserResponse, segmentUserResponses, segments, eventTiming: dateRange.hitTestDateTime(now),
-        eventIsCancelled: scenario.cancelled, cancelledStatusIds: [cancelledStatusId], attendances: scenarioAttendances,
+        eventUserResponse,
+        segmentUserResponses,
+        segments,
+        eventTiming: dateRange.hitTestDateTime(now),
+        eventIsCancelled: scenario.cancelled,
+        cancelledStatusIds: [cancelledStatusId],
+        attendances: scenarioAttendances,
     });
     return { event, user, attendance };
 }

@@ -2,9 +2,10 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import { z } from "zod";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { z } from "zod";
+import { gEventRelevanceClass } from "../shared/eventRelevance";
 
 const ZArgs = z.object({
     eventId: z.number(),
@@ -16,12 +17,11 @@ export default resolver.pipe(
     resolver.authorize(Permission.login),
     resolver.zod(ZArgs),
     async (args, ctx: AuthenticatedCtx) => {
-        const relevanceClassValue = args.relevanceClassOverrideName == null ? null : db3.gEventRelevanceClass[args.relevanceClassOverrideName] || null;
+        const relevanceClassValue = args.relevanceClassOverrideName == null ? null : gEventRelevanceClass[args.relevanceClassOverrideName] || null;
 
         const fields: Prisma.EventUncheckedUpdateInput = {
             relevanceClassOverride: relevanceClassValue,
         };
-
 
         await mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx);
         return args;

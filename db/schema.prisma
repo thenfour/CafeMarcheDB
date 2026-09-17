@@ -581,7 +581,7 @@ model Event {
   startsAt       DateTime? // date null means TBD
   durationMillis BigInt    @default(0)
   isAllDay       Boolean   @default(true)
-  endDateTime    DateTime? // after calculating the date range, this is the "end time" or TBD
+  endDateTime    DateTime? // after calculating the date range, this is the "end time" or TBD; just a convenience.
 
   createdAt       DateTime @default(now())
   createdByUserId Int? // required in order to know visibility when visiblePermissionId is NULL

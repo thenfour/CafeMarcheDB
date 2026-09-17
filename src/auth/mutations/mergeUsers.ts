@@ -8,5 +8,6 @@ import { publicMergeResponse } from "../server/userMerge/publicResponse";
 export default resolver.pipe(
     resolver.zod(CommitUserMergeInput),
     resolver.authorize(Permission.merge_users),
-    (input, ctx) => publicMergeResponse(() => commitUserMerge(db, ctx, input)),
+    // as any =>  avoid exploding type checking
+    (input, ctx) => publicMergeResponse(() => commitUserMerge(db as any, ctx, input)),
 );

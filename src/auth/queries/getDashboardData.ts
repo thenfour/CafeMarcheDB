@@ -1,4 +1,5 @@
-import { BigintToNumber } from "@/shared/utils";
+import { BigintToNumberNullable } from "@/shared/utils";
+import { EventRelevanceClassValue, GetRelevantEvents, gEventRelevanceClass, kMaxRelevantEventsToQuery } from "@/src/core/db3/shared/eventRelevance";
 import type { UserWithRolesPayload } from "@/src/core/db3/shared/schema/userPayloads";
 import { resolver } from "@blitzjs/rpc";
 import type { Ctx } from "blitz";
@@ -6,13 +7,15 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
-import { EventStatusSignificance, gEventRelevanceClass, gVisibleEventRelevanceClasses, xEvent, xMenuLink } from "src/core/db3/db3";
+import { EventStatusSignificance, xEvent, xMenuLink } from "src/core/db3/db3";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadBandTimeZone } from "src/server/dateTime";
+import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadUserSettings } from "../server/userSettings";
 
+
+// returns a list of eventIds to show in the dashboard for the current user.
 async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, eventStatuses: Prisma.EventStatusGetPayload<{}>[], db: TransactionalPrismaClient): Promise<number[]> {
     if (!currentUser) {
         // no user, no events.
@@ -25,6 +28,8 @@ async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, ev
     const twentyFourHoursAgo = new Date(now);
     twentyFourHoursAgo.setDate(now.getDate() - 1);
 
+    // iso date is like "2024-06-05T14:48:00.000Z"
+    // this returns "2024-06-05 14:48:00" (trim milliseconds and the "T" character)
     const formatDate = (date: Date) =>
         date.toISOString().slice(0, 19).replace("T", " ");
 
@@ -32,57 +37,78 @@ async function getTopRelevantEvents(currentUser: UserWithRolesPayload | null, ev
     const sevenDaysFromNowFormatted = formatDate(sevenDaysFromNow);
     const twentyFourHoursAgoFormatted = formatDate(twentyFourHoursAgo);
 
-    const cancelledStatusIds = eventStatuses.filter(s => s.significance === EventStatusSignificance.Cancelled).map(s => s.id).join(", ");
+    const ctx = {
+        now,
+        sevenDaysFromNow,
+        twentyFourHoursAgo,
+    };
 
+    const cancelledStatusIds = eventStatuses
+        .filter(s => s.significance === EventStatusSignificance.Cancelled)
+        .map(s => s.id)
+        .join(", ");
+
+    // this query only needs to return events that are possibly eligible,
+    // to be later filtered / classified - not the full relevance calculation.
     const query = `
-    WITH ClassifiedEvents AS (
-      SELECT
-        id,
-        startsAt,
-        CASE 
-          WHEN relevanceClassOverride IS NOT NULL THEN relevanceClassOverride -- Use explicit override if set
-          WHEN startsAt <= '${nowFormatted}' AND (endDateTime IS NULL OR endDateTime >= '${nowFormatted}') THEN ${gEventRelevanceClass.Ongoing}
-          WHEN startsAt >= '${nowFormatted}' AND startsAt <= '${sevenDaysFromNowFormatted}' THEN ${gEventRelevanceClass.Upcoming}
-          WHEN endDateTime IS NOT NULL AND endDateTime >= '${twentyFourHoursAgoFormatted}' AND endDateTime <= '${nowFormatted}' THEN ${gEventRelevanceClass.RecentPast}
-          WHEN startsAt > '${sevenDaysFromNowFormatted}' THEN ${gEventRelevanceClass.Future} -- Future, only shown if better events aren't available
-          ELSE ${gEventRelevanceClass.Hidden} -- Default/Unclassified (optional, for events that don't fit the criteria)
-        END AS relevance_class
-      FROM Event
-      where
-        (
-            (relevanceClassOverride is not null)
-            or (statusId is null or statusId NOT IN (${cancelledStatusIds}))
+    SELECT
+        e.id,
+        e.startsAt,
+        e.durationMillis,
+        e.isAllDay,
+        e.endDateTime,
+        e.relevanceClassOverride
+    FROM
+        Event e
+    WHERE
+        -- critical visibility
+        (${xEvent.SqlGetVisFilterExpression(currentUser, "e")})
+        and (
+            -- relevance class has overrides except for hidden.
+            (e.relevanceClassOverride IS NOT NULL and e.relevanceClassOverride != '${gEventRelevanceClass.Hidden}')
+            or (
+                -- uncancelled events
+                (e.statusId is null or e.statusId NOT IN (${cancelledStatusIds}))
+
+                -- TBD events don't normally get shown (unless you explicitly pin)
+                and e.startsAt is not null
+
+                -- and within the relevance time window
+                and (
+                    e.endDateTime >= '${twentyFourHoursAgoFormatted}'
+                )
+            )
         )
-        and isDeleted = false
-        and (${xEvent.SqlGetVisFilterExpression(currentUser, "Event")})
-    )
-    SELECT id, relevance_class
-    FROM ClassifiedEvents
-    WHERE relevance_class IN (${gVisibleEventRelevanceClasses.join(",")}) -- Filter to relevant events
     ORDER BY
-      relevance_class ASC, -- Primary sorting by relevance
-      startsAt ASC
-    LIMIT ${5};
-    
+        e.relevanceClassOverride is null asc, -- prioritize explicit relevance (0 = not null = first)
+        abs(timestampdiff(minute, e.startsAt, '${nowFormatted}')) asc -- sort by proximity to now (closest first)
+    LIMIT ${kMaxRelevantEventsToQuery};
     `;
 
     // debugger;
-    const events = (await db.$queryRaw(Prisma.raw(query))) as { id: number, relevance_class: bigint }[];
+    const dbResults = (await db.$queryRaw(Prisma.raw(query))) as {
+        id: number,
+        startsAt: Date | null,
+        durationMillis: bigint | null,
+        isAllDay: boolean | null,
+        endDateTime: Date | null,
+        relevanceClassOverride: number | null,
+    }[];
 
-    // only show class 4 events if there are no class 1, 2, or 3 events.
-    const hasClass123 = events.some(e => e.relevance_class < 4);
-    if (hasClass123) {
-        // filter out class 4 events
-        return events.filter(e => e.relevance_class < 4).map(e => e.id);
-    } else {
-        // take only the 1st class 4 event if exists.
-        const class4Event = events.find(e => BigintToNumber(e.relevance_class) === 4);
-        if (class4Event) {
-            return [class4Event.id];
-        }
-    }
+    const saneResults = dbResults.map(r => {
+        return {
+            id: r.id,
+            startsAt: r.startsAt,
+            durationMillis: BigintToNumberNullable(r.durationMillis),
+            isAllDay: r.isAllDay,
+            endDateTime: r.endDateTime,
+            relevanceClassOverride: r.relevanceClassOverride as null | EventRelevanceClassValue,
+        };
+    });
 
-    const ret = events.map(e => e.id);
+    const results = GetRelevantEvents(saneResults, ctx);
+
+    const ret = results.map(e => e.id);
     return ret;
 }
 

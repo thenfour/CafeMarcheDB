@@ -1,13 +1,12 @@
+import { useMutation } from "@blitzjs/rpc";
 import { Check, PushPin } from "@mui/icons-material";
 import { ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import { Prisma } from "@prisma/client";
-import { EventRelevanceClassName, gEventRelevanceClass } from "../../db3/db3";
-import { useSnackbar } from "../SnackbarContext";
-import { useMutation } from "@blitzjs/rpc";
 import setEventRelevanceClassOverride from "../../db3/mutations/setEventRelevanceClassOverride";
-import { ActivityFeature } from "../featureReports/activityTracking";
-import { gNullValue } from "@/shared/rootroot";
+import { EventRelevanceClassName, gEventRelevanceClass } from "../../db3/shared/eventRelevance";
 import { useClientTelemetryEvent } from "../dashboardContext/DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
+import { useSnackbar } from "../SnackbarContext";
 
 
 interface RelevanceClassOverrideIndicatorProps {
@@ -18,7 +17,9 @@ export const RelevanceClassOverrideIndicator = ({ event, colorStyle }: Relevance
     if (!event.relevanceClassOverride) return null;
 
     const messageMapping: Record<EventRelevanceClassName, string> = {
+        "Pinned": "Pin this event to the front page",
         "Future": "This event is pinned to the front page as a future event",
+        "TBD": "This event is pinned to the front page as a TBD event",
         "Hidden": "This event is explicitly hidden from the front page",
         "Ongoing": "This event is pinned to the front page as an ongoing event",
         "RecentPast": "This event is pinned to the front page as a recent past event",
@@ -26,11 +27,13 @@ export const RelevanceClassOverrideIndicator = ({ event, colorStyle }: Relevance
     };
 
     const colorMapping: Record<EventRelevanceClassName, string> = {
+        "Pinned": "#ffeb3b",       // Yellow - explicitly pinned
         "Ongoing": "#4caf50",      // Green - currently happening
         "Upcoming": "#2196f3",     // Blue - coming soon
         "RecentPast": "#ff9800",   // Orange - just finished
         "Future": "#9c27b0",       // Purple - far future
         "Hidden": "#f44336",       // Red - hidden/excluded
+        "TBD": "#607d8b",          // Grey - to be determined
     };
 
     // convert the value to the name.
@@ -46,22 +49,28 @@ export const RelevanceClassOverrideIndicator = ({ event, colorStyle }: Relevance
     );
 }
 
+type MenuItemSpec = {
+    key: string;
+    value: EventRelevanceClassName | null;
+    label: string;
+};
+
 interface RelevanceClassOverrideMenuItemProps {
     event: Prisma.EventGetPayload<{ select: { relevanceClassOverride } }>;
-    value: EventRelevanceClassName | null;
+    menuItemSpec: MenuItemSpec;
     onClick: () => void;
 };
 
 const RelevanceClassOverrideMenuItem = (props: RelevanceClassOverrideMenuItemProps) => {
     // renders a menu item that's checked if the event's relevance class override matches the value
-    const isNullAndEqual = props.value === null && props.event.relevanceClassOverride === null;
-    const isSelected = isNullAndEqual || props.event.relevanceClassOverride === gEventRelevanceClass[props.value!];
+    const isNullAndEqual = props.menuItemSpec.value === null && props.event.relevanceClassOverride === null;
+    const isSelected = isNullAndEqual || props.event.relevanceClassOverride === gEventRelevanceClass[props.menuItemSpec.value!];
     return (
         <MenuItem onClick={props.onClick}>
             <ListItemIcon>
                 {isSelected ? <Check /> : null}
             </ListItemIcon>
-            {props.value || "(default)"}
+            {props.menuItemSpec.label}
         </MenuItem>
     );
 
@@ -75,15 +84,50 @@ interface RelevanceClassOverrideMenuItemGroupProps {
 
 export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrideMenuItemGroupProps) => {
     // renders an array of menu items for each relevance class override option
-    const options: (EventRelevanceClassName | null)[] = [null, ...(Object.keys(gEventRelevanceClass) as EventRelevanceClassName[])];
+    const options: MenuItemSpec[] = [];
     const [mut] = useMutation(setEventRelevanceClassOverride);
     const featureRecorder = useClientTelemetryEvent();
     const snackbar = useSnackbar();
-    return options.map((relevanceClassName) => (
+
+    const isExplicitlyPinned = props.event.relevanceClassOverride === gEventRelevanceClass.Pinned;
+    const isExplicitlyHidden = props.event.relevanceClassOverride === gEventRelevanceClass.Hidden;
+    const isOtherwiseOverridden = !isExplicitlyPinned && !isExplicitlyHidden && props.event.relevanceClassOverride !== null;
+    const hasNoOverrides = props.event.relevanceClassOverride === null;
+
+    // new UX will show only
+    // - Pin/unpin to front page
+    // - Hide from front page -- only if not explicitly overridden
+
+    // so you can only see either:
+    // (if not explicitly overridden)
+    // - Pin this event to front page
+    // - Hide this event from front page
+    // Or,
+    // - Unpin this event from front page (if explicitly pinned)
+    // or,
+    // - Unhide this event from front page (if explicitly hidden)
+    // or for any other explicit override,
+    // - Reset relevance overrides (new version you should never see this because other overrides are not user-facing)
+
+    if (isExplicitlyPinned) {
+        options.push({ key: "unpin", value: null, label: "Unpin from front page" });
+    }
+    if (isExplicitlyHidden) {
+        options.push({ key: "unhide", value: null, label: "Unhide from front page" });
+    }
+    if (isOtherwiseOverridden) {
+        options.push({ key: "reset", value: null, label: "Reset relevance overrides" });
+    }
+    if (hasNoOverrides) {
+        options.push({ key: "pin", value: "Pinned", label: "Pin to front page" });
+        options.push({ key: "hide", value: "Hidden", label: "Hide from front page" });
+    }
+
+    return options.map((item) => (
         <RelevanceClassOverrideMenuItem
-            key={relevanceClassName === null ? gNullValue : relevanceClassName}
+            key={item.key}
             event={props.event}
-            value={relevanceClassName}
+            menuItemSpec={item}
             onClick={async () => {
                 void featureRecorder({
                     feature: ActivityFeature.event_change_relevance_class,
@@ -92,7 +136,7 @@ export const RelevanceClassOverrideMenuItemGroup = (props: RelevanceClassOverrid
                 await snackbar.invokeAsync(async () => {
                     await mut({
                         eventId: props.event.id,
-                        relevanceClassOverrideName: relevanceClassName,
+                        relevanceClassOverrideName: item.value,
                     });
                     void props.refetch();
                     void props.closeMenu();
