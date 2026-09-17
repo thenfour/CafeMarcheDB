@@ -1,5 +1,4 @@
 import { Prisma } from "db";
-import { z } from "zod";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
 import { AuxUserArgs } from "types";
@@ -712,98 +711,6 @@ export const EventTagAssignmentNaturalOrderBy: Prisma.EventTagAssignmentOrderByW
     { eventTag: { id: 'asc' } },
 ];
 
-
-////////////////////////////////////////////////////////////////
-
-export const EventCustomFieldArgs = Prisma.validator<Prisma.EventCustomFieldDefaultArgs>()({
-    include: {}
-});
-export type EventCustomFieldPayload = Prisma.EventCustomFieldGetPayload<typeof EventCustomFieldArgs>;
-
-
-export const EventCustomFieldNaturalOrderBy: Prisma.EventCustomFieldOrderByWithRelationInput[] = [
-    { sortOrder: 'asc' },
-    { id: 'asc' },
-];
-
-export enum EventCustomFieldSignificance {
-};
-
-export enum EventCustomFieldDataType {
-    Checkbox = "Checkbox",
-    Options = "Options",
-    RichText = "RichText",
-    SimpleText = "SimpleText",
-};
-
-export type EventCustomFieldOption = {
-    label: string,
-    id: string,
-    color?: string,
-};
-
-const EventCustomFieldOptionSchema = z.object({
-    label: z.string(),
-    id: z.string(),
-    color: z.string().optional(), // Optional field
-});
-
-// Define the schema for an array of EventCustomFieldOption objects
-export const EventCustomFieldOptionArraySchema = z.array(EventCustomFieldOptionSchema);
-
-export type EventCustomFieldOptions = z.infer<typeof EventCustomFieldOptionArraySchema>;
-
-export function ParseEventCustomFieldOptionsJson(optionsJson: string | null): EventCustomFieldOptions {
-    try {
-        const newobj = JSON.parse(optionsJson || "");
-        const r = EventCustomFieldOptionArraySchema.parse(newobj);
-        return r;
-    }
-    catch (e) {
-        return [];
-    }
-}
-
-export const GetCustomFieldMemberName = (
-    cf: Prisma.EventCustomFieldGetPayload<{ select: { id: true } }>
-): string => {
-    return `cf:${cf.id}`;
-};
-
-export const GetCustomFieldIdFromMember = (member: string): number | null => {
-    const prefix = 'cf:';
-    if (!member.startsWith(prefix)) {
-        return null;
-    }
-
-    const idPart = member.substring(prefix.length);
-    const idPattern = /^\d+$/;
-    if (!idPattern.test(idPart)) {
-        return null;
-    }
-    const id = Number(idPart);
-    // Additional check to ensure conversion was successful
-    return isNaN(id) ? null : id;
-};
-
-
-////////////////////////////////////////////////////////////////
-
-export const EventCustomFieldValueArgs = Prisma.validator<Prisma.EventCustomFieldValueDefaultArgs>()({
-    include: {
-        customField: true,
-    }
-});
-export type EventCustomFieldValuePayload = Prisma.EventCustomFieldValueGetPayload<typeof EventCustomFieldValueArgs>;
-
-
-export const EventCustomFieldValueNaturalOrderBy: Prisma.EventCustomFieldValueOrderByWithRelationInput[] = [
-    { customField: { sortOrder: 'asc' } },
-    { id: 'asc' },
-];
-
-
-
 // ////////////////////////////////////////////////////////////////
 // export type EventPayloadMinimum = Prisma.EventGetPayload<{
 //     select: {
@@ -851,7 +758,6 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
                 user: true,
             }
         },
-        workflowDef: true,
         segments: {
             orderBy: { startsAt: "desc" },
             include: {
@@ -1019,8 +925,6 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
             }
         },
         responses: true,
-        workflowDef: true,
-        customFieldValues: true,
         descriptionWikiPage: {
             include: {
                 currentRevision: true,

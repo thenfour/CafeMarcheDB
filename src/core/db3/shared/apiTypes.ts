@@ -179,7 +179,6 @@ export interface TinsertEventArgs {
         tags: number[],
         expectedAttendanceUserTagId: number | null,
         visiblePermissionId: number | null;
-        workflowDefId: number | null;
     },
     segment: {
         startsAt: Date | null,
@@ -414,31 +413,26 @@ export function MakeICalEventUid(eventUid: string, userUid: string | null) {
 }
 
 
-export function ParseICalEventUid(uid: string): { eventUid: string; userUid: string | null } | null {
-    // Define the regex pattern
-    const regex = /^(.+?)_(.+?)@cafemarche\.be$/;
+// export function ParseICalEventUid(uid: string): { eventUid: string; userUid: string | null } | null {
+//     // Define the regex pattern
+//     const regex = /^(.+?)_(.+?)@cafemarche\.be$/;
 
-    // Test the UID string against the regex
-    const match = uid.match(regex);
+//     // Test the UID string against the regex
+//     const match = uid.match(regex);
 
-    // If it doesn't match, return null
-    if (!match) {
-        console.error('Invalid UID format');
-        return null;
-    }
+//     // If it doesn't match, return null
+//     if (!match) {
+//         console.error('Invalid UID format');
+//         return null;
+//     }
 
-    // Extract eventUid and userUid from the regex match
-    const [, eventUid, userUid] = match;
+//     // Extract eventUid and userUid from the regex match
+//     const [, eventUid, userUid] = match;
 
-    return {
-        eventUid: eventUid!,
-        userUid: userUid === "public" ? null : userUid!,
-    };
-}
-
-// export function GetICalRelativeURIForUserAndEvent(args: { calendarFeedToken: string | null, eventUid: string | null, userUid: string | null }) {
-//     if (!args.eventUid) throw new Error("invalid event for ical");
-//     return `/api/ical/user/${args.calendarFeedToken || "public"}/event/${MakeICalEventUid(args.eventUid, args.userUid)}`;
+//     return {
+//         eventUid: eventUid!,
+//         userUid: userUid === "public" ? null : userUid!,
+//     };
 // }
 
 export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null }) {
@@ -773,124 +767,6 @@ export const ZGetSearchResultsInput = z.object({
     discreteCriteria: z.array(ZDiscreteCriterion),
 });
 
-export type TupdateEventCustomFieldValue = Prisma.EventCustomFieldValueGetPayload<{}>;
-
-export interface TupdateEventCustomFieldValuesArgs {
-    eventId: number;
-    values: TupdateEventCustomFieldValue[];
-};
-
-
-
-export enum WorkflowNodeProgressState {
-    InvalidState = "InvalidState", // initial before evaluation etc. never to reach the user.
-    Irrelevant = "Irrelevant", // effectively visibility = relevance. Irrelevant nodes are not shown.
-    Relevant = "Relevant", // unable to enter started/activated state because of dependencies.
-    Activated = "Activated", // blocked from completed state because of 
-    Completed = "Completed",
-};
-
-export enum WorkflowLogItemType {
-    Comment = "Comment", // dev comments or other custom stuff you can pollute the log with.
-    InstanceStarted = "InstanceStarted",
-    FieldUpdated = "FieldUpdated",// field updated
-    AssigneesChanged = "AssigneesChanged",// assignee changed
-    DueDateChanged = "DueDateChanged",// duedate changed
-    StatusChanged = "StatusChanged",
-};
-
-
-
-
-export interface TinsertOrUpdateWorkflowDefNodeDefaultAssignee {
-    id: number; // for insertion, this is not used / specified.
-    userId: number;
-    // nodeDefId
-};
-
-export interface TinsertOrUpdateWorkflowDefNodeDependency {
-    id: number; // for insertion, this is not used / specified.
-
-    selected: boolean;
-    determinesRelevance: boolean;
-    determinesActivation: boolean;
-    determinesCompleteness: boolean;
-    nodeDefId: number; // the other (child) node
-};
-
-export interface TinsertOrUpdateWorkflowDefNode {
-    id: number; // for insertion, this is not used / specified.
-    dependencies: TinsertOrUpdateWorkflowDefNodeDependency[];
-    defaultAssignees: TinsertOrUpdateWorkflowDefNodeDefaultAssignee[];
-
-    name: string;
-    description: string;
-
-    groupId: number | null;
-    //     workflowDefId Int?
-
-    displayStyle: string;
-    manualCompletionStyle: string;
-    thisNodeProgressWeight: number;
-
-    relevanceCriteriaType: string;
-    activationCriteriaType: string;
-    completionCriteriaType: string;
-
-    fieldName?: string | undefined;
-    fieldValueOperator?: string | undefined;
-    fieldValueOperand2?: string | undefined;
-
-    defaultDueDateDurationDaysAfterStarted?: number | undefined;
-    positionX?: number | undefined;
-    positionY?: number | undefined;
-    width?: number | undefined;
-    height?: number | undefined;
-    selected: boolean;
-};
-
-export interface TinsertOrUpdateWorkflowDefGroup {
-    id: number; // for insertion, this is not used / specified.
-    // workflowDefId
-    name: string;
-    description: string;
-    color: string | null;
-
-    positionX: number;
-    positionY: number;
-    width: number;
-    height: number;
-    selected: boolean;
-};
-
-
-
-export enum WorkflowObjectType {
-    workflow = "workflow",
-    node = "node",
-    dependency = "dependency",
-    assignee = "assignee",
-    group = "group",
-
-    workflowInstance = "workflowInstance",
-    workflowNodeInstance = "workflowNodeInstance",
-    workflowNodeInstanceAssignee = "workflowNodeInstanceAssignee",
-    workflowNodeInstanceLastAssignee = "workflowNodeInstanceLastAssignee",
-    logItem = "logItem",
-};
-
-
-export interface TinsertOrUpdateWorkflowDefArgs {
-    id: number; // for insertion, this is not used / specified.
-    sortOrder: number;
-    name: string;
-    description: string;
-    color: string | null;
-    isDefaultForEvents: boolean;
-    groups: TinsertOrUpdateWorkflowDefGroup[];
-    nodes: TinsertOrUpdateWorkflowDefNode[];
-};
-
 
 
 
@@ -981,39 +857,6 @@ export interface ICalCalendarJSON {
 
 
 
-///////////// WF INSTANCE /////////////////////////////////////////////////////////////////
-export interface TUpdateEventWorkflowInstanceArgsAssignee {
-    id: number; // for insertion, this is not used / specified.
-    userId: number;
-};
-
-export interface TUpdateEventWorkflowNodeInstance {
-    id: number;
-    nodeDefId: number;
-    assignees: TUpdateEventWorkflowInstanceArgsAssignee[];
-    dueDate?: Date | undefined;
-
-    manuallyCompleted: boolean;
-    manualCompletionComment: string | undefined;
-
-    lastFieldName: string | undefined;
-    lastFieldValueAsString: string | undefined;
-    lastAssignees: TUpdateEventWorkflowInstanceArgsAssignee[];
-    activeStateFirstTriggeredAt: Date | undefined;
-    lastProgressState: WorkflowNodeProgressState;
-};
-
-export interface TUpdateEventWorkflowInstance {
-    id: number;
-    revision: number;
-    nodeInstances: TUpdateEventWorkflowNodeInstance[];
-    lastEvaluatedWorkflowDefId: number | undefined;
-};
-
-export interface TUpdateEventWorkflowInstanceArgs {
-    instance: TUpdateEventWorkflowInstance;
-    eventId: number;
-};
 
 
 export type GetUserAttendanceArgs = {

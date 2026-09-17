@@ -370,7 +370,6 @@ export const UserMassAnalysisTabContent = (props: UserMassAnalysisTabContentProp
         qr.contentCounts.setlistPlans + qr.contentCounts.wikiPageRevisions;
 
     const totalParticipationItems = qr.participationCounts.eventResponses + qr.participationCounts.eventSegmentResponses +
-        qr.participationCounts.workflowAssignments + qr.participationCounts.workflowLogItems +
         qr.participationCounts.taggedFiles + qr.participationCounts.instruments +
         qr.participationCounts.userTags;
 

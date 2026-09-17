@@ -9,7 +9,6 @@ import { setlistReferencesPolicy } from "./policies/setlistReferences";
 import { signInMethodsPolicy } from "./policies/signInMethods";
 import { songCreditsPolicy } from "./policies/songCredits";
 import { userTagsPolicy } from "./policies/userTags";
-import { workflowsPolicy } from "./policies/workflows";
 import type { MergePolicy } from "./types";
 
 // Bump when decisions or report meaning changes. Previously reviewed plans expire.
@@ -28,6 +27,5 @@ export const userMergePolicies: readonly MergePolicy[] = [
     filesPolicy,
     authoredContentPolicy,
     historyPolicy,
-    workflowsPolicy,
     setlistReferencesPolicy,
 ];

@@ -352,43 +352,6 @@ const permissionRegistry = [
     940
   ),
 
-  // Workflows remain registered only until the separately approved removal slice.
-  definePermission(
-    "view_workflow_instances",
-    //"workflows",
-    "site",
-    "View workflow instances and the workflow tab.",
-    1000
-  ),
-  definePermission(
-    "edit_workflow_instances",
-    //"workflows",
-    "site",
-    "Manage workflow instance assignees and due dates.",
-    1010
-  ),
-  definePermission(
-    "view_workflow_defs",
-    //"workflows",
-    "site",
-    "View workflow definitions and graphs.",
-    1020
-  ),
-  definePermission(
-    "edit_workflow_defs",
-    //"workflows",
-    "site",
-    "Create and edit workflow definitions and graphs.",
-    1030
-  ),
-  definePermission(
-    "admin_workflow_defs",
-    //"workflows",
-    "site",
-    "Perform technical workflow administration.",
-    1040
-  ),
-
   definePermission("customize_menu", //"menu", 
     "site", "Customize site navigation menus.", 1100),
   definePermission(

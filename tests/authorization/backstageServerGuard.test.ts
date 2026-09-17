@@ -131,16 +131,8 @@ describe("backstage server page guard", () => {
     });
 
     it("keeps contained routes and unregistered pages closed to anonymous visitors", async () => {
-        await expect(authorizePageRequest("/backstage/workflows", null)).rejects.toThrow();
         await expect(authorizePageRequest("/backstage/notRegistered", null))
             .rejects.toThrow("missing route authorization metadata");
-    });
-
-    it("keeps contained workflow routes unreachable even to Sysadmin", async () => {
-        await expect(authorizePageRequest(
-            "/backstage/workflows",
-            actualSysadmin.id,
-        )).rejects.toThrow();
     });
 
     it("keeps experimental event import behind sysadmin at the route and query", async () => {

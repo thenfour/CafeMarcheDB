@@ -19,7 +19,6 @@ import deleteEventSongList from "./mutations/deleteEventSongList";
 import insertEvent from "./mutations/insertEvent";
 import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
-import updateEventCustomFieldValuesMutation from "./mutations/updateEventCustomFieldValuesMutation";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
 import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
@@ -160,8 +159,6 @@ class EventsAPI {
     insertEventSongListx = CreateAPIMutationFunction(insertEventSongListMutation);
     deleteEventSongListx = CreateAPIMutationFunction(deleteEventSongList);
     updateEventSongListx = CreateAPIMutationFunction(updateEventSongListMutation);
-
-    updateEventCustomFieldValues = CreateAPIMutationFunction(updateEventCustomFieldValuesMutation);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

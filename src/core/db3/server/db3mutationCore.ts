@@ -1,32 +1,32 @@
-import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
-import { loadBandTimeZone, isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
+import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
+import { isBandTimeZoneSetting, loadBandTimeZone, reanchorAllDayEvents } from "src/server/dateTime";
+
+import { TAnyModel } from "@/shared/rootroot";
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { validateSettingValue } from "@/src/auth/server/settingWrite";
+import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
+import { clearBrandCache } from "@/src/server/brand";
 import { AuthenticatedCtx, AuthorizationError, Ctx, assert } from "blitz";
 import db, { Prisma } from "db";
 import * as mime from 'mime';
 import * as mm from 'music-metadata';
 import { nanoid } from 'nanoid';
+import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { ComputeChangePlan, getIntersectingFields } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { CoalesceBool, ObjectDiff, sanitize } from "shared/utils";
-import { TWorkflowChange } from "shared/workflowEngine";
+import { ObjectDiff } from "shared/utils";
 import sharp from "sharp";
 import { z } from "zod";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType } from "../shared/apiTypes";
-import { SharedAPI } from "../shared/sharedAPI";
-import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
-import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/activityLog";
-import { UserWithRolesArgs } from "../shared/schema/userPayloads";
+import { CMDBTableFilterModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient } from "../shared/apiTypes";
 import { getFileCustomData } from "../shared/fileAPI";
 import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from "../shared/fileTypes";
-import { TAnyModel } from "@/shared/rootroot";
-import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
-import { clearBrandCache } from "@/src/server/brand";
+import { UserWithRolesArgs } from "../shared/schema/userPayloads";
+import { SharedAPI } from "../shared/sharedAPI";
 import { queryTable } from "./db3QueryCore";
-import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
-import { validateSettingValue } from "@/src/auth/server/settingWrite";
+import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 //import { requireUnmergedMutationUsers } from "./mergedUserMutationGuard";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 
@@ -230,7 +230,6 @@ export const CallMutateEventHooks = async (args: {
                 eventIdToUpdate = (args.model as EventSegmentChangeHookModelType).eventSegment.eventId;
             }
             break;
-        case "saveEventWorkflowModel":
         case "mutation:copyeventsegmentresponses":
         case "mutation:cleareventsegmentresponses":
             eventIdToUpdate = args.model.id; // is event id.
@@ -261,11 +260,6 @@ export const CallMutateEventHooks = async (args: {
                     }
                 });
                 eventIdToUpdate = eventIdRet?.eventId;
-            }
-            break;
-        case "event:eventCustomFieldValue":
-            {
-                eventIdToUpdate = args.model.id;
             }
             break;
         default:
@@ -1347,215 +1341,3 @@ export const PostProcessFile = async ({ file }: { file: Prisma.FileGetPayload<{}
 };
 
 
-
-
-// assumes all tables are using "id" as pk column.
-export const UpdateEventCustomFieldValues = async (changeContext: ChangeContext, ctx: AuthenticatedCtx, args: TupdateEventCustomFieldValuesArgs) => {
-    // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
-    const desiredValues: TupdateEventCustomFieldValue[] = args.values.map((a, index) => ({
-        id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
-        customFieldId: a.customFieldId,
-        dataType: a.dataType,
-        eventId: a.eventId,
-        jsonValue: a.jsonValue,
-    }));
-
-    // get current associations to the local / parent item (eventsonglistid)
-    const currentValuesRaw = await db.eventCustomFieldValue.findMany({
-        where: { eventId: args.eventId },
-    });
-
-    // in order to make the change plan, unify the types into the kind that's passed in args
-    const currentValues: TupdateEventCustomFieldValue[] = currentValuesRaw.map(a => ({
-        id: a.id,
-        customFieldId: a.customFieldId,
-        dataType: a.dataType,
-        eventId: a.eventId,
-        jsonValue: a.jsonValue,
-    }));
-
-    // apply the existing correct db ids
-    for (const v of desiredValues) {
-        const found = currentValues.find(x => x.customFieldId === v.customFieldId);
-        if (found) {
-            v.id = found.id;
-        }
-    }
-
-    // computes which values need to be created, deleted, and which may need to be updated
-    const cp = ComputeChangePlan(
-        currentValues,
-        desiredValues, // ORDER matters; we assume 'b' is the desired.
-        (a, b) => a.id === b.id, // all should have unique numeric IDs. could assert that.
-    );
-
-    // execute the plan:
-
-    // do deletes
-    await db.eventCustomFieldValue.deleteMany({
-        where: {
-            id: {
-                in: cp.delete.map(x => x.id!),
-            }
-        },
-    });
-
-    // create new
-    for (let i = 0; i < cp.create.length; ++i) {
-        const a = cp.create[i]!;
-        const newAssoc = await db.eventCustomFieldValue.create({
-            data: {
-                eventId: args.eventId,
-                customFieldId: a.customFieldId,
-                dataType: a.dataType,
-                jsonValue: a.jsonValue,
-            },
-        });
-        // save the new id.
-        a.id = newAssoc.id;
-        const dv = desiredValues.find(x => x.customFieldId === a.customFieldId);
-        if (dv) {
-            dv.id = newAssoc.id;
-        }
-    }
-
-    // updates
-    for (let i = 0; i < cp.potentiallyUpdate.length; ++i) {
-        const item = cp.potentiallyUpdate[i]!;
-        const data = {};
-
-        const checkChangedColumn = (columnName: keyof Prisma.EventCustomFieldValueGetPayload<{}>) => {
-            if (item.a[columnName] === item.b[columnName]) return;
-            data[columnName] = item.b[columnName];
-        };
-
-        checkChangedColumn("customFieldId");
-        checkChangedColumn("dataType");
-        checkChangedColumn("jsonValue");
-
-        if (Object.entries(data).length < 1) {
-            // nothing to update.
-            continue;
-        }
-
-        const newAssoc = await db.eventCustomFieldValue.update({
-            where: {
-                id: item.a.id!,
-            },
-            data,
-        });
-
-    }
-
-    // make a custom change obj. let's not bother with "old state"; this just gets too verbose and that's not helpful.
-    await RegisterChange({
-        action: ChangeAction.update,
-        changeContext,
-        table: "event:eventCustomFieldValue",
-        pkid: args.eventId,
-        oldValues: {},
-        newValues: cp.desiredState,
-        ctx,
-        options: { dontCalculateChanges: true },
-    });
-
-    await CallMutateEventHooks({
-        tableNameOrSpecialMutationKey: "event:eventCustomFieldValue",
-        model: { id: args.eventId }
-    });
-};
-
-
-export type SyncEntitiesResult = {
-    changes: TWorkflowChange[],
-    tempToRealIdMappings: { objectType: WorkflowObjectType, tempId: number, realId: number }[],
-};
-
-// takes 2 lists of entities, compares them, and performs the requisite CRUD to bring the database in sync with the desired state.
-// assumes negative IDs are provisional.
-//
-// one limitation of this function is that it cannot deal with self-referencing entities. for example,
-// if a node entity contains a "nextNodeId", and both have provisional ids, then we would need extra logic to order in a DAG, ensure creating in a safe order, and updating from provisional to real IDs each creation.
-export async function SyncNonSelfReferencingEntities<T extends { id: number }>({
-    entityName,
-    existingEntities,
-    desiredEntities,
-    allowedKeysForCreate,
-    dbOperations,
-    ignoreDiffFieldsForUpdates,
-    options,
-}: {
-    entityName: string,
-    existingEntities: T[],
-    desiredEntities: T[],
-    allowedKeysForCreate: (keyof T)[],
-    dbOperations: {
-        deleteMany: (ids: number[]) => Promise<any>,
-        update: (id: number, data: Partial<T>) => Promise<any>,
-        create: (data: Omit<T, "id">) => Promise<T>,
-    },
-    options?: {
-        allowDeletions?: boolean | undefined, // default true
-    },
-    ignoreDiffFieldsForUpdates?: (keyof Omit<T, "id">)[], // only for updates, fields of T which should not ever be updated or contribute to equality check. "id" is automatically included
-}): Promise<SyncEntitiesResult> {
-
-    const allowDeletions = CoalesceBool(options?.allowDeletions, true);
-
-    // Compute change plan
-    const changePlan = ComputeChangePlan(existingEntities, desiredEntities, (a, b) => a.id === b.id);
-    const result: SyncEntitiesResult = {
-        changes: [],
-        tempToRealIdMappings: [],
-    };
-
-    // Delete
-    if (allowDeletions) {
-        const idsToDelete = changePlan.delete.map(x => x.id);
-        if (idsToDelete.length > 0) {
-            await dbOperations.deleteMany(idsToDelete);
-            result.changes.push(...changePlan.delete.map(x => ({
-                action: ChangeAction.delete,
-                pkid: x.id,
-                objectType: entityName as WorkflowObjectType,
-                oldValues: x,
-            })));
-        }
-    }
-
-    // Update
-    const ignoredFields: (keyof T)[] = ["id"];
-    if (ignoreDiffFieldsForUpdates) ignoredFields.push(...ignoreDiffFieldsForUpdates);
-    for (const { a, b } of changePlan.potentiallyUpdate) {
-        const diffResult = ObjectDiff(a, b, { ignore: ignoredFields });
-        if (!diffResult.areDifferent) continue;
-        await dbOperations.update(a.id, diffResult.differences.rhs);
-        result.changes.push({
-            action: ChangeAction.update,
-            pkid: a.id,
-            objectType: entityName as WorkflowObjectType,
-            oldValues: diffResult.differences.lhs,
-            newValues: diffResult.differences.rhs,
-        });
-    }
-
-    // Create
-    for (const entity of changePlan.create) {
-        //const { id, ...data } = entity;
-        const insertionObj = sanitize(entity, allowedKeysForCreate);
-        const newEntity = await dbOperations.create(insertionObj);
-        result.changes.push({
-            action: ChangeAction.insert,
-            pkid: newEntity.id,
-            objectType: entityName as WorkflowObjectType,
-            newValues: insertionObj,
-        });
-        result.tempToRealIdMappings.push({
-            objectType: entityName as WorkflowObjectType,
-            tempId: entity.id,
-            realId: newEntity.id,
-        });
-    }
-
-    return result;
-}

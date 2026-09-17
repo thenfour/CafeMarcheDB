@@ -1,41 +1,45 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { Checklist, EditNote, LibraryMusic } from '@mui/icons-material';
+import { HostingMode } from '@/shared/brandConfigBase';
+import { EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, Checkbox, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Select, Switch, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { toSorted } from 'shared/arrayUtils';
-import { Permission } from 'shared/permissions';
 import { isAttendanceGoing, isAttendanceNotGoing } from 'shared/eventAttendance';
-import { gNullValue } from 'shared/rootroot';
+import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
-import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
+import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
-import { gCharMap, gIconMap, RenderMuiIcon } from '../../db3/components/IconMap';
+import { gCharMap, gIconMap } from '../../db3/components/IconMap';
 import { SearchResultsRet } from '../../db3/shared/apiTypes';
+import { EnrichedSearchEventPayload, enrichSearchResultEvent } from '../../db3/shared/schema/enrichedEventTypes';
+import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
+import { EventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
 import { AdminInspectObject, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
-import { CMTextInputBase } from '../CMTextField';
+import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
+import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
+import { DashboardContextData, useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from '../EditFieldsDialog';
 import { EventStatusChip } from '../event/EventChips';
 import { EventAttendanceControl } from '../EventAttendanceComponents';
 import { EventSongListTabContent } from '../EventSongListComponents';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { Markdown } from '../markdown/Markdown';
-import { Markdown3Editor } from '../markdown/MarkdownControl3';
 import { ReactiveInputDialog } from '../ReactiveInputDialog';
 import { SearchItemBigCardLink } from '../SearchItemBigCardLink';
 import { SettingMarkdown } from '../SettingMarkdown';
@@ -45,21 +49,13 @@ import { UserChip } from '../user/userChip';
 import { AddUserButton } from '../user/UserComponents';
 import { VisibilityValue } from '../VisibilityControl';
 import { WikiStandaloneControl } from '../wiki/WikiStandaloneComponents';
-import { EventWorkflowTabContent } from '../workflow/WorkflowEventComponents';
+import { AttendanceChip } from './AttendanceChips';
+import { EventAttendanceUserTagControl } from './EventAttendanceUserTagControl';
 import { EventsFilterSpec } from './EventClientBaseTypes';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
-import { EventAttendanceUserTagControl } from './EventAttendanceUserTagControl';
 import { RelevanceClassOverrideIndicator, RelevanceClassOverrideMenuItemGroup } from './EventRelevanceOverrideComponents';
 import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
-import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
-import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
-import { AttendanceChip } from './AttendanceChips';
-import { HostingMode } from '@/shared/brandConfigBase';
-import { EventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
-import { DashboardContextData, useDashboardContext, useFeatureRecorder } from '../dashboardContext/DashboardContext';
-import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
-import { EnrichedSearchEventPayload, enrichSearchResultEvent } from '../../db3/shared/schema/enrichedEventTypes';
 
 // type EventWithTypePayload = Prisma.EventGetPayload<{
 //     include: {
@@ -88,280 +84,6 @@ type VerboseEventWithMetadata = EventWithMetadata<
     db3.EventVerbose_EventSegmentUserResponse
 >;
 
-
-////////////////////////////////////////////////////////////////
-type EventCustomFieldValuePayload = Prisma.EventCustomFieldValueGetPayload<{}>;
-
-////////////////////////////////////////////////////////////////
-interface EventCustomFieldValueControlProps {
-    value: EventCustomFieldValuePayload;
-    readonly?: boolean;
-    mode: "edit" | "view";
-    onChange?: (x: EventCustomFieldValuePayload) => void;
-};
-
-type EventCustomFieldValueControlPropsWithDeserializedValueView<T> = Omit<EventCustomFieldValueControlProps, "onChange"> & {
-    deserializedValue: T;
-}
-
-type EventCustomFieldValueControlPropsWithDeserializedValue<T> = EventCustomFieldValueControlPropsWithDeserializedValueView<T> & {
-    deserializedValue: T;
-    onChange: (val: T) => void;
-}
-
-// checkbox json data is just a boolish value null/true/false. checkbox types do not need to care about tri-state; if you want tristate use an options type.
-const EventCustomFieldValueValueView_Checkbox = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<boolean>) => {
-    return <div>{props.deserializedValue ? "YES" : "NO"}</div>
-}
-
-const EventCustomFieldValueValueEdit_Checkbox = (props: EventCustomFieldValueControlPropsWithDeserializedValue<boolean>) => {
-    //return <div>{props.deserializedValue ? "YES" : "NO"}</div>
-    return <Checkbox
-        checked={props.deserializedValue || false}
-        onChange={props.onChange == null ? undefined : ((e) => props.onChange!(e.target.checked))}
-    />;
-}
-
-const EventCustomFieldValueValueView_Options = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<null | string>) => {
-    const dashboardContext = useDashboardContext();
-    const fieldSpec = dashboardContext.eventCustomField.getById(props.value.customFieldId);
-    assert(!!fieldSpec, `fieldspec not found for id ${props.value.customFieldId}`);
-    const options = db3.ParseEventCustomFieldOptionsJson(fieldSpec.optionsJson);
-    let selectedOption = options.find(o => o.id === props.deserializedValue);
-    return <div>{selectedOption ? selectedOption.label : "<none>"}</div>;
-}
-
-const EventCustomFieldValueValueEdit_Options = (props: EventCustomFieldValueControlPropsWithDeserializedValue<null | string>) => {
-    const dashboardContext = useDashboardContext();
-    const fieldSpec = dashboardContext.eventCustomField.getById(props.value.customFieldId);
-    assert(!!fieldSpec, `fieldspec not found for id ${props.value.customFieldId}`);
-    const options = db3.ParseEventCustomFieldOptionsJson(fieldSpec.optionsJson);
-    return <Select value={props.deserializedValue || gNullValue} onChange={e => props.onChange(e.target.value)}>
-        <MenuItem value={gNullValue}>--</MenuItem>
-        {options.map(o => {
-            return <MenuItem key={o.id} value={o.id}>{o.label}</MenuItem>
-        })}
-    </Select>;
-}
-
-const EventCustomFieldValueValueView_RichText = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<string | null>) => {
-    return <div><Markdown markdown={props.deserializedValue} /></div>;
-}
-
-const EventCustomFieldValueValueEdit_RichText = (props: EventCustomFieldValueControlPropsWithDeserializedValue<string | null>) => {
-    return <div>
-        <Markdown3Editor
-            value={props.deserializedValue || ""}
-            onChange={(v) => props.onChange(v)}
-            nominalHeight={250}
-            uploadFileContext={{
-                taggedEventId: props.value.eventId,
-            }}
-        />
-    </div>
-}
-
-const EventCustomFieldValueValueView_SimpleText = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<string | null>) => {
-    return <div>{props.deserializedValue}</div>
-}
-
-const EventCustomFieldValueValueEdit_SimpleText = (props: EventCustomFieldValueControlPropsWithDeserializedValue<string | null>) => {
-    return <div><CMTextInputBase onChange={(e, v) => props.onChange(v)} value={props.deserializedValue} /></div>
-}
-
-const parseCustomFieldValueJson = (json: string | null) => {
-    if (json == null) return null;
-    try {
-        return JSON.parse(json);
-    } catch (e) {
-        return null;
-    }
-}
-
-const stringifyCustomFieldValueJson = <T,>(dataType: db3.EventCustomFieldDataType, value: T): string => {
-    // all datatypes currently are a straight serialize
-    return JSON.stringify(value);
-}
-
-const EventCustomFieldValueValueView = (props: EventCustomFieldValueControlProps) => {
-    const dataType = props.value.dataType as db3.EventCustomFieldDataType;
-    const deserializedValue = parseCustomFieldValueJson(props.value.jsonValue);
-    switch (dataType) {
-        case db3.EventCustomFieldDataType.Checkbox:
-            return <EventCustomFieldValueValueView_Checkbox {...props} deserializedValue={deserializedValue} />;
-        case db3.EventCustomFieldDataType.Options:
-            return <EventCustomFieldValueValueView_Options {...props} deserializedValue={deserializedValue} />;
-        case db3.EventCustomFieldDataType.RichText:
-            return <EventCustomFieldValueValueView_RichText {...props} deserializedValue={deserializedValue} />;
-        case db3.EventCustomFieldDataType.SimpleText:
-            return <EventCustomFieldValueValueView_SimpleText {...props} deserializedValue={deserializedValue} />;
-        default:
-            return <div>Unknown datatype {dataType}</div>;
-    }
-};
-
-const EventCustomFieldValueValueEdit = (props: EventCustomFieldValueControlProps) => {
-    const dataType = props.value.dataType as db3.EventCustomFieldDataType;
-    const deserializedValue = parseCustomFieldValueJson(props.value.jsonValue);
-    const handleChange = (val: unknown) => {
-        if (props.onChange) {
-            const newVal: EventCustomFieldValuePayload = { ...props.value };
-            newVal.jsonValue = stringifyCustomFieldValueJson(dataType, val);
-            props.onChange(newVal);
-        }
-    };
-    switch (dataType) {
-        case db3.EventCustomFieldDataType.Checkbox:
-            return <EventCustomFieldValueValueEdit_Checkbox {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
-        case db3.EventCustomFieldDataType.Options:
-            return <EventCustomFieldValueValueEdit_Options {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
-        case db3.EventCustomFieldDataType.RichText:
-            return <EventCustomFieldValueValueEdit_RichText {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
-        case db3.EventCustomFieldDataType.SimpleText:
-            return <EventCustomFieldValueValueEdit_SimpleText {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
-        default:
-            return <div>Unknown datatype {dataType}</div>;
-    }
-}
-
-////////////////////////////////////////////////////////////////
-const EventCustomFieldValueControl = (props: EventCustomFieldValueControlProps) => {
-    const dashboardContext = useDashboardContext();
-    const field = dashboardContext.eventCustomField.getById(props.value.customFieldId);
-    if (!field) return <div>field not found</div>;
-
-    const usingViewer = (props.readonly || props.mode === 'view');
-
-    return <NameValuePair
-        name={<>
-            {RenderMuiIcon(field.iconName)}
-            <span>{field.name}</span>
-        </>}
-        description={field.description}
-        isReadOnly={props.readonly}
-        value={usingViewer ? <EventCustomFieldValueValueView {...props} /> : <EventCustomFieldValueValueEdit {...props} />}
-    />;
-};
-
-////////////////////////////////////////////////////////////////
-interface EventCustomFieldEditDialogProps {
-    onClose: () => void,
-    onOK: (value: EventCustomFieldValuePayload[]) => void,
-    initialValue: EventCustomFieldValuePayload[];
-};
-const EventCustomFieldEditDialog = (props: EventCustomFieldEditDialogProps) => {
-    const dashboardContext = useDashboardContext();
-    const [currentValue, setCurrentValue] = React.useState<EventCustomFieldValuePayload[]>(() => {
-        return toSorted(props.initialValue, (a, b) => {
-            const sorta = dashboardContext.eventCustomField.getById(a.customFieldId)?.sortOrder || 0;
-            const sortb = dashboardContext.eventCustomField.getById(b.customFieldId)?.sortOrder || 0;
-            return sortb - sorta;
-        });
-    });
-
-    return <ReactiveInputDialog onCancel={props.onClose}>
-
-        <DialogTitle>
-            <SettingMarkdown setting="EventEditCustomFieldValuesDialog_TitleMarkdown" />
-            <AdminInspectObject src={props.initialValue} label="initialValue" />
-            <AdminInspectObject src={currentValue} label="currentValue" />
-        </DialogTitle>
-        <DialogContent dividers>
-            <CMDialogContentText>
-                <SettingMarkdown setting="EventEditCustomFieldValuesDialog_DescriptionMarkdown" />
-            </CMDialogContentText>
-
-            {
-                currentValue.map(f => <EventCustomFieldValueControl
-                    key={f.customFieldId}
-                    value={f}
-                    mode='edit'
-                    readonly={false}
-                    onChange={(val) => {
-                        const newArray = [...currentValue]; // create new array which excludes this
-                        const changedVal = newArray.find(x => x.customFieldId === val.customFieldId)!;
-                        // todo: assert all other fields are the same.
-                        changedVal.jsonValue = val.jsonValue;
-                        setCurrentValue(newArray);
-                    }}
-                />)
-            }
-
-            <DialogActionsCM>
-                <Button onClick={() => props.onOK(currentValue)} startIcon={gIconMap.Save()}>OK</Button>
-                <Button onClick={props.onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
-            </DialogActionsCM>
-        </DialogContent>
-
-    </ReactiveInputDialog>;
-}
-
-////////////////////////////////////////////////////////////////
-interface EventCustomFieldsControlProps {
-    event: Prisma.EventGetPayload<{ include: { customFieldValues: true } }>;
-    readonly?: boolean;
-    refetch: () => void;
-};
-
-export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) => {
-    const [open, setOpen] = React.useState<boolean>(false);
-    const dashboardContext = useDashboardContext();
-    const snackbar = useSnackbar();
-    const recordFeature = useFeatureRecorder();
-
-    const authToEdit = dashboardContext.isAuthorized(Permission.manage_events);
-    const readonly = !authToEdit || props.readonly;
-
-    const updateMutation = API.events.updateEventCustomFieldValues.useToken();
-
-    const potentialValues = dashboardContext.eventCustomField.map(ecf => {
-        const existing = props.event.customFieldValues.find(e => e.customFieldId === ecf.id);
-        if (existing) return existing;
-        const n = db3.xEventCustomFieldValue.createNew(dashboardContext.currentUser) as db3.EventCustomFieldValuePayload;
-        n.customField = ecf;
-        n.customFieldId = ecf.id;
-        n.eventId = props.event.id;
-        n.dataType = ecf.dataType;
-        //n.isVisible = true;
-        return n;
-    });
-
-    // if there are no custom fields defined at all, don't show anything.
-    if (dashboardContext.eventCustomField.items.length < 1) return null;
-
-    const isJsonNotNullish = (s: string): boolean => {
-        try {
-            const x = JSON.parse(s);
-            return x != null;
-        } catch (e) {
-            return false;
-        }
-    };
-
-    return <div className='editCustomFieldsButtonContainer'>
-        {!readonly && <Button onClick={() => setOpen(true)}>{gIconMap.Edit()}Edit custom fields</Button>}
-        {props.event.customFieldValues
-            .filter(v => CoalesceBool(dashboardContext.eventCustomField.getById(v.customFieldId)?.isVisibleOnEventPage, true) && isJsonNotNullish(v.jsonValue))
-            .map(v => <EventCustomFieldValueControl key={v.id} value={v} mode='view' />)
-        }
-        {open && !readonly && <EventCustomFieldEditDialog onClose={() => setOpen(false)} onOK={async (val) => {
-            try {
-                void recordFeature({ feature: ActivityFeature.event_change_custom_field });
-                await updateMutation.invoke({
-                    eventId: props.event.id,
-                    values: val,
-                });
-                snackbar.showMessage({ severity: "success", children: "Updated successfully" });
-            }
-            catch (e) {
-                console.log(e);
-                snackbar.showMessage({ severity: "error", children: "Error; see console" });
-            }
-            props.refetch();
-            setOpen(false);
-        }} initialValue={potentialValues} />}
-    </div>;
-};
 
 
 
@@ -1132,7 +854,6 @@ export const gEventDetailTabSlugIndices = {
     "completeness": "completeness",
     "files": "files",
     "frontpage": "frontpage",
-    "workflow": "workflow",
 } as const;
 
 export interface EventDetailContainerProps {
@@ -1306,7 +1027,6 @@ export interface EventDetailFullProps {
     tableClient: DB3Client.xTableRenderClient;
     initialTabIndex?: string;
     readonly: boolean;
-    workflowRefreshTrigger: number;
     refetch: () => void;
 };
 
@@ -1355,22 +1075,8 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
         >
             <AppContextMarker name="info tab">
                 <div className='descriptionLine'>
-                    <Suspense>
-                        <EventCustomFieldsControl event={event} readonly={props.readonly} refetch={refetch} />
-                    </Suspense>
                     <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
                 </div>
-            </AppContextMarker>
-        </CMTab>
-
-        <CMTab
-            enabled={!!event.workflowDefId}
-            summaryIcon={<Checklist />}
-            summaryTitle="Checklist"
-            thisTabId={gEventDetailTabSlugIndices.workflow}
-        >
-            <AppContextMarker name="workflow tab">
-                <EventWorkflowTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} refreshTrigger={props.workflowRefreshTrigger} />
             </AppContextMarker>
         </CMTab>
 

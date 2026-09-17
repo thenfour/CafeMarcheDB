@@ -2436,14 +2436,6 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
     ;
 }
 
-
-.editCustomFieldsButtonContainer {
-    padding-top: 10px;
-    padding-bottom: 10px;
-}
-
-
-
 .frontpageGalleryCaptionEditorContainer {
     border: 2px solid #ccc;
     background-color: #ffe;
@@ -2559,12 +2551,6 @@ i.placeholder {
     color: black;
 }
 
-
-/* activity log workflow def graph viewer should be big.*/
-.activityLogWorkflowGraphDialog>.MuiDialog-scrollPaper>.MuiPaper-root {
-    max-width: 80vw;
-    width: 1200px;
-}
 
 
 span.faded {

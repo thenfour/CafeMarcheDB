@@ -43,7 +43,7 @@ const dashboardData = (showDeclinedEvents: boolean) => ({
     ...Object.fromEntries([
         "permission", "effectivePermissionIds", "effectivePermissionNames", "userTag", "wikiPageTag", "role",
         "eventType", "eventStatus", "eventTag", "eventAttendance", "fileTag", "instrumentTag", "instrumentFunctionalGroup",
-        "songTag", "songCreditType", "eventCustomField", "relevantEventIds", "dynMenuLinks", "instrument",
+        "songTag", "songCreditType", "relevantEventIds", "dynMenuLinks", "instrument",
     ].map(name => [name, []])),
     bandTimeZone: "Europe/Brussels",
     userSettings: { "calendar.showDeclinedEvents": showDeclinedEvents, "calendar.showUninvitedEvents": true },

@@ -16,14 +16,6 @@ import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../genericStringField";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, type EventAttendancePayload,
-    EventCustomFieldArgs,
-    EventCustomFieldDataType,
-    EventCustomFieldNaturalOrderBy,
-    type EventCustomFieldPayload,
-    EventCustomFieldSignificance,
-    EventCustomFieldValueArgs,
-    EventCustomFieldValueNaturalOrderBy,
-    type EventCustomFieldValuePayload,
     EventNaturalOrderBy, type EventPayload, type EventPayloadClient,
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, type EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
@@ -36,7 +28,6 @@ import {
     type UserWithInstrumentsPayload
 } from "./prismArgs";
 import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
-import { type WorkflowDef_Minimum } from "./workflow";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
@@ -325,83 +316,6 @@ export const xEventTagAssignment = new db3.xTable({
 });
 
 
-
-
-////////////////////////////////////////////////////////////////
-
-export const xEventCustomField = new db3.xTable({
-    tableName: "EventCustomField",
-    deletePolicy: "hard",
-    naturalOrderBy: EventCustomFieldNaturalOrderBy,
-    tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getSelectionArgs: (): Prisma.EventCustomFieldDefaultArgs => {
-        return EventCustomFieldArgs;
-    },
-    getRowInfo: (row: EventCustomFieldPayload) => {
-        return {
-            pk: row.id,
-            name: row.name,
-            description: row.description,
-            color: gGeneralPaletteList.findEntry(row.color || null),
-            iconName: row.iconName,
-            ownerUserId: null,
-        };
-    },
-    columns: [
-        MakePKfield(),
-        MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-
-        MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeSignificanceField("significance", EventCustomFieldSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-
-        new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "dataType", defaultValue: EventCustomFieldDataType.SimpleText, options: EventCustomFieldDataType }),
-
-        new BoolField({ columnName: "isVisibleOnEventPage", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
-        new GenericStringField({
-            columnName: "optionsJson",
-            allowNull: true,
-            format: "raw",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-        }),
-    ]
-});
-
-
-////////////////////////////////////////////////////////////////
-
-export const xEventCustomFieldValue = new db3.xTable({
-    tableName: "EventCustomFieldValue",
-    deletePolicy: "hard",
-    naturalOrderBy: EventCustomFieldValueNaturalOrderBy,
-    tableAuthMap: xEventTableAuthMap_R_EManagers,
-    getSelectionArgs: (): Prisma.EventCustomFieldValueDefaultArgs => {
-        return EventCustomFieldValueArgs;
-    },
-    getRowInfo: (row: EventCustomFieldValuePayload) => {
-        return xEventCustomField.getRowInfo(row.customField);
-    },
-    columns: [
-        MakePKfield(),
-        new GenericStringField({
-            columnName: "jsonValue",
-            allowNull: false,
-            format: "raw",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-        }),
-        new ForeignSingleField<EventCustomFieldPayload>({
-            columnName: "customField",
-            fkidMember: "customFieldId",
-            allowNull: false,
-            foreignTableID: "EventCustomField",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
-        }),
-        new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "dataType", defaultValue: EventCustomFieldDataType.SimpleText, options: EventCustomFieldDataType }),
-    ]
-});
 
 
 ////////////////////////////////////////////////////////////////
@@ -700,19 +614,6 @@ export const xEventArgs_Base: db3.TableDesc = {
         new ForeignCollectionField({ memberName: "songLists", foreignTableID: "EventSongList", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "descriptionWikiPageId", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "descriptionWikiPage", authMap: xEventAuthMap_R_EOwn_EManagers }),
-
-        new GhostField({ memberName: "workflowInstanceId", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        //new GhostField({ memberName: "workflowDefId", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new ForeignSingleField<WorkflowDef_Minimum>({
-            columnName: "workflowDef",
-            fkidMember: "workflowDefId",
-            allowNull: true,
-            foreignTableID: "WorkflowDef",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
-            getQuickFilterWhereClause: (query: string) => false,
-        }),
-
-        new GhostField({ memberName: "customFieldValues", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
         // because this is used for generating icals
         new GhostField({ memberName: "uid", authMap: xEventAuthMap_Homepage }),

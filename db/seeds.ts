@@ -948,50 +948,6 @@ const main = async () => {
 
   }// } create random songs
 
-  // custom fields
-  await SeedTable("eventCustomField", gState.prisma.eventCustomField, [
-    {
-      "name": "Band is aware?",
-      "description": "",
-      "color": null,
-      "sortOrder": 5,
-      "significance": null,
-      "iconName": null,
-      "dataType": "Checkbox",
-      "optionsJson": null
-    },
-    {
-      "name": "Contact name",
-      "description": "",
-      "color": "orange",
-      "sortOrder": 10,
-      "significance": null,
-      "iconName": "Person",
-      "dataType": "SimpleText",
-      "optionsJson": null
-    },
-    {
-      "name": "carpool info",
-      "description": "rchrch",
-      "color": "blue",
-      "sortOrder": 40,
-      "significance": null,
-      "iconName": null,
-      "dataType": "RichText",
-      "optionsJson": ""
-    },
-    {
-      "name": "how did they find us?",
-      "description": "",
-      "color": null,
-      "sortOrder": 80,
-      "significance": null,
-      "iconName": "Search",
-      "dataType": "Options",
-      "optionsJson": "[{\"id\":\"2nMBEW7lud8zawNhGbeoY\",\"label\":\"via mail\"},{\"id\":\"mqHJ11910q19JZXHfST4B\",\"label\":\"instagram\"},{\"id\":\"r1KSPRpJ5I4ocFFJa0NE5\",\"label\":\"word of mouth\"}]"
-    }
-  ]);
-
   // create random events
   gState.gAllEventTypes = await gState.prisma.eventType.findMany();
   gState.gAllEventStatuses = await gState.prisma.eventStatus.findMany();

@@ -15,8 +15,6 @@ export type UserMassAnalysisContentCounts = {
 export type UserMassAnalysisParticipationCounts = {
     eventResponses: number;
     eventSegmentResponses: number;
-    workflowAssignments: number;
-    workflowLogItems: number;
     taggedFiles: number;
     instruments: number;
     userTags: number;
@@ -99,8 +97,6 @@ export const getParticipationCountsRows = (
 ): MassAnalysisDataRow[] => [
         { key: "eventResponses", label: "Event Responses", value: counts.eventResponses, compareValue: compareCounts?.eventResponses },
         { key: "eventSegmentResponses", label: "Event Segment Responses", value: counts.eventSegmentResponses, compareValue: compareCounts?.eventSegmentResponses },
-        { key: "workflowAssignments", label: "Workflow Assignments", value: counts.workflowAssignments, compareValue: compareCounts?.workflowAssignments },
-        { key: "workflowLogItems", label: "Workflow Log Items", value: counts.workflowLogItems, compareValue: compareCounts?.workflowLogItems },
         { key: "taggedFiles", label: "Tagged Files", value: counts.taggedFiles, compareValue: compareCounts?.taggedFiles },
         { key: "instruments", label: "Instruments", value: counts.instruments, compareValue: compareCounts?.instruments },
         { key: "userTags", label: "User Tags", value: counts.userTags, compareValue: compareCounts?.userTags },

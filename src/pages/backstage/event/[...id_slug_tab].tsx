@@ -22,7 +22,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
     const dashboardContext = useDashboardContext();
-    const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = React.useState<number>(0);
 
     //if (!idOrSlug) return <div>no event specified</div>;
     if (!eventId) throw new Error(`song not found`);
@@ -44,7 +43,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
                 EventTableClientColumns.tags,
                 EventTableClientColumns.expectedAttendanceUserTag,
                 EventTableClientColumns.visiblePermission,
-                EventTableClientColumns.workflowDef,
             ],
         }),
         filterModel: {
@@ -68,10 +66,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
         tableClient.refetch();
     };
 
-    React.useEffect(() => {
-        setWorkflowRefreshTrigger(workflowRefreshTrigger + 1);
-    }, [tableClient.queryResultInfo.resultId]);
-
     return <div className="eventDetailComponent">
         <NewEventButton />
         {event ? <>
@@ -81,7 +75,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
                 event={event}
                 tableClient={tableClient}
                 initialTabIndex={initialTabIndex}
-                workflowRefreshTrigger={workflowRefreshTrigger}
                 refetch={refetch}
             />
         </> : <>

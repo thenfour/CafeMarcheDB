@@ -20,7 +20,6 @@ export abstract class DashboardContextDataBase {
     songTag: TableAccessor<Prisma.SongTagGetPayload<{}>>;
     songCreditType: TableAccessor<Prisma.SongCreditTypeGetPayload<{}>>;
     instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
-    eventCustomField: TableAccessor<Prisma.EventCustomFieldGetPayload<{}>>;
 
     wikiPageTag: TableAccessor<Prisma.WikiPageTagGetPayload<{}>>;
 

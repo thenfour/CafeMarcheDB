@@ -5,7 +5,6 @@ export const historyPolicy: MergePolicy = {
     userRelations: [
         "Action.userId",
         "Change.userId",
-        "WorkflowInstanceLogItem.userId",
         "WikiPageRevision.createdByUserId",
         "Event.updatedByUserId",
         "EventSegmentUserResponse.createdByUserId",

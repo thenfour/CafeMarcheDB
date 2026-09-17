@@ -32,7 +32,6 @@ export default resolver.pipe(
                 revision: 0,
                 expectedAttendanceUserTagId: args.event.expectedAttendanceUserTagId,
                 visiblePermissionId: args.event.visiblePermissionId,
-                workflowDefId: args.event.workflowDefId,
             };
 
             // create the root event,

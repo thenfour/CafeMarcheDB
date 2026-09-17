@@ -1,7 +1,6 @@
 import { StandardVariationSpec } from "@/src/core/components/color/palette";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
-import { WorkflowViewer } from "@/src/core/components/workflow/WorkflowEventComponents";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Prisma } from "db";
@@ -46,8 +45,6 @@ const MainContent = () => {
 
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
 
-    const renderWorkflow = (workflowDef) => <WorkflowViewer value={workflowDef} />;
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xChange,
         columns: [
@@ -83,8 +80,8 @@ const MainContent = () => {
             }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 80, }),
             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
-            new DB3Client.JSONStringColumnClient({ columnName: "oldValues", cacheData: filterSourceData, renderWorkflow }),
-            new DB3Client.JSONStringColumnClient({ columnName: "newValues", cacheData: filterSourceData, renderWorkflow }),
+            new DB3Client.JSONStringColumnClient({ columnName: "oldValues", cacheData: filterSourceData }),
+            new DB3Client.JSONStringColumnClient({ columnName: "newValues", cacheData: filterSourceData }),
             new DB3Client.DateTimeColumn({ columnName: "changedAt" }),
         ],
     });

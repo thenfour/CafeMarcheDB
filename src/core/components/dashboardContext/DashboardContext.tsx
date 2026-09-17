@@ -248,7 +248,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(dashboardData.instrumentFunctionalGroup);
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
-    valueRef.current.eventCustomField = new TableAccessor(dashboardData.eventCustomField);
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
     valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
@@ -256,7 +255,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.userSettings = dashboardData.userSettings;
     valueRef.current.brand = brand;
     valueRef.current.localTimeZone = localTimeZone();
+
+    // todo: we can break this into lang + region, and expose user local vs. resolved app locale.
     valueRef.current.userLocale = typeof navigator === "undefined" ? "en" : navigator.language;
+
     valueRef.current.eventDatePresentation = {
         bandTimeZone: valueRef.current.bandTimeZone,
         viewerTimeZone: valueRef.current.localTimeZone,

@@ -35,9 +35,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const recordFeature = useFeatureRecorder();
     const router = useRouter();
 
-    const workflowQuery = DB3Client.useDb3Query({ schema: db3.xWorkflowDef_Search });
-    const workflows = workflowQuery.items as db3.WorkflowDef_SearchPayload[];
-
     // EVENT table bindings
     const eventTableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
@@ -52,7 +49,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             //EventTableClientColumns.segmentBehavior,
             EventTableClientColumns.expectedAttendanceUserTag,
             EventTableClientColumns.visiblePermission,
-            EventTableClientColumns.workflowDef,
         ],
     });
 
@@ -68,11 +64,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//
         ret.visiblePermission = dashboardContext.getDefaultVisibilityPermission() as any;
-        const defaultWorkflow = workflows.find(w => w.isDefaultForEvents);
-        if (defaultWorkflow) {
-            ret.workflowDef = defaultWorkflow;
-            ret.workflowDefId = defaultWorkflow.id;
-        }
         return ret;
     });
 
@@ -159,8 +150,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                 {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI, false)}
 
                 {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)}
-
-                {renderColumn(eventTableSpec, "workflowDef", eventValue, eventValidationResult, eventAPI, false)}
 
             </div>
             <DialogActionsCM>

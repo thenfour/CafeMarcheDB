@@ -42,8 +42,6 @@ export default resolver.pipe(
             wikiPageRevisions,
             eventResponses,
             eventSegmentResponses,
-            workflowAssignments,
-            workflowLogItems,
             taggedFiles,
             instruments,
             userTags,
@@ -67,8 +65,6 @@ export default resolver.pipe(
             // Participation counts
             db.eventUserResponse.count({ where: { userId: userId } }),
             db.eventSegmentUserResponse.count({ where: { userId: userId } }),
-            db.workflowInstanceNodeAssignee.count({ where: { userId: userId } }),
-            db.workflowInstanceLogItem.count({ where: { userId: userId } }),
             db.fileUserTag.count({ where: { userId: userId } }),
             db.userInstrument.count({ where: { userId: userId } }),
             db.userTagAssignment.count({ where: { userId: userId } }),
@@ -164,8 +160,6 @@ export default resolver.pipe(
             participationCounts: {
                 eventResponses,
                 eventSegmentResponses,
-                workflowAssignments,
-                workflowLogItems,
                 taggedFiles,
                 instruments,
                 userTags,

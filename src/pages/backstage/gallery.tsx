@@ -22,7 +22,6 @@ import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import { Markdown3Editor } from "src/core/components/markdown/MarkdownControl3";
-import { WorkflowViewer } from "src/core/components/workflow/WorkflowEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
@@ -284,7 +283,7 @@ const ActivityLogValueViewerTester = () => {
         <CMTextField value={tableName} onChange={(e, v) => setTableName(v)} autoFocus={false} label="Table name" />
         <CMTextField value={value} onChange={(e, v) => setValue(v)} autoFocus={false} label="Value" multiline={true} />
         <div style={{ width: 350, border: "2px solid #0004" }}>
-            <DB3Client.ActivityLogValueViewer tableName={tableName} value={obj} cacheData={filterSourceData} renderWorkflow={(workflowDef) => <WorkflowViewer value={workflowDef} />} />
+            <DB3Client.ActivityLogValueViewer tableName={tableName} value={obj} cacheData={filterSourceData} />
         </div>
     </div>;
 };
