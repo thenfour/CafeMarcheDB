@@ -1,5 +1,7 @@
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
+import { TAnyModel } from '@/shared/rootroot';
+import { AgeRelativeToNow } from '@components/DateTime/RelativeTimeComponents';
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -9,7 +11,7 @@ import {
     Save as SaveIcon
 } from '@mui/icons-material';
 import {
-    Button, Dialog,
+    Button,
     DialogContent,
     DialogTitle
 } from "@mui/material";
@@ -26,15 +28,14 @@ import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
 import { AdminInspectObject, DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
-import { AgeRelativeToNow } from '@components/DateTime/RelativeTimeComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { ResponsiveDialog } from "../../components/ResponsiveDialog";
+import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 import * as DB3Client from "../DB3Client";
 import * as db3 from '../db3';
 import type { CMDBTableFilterItem } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
-import { TAnyModel } from '@/shared/rootroot';
-import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
@@ -248,7 +249,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         // }
 
         return (
-            <Dialog
+            <ResponsiveDialog
                 open={true}
                 onClose={handleClose}
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
@@ -261,7 +262,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                         <Button onClick={handleYes}>Yes</Button>
                     </DialogActionsCM>
                 </DialogContent>
-            </Dialog>
+            </ResponsiveDialog>
         );
     };
 
@@ -273,7 +274,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         // const { oldRow, newRow, validateResult } = confirmDialogArgs;
 
         return (
-            <Dialog
+            <ResponsiveDialog
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 open={true}
                 onClose={isSaving ? undefined : handleNo}
@@ -289,7 +290,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                             type="submit" onClick={handleYes}>Yes</Button>
                     </DialogActionsCM>
                 </DialogContent>
-            </Dialog>
+            </ResponsiveDialog>
         );
     };
 

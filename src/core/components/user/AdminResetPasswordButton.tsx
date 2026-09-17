@@ -1,13 +1,14 @@
 
 import { useMutation } from "@blitzjs/rpc";
-import { Button, Dialog, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
+import { Button, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import { DialogActionsCM } from "src/core/components/CMCoreComponents2";
-import { EnrichedVerboseUser } from "./UserListItem";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { ResponsiveDialog } from "../ResponsiveDialog";
+import { EnrichedVerboseUser } from "./UserListItem";
 
 export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }) => {
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
@@ -43,7 +44,7 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
             Reset password
         </Button>
         {showConfirm &&
-            <Dialog
+            <ResponsiveDialog
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 open={true}
                 onClose={() => setShowConfirm(false)}
@@ -57,10 +58,10 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
                         <Button autoFocus={true} onClick={handleConfirmClick}>Continue</Button>
                     </DialogActionsCM>
                 </DialogContent>
-            </Dialog>
+            </ResponsiveDialog>
         }
         {resetURL &&
-            <Dialog
+            <ResponsiveDialog
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 open={true}
                 className={`resetPasswordURLDialog ${isMdUp ? "bigScreen" : "smallScreen"}`}
@@ -77,7 +78,7 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
                         <Button autoFocus={true} onClick={() => { setShowCopied(false); setResetURL(null) }}>Close</Button>
                     </DialogActionsCM>
                 </DialogContent>
-            </Dialog>
+            </ResponsiveDialog>
         }
     </>;
 };

@@ -5,17 +5,15 @@ vi.mock("db", async () => ({
 }));
 
 import { Permission } from "shared/permissions";
+import mergeUsers from "src/auth/mutations/mergeUsers";
 import previewUserMerge from "src/auth/queries/previewUserMerge";
 import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidates";
-import mergeUsers from "src/auth/mutations/mergeUsers";
-import reactivateUser from "src/auth/mutations/reactivateUser";
-import addUserSignInMethod from "src/auth/mutations/addUserSignInMethod";
 import { canManageUser } from "src/auth/server/userManagementPolicy";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 import { publicMergeResponse } from "src/auth/server/userMerge/publicResponse";
 import { CommitUserMergeInput, UserMergeInput } from "src/auth/userMergeSchemas";
-import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { invokeResolver } from "./support/resolverHarness";
 
 const admin = createAuthorizationTestUser("sysadmin", { id: 1 });

@@ -1,9 +1,10 @@
 // TODO: replace with useMessageBox
 
 // ConfirmContext.tsx
-import { Button, Dialog, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Button, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 import { DialogActionsCM } from './CMCoreComponents2';
+import { ResponsiveDialog } from './ResponsiveDialog';
 
 interface ConfirmOptions {
     title?: React.ReactNode;
@@ -81,7 +82,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     }
 
     return (
-        <Dialog
+        <ResponsiveDialog
             open={open}
             onClose={() => onClose(false)}
             onKeyDown={(e) => {
@@ -104,6 +105,6 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 </DialogActionsCM>
 
             </DialogContent>
-        </Dialog>
+        </ResponsiveDialog>
     );
 };

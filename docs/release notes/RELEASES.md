@@ -17,7 +17,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
 - Text editor
   - #634 Text editor auto-height support
   - #633 Side-by-side preview mode
-  - #515 Text editor full-screen mode
+  - #515 #681 Text editor full-screen mode
 - Setlist planner
   - #666 fixed: changing order of rows in setlist planner de-syncs column cells
   - #670 #632 fixed: setlist plans couldn't be duplicated

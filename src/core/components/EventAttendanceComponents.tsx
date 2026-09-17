@@ -2,16 +2,15 @@
 import React from "react";
 import { API } from "../db3/clientAPI";
 import type * as db3 from "../db3/db3";
-import type { UserInstrumentList } from "../db3/shared/schema/eventAPI";
 import type { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
+import type { UserInstrumentList } from "../db3/shared/schema/eventAPI";
 import { AdminInspectObject } from "./CMCoreComponents2";
-import { CalcEventAttendance, EventWithMetadata } from "./event/EventComponentsBase";
-import { AttendanceChange, AttendanceControlView } from "./event/AttendanceControlView";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
-import { SnackbarContext } from "./SnackbarContext";
-import { SettingMarkdown } from "./SettingMarkdown";
+import { AttendanceChange, AttendanceControlView } from "./event/AttendanceControlView";
+import { CalcEventAttendance, EventWithMetadata } from "./event/EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
-import { localTimeZone } from "@/shared/time";
+import { SettingMarkdown } from "./SettingMarkdown";
+import { SnackbarContext } from "./SnackbarContext";
 
 type CreatedUpdatedObj = {
     id: number;

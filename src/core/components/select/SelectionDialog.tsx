@@ -1,6 +1,7 @@
 import SearchIcon from "@mui/icons-material/Search";
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Button, DialogActions, DialogContent, DialogTitle, InputAdornment, TextField, Typography } from "@mui/material";
 import React from "react";
+import { ResponsiveDialog, useResponsiveDialogFullscreen } from "../ResponsiveDialog";
 
 interface SelectionDialogProps {
     title: React.ReactNode;
@@ -17,15 +18,13 @@ interface SelectionDialogProps {
 
 // Callers can accept an option immediately, or provide Apply to confirm a draft.
 export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogProps>) => {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
+    const fullScreen = useResponsiveDialogFullscreen();
     const titleId = React.useId();
     const descriptionId = React.useId();
     const titleRef = React.useRef<HTMLHeadingElement>(null);
 
-    return <Dialog
+    return <ResponsiveDialog
         open
-        fullScreen={fullScreen}
         className="CMSelectionDialog"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
@@ -80,7 +79,7 @@ export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogPr
             <Button type="button" disabled={props.busy} onClick={props.onCancel}>Cancel</Button>
             {props.onApply && <Button type="button" variant="contained" disabled={props.applyDisabled || props.busy} onClick={props.onApply}>Apply</Button>}
         </DialogActions>
-    </Dialog>;
+    </ResponsiveDialog>;
 };
 
 export const SelectionSummary = (props: React.PropsWithChildren<{ count: number }>) => {

@@ -1,15 +1,16 @@
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Alert, Button, Dialog, DialogContent, DialogTitle, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Button, DialogContent, DialogTitle, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import React, { Suspense } from "react";
 import addUserSignInMethod from "src/auth/mutations/addUserSignInMethod";
 import removeUserSignInMethod from "src/auth/mutations/removeUserSignInMethod";
 import getUserSignInMethods from "src/auth/queries/getUserSignInMethods";
 import { SignInMethodSchema } from "src/auth/signInMethodSchemas";
+import { CMChip, CMChipContainer } from "../CMChip";
 import { DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import type { EnrichedVerboseUser } from "./UserListItem";
-import { CMChip, CMChipContainer } from "../CMChip";
 
 type Props = { user: EnrichedVerboseUser; onChanged?: () => void };
 
@@ -83,7 +84,7 @@ export const UserSignInMethodsButton = (props: Props) => {
     const [open, setOpen] = React.useState(false);
     return <>
         <Button onClick={() => setOpen(true)}>Manage Sign-in methods</Button>
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <ResponsiveDialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
             <DialogTitle>Sign-in methods for {props.user.name}</DialogTitle>
             <DialogContent dividers>
                 {open && <Suspense fallback={<div>Loading sign-in methods...</div>}>
@@ -91,6 +92,6 @@ export const UserSignInMethodsButton = (props: Props) => {
                 </Suspense>}
                 <DialogActionsCM><Button onClick={() => setOpen(false)}>Close</Button></DialogActionsCM>
             </DialogContent>
-        </Dialog>
+        </ResponsiveDialog>
     </>;
 };

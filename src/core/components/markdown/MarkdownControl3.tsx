@@ -5,7 +5,6 @@ import TabIcon from "@mui/icons-material/Tab";
 import ViewAgendaIcon from "@mui/icons-material/ViewAgenda";
 import ViewWeekIcon from "@mui/icons-material/ViewWeek";
 import React from "react";
-import { createPortal } from "react-dom";
 import { Permission } from 'shared/permissions';
 import { IsNullOrWhitespace, parseMimeType } from 'shared/utils';
 import { gCharMap } from '../../db3/components/IconMap';
@@ -22,6 +21,7 @@ import { WikiPageApi } from './useWikiPageApi';
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { useLocalStorageState } from "../useLocalStorageState";
+import { ResponsiveDialog } from "../ResponsiveDialog";
 
 const kMaxImageDimension = 750;
 const kFullscreenSideBySideBreakpointQuery = "(min-width: 1200px)";
@@ -176,20 +176,6 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         lastForcedLayoutRef.current = props.markdownPreviewLayout;
         setPreviewLayout(props.markdownPreviewLayout);
     }, [props.markdownPreviewLayout, setPreviewLayout]);
-
-    const portalTarget = typeof window !== "undefined" ? window.document.body : null;
-
-    React.useEffect(() => {
-        if (!portalTarget) return;
-        const originalOverflow = portalTarget.style.overflow;
-        if (isFullscreen) {
-            portalTarget.style.overflow = "hidden";
-            return () => {
-                portalTarget.style.overflow = originalOverflow;
-            };
-        }
-        portalTarget.style.overflow = originalOverflow;
-    }, [isFullscreen, portalTarget]);
 
     const wasFullscreenRef = React.useRef<boolean>(false);
     React.useEffect(() => {
@@ -580,17 +566,17 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
         return <pre>{props.value}</pre>
     }
 
-    if (isFullscreen && portalTarget) {
-        return createPortal(
-            <div className="MD3FullscreenOverlay" role="dialog" aria-modal="true">
-                {renderEditorShell(true)}
-            </div>,
-            portalTarget
-        );
-    }
-
     if (isFullscreen) {
-        return renderEditorShell(true);
+        return <ResponsiveDialog
+            className="MarkdownFullscreenDialog"
+            open={true}
+            onClose={() => setIsFullscreen(false)}
+            scroll="paper"
+            maxWidth={false}
+            disableRestoreFocus={true}
+        >
+            {renderEditorShell(true)}
+        </ResponsiveDialog>;
     }
 
     return renderEditorShell(false);

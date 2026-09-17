@@ -1,12 +1,13 @@
-import { BlitzPage } from "@blitzjs/next";
-import React, { useState, useLayoutEffect, useRef } from "react";
-import { AppBar, Toolbar, Typography, IconButton, Box, Drawer, List, ListItem, ListItemText, Paper, useMediaQuery, useTheme, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
-import MenuIcon from '@mui/icons-material/Menu';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { Permission } from "shared/permissions";
 import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
+import { ResponsiveDialog } from "@/src/core/components/ResponsiveDialog";
+import { BlitzPage } from "@blitzjs/next";
+import MenuIcon from '@mui/icons-material/Menu';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { AppBar, Box, Button, DialogActions, DialogContent, DialogTitle, Drawer, IconButton, List, ListItem, ListItemText, Paper, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { useLayoutEffect, useRef, useState } from "react";
+import { Permission } from "shared/permissions";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const GridTestPage: BlitzPage = (props) => {
@@ -215,7 +216,7 @@ grid-template-areas:
             </Paper>
 
             {/* Modal Dialog */}
-            <Dialog
+            <ResponsiveDialog
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 maxWidth="sm"
@@ -273,7 +274,7 @@ grid-template-areas:
                         Toggle Media Player
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </ResponsiveDialog>
         </Box>
     );
 };

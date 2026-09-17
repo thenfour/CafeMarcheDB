@@ -2,11 +2,10 @@ import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
     Button,
-    Dialog,
     DialogContent,
     DialogTitle,
     TextField,
-    Tooltip,
+    Tooltip
 } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
@@ -18,12 +17,13 @@ import { DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import { useSnackbar } from "../SnackbarContext";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
-import { EnrichedVerboseUser } from "./UserListItem";
-import { useUserLifecycleActions } from "./useUserLifecycleActions";
-import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
 import { MergeUsersButton } from "./MergeUsersButton";
+import { EnrichedVerboseUser } from "./UserListItem";
+import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
+import { useUserLifecycleActions } from "./useUserLifecycleActions";
 
 type UserMgmtCaps = {
     canMerge?: boolean;
@@ -96,7 +96,7 @@ export const CorrectUserEmailButton = ({ capabilities, user, onOK }: CorrectUser
             }}>
                 Change contact email
             </Button>
-            <Dialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
+            <ResponsiveDialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
                 <DialogTitle>Change contact email for {user.name}</DialogTitle>
                 <DialogContent dividers>
                     <p>
@@ -125,7 +125,7 @@ export const CorrectUserEmailButton = ({ capabilities, user, onOK }: CorrectUser
                         }}>Save</Button>
                     </DialogActionsCM>
                 </DialogContent>
-            </Dialog>
+            </ResponsiveDialog>
         </>}
     </>
 }

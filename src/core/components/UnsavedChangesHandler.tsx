@@ -1,13 +1,13 @@
 // UnsavedChangesHandler.tsx
 import {
   Button,
-  Dialog,
   DialogContent,
   DialogTitle
 } from '@mui/material';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
 import { DialogActionsCM } from './CMCoreComponents2';
+import { ResponsiveDialog } from './ResponsiveDialog';
 
 interface UnsavedChangesHandlerProps {
   isDirty: boolean;
@@ -73,7 +73,7 @@ const UnsavedChangesHandler: React.FC<UnsavedChangesHandlerProps> = ({
     setNextRoute(null);
   };
 
-  return <Dialog open={showDialog}>
+  return <ResponsiveDialog open={showDialog}>
     <DialogTitle>Unsaved Changes</DialogTitle>
     <DialogContent>
       You have unsaved changes. Are you sure you want to leave?
@@ -84,7 +84,7 @@ const UnsavedChangesHandler: React.FC<UnsavedChangesHandlerProps> = ({
         </Button>
       </DialogActionsCM>
     </DialogContent>
-  </Dialog>;
+  </ResponsiveDialog>;
 };
 
 export default UnsavedChangesHandler;

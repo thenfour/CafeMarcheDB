@@ -1,12 +1,10 @@
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 import {
-    Button, Dialog, DialogContent,
+    Button, DialogContent,
     DialogTitle,
     FormControl
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
 import type { SettingKey } from "shared/settingKeys";
 import { AdminInspectObject, CMDialogContentText, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
@@ -17,6 +15,7 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { TAnyModel } from "@/shared/rootroot";
+import { ResponsiveDialog } from "src/core/components/ResponsiveDialog";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -138,9 +137,7 @@ type DB3EditObject2DialogProps = {
 };
 
 export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete, ...props }: DB3EditObject2DialogProps) {
-    const theme = useTheme();
     const publicData = useDB3Authorization();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(initialValue);
     const [oldObj, setOldObj] = React.useState(initialValue); // needed for tracking changes during validation
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
@@ -182,12 +179,11 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
 
     return (
         <Suspense>
-            <Dialog
+            <ResponsiveDialog
                 open={true}
                 onClose={onCancel}
                 scroll="paper"
-                className={`ReactiveInputDialog ${fullScreen ? "smallScreen" : "bigScreen"}`}
-                fullScreen={fullScreen}
+                className="ReactiveInputDialog"
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >
                 <DialogTitle>
@@ -241,7 +237,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                         <Button onClick={handleOK}>OK</Button>
                     </DialogActionsCM>
                 </DialogContent>
-            </Dialog>
+            </ResponsiveDialog>
         </Suspense >
     );
 };

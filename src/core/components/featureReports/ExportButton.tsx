@@ -1,7 +1,8 @@
 import { invoke } from "@blitzjs/rpc";
-import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import * as React from 'react';
 //
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import getDetailCsv from "./queries/getDetailCsv";
 import { FeatureReportFilterSpec } from './server/facetProcessor';
 
@@ -65,7 +66,12 @@ const ExportDialog = ({ open, onClose, filterSpec }: ExportDialogProps) => {
     };
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <ResponsiveDialog
+            open={open}
+            onClose={handleClose}
+            maxWidth="sm"
+            fullWidth
+        >
             <DialogTitle>Export Activity Data</DialogTitle>
             <DialogContent>
                 {status === 'idle' && (
@@ -106,7 +112,7 @@ const ExportDialog = ({ open, onClose, filterSpec }: ExportDialogProps) => {
                     </Button>
                 )}
             </DialogActions>
-        </Dialog>
+        </ResponsiveDialog>
     );
 };
 

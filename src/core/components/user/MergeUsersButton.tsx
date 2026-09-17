@@ -1,5 +1,5 @@
 import { invoke, useMutation, useQuery } from "@blitzjs/rpc";
-import { Alert, Button, Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { Alert, Button, DialogContent, DialogTitle } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import mergeUsers from "src/auth/mutations/mergeUsers";
@@ -12,6 +12,7 @@ import { DialogActionsCM } from "../CMCoreComponents2";
 import { CMTable } from "../CMTable";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
+import { ResponsiveDialog } from "../ResponsiveDialog";
 import { RoleChip } from "../RoleChip";
 import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/selectionSource";
@@ -164,7 +165,12 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
     const mainUserMassAnalysis = mainIsProfile ? userMassAnalysis : otherUserMassAnalysis;
     const otherUserMassAnalysisToShow = mainIsProfile ? otherUserMassAnalysis : userMassAnalysis;
 
-    return <Dialog open onClose={pending ? undefined : onClose} fullWidth maxWidth="md">
+    return <ResponsiveDialog
+        open
+        onClose={pending ? undefined : onClose}
+        fullWidth
+        maxWidth="md"
+    >
         <DialogTitle>Merge users</DialogTitle>
         <DialogContent dividers>
             <p>Select a second account, choose which one remains main and which one will be retired.
@@ -213,7 +219,7 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
                     </Button>}
             </DialogActionsCM>
         </DialogContent>
-    </Dialog>;
+    </ResponsiveDialog>;
 }
 
 export function MergeUsersButton({ user }: { user: { id: number; name: string } }) {
