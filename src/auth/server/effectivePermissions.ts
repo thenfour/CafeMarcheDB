@@ -40,9 +40,23 @@ export const loadEffectivePermissions = async (
     const specialRoles = await db.role.findMany({
         where: {
             OR: [
+                // everyone inherits the public role permissions (even non-users)
                 { isPublicRole: true },
                 ...(user?.isSysAdmin ? [{ isSysAdminRole: true }] : []),
             ],
+        },
+        include: {
+            permissions: {
+                include: { permission: true },
+            },
+        },
+    });
+
+    // users with a login also inherit these permissions.
+    // this resolves a situation where the user has no role at all.
+    const roleForNewUser = await db.role.findMany({
+        where: {
+            isRoleForNewUsers: true,
         },
         include: {
             permissions: {
@@ -58,11 +72,15 @@ export const loadEffectivePermissions = async (
     const sysadminRoles = specialRoles.filter(role => role.isSysAdminRole);
     const sysadminRole = sysadminRoles.length === 1 ? sysadminRoles[0] : null;
 
+    const userHasLoginButNoRole = !!user && !user.role;
+    const permsForNewUsers = roleForNewUser.flatMap(role => role.permissions);
+
     // flatten all (may contain dupes)
     const entries = [
         ...(publicRole?.permissions || []),
         ...(user?.role?.permissions || []),
         ...(sysadminRole?.permissions || []),
+        ...(userHasLoginButNoRole ? permsForNewUsers : []),
     ];
 
     const deduped = distinctValuesOfArray(entries, (a, b) => a.permissionId === b.permissionId);

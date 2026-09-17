@@ -23,7 +23,9 @@ const DynamicContent = () => {
   const dashboardContext = useDashboardContext();
   const currentUser = dashboardContext.currentUser;
   let noInstrumentsWarning = (currentUser?.instruments?.length || 0) < 1;
-  let limitedAccountWarning = !!(currentUser?.role?.isRoleForNewUsers);
+  const userHasLimitedAccount = !!(currentUser?.role?.isRoleForNewUsers);
+  const userHasNoAccountButNoRole = !!(currentUser && !currentUser.role);
+  const limitedAccountWarning = userHasLimitedAccount || userHasNoAccountButNoRole;
 
   return (<Suspense>
     <AppContextMarker name="backstage home">

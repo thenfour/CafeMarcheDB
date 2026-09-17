@@ -408,32 +408,15 @@ export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
 });
 
 // UIDs need to be url path compatible. So a slash cannot be used because it would break routing.
+// we use:
+// event uid is like "48f0e9ad-9354-4664-8a6d-a4681e14e75c"
+// user uid is another uuid like "d290f1ee-6c54-4b01-90e6-d701748f0851"
+// https://datatracker.ietf.org/doc/html/rfc7986#section-5.3
+// original RFC described an email like <uuid>@example.com format, but newer RFC
+// discourages identifiability.
 export function MakeICalEventUid(eventUid: string, userUid: string | null) {
-    return `${eventUid}_${userUid || "public"}@cafemarche.be`;
+    return `${eventUid}_${userUid || "public"}`;
 }
-
-
-// export function ParseICalEventUid(uid: string): { eventUid: string; userUid: string | null } | null {
-//     // Define the regex pattern
-//     const regex = /^(.+?)_(.+?)@cafemarche\.be$/;
-
-//     // Test the UID string against the regex
-//     const match = uid.match(regex);
-
-//     // If it doesn't match, return null
-//     if (!match) {
-//         console.error('Invalid UID format');
-//         return null;
-//     }
-
-//     // Extract eventUid and userUid from the regex match
-//     const [, eventUid, userUid] = match;
-
-//     return {
-//         eventUid: eventUid!,
-//         userUid: userUid === "public" ? null : userUid!,
-//     };
-// }
 
 export function GetICalRelativeURIForUserUpcomingEvents(args: { calendarFeedToken: string | null }) {
     return `/api/ical/user/${encodeURIComponent(args.calendarFeedToken || "public")}/upcoming`;

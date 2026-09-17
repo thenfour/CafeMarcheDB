@@ -63,9 +63,9 @@ export interface UserManagementCapabilities {
     canSetSysAdmin: boolean;
 }
 
-export const roleHasPermission = (role: UserManagementRole | undefined, permission: Permission): boolean => (
-    role?.permissions?.some(entry => entry.permission?.name === permission) || false
-);
+export const roleHasPermission = (role: UserManagementRole | undefined, permission: Permission): boolean => {
+    return role?.permissions?.some(entry => entry.permission?.name === permission) || false;
+};
 
 const getActorPermissionNames = (actor: UserManagementPrincipal): ReadonlySet<string> => new Set([
     ...(actor.role?.permissions
@@ -113,7 +113,9 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
 
     const actorIsSysadmin = roleHasPermission(actor.role, Permission.sysadmin);
 
-    if (target.mergedIntoUserId != null) return false;
+    if (target.mergedIntoUserId != null) {
+        return false;
+    }
 
     if (action === "merge") {
         return roleHasPermission(actor.role, Permission.merge_users)
@@ -132,7 +134,9 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
             && (actorIsSysadmin || (!isProtectedUser(target) && isRoleWithinDelegationEnvelope(actor, target.role)));
     }
 
-    if (target.isDeleted === true) return false;
+    if (target.isDeleted === true) {
+        return false;
+    }
 
     if (action === "setSysAdmin") {
         return actorIsSysadmin;
@@ -160,8 +164,12 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
             && actor.id !== target.id;
     }
 
-    if (targetIsProtected && !actorIsSysadmin) return false;
-    if (actorIsSysadmin) return true;
+    if (targetIsProtected && !actorIsSysadmin) {
+        return false;
+    }
+    if (actorIsSysadmin) {
+        return true;
+    }
 
     if (action === "assignRole") {
         if (!roleHasPermission(actor.role, Permission.assign_user_roles)) return false;
@@ -175,7 +183,10 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     const isSelf = actor.id === target.id;
-    if (isSelf && roleHasPermission(actor.role, Permission.basic_trust)) return true;
+    if (isSelf && roleHasPermission(actor.role, Permission.basic_trust)) {
+        return true;
+    }
+
     return roleHasPermission(actor.role, Permission.manage_users);
 };
 

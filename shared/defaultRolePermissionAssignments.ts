@@ -264,6 +264,7 @@ export const DefaultRolePermissionAssignments: ReadonlyArray<[string, string]> =
         ["Public", "public"],
         ["Public", "view_events"],
         ["Public", "view_files"],
-        ["Public", "visibility_public"]
+        ["Public", "visibility_public"],
+        ["Public", "view_wiki_pages"],
     ]
     ;
