@@ -1,5 +1,4 @@
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
-import { loadBandTimeZone } from "src/server/dateTime";
 import { calendarWindowSql } from "./calendarWindowSql";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
@@ -15,6 +14,7 @@ import { queryTable } from "src/core/db3/server/db3QueryCore";
 import { CalculateFilterQueryResult, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
 async function GetCustomSearchResultsHook(currentUser: UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
     const fullEvents = resultsSoFar.results as db3.EventSearch_Event[];

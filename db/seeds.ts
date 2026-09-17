@@ -5,12 +5,21 @@ import { SeedingState } from './seeding/base';
 import { SeedEvents_VeryRandom } from './seeding/events';
 import { SeedActivity } from './seeding/activitySeeding';
 import { SeedWikiPages } from './seeding/wikiPageSeeding';
-import { DefaultRolePermissionAssignments } from '../shared/defaultRolePermissionAssignments';
+import { DefaultRolePermissionAssignments, DefaultRoles } from '../shared/defaultRolePermissionAssignments';
 
 const gState = new SeedingState();
 
 
-const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
+const SeedTable = async <
+  Ttable extends {
+    create: (inp: { data: TuncheckedCreateInput }) => any
+  }, TuncheckedCreateInput//
+>//
+  (
+    tableName: string,
+    table: Ttable,
+    items: ReadonlyArray<TuncheckedCreateInput>//
+  ) => {
   console.log(`Seeding table ${tableName}`);
 
   // This array will store the original input items along with their new primary keys
@@ -514,87 +523,18 @@ const main = async () => {
 
 
   await SeedTable("role", gState.prisma.role,
-    [
-      {
-        "name": "Public",
-        "description": "not even logged in",
-        "isRoleForNewUsers": false,
-        "isPublicRole": true,
-        "isSysAdminRole": false,
-        "sortOrder": 0,
-        "color": "citron",
-        "significance": null
-      },
-      {
-        "name": "Limited Users",
-        "description": "logged-in users with no rights",
-        "isRoleForNewUsers": true,
-        "isPublicRole": false,
-        "isSysAdminRole": false,
-        "sortOrder": 10,
-        "color": "green",
-        "significance": null
-      },
-      {
-        "name": "Normal Users",
-        "description": "login with granted normal rights",
-        "isRoleForNewUsers": false,
-        "isPublicRole": false,
-        "isSysAdminRole": false,
-        "sortOrder": 40,
-        "color": "blue",
-        "significance": null
-      },
-      {
-        "name": "Editors",
-        "description": "",
-        "isRoleForNewUsers": false,
-        "isPublicRole": false,
-        "isSysAdminRole": false,
-        "sortOrder": 60,
-        "color": "gold",
-        "significance": null
-      },
-      {
-        "name": "Moderators",
-        "description": "site content moderation",
-        "isRoleForNewUsers": false,
-        "isPublicRole": false,
-        "isSysAdminRole": false,
-        "sortOrder": 80,
-        "color": "purple",
-        "significance": null
-      },
-      {
-        "name": "Band Admin",
-        "description": "technical band administration",
-        "isRoleForNewUsers": false,
-        "isPublicRole": false,
-        "isSysAdminRole": false,
-        "sortOrder": 90,
-        "color": "purple",
-        "significance": null
-      },
-      {
-        "name": "Admin",
-        "description": "technical admin",
-        "isRoleForNewUsers": false,
-        "isPublicRole": false,
-        "isSysAdminRole": true,
-        "sortOrder": 100,
-        "color": "black",
-        "significance": null
-      }
-    ]
+    DefaultRoles
   );
 
   for (const definition of gPermissionRegistry) {
+    console.log(`Seeding permission: ${definition.key}, sortOrder=${definition.sortOrder}`);
     await gState.prisma.permission.create({
       data: {
         name: definition.key,
         ...getPermissionDatabaseMetadata(definition),
       },
     });
+    console.log(`  ...success`);
   }
 
 

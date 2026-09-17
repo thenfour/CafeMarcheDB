@@ -18,21 +18,21 @@ const RecoveryContent = ({ status }: { status: AdminBootstrapStatus }) => {
 
     if (claimSucceeded || status.isAlreadySysadmin) {
         return <div className="signInBlock">
-            <div className="title">System administration is available</div>
-            <div className="description">This account has Sysadmin access.</div>
+            <div className="title">Success ✅</div>
+            <div className="description">This account has sysadmin rights.</div>
         </div>;
     }
 
     if (!status.isConfigured) {
         return <div className="signInBlock">
-            <div className="title">Administrator recovery is unavailable</div>
+            <div className="title">Administrator recovery is unavailable ❌</div>
             <div className="description">The deployment bootstrap credential is not configured.</div>
         </div>;
     }
 
     if (!status.isClaimable) {
         return <div className="signInBlock">
-            <div className="title">Administrator recovery is unavailable</div>
+            <div className="title">Administrator recovery is unavailable ❌</div>
             <div className="description">The configured bootstrap credential has already been claimed.</div>
         </div>;
     }

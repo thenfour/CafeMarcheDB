@@ -10,9 +10,9 @@ import { getClientServerState } from "shared/serverStateBase";
 import { EventStatusSignificance, xEvent, xMenuLink } from "src/core/db3/db3";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-import { loadBandTimeZone } from "src/server/dateTime";
 import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadUserSettings } from "../server/userSettings";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
 
 // returns a list of eventIds to show in the dashboard for the current user.
@@ -157,7 +157,7 @@ export default resolver.pipe(
                 menuItemsCall,
                 db.wikiPageTag.findMany(),
                 relevantEventsCall,
-                loadBandTimeZone(),
+                loadBandTimeZone(db),
                 loadUserSettings(currentUser?.id ?? null),
             ]);
 

@@ -1,5 +1,4 @@
 import { CalendarDate } from "shared/dateTimePolicy";
-import { loadBandTimeZone } from "src/server/dateTime";
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
@@ -12,6 +11,7 @@ import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { TGetImportEventDataArgs, TGetImportEventDataRet } from "../shared/apiTypes";
 import { GetDefaultVisibilityPermission } from "../shared/db3Helpers";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
 
 
@@ -184,7 +184,7 @@ export default resolver.pipe(
     async (args: TGetImportEventDataArgs, ctx: AuthenticatedCtx): Promise<TGetImportEventDataRet> => {
         const currentUser = await getCurrentUserCore(ctx);
         if (!currentUser) throw new Error("Current user was not found.");
-        const bandTimeZone = await loadBandTimeZone();
+        const bandTimeZone = await loadBandTimeZone(db);
         const today = CalendarDate.fromInstant({ value: new Date(), timeZone: bandTimeZone });
         const todayRange = createAllDayRange({ startDate: today.date, endDateExclusive: today.addDays(1).date }, bandTimeZone);
         // start with defaults.

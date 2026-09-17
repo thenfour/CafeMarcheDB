@@ -1,10 +1,11 @@
-import { DateTimeRange, roundToNearest15Minutes, createAllDayRange } from "shared/time";
-import { CalendarDate } from "shared/dateTimePolicy";
-import { loadBandTimeZone } from "src/server/dateTime";
+import { DateTimeRange, roundToNearest15Minutes, createAllDayRange } from "../../shared/time";
+import { CalendarDate } from "../../shared/dateTimePolicy";
 import { faker } from '@faker-js/faker';
 import { Prisma } from '@prisma/client';
 import { SeedingState } from './base';
 //import { EventTypeSignificance } from 'src/core/db3/db3';
+
+const BAND_TIME_ZONE = "Europe/Brussels";
 
 // Define arrays of words for event names
 const adjectives = [
@@ -422,7 +423,7 @@ function GenerateEventsAndSegments(gState: SeedingState, config: EventSeedingCon
 
 export const SeedEvents_VeryRandom = async (gState: SeedingState) => {
 
-    let eventDates = GenerateEventsAndSegments(gState, gState.config.events, await loadBandTimeZone(gState.prisma));
+    let eventDates = GenerateEventsAndSegments(gState, gState.config.events, BAND_TIME_ZONE);
     console.log(`creating ${eventDates.length} events...`);
 
     eventDates = faker.helpers.shuffle(eventDates);

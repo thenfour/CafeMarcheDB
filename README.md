@@ -21,7 +21,6 @@ See [Releases and deployment](docs/deployment.md) for manual GitHub Actions rele
 * Event management
   * Multi-segments
   * Attendance breakdowns
-  * Workflow engine for event mgmt
 * Setlist creation and management tools
 * Rehearsal planning tools
 * Media player

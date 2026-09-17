@@ -1,4 +1,79 @@
+export const DefaultRoles: ReadonlyArray<Record<string, any>> =
+    [
+        {
+            "name": "Public",
+            "description": "not even logged in",
+            "isRoleForNewUsers": false,
+            "isPublicRole": true,
+            "isSysAdminRole": false,
+            "sortOrder": 0,
+            "color": "citron",
+            "significance": null
+        },
+        {
+            "name": "Limited Users",
+            "description": "logged-in users with no rights",
+            "isRoleForNewUsers": true,
+            "isPublicRole": false,
+            "isSysAdminRole": false,
+            "sortOrder": 10,
+            "color": "green",
+            "significance": null
+        },
+        {
+            "name": "Normal Users",
+            "description": "login with granted normal rights",
+            "isRoleForNewUsers": false,
+            "isPublicRole": false,
+            "isSysAdminRole": false,
+            "sortOrder": 40,
+            "color": "blue",
+            "significance": null
+        },
+        {
+            "name": "Editors",
+            "description": "",
+            "isRoleForNewUsers": false,
+            "isPublicRole": false,
+            "isSysAdminRole": false,
+            "sortOrder": 60,
+            "color": "gold",
+            "significance": null
+        },
+        {
+            "name": "Moderators",
+            "description": "site content moderation",
+            "isRoleForNewUsers": false,
+            "isPublicRole": false,
+            "isSysAdminRole": false,
+            "sortOrder": 80,
+            "color": "purple",
+            "significance": null
+        },
+        {
+            "name": "Band Admin",
+            "description": "technical band administration",
+            "isRoleForNewUsers": false,
+            "isPublicRole": false,
+            "isSysAdminRole": false,
+            "sortOrder": 90,
+            "color": "purple",
+            "significance": null
+        },
+        {
+            "name": "Admin",
+            "description": "technical admin",
+            "isRoleForNewUsers": false,
+            "isPublicRole": false,
+            "isSysAdminRole": true,
+            "sortOrder": 100,
+            "color": "black",
+            "significance": null
+        }
+    ];
+
 // used by seeding, and by runtime permission seeds.
+// use the role permission matrix page, copy as json and paste below to manage this.
 
 export const DefaultRolePermissionAssignments: ReadonlyArray<[string, string]> =
     [

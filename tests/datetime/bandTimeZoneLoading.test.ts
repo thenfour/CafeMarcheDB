@@ -7,11 +7,11 @@ vi.mock("db", async () => {
 })
 
 import { Setting } from "shared/settingKeys"
-import { loadBandTimeZone } from "src/server/dateTime"
 import getDashboardData from "src/auth/queries/getDashboardData"
 import { authorizationTestDb } from "../authorization/support/inMemoryPrisma"
 import { createAuthorizationPersona } from "../authorization/support/authorizationFixtures"
 import { invokeResolver } from "../authorization/support/resolverHarness"
+import { loadBandTimeZone } from "@/src/server/bandTimeZone"
 
 describe("server band timezone configuration", () => {
   beforeEach(() => authorizationTestDb.reset({ setting: [] }))

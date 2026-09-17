@@ -46,6 +46,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #674 fixed some issues related to document editing
   - #676 Fixed and refined handling of date/times, ranges, user's local timezone, and added concept of a band timezone.
   - #647 pinning events was confusing; now you have options to Pin, Unpin, and Hide.
+  - #691 Removing the unused workflows feature.
 
 ## security hardening
 

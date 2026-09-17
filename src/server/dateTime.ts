@@ -1,18 +1,9 @@
-import { createAllDayRange } from "shared/time";
-import { getRangeCalendarDates } from "shared/dateTimePresentation";
-import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
-import db from "db";
-import { resolveBandTimeZone } from "shared/dateTimePolicy";
-import { Setting } from "shared/settingKeys";
-import { EventStatusSignificance, getEventDateBoundsFromSegments } from "src/core/db3/db3";
-import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
-
-// Scheduling configuration is read fresh; it must not inherit the branding
-// cache's last-known-good fallback when deciding event boundaries.
-export async function loadBandTimeZone(client: TransactionalPrismaClient = db): Promise<string> {
-    const setting = await client.setting.findFirst({ where: { name: Setting.BandTimeZone } });
-    return resolveBandTimeZone(setting?.value);
-}
+import { getRangeCalendarDates } from "../../shared/dateTimePresentation";
+import { createAllDayRange } from "../../shared/time";
+import { Setting } from "../../shared/settingKeys";
+import { EventStatusSignificance, getEventDateBoundsFromSegments, getEventSegmentDateTimeRange } from "../core/db3/db3";
+import { TransactionalPrismaClient } from "../core/db3/shared/apiTypes";
+//import db from "db";
 
 export function isBandTimeZoneSetting(name: string | undefined): boolean {
     return name?.trim().toLowerCase() === Setting.BandTimeZone.toLowerCase();
@@ -70,9 +61,13 @@ export async function reanchorAllDayEvents(client: TransactionalPrismaClient, ol
     for (const segment of segments) {
         const dates = getRangeCalendarDates(getEventSegmentDateTimeRange(segment), oldTimeZone)!;
         const spec = createAllDayRange(dates.dates, newTimeZone).getSpec();
-        await client.eventSegment.update({ where: { id: segment.id }, data: {
-            startsAt: spec.startsAtDateTime, durationMillis: spec.durationMillis,
-        } });
+        await client.eventSegment.update({
+            where: { id: segment.id },
+            data: {
+                startsAt: spec.startsAtDateTime,
+                durationMillis: spec.durationMillis,
+            }
+        });
     }
     await recalculateEventDateBounds(client);
 }

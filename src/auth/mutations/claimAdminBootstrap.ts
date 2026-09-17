@@ -76,12 +76,26 @@ export default resolver.pipe(
                     user.id,
                 );
                 if (!recordedClaim) failClaim();
+
+                const sysadminRoles = await tx.role.findMany({
+                    where: { isSysAdminRole: true },
+                    select: {
+                        id: true,
+                    },
+                });
+                if (sysadminRoles.length !== 1) failClaim();
+
                 const updatedUser = await tx.user.update({
                     ...UserWithRolesArgs,
                     where: { id: user.id },
-                    data: { isSysAdmin: true },
+                    data: {
+                        isSysAdmin: true,
+                        roleId: sysadminRoles[0].id,
+                    },
                 });
+
                 await tx.session.deleteMany({ where: { userId: user.id } });
+
                 await RegisterChange({
                     action: ChangeAction.update,
                     changeContext: CreateChangeContext("claimAdminBootstrap"),

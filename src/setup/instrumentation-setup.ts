@@ -1,5 +1,5 @@
 import { DefaultDbBrandConfig } from "@/shared/brandConfigBase";
-import { DefaultRolePermissionAssignments } from "@/shared/defaultRolePermissionAssignments";
+import { DefaultRolePermissionAssignments, DefaultRoles } from "@/shared/defaultRolePermissionAssignments";
 import { getPermissionDatabaseMetadata, gPermissionRegistry } from "@/shared/permissions";
 import { Setting } from "@/shared/settingKeys";
 import { assertValidSysadminRole } from "@/src/auth/server/sessionInvalidation";
@@ -11,6 +11,7 @@ import { ValidateRouteRegistry } from "../auth/shared/backstageRoutes";
 async function SyncPermissionsTable() {
     console.log(`Synchronizing permissions table...`);
     const dbPermissions = await db.permission.findMany();
+    // ensure permissions exist.
     for (const definition of gPermissionRegistry) {
         const existingPermission = dbPermissions.find(dbp => dbp.name === definition.key);
         const canonicalData = getPermissionDatabaseMetadata(definition);
@@ -55,70 +56,7 @@ async function EnsureDefaultRoles() {
         console.log(`Roles already exist. Skipping seeding default roles.`);
         return;
     }
-    await SeedTable("role", db.role,
-        [
-            {
-                "name": "Public",
-                "description": "not even logged in",
-                "isRoleForNewUsers": false,
-                "isPublicRole": true,
-                "isSysAdminRole": false,
-                "sortOrder": 0,
-                "color": "citron",
-                "significance": null
-            },
-            {
-                "name": "Limited Users",
-                "description": "logged-in users with no rights",
-                "isRoleForNewUsers": true,
-                "isPublicRole": false,
-                "isSysAdminRole": false,
-                "sortOrder": 10,
-                "color": "green",
-                "significance": null
-            },
-            {
-                "name": "Normal Users",
-                "description": "login with granted normal rights",
-                "isRoleForNewUsers": false,
-                "isPublicRole": false,
-                "isSysAdminRole": false,
-                "sortOrder": 40,
-                "color": "blue",
-                "significance": null
-            },
-            {
-                "name": "Editors",
-                "description": "",
-                "isRoleForNewUsers": false,
-                "isPublicRole": false,
-                "isSysAdminRole": false,
-                "sortOrder": 60,
-                "color": "gold",
-                "significance": null
-            },
-            {
-                "name": "Moderators",
-                "description": "just below site admin",
-                "isRoleForNewUsers": false,
-                "isPublicRole": false,
-                "isSysAdminRole": false,
-                "sortOrder": 80,
-                "color": "purple",
-                "significance": null
-            },
-            {
-                "name": "Admin",
-                "description": "technical admin",
-                "isRoleForNewUsers": false,
-                "isPublicRole": false,
-                "isSysAdminRole": true,
-                "sortOrder": 100,
-                "color": "black",
-                "significance": null
-            }
-        ]
-    );
+    await SeedTable("role", db.role, DefaultRoles);
 };
 
 async function EnsureRolePermissionMatrix() {
@@ -131,8 +69,6 @@ async function EnsureRolePermissionMatrix() {
         return;
     }
 
-    // use the role permission matrix page, copy as json and paste below to manage this.
-    // todo: unify with seeds (currently this table is duplicated!)
     const rolePermissionAssignments = DefaultRolePermissionAssignments;
 
     console.log(`Seeding role-permission assignments`);
@@ -648,7 +584,9 @@ export async function instrumentationSetup() {
 
     await SyncPermissionsTable();
     await EnsureDefaultRoles();
+
     await EnsureRolePermissionMatrix();
+
     await assertValidSysadminRole(db);
     await EnsureEventStatuses();
     await EnsureEventTypes();

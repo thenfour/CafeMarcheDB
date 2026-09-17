@@ -1,6 +1,15 @@
 
 // Utility function to seed a database table with items and log the created entries
-export const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
+export const SeedTable = async < //
+    Ttable extends {
+        create: (inp: { data: TuncheckedCreateInput }) => any
+    },
+    TuncheckedCreateInput
+>(//
+    tableName: string,
+    table: Ttable,
+    items: ReadonlyArray<TuncheckedCreateInput>//
+) => {
     console.log(`Seeding table ${tableName}`);
 
     // This array will store the original input items along with their new primary keys

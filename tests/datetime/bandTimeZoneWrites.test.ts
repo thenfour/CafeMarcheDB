@@ -12,13 +12,13 @@ import db3Mutation from "@db3/mutations/db3mutations"
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings"
 import updateSetting from "src/auth/mutations/updateSetting"
 import { clearBrandCache } from "src/server/brand"
-import { loadBandTimeZone } from "src/server/dateTime"
 import { Permission } from "shared/permissions"
 import { Setting } from "shared/settingKeys"
 import { authorizationTestDb } from "../authorization/support/inMemoryPrisma"
 import { createAuthorizationPersona, createAuthorizationTestUser } from "../authorization/support/authorizationFixtures"
 import { forgeDb3Insert, forgeDb3Update } from "../authorization/support/db3RequestBuilders"
 import { invokeResolver } from "../authorization/support/resolverHarness"
+import { loadBandTimeZone } from "@/src/server/bandTimeZone"
 
 const sysadmin = createAuthorizationTestUser("sysadmin", { id: 710 })
 const adminContext = () => createAuthorizationPersona("sysadmin", { id: sysadmin.id }).ctx

@@ -452,7 +452,7 @@ export const UserMinimumArgs = Prisma.validator<Prisma.UserArgs>()({
 export type UserPayloadMinimum = Prisma.UserGetPayload<typeof UserMinimumArgs>;
 
 
-export const UserForCalBackendArgs = Prisma.validator<Prisma.UserArgs>()({
+export const UserForCalBackendArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
         id: true,
         name: true,

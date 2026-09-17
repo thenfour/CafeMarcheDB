@@ -10,7 +10,7 @@ import type { TAnyModel } from "@/shared/rootroot";
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
         super();
-        this.message = "Not authorized to perform this DB3 query.";
+        this.message = "Not authorized to perform this query.";
         this.name = "DB3QueryAuthorizationError";
     }
 }
