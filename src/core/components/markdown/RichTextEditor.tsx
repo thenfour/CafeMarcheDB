@@ -11,6 +11,7 @@ import { CollapsableUploadFileComponent, FileDropWrapper } from "../file/FileDro
 import { fetchObjectQuery } from '../ItemAssociation';
 import { fetchInlineClasses } from './MarkdownReactPlugins';
 import { useKeyboardState } from '../../hooks/useKeyboardState';
+import { NativeTextAreaEdit } from './useControlledTextArea';
 
 var turndownService = new TurndownService();
 
@@ -38,7 +39,8 @@ async function fetchEventOrSongTagsAt(keyword: string): Promise<QuickSearchItemM
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownEditorProps {
     value: string | null, // value which may be coming from the database.
-    onValueChanged: (val: string) => void, // caller can save the changed value to a db here.
+    onValueChanged: (edit: NativeTextAreaEdit) => void, // caller can save the changed value to a db here.
+    onBeforeInput: (inputType: string | undefined, selectionStart: number, selectionEnd: number) => boolean;
     onSave?: () => void,
     nominalHeight: number,
     autoFocus?: boolean;
@@ -49,6 +51,12 @@ interface MarkdownEditorProps {
 
     textAreaRef: (ref: HTMLTextAreaElement | null) => void; // ref to the textarea element.
     nativeFileInputRef: (ref: HTMLInputElement | null) => void; // ref to the native file input element.
+}
+
+function getInputType(nativeEvent: Event | undefined): string | undefined {
+    if (!nativeEvent) return undefined; // hitting ctrl+Z produces no native event but does produce onChange.
+    if (!("inputType" in nativeEvent) || typeof nativeEvent.inputType !== "string") return undefined;
+    return nativeEvent.inputType;
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
@@ -107,8 +115,26 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 value={props.value || ""}
                 height={props.nominalHeight || 400}
                 style={{ height: props.nominalHeight }}
-                onChange={(e) => {
-                    props.onValueChanged(e.target.value);
+                onBeforeInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
+                    const inputWasHandled = props.onBeforeInput(
+                        getInputType(event.nativeEvent),
+                        event.currentTarget.selectionStart,
+                        event.currentTarget.selectionEnd
+                    );
+                    if (inputWasHandled) {
+                        event.preventDefault();
+                    }
+                }}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                    console.log(`onChange event e=`, e, "nativeEvent=", e.nativeEvent);
+                    const inputType = getInputType(e.nativeEvent);
+                    console.log(`inputType=${inputType}`);
+                    props.onValueChanged({
+                        text: e.target.value,
+                        selectionStart: e.target.selectionStart,
+                        selectionEnd: e.target.selectionEnd,
+                        inputType,
+                    });
                 }}
                 onPaste={handlePaste}
                 minChar={1} // how many chars AFTER the trigger char you need to type before the popup arrives

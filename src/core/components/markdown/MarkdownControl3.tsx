@@ -285,7 +285,7 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                 return `[${f.fileLeafName}](${url})`;
             }).join(" ");
 
-            void controlledTextArea.replaceSelectionWithText(toInsert, { select: "change" });
+            void apiRef.current.controlledTextArea.replaceSelectionWithText(toInsert, { select: "change" });
 
             if (!resp.isSuccess) {
                 throw new Error(`Server returned unsuccessful result while uploading files`);
@@ -469,7 +469,8 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                 >
                                     <div className="editorContainer">
                                         <MarkdownEditor
-                                            onValueChanged={handleChange}
+                                            onValueChanged={controlledTextArea.handleNativeTextChange}
+                                            onBeforeInput={controlledTextArea.handleNativeBeforeInput}
                                             onSave={props.handleSave}
                                             nominalHeight={effectiveNominalHeight}
                                             value={useValue}
@@ -480,7 +481,10 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                             nativeFileInputRef={setNativeFileInputRef}
                                             onFileSelect={handleFileSelect}
                                             onCustomPaste={(pastedHtml) => {
-                                                void controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
+                                                void controlledTextArea.replaceSelectionWithText(pastedHtml, {
+                                                    select: "afterChange",
+                                                    historyEditKind: "isolated",
+                                                });
                                             }}
                                         />
                                     </div>
@@ -506,7 +510,8 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                         <>
                             <div className="editorContainer">
                                 <MarkdownEditor
-                                    onValueChanged={handleChange}
+                                    onValueChanged={controlledTextArea.handleNativeTextChange}
+                                    onBeforeInput={controlledTextArea.handleNativeBeforeInput}
                                     onSave={props.handleSave}
                                     nominalHeight={effectiveNominalHeight}
                                     value={useValue}
@@ -517,7 +522,10 @@ export const Markdown3Editor = ({ readonly = false, autoFocus = false, wikiPageA
                                     nativeFileInputRef={setNativeFileInputRef}
                                     onFileSelect={handleFileSelect}
                                     onCustomPaste={(pastedHtml) => {
-                                        void controlledTextArea.replaceSelectionWithText(pastedHtml, { select: "afterChange" });
+                                        void controlledTextArea.replaceSelectionWithText(pastedHtml, {
+                                            select: "afterChange",
+                                            historyEditKind: "isolated",
+                                        });
                                     }}
                                 />
                             </div>

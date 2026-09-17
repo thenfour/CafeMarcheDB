@@ -1,3 +1,6 @@
+import React from "react";
+
+import { MarkdownEditKind, MarkdownEditorSnapshot } from "./MarkdownEditorHistory";
 import { UndoManagerApi, useUndoManager } from "./MarkdownUndoStack";
 import {
     getListAtCaretInfo as getListAtCaretInfoFromText,
@@ -10,6 +13,21 @@ export type { ListAtCaretInfo } from "./MarkdownTextEditing";
 
 interface ReplaceSelectionWithTextOptions {
     select: "change" | "afterChange",
+    historyEditKind?: MarkdownEditKind;
+}
+
+export interface NativeTextAreaEdit {
+    text: string;
+    selectionStart: number;
+    selectionEnd: number;
+    inputType: string | undefined;
+}
+
+interface PendingSelectionRestore {
+    expectedText: string;
+    selectionStart: number;
+    selectionEnd: number;
+    resolve: () => void;
 }
 
 export interface ControlledTextAreaAPI {
@@ -31,6 +49,9 @@ export interface ControlledTextAreaAPI {
     transformSelectedLines: (transform: (line: string, lineIndex: number, allSelectedLines: string[]) => string | undefined) => Promise<void>; // transforming a line to undefined removes it.
     toggleSurroundingSelectionWithText: (prefix: string, suffix: string, textIfNoSelection: string) => Promise<void>;
 
+    handleNativeBeforeInput: (inputType: string | undefined, selectionStart: number, selectionEnd: number) => boolean;
+    handleNativeTextChange: (edit: NativeTextAreaEdit) => void;
+
     undoManagerApi: UndoManagerApi,
 }
 
@@ -40,10 +61,13 @@ export function useControlledTextArea(
     onTextChange: (val: string) => void
 ): ControlledTextAreaAPI {
 
-    const textArea = textAreaRef?.current ?? null;
+    const getTextArea = () => textAreaRef?.current ?? null;
+    const textArea = getTextArea();
+    const pendingSelectionRestoreRef = React.useRef<PendingSelectionRestore | null>(null);
 
     const setSelectionRange = async (start: number, end: number) => {
         return new Promise<void>((resolve) => {
+            const textArea = getTextArea();
             if (!textArea) return resolve();
             textArea.setSelectionRange(start, end);
             textArea.focus();
@@ -51,34 +75,101 @@ export function useControlledTextArea(
                 resolve();
             }, 0); // wait for the focus to be applied before resolving.
         });
-        // if (!textArea) return;
-        // textArea.setSelectionRange(start, end);
-        // textArea.focus();
     };
-    const setSelectionRangeAsync = (start: number, end: number): Promise<void> => {
-        return new Promise((resolve) => {
-            setTimeout(async () => {
-                await setSelectionRange(start, end);
-                resolve();
-            }, 0);
+    React.useLayoutEffect(() => {
+        const pendingSelectionRestore = pendingSelectionRestoreRef.current;
+        if (!pendingSelectionRestore || pendingSelectionRestore.expectedText !== textValue) return;
+
+        pendingSelectionRestoreRef.current = null;
+        const textArea = getTextArea();
+        if (textArea) {
+            textArea.setSelectionRange(
+                pendingSelectionRestore.selectionStart,
+                pendingSelectionRestore.selectionEnd
+            );
+            textArea.focus();
+        }
+        pendingSelectionRestore.resolve();
+    }, [textValue, textAreaRef]);
+
+    const setTextAndSelection = (
+        text: string,
+        selectionStart: number,
+        selectionEnd: number
+    ): Promise<void> => {
+        if (text === textValue) {
+            return setSelectionRange(selectionStart, selectionEnd);
+        }
+
+        return new Promise(resolve => {
+            pendingSelectionRestoreRef.current?.resolve();
+            pendingSelectionRestoreRef.current = {
+                expectedText: text,
+                selectionStart,
+                selectionEnd,
+                resolve,
+            };
+            onTextChange(text);
         });
     };
 
+    const applyHistorySnapshot = async (snapshot: MarkdownEditorSnapshot) => {
+        await setTextAndSelection(snapshot.text, snapshot.selectionStart, snapshot.selectionEnd);
+    };
+
+    const undoManagerController = useUndoManager({
+        textValue,
+        selectionStart: textArea?.selectionStart ?? 0,
+        selectionEnd: textArea?.selectionEnd ?? 0,
+        applySnapshot: applyHistorySnapshot,
+    });
+
+    const getCurrentSnapshot = (): MarkdownEditorSnapshot => ({
+        text: textValue,
+        selectionStart: getTextArea()?.selectionStart ?? 0,
+        selectionEnd: getTextArea()?.selectionEnd ?? 0,
+    });
+
+    const applyProgrammaticEdit = async (
+        start: number,
+        end: number,
+        replacement: string,
+        selectionStart: number,
+        selectionEnd: number,
+        editKind: MarkdownEditKind = "isolated"
+    ) => {
+        const before = getCurrentSnapshot();
+        const after: MarkdownEditorSnapshot = {
+            text: textValue.slice(0, start) + replacement + textValue.slice(end),
+            selectionStart,
+            selectionEnd,
+        };
+
+        undoManagerController.recordProgrammaticEdit(before, after, editKind);
+        await setTextAndSelection(after.text, after.selectionStart, after.selectionEnd);
+    };
+
     const getSelectedText = () => {
+        const textArea = getTextArea();
         if (!textArea) return "";
         return textValue.slice(textArea.selectionStart, textArea.selectionEnd);
     };
 
     const replaceRange = async (start: number, end: number, replacement: string) => {
-        const before = textValue.slice(0, start);
-        const after = textValue.slice(end);
-        const newText = before + replacement + after;
-        onTextChange(newText);
+        const caretAfterReplacement = start + replacement.length;
+        await applyProgrammaticEdit(
+            start,
+            end,
+            replacement,
+            caretAfterReplacement,
+            caretAfterReplacement
+        );
     };
 
     async function transformSelectedLines(
         transformLine: (text: string, lineIndex: number, allSelectedLines: string[]) => string | undefined
     ) {
+        const textArea = getTextArea();
         if (!textArea) return;
         const result = transformSelectedLinesInText(
             textValue,
@@ -86,11 +177,18 @@ export function useControlledTextArea(
             textArea.selectionEnd,
             transformLine
         );
-        onTextChange(result.text);
-        await setSelectionRangeAsync(result.selectionStart, result.selectionEnd);
+        const before = getCurrentSnapshot();
+        const after: MarkdownEditorSnapshot = {
+            text: result.text,
+            selectionStart: result.selectionStart,
+            selectionEnd: result.selectionEnd,
+        };
+        undoManagerController.recordProgrammaticEdit(before, after);
+        await setTextAndSelection(after.text, after.selectionStart, after.selectionEnd);
     }
 
     const isLineBasedSelection = () => {
+        const textArea = getTextArea();
         if (!textArea) return false;
         return isLineBasedSelectionInText(textValue, textArea.selectionStart, textArea.selectionEnd);
     };
@@ -101,6 +199,7 @@ export function useControlledTextArea(
      * Returns the entire list prefix if it matches, otherwise { isList: false, prefix: "" }.
      */
     function getListAtCaretInfo(): ListAtCaretInfo {
+        const textArea = getTextArea();
         if (!textArea) {
             return { isListItem: false, prefix: "", itemText: "" };
         }
@@ -108,52 +207,63 @@ export function useControlledTextArea(
     }
 
     const surroundSelectionWithText = async (prefix: string, suffix: string, textIfNoSelection: string) => {
+        const textArea = getTextArea();
         const start = textArea?.selectionStart ?? 0;
         const end = textArea?.selectionEnd ?? 0;
         const selectedText = textValue.slice(start, end);
 
         if (end - start > 0) {
             // there's a selection; surround it.
-            await replaceRange(start, end, prefix + selectedText + suffix);
             const existingTextStart = start + prefix.length;
             const suffixStart = existingTextStart + selectedText.length;
-            await setSelectionRangeAsync(existingTextStart, suffixStart);
+            await applyProgrammaticEdit(
+                start,
+                end,
+                prefix + selectedText + suffix,
+                existingTextStart,
+                suffixStart
+            );
         } else {
             // No selection, insert the default text highlighted
-            await replaceRange(start, start, prefix + textIfNoSelection + suffix);
             const existingTextStart = start + prefix.length;
             const suffixStart = existingTextStart + textIfNoSelection.length;
-            await setSelectionRangeAsync(existingTextStart, suffixStart);
+            await applyProgrammaticEdit(
+                start,
+                start,
+                prefix + textIfNoSelection + suffix,
+                existingTextStart,
+                suffixStart
+            );
         }
     };
 
-    const replaceSelectionWithText = async (replacement: string, options = { select: "afterChange" }) => {
+    const replaceSelectionWithText = async (
+        replacement: string,
+        options: ReplaceSelectionWithTextOptions = { select: "afterChange" }
+    ) => {
+        const textArea = getTextArea();
         const start = textArea?.selectionStart ?? 0;
         const end = textArea?.selectionEnd ?? 0;
-        await replaceRange(start, end, replacement);
-
-        // respect the select option
-        if (options.select === "change") {
-            await setSelectionRangeAsync(start, start + replacement.length);
-        }
-        else if (options.select === "afterChange") {
-            await setSelectionRangeAsync(start + replacement.length, start + replacement.length);
-        }
+        const selectionStart = options.select === "change" ? start : start + replacement.length;
+        const selectionEnd = start + replacement.length;
+        await applyProgrammaticEdit(
+            start,
+            end,
+            replacement,
+            selectionStart,
+            selectionEnd,
+            options.historyEditKind
+        );
     };
 
-    const undoManagerApi = useUndoManager({
-        textareaRef: textAreaRef,
-        getState: () => ({
-            text: textValue,
-            selectionStart: textArea?.selectionStart ?? 0,
-            selectionEnd: textArea?.selectionEnd ?? 0,
-            charCount: textValue.length,
-        }),
-        setState: async (state) => {
-            onTextChange(state.text);
-            await setSelectionRangeAsync(state.selectionStart, state.selectionEnd);
-        },
-    });
+    const handleNativeTextChange = (edit: NativeTextAreaEdit) => {
+        undoManagerController.recordNativeEdit({
+            text: edit.text,
+            selectionStart: edit.selectionStart,
+            selectionEnd: edit.selectionEnd,
+        }, edit.inputType);
+        onTextChange(edit.text);
+    };
 
     return {
         selectionStart: textArea?.selectionStart ?? 0,
@@ -168,7 +278,9 @@ export function useControlledTextArea(
         isLineBasedSelection,
         surroundSelectionWithText,
         replaceSelectionWithText,
-        undoManagerApi,
+        handleNativeBeforeInput: undoManagerController.captureNativeEdit,
+        handleNativeTextChange,
+        undoManagerApi: undoManagerController.undoManagerApi,
         // if the selection is surrounded by or includes the prefix and suffix, remove them
         // if not, add them.
         // if there's no selection, add the prefix and suffix around the textIfNoSelection.
@@ -182,8 +294,9 @@ export function useControlledTextArea(
                 return;
             }
 
-            const selectionStart = textArea?.selectionStart ?? 0;
-            const selectionEnd = textArea?.selectionEnd ?? 0;
+            const currentTextArea = getTextArea();
+            const selectionStart = currentTextArea?.selectionStart ?? 0;
+            const selectionEnd = currentTextArea?.selectionEnd ?? 0;
 
             // if the selection is not surrounded by **, but the text includes them, same thing.
             const selectedTextWithSurrounding = textValue.slice(selectionStart - prefix.length, selectionEnd + suffix.length);
