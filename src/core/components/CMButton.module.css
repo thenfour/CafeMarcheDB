@@ -1,5 +1,6 @@
 .CMButtonGroup {
     margin: 9px 0;
+    display: flex;
 }
 
 

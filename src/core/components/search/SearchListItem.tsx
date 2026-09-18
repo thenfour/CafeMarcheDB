@@ -21,8 +21,7 @@ export const GenericSearchListItem = <T,>(props: GenericSearchListItemProps<T>) 
     return <div className={`songListItem`}>
         <div className="titleLine">
             <div className="topTitleLine">
-                {props.icon}
-                <CMLink className="nameLink" href={props.href}>{props.title}</CMLink>
+                <CMLink className="nameLink" href={props.href}>{props.icon} {props.title}</CMLink>
                 {props.titleExtra}
                 <div style={{ flexGrow: 1 }}>
                     <AdminInspectObject src={props.item} label="Obj" />
