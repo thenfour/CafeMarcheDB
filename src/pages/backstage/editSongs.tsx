@@ -1,7 +1,7 @@
 
+import { CMButton } from "@/src/core/components/CMCoreComponents2";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
-import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SongClientColumns } from "src/core/components/song/SongComponents";
@@ -12,12 +12,12 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter(); return <>
-        <Button onClick={() => {
+        <CMButton onClick={() => {
             void router.push({
                 pathname: '/backstage/editSongCredits',
                 query: { songId: gridArgs.row.id },
             });
-        }}>Credits</Button>
+        }}>Credits</CMButton>
     </>;
 };
 

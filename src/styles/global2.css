@@ -1082,6 +1082,9 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 .ImageEditor.editorMain .toolbar {
     padding: 0;
+    /* undo style of cmbuttongroup */
+    margin: 0;
+    gap: 0;
 }
 
 .ImageEditor.editorMain .toolbar .toolbutton {

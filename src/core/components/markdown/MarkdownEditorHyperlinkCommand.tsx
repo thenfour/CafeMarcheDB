@@ -1,7 +1,7 @@
-import { Button, DialogContent, DialogTitle, InputBase } from "@mui/material";
+import { DialogContent, DialogTitle, InputBase } from "@mui/material";
 import React from "react";
 import { IsNullOrWhitespace, isValidURL } from "shared/utils";
-import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
+import { CMButton, DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
 import { GetMatchUnderSelection, MarkdownEditorToolbarItem } from "./MarkdownEditorCommandUtils";
@@ -185,8 +185,8 @@ export const InsertLinkDialog: React.FC<{ api: MarkdownEditorCommandApi }> = (pr
                         }
                     />
                     <DialogActionsCM>
-                        <Button onClick={handleOK}>Ok</Button>
-                        <Button onClick={closeDialog}>Cancel</Button>
+                        <CMButton onClick={handleOK}>Ok</CMButton>
+                        <CMButton onClick={closeDialog}>Cancel</CMButton>
                     </DialogActionsCM>
                 </DialogContent>
             </ReactiveInputDialog>

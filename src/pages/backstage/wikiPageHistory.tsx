@@ -5,14 +5,14 @@ import { UserChip } from "@/src/core/components/user/userChip";
 import { EnrichedUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Button, DialogContent, DialogTitle, Tooltip } from "@mui/material";
+import { DialogContent, DialogTitle, Tooltip } from "@mui/material";
 import { Prisma } from "db";
 import React, { Suspense } from "react";
 import ReactDiffViewer from 'react-diff-viewer';
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
-import { CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
+import { CMButton, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useMessageBox } from "src/core/components/MessageBoxContext";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
@@ -62,9 +62,9 @@ const WikiRevisionPreviewDialog = (props: { revisionId: number, onClose: () => v
         <DialogContent>
             <Markdown markdown={revision?.content || ""} />
             <DialogActionsCM>
-                <Button onClick={props.onClose} color="primary">
+                <CMButton onClick={props.onClose}>
                     Close
-                </Button>
+                </CMButton>
             </DialogActionsCM>
         </DialogContent>
     </ReactiveInputDialog>;
@@ -116,7 +116,7 @@ const RebuildStatsButton = (props: { onChanged: () => void }) => {
             props.onChanged();
         });
     };
-    return <Button onClick={handleClick}>Rebuild all stats</Button>;
+    return <CMButton onClick={handleClick}>Rebuild all stats</CMButton>;
 };
 
 const WikiRevisionHistoryPageContent = () => {

@@ -11,7 +11,6 @@ import {
     Save as SaveIcon
 } from '@mui/icons-material';
 import {
-    Button,
     DialogContent,
     DialogTitle
 } from "@mui/material";
@@ -27,7 +26,7 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
-import { AdminInspectObject, DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
+import { AdminInspectObject, CMButton, CMButtonGroup, DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { ResponsiveDialog } from "../../components/ResponsiveDialog";
 import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
@@ -61,11 +60,7 @@ const ClipboardControls = (props: ClipboardControlsProps) => {
         showSnackbar({ severity: "success", children: `Copied ${rows.length} settings to clipboard (${txt.length} characters)` });
     };
 
-    return (
-        <>
-            <Button onClick={onCopy} startIcon={gIconMap.ContentCopy()}>Copy for seeding</Button>
-        </>
-    );
+    return <CMButton onClick={onCopy} startIcon={gIconMap.ContentCopy()}>Copy for seeding</CMButton>
 }
 
 
@@ -76,7 +71,7 @@ const ClipboardControls = (props: ClipboardControlsProps) => {
 function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSpec: DB3Client.xTableClientSpec }) {
     return (
         <GridToolbarContainer>
-            <Button startIcon={<AddIcon />} onClick={onNewClicked}>insert {tableSpec.args.table.tableName}</Button>
+            <CMButton startIcon={<AddIcon />} onClick={onNewClicked}>insert {tableSpec.args.table.tableName}</CMButton>
 
             {/* <GridToolbarColumnsButton /> */}
             <GridToolbarFilterButton />
@@ -258,8 +253,8 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 <DialogContent dividers>
                     confirm delete
                     <DialogActionsCM>
-                        <Button onClick={handleClose}>No</Button>
-                        <Button onClick={handleYes}>Yes</Button>
+                        <CMButton onClick={handleClose}>No</CMButton>
+                        <CMButton onClick={handleYes}>Yes</CMButton>
                     </DialogActionsCM>
                 </DialogContent>
             </ResponsiveDialog>
@@ -283,11 +278,11 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 <DialogContent dividers>
                     confirm update...
                     <DialogActionsCM>
-                        <Button disabled={isSaving} onClick={handleNo}>No</Button>
+                        <CMButton disabled={isSaving} onClick={handleNo}>No</CMButton>
                         {/* type=submit doesn't seem to work. why? */}
-                        <Button
+                        <CMButton
                             disabled={isSaving} autoFocus={true}
-                            type="submit" onClick={handleYes}>Yes</Button>
+                            type="submit" onClick={handleYes}>Yes</CMButton>
                     </DialogActionsCM>
                 </DialogContent>
             </ResponsiveDialog>
@@ -416,13 +411,13 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         <KeyValueTable data={{
             QueryTimeMS: tableClient.queryResultInfo.executionTimeMillis,
             Updated: <AgeRelativeToNow value={new Date(tableClient.remainingQueryStatus.dataUpdatedAt)} />,// <>   {formatMillisecondsToDHMS((new Date()).valueOf() - dataUpdateAt.valueOf())} ago</>,
-            Extras: <>
-                <Button disabled={isWaitingForRefresh} onClick={() => {
+            Extras: <CMButtonGroup>
+                <CMButton disabled={isWaitingForRefresh} onClick={() => {
                     setIsWaitingForRefresh(true);
                     tableClient.refetch();
-                }}>Refresh</Button>
+                }}>Refresh</CMButton>
                 <ClipboardControls client={tableClient} />
-            </>,
+            </CMButtonGroup>,
         }} />
 
         <AdminInspectObject label={"items"} src={tableClient.items} />

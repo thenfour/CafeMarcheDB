@@ -1,6 +1,6 @@
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
-import { Button, CircularProgress, DialogContent, DialogTitle } from "@mui/material";
+import { CircularProgress, DialogContent, DialogTitle } from "@mui/material";
 import type { Prisma } from "@prisma/client";
 import type * as db3 from "src/core/db3/db3";
 import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
@@ -8,7 +8,7 @@ import { isAttendanceGoing } from "shared/eventAttendance";
 import { Timing } from "shared/time";
 import { RenderMuiIcon, gIconMap } from "../../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "../CMChip";
-import { CMSmallButton, DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
+import { CMButton, CMSmallButton, DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
 import { Markdown } from "../markdown/Markdown";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
@@ -91,10 +91,10 @@ const CommentEditor = ({ response, environment, onClose }: {
                 handleSave={() => { void save(); }} allowUploads={environment.allowUploads}
                 uploadFileContext={environment.allowUploads ? { taggedEventId: response.event.id } : undefined} />
             <DialogActionsCM>
-                <Button className="freeButton cancelButton" onClick={onClose}>Cancel</Button>
-                <Button className="saveButton saveAndCloseButton freeButton changed" onClick={async () => { await save(); onClose(); }}>
+                <CMButton className="freeButton cancelButton" onClick={onClose}>Cancel</CMButton>
+                <CMButton className="saveButton saveAndCloseButton freeButton changed" onClick={async () => { await save(); onClose(); }}>
                     {gIconMap.CheckCircleOutline()}Save
-                </Button>
+                </CMButton>
             </DialogActionsCM>
         </DialogContent>
     </ReactiveInputDialog></AppContextMarker>;
@@ -117,8 +117,8 @@ const AnswerButton = ({ value, selected, noItemSelected, onSelect, tooltip }: {
 }) => <CMChip onClick={onSelect} shape="rectangle" size="big" color={value?.color} tooltip={tooltip}
     className={`attendanceAnswer ${isAttendanceGoing(value) ? "yes" : "no"} CMChipNoMargin`}
     variation={{ enabled: true, fillOption: "filled", variation: selected || noItemSelected ? "strong" : "weak", selected }}>
-    {value?.text || "(no answer)"}{RenderMuiIcon(value?.iconName)}
-</CMChip>;
+        {value?.text || "(no answer)"}{RenderMuiIcon(value?.iconName)}
+    </CMChip>;
 
 const AnswerControl = ({ segment, environment, forceEditMode, onReadonlyClick }: {
     segment: EventAttendanceResult["segmentUserResponses"][number]; environment: AttendanceControlEnvironment;

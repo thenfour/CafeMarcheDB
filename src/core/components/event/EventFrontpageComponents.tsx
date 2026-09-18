@@ -1,7 +1,7 @@
 import { formatEventDateRangeTranslations } from "shared/dateTimePresentation";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
-import { Button, DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
+import { DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
 import { Prisma } from "db";
 import React from "react";
 import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
@@ -14,7 +14,7 @@ import { getAgendaItem } from "../../db3/shared/publicFeedApi";
 import { PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { EditTextField } from "../CMCoreComponents";
-import { CMDialogContentText, DialogActionsCM } from "../CMCoreComponents2";
+import { CMButton, CMDialogContentText, DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
@@ -84,8 +84,8 @@ const EditTextDialog = (props: EditTextDialogProps) => {
                 value={valueFr}
             />
             <DialogActionsCM>
-                <Button onClick={props.onCancel}>Cancel</Button>
-                <Button onClick={() => { props.onOK(valueEn, valueNl, valueFr) }}>OK</Button>
+                <CMButton onClick={props.onCancel}>Cancel</CMButton>
+                <CMButton onClick={() => { props.onOK(valueEn, valueNl, valueFr) }}>OK</CMButton>
             </DialogActionsCM>
         </DialogContent>
     </ReactiveInputDialog>;
@@ -115,7 +115,12 @@ const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
     return <>
-        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>
+        <CMButton
+            disabled={props.readOnly}
+            onClick={() => { setIsOpen(!isOpen) }}
+        >
+            {props.selectButtonLabel}
+        </CMButton>
         {isOpen && !props.readOnly && <EditTextDialog
             valueEn={props.valueEn}
             columnSpecEn={props.columnSpecEn}
@@ -262,7 +267,6 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         <div className='editButtonContainer'>
             {!readonly && <div style={{ display: "flex", flexDirection: "column", width: "100px" }}>
                 <EditTextDialogButton
-
                     columnSpecEn={db3.xEvent.getColumn(props.fieldSpec.fieldNameEn)! as db3.FieldBase<string>}
                     valueEn={valueEn || ""}
                     columnSpecNl={db3.xEvent.getColumn(props.fieldSpec.fieldNameNl)! as db3.FieldBase<string>}
@@ -275,18 +279,20 @@ const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                     selectButtonLabel='edit'
                     onChange={handleChange}
                 />
-                {props.getResetValues && <Button onClick={async () => {
-                    const vals = props.getResetValues!();
-                    const r = await confirm({
-                        title: `Reset ${props.fieldSpec.fieldLabel} to auto values?`,
-                        description: <EventFrontpageValuesTable valueEn={vals.en} valueFr={vals.fr} valueNl={vals.nl} />
-                    });
-                    if (r) {
-                        handleChange(vals.en, vals.nl, vals.fr);
-                    }
-                }}>
+                {props.getResetValues && <CMButton
+                    onClick={async () => {
+                        const vals = props.getResetValues!();
+                        const r = await confirm({
+                            title: `Reset ${props.fieldSpec.fieldLabel} to auto values?`,
+                            description: <EventFrontpageValuesTable valueEn={vals.en} valueFr={vals.fr} valueNl={vals.nl} />
+                        });
+                        if (r) {
+                            handleChange(vals.en, vals.nl, vals.fr);
+                        }
+                    }}
+                >
                     Reset
-                </Button>}
+                </CMButton>}
             </div>}
         </div>
 
@@ -445,7 +451,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             <div className='label'>
             </div>
             <div className='nullContainer' style={{ alignItems: "flex-start" }}>
-                <Button onClick={resetAll}>Reset all</Button>
+                <CMButton onClick={resetAll}>Reset all</CMButton>
             </div>
             <div className={`value frontpageVisible`}>
                 <FormControlLabel

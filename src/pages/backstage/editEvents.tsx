@@ -1,3 +1,4 @@
+import { CMButton } from "@/src/core/components/CMCoreComponents2";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "@components/dashboard/DashboardLayout";
@@ -6,23 +7,22 @@ import { SettingMarkdown } from "@components/SettingMarkdown";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "@db3/components/db3DataGrid";
 import * as db3 from "@db3/db3";
 import * as DB3Client from "@db3/DB3Client";
-import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter(); return <>
-        <Button onClick={() => {
+        <CMButton onClick={() => {
             void router.push({
                 pathname: '/backstage/editEventSegments',
                 query: { eventId: gridArgs.row.id },
             });
-        }}>Segments</Button>
-        <Button onClick={() => {
+        }}>Segments</CMButton>
+        <CMButton onClick={() => {
             void router.push({
                 pathname: '/backstage/editEventSongLists',
                 query: { eventId: gridArgs.row.id },
             });
-        }}>Song lists</Button>
+        }}>Song lists</CMButton>
     </>;
 };
 

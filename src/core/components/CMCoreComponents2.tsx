@@ -28,15 +28,36 @@ export const AbsoluteUriText = (props: { relativeUri: string }) => {
 // this brings the action buttons into the normal scrolling area of the dialog so they aren't subject
 // to weird behavior that cuts them off permanently. It also adds a tall footer so you can scroll
 // the action buttons into view more readily.
-export const DialogActionsCM = (props: React.PropsWithChildren<{ className?: string }>) => {
-    return <div className={`CMDialogActions MuiDialogActions-root ${props.className}`}>
+export const DialogActionsCM = (props: React.PropsWithChildren<{ fullScreen?: boolean; className?: string }>) => {
+    //     sx={{
+    //     flexShrink: 0, gap: 1, px: 3, pt: 2,
+    //     pb: "max(16px, env(safe-area-inset-bottom))",
+    //     "& .MuiButton-root": { minHeight: 44, minWidth: 88, ml: 0, flex: fullScreen ? 1 : undefined },
+    // }}
+
+    return <Box
+        className={`CMDialogActions MuiDialogActions-root ${props.className}`}
+    // sx={{
+    //     flexShrink: 0,
+    //     gap: 1,
+    //     px: 3,
+    //     pt: 2,
+    //     pb: "max(16px, env(safe-area-inset-bottom))",
+    //     "& .MuiButton-root": {
+    //         minHeight: 44,
+    //         minWidth: 88,
+    //         ml: 0,
+    //         flex: props.fullScreen ? 1 : undefined,
+    //     },
+    // }}
+    >
         <div className="CMDialogActionsButtonContainer">
             {props.children}
         </div>
         <div className="CMDialogActionsFooter">
             --
         </div>
-    </div>;
+    </Box>;
 };
 
 
@@ -228,23 +249,34 @@ export interface CMButtonProps {
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
     href?: string; // for link-style buttons
     enabled?: boolean;
+    disabled?: boolean; // i like positive flags like enabled but this is convention
     startIcon?: React.ReactNode;
     tooltip?: React.ReactNode;
 
     component?: React.ElementType;
+    autoFocus?: boolean;
 
     type?: "button" | "submit";
     value?: string; // for submit
 
     className?: string;
     style?: React.CSSProperties;
+
+    color?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
 }
 
-export const CMButton = ({ enabled = true, component = "button", ...props }: React.PropsWithChildren<CMButtonProps>) => {
+
+//export const CMButton = ({ enabled, disabled, component = "button", ...props }: React.PropsWithChildren<CMButtonProps>) => {
+export const CMButton = React.forwardRef<HTMLElement, React.PropsWithChildren<CMButtonProps>>(({ enabled, disabled, component = "button", ...props }, ref) => {
     let innerContent = <>
         {props.startIcon}
         {props.children}
     </>;
+
+    const color = props.color ? props.color : "default";
+    const colorClass = CMButtonStyle[`CMButtonColor_${color}`];
+
+    const isEnabled = enabled !== undefined ? enabled : !disabled; // precedence: enabled, disabled
 
     if (props.tooltip) {
         innerContent = <Tooltip title={props.tooltip} arrow>
@@ -254,8 +286,8 @@ export const CMButton = ({ enabled = true, component = "button", ...props }: Rea
         </Tooltip>;
     }
 
-    const className = `interactable CMButton ${CMButtonStyle.CMButton} ${props.className} ${enabled ? "enabled" : "disabled"}`;
-    const clickHandler = enabled ? (e: React.MouseEvent<HTMLElement>) => { props.onClick && props.onClick(e) } : undefined;
+    const className = `interactable CMButton ${CMButtonStyle.CMButton} ${colorClass} ${props.className} ${isEnabled ? "enabled" : CMButtonStyle.disabled}`;
+    const clickHandler = isEnabled ? (e: React.MouseEvent<HTMLElement>) => { props.onClick && props.onClick(e) } : undefined;
 
     if (props.type === "submit" && props.value) {
         // submit are rendered as <input type="submit" value={props.value} /> instead of a button
@@ -264,7 +296,7 @@ export const CMButton = ({ enabled = true, component = "button", ...props }: Rea
             value={props.value}
             style={props.style}
             className={className}
-            disabled={!enabled}
+            disabled={!isEnabled}
             onClick={clickHandler}
         />;
     }
@@ -275,12 +307,13 @@ export const CMButton = ({ enabled = true, component = "button", ...props }: Rea
             style: props.style,
             className: className,
             onClick: clickHandler,
-            disabled: !enabled,
+            disabled: !isEnabled,
             href: props.href,
+            autoFocus: props.autoFocus,
         },
         innerContent
     );
-};
+});
 
 export const CMUserMgmtButton = CMButton;
 

@@ -1,5 +1,5 @@
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs, Button } from "@mui/material";
+import { Breadcrumbs } from "@mui/material";
 import { Prisma } from "db";
 import React from "react";
 import { IsNullOrWhitespace } from "shared/utils";
@@ -12,6 +12,7 @@ import { SelectionSource } from "../select/selectionSource";
 //import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
 import { UserChip } from "./userChip";
+import { CMButton } from '../CMCoreComponents2';
 
 
 
@@ -43,7 +44,7 @@ export const AddUserButton = (props: AddUserButtonProps) => {
     const buttonChildren = props.buttonChildren || <>{gIconMap.Add()} Add users</>;
 
     return <>
-        <Button type="button" onClick={() => setAddUserOpen(true)}>{buttonChildren}</Button>
+        <CMButton type="button" onClick={() => setAddUserOpen(true)}>{buttonChildren}</CMButton>
         {addUserOpen && <AddUserPicker {...props} onClose={() => setAddUserOpen(false)} />}
     </>;
 };

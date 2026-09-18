@@ -1,4 +1,4 @@
-import { useURLState } from "@/src/core/components/CMCoreComponents2";
+import { CMButton, useURLState } from "@/src/core/components/CMCoreComponents2";
 import { CMTab, CMTabPanel } from "@/src/core/components/TabPanel";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
@@ -8,7 +8,6 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import WindowIcon from "@mui/icons-material/Window";
 import {
     Alert,
-    Button,
     TextField,
     Typography,
 } from "@mui/material";
@@ -130,9 +129,9 @@ const CalendarPageContent = () => {
                             <p>
                                 On <strong>this device</strong>, use the button below.
                             </p>
-                            <Button href={subscription.webcalUrl}>
+                            <CMButton href={subscription.webcalUrl}>
                                 Open in Apple Calendar
-                            </Button>
+                            </CMButton>
                             <p>
                                 To add the calendar on an <strong>iPhone or iPad</strong>{" "}
                                 scan the QR code below
@@ -152,7 +151,7 @@ const CalendarPageContent = () => {
                                     <li>Copy and paste your private calendar link.</li>
                                 </ol>
                             </p>
-                            <Button onClick={copySubscriptionUrl}>Copy link for Google Calendar</Button>
+                            <CMButton onClick={copySubscriptionUrl}>Copy link for Google Calendar</CMButton>
                             {linkWasCopied && <Alert severity="success">Link copied; you can now paste it into your calendar app.</Alert>}
                         </CMTab>
                         <CMTab thisTabId={"outlook"} summaryIcon={<WindowIcon />} summaryTitle="Outlook">
@@ -162,7 +161,7 @@ const CalendarPageContent = () => {
                                 <li>Choose "Add calendar", then "Subscribe from web."</li>
                                 <li>Copy and paste your private calendar link.</li>
                             </ol>
-                            <Button onClick={copySubscriptionUrl}>Copy link for Outlook</Button>
+                            <CMButton onClick={copySubscriptionUrl}>Copy link for Outlook</CMButton>
                             {linkWasCopied && <Alert severity="success">Link copied; you can now paste it into your calendar app.</Alert>}
                         </CMTab>
                         <CMTab thisTabId={"other"} summaryIcon={<MoreHorizIcon />} summaryTitle="Other">
@@ -176,7 +175,7 @@ const CalendarPageContent = () => {
                                 is only a snapshot. Calendar apps also choose their own refresh schedule, so updates
                                 may take several hours to appear.
                             </Alert> */}
-                            <Button onClick={copySubscriptionUrl}>Copy subscription link</Button>
+                            <CMButton onClick={copySubscriptionUrl}>Copy subscription link</CMButton>
                             {linkWasCopied && <Alert severity="success">Link copied; you can now paste it into your calendar app.</Alert>}
 
                         </CMTab>
@@ -198,7 +197,7 @@ const CalendarPageContent = () => {
                         and you can use a new link to subscribe to your calendar again.
                         Do this if your private calendar link was shared accidentally.
                     </p>
-                    <Button color="error" onClick={replaceSubscriptionUrl}>Replace private link</Button>
+                    <CMButton color="error" onClick={replaceSubscriptionUrl}>Replace private link</CMButton>
                 </div>
             </CMSinglePageSurfaceCard>
         </div>

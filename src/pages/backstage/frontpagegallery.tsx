@@ -12,7 +12,7 @@ import { ImageEditParams, MakeDefaultImageEditParams, UpdateGalleryItemImagePara
 import { MakePublicFeedResponseSpec } from "@/src/core/db3/shared/publicFeedApi";
 import { SharedAPI } from "@/src/core/db3/shared/sharedAPI";
 import { BlitzPage } from "@blitzjs/next";
-import { Button, Tooltip } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
@@ -23,7 +23,7 @@ import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "s
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
-import { KeyValueTable } from "src/core/components/CMCoreComponents2";
+import { CMButton, CMButtonGroup, KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
@@ -426,27 +426,25 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     // console.log(`hasCroppingApplied=${hasCroppingApplied}`);
 
     return (<div className="imageEditControlContainer ImageEditor editorMain">
-        <div className="ImageEditor toolbar">
-            <Button onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>begin</Button>
-            <Button onClick={() => setSelectedTool("CropEnd")} className={`toolbutton ${selectedTool === "CropEnd" && "selected"}`}>end</Button>
-            <Button onClick={() => setSelectedTool("Move")} className={`toolbutton ${selectedTool === "Move" && "selected"}`}>Move</Button>
-            <Button onClick={() => setSelectedTool("Scale")} className={`toolbutton ${selectedTool === "Scale" && "selected"}`}>Scale</Button>
-            <Button onClick={() => setSelectedTool("Rotate")} className={`toolbutton ${selectedTool === "Rotate" && "selected"}`}>Rotate</Button>
+        <CMButtonGroup className="ImageEditor toolbar">
+            <CMButton onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>begin</CMButton>
+            <CMButton onClick={() => setSelectedTool("CropEnd")} className={`toolbutton ${selectedTool === "CropEnd" && "selected"}`}>end</CMButton>
+            <CMButton onClick={() => setSelectedTool("Move")} className={`toolbutton ${selectedTool === "Move" && "selected"}`}>Move</CMButton>
+            <CMButton onClick={() => setSelectedTool("Scale")} className={`toolbutton ${selectedTool === "Scale" && "selected"}`}>Scale</CMButton>
+            <CMButton onClick={() => setSelectedTool("Rotate")} className={`toolbutton ${selectedTool === "Rotate" && "selected"}`}>Rotate</CMButton>
             <Tooltip title={"Reset edits"}>
-                <Button onClick={() => {
+                <CMButton onClick={() => {
                     setEditParams(MakeDefaultImageEditParams());
-                }} className={`toolbutton resetIcon`}>⟲</Button>
+                }} className={`toolbutton resetIcon`}>⟲</CMButton>
             </Tooltip>
             <Tooltip title={"Click here to process the image with cropping. The idea is your crops probably result in a smaller image for more efficient page download. If you didn't crop anything don't bother with this. 'Bake' and 'Save' result in the same for public users, but bake generates a new smaller image file. Do this if you are sure you're done with edits."}>
-                <span>
-                    <Button onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</Button>
-                </span>
+                <CMButton onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</CMButton>
             </Tooltip>
             <Tooltip title={"Click here to save your edits. The underlying image file won't be modified but the edits will be updated for the public homepage. Do this if you didn't perform any cropping, or if you are just tweaking the image a little bit. Avoids creating a new image file."}>
-                <Button onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</Button>
+                <CMButton onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</CMButton>
             </Tooltip>
-            <Button onClick={props.onExitEditMode} startIcon={gIconMap.Edit()}>Close</Button>
-        </div>
+            <CMButton onClick={props.onExitEditMode} startIcon={gIconMap.Edit()}>Close</CMButton>
+        </CMButtonGroup>
         <JoystickDiv
             enabled={true}
             onDragMove={handleDragMove}
@@ -502,9 +500,6 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         <GalleryItemImageEditControl client={props.client} value={props.value} onExitEditMode={() => props.setEditMode(false)} />
     ) : (
         <div className="imageEditControlContainer">
-            {/* <div className="buttonRow">
-                <Button style={{ whiteSpace: "nowrap" }} onClick={() => setEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
-            </div> */}
             <img src={dashboardContext.routingApi.getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
         </div>
     );
@@ -567,12 +562,12 @@ const GalleryItem = (props: GalleryItemProps) => {
 
             </div>
             <VisibilityControl value={props.value.visiblePermission} onChange={handleVisibilityChange} />
-            <Button onClick={() => setShowingDeleteConfirmation(true)} startIcon={gIconMap.Delete()}>Delete</Button>
+            <CMButton onClick={() => setShowingDeleteConfirmation(true)} startIcon={gIconMap.Delete()}>Delete</CMButton>
 
 
             {showingDeleteConfirmation && (<div className="deleteConfirmationControl">Are you sure you want to delete this item?
-                <Button onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</Button>
-                <Button onClick={() => { setShowingDeleteConfirmation(false); handleSoftDeleteClick(); }}>yes</Button>
+                <CMButton onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</CMButton>
+                <CMButton onClick={() => { setShowingDeleteConfirmation(false); handleSoftDeleteClick(); }}>yes</CMButton>
             </div>)}
 
         </div>
@@ -584,9 +579,10 @@ const GalleryItem = (props: GalleryItemProps) => {
             <GalleryItemImageControl value={props.value} client={props.client} editMode={imageEditMode} setEditMode={setImageEditMode} />
             <GalleryItemDescriptionControl value={props.value} client={props.client} editMode={descriptionEditMode} setEditMode={setDescriptionEditMode} />
 
-            <Button style={{ whiteSpace: "nowrap" }} onClick={() => setImageEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
-            <Button style={{ whiteSpace: "nowrap" }} onClick={() => setDescriptionEditMode(true)} startIcon={gIconMap.Edit()}>Edit description</Button>
-
+            <CMButtonGroup>
+                <CMButton style={{ whiteSpace: "nowrap" }} onClick={() => setImageEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</CMButton>
+                <CMButton style={{ whiteSpace: "nowrap" }} onClick={() => setDescriptionEditMode(true)} startIcon={gIconMap.Edit()}>Edit description</CMButton>
+            </CMButtonGroup>
         </div>
     </CMSinglePageSurfaceCard>;
 };

@@ -1,6 +1,6 @@
-import { Button, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import React from 'react';
-import { DialogActionsCM } from './CMCoreComponents2';
+import { CMButton, DialogActionsCM } from './CMCoreComponents2';
 import { ReactiveInputDialog } from './ReactiveInputDialog';
 
 
@@ -77,9 +77,9 @@ export const MessageBoxProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     <DialogContentText>{message}</DialogContentText>
                     <DialogActionsCM>
                         {buttons.map((btn) => (
-                            <Button key={btn} onClick={() => handleClose(btn)}>
+                            <CMButton key={btn} onClick={() => handleClose(btn)}>
                                 {btn.toUpperCase()}
-                            </Button>
+                            </CMButton>
                         ))}
                     </DialogActionsCM>
                 </DialogContent>

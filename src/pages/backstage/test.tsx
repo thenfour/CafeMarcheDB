@@ -1,11 +1,12 @@
 import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
+import { CMButton, DialogActionsCM } from "@/src/core/components/CMCoreComponents2";
 import { ResponsiveDialog } from "@/src/core/components/ResponsiveDialog";
 import { BlitzPage } from "@blitzjs/next";
 import MenuIcon from '@mui/icons-material/Menu';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { AppBar, Box, Button, DialogActions, DialogContent, DialogTitle, Drawer, IconButton, List, ListItem, ListItemText, Paper, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { AppBar, Box, DialogContent, DialogTitle, Drawer, IconButton, List, ListItem, ListItemText, Paper, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Permission } from "shared/permissions";
 
@@ -152,13 +153,12 @@ grid-template-areas:
                         Click the button below to test that MUI modals work correctly with the media bar footer.
                         The dialog automatically adjusts its positioning to avoid overlapping with the media bar.
                     </Typography>
-                    <Button
-                        variant="contained"
+                    <CMButton
                         onClick={() => setModalOpen(true)}
-                        sx={{ mb: 2 }}
+                    //sx={{ mb: 2 }}
                     >
                         Open Modal Dialog
-                    </Button>
+                    </CMButton>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                         <strong>Solution implemented:</strong> Dynamic padding on dialog backdrop and container
                         based on measured media bar height ({mediaBarHeight}px).
@@ -268,12 +268,12 @@ grid-template-areas:
                         </Typography>
                     ))}
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setModalOpen(false)}>Close</Button>
-                    <Button onClick={() => setIsPlaying(!isPlaying)} variant="outlined">
+                <DialogActionsCM>
+                    <CMButton onClick={() => setModalOpen(false)}>Close</CMButton>
+                    <CMButton onClick={() => setIsPlaying(!isPlaying)}>
                         Toggle Media Player
-                    </Button>
-                </DialogActions>
+                    </CMButton>
+                </DialogActionsCM>
             </ResponsiveDialog>
         </Box>
     );

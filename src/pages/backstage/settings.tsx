@@ -1,7 +1,7 @@
+import { CMButton, CMButtonGroup } from "@/src/core/components/CMCoreComponents2";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
-import { Button } from "@mui/material";
 import React from "react";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
 import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
@@ -55,10 +55,10 @@ const SettingsControls = (props) => {
     };
 
     return (
-        <>
-            <Button onClick={onCopy}>Copy to clipboard</Button>
-            <Button onClick={onPaste}>Paste from clipboard</Button>
-        </>
+        <CMButtonGroup>
+            <CMButton onClick={onCopy}>Copy to clipboard</CMButton>
+            <CMButton onClick={onPaste}>Paste from clipboard</CMButton>
+        </CMButtonGroup>
     );
 }
 

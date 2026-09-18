@@ -18,6 +18,13 @@ indicating size + not looking like a chip is a challenge. so,
 - no border by default (but show on hover as confirmation that this is interactive)
 - indicate size through very subtle background color
 
+style dimensions similar to chips:
+
+- color indicates button intention / alert / status
+- selected / focused
+- disabled
+- hovered
+
 */
 
 .CMButton {
@@ -43,5 +50,45 @@ indicating size + not looking like a chip is a challenge. so,
 .CMButton:hover {
     border: 1px solid #0002;
     background-color: #00000008;
+}
 
+
+.CMButton.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.CMButton.CMButtonColor_default {
+    background-color: #00000008;
+    color: #444;
+}
+
+.CMButton.CMButtonColor_primary {
+    background-color: #1976d2;
+    color: #fff;
+}
+
+.CMButton.CMButtonColor_secondary {
+    background-color: #9c27b0;
+    color: #fff;
+}
+
+.CMButton.CMButtonColor_error {
+    background-color: #f802;
+    color: #d32;
+}
+
+.CMButton.CMButtonColor_info {
+    background-color: #0288d1;
+    color: #fff;
+}
+
+.CMButton.CMButtonColor_success {
+    background-color: #2e7d32;
+    color: #fff;
+}
+
+.CMButton.CMButtonColor_warning {
+    background-color: #ed6c02;
+    color: #fff;
 }

@@ -1,7 +1,8 @@
 import SearchIcon from "@mui/icons-material/Search";
-import { Box, Button, DialogActions, DialogContent, DialogTitle, InputAdornment, TextField, Typography } from "@mui/material";
+import { Box, DialogContent, DialogTitle, InputAdornment, TextField, Typography } from "@mui/material";
 import React from "react";
 import { ResponsiveDialog, useResponsiveDialogFullscreen } from "../ResponsiveDialog";
+import { CMButton, DialogActionsCM } from "../CMCoreComponents2";
 
 interface SelectionDialogProps {
     title: React.ReactNode;
@@ -71,14 +72,16 @@ export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogPr
         <DialogContent dividers sx={{ p: 0, minHeight: 0, overscrollBehavior: "contain" }}>
             {props.children}
         </DialogContent>
-        <DialogActions sx={{
-            flexShrink: 0, gap: 1, px: 3, pt: 2,
-            pb: "max(16px, env(safe-area-inset-bottom))",
-            "& .MuiButton-root": { minHeight: 44, minWidth: 88, ml: 0, flex: fullScreen ? 1 : undefined },
-        }}>
-            <Button type="button" disabled={props.busy} onClick={props.onCancel}>Cancel</Button>
-            {props.onApply && <Button type="button" variant="contained" disabled={props.applyDisabled || props.busy} onClick={props.onApply}>Apply</Button>}
-        </DialogActions>
+        <DialogActionsCM fullScreen={fullScreen}
+        // sx={{
+        //     flexShrink: 0, gap: 1, px: 3, pt: 2,
+        //     pb: "max(16px, env(safe-area-inset-bottom))",
+        //     "& .MuiButton-root": { minHeight: 44, minWidth: 88, ml: 0, flex: fullScreen ? 1 : undefined },
+        // }}
+        >
+            <CMButton type="button" disabled={props.busy} onClick={props.onCancel}>Cancel</CMButton>
+            {props.onApply && <CMButton type="button" disabled={props.applyDisabled || props.busy} onClick={props.onApply}>Apply</CMButton>}
+        </DialogActionsCM>
     </ResponsiveDialog>;
 };
 
@@ -91,14 +94,14 @@ export const SelectionSummary = (props: React.PropsWithChildren<{ count: number 
             <Typography component="span" variant="body2" color="text.secondary" role="status">
                 {props.count === 0 ? "None selected" : `${props.count} selected`}
             </Typography>
-            {props.count > 0 && <Button
+            {props.count > 0 && <CMButton
                 type="button"
-                size="small"
+                //size="small"
                 aria-expanded={expanded}
                 aria-controls={valuesId}
                 onClick={() => setExpanded(value => !value)}
-                sx={{ minHeight: 44 }}
-            >{expanded ? "Hide selected" : "Show selected"}</Button>}
+            //sx={{ minHeight: 44 }}
+            >{expanded ? "Hide selected" : "Show selected"}</CMButton>}
         </Box>
         <Box id={valuesId} hidden={!expanded || props.count === 0} sx={{ maxHeight: 112, overflowY: "auto" }}>
             {expanded && props.count > 0 && props.children}

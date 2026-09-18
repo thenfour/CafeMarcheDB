@@ -1,7 +1,7 @@
 
 import { useMutation } from "@blitzjs/rpc";
 import { History, LockOpen } from "@mui/icons-material";
-import { Button, ListItemIcon, MenuItem } from "@mui/material";
+import { ListItemIcon, MenuItem } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
@@ -12,20 +12,20 @@ import * as db3 from "../../db3/db3";
 import * as DB3Client from "../../db3/DB3Client";
 import wikiPageSetVisibility from "../../wiki/mutations/wikiPageSetVisibility";
 import { getFileUploadContext, UpdateWikiPageResultOutcome, WikiPath } from "../../wiki/shared/wikiUtils";
+import { AppContextMarker } from "../AppContext";
 import { EventTextLink } from "../CMCoreComponents";
 import { AdminContainer, AdminInspectObject, CMButton, DotMenu, KeyValueTable, NameValuePair } from "../CMCoreComponents2";
-import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
-import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { CMTextInputBase } from "../CMTextField";
+import { useClientTelemetryEvent, useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { Markdown } from "../markdown/Markdown";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
 import { useWikiPageApi, WikiPageApi } from "../markdown/useWikiPageApi";
+import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
+import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import UnsavedChangesHandler from "../UnsavedChangesHandler";
 import { VisibilityValue } from "../VisibilityControl";
-import { AgeRelativeToNow } from "../DateTime/RelativeTimeComponents";
-import { AppContextMarker } from "../AppContext";
-import { useClientTelemetryEvent, useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 
 
 //////////////////////////////////////////////////
@@ -225,19 +225,19 @@ export const WikiPageContentEditor = ({ showNamespace = true, showVisiblePermiss
             {(needsLock || hasConflict) && <div role="status">
                 <p>{hasConflict ? "This page has changed since your draft began. Review the latest version before saving." :
                     "You do not currently hold the editing lock. Your draft is preserved; reacquire the lock to save."}</p>
-                <Button onClick={reacquire}>Reacquire editing lock</Button>
-                {hasConflict && <Button onClick={openComparison}>Compare with latest</Button>}
+                <CMButton onClick={reacquire}>Reacquire editing lock</CMButton>
+                {hasConflict && <CMButton onClick={openComparison}>Compare with latest</CMButton>}
             </div>}
             {reviewingConflict && <section aria-label="Review latest version">
                 <h3>Latest saved version</h3>
                 <p>Your draft remains editable below. Incorporate the changes you want to keep, then acknowledge this version.</p>
                 <h4>{reviewPage?.currentRevision?.name}</h4>
                 <pre style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto" }}>{reviewPage?.currentRevision?.content ?? ""}</pre>
-                <Button onClick={() => {
+                <CMButton onClick={() => {
                     props.wikiPageApi.acceptLatestAsBase(reviewPage);
                     setReviewingConflict(false);
-                }}>I have reconciled my draft with this version</Button>
-                <Button onClick={() => setReviewingConflict(false)}>Close comparison</Button>
+                }}>I have reconciled my draft with this version</CMButton>
+                <CMButton onClick={() => setReviewingConflict(false)}>Close comparison</CMButton>
             </section>}
 
 
@@ -413,7 +413,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
 
         <div className="flex-spacer">&nbsp;</div>
 
-        {showEditButton && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</Button>}
+        {showEditButton && <CMButton onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</CMButton>}
 
         {/* only show if the page is created, because otherwise the permission id is always null and this value is meaningless. */}
         {!showCreateButton && showVisiblePermission &&

@@ -1172,7 +1172,14 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
     //const refetch = tableClient.refetch;
 
-    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true} refetch={props.refetch}>
+    return <EventDetailContainer
+        eventData={eventData}
+        readonly={props.readonly}
+        tableClient={tableClient}
+        fadePastEvents={false}
+        showVisibility={true}
+        refetch={props.refetch}
+    >
         <AppContextMarker name="event detail full" eventId={event.id} >
             <EventAttendanceControl
                 eventData={eventData}

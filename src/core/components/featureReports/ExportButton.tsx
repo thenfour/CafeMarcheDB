@@ -1,7 +1,8 @@
 import { invoke } from "@blitzjs/rpc";
-import { Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Button, CircularProgress, DialogContent, DialogTitle } from '@mui/material';
 import * as React from 'react';
 //
+import { CMButton, DialogActionsCM } from "../CMCoreComponents2";
 import { ResponsiveDialog } from "../ResponsiveDialog";
 import getDetailCsv from "./queries/getDetailCsv";
 import { FeatureReportFilterSpec } from './server/facetProcessor';
@@ -97,21 +98,21 @@ const ExportDialog = ({ open, onClose, filterSpec }: ExportDialogProps) => {
                     </div>
                 )}
             </DialogContent>
-            <DialogActions>
-                <Button onClick={handleClose} disabled={status === 'exporting'}>
+            <DialogActionsCM>
+                <CMButton onClick={handleClose} disabled={status === 'exporting'}>
                     {status === 'success' ? 'Close' : 'Cancel'}
-                </Button>
+                </CMButton>
                 {status === 'idle' && (
-                    <Button onClick={handleExport} variant="contained" color="primary">
+                    <CMButton onClick={handleExport} >
                         Export CSV
-                    </Button>
+                    </CMButton>
                 )}
                 {status === 'error' && (
-                    <Button onClick={handleExport} variant="contained" color="primary">
+                    <CMButton onClick={handleExport} >
                         Retry
-                    </Button>
+                    </CMButton>
                 )}
-            </DialogActions>
+            </DialogActionsCM>
         </ResponsiveDialog>
     );
 };

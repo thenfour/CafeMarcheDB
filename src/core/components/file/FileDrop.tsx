@@ -1,10 +1,10 @@
 
-import { Button, Modal } from "@mui/material";
+import { Modal } from "@mui/material";
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import React from "react";
 
 import { CoerceToBoolean, isValidURL } from "shared/utils";
-import { CircularProgressWithLabel } from "../CMCoreComponents2";
+import { CircularProgressWithLabel, CMButton } from "../CMCoreComponents2";
 import { AppContextMarker } from "../AppContext";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -212,9 +212,9 @@ export const CollapsableUploadFileComponent = (props: UploadFileComponentProps) 
         <AppContextMarker name="CollapsableUploadFileComponent">
             <UploadFileComponent {...props} />
         </AppContextMarker>
-        <Button onClick={() => setShowUpload(false)}>Cancel</Button>
+        <CMButton onClick={() => setShowUpload(false)}>Cancel</CMButton>
     </div> :
-        <Button onClick={() => setShowUpload(true)}>Upload</Button>)
+        <CMButton onClick={() => setShowUpload(true)}>Upload</CMButton>)
 
 };
 
