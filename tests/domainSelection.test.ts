@@ -148,7 +148,7 @@ describe("migrated domain pickers", () => {
         expect(recordFeature).toHaveBeenCalledTimes(1);
         expect(refetch).toHaveBeenCalledTimes(1);
         await click(button("Edit Expected attendance group"));
-        await click(button("No attendance group"));
+        await click(button("No tags are invited"));
         expect(mutate).toHaveBeenLastCalledWith({ eventId: 10, expectedAttendanceUserTagId: null });
     });
 
