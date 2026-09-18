@@ -14,7 +14,7 @@ import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import * as db3 from "../db3/db3";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 
-
+import CMButtonStyle from "./CMButton.module.css";
 
 export const AbsoluteUriText = (props: { relativeUri: string }) => {
     const dashboardContext = useDashboardContext();
@@ -189,18 +189,55 @@ export const CMTextButton = ({ enabled = true, ...props }: React.PropsWithChildr
     </div>;
 };
 
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export interface CMUserMgmtButtonProps {
+//     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+//     enabled?: boolean;
+//     startIcon?: React.ReactNode;
+//     tooltip?: React.ReactNode;
+
+//     className?: string;
+//     style?: React.CSSProperties;
+// }
+
+// export const CMUserMgmtButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMUserMgmtButtonProps>) => {
+//     let innerContent = <>
+//         {props.startIcon}
+//         {props.children}
+//     </>;
+
+//     if (props.tooltip) {
+//         innerContent = <Tooltip title={props.tooltip} arrow>
+//             <div>
+//                 {innerContent}
+//             </div>
+//         </Tooltip>;
+//     }
+
+//     return <button
+//         style={props.style}
+//         className={`interactable freeButton CMUserMgmtButton ${props.className} ${enabled ? "enabled" : "disabled"}`}
+//         onClick={enabled ? (e) => { props.onClick && props.onClick(e) } : undefined}
+//     >
+//         {innerContent}
+//     </button>;
+// };
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface CMUserMgmtButtonProps {
+export interface CMButtonProps {
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
     enabled?: boolean;
     startIcon?: React.ReactNode;
     tooltip?: React.ReactNode;
 
+    type?: "button" | "submit";
+    value?: string; // for submit
+
     className?: string;
     style?: React.CSSProperties;
 }
 
-export const CMUserMgmtButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMUserMgmtButtonProps>) => {
+export const CMButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMButtonProps>) => {
     let innerContent = <>
         {props.startIcon}
         {props.children}
@@ -214,14 +251,32 @@ export const CMUserMgmtButton = ({ enabled = true, ...props }: React.PropsWithCh
         </Tooltip>;
     }
 
+    const className = `interactable ${CMButtonStyle.CMButton} ${props.className} ${enabled ? "enabled" : "disabled"}`;
+    const clickHandler = enabled ? (e: React.MouseEvent<HTMLElement>) => { props.onClick && props.onClick(e) } : undefined;
+
+    if (props.type === "submit" && props.value) {
+        // submit are rendered as <input type="submit" value={props.value} /> instead of a button
+        return <input
+            type="submit"
+            value={props.value}
+            style={props.style}
+            className={className}
+            disabled={!enabled}
+            onClick={clickHandler}
+        />;
+    }
+
     return <button
         style={props.style}
-        className={`interactable freeButton CMUserMgmtButton ${props.className} ${enabled ? "enabled" : "disabled"}`}
-        onClick={enabled ? (e) => { props.onClick && props.onClick(e) } : undefined}
+        className={className}
+        onClick={clickHandler}
+        disabled={!enabled}
     >
         {innerContent}
     </button>;
 };
+
+export const CMUserMgmtButton = CMButton;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMButtonGroupProps {
@@ -231,7 +286,7 @@ export interface CMButtonGroupProps {
 }
 export const CMButtonGroup = ({ className, style, children, orientation = "horizontal" }: React.PropsWithChildren<CMButtonGroupProps>) => {
     return <div
-        className={`CMButtonGroup ${className || ""} ${orientation === "vertical" ? "vertical" : "horizontal"}`}
+        className={`${CMButtonStyle.CMButtonGroup} ${className || ""} ${orientation === "vertical" ? "vertical" : "horizontal"}`}
         style={style}
     >
         {children}

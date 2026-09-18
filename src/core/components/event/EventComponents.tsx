@@ -270,7 +270,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                 <SettingMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
             </CMDialogContentText>
 
-            <div className="EventSongListValue">
+            <div className="NameValuePairList">
                 {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
                 {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 

@@ -1,0 +1,24 @@
+.CMButtonGroup {
+    margin: 9px 0;
+}
+
+
+.CMButton {
+    border-radius: 2px;
+    border: 1px solid #0002;
+    padding: 3px 12px;
+    font-size: 14px;
+    background-color: #0001;
+    color: #444;
+
+    display: flex;
+    align-content: center;
+    align-items: center;
+}
+
+/* largely already handled by the .interactable styling */
+.CMButton:hover {
+    border: 1px solid #0008;
+    background-color: #00000008;
+
+}

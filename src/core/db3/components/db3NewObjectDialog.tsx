@@ -1,5 +1,4 @@
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
+import { TAnyModel } from "@/shared/rootroot";
 import {
     Button, DialogContent,
     DialogTitle,
@@ -7,15 +6,16 @@ import {
 } from "@mui/material";
 import React, { Suspense } from "react";
 import type { SettingKey } from "shared/settingKeys";
-import { AdminInspectObject, CMDialogContentText, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { AppContextMarker } from "src/core/components/AppContext";
+import { AdminInspectObject, CMButton, CMDialogContentText, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
+import { ResponsiveDialog } from "src/core/components/ResponsiveDialog";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
-import { AppContextMarker } from "src/core/components/AppContext";
-import { TAnyModel } from "@/shared/rootroot";
-import { ResponsiveDialog } from "src/core/components/ResponsiveDialog";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -321,7 +321,7 @@ export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
         {!!props.smallButton ? (
             <CMSmallButton onClick={() => setEditOpen(true)}>{buttonChildren}</CMSmallButton>
         ) : (
-            <Button onClick={() => setEditOpen(true)}>{buttonChildren}</Button>
+            <CMButton onClick={() => setEditOpen(true)}>{buttonChildren}</CMButton>
         )}
         {editOpen && (
             <DB3EditObject2Dialog

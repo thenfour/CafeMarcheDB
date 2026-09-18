@@ -1,12 +1,12 @@
 //import { LabeledTextField } from "src/core/components/LabeledTextField"
 //import { Form, FORM_ERROR } from "src/core/components/Form"
+import { useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
+import { useSnackbar } from "@/src/core/components/SnackbarContext";
 import { useMutation } from "@blitzjs/rpc";
 import React from "react";
 import signup from "src/auth/mutations/signup";
-import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext";
-import { useSnackbar } from "@/src/core/components/SnackbarContext";
+import { CMButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 
 type SignupFormProps = {
   onSuccess?: () => void
@@ -70,7 +70,7 @@ export const SignupForm = (props: SignupFormProps) => {
         name={"Password"}
         value={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />}
       />
-      <div><input type="submit" value="Submit" disabled={isSubmitting} /></div>
+      <div><CMButton type="submit" value="Submit" enabled={!isSubmitting}>Submit</CMButton></div>
     </form>
   </div>);
 }

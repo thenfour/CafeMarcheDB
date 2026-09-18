@@ -1,16 +1,17 @@
-import { AuthenticationError, type PromiseReturnType } from "blitz"
+import { type PromiseReturnType } from "blitz"
 import Link from "next/link"
+import { CMButton, CMButtonGroup } from "src/core/components/CMCoreComponents2"
 //import { LabeledTextField } from "src/core/components/LabeledTextField"
 //import { Form, FORM_ERROR } from "src/core/components/Form"
 import login from "src/auth/mutations/login"
 //import { Login } from "src/auth/schemas"
 import { useMutation } from "@blitzjs/rpc"
 //import { Routes } from "@blitzjs/next"
+import { useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext"
+import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking"
 import React from "react"
 import { NameValuePair } from "src/core/components/CMCoreComponents2"
 import { useSnackbar } from "src/core/components/SnackbarContext"
-import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking"
-import { useFeatureRecorder } from "@/src/core/components/dashboardContext/DashboardContext"
 
 type LoginFormProps = {
   onSuccess?: (user: PromiseReturnType<typeof login>) => void
@@ -38,11 +39,7 @@ export const LoginForm = (props: LoginFormProps) => {
       props.onSuccess?.(user)
     } catch (error: any) {
       console.log(error);
-      if (error instanceof AuthenticationError) {
-        showSnackbar({ severity: "error", children: "Sorry, those credentials are invalid" });
-      } else {
-        showSnackbar({ severity: "error", children: "Sorry, we had an unexpected error. Please try again. - " + error.toString() });
-      }
+      showSnackbar({ severity: "error", children: "Sorry, we had an unexpected error. Please try again. - " + error.toString() });
     }
   };
 
@@ -61,7 +58,7 @@ export const LoginForm = (props: LoginFormProps) => {
         name={"Password"}
         value={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />}
       />
-      <div><input type="submit" value="Login" /></div>
+      <CMButtonGroup><CMButton type="submit" value="Login">Login</CMButton></CMButtonGroup>
       <Link href={"/auth/forgot-password"}>Forgot your password?</Link>
     </form>
 

@@ -1,3 +1,4 @@
+import { TAnyModel } from "@/shared/rootroot";
 import { Button, DialogContent, DialogTitle } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
@@ -13,12 +14,11 @@ import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
 import { DialogActionsCM } from "../CMCoreComponents2";
-import { EventTableClientColumns } from "./EventComponentsBase";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
-import { ActivityFeature } from "../featureReports/activityTracking";
-import { EventSegmentClientColumns } from "./EventSegmentComponents";
-import { TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
+import { ActivityFeature } from "../featureReports/activityTracking";
+import { EventTableClientColumns } from "./EventComponentsBase";
+import { EventSegmentClientColumns } from "./EventSegmentComponents";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -135,7 +135,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         <DialogContent dividers>
             <SettingMarkdown setting="NewEventDialogDescription" />
 
-            <div className="EventSongListValue">
+            <div className="NameValuePairList">
                 <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
                     const newValue = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
                     setEventValue(newValue);

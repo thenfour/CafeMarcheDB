@@ -1,5 +1,3 @@
-import { createAllDayRange } from "shared/time";
-import { CalendarDate } from "shared/dateTimePolicy";
 import { TAnyModel } from "@/shared/rootroot";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
@@ -8,7 +6,8 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React, { Suspense } from "react";
-import { DateTimeRange, gMillisecondsPerDay } from "shared/time";
+import { CalendarDate } from "shared/dateTimePolicy";
+import { createAllDayRange, DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -160,7 +159,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         startsAtDateTime: props.serverData?.segment.startsAt || null,
     });
 
-    return <div className="EventSongListValue">
+    return <div className="NameValuePairList">
         <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
             const newValue = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
             setEventValue(newValue);
