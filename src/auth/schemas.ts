@@ -13,7 +13,7 @@ export const DeleteByIdSchema = z.object({
   id: z.number(),
 });
 
-export const UserNameSchema = z.string().min(1);
+export const UserNameSchema = z.string().trim().min(1, { message: "Name is required" });
 export const UserEmailSchema = z
   .string()
   .trim()
@@ -41,7 +41,7 @@ export const Signup = z.object({
 
 export const Login = z.object({
   email: UserEmailSchema,
-  password: z.string(),
+  password: z.string().min(1, { message: "Password is required" }),
 })
 
 export const ForgotPassword = z.union([

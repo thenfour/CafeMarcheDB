@@ -339,6 +339,7 @@ interface NameValuePairPropsBase {
     name: React.ReactNode;
     description?: React.ReactNode;
     value: React.ReactNode;
+    validationError?: string | null;
     isReadOnly?: boolean;
     className?: string;
 };
@@ -356,13 +357,13 @@ interface NameValuePairPropsWithValidation extends NameValuePairPropsBase {
 type NameValuePairProps = NameValuePairPropsWithoutValidation | NameValuePairPropsWithValidation;
 
 export const NameValuePair = (props: NameValuePairProps) => {
-    const validationError = props.validationResult?.getErrorForField(props.fieldName) || null;
+    const validationError = props.validationError ?? props.validationResult?.getErrorForField(props.fieldName) ?? null;
 
-    return <div className={`BasicNameValuePairContainer ${props.className} ${props.isReadOnly ? "readOnly" : "editable"} ${(props.validationResult && !!validationError) ? "validationError" : "validationSuccess"}`}>
+    return <div className={`BasicNameValuePairContainer ${props.className} ${props.isReadOnly ? "readOnly" : "editable"} ${validationError ? "validationError" : "validationSuccess"}`}>
         {!IsNullOrWhitespace(props.name) && <div className="name">{props.name}</div>}
         {props.description && <div className="description">{props.description}</div>}
         <div className="value">{props.value}</div>
-        {(props.validationResult && !!validationError) && <div className="validationResult">{validationError}</div>}
+        {!!validationError && <div className="validationResult" role="alert">{validationError}</div>}
     </div>;
 }
 

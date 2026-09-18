@@ -64,12 +64,15 @@ html,
     /* background-color: #eee; */
 }
 
+.BasicNameValuePairContainer>* {
+    padding: 6px 0 3px 10px;
+}
+
 .BasicNameValuePairContainer>.name {
     /* font-weight: bold; */
     /* background-color: white; */
     color: black;
     opacity: 50%;
-    padding: 6px 0 3px 10px;
 
     /* see this in action on event custom fields with icons; this vertically-aligns the icons */
     display: flex;
@@ -78,7 +81,6 @@ html,
 
 .BasicNameValuePairContainer>.value {
     /* background-color: #eee; */
-    padding: 4px 0 4px 10px;
 }
 
 .BasicNameValuePairContainer>.description {

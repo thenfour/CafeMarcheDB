@@ -159,7 +159,7 @@ export const xUserMinimum = new db3.xTable({
         new GenericStringField({
             columnName: "name",
             allowNull: false,
-            format: "plain",
+            format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
@@ -642,7 +642,7 @@ const userBaseArgs: db3.TableDesc = {
         new GenericStringField({
             columnName: "name",
             allowNull: false,
-            format: "plain",
+            format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
