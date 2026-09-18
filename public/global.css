@@ -716,7 +716,8 @@ put spacing.*/
 
 /* default table formatting to at least reveal cell boundaries */
 table {
-  border: 1px solid #0006;
+  /* avoid so many nested surfaces; borders emphasize */
+  /* border: 1px solid #0006; */
   margin: 8px 6px;
 }
 

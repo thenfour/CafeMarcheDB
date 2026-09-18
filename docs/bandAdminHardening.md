@@ -564,7 +564,6 @@ References:
 
 - [User DB3 schema](../src/core/db3/shared/schema/user.ts)
 - [Google authentication callback](../src/pages/api/auth/[...auth].ts)
-- [Actual-Sysadmin email correction](../src/auth/mutations/correctUserEmail.ts)
 - [Verified Google profile email](../src/auth/server/googleProfile.ts)
 
 Evidence:

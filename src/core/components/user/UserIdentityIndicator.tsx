@@ -1,10 +1,14 @@
 import { useQuery } from "@blitzjs/rpc";
 import getUserExtraInfo from "../../db3/queries/getUserExtraInfo";
 import { GoogleIconSmall, NameValuePair } from "../CMCoreComponents2";
+import { CMChip, CMChipContainer } from "../CMChip";
 
 
 
 type UserIdentityIndicatorProps = {
+    // whether to show the password indicator. for user search list items,
+    // we only show a google badge / non-password-identity indicator.
+
     showPassword?: boolean;
     user?: { id: number };
     userId?: number;
@@ -12,9 +16,13 @@ type UserIdentityIndicatorProps = {
 
 export const UserIdentityIndicator = ({ showPassword = true, ...props }: UserIdentityIndicatorProps) => {
     const userId = props.user?.id || props.userId;
-    if (!userId) return null;
+    if (!userId) {
+        return null;
+    }
     const [extraInfo, { refetch }] = useQuery(getUserExtraInfo, { userId: userId });
-    return extraInfo.identity === "Google" ? <GoogleIconSmall /> : (showPassword ? "Password" : null);
+    return extraInfo.identity === "Google" ? (
+        <GoogleIconSmall />
+    ) : (showPassword ? (<CMChipContainer><CMChip>Password</CMChip></CMChipContainer>) : null);
 }
 
 

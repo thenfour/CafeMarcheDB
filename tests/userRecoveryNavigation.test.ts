@@ -13,7 +13,6 @@ vi.mock("@mui/material", async () => {
     };
 });
 vi.mock("@blitzjs/rpc", () => ({ useMutation: () => [vi.fn()] }));
-vi.mock("src/auth/mutations/correctUserEmail", () => ({ default: vi.fn() }));
 vi.mock("src/core/components/user/UserSignInMethodsButton", () => ({ UserSignInMethodsButton: () => null }));
 vi.mock("src/core/components/user/MergeUsersButton", () => ({ MergeUsersButton: () => null }));
 vi.mock("src/auth/mutations/setUserSysAdmin", () => ({ default: vi.fn() }));
@@ -23,7 +22,12 @@ vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDas
 vi.mock("src/core/components/user/useUserLifecycleActions", () => ({ useUserLifecycleActions: vi.fn() }));
 vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ showSuccess: vi.fn(), showError: vi.fn() }) }));
 vi.mock("src/core/components/EditFieldsDialog", () => ({ EditFieldsDialogButton: () => null }));
-vi.mock("src/core/components/CMCoreComponents2", () => ({ DialogActionsCM: () => null }));
+vi.mock("src/core/components/CMCoreComponents2", () =>
+({
+    DialogActionsCM: () => null,
+    CMButtonGroup: () => null,
+    CMUserMgmtButton: () => null,
+}));
 vi.mock("src/core/components/ConfirmationDialog", () => ({ useConfirm: () => vi.fn() }));
 vi.mock("src/core/components/user/AdminResetPasswordButton", () => ({ AdminResetPasswordButton: () => null }));
 vi.mock("src/core/components/user/ImpersonateUserButton", () => ({ ImpersonateUserButton: () => null }));
@@ -73,6 +77,7 @@ describe("user profile lifecycle navigation", () => {
         } as any);
         vi.mocked(useUserLifecycleActions).mockReturnValue({ deactivate, reactivate: vi.fn() });
         await act(async () => root.render(React.createElement(DeactivateUserButton, { user, capabilities, onOK: refresh })));
+        expect(container.querySelector("button")).not.toBeNull();
         await act(async () => container.querySelector("button")!.click());
         expect(deactivate).toHaveBeenCalledWith(user, []);
         if (canRecover) {

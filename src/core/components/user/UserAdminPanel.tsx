@@ -2,27 +2,21 @@ import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
     Button,
-    DialogContent,
-    DialogTitle,
-    TextField,
     Tooltip
 } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
-import correctUserEmail from "src/auth/mutations/correctUserEmail";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { DialogActionsCM } from "../CMCoreComponents2";
+import { CMButtonGroup, CMUserMgmtButton } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
-import { ResponsiveDialog } from "../ResponsiveDialog";
 import { useSnackbar } from "../SnackbarContext";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { MergeUsersButton } from "./MergeUsersButton";
 import { EnrichedVerboseUser } from "./UserListItem";
-import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
 
 type UserMgmtCaps = {
@@ -61,6 +55,7 @@ export const EditUserProfileButton = ({ readonly, tableClient, user, onOK }: Edi
     });
 
     return <>{canEdit && <EditFieldsDialogButton
+        buttonComponent={CMUserMgmtButton}
         readonly={readonly}
         dialogTitle="Edit user profile"
         tableSpec={tableClient.tableSpec}
@@ -78,60 +73,6 @@ export const EditUserProfileButton = ({ readonly, tableClient, user, onOK }: Edi
     />}</>
 }
 
-type CorrectUserEmailButtonProps = {
-    capabilities: UserMgmtCaps;
-    user: EnrichedVerboseUser;
-    onOK?: () => void;
-};
-
-export const CorrectUserEmailButton = ({ capabilities, user, onOK }: CorrectUserEmailButtonProps) => {
-    const snackbar = useSnackbar();
-    const [correctUserEmailMutation] = useMutation(correctUserEmail);
-    const [showEmailDialog, setShowEmailDialog] = React.useState(false);
-    const [correctedEmail, setCorrectedEmail] = React.useState(user.email);
-
-    return <>
-        {capabilities.canCorrectEmail && <>
-            <Button onClick={() => {
-                setCorrectedEmail(user.email);
-                setShowEmailDialog(true);
-            }}>
-                Change contact email
-            </Button>
-            <ResponsiveDialog open={showEmailDialog} onClose={() => setShowEmailDialog(false)}>
-                <DialogTitle>Change contact email for {user.name}</DialogTitle>
-                <DialogContent dividers>
-                    <p>
-                        This changes the profile&apos;s contact address. Manage login identifiers separately under Sign-in methods.
-                    </p>
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        label="Contact email"
-                        margin="normal"
-                        onChange={event => setCorrectedEmail(event.target.value)}
-                        type="email"
-                        value={correctedEmail}
-                    />
-                    <DialogActionsCM>
-                        <Button onClick={() => setShowEmailDialog(false)}>Cancel</Button>
-                        <Button disabled={!correctedEmail.trim()} onClick={async () => {
-                            await snackbar.invokeAsync(async () => {
-                                await correctUserEmailMutation({
-                                    userId: user.id,
-                                    email: correctedEmail,
-                                });
-                                setShowEmailDialog(false);
-                                onOK?.();
-                            }, "Contact email corrected");
-                        }}>Save</Button>
-                    </DialogActionsCM>
-                </DialogContent>
-            </ResponsiveDialog>
-        </>}
-    </>
-}
-
 export type DeactivateUserButtonProps = {
     capabilities: UserMgmtCaps;
     user: EnrichedVerboseUser;
@@ -147,27 +88,32 @@ export const DeactivateUserButton = ({ capabilities, user, onOK }: DeactivateUse
 
     return <>
         {capabilities.canDeactivate && <Tooltip title="Deactivate this account and revoke its sessions.">
-            <Button disabled={pending} onClick={async () => {
-                setPending(true);
-                try {
-                    const changed = await lifecycle.deactivate(user, capabilities.deactivationContinuityWarnings);
-                    if (!changed) return;
-                    snackbar.showSuccess("User deactivated");
-                    if (dashboardContext.currentUser?.id === user.id) {
-                        window.location.assign("/backstage");
-                    } else if (!dashboardContext.isAuthorized(Permission.recover_users)) {
-                        await router.replace(dashboardContext.isAuthorized(Permission.search_users)
-                            ? Routes.UserSearchPage() : "/backstage");
-                    } else {
-                        await onOK?.();
+            <CMUserMgmtButton
+                enabled={!pending}
+                onClick={async () => {
+                    setPending(true);
+                    try {
+                        const changed = await lifecycle.deactivate(user, capabilities.deactivationContinuityWarnings);
+                        if (!changed) return;
+                        snackbar.showSuccess("User deactivated");
+                        if (dashboardContext.currentUser?.id === user.id) {
+                            window.location.assign("/backstage");
+                        } else if (!dashboardContext.isAuthorized(Permission.recover_users)) {
+                            await router.replace(dashboardContext.isAuthorized(Permission.search_users)
+                                ? Routes.UserSearchPage() : "/backstage");
+                        } else {
+                            await onOK?.();
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        snackbar.showError("Unable to deactivate user; see console");
+                    } finally {
+                        setPending(false);
                     }
-                } catch (error) {
-                    console.error(error);
-                    snackbar.showError("Unable to deactivate user; see console");
-                } finally {
-                    setPending(false);
-                }
-            }}>Deactivate</Button>
+                }}
+            >
+                Deactivate
+            </CMUserMgmtButton>
         </Tooltip>}
     </>;
 };
@@ -202,17 +148,22 @@ export const SetUserSysadminButton = ({ capabilities, user, onOK }: SetUserSysad
     const snackbar = useSnackbar();
     const confirm = useConfirm();
     return <>
-        {capabilities.canSetSysAdmin && <Button onClick={async () => {
-            const isSysAdmin = !user.isSysAdmin;
-            if (!await confirm({
-                title: isSysAdmin ? "Grant Sysadmin" : "Revoke Sysadmin",
-                description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${user.name}?`,
-            })) return;
-            await snackbar.invokeAsync(async () => {
-                await setUserSysAdminMutation({ userId: user.id, isSysAdmin });
-                void onOK?.();
-            }, "Sysadmin status updated");
-        }}>{user.isSysAdmin ? "Revoke Sysadmin" : "Grant Sysadmin"}</Button>}
+        {capabilities.canSetSysAdmin && (
+            <CMUserMgmtButton
+                onClick={async () => {
+                    const isSysAdmin = !user.isSysAdmin;
+                    if (!await confirm({
+                        title: isSysAdmin ? "Grant Sysadmin" : "Revoke Sysadmin",
+                        description: `${isSysAdmin ? "Grant" : "Revoke"} Sysadmin status for ${user.name}?`,
+                    })) return;
+                    await snackbar.invokeAsync(async () => {
+                        await setUserSysAdminMutation({ userId: user.id, isSysAdmin });
+                        void onOK?.();
+                    }, "Sysadmin status updated");
+                }}
+            >
+                {user.isSysAdmin ? "Revoke Sysadmin" : "Grant Sysadmin"}
+            </CMUserMgmtButton>)}
     </>;
 
 };
@@ -223,9 +174,9 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
         .some(([key, value]) => key.startsWith("can") && value === true);
     if (!hasAnyControl) return null;
 
-    return <div>
+    return <CMButtonGroup>
         {capabilities.canMerge && <MergeUsersButton user={props.user} />}
-        {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={props.user} onChanged={props.refetch} />}
+
         <DeactivateUserButton
             capabilities={capabilities}
             user={props.user}
@@ -246,5 +197,5 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
 
         {capabilities.canImpersonate && <ImpersonateUserButton userId={props.user.id} />}
 
-    </div>;
+    </CMButtonGroup>;
 };

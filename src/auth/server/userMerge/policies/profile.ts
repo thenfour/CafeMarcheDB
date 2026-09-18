@@ -5,6 +5,7 @@ export const profilePolicy: MergePolicy = {
     userRelations: [
         "UserSetting.userId",
         "User.mergedIntoUserId",
+        "WikiPage.lockedByUserId",
     ],
     async prepare(context) {
         const settings = await context.db.userSetting.findMany({

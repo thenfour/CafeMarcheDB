@@ -10,7 +10,6 @@ vi.mock("db", async () => {
 })
 
 import db3Mutation from "@db3/mutations/db3mutations"
-import correctUserEmail from "src/auth/mutations/correctUserEmail"
 import { getVerifiedGoogleProfileEmail } from "src/auth/server/googleProfile"
 import { Permission } from "shared/permissions"
 import {
@@ -101,121 +100,6 @@ describe("BA-U006 generic User identity boundaries", () => {
     )).rejects.toThrow(`Not authorized to mutate User fields: ${field}`)
 
     expect(update).not.toHaveBeenCalled()
-  })
-})
-
-describe("BA-U006 Sysadmin contact email correction", () => {
-  const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
-  const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
-  const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
-    id: 3,
-    isSysAdmin: false,
-    permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
-  })
-  const target = {
-    ...createAuthorizationTestUser("normal", {
-      id: 10,
-      email: "original@test.invalid",
-    }),
-    signInMethods: [{ id: 1, type: "google", identifier: "existing-google-subject" }],
-  }
-
-  beforeEach(() => {
-    authorizationTestDb.reset({
-      user: [sysadmin, bandAdmin, roleGrantedSysadmin, target],
-      session: [
-        { id: 100, userId: target.id },
-        { id: 101, userId: sysadmin.id },
-      ],
-      change: [],
-    })
-    vi.restoreAllMocks()
-  })
-
-  it("normalizes contact email without changing sign-in methods or sessions, and redacts audit values", async () => {
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-
-    const result = await invokeResolver(correctUserEmail, {
-      userId: target.id,
-      email: "  Corrected@Example.COM  ",
-    }, ctx)
-
-    expect(result).toEqual({ userId: target.id, email: "corrected@example.com" })
-    expect(authorizationTestDb.snapshot("user")).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: target.id,
-        email: "corrected@example.com",
-        signInMethods: target.signInMethods,
-      }),
-    ]))
-    expect(authorizationTestDb.snapshot("session")).toEqual([
-      expect.objectContaining({ id: 100, userId: target.id }),
-      expect.objectContaining({ id: 101, userId: sysadmin.id }),
-    ])
-
-    const changes = authorizationTestDb.snapshot("change")
-    expect(changes).toEqual([
-      expect.objectContaining({
-        table: "User",
-        recordId: target.id,
-        action: "update",
-        context: "correctUserEmail",
-        userId: sysadmin.id,
-        oldValues: JSON.stringify({ contactEmailChanged: false }),
-        newValues: JSON.stringify({ contactEmailChanged: true }),
-      }),
-    ])
-    expect(JSON.stringify(changes)).not.toContain(target.email)
-    expect(JSON.stringify(changes)).not.toContain("corrected@example.com")
-  })
-
-  it("does not let Band Admin invoke the correction operation", async () => {
-    const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
-    const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
-
-    await expect(invokeResolver(correctUserEmail, {
-      userId: target.id,
-      email: "attacker@test.invalid",
-    }, ctx)).rejects.toThrow("Unauthorized test persona; required: sysadmin")
-
-    expect(update).not.toHaveBeenCalled()
-  })
-
-  it("accepts a freshly verified role-carried Sysadmin permission", async () => {
-    const findFirst = vi.spyOn(authorizationTestDb.getDelegate("user"), "findFirst")
-    const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
-    const { ctx } = createAuthorizationPersona("normal", {
-      id: roleGrantedSysadmin.id,
-      isSysAdmin: false,
-      permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
-    })
-
-    await expect(invokeResolver(correctUserEmail, {
-      userId: target.id,
-      email: "attacker@test.invalid",
-    }, ctx)).resolves.toEqual({ userId: target.id, email: "attacker@test.invalid" })
-
-    expect(findFirst).toHaveBeenCalled()
-    expect(update).toHaveBeenCalled()
-  })
-
-  it("allows contact correction of a deactivated account without restoring it", async () => {
-    authorizationTestDb.reset({
-      user: [sysadmin, { ...target, isDeleted: true }],
-      session: [{ id: 100, userId: target.id }],
-      change: [],
-    })
-    const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
-
-    await expect(invokeResolver(correctUserEmail, {
-      userId: target.id,
-      email: "corrected@test.invalid",
-    }, ctx)).resolves.toEqual({ userId: target.id, email: "corrected@test.invalid" })
-
-    expect(authorizationTestDb.snapshot("session")).toEqual([
-      expect.objectContaining({ id: 100, userId: target.id }),
-    ])
-    expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(true)
   })
 })
 

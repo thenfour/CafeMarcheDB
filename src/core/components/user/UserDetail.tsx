@@ -7,7 +7,7 @@ import React, { Suspense } from "react";
 import { StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "../../db3/components/IconMap";
-import { CMChipContainer, CMStandardDBChip } from "../CMChip";
+import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
 import { useSnackbar } from "../SnackbarContext";
 import { CMTab, CMTabPanel } from "../TabPanel";
@@ -17,10 +17,11 @@ import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { SongsProvider } from "../song/SongsContext";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
-import { CorrectUserEmailButton, EditUserProfileButton, UserAdminPanel } from "./UserAdminPanel";
+import { EditUserProfileButton, UserAdminPanel } from "./UserAdminPanel";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
+import { UserSignInMethodsButton } from "./UserSignInMethodsButton";
 
 type _Role = Prisma.RoleGetPayload<{ select: { id: true, description: true, name: true, color: true, sortOrder: true, } }>;
 
@@ -180,32 +181,29 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
             }
             {dashboardContext.isAuthorized(Permission.manage_users) &&
                 <KeyValueTable data={{
-                    "_": <EditUserProfileButton
+                    "": <EditUserProfileButton
                         readonly={props.readonly}
                         tableClient={tableClient}
                         user={user}
-                        onOK={async () => {
-                            await refetch();
-                        }}
+                        onOK={refetch}
                     />,
-                    Phone: <div className='key-value-cell' style={{ display: 'flex', alignItems: 'center' }}>
-                        <div>{user.phone}</div>
-                    </div>,
+                    Phone: <CMChipContainer>
+                        {user.phone && <CMChip>{user.phone}</CMChip>}
+                        {!user.phone && <span>-</span>}
+                    </CMChipContainer>,
                     Email: <>
-                        <div>{user.email}</div>
-                        <CorrectUserEmailButton
-                            capabilities={capabilities}
-                            user={user}
-                            onOK={async () => {
-                                await refetch();
-                            }}
-                        />
+                        <CMChipContainer>
+                            <CMChip>{user.email}</CMChip>
+                        </CMChipContainer>
                     </>,
                     Identity: <Suspense>
-                        <UserIdentityIndicator user={user} />
+                        <CMChipContainer>
+                            <UserIdentityIndicator user={user} />
 
-                        {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
+                            {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
+                            {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={user} onChanged={refetch} />}
 
+                        </CMChipContainer>
                     </Suspense>,
 
 

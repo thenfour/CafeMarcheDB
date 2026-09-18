@@ -47,12 +47,16 @@ export default resolver.pipe(
 
         let promotedUser: UserWithRolesPayload;
         try {
-            promotedUser = await db.$transaction(async (tx: TransactionalPrismaClient) => {
+            promotedUser = await db.$transaction(async (tx: typeof db) => {
                 const user = await tx.user.findFirst({
                     ...UserWithRolesArgs,
                     where: { id: ctx.session.userId },
                 });
-                if (!user) failClaim(); // User not found, cannot claim admin bootstrap.
+                if (!user) {
+                    //failClaim(); // User not found, cannot claim admin bootstrap.
+                    throw new AdminBootstrapClaimError(); // throw in outer code so IDE knows user is not null
+                }
+                if (user.isDeleted) failClaim(); // User is deleted, cannot claim admin bootstrap.
                 if (user.isSysAdmin) failClaim(); // User is already a sysadmin, cannot claim admin bootstrap.
 
                 if (!adminBootstrapSecretMatches(secret, verifiedConfiguration)) {
@@ -70,7 +74,7 @@ export default resolver.pipe(
                 const recordedClaim = await recordAdminBootstrapTokenClaim(
                     tx,
                     verifiedConfiguration.tokenHash,
-                    user.id,
+                    user!.id,
                 );
                 if (!recordedClaim) failClaim();
 
@@ -80,14 +84,17 @@ export default resolver.pipe(
                         id: true,
                     },
                 });
-                if (sysadminRoles.length !== 1) failClaim();
+                if (!sysadminRoles || sysadminRoles.length !== 1) {
+                    throw new AdminBootstrapClaimError();
+                }
+                const sysadminRoleId = sysadminRoles[0]!.id;
 
                 const updatedUser = await tx.user.update({
                     ...UserWithRolesArgs,
                     where: { id: user.id },
                     data: {
                         isSysAdmin: true,
-                        roleId: sysadminRoles[0].id,
+                        roleId: sysadminRoleId,
                     },
                 });
 

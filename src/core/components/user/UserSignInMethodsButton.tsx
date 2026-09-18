@@ -6,7 +6,7 @@ import removeUserSignInMethod from "src/auth/mutations/removeUserSignInMethod";
 import getUserSignInMethods from "src/auth/queries/getUserSignInMethods";
 import { SignInMethodSchema } from "src/auth/signInMethodSchemas";
 import { CMChip, CMChipContainer } from "../CMChip";
-import { DialogActionsCM } from "../CMCoreComponents2";
+import { CMTextButton, DialogActionsCM } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { ResponsiveDialog } from "../ResponsiveDialog";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
@@ -83,7 +83,7 @@ const SignInMethodsEditor = ({ user, onChanged }: Props) => {
 export const UserSignInMethodsButton = (props: Props) => {
     const [open, setOpen] = React.useState(false);
     return <>
-        <Button onClick={() => setOpen(true)}>Manage Sign-in methods</Button>
+        <CMTextButton onClick={() => setOpen(true)}>Manage Sign-in methods</CMTextButton>
         <ResponsiveDialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
             <DialogTitle>Sign-in methods for {props.user.name}</DialogTitle>
             <DialogContent dividers>

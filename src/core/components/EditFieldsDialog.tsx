@@ -4,11 +4,11 @@ import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization
 
 // TODO: how is this different from DB3EditRowButton ? is it different at all or did i accidentally write this twice?
 
+import { TAnyModel } from "@/shared/rootroot";
 import { Button } from "@mui/material";
 import React from "react";
-import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { TAnyModel } from "@/shared/rootroot";
+import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
 
 
 ////////////////////////////////////////////////////////////////
@@ -27,8 +27,9 @@ export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
     initialValue: TRowModel;
     dialogTitle: string;
     dialogDescription: React.ReactNode;
+    buttonComponent?: React.ComponentType<React.ComponentProps<typeof Button>>;
 };
-export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
+export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>({ buttonComponent, ...props }: EditFieldsDialogButtonProps<TRowModel>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
     const publicData = useDB3Authorization();
@@ -49,7 +50,7 @@ export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: Edit
     } : undefined;
 
     return <>
-        {!readonly && <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>}
+        {!readonly && (buttonComponent ? React.createElement(buttonComponent, { onClick: () => { setIsOpen(!isOpen) }, disableRipple: true }, props.renderButtonChildren()) : <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>)}
         {isOpen && !readonly && <DB3EditObjectDialog
             initialValue={props.initialValue as TAnyModel}
             onCancel={() => {

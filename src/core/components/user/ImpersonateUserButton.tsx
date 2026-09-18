@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import impersonateUser from "src/auth/mutations/impersonateUser";
 import { Permission } from "shared/permissions";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { CMUserMgmtButton } from "../CMCoreComponents2";
 
 export const ImpersonateUserButton = ({ userId }: { userId: number }) => {
     const router = useRouter();
@@ -28,8 +29,8 @@ export const ImpersonateUserButton = ({ userId }: { userId: number }) => {
     };
 
     return (
-        <Button onClick={handleImpersonateClick}>
+        <CMUserMgmtButton onClick={handleImpersonateClick}>
             Impersonate
-        </Button>
+        </CMUserMgmtButton>
     );
 }

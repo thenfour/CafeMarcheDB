@@ -189,6 +189,54 @@ export const CMTextButton = ({ enabled = true, ...props }: React.PropsWithChildr
     </div>;
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CMUserMgmtButtonProps {
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+    enabled?: boolean;
+    startIcon?: React.ReactNode;
+    tooltip?: React.ReactNode;
+
+    className?: string;
+    style?: React.CSSProperties;
+}
+
+export const CMUserMgmtButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMUserMgmtButtonProps>) => {
+    let innerContent = <>
+        {props.startIcon}
+        {props.children}
+    </>;
+
+    if (props.tooltip) {
+        innerContent = <Tooltip title={props.tooltip} arrow>
+            <div>
+                {innerContent}
+            </div>
+        </Tooltip>;
+    }
+
+    return <button
+        style={props.style}
+        className={`interactable freeButton CMUserMgmtButton ${props.className} ${enabled ? "enabled" : "disabled"}`}
+        onClick={enabled ? (e) => { props.onClick && props.onClick(e) } : undefined}
+    >
+        {innerContent}
+    </button>;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CMButtonGroupProps {
+    className?: string;
+    style?: React.CSSProperties;
+    orientation?: "horizontal" | "vertical";
+}
+export const CMButtonGroup = ({ className, style, children, orientation = "horizontal" }: React.PropsWithChildren<CMButtonGroupProps>) => {
+    return <div
+        className={`CMButtonGroup ${className || ""} ${orientation === "vertical" ? "vertical" : "horizontal"}`}
+        style={style}
+    >
+        {children}
+    </div>;
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSmallButtonProps {

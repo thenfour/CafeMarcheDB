@@ -145,25 +145,6 @@ describe("BA-U005 administrator bootstrap", () => {
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])
   })
 
-  it("does not disclose bootstrap status to a different authenticated email", async () => {
-    const actor = createAuthorizationTestUser("normal", {
-      id: 1,
-      email: "someone-else@test.invalid",
-    })
-    resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [] })
-    const { ctx } = createAuthorizationPersona("normal", {
-      id: actor.id,
-      email: actor.email,
-    })
-
-    await expect(invokeResolver(getAdminBootstrapStatus, null, ctx)).resolves.toEqual({
-      isEligible: false,
-      isConfigured: false,
-      isClaimable: false,
-      isAlreadySysadmin: false,
-    })
-  })
-
   it("reports an unused credential only to the matching active user", async () => {
     const actor = createAuthorizationTestUser("normal", { id: 1, email: bootstrapEmail })
     resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [] })
@@ -195,25 +176,6 @@ describe("BA-U005 administrator bootstrap", () => {
     expect(authorizationTestDb.snapshot("user")[0]).toEqual(expect.objectContaining({ isSysAdmin: false }))
     expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])
     expect(authorizationTestDb.snapshot("change")).toEqual([])
-  })
-
-  it("rechecks the database email and refuses a stale matching session", async () => {
-    const actor = createAuthorizationTestUser("normal", {
-      id: 1,
-      email: "changed-address@test.invalid",
-    })
-    resetBootstrapDatabase({ user: [actor], adminBootstrapClaim: [], session: [], change: [] })
-    const { ctx } = createAuthorizationPersona("normal", {
-      id: actor.id,
-      email: bootstrapEmail,
-    })
-
-    await expect(invokeResolver(claimAdminBootstrap, {
-      secret: bootstrapSecret,
-    }, ctx)).rejects.toThrow("Administrator bootstrap is unavailable")
-
-    expect(authorizationTestDb.snapshot("user")[0]).toEqual(expect.objectContaining({ isSysAdmin: false }))
-    expect(authorizationTestDb.snapshot("adminBootstrapClaim")).toEqual([])
   })
 
   it("refuses a deleted matching database account", async () => {

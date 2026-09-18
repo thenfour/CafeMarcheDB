@@ -8,7 +8,7 @@ import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidate
 import type { MergeIdentity, UserMergePreview } from "src/auth/userMergeSchemas";
 import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
 import { UserMassAnalysisResult } from "../../db3/shared/getUserMassAnalysisTypes";
-import { DialogActionsCM } from "../CMCoreComponents2";
+import { CMUserMgmtButton, DialogActionsCM } from "../CMCoreComponents2";
 import { CMTable } from "../CMTable";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
@@ -225,7 +225,7 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
 export function MergeUsersButton({ user }: { user: { id: number; name: string } }) {
     const [open, setOpen] = React.useState(false);
     return <>
-        <Button onClick={() => setOpen(true)}>Merge with another user</Button>
+        <CMUserMgmtButton onClick={() => setOpen(true)}>Merge with another user</CMUserMgmtButton>
         {open && <MergeUsersDialog user={user} onClose={() => setOpen(false)} />}
     </>;
 }

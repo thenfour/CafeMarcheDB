@@ -32,7 +32,7 @@ const DynamicContent = () => {
 
       {limitedAccountWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
         <div>{gIconMap.ErrorOutline()}</div>
-        <div>Your account has limited access; please contact a site admin to grant you access 😊.
+        <div>Your account has limited access; please contact an admin for access 😊.
         </div>
       </CMSinglePageSurfaceCard>}
 
