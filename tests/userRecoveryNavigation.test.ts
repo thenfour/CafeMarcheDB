@@ -26,7 +26,8 @@ vi.mock("src/core/components/CMCoreComponents2", () =>
 ({
     DialogActionsCM: () => null,
     CMButtonGroup: () => null,
-    CMUserMgmtButton: () => null,
+    CMUserMgmtButton: ({ children, onClick, enabled = true }: any) =>
+        React.createElement("button", { onClick, disabled: !enabled }, children),
 }));
 vi.mock("src/core/components/ConfirmationDialog", () => ({ useConfirm: () => vi.fn() }));
 vi.mock("src/core/components/user/AdminResetPasswordButton", () => ({ AdminResetPasswordButton: () => null }));
