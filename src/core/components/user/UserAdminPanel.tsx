@@ -19,6 +19,8 @@ import { MergeUsersButton } from "./MergeUsersButton";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
 
+import styles from './UserAdminPanel.module.css';
+
 type UserMgmtCaps = {
     canMerge?: boolean;
     canManageSignInMethods: boolean;

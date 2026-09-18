@@ -15,24 +15,9 @@ import { themeOptions } from "src/core/theme";
 import Head from "next/head";
 import NextApp, { AppContext, AppInitialProps } from "next/app";
 import { BrandContext, useBrand } from "@/shared/brandConfig";
-import '../../public/eventSongList.css';
+
+import 'src/styles/main.css';
 import '../../public/frontpage.css';
-import '../../public/global.css';
-import '../../public/global2.css';
-import '../../public/markdown.css';
-import '../../public/style/bigCalendar.css';
-import "../../public/style/color.css";
-import '../../public/style/dashboard.css';
-import '../../public/style/events2.css';
-import '../../public/style/filterControls.css';
-import '../../public/style/ImportEvents.css';
-import '../../public/style/mediaPlayer.css';
-import '../../public/style/metronome.css';
-import '../../public/style/tuner.css';
-import '../../public/style/setlistPlan.css';
-import '../../public/style/songSearch.css';
-import '../../public/style/tabs.css';
-import '../../public/style/calendarPage.css';
 import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
 
 // Client-side cache, shared for the whole session of the user in the browser.
