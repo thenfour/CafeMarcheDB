@@ -1,4 +1,3 @@
-import { loadBandTimeZone } from "src/server/dateTime";
 import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import db, { Prisma } from "db";
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
@@ -12,6 +11,7 @@ import { isAttendanceGoing } from "shared/eventAttendance";
 import { isUserInvitedToEvent } from "shared/eventInvitation";
 import { loadUserSettings } from "src/auth/server/userSettings";
 import { shouldIncludeEventInCalendarFeed } from "../shared/calendarAttendance";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 
 interface ICalSettings {
     calendarName: string;

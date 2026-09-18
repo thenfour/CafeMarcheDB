@@ -28,7 +28,6 @@ import { useUserLifecycleActions } from "./useUserLifecycleActions";
 type UserMgmtCaps = {
     canMerge?: boolean;
     canManageSignInMethods: boolean;
-    canEdit: boolean;
     canCorrectEmail: boolean;
     canDeactivate: boolean;
     canReactivate: boolean;
@@ -48,17 +47,20 @@ interface UserAdminPanelProps {
 }
 
 type EditUserProfileButtonProps = {
-    capabilities: UserMgmtCaps;
     readonly: boolean;
     tableClient: DB3Client.xTableRenderClient;
     user: EnrichedVerboseUser;
     onOK: () => void;
 };
 
-export const EditUserProfileButton = ({ capabilities, readonly, tableClient, user, onOK }: EditUserProfileButtonProps) => {
+export const EditUserProfileButton = ({ readonly, tableClient, user, onOK }: EditUserProfileButtonProps) => {
     const snackbar = useSnackbar();
+    const canEdit = tableClient.schema.authorizeRowForEdit({
+        model: user,
+        publicData: tableClient.publicData,
+    });
 
-    return <>{capabilities.canEdit && <EditFieldsDialogButton
+    return <>{canEdit && <EditFieldsDialogButton
         readonly={readonly}
         dialogTitle="Edit user profile"
         tableSpec={tableClient.tableSpec}

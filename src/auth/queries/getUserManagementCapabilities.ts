@@ -2,18 +2,18 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthorizationError, NotFoundError } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
-import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
 import { z } from "zod";
 import {
     getContinuityWarningsForUserResult,
     getUserManagementCapabilities,
-    roleHasPermission,
 } from "../server/userManagementPolicy";
 import {
     findActiveNonSysadminUsers,
+    findUserManagementActor,
+    findUserManagementTarget,
     getAssignableRoles,
-    findActiveUserManagementPrincipal,
 } from "../server/userManagementState";
+import { PermissionSet } from "../shared/PermissionSet";
 
 const GetUserManagementCapabilitiesInput = z.object({
     userId: z.number().int().positive(),
@@ -24,15 +24,13 @@ export default resolver.pipe(
     resolver.authorize(Permission.view_users_basic_info),
     async ({ userId }, ctx) => {
         const [actor, target] = await Promise.all([
-            findActiveUserManagementPrincipal(db, ctx.session.userId),
-            db.user.findFirst({
-                select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
-                where: { id: userId },
-            }),
+            findUserManagementActor(db, ctx.session.userId),
+            findUserManagementTarget(db, userId),
         ]);
 
         if (!target) throw new NotFoundError();
-        if (target.isDeleted && !roleHasPermission(actor?.role, Permission.recover_users)) {
+        if (target.principal.isDeleted
+            && !actor.effectivePermissions.includesName(Permission.recover_users)) {
             // target user is deleted.
             // deleted users are only known through Permission.recover_users
             throw new AuthorizationError();
@@ -44,7 +42,7 @@ export default resolver.pipe(
 
         return {
             ...capabilities,
-            mergedIntoUserId: target.mergedIntoUserId,
+            mergedIntoUserId: target.principal.mergedIntoUserId,
             assignableRoles: await getAssignableRoles(
                 db,
                 actor,
@@ -52,10 +50,10 @@ export default resolver.pipe(
                 activeNonSysadminUsers,
             ),
             unassignedRoleContinuityWarnings: capabilities.canAssignRole
-                ? getContinuityWarningsForUserResult(target, null, activeNonSysadminUsers)
+                ? getContinuityWarningsForUserResult(target, new PermissionSet([]), activeNonSysadminUsers)
                 : [],
             deactivationContinuityWarnings: capabilities.canDeactivate
-                ? getContinuityWarningsForUserResult(target, null, activeNonSysadminUsers)
+                ? getContinuityWarningsForUserResult(target, new PermissionSet([]), activeNonSysadminUsers)
                 : [],
         };
     },

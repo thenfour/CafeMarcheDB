@@ -1,17 +1,20 @@
-// server-side API for user auth auth
+// Server-side adapters and loaders for user-management authorization.
 
 import { Prisma } from "db";
 import type { Permission } from "shared/permissions";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { RoleArgs, RoleNaturalOrderBy } from "src/core/db3/shared/schema/prismArgs";
 import { UserWithRolesArgs } from "src/core/db3/shared/schema/userPayloads";
+import { PermissionSet } from "../shared/PermissionSet";
+import { loadEffectivePermissions } from "./effectivePermissions";
 import {
     canManageUser,
     getContinuityWarningsForUserResult,
+    UserManagementActor,
     type UserManagementPrincipal,
-    type UserManagementRole,
+    UserManagementSubject,
+    UserManagementTarget,
 } from "./userManagementPolicy";
-import { loadEffectivePermissionNames } from "./effectivePermissions";
 
 export type UserManagementRoleWithPermissions = Prisma.RoleGetPayload<typeof RoleArgs>;
 
@@ -22,34 +25,61 @@ export type AssignableRole = Pick<
     continuityWarnings: Permission[];
 };
 
-export const findUserManagementPrincipal = (
+type RoleWithPermissionIdentities = {
+    permissions: ReadonlyArray<{
+        permission: {
+            id: number;
+            name: string;
+        };
+    }>;
+};
+
+type UserManagementPrincipalPayload = UserManagementPrincipal & {
+    role?: RoleWithPermissionIdentities | null;
+    mergedIntoUserId?: number | null;
+};
+
+export const makePermissionSetFromRole = (role: RoleWithPermissionIdentities | null | undefined): PermissionSet => (
+    new PermissionSet(role?.permissions.map(entry => entry.permission) ?? [])
+);
+
+export const makeUserManagementActor = (
+    principal: UserManagementPrincipalPayload | null,
+    effectivePermissions: PermissionSet,
+): UserManagementActor => ({ principal, effectivePermissions });
+
+export const makeUserManagementTarget = (
+    principal: UserManagementPrincipalPayload,
+): UserManagementTarget => ({
+    principal,
+    rolePermissions: makePermissionSetFromRole(principal.role),
+});
+
+export const findUserManagementTarget = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
-) => {
-    if (!userId) return Promise.resolve(null);
-    return db.user.findFirst({
+): Promise<UserManagementTarget | null> => {
+    if (!userId) return null;
+    const principal = await db.user.findFirst({
         select: { ...UserWithRolesArgs.select, mergedIntoUserId: true },
         where: { id: userId },
     });
+    return principal ? makeUserManagementTarget(principal) : null;
 };
 
-export const findActiveUserManagementPrincipal = async (
+export const findUserManagementActor = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
-) => {
-    if (!userId) return null;
-    const actor = await db.user.findFirst({
+): Promise<UserManagementActor> => {
+    const principal = userId ? await db.user.findFirst({
         ...UserWithRolesArgs,
-        where: { id: userId, isDeleted: false },
-    });
-    if (!actor) return null;
-    const permissions = await loadEffectivePermissionNames(db, actor);
-    return {
-        ...actor,
-        role: {
-            permissions: permissions.map(name => ({ permission: { name } })),
-        },
-    };
+        where: { id: userId },
+    }) : null;
+    const effectivePermissions = await loadEffectivePermissions(
+        db,
+        principal?.isDeleted ? null : principal,
+    );
+    return makeUserManagementActor(principal, effectivePermissions);
 };
 
 export const findUserManagementRole = async (
@@ -63,20 +93,22 @@ export const findUserManagementRole = async (
     });
 };
 
-export const findActiveNonSysadminUsers = (
+export const findActiveNonSysadminUsers = async (
     db: TransactionalPrismaClient,
-): Promise<UserManagementPrincipal[]> => db.user.findMany({
-    ...UserWithRolesArgs,
-    where: {
-        isDeleted: false,
-        isSysAdmin: false,
-    },
-});
+): Promise<UserManagementSubject[]> => (
+    await db.user.findMany({
+        ...UserWithRolesArgs,
+        where: {
+            isDeleted: false,
+            isSysAdmin: false,
+        },
+    })
+).map(makeUserManagementTarget);
 
 export const getUserManagementContinuityWarnings = async (
     db: TransactionalPrismaClient,
-    target: UserManagementPrincipal,
-    resultingRole: UserManagementRole,
+    target: UserManagementTarget,
+    resultingRole: PermissionSet,
 ): Promise<Permission[]> => getContinuityWarningsForUserResult(
     target,
     resultingRole,
@@ -85,9 +117,9 @@ export const getUserManagementContinuityWarnings = async (
 
 export const getAssignableRoles = async (
     db: TransactionalPrismaClient,
-    actor: UserManagementPrincipal | null,
-    target: UserManagementPrincipal,
-    activeNonSysadminUsers: readonly UserManagementPrincipal[],
+    actor: UserManagementActor,
+    target: UserManagementTarget,
+    activeNonSysadminUsers: readonly UserManagementSubject[],
 ): Promise<AssignableRole[]> => {
     if (!canManageUser({ actor, target, action: "assignRole" })) return [];
 
@@ -97,7 +129,12 @@ export const getAssignableRoles = async (
     });
 
     return roles
-        .filter(role => canManageUser({ actor, target, action: "assignRole", desiredRole: role }))
+        .filter(role => canManageUser({
+            actor,
+            target,
+            action: "assignRole",
+            desiredRole: makePermissionSetFromRole(role),
+        }))
         .map(role => ({
             id: role.id,
             name: role.name,
@@ -106,7 +143,7 @@ export const getAssignableRoles = async (
             color: role.color,
             continuityWarnings: getContinuityWarningsForUserResult(
                 target,
-                role,
+                makePermissionSetFromRole(role),
                 activeNonSysadminUsers,
             ),
         }));

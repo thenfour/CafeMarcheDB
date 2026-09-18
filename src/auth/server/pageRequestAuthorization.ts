@@ -16,8 +16,8 @@ export async function authorizePageRequest(
     if (!route) throw new Error(`Backstage page is missing route authorization metadata: ${pathname}`);
 
     const { user, effectivePermissions } = await getRequestAuthorization(session);
-    if (!user && !principalHasPermission(effectivePermissions.names, route.permission)) {
+    if (!user && !principalHasPermission(effectivePermissions, route.permission)) {
         throw new AuthenticationError();
     }
-    assertPermission(effectivePermissions.names, route.permission);
+    assertPermission(effectivePermissions, route.permission);
 }

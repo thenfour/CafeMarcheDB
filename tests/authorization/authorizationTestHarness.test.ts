@@ -27,9 +27,9 @@ import getUserManagementCapabilities from "src/auth/queries/getUserManagementCap
 import {
   canManageUser,
   getContinuityWarningsForUserResult,
-  isProtectedUserRole,
   isRoleWithinDelegationEnvelope,
 } from "src/auth/server/userManagementPolicy"
+import { makePermissionSetFromRole } from "src/auth/server/userManagementState"
 import {
   validateDB3MutationRequest,
   validateDB3PaginatedQueryRequest,
@@ -38,7 +38,10 @@ import {
 import { queryTable } from "@db3/server/db3QueryCore"
 import type { UserWithRolesPayload } from "@db3/shared/schema/userPayloads"
 import { Permission } from "shared/permissions"
+import { PermissionSet } from "src/auth/shared/PermissionSet"
 import {
+  asUserManagementActor,
+  asUserManagementTarget,
   createAuthorizationPersona,
   createAuthorizationTarget,
   createAuthorizationTestUser,
@@ -359,7 +362,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
     const { ctx } = createAuthorizationPersona("normal", { id: normal.id })
 
     await expect(invokeResolver(db3Query, forgeDb3Query("Change"), ctx)).rejects.toThrow(
-      "Not authorized to perform this DB3 query",
+      "Not authorized to perform this query.",
     )
     expect(findMany).not.toHaveBeenCalled()
   })
@@ -376,7 +379,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
         { ...forgeDb3Query("Change"), skip: 0, take: 50 },
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to perform this DB3 query")
+    ).rejects.toThrow("Not authorized to perform this query.")
     expect(findMany).not.toHaveBeenCalled()
     expect(count).not.toHaveBeenCalled()
   })
@@ -387,7 +390,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     await expect(queryTable({
       ...forgeDb3Query("Role"),
-    }, await loadUserAuthorization(databaseNormal))).rejects.toThrow("Not authorized to perform this DB3 query")
+    }, await loadUserAuthorization(databaseNormal))).rejects.toThrow("Not authorized to perform this query.")
     expect(findMany).not.toHaveBeenCalled()
   })
 
@@ -401,7 +404,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
 
     await expect(
       invokeResolver(db3Query, forgeDb3Query("Event", request), ctx),
-    ).rejects.toThrow("Not authorized to perform this DB3 query")
+    ).rejects.toThrow("Not authorized to perform this query.")
     expect(findMany).not.toHaveBeenCalled()
   })
 
@@ -690,7 +693,7 @@ describe("BA-A002 generic DB3 query authorization", () => {
       includeDeleted: true,
       skip: 0,
       take: 50,
-    }, ctx)).rejects.toThrow("Not authorized to perform this DB3 query")
+    }, ctx)).rejects.toThrow("Not authorized to perform this query.")
 
     expect(findMany).not.toHaveBeenCalled()
     expect(count).not.toHaveBeenCalled()
@@ -953,7 +956,7 @@ describe("BA-A003 generic DB3 mutation authorization", () => {
   })
 })
 
-describe("BA-U001 protected-principal policy", () => {
+describe("BA-U001 user management boundaries", () => {
   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
   const bandAdmin = createAuthorizationTestUser("bandAdmin", { id: 2 })
   const moderator = createAuthorizationTestUser("moderator", { id: 3 })
@@ -1001,13 +1004,14 @@ describe("BA-U001 protected-principal policy", () => {
     vi.restoreAllMocks()
   })
 
-  it.each([
-    Permission.sysadmin,
-    Permission.impersonate_user,
-    Permission.never_grant,
-  ])("treats a role containing %s as protected", (permission) => {
-    expect(isProtectedUserRole({
-      permissions: [{ permission: { name: permission } }],
+  it("allows an anonymous actor when the public permission set grants the action", () => {
+    expect(canManageUser({
+      actor: {
+        principal: null,
+        effectivePermissions: new PermissionSet([{ id: 1, name: Permission.deactivate_users }]),
+      },
+      target: asUserManagementTarget(ordinaryUser),
+      action: "deactivate",
     })).toBe(true)
   })
 
@@ -1040,9 +1044,9 @@ describe("BA-U001 protected-principal policy", () => {
   })
 
   it.each([
-    ["a protected-role user", protectedRoleUser],
-    ["an isSysAdmin user", isSysAdminUser],
-  ])("does not let Band Admin edit or demote %s", async (_description, target) => {
+    ["a protected-role user", protectedRoleUser, false],
+    ["an isSysAdmin user with an ordinary assigned role", isSysAdminUser, true],
+  ])("uses DB3 profile editing and the assigned-role envelope for %s", async (_description, target, canAssignRole) => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
 
@@ -1052,20 +1056,23 @@ describe("BA-U001 protected-principal policy", () => {
         forgeDb3Update("User", target.id, { id: target.id, name: "Forbidden edit" }),
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to edit this user")
-    await expect(
-      invokeResolver(
-        assignUserRole,
-        {
-          userId: target.id,
-          roleId: ordinaryRole.id,
-          acknowledgeContinuityRisk: false,
-        },
-        ctx,
-      ),
-    ).rejects.toThrow("Not authorized to assignRole this user")
+    ).resolves.toEqual(expect.objectContaining({ name: "Forbidden edit" }))
+    const assignment = invokeResolver(
+      assignUserRole,
+      {
+        userId: target.id,
+        roleId: ordinaryRole.id,
+        acknowledgeContinuityRisk: false,
+      },
+      ctx,
+    )
+    if (canAssignRole) {
+      await expect(assignment).resolves.toEqual(expect.objectContaining({ roleId: ordinaryRole.id }))
+    } else {
+      await expect(assignment).rejects.toThrow("Not authorized to assignRole this user")
+    }
 
-    expect(update).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalledTimes(canAssignRole ? 2 : 1)
   })
 
   it.each([
@@ -1130,8 +1137,8 @@ describe("BA-U001 protected-principal policy", () => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
 
     expect(canManageUser({
-      actor: bandAdmin,
-      target: isSysAdminUser,
+      actor: asUserManagementActor(bandAdmin),
+      target: asUserManagementTarget(isSysAdminUser),
       action: "impersonate",
     })).toBe(false)
     await expect(
@@ -1142,12 +1149,12 @@ describe("BA-U001 protected-principal policy", () => {
   it.each([
     ["a protected-role user", protectedRoleUser],
     ["an isSysAdmin user", isSysAdminUser],
-  ])("does not let Sysadmin impersonate %s", async (_description, target) => {
+  ])("lets Sysadmin impersonate %s when the dedicated grant is present", async (_description, target) => {
     const { ctx } = createAuthorizationPersona("sysadmin", { id: sysadmin.id })
 
     await expect(
       invokeResolver(impersonateUser, { userId: target.id }, ctx),
-    ).rejects.toThrow("Not authorized to impersonate this user")
+    ).resolves.toEqual({ userId: target.id })
   })
 
   it("returns server-computed UI decisions for ordinary and protected targets", async () => {
@@ -1167,7 +1174,6 @@ describe("BA-U001 protected-principal policy", () => {
       canAssignRole: true,
       canCorrectEmail: false,
       canDeactivate: true,
-      canEdit: true,
       canImpersonate: false,
       canResetPassword: false,
       canSetSysAdmin: false,
@@ -1193,8 +1199,7 @@ describe("BA-U001 protected-principal policy", () => {
     expect(bandAdminProtectedCapabilities).toEqual(expect.objectContaining({
       canAssignRole: false,
       canCorrectEmail: false,
-      canDeactivate: false,
-      canEdit: false,
+      canDeactivate: true,
       canImpersonate: false,
       canResetPassword: false,
       canSetSysAdmin: false,
@@ -1210,7 +1215,6 @@ describe("BA-U001 protected-principal policy", () => {
       canAssignRole: true,
       canCorrectEmail: true,
       canDeactivate: true,
-      canEdit: true,
       canImpersonate: true,
       canResetPassword: true,
       canSetSysAdmin: true,
@@ -1226,10 +1230,10 @@ describe("BA-U001 protected-principal policy", () => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
 
     expect(canManageUser({
-      actor: moderator,
-      target: ordinaryUser,
+      actor: asUserManagementActor(moderator),
+      target: asUserManagementTarget(ordinaryUser),
       action: "assignRole",
-      desiredRole: ordinaryRole,
+      desiredRole: makePermissionSetFromRole(ordinaryRole),
     })).toBe(false)
     await expect(
       invokeResolver(
@@ -1250,9 +1254,9 @@ describe("BA-U001 protected-principal policy", () => {
         }),
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to edit this user")
+    ).resolves.toEqual(expect.objectContaining({ name: "Forbidden protected edit" }))
 
-    expect(update).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -1309,11 +1313,12 @@ describe("BA-U002 delegated user administration", () => {
   })
 
   it("uses permission composition rather than role identity or rank", () => {
-    expect(isRoleWithinDelegationEnvelope(bandAdmin, peerRole)).toBe(true)
-    expect(isRoleWithinDelegationEnvelope(bandAdmin, ordinaryRole)).toBe(true)
-    expect(isRoleWithinDelegationEnvelope(bandAdmin, unheldRole)).toBe(false)
-    expect(isRoleWithinDelegationEnvelope(bandAdmin, protectedRole)).toBe(false)
-    expect(isRoleWithinDelegationEnvelope(bandAdmin, unknownRole)).toBe(false)
+    const actor = asUserManagementActor(bandAdmin)
+    expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(peerRole))).toBe(true)
+    expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(ordinaryRole))).toBe(true)
+    expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(unheldRole))).toBe(false)
+    expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(protectedRole))).toBe(false)
+    expect(isRoleWithinDelegationEnvelope(actor, makePermissionSetFromRole(unknownRole))).toBe(false)
 
     const targetOutsideEnvelope = {
       ...ordinaryUser,
@@ -1321,10 +1326,10 @@ describe("BA-U002 delegated user administration", () => {
       roleId: unheldRole.id,
     }
     expect(canManageUser({
-      actor: bandAdmin,
-      target: targetOutsideEnvelope,
+      actor,
+      target: asUserManagementTarget(targetOutsideEnvelope),
       action: "assignRole",
-      desiredRole: ordinaryRole,
+      desiredRole: makePermissionSetFromRole(ordinaryRole),
     })).toBe(false)
   })
 
@@ -1392,9 +1397,9 @@ describe("BA-U002 delegated user administration", () => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: selfInPeerRole.id })
 
     expect(getContinuityWarningsForUserResult(
-      selfInPeerRole,
-      ordinaryRole,
-      [selfInPeerRole, ordinaryUser],
+      asUserManagementTarget(selfInPeerRole),
+      makePermissionSetFromRole(ordinaryRole),
+      [selfInPeerRole, ordinaryUser].map(asUserManagementTarget),
     )).toEqual([Permission.deactivate_users, Permission.assign_user_roles])
 
     await expect(invokeResolver(assignUserRole, {
@@ -1420,9 +1425,9 @@ describe("BA-U002 delegated user administration", () => {
   it("does not warn when another active non-Sysadmin retains continuity permissions", async () => {
     const peer = { ...bandAdmin, id: 12, email: "peer@test.invalid" }
     const warnings = getContinuityWarningsForUserResult(
-      bandAdmin,
-      ordinaryRole,
-      [bandAdmin, peer],
+      asUserManagementTarget(bandAdmin),
+      makePermissionSetFromRole(ordinaryRole),
+      [bandAdmin, peer].map(asUserManagementTarget),
     )
     expect(warnings).toEqual([])
   })
@@ -1762,7 +1767,7 @@ describe("BA-U004 impersonation hardening", () => {
     Permission.sysadmin,
     Permission.impersonate_user,
     Permission.never_grant,
-  ])("rejects a target whose role carries protected permission %s", async (permission) => {
+  ])("allows a target whose role carries protected permission %s", async (permission) => {
     const protectedTarget = createAuthorizationTestUser("normal", {
       id: 30,
       permissions: [Permission.login, permission],
@@ -1773,14 +1778,13 @@ describe("BA-U004 impersonation hardening", () => {
 
     await expect(
       invokeResolver(impersonateUser, { userId: protectedTarget.id }, ctx),
-    ).rejects.toThrow("Not authorized to impersonate this user")
+    ).resolves.toEqual({ userId: protectedTarget.id })
 
-    expect(createSession).not.toHaveBeenCalled()
-    expect(authorizationTestDb.snapshot("change")).toEqual([])
+    expect(createSession).toHaveBeenCalledTimes(1)
+    expect(authorizationTestDb.snapshot("change")).not.toEqual([])
   })
 
   it.each([
-    ["a Sysadmin", createAuthorizationTarget("isSysAdmin", { id: 40 })],
     ["the current actor", sysadmin],
     ["a deleted user", createAuthorizationTarget("ordinary", { id: 41, isDeleted: true })],
   ])("rejects %s as an impersonation target", async (_description, protectedTarget) => {
@@ -2308,7 +2312,7 @@ describe("BA-A005 delete authorization", () => {
   it.each([
     ["a user in a protected role", protectedRoleUser],
     ["a user with the isSysAdmin flag", isSysAdminUser],
-  ])("does not let Band Admin deactivate %s", async (_description, target) => {
+  ])("lets Band Admin deactivate %s when granted deactivate_users", async (_description, target) => {
     const { ctx } = createAuthorizationPersona("bandAdmin", { id: bandAdmin.id })
     const update = vi.spyOn(authorizationTestDb.getDelegate("user"), "update")
 
@@ -2318,12 +2322,12 @@ describe("BA-A005 delete authorization", () => {
         { userId: target.id, acknowledgeContinuityRisk: false },
         ctx,
       ),
-    ).rejects.toThrow("Not authorized to deactivate this user")
+    ).resolves.toEqual(expect.objectContaining({ userId: target.id }))
 
-    expect(update).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalledTimes(1)
     expect(authorizationTestDb.snapshot("user")).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: target.id, isDeleted: false }),
+        expect.objectContaining({ id: target.id, isDeleted: true }),
       ]),
     )
   })

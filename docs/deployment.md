@@ -139,7 +139,6 @@ Ordinary signup never grants Sysadmin. To enable a one-time sysadmin recovery pa
 configure both application environment values:
 
 ```dotenv
-CMDB_ADMIN_BOOTSTRAP_EMAIL=admin@example.com
 CMDB_ADMIN_BOOTSTRAP_SECRET=<at-least-32-character-random-secret>
 ```
 

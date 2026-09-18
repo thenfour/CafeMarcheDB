@@ -13,11 +13,12 @@ import {
     requireContinuityAcknowledgement,
 } from "../server/userManagementPolicy";
 import {
-    findActiveUserManagementPrincipal,
-    findUserManagementPrincipal,
+    findUserManagementActor,
+    findUserManagementTarget,
     getUserManagementContinuityWarnings,
 } from "../server/userManagementState";
 import { revokeUserSignInState } from "../server/signInMethods";
+import { PermissionSet } from "../shared/PermissionSet";
 
 export const DeactivateUserInput = z.object({
     userId: z.number().int().positive(),
@@ -30,8 +31,8 @@ export default resolver.pipe(
     async ({ userId, acknowledgeContinuityRisk }, ctx) => db.$transaction(
         async tx => {
             const [actor, target] = await Promise.all([
-                findActiveUserManagementPrincipal(tx, ctx.session.userId),
-                findUserManagementPrincipal(tx, userId),
+                findUserManagementActor(tx, ctx.session.userId),
+                findUserManagementTarget(tx, userId),
             ]);
 
             if (!target) throw new NotFoundError();
@@ -40,7 +41,7 @@ export default resolver.pipe(
             const continuityWarnings = await getUserManagementContinuityWarnings(
                 tx,
                 target,
-                null,
+                new PermissionSet([]),
             );
             requireContinuityAcknowledgement(
                 continuityWarnings,

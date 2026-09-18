@@ -13,11 +13,13 @@ import {
     requireContinuityAcknowledgement,
 } from "../server/userManagementPolicy";
 import {
-    findActiveUserManagementPrincipal,
-    findUserManagementPrincipal,
+    findUserManagementActor,
+    findUserManagementTarget,
     findUserManagementRole,
     getUserManagementContinuityWarnings,
+    makePermissionSetFromRole,
 } from "../server/userManagementState";
+import { PermissionSet } from "../shared/PermissionSet";
 
 export const AssignUserRoleInput = z.object({
     userId: z.number().int().positive(),
@@ -30,30 +32,35 @@ export default resolver.pipe(
     resolver.authorize(Permission.assign_user_roles),
     async ({ userId, roleId, acknowledgeContinuityRisk }, ctx) => db.$transaction(
         async tx => {
+            // desiredRole perm set is NOT "effective" perms, on purpose.
+            // we only care about perms under the assigning role.
+
             const [actor, target, desiredRole] = await Promise.all([
-                findActiveUserManagementPrincipal(tx, ctx.session.userId),
-                findUserManagementPrincipal(tx, userId),
+                findUserManagementActor(tx, ctx.session.userId),
+                findUserManagementTarget(tx, userId),
                 findUserManagementRole(tx, roleId),
             ]);
 
             if (!target) throw new NotFoundError();
             if (roleId != null && !desiredRole) throw new NotFoundError();
 
+            const desiredRolePerms = desiredRole ? makePermissionSetFromRole(desiredRole) : new PermissionSet([]);
+
             requireCanManageUser({
                 actor,
                 target,
                 action: "assignRole",
-                desiredRole,
+                desiredRole: desiredRolePerms,
             });
 
-            if (target.roleId === roleId) {
+            if (target.principal.roleId === roleId) {
                 return { userId, roleId, continuityWarnings: [] };
             }
 
             const continuityWarnings = await getUserManagementContinuityWarnings(
                 tx,
                 target,
-                desiredRole,
+                desiredRolePerms,
             );
             requireContinuityAcknowledgement(
                 continuityWarnings,
@@ -69,7 +76,7 @@ export default resolver.pipe(
                 changeContext: CreateChangeContext("assignUserRole"),
                 table: "User",
                 pkid: userId,
-                oldValues: { roleId: target.roleId },
+                oldValues: { roleId: target.principal.roleId },
                 newValues: { roleId },
                 ctx,
                 db: tx,

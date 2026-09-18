@@ -181,7 +181,6 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
             {dashboardContext.isAuthorized(Permission.manage_users) &&
                 <KeyValueTable data={{
                     "_": <EditUserProfileButton
-                        capabilities={capabilities}
                         readonly={props.readonly}
                         tableClient={tableClient}
                         user={user}

@@ -77,7 +77,11 @@ const RecoveryContent = ({ status }: { status: AdminBootstrapStatus }) => {
 
 const EligibleAdminBootstrapPage = () => {
     const [status] = useQuery(getAdminBootstrapStatus, null);
-    if (!status.isEligible) return null;
+
+    if (!status.isEligible) {
+        console.log("Admin bootstrap page is not eligible", status);
+        return null;
+    }
 
     return <DashboardLayout title="Administrator recovery">
         <AppContextMarker name="AdminBootstrapPage">

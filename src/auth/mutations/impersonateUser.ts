@@ -8,6 +8,7 @@ import * as z from "zod"
 import { requireFreshPermission } from "../server/permissionAuthorization"
 import { registerImpersonationAudit } from "../server/impersonationAudit"
 import { requireCanManageUser } from "../server/userManagementPolicy"
+import { makeUserManagementActor, makeUserManagementTarget } from "../server/userManagementState"
 
 export const ImpersonateUserInput = z.object({
     userId: z.number().int().positive(),
@@ -28,9 +29,10 @@ export default resolver.pipe(
             where: { id: userId },
         })
         if (!user) throw new Error("Could not find user id " + userId)
+
         requireCanManageUser({
-            actor: { ...actor, role: { permissions: actor.effectivePermissionNames.map(name => ({ permission: { name } })) } },
-            target: user,
+            actor: makeUserManagementActor(actor, actor.effectivePermissions),
+            target: makeUserManagementTarget(user),
             action: "impersonate",
         })
 

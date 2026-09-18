@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { Permission } from "shared/permissions"
 import { PermissionSet } from "src/auth/shared/PermissionSet"
 
 describe("PermissionSet", () => {
@@ -27,5 +28,22 @@ describe("PermissionSet", () => {
     expect(permissions.hasSameNames(["view"])).toBe(false)
     expect(permissions.hasSameNames(["edit", "view", "extra"])).toBe(false)
     expect(new PermissionSet([catalog[0]!]).hasSameNames(["view", "edit"])).toBe(false)
+  })
+
+  it("derives delegability from the canonical registry", () => {
+    const actor = new PermissionSet([
+      { id: 1, name: Permission.basic_trust },
+      { id: 2, name: Permission.sysadmin },
+    ])
+
+    expect(actor.hasAllDelegable(new PermissionSet([
+      { id: 1, name: Permission.basic_trust },
+    ]))).toBe(true)
+    expect(actor.hasAllDelegable(new PermissionSet([
+      { id: 2, name: Permission.sysadmin },
+    ]))).toBe(false)
+    expect(actor.hasAllDelegable(new PermissionSet([
+      { id: 3, name: "unknown_permission" },
+    ]))).toBe(false)
   })
 })

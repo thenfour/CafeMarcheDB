@@ -12,7 +12,12 @@ import { canManageUser } from "src/auth/server/userManagementPolicy";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 import { publicMergeResponse } from "src/auth/server/userMerge/publicResponse";
 import { CommitUserMergeInput, UserMergeInput } from "src/auth/userMergeSchemas";
-import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import {
+    asUserManagementActor,
+    asUserManagementTarget,
+    createAuthorizationTestContext,
+    createAuthorizationTestUser,
+} from "./support/authorizationFixtures";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 import { invokeResolver } from "./support/resolverHarness";
 
@@ -50,12 +55,25 @@ describe("merge authorization and lifecycle", () => {
 
     it("requires authority over both targets, excludes self and protects privileged accounts", () => {
         const actor = createAuthorizationTestUser("bandAdmin", { id: 2, permissions: [Permission.merge_users, Permission.login, Permission.basic_trust] });
-        expect(canManageUser({ actor, target: member, action: "merge" })).toBe(true);
-        expect(canManageUser({ actor, target: admin, action: "merge" })).toBe(false);
-        expect(canManageUser({ actor, target: actor, action: "merge" })).toBe(false);
-        expect(canManageUser({ actor, target: createAuthorizationTestUser("editor", { id: 30 }), action: "merge" })).toBe(false);
-        expect(canManageUser({ actor, target: { ...member, isDeleted: true }, action: "merge" })).toBe(false);
-        expect(canManageUser({ actor: admin, target: { ...member, isDeleted: true }, action: "merge" })).toBe(true);
+        const managementActor = asUserManagementActor(actor);
+        expect(canManageUser({ actor: managementActor, target: asUserManagementTarget(member), action: "merge" })).toBe(true);
+        expect(canManageUser({ actor: managementActor, target: asUserManagementTarget(admin), action: "merge" })).toBe(false);
+        expect(canManageUser({ actor: managementActor, target: asUserManagementTarget(actor), action: "merge" })).toBe(false);
+        expect(canManageUser({
+            actor: managementActor,
+            target: asUserManagementTarget(createAuthorizationTestUser("editor", { id: 30 })),
+            action: "merge",
+        })).toBe(false);
+        expect(canManageUser({
+            actor: managementActor,
+            target: asUserManagementTarget({ ...member, isDeleted: true }),
+            action: "merge",
+        })).toBe(false);
+        expect(canManageUser({
+            actor: asUserManagementActor(admin),
+            target: asUserManagementTarget({ ...member, isDeleted: true }),
+            action: "merge",
+        })).toBe(true);
     });
 
     it("accepts only two distinct IDs and a confirmation, never client-supplied decisions", () => {

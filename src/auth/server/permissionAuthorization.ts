@@ -2,7 +2,8 @@ import { AuthorizationError } from "blitz";
 import { Permission } from "shared/permissions";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { UserWithRolesArgs, type UserWithRolesPayload } from "src/core/db3/shared/schema/userPayloads";
-import { loadEffectivePermissionNames } from "./effectivePermissions";
+import { loadEffectivePermissions } from "./effectivePermissions";
+import { PermissionSet } from "../shared/PermissionSet";
 
 class FreshPermissionAuthorizationError extends AuthorizationError {
     constructor(permission: Permission) {
@@ -13,15 +14,15 @@ class FreshPermissionAuthorizationError extends AuthorizationError {
 }
 
 export const principalHasPermission = (
-    permissionNames: readonly string[],
+    permissionSet: Readonly<PermissionSet>,
     permission: Permission,
 ): boolean => {
     if (permission === Permission.never_grant) return false;
-    return permissionNames.includes(permission);
+    return permissionSet.includesName(permission);
 };
 
-export function assertPermission(permissionNames: readonly string[], permission: Permission): void {
-    if (!principalHasPermission(permissionNames, permission)) {
+export function assertPermission(permissionSet: Readonly<PermissionSet>, permission: Permission): void {
+    if (!principalHasPermission(permissionSet, permission)) {
         throw new FreshPermissionAuthorizationError(permission);
     }
 }
@@ -42,8 +43,8 @@ export const requireFreshAuthorization = async (
     permission: Permission,
 ): Promise<UserWithRolesPayload | null> => {
     const actor = await loadFreshPrincipal(db, userId);
-    const permissionNames = await loadEffectivePermissionNames(db, actor);
-    assertPermission(permissionNames, permission);
+    const permissions = await loadEffectivePermissions(db, actor);
+    assertPermission(permissions, permission);
     return actor;
 };
 
@@ -54,13 +55,13 @@ export const requireFreshPermission = async (
     db: TransactionalPrismaClient,
     userId: number | null | undefined,
     permission: Permission,
-): Promise<UserWithRolesPayload & { effectivePermissionNames: string[] }> => {
+): Promise<UserWithRolesPayload & { effectivePermissions: PermissionSet }> => {
     const actor = await requireFreshAuthorization(db, userId, permission);
     if (!actor) {
         throw new FreshPermissionAuthorizationError(permission);
     }
     return {
         ...actor,
-        effectivePermissionNames: await loadEffectivePermissionNames(db, actor),
+        effectivePermissions: await loadEffectivePermissions(db, actor),
     };
 };

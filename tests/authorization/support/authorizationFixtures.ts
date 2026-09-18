@@ -1,4 +1,8 @@
 import { PermissionSet } from "src/auth/shared/PermissionSet";
+import {
+  makeUserManagementActor,
+  makeUserManagementTarget,
+} from "src/auth/server/userManagementState";
 import { createDB3Authorization } from "src/core/db3/shared/db3Authorization";
 import type { AuthenticatedCtx, Ctx } from "blitz"
 import { Permission } from "shared/permissions"
@@ -218,4 +222,16 @@ export function createAuthorizationSchemaData(user: AuthorizationTestUser | null
     ...testPublicRolePermissions.map((name, index) => ({ id: 920_000 + index, name })),
     ...(user?.role?.permissions.map(entry => entry.permission) ?? []),
   ]))
+}
+
+export function asUserManagementActor(
+  user: AuthorizationTestUser | null,
+) {
+  return makeUserManagementActor(user, createAuthorizationSchemaData(user).effectivePermissions)
+}
+
+export function asUserManagementTarget(
+  user: Parameters<typeof makeUserManagementTarget>[0],
+) {
+  return makeUserManagementTarget(user)
 }

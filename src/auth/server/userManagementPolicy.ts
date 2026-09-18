@@ -1,12 +1,10 @@
 import { AuthorizationError } from "blitz";
 import {
-    getPermissionDefinition,
     gContinuitySensitivePermissions,
     gPermissionOrdered,
-    gProtectedPermissions,
-    isPermission,
     Permission,
 } from "shared/permissions";
+import { PermissionSet } from "../shared/PermissionSet";
 
 export type UserManagementAction =
     | "merge"
@@ -15,39 +13,45 @@ export type UserManagementAction =
     | "correctEmail"
     | "deactivate"
     | "reactivate"
-    | "edit"
     | "impersonate"
     | "resetPassword"
     | "setSysAdmin";
 
-type PermissionEntry = {
-    permission?: {
-        name?: string | null;
-    } | null;
-};
-
-export type UserManagementRole = {
-    permissions?: readonly PermissionEntry[];
-} | null;
-
-
-
 // user metadata relevant for management decisions
 export type UserManagementPrincipal = {
     id: number;
+    email: string;
+    roleId: number | null;
     isSysAdmin: boolean;
     isDeleted?: boolean;
     mergedIntoUserId?: number | null;
-    role?: UserManagementRole;
 };
 
+export type UserManagementActor = {
+    principal: UserManagementPrincipal | null; //  null = unauthenticated user / anonymous
+    effectivePermissions: PermissionSet;
+};
+
+// why do we need permissions of the target?
+// to be able to test if they're in your delegable permission envelope.
+export type UserManagementTarget = {
+    principal: UserManagementPrincipal;
+    rolePermissions: PermissionSet;
+};
+
+export type UserManagementSubject = UserManagementTarget;
+
 export interface CanManageUserArgs {
-    actor: UserManagementPrincipal | null;
-    target: UserManagementPrincipal;
+    actor: UserManagementActor; // non-nullable; anon still get an effective set of permissions.
+    target: UserManagementTarget;
     action: UserManagementAction;
+
+    // which role are you assigning, if applicable.
+    // why is this needed? to decide if the actor is allowed to assign that role.
+    //
     // Undefined means "is any role assignment available?" for UI capability
     // decisions. A concrete mutation must supply the selected role or null.
-    desiredRole?: UserManagementRole;
+    desiredRole?: PermissionSet;
 }
 
 export interface UserManagementCapabilities {
@@ -57,21 +61,10 @@ export interface UserManagementCapabilities {
     canCorrectEmail: boolean;
     canDeactivate: boolean;
     canReactivate: boolean;
-    canEdit: boolean;
     canImpersonate: boolean;
     canResetPassword: boolean;
     canSetSysAdmin: boolean;
 }
-
-export const roleHasPermission = (role: UserManagementRole | undefined, permission: Permission): boolean => {
-    return role?.permissions?.some(entry => entry.permission?.name === permission) || false;
-};
-
-const getActorPermissionNames = (actor: UserManagementPrincipal): ReadonlySet<string> => new Set([
-    ...(actor.role?.permissions
-        ?.map(entry => entry.permission?.name)
-        .filter((name): name is string => !!name) || []),
-]);
 
 // determines if the given role falls within the
 // actor's delegable permission envelope.
@@ -79,49 +72,29 @@ const getActorPermissionNames = (actor: UserManagementPrincipal): ReadonlySet<st
 // - if role is outside the delegable envelope, like a sysadmin role, the answer is: no.
 // - if role is within, like a regular member role, the answer is: yes.
 export const isRoleWithinDelegationEnvelope = (
-    actor: UserManagementPrincipal,
-    role: UserManagementRole | undefined,
+    actor: UserManagementActor,
+    role: PermissionSet,
 ): boolean => {
-    const actorPermissions = getActorPermissionNames(actor);
-    return role?.permissions?.every(entry => {
-        const permissionName = entry.permission?.name;
-        if (!permissionName || !isPermission(permissionName)) return false;
-        return getPermissionDefinition(permissionName).isDelegable
-            && actorPermissions.has(permissionName);
-    }) ?? true;
+    return actor.effectivePermissions.hasAllDelegable(role);
 };
-
-// todo: is this really necessary; our role-perm model already encodes protection through permissions
-export const isProtectedUserRole = (role: UserManagementRole | undefined): boolean => (
-    role?.permissions?.some(entry => {
-        const permissionName = entry.permission?.name;
-        return !!permissionName && gProtectedPermissions.has(permissionName as Permission);
-    }) || false
-);
-
-// todo: is this really necessary; our role-perm model already encodes protection through permissions
-export const isProtectedUser = (user: UserManagementPrincipal): boolean => (
-    user.isSysAdmin || isProtectedUserRole(user.role)
-);
 
 // This is an additional target/ceiling policy. Existing endpoint, table, row,
 // and field authorization remains mandatory and may be more restrictive.
 export const canManageUser = ({ actor, target, action, desiredRole }: CanManageUserArgs): boolean => {
-    if (!actor || actor.isDeleted) {
-        return false;
+    if (actor.principal?.isDeleted) {
+        return false; // deleted users can't act.
     }
+    const actorIsSysadmin = actor.effectivePermissions.includesName(Permission.sysadmin);
 
-    const actorIsSysadmin = roleHasPermission(actor.role, Permission.sysadmin);
-
-    if (target.mergedIntoUserId != null) {
+    if (target.principal.mergedIntoUserId != null) {
         return false;
     }
 
     if (action === "merge") {
-        return roleHasPermission(actor.role, Permission.merge_users)
-            && actor.id !== target.id
-            && (!target.isDeleted || roleHasPermission(actor.role, Permission.recover_users))
-            && (actorIsSysadmin || (!isProtectedUser(target) && isRoleWithinDelegationEnvelope(actor, target.role)));
+        return actor.effectivePermissions.includesName(Permission.merge_users)
+            && actor.principal?.id !== target.principal.id
+            && (!target.principal.isDeleted || actor.effectivePermissions.includesName(Permission.recover_users))
+            && (actorIsSysadmin || isRoleWithinDelegationEnvelope(actor, target.rolePermissions));
     }
 
     if (action === "manageSignInMethods" || action === "correctEmail") {
@@ -129,12 +102,12 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
     }
 
     if (action === "reactivate") {
-        return target.isDeleted === true
-            && roleHasPermission(actor.role, Permission.recover_users)
-            && (actorIsSysadmin || (!isProtectedUser(target) && isRoleWithinDelegationEnvelope(actor, target.role)));
+        return target.principal.isDeleted === true
+            && actor.effectivePermissions.includesName(Permission.recover_users)
+            && (actorIsSysadmin || isRoleWithinDelegationEnvelope(actor, target.rolePermissions));
     }
 
-    if (target.isDeleted === true) {
+    if (target.principal.isDeleted === true) {
         return false;
     }
 
@@ -152,47 +125,35 @@ export const canManageUser = ({ actor, target, action, desiredRole }: CanManageU
         return actorIsSysadmin;
     }
 
-    const targetIsProtected = isProtectedUser(target);
-
-    // Impersonation
-    // - reserved for the protected impersonation capability
-    // - cannot target a protected principal, even as a defense-in-depth Sysadmin operation.
-    // - cannot target oneself
+    // Impersonation is controlled by its dedicated capability and cannot target oneself.
     if (action === "impersonate") {
-        return roleHasPermission(actor.role, Permission.impersonate_user)
-            && !targetIsProtected
-            && actor.id !== target.id;
+        return actor.effectivePermissions.includesName(Permission.impersonate_user)
+            && actor.principal?.id !== target.principal.id;
     }
 
-    if (targetIsProtected && !actorIsSysadmin) {
-        return false;
-    }
     if (actorIsSysadmin) {
         return true;
     }
 
     if (action === "assignRole") {
-        if (!roleHasPermission(actor.role, Permission.assign_user_roles)) return false;
-        if (!isRoleWithinDelegationEnvelope(actor, target.role)) return false;
+        if (!actor.effectivePermissions.includesName(Permission.assign_user_roles)) return false;
+        if (!isRoleWithinDelegationEnvelope(actor, target.rolePermissions)) return false;
         if (desiredRole !== undefined && !isRoleWithinDelegationEnvelope(actor, desiredRole)) return false;
         return true;
     }
 
     if (action === "deactivate") {
-        return roleHasPermission(actor.role, Permission.deactivate_users);
+        return actor.effectivePermissions.includesName(Permission.deactivate_users);
     }
 
-    const isSelf = actor.id === target.id;
-    if (isSelf && roleHasPermission(actor.role, Permission.basic_trust)) {
-        return true;
-    }
-
-    return roleHasPermission(actor.role, Permission.manage_users);
+    // edit not handled here; DB3 handles normal table mutations of users;
+    // field edits are not considered "management actions".
+    throw new Error(`Unhandled action: ${action}`);
 };
 
 export const getUserManagementCapabilities = (
-    actor: UserManagementPrincipal | null,
-    target: UserManagementPrincipal,
+    actor: UserManagementActor,
+    target: UserManagementTarget,
 ): UserManagementCapabilities => ({
     canMerge: canManageUser({ actor, target, action: "merge" }),
     canManageSignInMethods: canManageUser({ actor, target, action: "manageSignInMethods" }),
@@ -200,29 +161,29 @@ export const getUserManagementCapabilities = (
     canCorrectEmail: canManageUser({ actor, target, action: "correctEmail" }),
     canDeactivate: canManageUser({ actor, target, action: "deactivate" }),
     canReactivate: canManageUser({ actor, target, action: "reactivate" }),
-    canEdit: canManageUser({ actor, target, action: "edit" }),
     canImpersonate: canManageUser({ actor, target, action: "impersonate" }),
     canResetPassword: canManageUser({ actor, target, action: "resetPassword" }),
     canSetSysAdmin: canManageUser({ actor, target, action: "setSysAdmin" }),
 });
 
 export const getContinuityWarningsForUserResult = (
-    target: UserManagementPrincipal,
-    resultingRole: UserManagementRole,
-    activeNonSysadminUsers: readonly UserManagementPrincipal[],
+    target: UserManagementTarget,
+    resultingRole: PermissionSet,
+    activeNonSysadminUsers: readonly UserManagementSubject[],
 ): Permission[] => {
-    if (target.isDeleted === true || target.isSysAdmin) return [];
+    if (target.principal.isDeleted === true || target.principal.isSysAdmin) return [];
+    const principalId = target.principal.id;
 
     return gPermissionOrdered.filter(permission => {
         if (!gContinuitySensitivePermissions.has(permission)) return false;
-        if (!roleHasPermission(target.role, permission)) return false;
-        if (roleHasPermission(resultingRole, permission)) return false;
+        if (!target.rolePermissions.includesName(permission)) return false;
+        if (resultingRole.includesName(permission)) return false;
 
         return !activeNonSysadminUsers.some(user => (
-            user.id !== target.id
-            && user.isDeleted !== true
-            && !user.isSysAdmin
-            && roleHasPermission(user.role, permission)
+            user.principal.id !== principalId
+            && user.principal.isDeleted !== true
+            && !user.principal.isSysAdmin
+            && user.rolePermissions.includesName(permission)
         ));
     });
 };

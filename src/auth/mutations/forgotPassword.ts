@@ -6,6 +6,8 @@ import { Permission } from "shared/permissions"
 import { ForgotPassword } from "../schemas"
 import { requireCanManageUser } from "../server/userManagementPolicy"
 import { findSignInUser, requireSignInMethodAdmin } from "../server/signInMethods"
+import { UserWithRolesArgs } from "@/src/core/db3/shared/schema/userPayloads"
+import { makeUserManagementActor, makeUserManagementTarget } from "../server/userManagementState"
 
 const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 
@@ -17,12 +19,15 @@ export default resolver.pipe(
     const actor = await requireSignInMethodAdmin(tx, ctx)
 
     const user = "userId" in input
-      ? await tx.user.findFirst({ where: { id: input.userId } })
-      : await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false })
+      ? (await tx.user.findFirst({
+        select: { ...UserWithRolesArgs.select },
+        where: { id: input.userId }
+      }))
+      : (await findSignInUser(tx, { type: "email", identifier: input.email }, { allowInactive: false }))
     if (user) {
       requireCanManageUser({
-        actor: { ...actor, role: { permissions: actor.effectivePermissionNames.map(name => ({ permission: { name } })) } },
-        target: user,
+        actor: makeUserManagementActor(actor, actor.effectivePermissions),
+        target: makeUserManagementTarget(user),
         action: "resetPassword",
       })
     }

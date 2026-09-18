@@ -18,7 +18,12 @@ import db3queries from "src/core/db3/queries/db3queries";
 import db3mutations from "src/core/db3/mutations/db3mutations";
 import { xUser } from "src/core/db3/db3";
 import { authorizationTestDb } from "./support/inMemoryPrisma";
-import { createAuthorizationTestContext, createAuthorizationTestUser } from "./support/authorizationFixtures";
+import {
+    asUserManagementActor,
+    asUserManagementTarget,
+    createAuthorizationTestContext,
+    createAuthorizationTestUser,
+} from "./support/authorizationFixtures";
 import { forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
@@ -72,14 +77,18 @@ describe("user recovery", () => {
         const ctx = createAuthorizationTestContext(sysadmin);
         await getRequestAuthorization(ctx.session);
         const caps = await invokeResolver(getUserManagementCapabilities, { userId: target.id }, ctx);
-        expect(caps).toMatchObject({ canReactivate: true, canDeactivate: false, canEdit: false, canAssignRole: false });
+        expect(caps).toMatchObject({ canReactivate: true, canDeactivate: false, canAssignRole: false });
         await invokeResolver(reactivateUser, { userId: target.id }, ctx);
         expect(authorizationTestDb.snapshot("user").find(row => row.id === target.id)?.isDeleted).toBe(false);
     });
 
     it("does not allow a deleted actor to recover itself or another account", async () => {
         const deletedAdmin = { ...admin, isDeleted: true };
-        expect(canManageUser({ actor: deletedAdmin, target, action: "reactivate" })).toBe(false);
+        expect(canManageUser({
+            actor: asUserManagementActor(deletedAdmin),
+            target: asUserManagementTarget(target),
+            action: "reactivate",
+        })).toBe(false);
         authorizationTestDb.reset({ user: [deletedAdmin, target], change: [] });
         await expect(invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin))).rejects.toThrow();
         expect(authorizationTestDb.snapshot("change")).toEqual([]);
@@ -127,10 +136,10 @@ describe("user recovery", () => {
         authorizationTestDb.reset({ user: [admin, { ...target, isDeleted: false }], session: [], change: [] });
         await invokeResolver(deactivateUser, { userId: target.id, acknowledgeContinuityRisk: false }, createAuthorizationTestContext(admin));
         expect(await invokeResolver(getUserManagementCapabilities, { userId: target.id }, createAuthorizationTestContext(admin)))
-            .toMatchObject({ canReactivate: true, canDeactivate: false, canEdit: false });
+            .toMatchObject({ canReactivate: true, canDeactivate: false });
         await invokeResolver(reactivateUser, { userId: target.id }, createAuthorizationTestContext(admin));
         expect(await invokeResolver(getUserManagementCapabilities, { userId: target.id }, createAuthorizationTestContext(admin)))
-            .toMatchObject({ canReactivate: false, canDeactivate: true, canEdit: true });
+            .toMatchObject({ canReactivate: false, canDeactivate: true });
         expect(authorizationTestDb.snapshot("change")).toHaveLength(2);
     });
 });

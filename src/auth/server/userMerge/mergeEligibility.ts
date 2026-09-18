@@ -4,6 +4,7 @@ import { Permission } from "shared/permissions";
 import type { MergeIdentity, UserMergeParticipants } from "../../userMergeSchemas";
 import { requireFreshPermission } from "../permissionAuthorization";
 import { canManageUser } from "../userManagementPolicy";
+import { makeUserManagementActor, makeUserManagementTarget } from "../userManagementState";
 import type { MergeContext, MergeDatabase, MergeUser } from "./types";
 
 export async function authorizeMergeActor(db: MergeDatabase, ctx: Ctx) {
@@ -12,12 +13,7 @@ export async function authorizeMergeActor(db: MergeDatabase, ctx: Ctx) {
         throw new AuthorizationError();
     }
     const actor = await requireFreshPermission(db, ctx.session.userId, Permission.merge_users);
-    return {
-        ...actor,
-        role: {
-            permissions: actor.effectivePermissionNames.map(name => ({ permission: { name } }))
-        }
-    };
+    return makeUserManagementActor(actor, actor.effectivePermissions);
 }
 
 // also does auth check
@@ -35,7 +31,11 @@ export async function loadMergeContext(db: MergeDatabase, ctx: Ctx, participants
     const retiring = users.find(user => user.id === participants.retiringUserId);
     if (!main || !retiring) throw new NotFoundError();
     for (const target of [main, retiring]) {
-        if (!canManageUser({ actor, target, action: "merge" })) {
+        if (!canManageUser({
+            actor,
+            target: makeUserManagementTarget(target),
+            action: "merge",
+        })) {
             throw new AuthorizationError();
         }
     }

@@ -52,17 +52,14 @@ export default resolver.pipe(
                     ...UserWithRolesArgs,
                     where: { id: ctx.session.userId },
                 });
+                if (!user) failClaim(); // User not found, cannot claim admin bootstrap.
+                if (user.isSysAdmin) failClaim(); // User is already a sysadmin, cannot claim admin bootstrap.
 
-                const signInUser = await findSignInUser(tx, { type: "email", identifier: verifiedConfiguration.email }, { allowInactive: false });
-
-                if (
-                    !user
-                    || user.isSysAdmin
-                    || signInUser?.id !== user.id
-                ) {
+                if (!adminBootstrapSecretMatches(secret, verifiedConfiguration)) {
                     failClaim();
                 }
-                if (!adminBootstrapSecretMatches(secret, verifiedConfiguration)) failClaim();
+
+                // you can pass now.
 
                 const previousClaim = await hasAdminBootstrapTokenBeenClaimed(
                     tx,

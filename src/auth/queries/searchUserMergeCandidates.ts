@@ -5,6 +5,7 @@ import { Permission } from "shared/permissions";
 import { authorizeMergeActor, mergeIdentity } from "../server/userMerge/mergeEligibility";
 import { canManageUser } from "../server/userManagementPolicy";
 import { publicMergeResponse } from "../server/userMerge/publicResponse";
+import { makeUserManagementTarget } from "../server/userManagementState";
 
 export default resolver.pipe(
     resolver.zod(z.object({ query: z.string().trim().max(150), excludeUserId: z.number().int().positive() }).strict()),
@@ -14,7 +15,7 @@ export default resolver.pipe(
         const users = await db.user.findMany({
             where: {
                 id: {
-                    notIn: [actor.id, excludeUserId],
+                    notIn: [actor.principal!.id, excludeUserId],
                 },
                 mergedIntoUserId: null,
                 OR: [
@@ -44,7 +45,11 @@ export default resolver.pipe(
         });
 
         return users
-            .filter(target => canManageUser({ actor, target, action: "merge" }))
+            .filter(target => canManageUser({
+                actor,
+                target: makeUserManagementTarget(target),
+                action: "merge",
+            }))
             .map(mergeIdentity);
     }),
 );

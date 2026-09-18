@@ -1,12 +1,12 @@
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
-import { isBandTimeZoneSetting, loadBandTimeZone, reanchorAllDayEvents } from "src/server/dateTime";
+import { isBandTimeZoneSetting, reanchorAllDayEvents } from "src/server/dateTime";
 
 import { TAnyModel } from "@/shared/rootroot";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 import { validateSettingValue } from "@/src/auth/server/settingWrite";
-import { requireCanManageUser } from "@/src/auth/server/userManagementPolicy";
+import { loadBandTimeZone } from "@/src/server/bandTimeZone";
 import { clearBrandCache } from "@/src/server/brand";
 import { AuthenticatedCtx, AuthorizationError, Ctx, assert } from "blitz";
 import db, { Prisma } from "db";
@@ -673,12 +673,6 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             const authorizedMutationFields = requireAuthorizedMutationFields(table, authResult);
             ({ localFields: authorizedLocalFields, associationFields: authorizedAssociationFields }
                 = db3.separateMutationValues({ table, fields: authorizedMutationFields }));
-        }
-
-        // enforce policies for user table updates
-        if (table.tableName === db3.xUser.tableName && Object.keys(proposedModel).length > 0) {
-            const actor = await getCurrentUserCore(ctx);
-            requireCanManageUser({ actor, target: fullOldObj, action: "edit" });
         }
 
         if (Object.keys(authorizedLocalFields).length > 0) {

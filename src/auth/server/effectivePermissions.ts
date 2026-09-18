@@ -43,20 +43,8 @@ export const loadEffectivePermissions = async (
                 // everyone inherits the public role permissions (even non-users)
                 { isPublicRole: true },
                 ...(user?.isSysAdmin ? [{ isSysAdminRole: true }] : []),
+                ...(user && !user.role ? [{ isRoleForNewUsers: true }] : []),
             ],
-        },
-        include: {
-            permissions: {
-                include: { permission: true },
-            },
-        },
-    });
-
-    // users with a login also inherit these permissions.
-    // this resolves a situation where the user has no role at all.
-    const roleForNewUser = await db.role.findMany({
-        where: {
-            isRoleForNewUsers: true,
         },
         include: {
             permissions: {
@@ -72,8 +60,10 @@ export const loadEffectivePermissions = async (
     const sysadminRoles = specialRoles.filter(role => role.isSysAdminRole);
     const sysadminRole = sysadminRoles.length === 1 ? sysadminRoles[0] : null;
 
+    // An account without an assigned role inherits the new-user role.
+    const newUserRoles = specialRoles.filter(role => role.isRoleForNewUsers);
     const userHasLoginButNoRole = !!user && !user.role;
-    const permsForNewUsers = roleForNewUser.flatMap(role => role.permissions);
+    const permsForNewUsers = newUserRoles.flatMap(role => role.permissions || []);
 
     // flatten all (may contain dupes)
     const entries = [
@@ -99,19 +89,13 @@ export const loadEffectivePermissions = async (
 
 };
 
-// public data gets permission names without ids
-export const loadEffectivePermissionNames = async (
-    db: TransactionalPrismaClient,
-    user: UserWithPermissions | null | undefined,
-): Promise<string[]> => {
-    const ep = await loadEffectivePermissions(db, user);
-    return ep.names;
-}
-
 export const createPublicDataFromDatabase = async (
     db: TransactionalPrismaClient,
     args: Omit<CreatePublicDataArgs, "permissions">,
-): Promise<PublicDataType> => CreatePublicData({
-    ...args,
-    permissions: await loadEffectivePermissionNames(db, args.user),
-});
+): Promise<PublicDataType> => {
+    const permissions = await loadEffectivePermissions(db, args.user);
+    return CreatePublicData({
+        ...args,
+        permissions: permissions.names,
+    });
+};

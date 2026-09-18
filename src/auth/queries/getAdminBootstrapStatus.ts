@@ -3,10 +3,8 @@ import db from "db";
 import { Permission } from "shared/permissions";
 import {
     getAdminBootstrapConfiguration,
-    getAdminBootstrapTargetEmail,
 } from "../server/adminBootstrap";
 import { hasAdminBootstrapTokenBeenClaimed } from "../server/adminBootstrapClaims";
-import { findSignInUser } from "../server/signInMethods";
 
 export interface AdminBootstrapStatus {
     isEligible: boolean;
@@ -25,16 +23,12 @@ const unavailableStatus: AdminBootstrapStatus = {
 export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (_, ctx): Promise<AdminBootstrapStatus> => {
+
         const user = await db.user.findFirst({
             where: { id: ctx.session.userId },
             select: { id: true, isDeleted: true, isSysAdmin: true },
         });
-        const targetEmail = getAdminBootstrapTargetEmail();
-        if (!targetEmail) {
-            return unavailableStatus;
-        }
-        const signInUser = await findSignInUser(db, { type: "email", identifier: targetEmail }, { allowInactive: false });
-        if (!user || signInUser?.id !== user.id) {
+        if (!user || user.isDeleted) {
             return unavailableStatus;
         }
 

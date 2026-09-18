@@ -9,7 +9,7 @@ import {
 import { Permission } from "shared/permissions";
 import { z } from "zod";
 import { requireCanManageUser } from "../server/userManagementPolicy";
-import { findActiveUserManagementPrincipal, findUserManagementPrincipal } from "../server/userManagementState";
+import { findUserManagementActor, findUserManagementTarget } from "../server/userManagementState";
 
 export const SetUserSysAdminInput = z.object({
     userId: z.number().int().positive(),
@@ -22,14 +22,14 @@ export default resolver.pipe(
     async ({ userId, isSysAdmin }, ctx) => db.$transaction(
         async tx => {
             const [actor, target] = await Promise.all([
-                findActiveUserManagementPrincipal(tx, ctx.session.userId),
-                findUserManagementPrincipal(tx, userId),
+                findUserManagementActor(tx, ctx.session.userId),
+                findUserManagementTarget(tx, userId),
             ]);
 
             if (!target) throw new NotFoundError();
             requireCanManageUser({ actor, target, action: "setSysAdmin" });
 
-            if (target.isSysAdmin === isSysAdmin) {
+            if (target.principal.isSysAdmin === isSysAdmin) {
                 return { userId, isSysAdmin };
             }
 
@@ -42,7 +42,7 @@ export default resolver.pipe(
                 changeContext: CreateChangeContext("setUserSysAdmin"),
                 table: "User",
                 pkid: userId,
-                oldValues: { isSysAdmin: target.isSysAdmin },
+                oldValues: { isSysAdmin: target.principal.isSysAdmin },
                 newValues: { isSysAdmin },
                 ctx,
                 db: tx,

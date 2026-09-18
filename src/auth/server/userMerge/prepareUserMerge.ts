@@ -1,7 +1,11 @@
 import { createHmac } from "crypto";
 import type { Ctx } from "@blitzjs/next";
 import type { UserMergeParticipants, UserMergePreview } from "../../userMergeSchemas";
-import { getUserManagementContinuityWarnings } from "../userManagementState";
+import {
+    getUserManagementContinuityWarnings,
+    makePermissionSetFromRole,
+    makeUserManagementTarget,
+} from "../userManagementState";
 import { loadMergeContext, mergeIdentity } from "./mergeEligibility";
 import { USER_MERGE_POLICY_VERSION, userMergePolicies } from "./policies";
 import type { MergeDatabase, PreparedMergeStep } from "./types";
@@ -26,7 +30,11 @@ export async function prepareUserMerge(db: MergeDatabase, ctx: Ctx, participants
     }
 
     // merging can result in continuity issues (e.g., losing the last ordinary account holder of certain capabilities)
-    const lostCapabilities = await getUserManagementContinuityWarnings(db, context.retiring, context.main.role);
+    const lostCapabilities = await getUserManagementContinuityWarnings(
+        db,
+        makeUserManagementTarget(context.retiring),
+        makePermissionSetFromRole(context.main.role)
+    );
     if (lostCapabilities.length) {
         steps[0]!.report.consequences!.push(`This merge removes the last ordinary account holder of: ${lostCapabilities.join(", ")}. Main retains its current role.`);
     }
