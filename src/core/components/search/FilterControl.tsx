@@ -1,6 +1,6 @@
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Button, Switch } from "@mui/material";
+import { Switch } from "@mui/material";
 import React from "react";
 import { OpposingSortDirection, SortDirection } from 'shared/rootroot';
 import { SearchInput } from "src/core/components/CMTextField";
@@ -10,6 +10,7 @@ import { CMChip, CMChipBorderOption, CMChipContainer, CMChipShapeOptions, CMChip
 import { toggleValueInArray } from 'shared/arrayUtils';
 import { FilterAlt } from '@mui/icons-material';
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from '../color/palette';
+import { CMButton } from '../CMCoreComponents2';
 
 type FilterControlsProps = {
     hasExtraFilters?: boolean; // default falsy
@@ -44,7 +45,7 @@ export const FilterControls = (props: FilterControlsProps) => {
                             //autoFocus={true} // see #408
                             />
                         }
-                        {(props.hasAnyFilters) && <Button onClick={props.onResetFilter} style={{ whiteSpace: "nowrap", padding: "0 18px" }}>Reset filter</Button>}
+                        {(props.hasAnyFilters) && <CMButton onClick={props.onResetFilter} style={{ whiteSpace: "nowrap", padding: "0 18px" }}>Reset filter</CMButton>}
                         {expandable && <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
                             <FilterAlt /> {props.hasExtraFilters && "*"}
                             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}

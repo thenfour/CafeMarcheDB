@@ -13,7 +13,7 @@ import * as DB3Client from "../../db3/DB3Client";
 import wikiPageSetVisibility from "../../wiki/mutations/wikiPageSetVisibility";
 import { getFileUploadContext, UpdateWikiPageResultOutcome, WikiPath } from "../../wiki/shared/wikiUtils";
 import { EventTextLink } from "../CMCoreComponents";
-import { AdminContainer, AdminInspectObject, DotMenu, KeyValueTable, NameValuePair } from "../CMCoreComponents2";
+import { AdminContainer, AdminInspectObject, CMButton, DotMenu, KeyValueTable, NameValuePair } from "../CMCoreComponents2";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { CMTextInputBase } from "../CMTextField";
@@ -349,7 +349,7 @@ export const WikiPageHeader = ({ showNamespace = true, showVisiblePermission = t
     const showEditButton = authorizedForEdit && pageExists;
     const showCreateButton = authorizedForEdit && !pageExists;
 
-    const renderCreateButton = props.renderCreateButton || ((onClick) => <Button onClick={onClick}>{gIconMap.AutoAwesome()} Create this page</Button>);
+    const renderCreateButton = props.renderCreateButton || ((onClick) => <CMButton onClick={onClick}>{gIconMap.AutoAwesome()} Create this page</CMButton>);
 
     const menuItems = [
         showVisiblePermission &&

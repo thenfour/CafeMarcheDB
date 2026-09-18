@@ -9,7 +9,7 @@ import React from "react";
 import { Permission } from "shared/permissions";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { CMButtonGroup, CMUserMgmtButton } from "../CMCoreComponents2";
+import { CMUserMgmtButton } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { EditFieldsDialogButton } from "../EditFieldsDialog";
@@ -19,7 +19,6 @@ import { MergeUsersButton } from "./MergeUsersButton";
 import { EnrichedVerboseUser } from "./UserListItem";
 import { useUserLifecycleActions } from "./useUserLifecycleActions";
 
-import styles from './UserAdminPanel.module.css';
 
 type UserMgmtCaps = {
     canMerge?: boolean;
@@ -176,7 +175,7 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
         .some(([key, value]) => key.startsWith("can") && value === true);
     if (!hasAnyControl) return null;
 
-    return <CMButtonGroup>
+    return <>
         {capabilities.canMerge && <MergeUsersButton user={props.user} />}
 
         <DeactivateUserButton
@@ -199,5 +198,5 @@ export const UserAdminPanel = (props: UserAdminPanelProps) => {
 
         {capabilities.canImpersonate && <ImpersonateUserButton userId={props.user.id} />}
 
-    </CMButtonGroup>;
+    </>;
 };

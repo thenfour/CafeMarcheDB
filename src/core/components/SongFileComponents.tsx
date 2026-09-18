@@ -20,7 +20,7 @@ import { EnrichedFile } from '../db3/shared/schema/enrichedFileTypes';
 import { AppContextMarker } from './AppContext';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { InstrumentChip } from "./CMCoreComponents";
-import { CMSmallButton, DotMenu } from './CMCoreComponents2';
+import { CMButton, CMSmallButton, DotMenu } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { SearchInput } from './CMTextField';
 import { VisibilityValue } from './VisibilityControl';
@@ -218,7 +218,6 @@ export const FileValueViewer = (props: FileViewerProps) => {
                 {isPinned && <Tooltip title="This file is pinned as the song recording for this song">
                     <PushPin className='pinnedFile' />
                 </Tooltip>}
-                {/* {!props.readonly && <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>} */}
 
                 <DotMenu setCloseMenuProc={(proc) => endMenuItemRef.current = proc}>
                     {!props.readonly && props.onEnterEditMode && <MenuItem
@@ -954,9 +953,9 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     return <FileDropWrapper onFileSelect={handleFileSelect} onURLUpload={handleURLSelect} progress={progress}>
         {!props.readonly && canUploadFiles && (showUpload ? <div className="uploadControlContainer">
             <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={handleURLSelect} />
-            <Button onClick={() => setShowUpload(false)}>Cancel</Button>
+            <CMButton onClick={() => setShowUpload(false)}>Cancel</CMButton>
         </div> :
-            <Button onClick={() => setShowUpload(true)}>Upload</Button>)
+            <CMButton onClick={() => setShowUpload(true)}>Upload</CMButton>)
         }
 
         <FileFilterAndSortControls value={filterSpec} onChange={(value) => setFilterSpec(value)} fileTags={props.fileTags} />

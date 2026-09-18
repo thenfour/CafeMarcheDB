@@ -5,7 +5,7 @@ import { useTheme } from "@mui/material/styles";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import forgotPassword from "src/auth/mutations/forgotPassword";
-import { CMTextButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
+import { CMButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { ResponsiveDialog } from "../ResponsiveDialog";
 import { EnrichedVerboseUser } from "./UserListItem";
@@ -40,9 +40,9 @@ export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }
     }
 
     return <>
-        <CMTextButton onClick={() => setShowConfirm(true)}>
+        <CMButton onClick={() => setShowConfirm(true)}>
             Reset password
-        </CMTextButton>
+        </CMButton>
         {showConfirm &&
             <ResponsiveDialog
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v

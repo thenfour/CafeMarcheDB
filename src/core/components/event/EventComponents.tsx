@@ -5,7 +5,7 @@ import { HostingMode } from '@/shared/brandConfigBase';
 import { EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Switch, Tooltip } from "@mui/material";
+import { Breadcrumbs, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
@@ -29,7 +29,7 @@ import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtil
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
-import { AdminInspectObject, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
+import { AdminInspectObject, CMButton, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
@@ -302,8 +302,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 
             </div>
             <DialogActionsCM>
-                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
-                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+                <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
+                <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</CMButton>
             </DialogActionsCM>
         </DialogContent>
 
@@ -615,7 +615,7 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: P
         canonicalWikiPath={wikiPath.canonicalWikiPath}
         readonly={readonly}
         onUpdated={refetch}
-        renderCreateButton={(onClick) => <Button onClick={onClick} startIcon={gIconMap.Edit()}>Add information</Button>}
+        renderCreateButton={(onClick) => <CMButton onClick={onClick} startIcon={gIconMap.Edit()}>Add information</CMButton>}
     />;
 };
 

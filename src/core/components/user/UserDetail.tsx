@@ -8,7 +8,7 @@ import { StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
-import { AdminInspectObject, KeyValueTable } from "../CMCoreComponents2";
+import { AdminInspectObject, CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
 import { useSnackbar } from "../SnackbarContext";
 import { CMTab, CMTabPanel } from "../TabPanel";
 import { StandardVariationSpec } from "../color/palette";
@@ -149,14 +149,6 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
             </div>{/* /title line */}
 
-            <UserAdminPanel
-                user={user}
-                tableClient={tableClient}
-                readonly={props.readonly}
-                refetch={refetch}
-                capabilities={capabilities}
-            />
-
             {dashboardContext.isAuthorized(Permission.search_users) &&
                 <CMChipContainer>
                     {user.tags.map(tag => <CMStandardDBChip
@@ -179,14 +171,29 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     />)}
                 </CMChipContainer>
             }
-            {dashboardContext.isAuthorized(Permission.manage_users) &&
-                <KeyValueTable data={{
-                    "": <EditUserProfileButton
+
+            <CMButtonGroup>
+
+                {dashboardContext.isAuthorized(Permission.manage_users) && (
+                    <EditUserProfileButton
                         readonly={props.readonly}
                         tableClient={tableClient}
                         user={user}
                         onOK={refetch}
-                    />,
+                    />
+                )}
+
+                <UserAdminPanel
+                    user={user}
+                    tableClient={tableClient}
+                    readonly={props.readonly}
+                    refetch={refetch}
+                    capabilities={capabilities}
+                />
+            </CMButtonGroup>
+
+            {dashboardContext.isAuthorized(Permission.manage_users) &&
+                <KeyValueTable data={{
                     Phone: <CMChipContainer>
                         {user.phone && <CMChip>{user.phone}</CMChip>}
                         {!user.phone && <span>-</span>}
@@ -200,9 +207,10 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                         <CMChipContainer>
                             <UserIdentityIndicator user={user} />
 
-                            {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
-                            {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={user} onChanged={refetch} />}
-
+                            <CMButtonGroup>
+                                {capabilities.canResetPassword && <AdminResetPasswordButton user={user} />}
+                                {capabilities.canManageSignInMethods && <UserSignInMethodsButton user={user} onChanged={refetch} />}
+                            </CMButtonGroup>
                         </CMChipContainer>
                     </Suspense>,
 

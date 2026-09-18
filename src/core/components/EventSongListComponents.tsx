@@ -8,7 +8,7 @@ import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization
 import { TAnyModel } from '@/shared/rootroot';
 import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
-import { Button, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
+import { DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import React, { useCallback, useRef } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
@@ -27,7 +27,7 @@ import { enrichSong } from '../db3/shared/schema/enrichedSongTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
-import { AdminInspectObject, CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
+import { AdminInspectObject, CMButton, CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
@@ -192,8 +192,8 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                 }
             />
             <DialogActionsCM>
-                <Button onClick={() => { onClick(controlledValue); onClose(); }} startIcon={gIconMap.Save()}>Ok</Button>
-                <Button onClick={onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
+                <CMButton onClick={() => { onClick(controlledValue); onClose(); }} startIcon={gIconMap.Save()}>Ok</CMButton>
+                <CMButton onClick={onClose} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
             </DialogActionsCM>
         </DialogContent>
     </ReactiveInputDialog >
@@ -887,7 +887,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                 {props.value.name}
                 {props.value.isActuallyPlayed && <Tooltip disableInteractive title={`This is the playlist that was actually played or will be played`}><span className='verified songListVerified'>{gIconMap.Check()}</span></Tooltip>}
             </div>
-            {!props.readonly && editAuthorized && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
+            {!props.readonly && editAuthorized && <CMButton onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</CMButton>}
 
         </div>
         <div className="content">
@@ -1578,13 +1578,13 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
                 <div>Edit setlist</div>
                 <SettingMarkdown setting='EditEventSongListDialogTitle' />
                 <div style={{ display: "flex" }}>
-                    {preview ? (<Button onClick={() => setPreview(false)} startIcon={<ArrowBack />}>Continue editing</Button>)
-                        : (<Button onClick={() => setPreview(true)} startIcon={gIconMap.Visibility()}>Preview</Button>)}
+                    {preview ? (<CMButton onClick={() => setPreview(false)} startIcon={<ArrowBack />}>Continue editing</CMButton>)
+                        : (<CMButton onClick={() => setPreview(true)} startIcon={gIconMap.Visibility()}>Preview</CMButton>)}
                     <div className='flex-spacer'></div>
-                    {props.onDelete && <Button onClick={handleDeleteClick}>
+                    {props.onDelete && <CMButton onClick={handleDeleteClick}>
                         {gIconMap.Delete()}
                         Delete
-                    </Button>}
+                    </CMButton>}
                 </div>
             </DialogTitle>
             <DialogContent dividers>
@@ -1608,11 +1608,11 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
 
                 <DialogActionsCM>
 
-                    <Button onClick={() => {
+                    <CMButton onClick={() => {
                         setGrayed(true);
                         props.onSave(value);
-                    }} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
-                    <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
+                    }} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
+                    <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()} enabled={!grayed}>Cancel</CMButton>
 
                 </DialogActionsCM>
 
@@ -1867,7 +1867,7 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
 
     return <div className="EventSongListTabContent">
         <SettingMarkdown setting='EventSongListTabDescription' />
-        {insertAuthorized && !readonly && <Button className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
+        {insertAuthorized && !readonly && <CMButton className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</CMButton>}
         {newOpen && !readonly && insertAuthorized && (
             <AppContextMarker name="EventSongListNewEditor">
                 <EventSongListNewEditor event={event} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />

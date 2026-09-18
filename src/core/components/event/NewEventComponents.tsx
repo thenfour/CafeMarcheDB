@@ -1,5 +1,5 @@
 import { TAnyModel } from "@/shared/rootroot";
-import { Button, DialogContent, DialogTitle } from "@mui/material";
+import { DialogContent, DialogTitle } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
@@ -13,7 +13,7 @@ import * as db3 from "src/core/db3/db3";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
-import { DialogActionsCM } from "../CMCoreComponents2";
+import { CMButton, DialogActionsCM } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
@@ -153,8 +153,8 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
             </div>
             <DialogActionsCM>
-                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
-                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
+                <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()} enabled={!grayed}>Cancel</CMButton>
+                <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
             </DialogActionsCM>
         </DialogContent>
 
@@ -170,7 +170,7 @@ export const NewEventButton = (props: {}) => {
     }
 
     return <>
-        <Button onClick={() => setOpen(true)}>{gIconMap.Add()} Create a new event</Button>
+        <CMButton onClick={() => setOpen(true)}>{gIconMap.Add()} Create a new event</CMButton>
         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
             <AppContextMarker name="new event dialog">
                 <NewEventDialogWrapper

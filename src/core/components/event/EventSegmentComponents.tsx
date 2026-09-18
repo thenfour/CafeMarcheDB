@@ -5,7 +5,7 @@ import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useMutation } from "@blitzjs/rpc";
-import { Button, Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
+import { Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace } from "shared/utils";
@@ -25,6 +25,7 @@ import { toSorted } from "shared/arrayUtils";
 import { Prisma } from "db";
 import { EventStatusValue } from "../event/EventChips";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import { CMButton } from "../CMCoreComponents2";
 
 
 
@@ -130,7 +131,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 
 
     return <>
-        {authorized && <Button className="newSegmentButton" onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</Button>}
+        {authorized && <CMButton className="newSegmentButton" onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</CMButton>}
         {open && <EventSegmentEditDialog
             onCancel={() => setOpen(false)}
             markdownSettingPrefix="NewEventSegment"
@@ -196,7 +197,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
             </div>
             <div style={{ display: "flex" }}>
                 <EventStatusValue statusId={props.segment.statusId} size="small" />
-                {!props.readonly && editAuthorized && <Button className="editButton" onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
+                {!props.readonly && editAuthorized && <CMButton className="editButton" onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</CMButton>}
             </div>
         </div>
         <div className="content">
@@ -290,7 +291,7 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
     if (!editAuthorized || props.readonly) return null;
 
     return <>
-        <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Change date</Button>
+        <CMButton onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Change date</CMButton>
         {editOpen && (<EventSegmentEditDialog
             initialValue={props.segment}
             markdownSettingPrefix="EditSingleEventSegment"

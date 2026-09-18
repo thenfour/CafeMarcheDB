@@ -843,7 +843,8 @@ solution is to
   user-select: none;
 }
 
-.MuiDialogActions-root .MuiButton-root {
+.MuiDialogActions-root .MuiButton-root,
+.CMDialogActionsButtonContainer .CMButton {
   font-size: 20px;
   min-width: 100px;
   min-height: 40px;

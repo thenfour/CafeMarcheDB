@@ -1,25 +1,47 @@
 .CMButtonGroup {
     margin: 9px 0;
+    margin-right: 9px;
     display: flex;
+    gap: 8px;
 }
 
+/*
+goals:
+- avoid "nested bordered boxes" look
+- look interactive
+- do not distract from "real" content
+- do not look like a chip.
+
+but they should also indicate their size (pure text is not the idea and don't look interactive enough)
+indicating size + not looking like a chip is a challenge. so,
+
+- no border by default (but show on hover as confirmation that this is interactive)
+- indicate size through very subtle background color
+
+*/
 
 .CMButton {
     border-radius: 2px;
-    border: 1px solid #0002;
+    border: 1px solid transparent;
+    /* border-bottom: 1px solid #0002; */
+    /* no,  this makes it look like an input field. */
     padding: 3px 12px;
     font-size: 14px;
-    background-color: #0001;
+    background-color: #00000008;
     color: #444;
 
     display: flex;
     align-content: center;
     align-items: center;
+    justify-content: center;
+
+    /* for spacing between icon and text */
+    gap: 4px;
 }
 
 /* largely already handled by the .interactable styling */
 .CMButton:hover {
-    border: 1px solid #0008;
+    border: 1px solid #0002;
     background-color: #00000008;
 
 }

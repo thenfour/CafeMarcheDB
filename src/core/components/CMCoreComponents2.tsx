@@ -2,7 +2,7 @@ import { formatEventDateRange } from "shared/dateTimePresentation";
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, Menu, SvgIcon, Tooltip, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, CircularProgress, CircularProgressProps, Menu, SvgIcon, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
 import { useRouter } from "next/router";
@@ -41,9 +41,9 @@ export const DialogActionsCM = (props: React.PropsWithChildren<{ className?: str
 
 
 export const CMLinkButton = (props: { href: string; children: React.ReactNode }) => {
-    return <Button component="a" href={props.href}>
+    return <CMButton component="a" href={props.href}>
         {props.children}
-    </Button>;
+    </CMButton>;
 };
 
 
@@ -149,7 +149,7 @@ export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: strin
     const adminShowing = useIsShowingAdminControls();
     const [open, setOpen] = React.useState<boolean>(false);
     return <>{adminShowing && <div>
-        <Button onClick={() => setOpen(!open)}>{caption || "expand>"}</Button>
+        <CMButton onClick={() => setOpen(!open)}>{caption || "expand>"}</CMButton>
         {open && (text !== undefined) && <pre>{text}</pre>}
         {open && (obj !== undefined) && <pre>{JSON.stringify(obj, undefined, 2)}</pre>}
     </div>}</>;
@@ -226,9 +226,12 @@ export const CMTextButton = ({ enabled = true, ...props }: React.PropsWithChildr
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMButtonProps {
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+    href?: string; // for link-style buttons
     enabled?: boolean;
     startIcon?: React.ReactNode;
     tooltip?: React.ReactNode;
+
+    component?: React.ElementType;
 
     type?: "button" | "submit";
     value?: string; // for submit
@@ -237,7 +240,7 @@ export interface CMButtonProps {
     style?: React.CSSProperties;
 }
 
-export const CMButton = ({ enabled = true, ...props }: React.PropsWithChildren<CMButtonProps>) => {
+export const CMButton = ({ enabled = true, component = "button", ...props }: React.PropsWithChildren<CMButtonProps>) => {
     let innerContent = <>
         {props.startIcon}
         {props.children}
@@ -251,7 +254,7 @@ export const CMButton = ({ enabled = true, ...props }: React.PropsWithChildren<C
         </Tooltip>;
     }
 
-    const className = `interactable ${CMButtonStyle.CMButton} ${props.className} ${enabled ? "enabled" : "disabled"}`;
+    const className = `interactable CMButton ${CMButtonStyle.CMButton} ${props.className} ${enabled ? "enabled" : "disabled"}`;
     const clickHandler = enabled ? (e: React.MouseEvent<HTMLElement>) => { props.onClick && props.onClick(e) } : undefined;
 
     if (props.type === "submit" && props.value) {
@@ -266,14 +269,17 @@ export const CMButton = ({ enabled = true, ...props }: React.PropsWithChildren<C
         />;
     }
 
-    return <button
-        style={props.style}
-        className={className}
-        onClick={clickHandler}
-        disabled={!enabled}
-    >
-        {innerContent}
-    </button>;
+    return React.createElement(
+        component,
+        {
+            style: props.style,
+            className: className,
+            onClick: clickHandler,
+            disabled: !enabled,
+            href: props.href,
+        },
+        innerContent
+    );
 };
 
 export const CMUserMgmtButton = CMButton;
@@ -286,7 +292,7 @@ export interface CMButtonGroupProps {
 }
 export const CMButtonGroup = ({ className, style, children, orientation = "horizontal" }: React.PropsWithChildren<CMButtonGroupProps>) => {
     return <div
-        className={`${CMButtonStyle.CMButtonGroup} ${className || ""} ${orientation === "vertical" ? "vertical" : "horizontal"}`}
+        className={`CMButtonGroup ${CMButtonStyle.CMButtonGroup} ${className || ""} ${orientation === "vertical" ? "vertical" : "horizontal"}`}
         style={style}
     >
         {children}
