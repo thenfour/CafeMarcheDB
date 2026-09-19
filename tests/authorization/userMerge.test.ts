@@ -54,7 +54,15 @@ describe("merge authorization and lifecycle", () => {
     });
 
     it("requires authority over both targets, excludes self and protects privileged accounts", () => {
-        const actor = createAuthorizationTestUser("bandAdmin", { id: 2, permissions: [Permission.merge_users, Permission.login, Permission.basic_trust] });
+        const actor = createAuthorizationTestUser("bandAdmin", {
+            id: 2,
+            permissions: [
+                Permission.login,
+                Permission.search_users,
+                Permission.view_users_basic_info,
+                Permission.merge_users,
+            ],
+        });
         const managementActor = asUserManagementActor(actor);
         expect(canManageUser({ actor: managementActor, target: asUserManagementTarget(member), action: "merge" })).toBe(true);
         expect(canManageUser({ actor: managementActor, target: asUserManagementTarget(admin), action: "merge" })).toBe(false);

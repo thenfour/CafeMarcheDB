@@ -42,7 +42,6 @@ import { invokeResolver } from "./support/resolverHarness"
 
 const brandingPermissionSet = [
   Permission.login,
-  Permission.basic_trust,
   Permission.manage_site_branding,
 ]
 
@@ -215,7 +214,7 @@ describe("BA-C001 and BA-C002 setting authorization", () => {
   it("does not trust a stale session branding grant", async () => {
     const actorWithoutDatabaseGrant = createAuthorizationTestUser("normal", {
       id: brandManager.id,
-      permissions: [Permission.login, Permission.basic_trust],
+      permissions: [Permission.login],
     })
     authorizationTestDb.reset({ user: [actorWithoutDatabaseGrant], setting: [], change: [] })
     const { ctx } = createAuthorizationPersona("normal", {

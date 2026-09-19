@@ -27,8 +27,8 @@ import {
 import { forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
-const permissions = [Permission.login, Permission.basic_trust, Permission.view_users_basic_info,
-    Permission.manage_users, Permission.deactivate_users, Permission.recover_users];
+const permissions = [Permission.login, Permission.search_users, Permission.view_users_basic_info,
+    Permission.view_user_contact_info, Permission.manage_users, Permission.deactivate_users, Permission.recover_users];
 const admin = createAuthorizationTestUser("bandAdmin", { id: 801, permissions });
 const target = { ...createAuthorizationTestUser("normal", { id: 802, isDeleted: true }),
     signInMethods: [{ id: 1, type: "google", identifier: "existing-google-identity" }], hashedPassword: "existing-password-hash" };

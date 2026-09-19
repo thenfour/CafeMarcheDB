@@ -39,7 +39,7 @@ async function seedAccounts() {
         data: {
             id: 2, name: "Member", permissions: {
                 create: permissions
-                    .filter(permission => [Permission.login, Permission.basic_trust].includes(permission.name as any))
+                    .filter(permission => permission.name === Permission.login)
                     .map(permission => ({ permissionId: permission.id }))
             }
         }

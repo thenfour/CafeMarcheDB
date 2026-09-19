@@ -10,6 +10,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { GenericSearchListItem } from "../search/SearchListItem";
 import { UsersFilterSpec } from "./UserClientBaseTypes";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
+import { Permission } from "@/shared/permissions";
 
 export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;
 
@@ -23,6 +24,8 @@ type UserListItemProps = {
 
 export const UserListItem = (props: UserListItemProps) => {
     const dashboardContext = useDashboardContext();
+    const canViewContactInfo = dashboardContext.isAuthorized(Permission.view_user_contact_info);
+    const canManageUsers = dashboardContext.isAuthorized(Permission.manage_users);
     return <GenericSearchListItem<EnrichedVerboseUser>
         index={props.index}
         item={props.user}
@@ -30,11 +33,11 @@ export const UserListItem = (props: UserListItemProps) => {
         refetch={props.refetch}
         href={dashboardContext.routingApi.getURIForUser(props.user)}
         title={props.user.name}
-        titleExtra={props.user.isDeleted && <CMChip color="warning" size="small">Deactivated</CMChip>}
-        credits={[
+        titleExtra={canManageUsers && props.user.isDeleted && <CMChip color="warning" size="small">Deactivated</CMChip>}
+        credits={canViewContactInfo ? [
             props.user.email,
             props.user.phone,
-        ]}
+        ] : []}
         bodyContent={
             <>
                 <CMChipContainer className="songTags">
@@ -45,7 +48,7 @@ export const UserListItem = (props: UserListItemProps) => {
                         variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.userTagId) }}
                         getTooltip={(_) => tag.userTag.description}
                     />)}
-                    {props.user.role &&
+                    {canManageUsers && props.user.role &&
                         <CMChip
                             color={props.user.role.color}
                             shape={"rectangle"}
@@ -54,9 +57,9 @@ export const UserListItem = (props: UserListItemProps) => {
                         >
                             {props.user.role.name}
                         </CMChip>}
-                    <Suspense>
+                    {canManageUsers && <Suspense>
                         <UserIdentityIndicator userId={props.user.id} showPassword={false} />
-                    </Suspense>
+                    </Suspense>}
                 </CMChipContainer>
 
                 <CMChipContainer className="instruments">
@@ -70,7 +73,7 @@ export const UserListItem = (props: UserListItemProps) => {
                 </CMChipContainer>
             </>
         }
-        footerContent={
+        footerContent={canManageUsers &&
             <>
                 <DateValue value={props.user.createdAt} format={(dateStr) => `Created at ${dateStr}`} style={{ opacity: .5 }} />
             </>

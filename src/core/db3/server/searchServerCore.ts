@@ -11,7 +11,7 @@ import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUti
 import { SplitQuickFilter } from "shared/quickFilter";
 import { Stopwatch, TAnyModel } from "shared/rootroot";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
-import { CalculateFilterQueryResult, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
+import { CalculateFilterQueryResult, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
@@ -152,6 +152,14 @@ function calculateFilterQuery(currentUser: UserWithRolesPayload,
         const OR: string[] = [];
         for (let i = 0; i < table.columns.length; ++i) {
             const column = table.columns[i]!;
+            // Quick filters search every eligible column implicitly. Treat that
+            // as a read of the column so hidden data cannot be probed through
+            // the presence or absence of matching rows.
+            if (!table.authorizeColumnForView({
+                model: null,
+                publicData,
+                columnName: column.member,
+            })) continue;
             const orExpr = column.SqlGetQuickFilterElementsForToken(token, qfTokens);
             if (orExpr === null) continue;
             OR.push(orExpr);
@@ -235,23 +243,49 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
             throw new AuthorizationError();
         }
 
-        const sortElements = ProcessSortModel(table, args);
+        // Unlike quick filters, sort and facet columns are explicitly selected
+        // by the client. Reject forged requests for columns the caller cannot
+        // read instead of silently changing their meaning.
+        const isReadableSearchColumn = (columnName: string) => {
+            if (!table.getColumn(columnName)) {
+                throw new Error(`Search column ${columnName} not found on table ${table.tableName}`);
+            }
+            return table.authorizeColumnForView({ model: null, publicData, columnName });
+        };
+        const requireReadableSearchColumn = (columnName: string) => {
+            if (!isReadableSearchColumn(columnName)) {
+                throw new AuthorizationError();
+            }
+        };
+        args.sort.forEach(sort => requireReadableSearchColumn(sort.db3Column));
+        const readableDiscreteCriteria = args.discreteCriteria.filter(criterion => {
+            if (isReadableSearchColumn(criterion.db3Column)) {
+                return true;
+            }
+            // Search pages submit disabled criteria as alwaysMatch. They carry
+            // no filtering intent and must not produce unauthorized facets.
+            if (criterion.behavior === DiscreteCriterionFilterType.alwaysMatch) return false;
+            throw new AuthorizationError();
+        });
+        const authorizedSearchArgs = { ...args, discreteCriteria: readableDiscreteCriteria };
+
+        const sortElements = ProcessSortModel(table, authorizedSearchArgs);
         const bandTimeZone = await loadBandTimeZone(database);
         const calendarPredicate = args.calendarWindow ? calendarWindowSql(args.calendarWindow, bandTimeZone) : null;
 
-        const filterResult = calculateFilterQuery(u, args, null, sortElements, publicData, calendarPredicate);
+        const filterResult = calculateFilterQuery(u, authorizedSearchArgs, null, sortElements, publicData, calendarPredicate);
         ret.filterQueryResult = filterResult;
 
         const queries: Promise<any>[] = [];
 
-        for (let i = 0; i < args.discreteCriteria.length; ++i) {
-            const criterion = args.discreteCriteria[i]!;
+        for (let i = 0; i < authorizedSearchArgs.discreteCriteria.length; ++i) {
+            const criterion = authorizedSearchArgs.discreteCriteria[i]!;
             const col = table.getColumn(criterion.db3Column);
             if (!col) {
                 throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
             }
 
-            const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements, publicData, calendarPredicate);
+            const filterResult2 = calculateFilterQuery(u, authorizedSearchArgs, col.member, sortElements, publicData, calendarPredicate);
 
             const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filterResult.sqlSelect, filterResult2.sqlSelect, criterion);
             // no facet info to be done on this column
@@ -408,7 +442,7 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
         if (table.SearchCustomDataHookId) {
             const hooksw = new Stopwatch();
             const proc = gSearchCustomHookMap[table.SearchCustomDataHookId];
-            ret.customData = await proc(u, args, ret);
+            ret.customData = await proc(u, authorizedSearchArgs, ret);
             ret.queryMetrics.push({
                 title: `Custom hook: [${table.SearchCustomDataHookId}]`,
                 millis: hooksw.ElapsedMillis,

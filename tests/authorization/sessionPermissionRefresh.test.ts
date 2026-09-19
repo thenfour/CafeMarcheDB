@@ -58,24 +58,27 @@ describe("authorization refresh on every request", () => {
         expect(second.$handle).toBe(first.$handle);
         await getRequestAuthorization(second);
         expect(second.$publicData.permissionNames).toContain(Permission.admin_songs);
-        expect(second.$publicData.permissionNames).not.toContain(Permission.basic_trust);
+        expect(second.$publicData.permissionNames).not.toContain(Permission.view_users_basic_info);
         expect(second.userId).toBe(user.id);
     });
 
     it("removes revoked grants when no new grant replaces them", async () => {
         const previousUser = createAuthorizationTestUser("normal", {
-            id: user.id, permissions: [Permission.login, Permission.basic_trust, Permission.admin_events],
+            id: user.id, permissions: [Permission.login, Permission.admin_events],
         });
         const { session } = createAuthorizationTestContext(previousUser);
         const setPublicData = vi.spyOn(session, "$setPublicData");
         await getRequestAuthorization(session);
         expect(session.$publicData.permissionNames).not.toContain(Permission.admin_events);
-        expect(session.$publicData.permissionNames).toContain(Permission.basic_trust);
+        expect(session.$publicData.permissionNames).toContain(Permission.login);
         expect(setPublicData).toHaveBeenCalledOnce();
     });
 
     it("replaces equal-count grants while preserving identity and impersonation metadata", async () => {
-        const { session } = createAuthorizationTestContext(user);
+        const previousUser = createAuthorizationTestUser("normal", {
+            id: user.id, permissions: [Permission.login, Permission.view_users_basic_info],
+        });
+        const { session } = createAuthorizationTestContext(previousUser);
         session.$publicData.impersonatingFromUserId = 99;
         const handle = session.$handle;
         const revoke = vi.spyOn(session, "$revoke");
@@ -86,7 +89,7 @@ describe("authorization refresh on every request", () => {
         });
         await getRequestAuthorization(session);
         expect(session.$publicData.permissionNames).toContain(Permission.admin_events);
-        expect(session.$publicData.permissionNames).not.toContain(Permission.basic_trust);
+        expect(session.$publicData.permissionNames).not.toContain(Permission.view_users_basic_info);
         expect(session.$publicData.impersonatingFromUserId).toBe(99);
         expect(session.userId).toBe(user.id);
         expect(session.$handle).toBe(handle);

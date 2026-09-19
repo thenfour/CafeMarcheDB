@@ -750,7 +750,7 @@ describe("Band Admin split mutation boundaries", () => {
   })
 
   it("requires manage_user_taxonomy for tag definitions independently of manage_users", async () => {
-    const profilePermissions = [Permission.login, Permission.basic_trust, Permission.manage_users]
+    const profilePermissions = [Permission.login, Permission.manage_users]
     const profileManager = createAuthorizationTestUser("moderator", { id: 62, permissions: profilePermissions })
     const taxonomyPermissions = [...profilePermissions, Permission.manage_user_taxonomy]
     const taxonomyManager = createAuthorizationTestUser("bandAdmin", { id: 63, permissions: taxonomyPermissions })
@@ -782,7 +782,7 @@ describe("Band Admin split mutation boundaries", () => {
   })
 
   it("uses admin_instruments as the sole instrument-management capability", async () => {
-    const ordinaryPermissions = [Permission.login, Permission.basic_trust, Permission.manage_users]
+    const ordinaryPermissions = [Permission.login, Permission.manage_users]
     const ordinaryManager = createAuthorizationTestUser("moderator", { id: 65, permissions: ordinaryPermissions })
     const instrumentPermissions = [...ordinaryPermissions, Permission.admin_instruments]
     const instrumentAdmin = createAuthorizationTestUser("bandAdmin", { id: 66, permissions: instrumentPermissions })

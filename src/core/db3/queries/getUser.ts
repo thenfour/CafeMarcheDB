@@ -2,26 +2,28 @@
 
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db from "db";
-import { Permission } from "shared/permissions";
 import { z } from "zod";
-import { UserWithInstrumentsArgs, UserWithInstrumentsPayload } from "../db3";
+import { DB3QueryCore } from "../server/db3QueryCore";
+import { UserPayload_Name } from "../shared/schema/prismArgs";
+import { xUser } from "../db3";
 
 export default resolver.pipe(
-    resolver.authorize(Permission.basic_trust),
     resolver.zod(z.object({
         userId: z.number(),
     })),
-    async (args, ctx: AuthenticatedCtx): Promise<UserWithInstrumentsPayload> => {
-        const ret = await db.user.findFirst({
-            where: {
-                id: args.userId,
-                isDeleted: false,
+    async (args, ctx: AuthenticatedCtx): Promise<UserPayload_Name | null> => {
+        const result = await DB3QueryCore({
+            tableID: xUser.tableID,
+            tableName: xUser.tableName,
+            orderBy: undefined,
+            filter: {
+                items: [],
+                tableParams: { userId: args.userId },
             },
-            ...UserWithInstrumentsArgs
-        });
-        if (!ret) throw new Error(`user not found`);
-        return ret;
+            take: 1,
+            cmdbQueryContext: "getUser",
+        }, ctx);
+        return (result.items[0] as UserPayload_Name | undefined) ?? null;
     }
 );
 

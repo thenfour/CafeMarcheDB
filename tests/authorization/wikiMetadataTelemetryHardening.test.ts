@@ -124,7 +124,6 @@ describe("BA-S004 wiki DB3 capabilities", () => {
 describe("BA-S005 server-rendered entity metadata", () => {
     const permissions = [
         Permission.login,
-        Permission.basic_trust,
         Permission.view_events,
         Permission.view_events_nonpublic,
         Permission.access_file_landing_page,
@@ -211,7 +210,7 @@ describe("BA-S005 server-rendered entity metadata", () => {
     it("uses fresh page grants and stops before the entity lookup when they were revoked", async () => {
         const databaseActor = createAuthorizationTestUser("normal", {
             id: actor.id,
-            permissions: [Permission.login, Permission.basic_trust],
+            permissions: [Permission.login],
         });
         authorizationTestDb.reset({ user: [databaseActor] });
         const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions });

@@ -11,6 +11,7 @@ import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType } from "src/core/db3/shared/apiTypes";
 import { userSearchConfig } from "src/core/hooks/searchConfigs";
 import { useDiscreteFilter, useSearchPage } from "src/core/hooks/useSearchFilters";
+import { Permission } from "@/shared/permissions";
 
 
 // for serializing in compact querystring
@@ -78,6 +79,10 @@ const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultS
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const UserListOuter = () => {
     const dashboardContext = useDashboardContext();
+    const canManageUsers = dashboardContext.isAuthorized(Permission.manage_users);
+    const availableStaticFilters = canManageUsers
+        ? gStaticFilters
+        : gStaticFilters.filter(filter => filter.label !== "New");
 
     // Individual filter hooks - still needed for the search page hook
     const tagFilter = useDiscreteFilter({
@@ -107,13 +112,13 @@ const UserListOuter = () => {
     // Using useSearchPage hook for centralized search page logic
     const searchPage = useSearchPage<UsersFilterSpecStatic, UsersFilterSpec>({
         table: db3.xUser,
-        staticFilters: gStaticFilters,
+        staticFilters: availableStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnKey: "orderByColumn",
         sortDirectionKey: "orderByDirection",
         filterMappings: [
             { filterHook: tagFilter, columnKey: "tagFilter" },
-            { filterHook: roleFilter, columnKey: "roleFilter" },
+            ...(canManageUsers ? [{ filterHook: roleFilter, columnKey: "roleFilter" }] : []),
             { filterHook: instrumentFilter, columnKey: "instrumentFilter" },
         ],
         buildFilterSpec: ({ refreshSerial, quickFilter, sortColumn, sortDirection, includeDeleted }) => {
@@ -121,11 +126,11 @@ const UserListOuter = () => {
                 refreshSerial,
                 quickFilter,
                 includeDeleted,
-                orderByColumn: sortColumn as any,
+                orderByColumn: canManageUsers ? sortColumn as any : UserOrderByColumnOptions.name,
                 orderByDirection: sortDirection,
                 tagFilter: tagFilter.enabled ? tagFilter.criterion : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
                 instrumentFilter: instrumentFilter.enabled ? instrumentFilter.criterion : { db3Column: "instruments", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-                roleFilter: roleFilter.enabled ? roleFilter.criterion : { db3Column: "role", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+                roleFilter: canManageUsers && roleFilter.enabled ? roleFilter.criterion : { db3Column: "role", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
             };
             return filterSpec;
         },
@@ -133,12 +138,12 @@ const UserListOuter = () => {
             const staticSpec: UsersFilterSpecStatic = {
                 label: "(n/a)",
                 helpText: "",
-                orderByColumn: sortColumn as any,
+                orderByColumn: canManageUsers ? sortColumn as any : UserOrderByColumnOptions.name,
                 orderByDirection: sortDirection,
                 tagFilterEnabled: tagFilter.enabled,
                 tagFilterBehavior: tagFilter.criterion.behavior,
                 tagFilterOptions: tagFilter.criterion.options as number[],
-                roleFilterEnabled: roleFilter.enabled,
+                roleFilterEnabled: canManageUsers && roleFilter.enabled,
                 roleFilterBehavior: roleFilter.criterion.behavior,
                 roleFilterOptions: roleFilter.criterion.options as number[],
                 instrumentFilterEnabled: instrumentFilter.enabled,
@@ -151,10 +156,10 @@ const UserListOuter = () => {
 
     // Configuration for the generic SearchPageContent component
     const config: SearchPageContentConfig<UsersFilterSpecStatic, UsersFilterSpec, db3.UserPayload, EnrichedVerboseUser> = {
-        staticFilters: gStaticFilters,
+        staticFilters: availableStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
-        sortColumnOptions: UserOrderByColumnOptions,
-        sortColumnNames: UserOrderByColumnNames,
+        sortColumnOptions: canManageUsers ? UserOrderByColumnOptions : { name: UserOrderByColumnOptions.name },
+        sortColumnNames: canManageUsers ? UserOrderByColumnNames : { name: UserOrderByColumnNames.name },
         //useDataHook: (filterSpec) => useSearchableList(filterSpec, userSearchConfig),
         searchConfig: userSearchConfig,
         renderItem: (user, index, filterSpec, results, refetch) => (
@@ -177,7 +182,7 @@ const UserListOuter = () => {
             }),
             filename: "users"
         },
-        showAdminControls: true,
+        showAdminControls: canManageUsers,
     };
 
     // Filter hooks for passing to the generic component
@@ -206,7 +211,7 @@ const UserListOuter = () => {
                 };
             }
         },
-        {
+        ...(canManageUsers ? [{
             key: "role",
             label: "Role",
             type: "foreignSingle",
@@ -222,7 +227,7 @@ const UserListOuter = () => {
                     tooltip: role.description,
                 };
             }
-        },
+        }] satisfies FilterGroupDefinition[] : []),
         {
             key: "instruments",
             label: "Instruments",

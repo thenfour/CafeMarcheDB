@@ -105,6 +105,9 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
 
     const dashboardContext = useDashboardContext();
+    const canViewBasicInfo = dashboardContext.isAuthorized(Permission.view_users_basic_info);
+    const canViewContactInfo = dashboardContext.isAuthorized(Permission.view_user_contact_info);
+    const canManageUsers = dashboardContext.isAuthorized(Permission.manage_users);
 
     const [selectedTab, setSelectedTab] = React.useState<UserDetailTabSlug>(props.initialTab || UserDetailTabSlug.attendance);
 
@@ -120,7 +123,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
     return <div className="EventDetail contentSection event">
         <div className='content'>
-            {user.isDeleted && <Alert severity="warning">
+            {canManageUsers && user.isDeleted && <Alert severity="warning">
                 {capabilities.mergedIntoUserId != null
                     ? <>This account was merged into <a href={`/backstage/user/${capabilities.mergedIntoUserId}`}>account #{capabilities.mergedIntoUserId}</a> and cannot be reactivated.</>
                     : "This user account is deactivated."}
@@ -133,7 +136,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     </div>
                 </div>
 
-                <RoleControl
+                {canManageUsers && <RoleControl
                     userId={user.id}
                     value={user.role}
                     readonly={props.readonly || !capabilities.canAssignRole}
@@ -141,7 +144,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     onChange={async () => {
                         await refetch();
                     }}
-                />
+                />}
 
                 <div className='flex-spacer'></div>
 
@@ -149,7 +152,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
             </div>{/* /title line */}
 
-            {dashboardContext.isAuthorized(Permission.search_users) &&
+            {canViewBasicInfo &&
                 <CMChipContainer>
                     {user.tags.map(tag => <CMStandardDBChip
                         key={tag.id}
@@ -160,7 +163,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                     />)}
                 </CMChipContainer>
             }
-            {dashboardContext.isAuthorized(Permission.search_users) &&
+            {canViewBasicInfo &&
                 <CMChipContainer>
                     {user.instruments.map(tag => <CMStandardDBChip
                         key={tag.id}
@@ -174,7 +177,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
             <CMButtonGroup>
 
-                {dashboardContext.isAuthorized(Permission.manage_users) && (
+                {canManageUsers && (
                     <EditUserProfileButton
                         readonly={props.readonly}
                         tableClient={tableClient}
@@ -192,7 +195,7 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                 />
             </CMButtonGroup>
 
-            {dashboardContext.isAuthorized(Permission.manage_users) &&
+            {canViewContactInfo &&
                 <KeyValueTable data={{
                     Phone: <CMChipContainer>
                         {user.phone && <CMChip>{user.phone}</CMChip>}
@@ -203,6 +206,11 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                             <CMChip>{user.email}</CMChip>
                         </CMChipContainer>
                     </>,
+                }} />
+            }
+
+            {canManageUsers &&
+                <KeyValueTable data={{
                     Identity: <Suspense>
                         <CMChipContainer>
                             <UserIdentityIndicator user={user} />
@@ -213,9 +221,6 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
                             </CMButtonGroup>
                         </CMChipContainer>
                     </Suspense>,
-
-
-
                 }} />
             }
 

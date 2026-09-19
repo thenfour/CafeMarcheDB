@@ -25,8 +25,9 @@ import { createAuthorizationPersona, createAuthorizationTestContext, createAutho
 import { authorizationTestDb } from "./support/inMemoryPrisma";
 const rawQuery = vi.mocked(db.$queryRaw as (sql: any) => Promise<any[]>);
 
-const permissions = [Permission.login, Permission.basic_trust, Permission.view_users_basic_info,
-    Permission.search_users, Permission.visibility_members, Permission.recover_users];
+const permissions = [Permission.login, Permission.view_users_basic_info, Permission.view_user_contact_info,
+    Permission.manage_users, Permission.search_users, Permission.visibility_members, Permission.view_events_nonpublic,
+    Permission.recover_users];
 const actor = createAuthorizationTestUser("bandAdmin", { id: 901, permissions });
 const activeUser = createAuthorizationTestUser("normal", { id: 902, name: "Member Active" });
 const deletedUser = createAuthorizationTestUser("normal", { id: 903, name: "Member Deleted", isDeleted: true });

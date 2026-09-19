@@ -97,13 +97,6 @@ const permissionRegistry = [
     "Functionality available to any authenticated user.",
     20
   ),
-  definePermission(
-    "basic_trust",
-    //"access",
-    "account",
-    "Ordinary member data available after an account has been trusted.",
-    30
-  ),
 
   definePermission(
     "manage_site_branding",
@@ -319,6 +312,12 @@ const permissionRegistry = [
     "site",
     "View the user landing page and basic member information.",
     740
+  ),
+  definePermission(
+    "view_user_contact_info",
+    "site",
+    "View other users' contact information such as email addresses and phone numbers.",
+    750
   ),
 
   definePermission("view_custom_links",// "custom-links",

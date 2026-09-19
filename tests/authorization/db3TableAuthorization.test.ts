@@ -25,7 +25,7 @@ const authorization = (...names: Permission[]): db3.DB3Authorization => ({
 describe("metadata and association mutation entry points", () => {
   const actor = createAuthorizationTestUser("normal", {
     id: 501, isSysAdmin: false,
-    permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
+    permissions: [Permission.login, Permission.sysadmin],
   })
   const role = {
     id: 200, name: "Ordinary role", description: "", color: null, sortOrder: 0,
@@ -65,7 +65,7 @@ describe("metadata and association mutation entry points", () => {
 
   it("checks the parent map when association updates are invoked directly", async () => {
     const manager = createAuthorizationTestUser("normal", {
-      id: 502, permissions: [Permission.login, Permission.basic_trust, Permission.manage_users],
+      id: 502, permissions: [Permission.login, Permission.manage_users],
     })
     authorizationTestDb.reset({ user: [manager], role: [role], permission: [permission] })
     const joinLookup = vi.spyOn(authorizationTestDb.getDelegate("rolePermission"), "findMany")
@@ -92,7 +92,7 @@ describe("metadata and association mutation entry points", () => {
 })
 
 const sysadminGrant = authorization(Permission.sysadmin)
-const userManager = authorization(Permission.basic_trust, Permission.manage_users)
+const userManager = authorization(Permission.login, Permission.view_users_basic_info, Permission.manage_users)
 
 describe("schema-owned table authorization", () => {
   it.each([db3.xRole, db3.xPermission, db3.xRolePermissionAssociation, db3.xSetting])(
@@ -135,7 +135,7 @@ describe("schema-owned table authorization", () => {
 
   it("preflights own-row editing without granting edits to another user's row", () => {
     const table = db3.xUser
-    const publicData = authorization(Permission.basic_trust)
+    const publicData = authorization(Permission.login)
     expect(table.authorizeTableForEdit(publicData)).toBe(true)
     expect(table.authorizeRowForEdit({ publicData, model: { id: publicData.userId } })).toBe(true)
     expect(table.authorizeRowForEdit({ publicData, model: { id: 999 } })).toBe(false)

@@ -98,16 +98,11 @@ describe("backstage server page guard", () => {
         await expect(authorizePageRequest(pathname, null)).rejects.toMatchObject({ statusCode: 401 });
     });
 
-    it("keeps signed-in profile permission failures as authorization errors", async () => {
-        await expect(authorizePageRequest("/backstage/profile", eventAdmin.id))
-            .rejects.toMatchObject({ statusCode: 403 });
-    });
-
-    it("allows a signed-in user with profile permission", async () => {
+    it("allows any signed-in user to access their profile", async () => {
         authorizationTestDb.reset({
             user: [createAuthorizationTestUser("normal", {
                 id: eventAdmin.id,
-                permissions: [Permission.login, Permission.basic_trust],
+                permissions: [Permission.login],
             })],
         });
         await expect(authorizePageRequest("/backstage/profile", eventAdmin.id)).resolves.toBeUndefined();

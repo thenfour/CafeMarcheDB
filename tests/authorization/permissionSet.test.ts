@@ -32,12 +32,12 @@ describe("PermissionSet", () => {
 
   it("derives delegability from the canonical registry", () => {
     const actor = new PermissionSet([
-      { id: 1, name: Permission.basic_trust },
+      { id: 1, name: Permission.view_users_basic_info },
       { id: 2, name: Permission.sysadmin },
     ])
 
     expect(actor.hasAllDelegable(new PermissionSet([
-      { id: 1, name: Permission.basic_trust },
+      { id: 1, name: Permission.view_users_basic_info },
     ]))).toBe(true)
     expect(actor.hasAllDelegable(new PermissionSet([
       { id: 2, name: Permission.sysadmin },

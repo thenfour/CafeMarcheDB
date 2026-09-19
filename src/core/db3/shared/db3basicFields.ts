@@ -28,6 +28,7 @@ import { TAnyModel } from "@/shared/rootroot";
 // field types
 export type GhostFieldArgs = {
     memberName: string;
+    specialFunction?: SqlSpecialColumnFunction;
 } & DB3AuthSpec;
 
 // sometimes you have a query containing a payload and you don't need to have a full FieldSpec for handling it. you just need to access its raw value as returned by the db.
@@ -43,7 +44,7 @@ export class GhostField extends FieldBase<number> {
             _customAuth: (args as any)._customAuth || null,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
-            specialFunction: undefined,
+            specialFunction: args.specialFunction,
         });
     }
 
@@ -104,6 +105,7 @@ export class ForeignCollectionField extends GhostField {
 
 export type PKFieldArgs = {
     columnName: string;
+    isRowOwner?: boolean;
 };// & DB3AuthSpec;
 
 export class PKField extends FieldBase<number> {
@@ -113,7 +115,9 @@ export class PKField extends FieldBase<number> {
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
             authMap: createAuthContextMap_PK(),
-            specialFunction: SqlSpecialColumnFunction.pk,
+            specialFunction: args.isRowOwner
+                ? SqlSpecialColumnFunction.ownerUser
+                : SqlSpecialColumnFunction.pk,
             _customAuth: null,
         });
     }
@@ -121,6 +125,9 @@ export class PKField extends FieldBase<number> {
     // field child classes impl this to get established. for example pk fields will set the table's pk here.
     connectToTable = (table: xTable) => {
         table.pkMember = this.member;
+        // A self-owned table can use its primary key as the ownership column.
+        // Preserve the primary-key lookup as well as the owner marker.
+        table.SqlSpecialColumns.pk = this;
     };
 
     // this column type has no sub-items; no filtering to do.
@@ -1725,7 +1732,7 @@ export class EventStartsAtField extends FieldBase<Date> {
 export type CreatedAtFieldArgs = {
     columnName: string;
     specialFunction?: SqlSpecialColumnFunction;
-};
+} & Partial<DB3AuthSpec>;
 
 export class CreatedAtField extends FieldBase<Date> {
     constructor(args: CreatedAtFieldArgs) {
@@ -1889,8 +1896,9 @@ export class RevisionField extends FieldBase<number> {
 
 // higher-level conveniences
 
-export const MakePKfield = () => new PKField({
+export const MakePKfield = (args: { isRowOwner?: boolean } = {}) => new PKField({
     columnName: "id",
+    isRowOwner: args.isRowOwner,
 });
 
 export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
@@ -1942,8 +1950,9 @@ export const MakeIconField = (columnName: string, options: TAnyModel, authSpec: 
         _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeCreatedAtField = (args?: { columnName?: string }) => (
+export const MakeCreatedAtField = (args: ({ columnName?: string } & Partial<DB3AuthSpec>) = {}) => (
     new CreatedAtField({
+        ...args,
         columnName: args?.columnName || "createdAt",
         specialFunction: SqlSpecialColumnFunction.createdAt,
     })

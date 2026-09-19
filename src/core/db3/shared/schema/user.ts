@@ -3,6 +3,7 @@ import type { UserWithRolesPayload } from "./userPayloads";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 import { Prisma } from "db";
 import { assertIsNumberArray } from "shared/arrayUtils";
+import { MysqlEscape } from "shared/mysqlUtils";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/rootroot";
 import { gIconOptions } from "shared/utils";
@@ -12,42 +13,91 @@ import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { PermissionArgs, PermissionForVisibilityArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumArgs, UserNaturalOrderBy, UserPayload, UserPayloadMinimum, UserSafeArgs, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 
-// for basic user fields.
-// everyone can view
-// only you can edit your own data
-// user managers can edit others' data
-export const xUserAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.basic_trust,
-    PostQuery: Permission.basic_trust,
-    PreMutateAsOwner: Permission.basic_trust,
+// Basic profile data is self-service for the account owner and readable for
+// other users only through the explicit member-profile capability.
+export const xUserBasicProfileAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.view_users_basic_info,
+    PreMutateAsOwner: Permission.login,
     PreMutate: Permission.manage_users,
     PreInsert: Permission.manage_users,
 } as const;
 
-// readable by everyone, editable by managers only (cannot edit own)
-export const xUserAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.basic_trust,
-    PostQuery: Permission.basic_trust,
+// Tags and other manager-owned profile fields remain readable as basic profile
+// data, but owning the account does not grant write access.
+export const xUserBasicProfileManagerWriteAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.view_users_basic_info,
     PreMutateAsOwner: Permission.manage_users,
     PreMutate: Permission.manage_users,
     PreInsert: Permission.manage_users,
 } as const;
 
-// User taxonomy and presentation metadata are separate from ordinary profile
-// management, while remaining readable anywhere basic user data is readable.
-export const xUserAuthMap_R_ETaxonomyManagers: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.basic_trust,
-    PostQuery: Permission.basic_trust,
+// User presentation metadata follows basic-profile visibility while taxonomy
+// managers retain its distinct write authority.
+export const xUserPresentationMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.view_users_basic_info,
     PreMutateAsOwner: Permission.manage_user_taxonomy,
     PreMutate: Permission.manage_user_taxonomy,
     PreInsert: Permission.manage_user_taxonomy,
 } as const;
 
-// Visibility selectors need ordinary metadata reads; the table map restricts
-// raw role/permission access. Metadata writes require the sysadmin grant only.
-const xAuthorizationMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.basic_trust,
-    PostQuery: Permission.basic_trust,
+// Taxonomy definitions must be available when an authenticated user views or
+// edits their own profile; assignments still use the profile maps above.
+const xUserTaxonomyDefinitionAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.login,
+    PreMutateAsOwner: Permission.manage_user_taxonomy,
+    PreMutate: Permission.manage_user_taxonomy,
+    PreInsert: Permission.manage_user_taxonomy,
+} as const;
+
+// Contact information has a separate non-owner read capability. Phone remains
+// self-editable; email writes are owned by dedicated account-maintenance flows.
+const xUserContactInfoAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.view_user_contact_info,
+    PreMutateAsOwner: Permission.login,
+    PreMutate: Permission.manage_users,
+    PreInsert: Permission.manage_users,
+} as const;
+
+const xUserEmailAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.view_user_contact_info,
+    PreMutateAsOwner: Permission.sysadmin,
+    PreMutate: Permission.sysadmin,
+    PreInsert: Permission.sysadmin,
+} as const;
+
+// Operational account metadata is visible to user maintainers. Its mutation
+// authority stays separate and is enforced by existing dedicated flows.
+const xUserOperationalMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.manage_users,
+    PostQuery: Permission.manage_users,
+    PreMutateAsOwner: Permission.sysadmin,
+    PreMutate: Permission.sysadmin,
+    PreInsert: Permission.sysadmin,
+} as const;
+
+// Raw authentication fields remain unavailable to generic DB3 queries. These
+// virtual fields centralize authorization for the coarse sign-in summary and
+// sign-in-email search. Global search uses PostQuery, so only user maintainers
+// can search another account's sign-in email.
+const xUserSignInMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.manage_users,
+    PreMutateAsOwner: Permission.never_grant,
+    PreMutate: Permission.never_grant,
+    PreInsert: Permission.never_grant,
+} as const;
+
+// Permission and role tables are Sysadmin-only at table level. The visibility
+// selector variant deliberately exposes their display metadata after login.
+const xPermissionMetadataAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.login,
     PreMutateAsOwner: Permission.sysadmin,
     PreMutate: Permission.sysadmin,
     PreInsert: Permission.sysadmin,
@@ -70,23 +120,23 @@ const authorizeBuiltInRoleFlag = (flag: BuiltInRoleFlag) => (
 };
 
 
-export const xUserTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.basic_trust,
-    View: Permission.basic_trust,
-    EditOwn: Permission.basic_trust,
+export const xUserTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.login,
+    View: Permission.view_users_basic_info,
+    EditOwn: Permission.login,
     Edit: Permission.manage_users,
     Insert: Permission.manage_users,
 } as const;
 
-const xUserTableAuthMap_R_EManagers_SysadminInsert: db3.DB3AuthTablePermissionMap = {
-    ...xUserTableAuthMap_R_EManagers,
+const xUserTableAuthMap_SysadminInsert: db3.DB3AuthTablePermissionMap = {
+    ...xUserTableAuthMap,
     // User creation is self-signup or Sysadmin maintenance.
     Insert: Permission.sysadmin,
 } as const;
 
-export const xUserTableAuthMap_R_ETaxonomyManagers: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.basic_trust,
-    View: Permission.basic_trust,
+export const xUserTaxonomyTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.login,
+    View: Permission.login,
     EditOwn: Permission.manage_user_taxonomy,
     Edit: Permission.manage_user_taxonomy,
     Insert: Permission.manage_user_taxonomy,
@@ -101,8 +151,8 @@ export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
 } as const;
 
 const xVisibilityPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.basic_trust,
-    View: Permission.basic_trust,
+    ViewOwn: Permission.login,
+    View: Permission.login,
     EditOwn: Permission.sysadmin,
     Edit: Permission.sysadmin,
     Insert: Permission.sysadmin,
@@ -124,24 +174,24 @@ export const xUserMinimum = new db3.xTable({
         name: row.name,
         ownerUserId: row.id,
     }),
-    tableAuthMap: xUserTableAuthMap_R_EManagers_SysadminInsert,
+    tableAuthMap: xUserTableAuthMap_SysadminInsert,
 
     // note: self-sign-up is not part of this; it doesn't use db3 auth.
     // 
-    // col:              QueryOwn       Query           MutateOwn       Mutate            insert***
+    // col:              QueryOwn       Query                   MutateOwn       Mutate            insert***
     // 			-----------------------------------------------------------------------------------------------------------------
-    // id             |  basic_trust    basic_trust     #               #                 #             |   xUserAuthMap_R_EOwn_EManagers                                  
-    // name           |  basic_trust    basic_trust     basic_trust     manage_users      basic_trust   |   xUserAuthMap_R_EOwn_EManagers
-    // email          |  basic_trust    basic_trust     #               #                 sysadmin      |   dedicated correction after insert
-    // phone          |  basic_trust    basic_trust     basic_trust     manage_users      basic_trust   |   xUserAuthMap_R_EOwn_EManagers
+    // id             |  login          view_users_basic_info   #               #                 #             |   PK + table map
+    // name           |  login          view_users_basic_info   login           manage_users      sysadmin*     |   xUserBasicProfileAuthMap
+    // email          |  login          view_user_contact_info  sysadmin        sysadmin          sysadmin*     |   dedicated correction after insert
+    // phone          |  login          view_user_contact_info  login           manage_users      sysadmin*     |   xUserContactInfoAuthMap
     // auth fields    |  #              #               #               #                 #             |   dedicated auth/calendar flows only
 
-    // isDeleted      |  basic_trust    basic_trust     manage_users    manage_users*     basic_trust*  |   xUserAuthMap_Manage
-    // createdAt      |  basic_trust    basic_trust     user_admin      user_admin*       basic_trust*  |   xUserAuthMap_Admin
-    // role           |  basic_trust    basic_trust     user_admin      user_admin*       basic_trust*  |   xUserAuthMap_Admin
-    // isSysAdmin     |  basic_trust    basic_trust     user_admin      user_admin*       basic_trust*  |   xUserAuthMap_Admin
+    // isDeleted      |  manage_users   manage_users            sysadmin        sysadmin          sysadmin*     |   xUserOperationalMetadataAuthMap
+    // createdAt      |  manage_users   manage_users            #               #                 sysadmin*     |   xUserOperationalMetadataAuthMap
+    // role           |  manage_users   manage_users            sysadmin        sysadmin          sysadmin*     |   xUserOperationalMetadataAuthMap
+    // isSysAdmin     |  manage_users   manage_users            sysadmin        sysadmin          sysadmin*     |   xUserOperationalMetadataAuthMap
 
-    // * when inserting, you need certain permissions to set certain values. custom processing would be ideal.
+    // * The table-level insert grant is sysadmin; self-sign-up uses its dedicated flow.
 
     getParameterizedWhereClause: (params: { userId?: number }): (Prisma.UserWhereInput[] | false) => {
         if (params.userId != null) {
@@ -152,34 +202,34 @@ export const xUserMinimum = new db3.xTable({
         return false;
     },
     columns: [
-        MakePKfield(),
-        MakeCreatedAtField(),
-        MakeIsDeletedField({ authMap: xAuthorizationMetadataAuthMap }),
+        MakePKfield({ isRowOwner: true }),
+        MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
+        MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
 
         new GenericStringField({
             columnName: "name",
             allowNull: false,
             format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserBasicProfileAuthMap,
         }),
         new GenericStringField({
             columnName: "email",
             allowNull: false,
             format: "email",
             //_customAuth: authorizeUserLoginEmail,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xUserEmailAuthMap,
         }),
         new GenericStringField({
             columnName: "phone",
             allowNull: true,
             format: "plain",
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserContactInfoAuthMap,
         }),
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xUserOperationalMetadataAuthMap,
             allowNull: false,
         }),
         new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
@@ -217,19 +267,19 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xPermissionMetadataAuthMap,
         }),
-        MakeDescriptionField({ authMap: xAuthorizationMetadataAuthMap }),
-        MakeSortOrderField({ authMap: xAuthorizationMetadataAuthMap }),
+        MakeDescriptionField({ authMap: xPermissionMetadataAuthMap }),
+        MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
         new BoolField({
             columnName: "isVisibility",
             defaultValue: false,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xPermissionMetadataAuthMap,
             allowNull: false,
         }),
-        MakeSignificanceField("significance", PermissionSignificance, { authMap: xAuthorizationMetadataAuthMap }),
-        MakeColorField({ authMap: xAuthorizationMetadataAuthMap }),
-        MakeIconField("iconName", gIconOptions, { authMap: xAuthorizationMetadataAuthMap }),
+        MakeSignificanceField("significance", PermissionSignificance, { authMap: xPermissionMetadataAuthMap }),
+        MakeColorField({ authMap: xPermissionMetadataAuthMap }),
+        MakeIconField("iconName", gIconOptions, { authMap: xPermissionMetadataAuthMap }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "roles",
             associationForeignIDMember: "roleId",
@@ -240,7 +290,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             foreignTableID: "Role",
             getCustomFilterWhereClause: (query: CMDBTableFilterModel) => false,
             getQuickFilterWhereClause: (query: string): Prisma.PermissionWhereInput | boolean => false,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xPermissionMetadataAuthMap,
         }),
 
     ]
@@ -296,7 +346,7 @@ export const xRolePermissionAssociation = new db3.xTable({
             allowNull: false,
             foreignTableID: "Permission",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xPermissionMetadataAuthMap,
         }),
         new ForeignSingleField<RolePayload>({
             columnName: "role",
@@ -304,7 +354,7 @@ export const xRolePermissionAssociation = new db3.xTable({
             allowNull: false,
             foreignTableID: "Role",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xPermissionMetadataAuthMap,
         }),
     ]
 });
@@ -340,9 +390,9 @@ export const xRole = new db3.xTable({
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xPermissionMetadataAuthMap,
         }),
-        MakeDescriptionField({ authMap: xAuthorizationMetadataAuthMap }),
+        MakeDescriptionField({ authMap: xPermissionMetadataAuthMap }),
         new BoolField({
             columnName: "isRoleForNewUsers",
             defaultValue: false,
@@ -361,9 +411,9 @@ export const xRole = new db3.xTable({
             _customAuth: authorizeBuiltInRoleFlag("isSysAdminRole"),
             allowNull: false,
         }),
-        MakeSortOrderField({ authMap: xAuthorizationMetadataAuthMap }),
-        MakeColorField({ authMap: xAuthorizationMetadataAuthMap }),
-        MakeSignificanceField("significance", RoleSignificance, { authMap: xAuthorizationMetadataAuthMap }),
+        MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
+        MakeColorField({ authMap: xPermissionMetadataAuthMap }),
+        MakeSignificanceField("significance", RoleSignificance, { authMap: xPermissionMetadataAuthMap }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",
             associationForeignIDMember: "permissionId",
@@ -372,7 +422,7 @@ export const xRole = new db3.xTable({
             associationLocalObjectMember: "role",
             associationTableID: "RolePermission",
             foreignTableID: "Permission",
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xPermissionMetadataAuthMap,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
@@ -394,7 +444,7 @@ export const xRole = new db3.xTable({
 export const xUserInstrument = new db3.xTable({
     tableName: "UserInstrument",
     deletePolicy: "hard",
-    tableAuthMap: xUserTableAuthMap_R_EManagers,
+    tableAuthMap: xUserTableAuthMap,
     getSelectionArgs: (): Prisma.UserInstrumentDefaultArgs => {
         return UserInstrumentArgs;
     },
@@ -410,22 +460,23 @@ export const xUserInstrument = new db3.xTable({
     },
     columns: [
         MakePKfield(),
-        new BoolField({ columnName: "isPrimary", defaultValue: false, authMap: xUserAuthMap_R_EOwn_EManagers, allowNull: false }),
+        new BoolField({ columnName: "isPrimary", defaultValue: false, authMap: xUserBasicProfileAuthMap, allowNull: false }),
         new ForeignSingleField<Prisma.UserInstrumentGetPayload<{}>>({ // tags field should include the foreign object (tag object)
             columnName: "instrument",
             fkidMember: "instrumentId",
             allowNull: false,
             foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserBasicProfileAuthMap,
         }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({ // tags field should include the foreign object (tag object)
             columnName: "user",
             fkidMember: "userId",
             allowNull: false,
             foreignTableID: "user",
+            specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserBasicProfileAuthMap,
         }),
         // don't include local object because of dependencies / redundancy issues
     ]
@@ -458,7 +509,7 @@ const userTagBaseArgs: db3.TableDesc =
         userTagId: { kind: "integer", authorizeAs: "id" },
         ids: { kind: "integerArray", authorizeAs: "id" },
     },
-    tableAuthMap: xUserTableAuthMap_R_ETaxonomyManagers,
+    tableAuthMap: xUserTaxonomyTableAuthMap,
     naturalOrderBy: UserTagNaturalOrderBy,
     getParameterizedWhereClause: (params: UserTagTableParams): (Prisma.UserTagWhereInput[] | false) => {
         const ret: Prisma.UserTagWhereInput[] = [];
@@ -495,18 +546,18 @@ const userTagBaseArgs: db3.TableDesc =
     }),
     columns: [
         MakePKfield(),
-        MakeTitleField("text", { authMap: xUserAuthMap_R_ETaxonomyManagers }),
-        MakeDescriptionField({ authMap: xUserAuthMap_R_ETaxonomyManagers }),
-        MakeSortOrderField({ authMap: xUserAuthMap_R_ETaxonomyManagers }),
-        MakeColorField({ authMap: xUserAuthMap_R_ETaxonomyManagers }),
+        MakeTitleField("text", { authMap: xUserTaxonomyDefinitionAuthMap }),
+        MakeDescriptionField({ authMap: xUserTaxonomyDefinitionAuthMap }),
+        MakeSortOrderField({ authMap: xUserTaxonomyDefinitionAuthMap }),
+        MakeColorField({ authMap: xUserTaxonomyDefinitionAuthMap }),
         new GenericStringField({
             columnName: "cssClass",
             allowNull: true,
             format: "raw",
-            authMap: xUserAuthMap_R_ETaxonomyManagers,
+            authMap: xUserTaxonomyDefinitionAuthMap,
         }),
-        MakeSignificanceField("significance", UserTagSignificance, { authMap: xUserAuthMap_R_ETaxonomyManagers }),
-        new GhostField({ memberName: "userAssignments", authMap: xUserAuthMap_R_ETaxonomyManagers }),
+        MakeSignificanceField("significance", UserTagSignificance, { authMap: xUserTaxonomyDefinitionAuthMap }),
+        new GhostField({ memberName: "userAssignments", authMap: xUserTaxonomyDefinitionAuthMap }),
     ]
 };
 
@@ -563,7 +614,10 @@ export const xUserTagAssignment = new db3.xTable({
     tableName: "UserTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
-    tableAuthMap: xUserTableAuthMap_R_EManagers,
+    tableAuthMap: {
+        ...xUserTableAuthMap,
+        EditOwn: Permission.manage_users,
+    },
     getSelectionArgs: (): Prisma.UserTagAssignmentDefaultArgs => {
         return UserTagAssignmentArgs;
     },
@@ -585,7 +639,12 @@ export const xUserTagAssignment = new db3.xTable({
             allowNull: false,
             foreignTableID: "UserTag",
             getQuickFilterWhereClause: (query: string) => false,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserBasicProfileManagerWriteAuthMap,
+        }),
+        new GhostField({
+            memberName: "userId",
+            specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
+            authMap: xUserBasicProfileManagerWriteAuthMap,
         }),
     ]
 });
@@ -593,6 +652,29 @@ export const xUserTagAssignment = new db3.xTable({
 
 
 
+////////////////////////////////////////////////////////////////
+const MakeUserSignInEmailSearchField = () => {
+    const field = new GhostField({
+        memberName: "signInEmailSearch",
+        authMap: xUserSignInMetadataAuthMap,
+    });
+
+    // compile-time type safety for the sql filter.
+    const STATIC_CHECK: Prisma.UserSignInMethodScalarWhereInput = {
+        type: { equals: 'email' },
+        identifier: { contains: '' },
+        userId: { equals: 0 },
+    };
+
+    field.SqlGetQuickFilterElementsForToken = (token: string): string => `EXISTS (
+        SELECT 1
+        FROM UserSignInMethod signInMethod
+        WHERE signInMethod.userId = P.id
+          AND signInMethod.type = 'email'
+          AND signInMethod.identifier LIKE '%${MysqlEscape(token)}%'
+    )`;
+    return field;
+};
 
 ////////////////////////////////////////////////////////////////
 export interface UserTablParams {
@@ -612,7 +694,7 @@ const userBaseArgs: db3.TableDesc = {
         userId: { kind: "integer", authorizeAs: "id" },
         userIds: { kind: "integerArray", authorizeAs: "id" },
     },
-    tableAuthMap: xUserTableAuthMap_R_EManagers_SysadminInsert,
+    tableAuthMap: xUserTableAuthMap_SysadminInsert,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
         pk: row.id,
@@ -636,38 +718,38 @@ const userBaseArgs: db3.TableDesc = {
         return ret;
     },
     columns: [
-        MakePKfield(),
-        MakeIsDeletedField({ authMap: xAuthorizationMetadataAuthMap }),
-        MakeCreatedAtField(),
+        MakePKfield({ isRowOwner: true }),
+        MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
+        MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
         new GenericStringField({
             columnName: "name",
             allowNull: false,
             format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserBasicProfileAuthMap,
         }),
         new GenericStringField({
             columnName: "email",
             allowNull: false,
             format: "email",
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xUserEmailAuthMap,
         }),
         new GenericStringField({
             columnName: "phone",
             allowNull: true,
             format: "plain",
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserContactInfoAuthMap,
         }),
         new GenericStringField({
             columnName: "cssClass",
             allowNull: true,
             format: "raw",
-            authMap: xUserAuthMap_R_ETaxonomyManagers,
+            authMap: xUserPresentationMetadataAuthMap,
         }),
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xUserOperationalMetadataAuthMap,
             allowNull: false,
         }),
         new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
@@ -675,7 +757,7 @@ const userBaseArgs: db3.TableDesc = {
             allowNull: true,
             fkidMember: "roleId",
             foreignTableID: "Role",
-            authMap: xAuthorizationMetadataAuthMap,
+            authMap: xUserOperationalMetadataAuthMap,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 OR: [
                     { name: { contains: query } },
@@ -691,7 +773,7 @@ const userBaseArgs: db3.TableDesc = {
             associationLocalObjectMember: "user",
             associationTableID: "UserInstrument",
             foreignTableID: "Instrument",
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserBasicProfileAuthMap,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
         }),
@@ -703,7 +785,7 @@ const userBaseArgs: db3.TableDesc = {
             associationLocalObjectMember: "user",
             associationTableID: "UserTagAssignment",
             foreignTableID: "UserTag",
-            authMap: xUserAuthMap_R_EManagers, // don't allow editing your own tags; they're used for things like invites etc so only for managers.
+            authMap: xUserBasicProfileManagerWriteAuthMap, // tags affect invitations, so owners may view but only managers may edit them.
             getQuickFilterWhereClause: (query: string): Prisma.UserWhereInput => ({
                 tags: {
                     some: {
@@ -722,6 +804,8 @@ const userBaseArgs: db3.TableDesc = {
         }), // column: tags
 
         new GhostField({ memberName: "signInMethods", _customAuth: denyGenericUserAuthenticationField }),
+        new GhostField({ memberName: "signInMethodSummary", authMap: xUserSignInMetadataAuthMap }),
+        MakeUserSignInEmailSearchField(),
         new GhostField({ memberName: "mergedIntoUserId", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "mergedAt", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
@@ -819,4 +903,3 @@ export class VisiblePermissionField extends ForeignSingleField<PermissionPayload
 export const MakeVisiblePermissionField = (args: db3.DB3AuthSpec) => (
     new VisiblePermissionField(args)
 );
-

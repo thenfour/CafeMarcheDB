@@ -185,7 +185,7 @@ describe("band timezone validation in the raw DB3 setting editor", () => {
 })
 
 it("keeps generic write paths restricted to sysadmins even for branding managers", async () => {
-  const permissions = [Permission.login, Permission.basic_trust, Permission.manage_site_branding]
+  const permissions = [Permission.login, Permission.manage_site_branding]
   const manager = createAuthorizationTestUser("normal", { id: 711, permissions })
   authorizationTestDb.reset({ user: [manager], setting: [originalSetting], change: [] })
   const { ctx } = createAuthorizationPersona("normal", { id: manager.id, permissions })

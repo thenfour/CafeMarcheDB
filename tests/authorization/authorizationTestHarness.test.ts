@@ -343,7 +343,14 @@ describe("BA-A001 generic DB3 request validation", () => {
 
 describe("BA-A002 generic DB3 query authorization", () => {
   const sysadmin = createAuthorizationTestUser("sysadmin", { id: 1 })
-  const normal = createAuthorizationTestUser("normal", { id: 2 })
+  const normal = createAuthorizationTestUser("normal", {
+    id: 2,
+    permissions: [
+      Permission.login,
+      Permission.view_users_basic_info,
+      Permission.manage_users,
+    ],
+  })
   const activeTarget = createAuthorizationTestUser("normal", { id: 3 })
   const deletedTarget = createAuthorizationTestUser("normal", { id: 4, isDeleted: true })
 
@@ -559,7 +566,6 @@ describe("BA-A002 generic DB3 query authorization", () => {
   it("does not count rows outside an authenticated user's visibility scope", async () => {
     const visibilityPermissions = [
       Permission.login,
-      Permission.basic_trust,
       Permission.visibility_public,
     ]
     const visibilityUser = createAuthorizationTestUser("normal", {
@@ -703,7 +709,6 @@ describe("BA-A002 generic DB3 query authorization", () => {
 describe("Band Admin soft-delete recovery", () => {
   const recoveryPermissions = [
     Permission.login,
-    Permission.basic_trust,
     Permission.view_songs,
     Permission.manage_songs,
     Permission.recover_songs,
@@ -1287,7 +1292,7 @@ describe("BA-U002 delegated user administration", () => {
 
   const peerRole = makeRole(100, "Peer role", [
     Permission.login,
-    Permission.basic_trust,
+    Permission.view_users_basic_info,
     Permission.visibility_editors,
     Permission.manage_users,
     Permission.manage_user_taxonomy,
@@ -1296,7 +1301,6 @@ describe("BA-U002 delegated user administration", () => {
   ])
   const ordinaryRole = makeRole(101, "Ordinary role", [
     Permission.login,
-    Permission.basic_trust,
   ])
   const unheldRole = makeRole(102, "Unheld role", [Permission.manage_events])
   const protectedRole = makeRole(103, "Protected role", [Permission.sysadmin])
@@ -1507,13 +1511,13 @@ describe("BA-U002 delegated user administration", () => {
     const roleGrantedSysadmin = createAuthorizationTestUser("normal", {
       id: 20,
       isSysAdmin: false,
-      permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
+      permissions: [Permission.login, Permission.sysadmin],
     })
     authorizationTestDb.reset({ user: [roleGrantedSysadmin], role: [ordinaryRole] })
     const findMany = vi.spyOn(authorizationTestDb.getDelegate("role"), "findMany")
     const { ctx } = createAuthorizationPersona("normal", {
       id: roleGrantedSysadmin.id,
-      permissions: [Permission.login, Permission.basic_trust, Permission.sysadmin],
+      permissions: [Permission.login, Permission.sysadmin],
     })
 
     await expect(invokeResolver(db3Query, forgeDb3Query("Role"), ctx)).resolves.toBeDefined()
@@ -1526,7 +1530,7 @@ describe("BA-U002 delegated user administration", () => {
     const ordinaryUser = createAuthorizationTestUser("normal", {
       id: 20,
       isSysAdmin: false,
-      permissions: [Permission.login, Permission.basic_trust, Permission.manage_users],
+      permissions: [Permission.login, Permission.manage_users],
     })
     const visibilityPermission = {
       id: 300,
@@ -1545,7 +1549,7 @@ describe("BA-U002 delegated user administration", () => {
     const update = vi.spyOn(authorizationTestDb.getDelegate("permission"), "update")
     const { ctx } = createAuthorizationPersona("normal", {
       id: ordinaryUser.id,
-      permissions: [Permission.login, Permission.basic_trust, Permission.manage_users],
+      permissions: [Permission.login, Permission.manage_users],
     })
 
     await expect(invokeResolver(
@@ -2121,7 +2125,6 @@ describe("BA-A005 delete authorization", () => {
     id: 4,
     permissions: [
       Permission.login,
-      Permission.basic_trust,
       Permission.manage_events,
       Permission.admin_events,
     ],
@@ -2205,7 +2208,6 @@ describe("BA-A005 delete authorization", () => {
       id: eventAdmin.id,
       permissions: [
         Permission.login,
-        Permission.basic_trust,
         Permission.manage_events,
         Permission.admin_events,
       ],
@@ -2242,7 +2244,6 @@ describe("BA-A005 delete authorization", () => {
       id: eventAdmin.id,
       permissions: [
         Permission.login,
-        Permission.basic_trust,
         Permission.manage_events,
         Permission.admin_events,
       ],

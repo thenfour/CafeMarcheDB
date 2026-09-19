@@ -28,7 +28,6 @@ import { invokeResolver } from "./support/resolverHarness"
 
 const permissions = [
   Permission.login,
-  Permission.basic_trust,
   Permission.view_songs,
   Permission.view_files,
   Permission.view_wiki_pages,

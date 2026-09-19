@@ -53,23 +53,31 @@ export type AuthorizationTestUser = {
 
 const personaPermissions: Record<Exclude<AuthorizationPersona, "public">, Permission[]> = {
   limited: [Permission.login],
-  normal: [Permission.login, Permission.basic_trust],
-  editor: [Permission.login, Permission.basic_trust, Permission.visibility_editors],
+  normal: [Permission.login, Permission.search_users, Permission.view_users_basic_info],
+  editor: [
+    Permission.login,
+    Permission.visibility_editors,
+    Permission.search_users,
+    Permission.view_users_basic_info,
+  ],
   moderator: [
     Permission.login,
-    Permission.basic_trust,
     Permission.visibility_editors,
     Permission.manage_users,
+    Permission.search_users,
+    Permission.view_users_basic_info,
+    Permission.view_user_contact_info,
   ],
   bandAdmin: [
     Permission.login,
-    Permission.basic_trust,
     Permission.visibility_editors,
     Permission.manage_users,
     Permission.manage_user_taxonomy,
     Permission.deactivate_users,
     Permission.assign_user_roles,
+    Permission.search_users,
     Permission.view_users_basic_info,
+    Permission.view_user_contact_info,
   ],
   sysadmin: Object.values(Permission).filter(permission => permission !== Permission.never_grant),
 }

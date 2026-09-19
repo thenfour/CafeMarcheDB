@@ -16,8 +16,8 @@ import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
 // Instrument management has one administrative surface and one capability.
 export const xInstrumentAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.basic_trust,
-    PostQuery: Permission.basic_trust,
+    PostQueryAsOwner: Permission.login,
+    PostQuery: Permission.login,
     PreMutateAsOwner: Permission.admin_instruments,
     PreMutate: Permission.admin_instruments,
     PreInsert: Permission.admin_instruments,
@@ -25,8 +25,8 @@ export const xInstrumentAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
 
 
 export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.basic_trust,
-    View: Permission.basic_trust,
+    ViewOwn: Permission.login,
+    View: Permission.login,
     EditOwn: Permission.admin_instruments,
     Edit: Permission.admin_instruments,
     Insert: Permission.admin_instruments,
