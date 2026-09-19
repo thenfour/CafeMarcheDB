@@ -116,6 +116,7 @@ const DialogUxExamples = () => {
                 <li>Scroll the body: the title and actions should stay still.</li>
                 <li>Dismiss and reopen the keyboard in portrait and landscape.</li>
                 <li>Repeat while the site media player bar is visible.</li>
+                <li>With a real playable track, use the media transport and seek/volume controls while a dialog is open; the player must remain fully interactive.</li>
                 <li>Open the menu-launch test, close its dialog, and verify the page remains interactive.</li>
             </ul>
             <Typography variant="h6" component="h2" sx={{ mt: 2 }}>Live setlist scenario</Typography>

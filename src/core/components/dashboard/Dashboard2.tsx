@@ -39,6 +39,8 @@ import { NavRealm } from "./StaticMenuItems";
 import { ServerStartInfo } from "@/shared/serverStateBase";
 import { DateValue } from "../DateTime/DateTimeComponents";
 import { findBackstageRouteByPattern } from "@/src/auth/shared/backstageRoutes";
+import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
+import { useDialogViewportRect } from "../ResponsiveDialog";
 
 const drawerWidth = 260;
 
@@ -363,6 +365,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
 const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
     const dashboardContext = useDashboardContext();
+    const applicationFrame = useApplicationFrame();
     const router = useRouter();
     const mediaPlayer = useMediaPlayer();
     let forceLogin = false;
@@ -387,6 +390,9 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     const [open, setOpen] = React.useState(false);
+    const applicationBackgroundRef = useApplicationFrameBackgroundRef();
+
+    if (!applicationFrame) throw new Error("Dashboard3 must be rendered inside ApplicationFrameProvider");
 
     const toggleDrawer = event => {
         if (
@@ -399,102 +405,126 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
         setOpen(!open);
     };
 
-    // Grid layout configuration
+    React.useEffect(() => {
+        if (applicationFrame.hasOpenDialogs) setOpen(false);
+    }, [applicationFrame.hasOpenDialogs]);
+
+    // The player is a peer of the main application region. Dialogs are
+    // portaled into the application region and therefore cannot cover or
+    // consume the player's space.
     const isMediaBarVisible = !!(mediaPlayer.currentTrack || mediaPlayer.playlist.length > 0);
-    const mediaBarRef = React.useRef<HTMLDivElement | null>(null);
-
-    React.useLayoutEffect(() => {
-        const element = mediaBarRef.current;
-        if (!element) return;
-
-        const updateMediaBarHeight = () => {
-            document.documentElement.style.setProperty('--media-bar-height', `${element.getBoundingClientRect().height}px`);
-        };
-
-        updateMediaBarHeight();
-        const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateMediaBarHeight);
-        resizeObserver?.observe(element);
-        window.addEventListener("resize", updateMediaBarHeight);
-
-        return () => {
-            resizeObserver?.disconnect();
-            window.removeEventListener("resize", updateMediaBarHeight);
-            document.documentElement.style.removeProperty('--media-bar-height');
-        };
-    }, [isMediaBarVisible]);
-
-    const gridStyles = {
+    const applicationViewport = useDialogViewportRect(true);
+    const viewportRootStyles = {
+        position: 'fixed',
+        inset: 0,
+        overflow: 'hidden',
+    };
+    const frameStyles = {
         display: 'grid',
-        height: '100dvh', /* dvh = dynamic viewport height; doesn' let browser chrome hide media bar */
-        width: '100%',
-        gridTemplateRows: isMediaBarVisible ? 'auto 1fr auto' : 'auto 1fr 0fr', // AppBar, Content, MediaBar (footer)
-        gridTemplateColumns: isMdUp ? `${drawerWidth}px 1fr` : '1fr', // Sidebar, Main (desktop only)
-        gridTemplateAreas: isMdUp
-            ? `"appbar appbar"
-               "sidebar content"
-               "mediabar mediabar"`
-            : `"appbar"
-               "content"
-               "mediabar"`,
+        position: 'absolute',
+        top: applicationViewport?.top ?? 0,
+        left: applicationViewport?.left ?? 0,
+        height: applicationViewport?.height ?? '100dvh',
+        width: applicationViewport?.width ?? '100vw',
+        minWidth: 0,
+        minHeight: 0,
+        gridTemplateRows: isMediaBarVisible ? 'minmax(0, 1fr) auto' : 'minmax(0, 1fr) 0fr',
+        gridTemplateAreas: '"application" "mediabar"',
         gap: 0,
         transition: 'grid-template-rows 0.25s cubic-bezier(.4, 0, .2, 1)',
     };
+    const applicationGridStyles = {
+        display: 'grid',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+        minHeight: 0,
+        gridTemplateRows: 'auto minmax(0, 1fr)',
+        gridTemplateColumns: isMdUp ? `${drawerWidth}px 1fr` : '1fr', // Sidebar, Main (desktop only)
+        gridTemplateAreas: isMdUp
+            ? `"appbar appbar"
+               "sidebar content"`
+            : `"appbar"
+               "content"`,
+        gap: 0,
+    };
 
     return (
-        <Box sx={gridStyles}>
-            {/* AppBar */}
-            <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer} />
+        <Box sx={viewportRootStyles} className="ApplicationFrameViewportRoot">
+            <Box sx={frameStyles} className="ApplicationFrame">
+                <Box
+                    sx={{ gridArea: 'application', position: 'relative', minWidth: 0, minHeight: 0 }}
+                    className="ApplicationFrameMainRegion"
+                >
+                    <Box
+                        ref={applicationBackgroundRef}
+                        sx={applicationGridStyles}
+                        className="ApplicationFrameBackground"
+                    >
+                        {/* AppBar */}
+                        <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer} />
 
-            {/* Sidebar */}
-            <SideMenu
-                navRealm={navRealm}
-                open={open}
-                onClose={() => setOpen(false)}
-                variant={isMdUp ? "permanent" : "temporary"}
-                drawerWidth={drawerWidth}
-                theme={theme}
-            />
+                        {/* Sidebar */}
+                        <SideMenu
+                            navRealm={navRealm}
+                            open={open}
+                            onClose={() => setOpen(false)}
+                            variant={isMdUp ? "permanent" : "temporary"}
+                            drawerWidth={drawerWidth}
+                            theme={theme}
+                        />
 
-            {/* Main Content */}
-            <Box
-                sx={{
-                    gridArea: 'content',
-                    overflow: 'auto',
-                    backgroundColor: theme.palette.background.default,
-                    padding: theme.spacing(3)
-                }}
-                className="mainContentBackdrop"
-                id="scrollableDiv"
-            >
-                <AdminInspectObject label="DashboardCtx" src={dashboardContext} />
+                        {/* Main Content */}
+                        <Box
+                            sx={{
+                                gridArea: 'content',
+                                minWidth: 0,
+                                minHeight: 0,
+                                overflow: 'auto',
+                                backgroundColor: theme.palette.background.default,
+                                padding: theme.spacing(3)
+                            }}
+                            className="mainContentBackdrop"
+                            id="scrollableDiv"
+                        >
+                            <AdminInspectObject label="DashboardCtx" src={dashboardContext} />
 
-                <React.Suspense>
-                    {forceLogin ? <LoginSignup /> : <>
-                        {children}
-                    </>}
-                </React.Suspense>
-            </Box>
+                            <React.Suspense>
+                                {forceLogin ? <LoginSignup /> : <>
+                                    {children}
+                                </>}
+                            </React.Suspense>
+                        </Box>
+                    </Box>
 
-            {/* Media Player Footer */}
-            <Box
-                ref={mediaBarRef}
-                className={`mediaPlayerBarContainer${isMediaBarVisible
-                    ? ' mediaPlayerBarContainer--visible'
-                    : ''
-                    }`}
-                sx={{
-                    gridArea: 'mediabar',
-                    zIndex: 9999, // Must be usable even when dialogs are open
-                    '& .mediaPlayerBar': {
-                        position: 'relative !important',
-                        left: 'auto !important',
-                        right: 'auto !important',
-                        bottom: 'auto !important',
-                        pointerEvents: 'auto !important',
-                    }
-                }}
-            >
-                <MediaPlayerBar mediaPlayer={mediaPlayer} />
+                    <Box
+                        ref={applicationFrame.dialogHostRef}
+                        className="ApplicationFrameDialogHost"
+                        data-application-dialog-host
+                        sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            overflow: 'hidden',
+                            pointerEvents: 'none',
+                            zIndex: theme.zIndex.modal,
+                        }}
+                    />
+                </Box>
+
+                {/* Media Player Footer */}
+                <Box
+                    className={`mediaPlayerBarContainer${isMediaBarVisible
+                        ? ' mediaPlayerBarContainer--visible'
+                        : ''
+                        }`}
+                    sx={{
+                        gridArea: 'mediabar',
+                        minWidth: 0,
+                        minHeight: 0,
+                    }}
+                >
+                    <MediaPlayerBar mediaPlayer={mediaPlayer} />
+                </Box>
             </Box>
         </Box>
     );
@@ -512,17 +542,19 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     return (
         <Box className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} cmdb_env_${process.env.NODE_ENV}`}>
             <DashboardContextProvider>
-                <AppContextMarker name="bs">
-                    <ConfirmProvider>
-                        <MessageBoxProvider>
-                            <MediaPlayerProvider>
-                                <Dashboard3 navRealm={navRealm}>
-                                    {children}
-                                </Dashboard3>
-                            </MediaPlayerProvider>
-                        </MessageBoxProvider>
-                    </ConfirmProvider>
-                </AppContextMarker>
+                <ApplicationFrameProvider>
+                    <AppContextMarker name="bs">
+                        <ConfirmProvider>
+                            <MessageBoxProvider>
+                                <MediaPlayerProvider>
+                                    <Dashboard3 navRealm={navRealm}>
+                                        {children}
+                                    </Dashboard3>
+                                </MediaPlayerProvider>
+                            </MessageBoxProvider>
+                        </ConfirmProvider>
+                    </AppContextMarker>
+                </ApplicationFrameProvider>
             </DashboardContextProvider>
         </Box>
     );

@@ -4,6 +4,11 @@ import { createRoot, Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CMDialog, useDialogAfterMenuClose } from "src/core/components/CMDialog";
+import {
+    ApplicationFrameProvider,
+    useApplicationFrame,
+    useApplicationFrameBackgroundRef,
+} from "src/core/components/dashboard/ApplicationFrameContext";
 
 class TestVisualViewport extends EventTarget {
     offsetTop = 0;
@@ -27,6 +32,7 @@ beforeEach(() => {
 
 afterEach(async () => {
     await act(async () => root.unmount());
+    vi.restoreAllMocks();
     document.body.replaceChildren();
     if (originalViewport) Object.defineProperty(window, "visualViewport", originalViewport);
     else Reflect.deleteProperty(window, "visualViewport");
@@ -92,5 +98,82 @@ describe("CMDialog layout", () => {
 
         await act(async () => document.querySelector<HTMLButtonElement>("#exited")!.click());
         expect(document.querySelector("#state")?.textContent).toBe("false:true");
+    });
+
+    it("uses the application frame while leaving its media region interactive", async () => {
+        vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function () {
+            if (this.hasAttribute("data-application-dialog-host")) {
+                return {
+                    x: 0,
+                    y: 18,
+                    top: 18,
+                    right: 390,
+                    bottom: 618,
+                    left: 0,
+                    width: 390,
+                    height: 600,
+                    toJSON: () => undefined,
+                };
+            }
+            return {
+                x: 0,
+                y: 0,
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                width: 0,
+                height: 0,
+                toJSON: () => undefined,
+            };
+        });
+
+        const FrameContents = () => {
+            const frame = useApplicationFrame()!;
+            const backgroundRef = useApplicationFrameBackgroundRef();
+            const [dialogOpen, setDialogOpen] = React.useState(true);
+            return React.createElement(React.Fragment, null,
+                React.createElement("div", { id: "application-background", ref: backgroundRef }, "Page"),
+                React.createElement("div", { id: "dialog-host", ref: frame.dialogHostRef, "data-application-dialog-host": true }),
+                React.createElement("button", { id: "media-control" }, "Pause"),
+                React.createElement("output", { id: "dialog-state" }, String(frame.hasOpenDialogs)),
+                React.createElement(CMDialog, {
+                    open: dialogOpen,
+                    title: "Frame dialog",
+                    transitionDuration: 0,
+                    actions: React.createElement("button", { id: "close-frame-dialog", onClick: () => setDialogOpen(false) }, "Save"),
+                }, React.createElement("div", null, "Content")),
+            );
+        };
+
+        await act(async () => root.render(React.createElement(
+            ApplicationFrameProvider,
+            null,
+            React.createElement(FrameContents),
+        )));
+
+        const host = document.querySelector("#dialog-host")!;
+        const dialogRoot = host.querySelector<HTMLElement>(".MuiDialog-root")!;
+        const background = document.querySelector("#application-background")!;
+        const mediaControl = document.querySelector<HTMLButtonElement>("#media-control")!;
+
+        expect(dialogRoot).not.toBeNull();
+        expect(dialogRoot.parentElement).toBe(host);
+        expect(window.getComputedStyle(dialogRoot).position).toBe("absolute");
+        expect(window.getComputedStyle(dialogRoot.querySelector(".MuiBackdrop-root")!).position).toBe("absolute");
+        expect(dialogRoot.style.getPropertyValue("--cm-dialog-viewport-top")).toBe("0px");
+        expect(dialogRoot.style.getPropertyValue("--cm-dialog-viewport-height")).toBe("600px");
+        expect(background.hasAttribute("inert")).toBe(true);
+        expect(document.querySelector("#dialog-state")?.textContent).toBe("true");
+
+        await act(async () => mediaControl.focus());
+        expect(document.activeElement).toBe(mediaControl);
+
+        await act(async () => {
+            document.querySelector<HTMLButtonElement>("#close-frame-dialog")!.click();
+            await new Promise(resolve => setTimeout(resolve, 0));
+        });
+        expect(document.querySelector("#dialog-state")?.textContent).toBe("false");
+        expect(background.hasAttribute("inert")).toBe(false);
     });
 });
