@@ -14,6 +14,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #679 user administration page usable by band admin
   - #683 deactivated users can now be reactivated by a sysadmin
   - #292 fixed: setlists could show songs you're not allowed to see
+  - #693 permission cleanups, search hardening
 - Text editor
   - #634 Text editor auto-height support
   - #633 Side-by-side preview mode
@@ -37,7 +38,7 @@ is to be ignored; v3.0.1 is considered the next production release after v2.03
   - #626 fixed: Song search results sometimes didn't show the footer when it was supposed to.
   - #638 Setlists now display faint value bars for BPM
   - #673 fixed: Site branding could sometimes be bypassed (favicon / error boundaries)
-  - #663 Users can now have multiple signin methods (google + email/password, multiple emails...),
+  - #663 #695 Users can now have multiple signin methods (google + email/password, multiple emails...),
     and signin email can be different than displayed contact email.
   - #671 You can now hide from your calendar feed events that you responded "not going", and hide events you're not invited to.
   - #686 #694 UI improvements / tweaks

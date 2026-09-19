@@ -45,6 +45,16 @@ async function SyncPermissionsTable() {
             console.log(` -> INSERTED Permission ${definition.key}.`);
         }
     }
+
+    // check for retired permissions in the db.
+    const retiredPermissions = dbPermissions.filter(dbp => !gPermissionRegistry.some(def => def.key === dbp.name));
+    for (const retired of retiredPermissions) {
+        console.log(`Retired permission found in the database: ${retired.name}`);
+        await db.permission.delete({
+            where: { id: retired.id },
+        });
+        console.log(` -> DELETED retired permission ${retired.name} from the database.`);
+    }
 }
 
 // ensure default roles are populated

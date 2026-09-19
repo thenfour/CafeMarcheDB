@@ -1,5 +1,5 @@
 import type { BlitzLayout } from "@blitzjs/next";
-import { Backdrop, CircularProgress } from "@mui/material";
+import { Backdrop } from "@mui/material";
 import Head from "next/head";
 import React, { Suspense } from "react";
 import { useBrand } from "shared/brandConfig";
@@ -8,6 +8,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { LoginSignup } from "../LoginSignupForm";
 import Dashboard2 from "./Dashboard2";
 import { NavRealm } from "./StaticMenuItems";
+import { DashboardLoadingStatus } from "../../connectivity/ConnectionHealthComponents";
 
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
@@ -39,7 +40,7 @@ const DashboardLayout: BlitzLayout<{
 
         const fallback =
             <Backdrop open={true} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-                <CircularProgress color="inherit" />
+                <DashboardLoadingStatus />
             </Backdrop>
             ;
 

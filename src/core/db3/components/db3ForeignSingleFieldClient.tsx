@@ -474,7 +474,7 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
         }, {
             ...gQueryOptions.default,
             suspense: args.suspense ?? true,
-            useErrorBoundary: args.suspense ?? true,
+            ...(args.suspense === false ? { useErrorBoundary: false } : {}),
             keepPreviousData: args.suspense === false,
         });
         this.items = (result?.items || []) as TForeign[];

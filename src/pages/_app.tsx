@@ -1,6 +1,7 @@
 import { AppProps, BlitzPage, ErrorBoundary, ErrorFallbackProps } from "@blitzjs/next";
 import { CacheProvider, EmotionCache } from "@emotion/react";
-import { Box, CssBaseline, Typography } from "@mui/material";
+import PowerOffIcon from "@mui/icons-material/PowerOff";
+import { Box, Button, CssBaseline, Typography } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 //import CssBaseline from "@material-ui/core/CssBaseline";
 import { ThemeProvider, createTheme, PaletteColorOptions, SimplePaletteColorOptions } from '@mui/material/styles';
@@ -8,7 +9,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { AuthenticationError, AuthorizationError } from "blitz";
 import React from "react";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { withBlitz } from "src/blitz-client";
+import { queryClient, withBlitz } from "src/blitz-client";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
@@ -19,6 +20,9 @@ import { BrandContext, useBrand } from "@/shared/brandConfig";
 import 'src/styles/main.css';
 import '../../public/frontpage.css';
 import { DbBrandConfig, DefaultDbBrandConfig } from "@/shared/brandConfigBase";
+import { ConnectionHealthMonitor } from "src/core/connectivity/ConnectionHealthComponents";
+import { isConnectivityError } from "src/core/connectivity/connectionHealth";
+import { useQueryErrorResetBoundary } from "@blitzjs/rpc";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -36,25 +40,36 @@ export interface MyAppProps extends Omit<AppProps<SharedPageProps>, "Component">
 
 
 export function getRootErrorPresentation(error: Error & { statusCode?: number }) {
+  if (isConnectivityError(error)) {
+    return { statusCode: null, title: "The server cannot be reached", isConnectivityFailure: true };
+  }
   if (error instanceof AuthenticationError) {
-    return { statusCode: error.statusCode || 401, title: "You are not authenticated" };
+    return { statusCode: error.statusCode || 401, title: "You are not authenticated", isConnectivityFailure: false };
   }
   if (error instanceof AuthorizationError) {
     return {
       statusCode: error.statusCode || 403,
       title: "Sorry, you are not authorized to access this",
+      isConnectivityFailure: false,
     };
   }
   return {
     statusCode: error?.statusCode || 400,
     title: error.message || error.name || "An unexpected error occurred",
+    isConnectivityFailure: false,
   };
 }
 
-function RootErrorFallback({ error }: ErrorFallbackProps) {
+function RootErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
   const brand = useBrand();
-  const { statusCode, title } = getRootErrorPresentation(error);
-  const pageTitle = `${brand.siteTitlePrefix}${statusCode}: ${title}`;
+  const { statusCode, title, isConnectivityFailure } = getRootErrorPresentation(error);
+  const pageTitle = `${brand.siteTitlePrefix}${statusCode ? `${statusCode}: ` : ""}${title}`;
+
+  React.useEffect(() => {
+    if (!isConnectivityFailure) return;
+    window.addEventListener("online", resetErrorBoundary);
+    return () => window.removeEventListener("online", resetErrorBoundary);
+  }, [isConnectivityFailure, resetErrorBoundary]);
 
   return <>
     <Head><title>{pageTitle}</title></Head>
@@ -83,14 +98,21 @@ function RootErrorFallback({ error }: ErrorFallbackProps) {
           {brand.siteTitle && <Typography variant="h5">{brand.siteTitle}</Typography>}
         </Box>}
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Typography variant="h5" component="h1" sx={{
+          {isConnectivityFailure && <PowerOffIcon sx={{ fontSize: 32, marginRight: 2 }} />}
+          {statusCode && <Typography variant="h5" component="h1" sx={{
             paddingRight: 2.5,
             marginRight: 2.5,
             borderRight: "1px solid",
             borderColor: "divider",
-          }}>{statusCode}</Typography>
-          <Typography variant="body1">{title}</Typography>
+          }}>{statusCode}</Typography>}
+          <Typography variant={statusCode ? "body1" : "h5"} component={statusCode ? "p" : "h1"}>{title}</Typography>
         </Box>
+        {isConnectivityFailure && <>
+          <Typography variant="body1" sx={{ marginTop: 2 }}>
+            This page will try again when the connection returns. Previously loaded pages remain available while their tabs stay open.
+          </Typography>
+          <Button variant="contained" onClick={resetErrorBoundary} sx={{ marginTop: 3 }}>Try again</Button>
+        </>}
       </Box>
     </Box>
   </>;
@@ -102,6 +124,7 @@ function getMainPaletteColor(color: PaletteColorOptions | undefined): SimplePale
 
 // in order to emit css from the theme, this must be a CHILD of ThemeProvider.
 function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pageProps">) {
+  const queryErrorResetBoundary = useQueryErrorResetBoundary();
   const getLayout = Component.getLayout || ((page: React.ReactElement) => page)
   // Persist brand across client navigations; only update when a new brand is provided
   const [brand, setBrand] = React.useState<DbBrandConfig>(pageProps?.brand ?? DefaultDbBrandConfig)
@@ -161,9 +184,10 @@ function ThemedApp({ Component, pageProps }: Pick<MyAppProps, "Component" | "pag
             --contrast-text: ${theme.palette.primary.contrastText};
           }`}</style>
         </Head>
+        <ConnectionHealthMonitor queryClient={queryClient} />
         <SnackbarProvider>
           <BrandContext.Provider value={brand}>
-            <ErrorBoundary FallbackComponent={RootErrorFallback}>
+            <ErrorBoundary FallbackComponent={RootErrorFallback} onReset={queryErrorResetBoundary.reset}>
               {getLayout(<Component {...pageProps} />)}
             </ErrorBoundary>
           </BrandContext.Provider>

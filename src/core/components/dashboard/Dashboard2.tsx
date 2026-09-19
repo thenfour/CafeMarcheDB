@@ -41,6 +41,7 @@ import { DateValue } from "../DateTime/DateTimeComponents";
 import { findBackstageRouteByPattern } from "@/src/auth/shared/backstageRoutes";
 import { ApplicationFrameProvider, useApplicationFrame, useApplicationFrameBackgroundRef } from "./ApplicationFrameContext";
 import { useDialogViewportRect } from "../ResponsiveDialog";
+import { ConnectionStatusIndicator } from "../../connectivity/ConnectionHealthComponents";
 
 const drawerWidth = 260;
 
@@ -351,6 +352,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                 )}
 
                 {(session.userId != null) && <>
+                    <ConnectionStatusIndicator />
                     <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
                         <AppBarUserIcon_Desktop />
                     </Box>

@@ -90,7 +90,13 @@ vi.mock("next/head", async () => {
     default: ({ children }: React.PropsWithChildren) => ReactModule.createElement(ReactModule.Fragment, null, children),
   }
 })
-vi.mock("src/blitz-client", () => ({ withBlitz: (component: any) => component }))
+vi.mock("src/blitz-client", () => ({
+  withBlitz: (component: any) => component,
+  queryClient: {
+    getQueryCache: () => ({ subscribe: () => () => undefined }),
+    getMutationCache: () => ({ subscribe: () => () => undefined }),
+  },
+}))
 vi.mock("src/core/components/SnackbarContext", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react")
   return {
@@ -109,6 +115,15 @@ afterEach(() => {
 })
 
 describe("application branding lifecycle", () => {
+  it("does not present a transport failure as HTTP 400", async () => {
+    const { getRootErrorPresentation } = await import("src/pages/_app")
+    expect(getRootErrorPresentation(new TypeError("NetworkError when attempting to fetch resource."))).toEqual({
+      statusCode: null,
+      title: "The server cannot be reached",
+      isConnectivityFailure: true,
+    })
+  })
+
   it("keeps the loaded brand when a page error is followed by client navigation", async () => {
     const { MyApp } = await import("src/pages/_app")
     const { useBrand } = await import("shared/brandConfig")

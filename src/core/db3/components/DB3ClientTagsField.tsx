@@ -498,7 +498,7 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
         }, {
             ...gQueryOptions.default,
             suspense: args.suspense ?? true,
-            useErrorBoundary: args.suspense ?? true,
+            ...(args.suspense === false ? { useErrorBoundary: false } : {}),
             keepPreviousData: args.suspense === false,
         });
         this.options = (result?.items || []).map(item => this.args.spec.typedSchemaColumn.createMockAssociation(args.row, item));

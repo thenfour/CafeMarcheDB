@@ -507,7 +507,11 @@ export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T
         cmdbQueryContext: `fetchAsync for ${args.schema.tableName} / ${args.schema.tableID}`,
     };
 
-    const [queryRet, blitzQueryStatus] = useQuery(db3queries, queryInput, { ...(args.queryOptions || gQueryOptions.default), suspense: false });
+    const [queryRet, blitzQueryStatus] = useQuery(db3queries, queryInput, {
+        ...(args.queryOptions || gQueryOptions.default),
+        suspense: false,
+        useErrorBoundary: false,
+    });
 
     let dbItems: TAnyModel[] = [];
     let rowCount = 0;

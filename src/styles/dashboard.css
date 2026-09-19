@@ -8,3 +8,37 @@
     padding-left: 4px;
     padding-right: 10px;
 }
+
+@keyframes connectionStatusPulse {
+
+    0% {
+        opacity: 1;
+    }
+
+    49% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    99% {
+        opacity: 0.5;
+    }
+}
+
+.connectionStatusIndicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #f54;
+    margin: 0 8px;
+    animation: connectionStatusPulse 1.3s infinite;
+}
+
+.connectionStatusIndicator svg {
+    --icon-size: 30px;
+    width: var(--icon-size);
+    height: var(--icon-size);
+}

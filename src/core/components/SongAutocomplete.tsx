@@ -26,6 +26,7 @@ export const SongAutocomplete = ({ value, onChange, fadedSongIds = [], autofocus
 
     const [fullResult, _] = useQuery(getFilteredSongs, { id: pendingSelection?.id || -1 }, {
         suspense: false,
+        useErrorBoundary: false,
     });
 
     const handleSelection = React.useCallback((selection: QuickSearchItemMatch) => {

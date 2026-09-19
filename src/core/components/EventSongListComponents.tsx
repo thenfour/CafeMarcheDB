@@ -1256,6 +1256,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     }, {
         enabled: songIds.length > 0,
         suspense: false, // #629
+        useErrorBoundary: false,
     });
 
     const rowItems = SetlistAPI.GetRowItems(value);
