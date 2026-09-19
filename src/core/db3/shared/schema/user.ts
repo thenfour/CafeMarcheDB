@@ -804,7 +804,11 @@ const userBaseArgs: db3.TableDesc = {
         }), // column: tags
 
         new GhostField({ memberName: "signInMethods", _customAuth: denyGenericUserAuthenticationField }),
+
+        // this is not a real db column but allows us to attach auth maps to arbitrary
+        // queries like getUserExtraInfo
         new GhostField({ memberName: "signInMethodSummary", authMap: xUserSignInMetadataAuthMap }),
+
         MakeUserSignInEmailSearchField(),
         new GhostField({ memberName: "mergedIntoUserId", _customAuth: denyGenericUserAuthenticationField }),
         new GhostField({ memberName: "mergedAt", _customAuth: denyGenericUserAuthenticationField }),

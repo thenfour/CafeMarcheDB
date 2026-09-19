@@ -179,6 +179,12 @@ input.CMTextInputBase.titleText {
     height: 16px;
 }
 
+.CMChipContainer .CMDivider {
+    margin-left: 10px;
+    margin-right: 10px;
+    border-left: 1px dotted #888;
+    height: 16px;
+}
 
 .CMChip {
     /* requires an .applyColor css class for coloring */

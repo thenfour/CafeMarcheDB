@@ -106,6 +106,13 @@ export const CMChipContainer = (props: React.PropsWithChildren<CMChipContainerPr
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// general-purpose divider for CM containers.
+export const CMDivider: React.FC<{
+    className?: string;
+    style?: React.CSSProperties | undefined;
+}> = (props) => <div className={`CMDivider ${props.className || ""}`} style={props.style} />;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMStandardDBChipModel {
     color?: null | string | ColorPaletteEntry;
     iconName?: string | null;

@@ -1,46 +1,52 @@
 import { useQuery } from "@blitzjs/rpc";
 import getUserExtraInfo from "../../db3/queries/getUserExtraInfo";
 import { GoogleIconSmall, NameValuePair } from "../CMCoreComponents2";
-import { CMChip, CMChipContainer } from "../CMChip";
-
-
+import { Email, Google } from "@mui/icons-material";
+import { Tooltip } from "@mui/material";
 
 type UserIdentityIndicatorProps = {
     // whether to show the password indicator. for user search list items,
     // we only show a google badge / non-password-identity indicator.
-
-    showPassword?: boolean;
+    //showPassword?: boolean;
     user?: { id: number };
     userId?: number;
 };
 
-export const UserIdentityIndicator = ({ showPassword = true, ...props }: UserIdentityIndicatorProps) => {
+const GoogleIdentityBadge = () => <Tooltip title="Has a Google sign-in"><Google /></Tooltip>;
+const EmailIdentityBadge = () => <Tooltip title="Has an email sign-in"><Email /></Tooltip>;
+
+const IdentityIndicator = ({ signinMethods }: { signinMethods: string[] }) => {
+    return signinMethods.sort((a, b) => a.localeCompare(b)).map(method => {
+        if (method === "google") return <GoogleIdentityBadge key="google" />;
+        if (method === "email") return <EmailIdentityBadge key="email" />;
+        return null;
+    });
+};
+
+export const UserIdentityIndicator = ({ /*showPassword = true,*/ ...props }: UserIdentityIndicatorProps) => {
     const userId = props.user?.id || props.userId;
     if (!userId) {
         return null;
     }
     const [extraInfo, { refetch }] = useQuery(getUserExtraInfo, { userId: userId });
-    return extraInfo.identity === "Google" ? (
-        <GoogleIconSmall />
-    ) : (showPassword ? (<CMChipContainer><CMChip>Password</CMChip></CMChipContainer>) : null);
+
+    return <IdentityIndicator signinMethods={extraInfo.signinMethods} />;
 }
 
 
 export const ProfilePageIdentityControl = ({ userId }: { userId: number }) => {
-    if (!userId) return null;
+    if (!userId) {
+        return null;
+    }
     const [extraInfo, { refetch }] = useQuery(getUserExtraInfo, { userId: userId });
 
-    const haveGoogleIdentity = extraInfo.identity === "Google";
-
-    // if you don't have a google identity there's just not much to show here; don't show anything.
-    if (!haveGoogleIdentity) return null;
+    if (!extraInfo || extraInfo.signinMethods.length < 1) {
+        return null;
+    }
 
     return <NameValuePair
         isReadOnly={false}
-        name={"Identity and login"}
-        value={<div className="googleIdentityControl">
-            <img src="/web_light_rd_na.svg" />
-            <div>You have a Google identity and can sign in with your Google account.</div>
-        </div>}
+        name={"Sign-in"}
+        value={<IdentityIndicator signinMethods={extraInfo.signinMethods} />}
     />;
 }

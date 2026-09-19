@@ -1,11 +1,11 @@
-import { AuthServerPlugin, PrismaStorage, getSession } from "@blitzjs/auth"
+import { AuthServerPlugin, getSession, PrismaStorage } from "@blitzjs/auth"
 import { setupBlitzServer } from "@blitzjs/next"
 import { BlitzLogger, BlitzServerMiddleware } from "blitz"
-import type { IncomingMessage, ServerResponse } from "http"
 import db from "db"
+import type { IncomingMessage, ServerResponse } from "http"
 import { CMDBResolverAuthorize } from "types"
-import { authConfig } from "./blitz-client"
 import { getRequestAuthorization } from "./auth/server/requestAuthorization"
+import { authConfig } from "./blitz-client"
 
 // Used both by Blitz middleware and the Next page adapter in _app.
 export async function getSessionForRequest(req: IncomingMessage, res: ServerResponse) {

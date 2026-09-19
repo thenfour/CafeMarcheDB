@@ -188,7 +188,7 @@ describe("focused user data visibility", () => {
   it("uses login for one's own coarse sign-in type and manage_users for another user", async () => {
     await expect(
       invokeResolver(getUserExtraInfo, { userId: owner.id }, createAuthorizationTestContext(owner)),
-    ).resolves.toEqual({ identity: "Google" })
+    ).resolves.toEqual({ signinMethods: ["google"] })
 
     await expect(
       invokeResolver(getUserExtraInfo, { userId: target.id }, createAuthorizationTestContext(basicViewer)),
@@ -196,7 +196,7 @@ describe("focused user data visibility", () => {
 
     await expect(
       invokeResolver(getUserExtraInfo, { userId: target.id }, createAuthorizationTestContext(userManager)),
-    ).resolves.toEqual({ identity: "Google" })
+    ).resolves.toEqual({ signinMethods: ["google"] })
   })
 
   it("keeps search and basic-view distinct while assigning them to the same default roles", () => {

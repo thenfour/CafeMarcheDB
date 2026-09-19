@@ -28,10 +28,12 @@ import { forgeDb3Query, forgeDb3Update } from "./support/db3RequestBuilders";
 import { invokeResolver } from "./support/resolverHarness";
 
 const permissions = [Permission.login, Permission.search_users, Permission.view_users_basic_info,
-    Permission.view_user_contact_info, Permission.manage_users, Permission.deactivate_users, Permission.recover_users];
+Permission.view_user_contact_info, Permission.manage_users, Permission.deactivate_users, Permission.recover_users];
 const admin = createAuthorizationTestUser("bandAdmin", { id: 801, permissions });
-const target = { ...createAuthorizationTestUser("normal", { id: 802, isDeleted: true }),
-    signInMethods: [{ id: 1, type: "google", identifier: "existing-google-identity" }], hashedPassword: "existing-password-hash" };
+const target = {
+    ...createAuthorizationTestUser("normal", { id: 802, isDeleted: true }),
+    signInMethods: [{ id: 1, type: "google", identifier: "existing-google-identity" }], hashedPassword: "existing-password-hash"
+};
 
 describe("user recovery", () => {
     beforeEach(() => {
@@ -119,7 +121,8 @@ describe("user recovery", () => {
         if (canRecover) {
             const recovered = await invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx);
             expect(recovered.items).toContainEqual(expect.objectContaining({ id: target.id, isDeleted: true }));
-            await expect(invokeResolver(getUserExtraInfo, { userId: target.id }, ctx)).resolves.toEqual({ identity: "Google" });
+            await expect(invokeResolver(getUserExtraInfo, { userId: target.id }, ctx)).resolves
+                .toEqual({ signinMethods: ["google"] });
         } else {
             await expect(invokeResolver(db3queries, forgeDb3Query("User", { includeDeleted: true }), ctx)).rejects.toThrow();
             await expect(invokeResolver(getUserExtraInfo, { userId: target.id }, ctx)).rejects.toThrow();

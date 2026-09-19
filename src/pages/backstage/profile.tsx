@@ -47,7 +47,7 @@ const MainContent = () => {
         },
     });
 
-    const value = client.items[0]! as db3.UserPayload;
+    //const value = client.items[0]! as db3.UserPayload;
 
     const handleSave = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({

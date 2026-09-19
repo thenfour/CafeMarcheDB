@@ -1,15 +1,15 @@
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, AuthorizationError, NotFoundError } from "blitz";
-import db from "db";
+import db, { $Enums } from "db";
 import { Permission } from "shared/permissions";
-import { z } from "zod";
 import { getRequestAuthorization } from "src/auth/server/requestAuthorization";
-import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
+import { z } from "zod";
 import { xUser } from "../db3";
+import { GetAuthorizedTableReadWhere } from "../server/db3ReadPolicy";
 import { createDB3Authorization } from "../shared/db3Authorization";
 
 export interface UserExtraInfo {
-    identity: "Google" | "Password";
+    signinMethods: ($Enums.SignInMethodType)[];
 }
 
 export default resolver.pipe(
@@ -23,16 +23,22 @@ export default resolver.pipe(
             contextDesc: "getUserExtraInfo",
             publicData,
             rowMode: "view",
-            model: { id: args.userId, signInMethodSummary: null },
+            model: {
+                id: args.userId,
+                signInMethodSummary: null, // force inclusion of this field for authorization purposes
+            },
             fallbackOwnerId: null,
         });
         if (!summaryAuthorization.rowIsAuthorized
             || !("signInMethodSummary" in summaryAuthorization.authorizedModel)) {
             throw new AuthorizationError();
         }
+
         const ret = await db.user.findFirst({
             select: {
-                signInMethods: { where: { type: "google" }, select: { id: true }, take: 1 },
+                signInMethods: {
+                    select: { type: true, },
+                },
             },
             where: await GetAuthorizedTableReadWhere({
                 table: xUser,
@@ -42,10 +48,12 @@ export default resolver.pipe(
             }),
         });
 
-        if (!ret) throw new NotFoundError();
+        if (!ret) {
+            throw new NotFoundError();
+        }
 
         return {
-            identity: ret.signInMethods.length > 0 ? "Google" : "Password",
+            signinMethods: ret.signInMethods.map(method => method.type),
         } satisfies UserExtraInfo;
     }
 );

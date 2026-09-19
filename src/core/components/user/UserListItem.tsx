@@ -3,7 +3,7 @@ import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "../../db3/components/IconMap";
 import { SearchResultsRet } from "../../db3/shared/apiTypes";
 import { EnrichedUser } from "../../db3/shared/schema/enrichedUserTypes";
-import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
+import { CMChip, CMChipContainer, CMDivider, CMStandardDBChip } from "../CMChip";
 import { StandardVariationSpec } from "../color/palette";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
@@ -58,7 +58,8 @@ export const UserListItem = (props: UserListItemProps) => {
                             {props.user.role.name}
                         </CMChip>}
                     {canManageUsers && <Suspense>
-                        <UserIdentityIndicator userId={props.user.id} showPassword={false} />
+                        <CMDivider />
+                        <UserIdentityIndicator userId={props.user.id} />
                     </Suspense>}
                 </CMChipContainer>
 

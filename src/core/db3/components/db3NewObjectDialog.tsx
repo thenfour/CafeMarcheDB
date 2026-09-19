@@ -198,31 +198,31 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                 </div>)}
                 <FormControl>
 
-                        {
-                            tableRenderClient.clientColumns.filter(c => {
-                                if (!c.visible) return false;
-                                return (c.schemaTable.authorizeColumnForEdit({
-                                    columnName: c.columnName,
-                                    model: obj,
-                                    publicData,
-                                    fallbackOwnerId: null,// assume model has this.
-                                }));
-                            }).map(column => {
-                                let autoFocus = false;
-                                if (!encounteredAutofocusable && column.isAutoFocusable) {
-                                    encounteredAutofocusable = true;
-                                    autoFocus = true;
-                                }
-                                return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
-                                    key: column.columnName,
-                                    api,
-                                    row: obj,
-                                    autoFocus,
-                                    value: obj[column.columnName],
-                                    validationResult,
-                                })}</React.Fragment>;
-                            })
-                        }
+                    {
+                        tableRenderClient.clientColumns.filter(c => {
+                            if (!c.visible) return false;
+                            return (c.schemaTable.authorizeColumnForEdit({
+                                columnName: c.columnName,
+                                model: obj,
+                                publicData,
+                                fallbackOwnerId: null,// assume model has this.
+                            }));
+                        }).map(column => {
+                            let autoFocus = false;
+                            if (!encounteredAutofocusable && column.isAutoFocusable) {
+                                encounteredAutofocusable = true;
+                                autoFocus = true;
+                            }
+                            return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
+                                key: column.columnName,
+                                api,
+                                row: obj,
+                                autoFocus,
+                                value: obj[column.columnName],
+                                validationResult,
+                            })}</React.Fragment>;
+                        })
+                    }
 
                 </FormControl>
             </CMDialog>
@@ -338,7 +338,9 @@ export interface DB3RowViewerProps {
 
 export const DB3RowViewer = (props: DB3RowViewerProps) => {
     return <div className="DB3RowViewer">
-        {props.tableRenderClient.clientColumns.map((cc, i) => <React.Fragment key={i}>{cc.renderViewer({ key: i, row: props.row, value: props.row[cc.columnName] })}</React.Fragment>)}
+        {props.tableRenderClient.clientColumns.map((cc, i) => <React.Fragment key={i}>
+            {cc.renderViewer({ key: i, row: props.row, value: props.row[cc.columnName] })}
+        </React.Fragment>)}
     </div>;
 };
 
