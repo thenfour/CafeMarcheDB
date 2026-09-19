@@ -30,8 +30,6 @@ const EventsList = () => {
             ],
         }),
         filterModel: {
-            items: [],
-            tableParams,
         },
         paginationModel: {
             page: 0,

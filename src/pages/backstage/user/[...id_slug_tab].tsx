@@ -51,8 +51,6 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
             ],
         }),
         filterModel: {
-            items: [],
-            tableParams: {},
             pks: [userId]
         }
     };

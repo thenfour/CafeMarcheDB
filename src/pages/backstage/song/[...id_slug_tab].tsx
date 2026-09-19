@@ -48,7 +48,6 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
             ],
         }),
         filterModel: {
-            items: [],
             tableParams: {}
         }
     };

@@ -18,7 +18,6 @@ export const AttendanceChipTooltip = (props: AttendanceChipTooltipProps) => {
         schema: db3.xUser,
         filterSpec: {
             pks: userIds,
-            items: [],
         },
         enable: userIds.length > 0,
     });

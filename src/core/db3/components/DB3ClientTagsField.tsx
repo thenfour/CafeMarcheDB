@@ -490,7 +490,6 @@ export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
             tableName: args.spec.typedSchemaColumn.getForeignTableShema().tableName,
             orderBy: undefined,
             filter: {
-                items: [],
                 tableParams: {},
                 quickFilterValues: SplitQuickFilter(args.filterText),
             },

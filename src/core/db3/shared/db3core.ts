@@ -48,8 +48,13 @@ export type MutatorInput = MutatorDelete | MutatorInsert | MutatorUpdate;
 
 ////////////////////////////////////////////////////////////////
 export interface QueryInputBase {
-    tableID: string;
-    tableName: string;
+    table: {
+        // xTable provides these; pass in an xtable.
+        tableName: string;
+        tableID: string;
+    },
+    // tableID: string;
+    // tableName: string;
     orderBy: TAnyModel | undefined;
     filter: CMDBTableFilterModel;
     cmdbQueryContext: string;
@@ -1229,7 +1234,6 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
         publicData,
         includeDeleted,
         filterModel: { // clobber the filter; we don't propagate any filter values through relations for this.
-            items: [],
         }
     });
 

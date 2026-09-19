@@ -5,8 +5,7 @@ export function forgeDb3Query(
   overrides: Partial<QueryRequestInput> = {},
 ): QueryRequestInput {
   return {
-    tableID,
-    tableName: tableID,
+    table: { tableID, tableName: tableID },
     orderBy: undefined,
     filter: { items: [] },
     cmdbQueryContext: "authorization-test-forged-query",

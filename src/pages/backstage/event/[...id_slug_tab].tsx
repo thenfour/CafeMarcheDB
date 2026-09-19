@@ -46,7 +46,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
             ],
         }),
         filterModel: {
-            items: [],
             tableParams: {}
         }
     };

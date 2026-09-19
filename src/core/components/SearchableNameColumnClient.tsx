@@ -26,7 +26,6 @@ export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
         }),
         filterModel: {
             quickFilterValues: [searchQuery],
-            items: [],
         },
         paginationModel: {
             page: 0,

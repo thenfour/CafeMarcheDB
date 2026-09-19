@@ -192,10 +192,8 @@ export const CalExportCore = async ({ currentUser, type, ...args }: CalExportCor
     const { eventsRaw, bandTimeZone } = await db.$transaction(async tx => {
         const bandTimeZone = await loadBandTimeZone(tx);
         const eventsRaw = await queryTable({
-            tableName: table.tableName,
-            tableID: table.tableID,
+            table,
             filter: {
-                items: [],
                 tableParams: eventsTableParams,
             },
             cmdbQueryContext: `CalExportCore`,

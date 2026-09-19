@@ -13,11 +13,9 @@ export default resolver.pipe(
     })),
     async (args, ctx: AuthenticatedCtx): Promise<UserPayload_Name | null> => {
         const result = await DB3QueryCore({
-            tableID: xUser.tableID,
-            tableName: xUser.tableName,
+            table: xUser,
             orderBy: undefined,
             filter: {
-                items: [],
                 tableParams: { userId: args.userId },
             },
             take: 1,

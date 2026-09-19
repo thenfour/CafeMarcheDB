@@ -309,8 +309,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 throw new Error("Paginated DB3 queries require a pagination model.");
             }
             const paginatedQueryInput: db3.PaginatedQueryRequestInput = {
-                tableID: this.args.tableSpec.args.table.tableID,
-                tableName: this.args.tableSpec.args.table.tableName,
+                table: this.args.tableSpec.args.table,
                 orderBy,
                 skip,
                 take,
@@ -348,8 +347,10 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
             console.assert(skip === 0 || skip === undefined);
 
             const queryInput: db3.QueryRequestInput = {
-                tableID: this.args.tableSpec.args.table.tableID,
-                tableName: this.args.tableSpec.args.table.tableName,
+                table: {
+                    tableID: this.args.tableSpec.args.table.tableID,
+                    tableName: this.args.tableSpec.args.table.tableName,
+                },
                 orderBy,
                 take,
                 filter,
@@ -497,8 +498,7 @@ export interface FetchAsyncResult<T> {
 // allows fetching without suspense interaction
 export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T> {
     const queryInput: db3.QueryRequestInput = {
-        tableID: args.schema.tableID,
-        tableName: args.schema.tableName,
+        table: args.schema,
         orderBy: CalculateOrderBy(args.sortModel),
         take: args.take,
         filter: args.filterModel || { items: [] },

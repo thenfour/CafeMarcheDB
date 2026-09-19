@@ -149,7 +149,6 @@ export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => 
         }),
         filterModel: {
             quickFilterValues: [searchQuery],
-            items: [],
         },
         paginationModel: {
             page: 0,

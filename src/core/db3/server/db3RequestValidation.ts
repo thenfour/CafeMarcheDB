@@ -29,7 +29,7 @@ const FilterItemSchema = z.object({
 }).strict();
 
 const FilterModelSchema = z.object({
-    items: z.array(FilterItemSchema).max(MAX_FILTER_ITEMS),
+    items: z.array(FilterItemSchema).max(MAX_FILTER_ITEMS).optional(),
     quickFilterValues: z.array(z.string().max(MAX_QUERY_TEXT_LENGTH)).max(20).optional(),
     pks: z.array(SafeInteger).max(MAX_FILTER_VALUES).optional(),
     tagIds: z.array(SafeInteger).max(MAX_FILTER_VALUES).optional(),
@@ -40,8 +40,10 @@ const OrderBySchema = z.record(z.enum(["asc", "desc"]))
     .refine(value => Object.keys(value).length === 1, "Exactly one order field is required");
 
 const QueryBaseShape = {
-    tableID: Identifier,
-    tableName: Identifier,
+    table: z.object({
+        tableID: Identifier,
+        tableName: Identifier,
+    }),
     orderBy: OrderBySchema.optional(),
     filter: FilterModelSchema,
     cmdbQueryContext: z.string().min(1).max(MAX_QUERY_TEXT_LENGTH),
@@ -107,19 +109,24 @@ function parseRequest<T>(schema: z.ZodType<T>, input: unknown, pathPrefix?: stri
     throw new DB3RequestValidationError(issues.join("; "));
 }
 
-function getRequestTable(tableID: string, tableName: string): db3.xTable {
+type TableSpec = {
+    tableID: string;
+    tableName: string;
+}
+
+function getRequestTable<T extends TableSpec>(spec: T): db3.xTable {
     let table: db3.xTable;
     try {
-        table = db3.GetTableById(tableID);
+        table = db3.GetTableById(spec.tableID);
     } catch {
-        throw new DB3RequestValidationError(`unknown table ID '${tableID}'`);
+        throw new DB3RequestValidationError(`unknown table ID '${spec.tableID}'`);
     }
 
-    if (tableID !== table.tableID) {
+    if (spec.tableID !== table.tableID) {
         throw new DB3RequestValidationError(`table ID must use its registered spelling '${table.tableID}'`);
     }
-    if (tableName !== table.tableName) {
-        throw new DB3RequestValidationError(`table name '${tableName}' does not match table ID '${tableID}'`);
+    if (spec.tableName !== table.tableName) {
+        throw new DB3RequestValidationError(`table name '${spec.tableName}' does not match table ID '${spec.tableID}'`);
     }
     return table;
 }
@@ -175,9 +182,9 @@ function validateTableParameters(table: db3.xTable, params: Record<string, unkno
 }
 
 function validateQueryForTable<T extends db3.QueryRequestInput | db3.PaginatedQueryRequestInput>(input: T): T {
-    const table = getRequestTable(input.tableID, input.tableName);
+    const table = getRequestTable(input.table);
 
-    input.filter.items.forEach(item => validateFieldName(table, item.field, "filter"));
+    input.filter.items?.forEach(item => validateFieldName(table, item.field, "filter"));
     if (input.orderBy) {
         validateFieldName(table, Object.keys(input.orderBy)[0]!, "order");
     }
@@ -197,7 +204,7 @@ export function validateDB3PaginatedQueryRequest(input: unknown): db3.PaginatedQ
 
 export function validateDB3MutationRequest(input: unknown): db3.MutatorInput {
     const parsed = parseRequest(MutationRequestSchema, input) as db3.MutatorInput;
-    const table = getRequestTable(parsed.tableID, parsed.tableName);
+    const table = getRequestTable(parsed);
 
     if (parsed.mutationType === "insert") {
         Object.keys(parsed.insertModel).forEach(field => validateFieldName(table, field, "mutation"));

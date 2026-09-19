@@ -100,7 +100,6 @@ const RelevantEventsWithDashboardContext = ({
     const tableClient = useDb3Query<db3.EventVerbose_Event>({
         schema: db3.xEventVerbose, filterSpec: {
             pks: dashboardContext.relevantEventIds,
-            items: [],
         }
     });
     const items = tableClient.items;

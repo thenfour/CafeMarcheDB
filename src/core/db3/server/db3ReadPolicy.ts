@@ -6,7 +6,6 @@ import type { xTable } from "../shared/db3core";
 import type { UserWithRolesPayload } from "../shared/schema/userPayloads";
 
 const emptyFilter = {
-    items: [],
     tableParams: {},
 };
 

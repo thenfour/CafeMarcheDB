@@ -16,7 +16,7 @@ export class DB3QueryAuthorizationError extends AuthorizationError {
 }
 
 async function prepareTableQuery(input: db3.QueryInputBase, authorization: RequestAuthorization) {
-    const table = db3.GetTableById(input.tableID);
+    const table = db3.GetTableById(input.table.tableID);
     const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
     const includeDeleted = input.includeDeleted === true;
 
@@ -28,7 +28,7 @@ async function prepareTableQuery(input: db3.QueryInputBase, authorization: Reque
             throw new DB3QueryAuthorizationError();
         }
     };
-    input.filter.items.forEach(item => authorizeField(item.field));
+    input.filter.items?.forEach(item => authorizeField(item.field));
     if (input.orderBy) authorizeField(Object.keys(input.orderBy)[0]!);
     if (input.filter.pks) authorizeField(table.pkMember);
     Object.keys(input.filter.tableParams || {}).forEach(parameterName => {

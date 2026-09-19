@@ -179,7 +179,7 @@ describe("BA-A001 generic DB3 request validation", () => {
       "unknown table ID 'UnknownTable'",
     )
     expect(() =>
-      validateDB3QueryRequest(forgeDb3Query("User", { tableName: "Role" })),
+      validateDB3QueryRequest(forgeDb3Query("User", { table: { tableID: "User", tableName: "Role" } })),
     ).toThrow("table name 'Role' does not match table ID 'User'")
   })
 

@@ -39,10 +39,8 @@ async function GetCustomSearchResultsHook(currentUser: UserWithRolesPayload, inp
 
     const queryResult = await queryTable({
         cmdbQueryContext: "getEventFilterInfo-userTags",
-        tableID: db3.xUserTagForEventSearch.tableID,
-        tableName: db3.xUserTagForEventSearch.tableName,
+        table: db3.xUserTagForEventSearch,
         filter: {
-            items: [],
             tableParams,
         },
         orderBy: undefined,
@@ -418,11 +416,9 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
         if (resultIds.length) {
             const queryResult = await queryTable({
                 cmdbQueryContext: `getSearchResults[${table.tableName}]`,
-                tableID: table.tableID,
-                tableName: table.tableName,
+                table,
                 includeDeleted: args.includeDeleted === true,
                 filter: {
-                    items: [],
                     pks: resultIds,
                 },
                 orderBy: undefined,

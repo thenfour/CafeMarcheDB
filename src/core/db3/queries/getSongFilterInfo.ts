@@ -180,10 +180,8 @@ export default resolver.pipe(
 
                 const queryResult = await queryTable({
                     cmdbQueryContext: "getSongFilterInfo",
-                    tableID: db3.xSong_Verbose.tableID,
-                    tableName: db3.xSong_Verbose.tableName,
+                    table: db3.xSong_Verbose,
                     filter: {
-                        items: [],
                         tableParams,
                     },
                     orderBy: undefined,

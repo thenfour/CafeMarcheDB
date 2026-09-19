@@ -149,7 +149,6 @@ export const OwnInstrumentsControl = () => {
         }),
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         filterModel: {
-            items: [],
             tableParams: {
                 userId: currentUser.id,
             }

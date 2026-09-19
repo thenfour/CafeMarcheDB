@@ -1004,8 +1004,7 @@ export const queryFirstImpl = async <TitemPayload,>({ schema, filterModel, ctx }
     ctx: Ctx;
 }) => {
     const result = await queryTable({
-        tableID: schema.tableID,
-        tableName: schema.tableName,
+        table: schema,
         filter: filterModel,
         orderBy: undefined,
         take: 1,

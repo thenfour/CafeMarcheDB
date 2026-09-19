@@ -123,7 +123,6 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
             columns: [],
         }),
         filterModel: {
-            items: [],
             tableParams,
         }
     });

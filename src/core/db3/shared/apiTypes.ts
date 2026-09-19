@@ -20,7 +20,7 @@ export interface CMDBTableFilterItem { // from MUI GridFilterItem
 // allow client users to specify cmdb-specific queries.
 // normal filtering & quick filtering is great but this allows for example custom filtering like tagIds.
 export interface CMDBTableFilterModel {
-    items: CMDBTableFilterItem[];
+    items?: CMDBTableFilterItem[];
     quickFilterValues?: any[];
     pks?: number[]; // if specified, find items `where id in (...pks)`
 

@@ -128,8 +128,7 @@ export default resolver.pipe(
             const menuItemsCall = queryTable({
                 filter: { items: [] },
                 cmdbQueryContext: "getDashboardData/menulinks",
-                tableID: xMenuLink.tableID,
-                tableName: xMenuLink.tableName,
+                table: xMenuLink,
                 orderBy: undefined,
             }, authorization);
 

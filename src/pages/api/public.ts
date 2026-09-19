@@ -33,8 +33,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
     const eventsCall = queryTable({
         filter: eventsFilterModel,
         cmdbQueryContext: "publicDataFeed",
-        tableID: xEvent.tableID,
-        tableName: xEvent.tableName,
+        table: xEvent,
         orderBy: undefined,
     },
         authorization);
@@ -43,8 +42,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse, ctx: Ctx) {
     const galleryCall = queryTable({
         filter: { items: [] },
         cmdbQueryContext: "publicDataFeed",
-        tableID: db3.xFrontpageGalleryItem.tableID,
-        tableName: db3.xFrontpageGalleryItem.tableName,
+        table: db3.xFrontpageGalleryItem,
         orderBy: undefined,
     },
         authorization);

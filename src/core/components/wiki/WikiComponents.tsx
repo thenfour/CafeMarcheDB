@@ -86,7 +86,6 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     }), []);
 
     const filterModel = React.useMemo(() => ({
-        items: [],
         pks: [wikiPageId],
     }), [wikiPageId]);
 

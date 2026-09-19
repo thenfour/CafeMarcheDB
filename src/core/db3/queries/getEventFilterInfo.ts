@@ -238,10 +238,8 @@ export default resolver.pipe(
 
                 const queryResult = await queryTable({
                     cmdbQueryContext: "getEventFilterInfo",
-                    tableID: db3.xEventSearch.tableID,
-                    tableName: db3.xEventSearch.tableName,
+                    table: db3.xEventSearch,
                     filter: {
-                        items: [],
                         tableParams,
                     },
                     orderBy: undefined,
@@ -275,10 +273,8 @@ export default resolver.pipe(
 
                 const queryResult = await queryTable({
                     cmdbQueryContext: "getEventFilterInfo-userTags",
-                    tableID: db3.xUserTagForEventSearch.tableID,
-                    tableName: db3.xUserTagForEventSearch.tableName,
+                    table: db3.xUserTagForEventSearch,
                     filter: {
-                        items: [],
                         tableParams,
                     },
                     orderBy: undefined,

@@ -327,8 +327,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
             const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!]);
 
             const queryInput: db3.QueryRequestInput = {
-                tableID: this.typedSchemaColumn.getForeignTableSchema().tableID,
-                tableName: this.typedSchemaColumn.getForeignTableSchema().tableName,
+                table: this.typedSchemaColumn.getForeignTableSchema(),
                 orderBy: undefined,
                 filter: {
                     items: [{
@@ -469,7 +468,9 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
             tableID: args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
             tableName: args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
             orderBy: undefined,
-            filter: { items: [], quickFilterValues: SplitQuickFilter(args.filterText) },
+            filter: {
+                quickFilterValues: SplitQuickFilter(args.filterText),
+            },
             cmdbQueryContext: "ForeignSingleFieldRenderContext",
         }, {
             ...gQueryOptions.default,

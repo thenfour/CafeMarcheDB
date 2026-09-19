@@ -252,7 +252,6 @@ const MyComponent = ({ fileId }: { fileId: number | null }) => {
             ],
         }),
         filterModel: {
-            items: [],
             tableParams: {}
         }
     };
