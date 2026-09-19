@@ -46,7 +46,7 @@ export const scenarioAttendances: Prisma.EventAttendanceGetPayload<{}>[] = [
 export const scenarioInstruments: db3.InstrumentPayload[] = ["Trumpet", "Saxophone", "Percussion", "Tuba"].map((name, index) => ({
     id: index + 1, name, sortOrder: index, description: name, autoAssignFileLeafRegex: null,
     functionalGroupId: 1, instrumentTags: [],
-    functionalGroup: { id: 1, name: "Band", sortOrder: 0, description: "Scenario instruments", color: "blue" },
+    functionalGroup: { id: 1, publicId: "scenario_group01", name: "Band", sortOrder: 0, description: "Scenario instruments", color: "blue" },
 }));
 
 export const createAttendanceScenario = (): AttendanceScenario => ({

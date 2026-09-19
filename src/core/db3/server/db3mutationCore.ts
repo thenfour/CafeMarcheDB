@@ -27,6 +27,7 @@ import { UserWithRolesArgs } from "../shared/schema/userPayloads";
 import { SharedAPI } from "../shared/sharedAPI";
 import { queryTable } from "./db3QueryCore";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
+import { generatePublicId, isPublicIdUniqueCollision } from "@/src/server/publicId";
 //import { requireUnmergedMutationUsers } from "./mergedUserMutationGuard";
 //import { requireUnmergedUserReferences } from "src/auth/server/mergedUserReferences";
 
@@ -43,6 +44,30 @@ export class DB3MutationAuthorizationError extends AuthorizationError {
         this.name = "DB3MutationAuthorizationError";
     }
 }
+
+const PUBLIC_ID_INSERT_RETRIES = 8;
+
+const createDB3Row = async (
+    table: db3.xTable,
+    dbTableClient: TAnyModel, // prisma client
+    data: TAnyModel,
+): Promise<TAnyModel> => {
+    if (!table.publicIdMember) {
+        // natural id only; no public ID creation needed.
+        return await dbTableClient.create({ data });
+    }
+
+    // theoretically possible to collide, hence the retry loop.
+    for (let attempt = 0; attempt < PUBLIC_ID_INSERT_RETRIES; ++attempt) {
+        data[table.publicIdMember] = generatePublicId();
+        try {
+            return await dbTableClient.create({ data });
+        } catch (error) {
+            if (!isPublicIdUniqueCollision(error)) throw error;
+        }
+    }
+    throw new Error(`Unable to generate a unique public ID for ${table.tableID}.`);
+};
 
 const getMutationPublicData = async (ctx: Ctx): Promise<db3.DB3Authorization> => {
     const authorization = await getRequestAuthorization(ctx.session);
@@ -555,9 +580,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             }
 
             //await requireUnmergedMutationUsers(transactionalDb, table, { ...authorizedLocalFields, ...authorizedAssociationFields });
-            obj = await dbTableClient.create({
-                data: authorizedLocalFields,
-            });
+            obj = await createDB3Row(table, dbTableClient, authorizedLocalFields);
 
             await RegisterChange({
                 action: ChangeAction.insert,

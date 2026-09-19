@@ -10,12 +10,13 @@ import {
 import {
     ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
     FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
-    type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable
+    type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, createAuthContextMap_SysadminNaturalPK, xTable
 } from "./db3core";
 import type { DB3Authorization } from "./db3Authorization";
 import { type UserWithRolesPayload } from "./schema/userPayloads";
 import { type ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gSwatchColors } from "../../components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
+import { isPublicId } from "shared/publicId";
 
 // export type DB3AuthSpec = {
 //     authMap: DB3AuthContextPermissionMap;
@@ -106,6 +107,10 @@ export class ForeignCollectionField extends GhostField {
 export type PKFieldArgs = {
     columnName: string;
     isRowOwner?: boolean;
+
+    // "all" = visible to all users; the default for tables without publicId (only natural monotonic id)
+    // "sysadmin" = show natural id only to system administrators; this is useful on tables with publicId where we don't normally show the id; this grants an exception to sysadmins only.
+    naturalIdVisibility?: "all" | "sysadmin";
 };// & DB3AuthSpec;
 
 export class PKField extends FieldBase<number> {
@@ -114,7 +119,9 @@ export class PKField extends FieldBase<number> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
-            authMap: createAuthContextMap_PK(),
+            authMap: args.naturalIdVisibility === "sysadmin"
+                ? createAuthContextMap_SysadminNaturalPK()
+                : createAuthContextMap_PK(),
             specialFunction: args.isRowOwner
                 ? SqlSpecialColumnFunction.ownerUser
                 : SqlSpecialColumnFunction.pk,
@@ -182,6 +189,53 @@ export class PKField extends FieldBase<number> {
         if (!/^\d+$/.test(token)) return null; // must be a pure integer.
         return `(${this.member} = ${token})`;
     }
+}
+
+////////////////////////////////////////////////////////////////
+// Stable, opaque identity used whenever a converted row crosses the client
+// boundary. Generation remains server-owned.
+export class PublicIdField extends FieldBase<string> {
+    constructor(columnName = "publicId") {
+        super({
+            member: columnName,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: null,
+            authMap: createAuthContextMap_PK(),
+            specialFunction: SqlSpecialColumnFunction.publicId,
+            _customAuth: null,
+        });
+    }
+
+    connectToTable = (table: xTable) => {
+        if (table.publicIdMember) {
+            throw new Error(`Table ${table.tableID} declares more than one public-ID field.`);
+        }
+        table.publicIdMember = this.member;
+    };
+
+    ApplyIncludeFiltering = () => { };
+    getQuickFilterWhereClause = (): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (): TAnyModel | boolean => false;
+    getOverallWhereClause = (): TAnyModel | boolean => false;
+
+    ValidateAndParse = (args: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+        const value = args.row[this.member];
+        if (value === undefined) return UndefinedValidateAndParseResult();
+        if (!isPublicId(value)) return ErrorValidateAndParseResult("invalid public ID", { [this.member]: value });
+        return SuccessfulValidateAndParseResult({ [this.member]: value });
+    };
+
+    ApplyToNewRow = () => { };
+    isEqual = (a: string, b: string) => a === b;
+    ApplyClientToDb = () => { };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] !== undefined) clientModel[this.member] = dbModel[this.member];
+    };
+
+    SqlGetSortableQueryElements = (): SortQueryElements | null => null;
+    SqlGetDiscreteCriterionElements = (): CriterionQueryElements | null => null;
+    SqlGetFacetInfoQuery = (): SearchResultsFacetQuery | null => null;
+    SqlGetQuickFilterElementsForToken = (): string | null => null;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -726,7 +780,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     };
 
     isEqual = (a: TForeign, b: TForeign) => {
-        return a[this.getForeignTableSchema().pkMember] === b[this.getForeignTableSchema().pkMember];
+        return a[this.getForeignTableSchema().clientIdMember] === b[this.getForeignTableSchema().clientIdMember];
     };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
@@ -761,7 +815,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         // mutations want ONLY the id, not the object. but in the case both exist, use the object not the fk.
-        const foreignPk = this.getForeignTableSchema().pkMember;
+        const foreignPk = this.getForeignTableSchema().clientIdMember;
         if (clientModel[this.member] !== undefined) {
             if (clientModel[this.member] === null) {
                 mutationModel[this.fkidMember!] = null; // assumes foreign pk is 'id'
@@ -819,7 +873,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         }
         return SuccessfulValidateAndParseResult({
             [this.member]: value,
-            [this.fkidMember!]: value.id,
+            [this.fkidMember!]: value[this.getForeignTableSchema().clientIdMember],
         });
     };
 
@@ -1896,10 +1950,13 @@ export class RevisionField extends FieldBase<number> {
 
 // higher-level conveniences
 
-export const MakePKfield = (args: { isRowOwner?: boolean } = {}) => new PKField({
+export const MakePKfield = (args: { isRowOwner?: boolean, naturalIdVisibility?: "all" | "sysadmin" } = {}) => new PKField({
     columnName: "id",
     isRowOwner: args.isRowOwner,
+    naturalIdVisibility: args.naturalIdVisibility,
 });
+
+export const MakePublicIdField = () => new PublicIdField("publicId");
 
 export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericIntegerField({

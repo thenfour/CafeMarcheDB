@@ -7,9 +7,9 @@ import forgotPassword from "src/auth/mutations/forgotPassword";
 import { CMButton } from "src/core/components/CMCoreComponents2";
 import { CMDialog } from "../CMDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { EnrichedVerboseUser } from "./UserListItem";
+import type * as db3 from "src/core/db3/db3";
 
-export const AdminResetPasswordButton = ({ user }: { user: EnrichedVerboseUser }) => {
+export const AdminResetPasswordButton = ({ user }: { user: Pick<db3.UserPayload, "id" | "name" | "email"> }) => {
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
     const [resetURL, setResetURL] = React.useState<string | null>(null);
     const [showCopied, setShowCopied] = React.useState<boolean>(false);

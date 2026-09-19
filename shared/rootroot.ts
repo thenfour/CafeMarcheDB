@@ -87,21 +87,26 @@ export class Stopwatch {
 };
 
 
-
-export class TableAccessor<TRow extends { id: number }> {
-    private rows: Map<TRow['id'], TRow>;
+// TODO: this should not probably assume literal `id` as the primary key field for all tables.
+// that's kinda confusing for tables that use publicId on the client for identification,
+// and just wrong in the case for any tables that do not use `id` as their primary key.
+//
+// here Tid can be number (trad id) or string (publicId)
+// and default is the type of `id` in the row, excluding undefined.
+export class TableAccessor<TRow extends { id?: number | string }, TId extends number | string = Exclude<TRow['id'], undefined>> {
+    private rows: Map<TId, TRow>;
     private asArray: TRow[];
 
-    constructor(rows: TRow[]) {
+    constructor(rows: TRow[], getId: (row: TRow) => TId = (row => row.id as TId)) {
         this.asArray = rows;
-        this.rows = new Map(rows.map(row => [row.id, row]));
+        this.rows = new Map(rows.map(row => [getId(row), row]));
     }
 
     public get items() {
         return [...this.asArray];
     }
 
-    public getById(id: TRow['id'] | null | undefined): TRow | null {
+    public getById(id: TId | null | undefined): TRow | null {
         if (id == null) return null;
         return this.rows.get(id) || null;
     }
@@ -139,7 +144,7 @@ export class TableAccessor<TRow extends { id: number }> {
     ): T[] {
         return items.map(item => ({
             ...item,
-            [tagField]: this.getById(item[tagIdField] as unknown as TRow['id'])
+            [tagField]: this.getById(item[tagIdField] as unknown as TId)
         })) as T[];
     }
 

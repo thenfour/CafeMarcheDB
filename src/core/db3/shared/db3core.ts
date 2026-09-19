@@ -27,9 +27,15 @@ export interface MutatorInputBase {
     tableName: string;
 };
 
-interface MutatorDelete extends MutatorInputBase {
+interface MutatorDeleteByNaturalId extends MutatorInputBase {
     mutationType: "delete";
     deleteId: number;
+    deleteType: "softWhenPossible" | "hard";
+};
+
+interface MutatorDeleteByPublicId extends MutatorInputBase {
+    mutationType: "delete";
+    deletePublicId: string;
     deleteType: "softWhenPossible" | "hard";
 };
 
@@ -38,13 +44,23 @@ interface MutatorInsert extends MutatorInputBase {
     insertModel: TAnyModel;
 };
 
-interface MutatorUpdate extends MutatorInputBase {
+interface MutatorUpdateByNaturalId extends MutatorInputBase {
     mutationType: "update";
     updateId: number;
     updateModel: TAnyModel;
 };
 
-export type MutatorInput = MutatorDelete | MutatorInsert | MutatorUpdate;
+interface MutatorUpdateByPublicId extends MutatorInputBase {
+    mutationType: "update";
+    updatePublicId: string;
+    updateModel: TAnyModel;
+};
+
+export type MutatorInput = MutatorDeleteByNaturalId
+    | MutatorDeleteByPublicId
+    | MutatorInsert
+    | MutatorUpdateByNaturalId
+    | MutatorUpdateByPublicId;
 
 ////////////////////////////////////////////////////////////////
 export interface QueryInputBase {
@@ -178,6 +194,14 @@ export const createAuthContextMap_PK = (): DB3AuthContextPermissionMap => ({
     PreMutateAsOwner: Permission.never_grant,
 });
 
+export const createAuthContextMap_SysadminNaturalPK = (): DB3AuthContextPermissionMap => ({
+    PostQuery: Permission.sysadmin,
+    PostQueryAsOwner: Permission.sysadmin,
+    PreInsert: Permission.never_grant,
+    PreMutate: Permission.never_grant,
+    PreMutateAsOwner: Permission.never_grant,
+});
+
 // adding this because crafting auth maps for all fields takes a lot of work and i want to shortcut the effort
 export const createAuthContextMap_TODO = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.always_grant);
 
@@ -210,6 +234,7 @@ export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMap;// "Post
 
 export enum SqlSpecialColumnFunction {
     pk = "pk",
+    publicId = "publicId",
     sortOrder = "sortOrder",
     color = "color",
     iconName = "iconName",
@@ -406,7 +431,7 @@ export interface SortModel {
 };
 
 export interface RowInfo {
-    pk: number;
+    pk: number | string;
     name: string;
     tooltip?: string | undefined;
     description?: string | undefined;
@@ -487,7 +512,7 @@ export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
 export class xTable /* implements TableDesc*/ {
-    tableName: string;
+    tableName: string; // the actual name of the table in the database; can be used in prisma db[t.tableName]
     tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
@@ -498,6 +523,7 @@ export class xTable /* implements TableDesc*/ {
     restorePermission?: Permission;
     searchCapabilities?: { includeDeleted?: boolean };
     pkMember: string;
+    publicIdMember?: string;
     rowNameMember?: string;
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
@@ -579,6 +605,14 @@ export class xTable /* implements TableDesc*/ {
             field.connectToTable(this);
         });
 
+        assert(!!this.pkMember, `Table ${this.tableID} has no primary-key field.`);
+        if (this.SqlSpecialColumns.publicId) {
+            assert(
+                this.publicIdMember === this.SqlSpecialColumns.publicId.member,
+                `Table ${this.tableID} public-ID metadata is inconsistent.`,
+            );
+        }
+
         if (this.sortOrderPolicy) {
             assert(
                 !!this.SqlSpecialColumns.sortOrder,
@@ -612,6 +646,10 @@ export class xTable /* implements TableDesc*/ {
                 assert(false, `table ${this.tableID} has a visiblePermission column but no owner column. this is not allowed.`);
             }
         }
+    }
+
+    get clientIdMember(): string {
+        return this.publicIdMember || this.pkMember;
     }
 
     // AND this into your query to apply visibility & soft delete logic.
@@ -1093,6 +1131,16 @@ export class xTable /* implements TableDesc*/ {
                 [this.pkMember]: {
                     in: filterModel.pks
                 }
+            };
+            and.push(expr);
+        }
+
+        if (filterModel && filterModel.publicIds) {
+            assert(!!this.publicIdMember, `Table ${this.tableID} does not use public IDs.`);
+            const expr: Prisma.EventWhereInput = {
+                [this.publicIdMember]: {
+                    in: filterModel.publicIds,
+                },
             };
             and.push(expr);
         }

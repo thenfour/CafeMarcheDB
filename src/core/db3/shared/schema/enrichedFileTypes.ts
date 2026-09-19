@@ -9,6 +9,11 @@ export type EnrichFileInput = Partial<Prisma.FileGetPayload<{
         taggedInstruments: true,
     },
 }>>;
+
+type EnrichedFileInstrumentTag = Prisma.FileInstrumentTagGetPayload<{}> & {
+    instrument: db3.InstrumentClientPayload;
+};
+
 export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
     // omit fields that may appear on input that we'll replace.
     "visiblePermission"
@@ -22,13 +27,10 @@ export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
                 fileTag: true,
             }
         },
-        taggedInstruments: {
-            include: {
-                instrument: true,
-            }
-        },
     }
-}>;
+}> & {
+    taggedInstruments: EnrichedFileInstrumentTag[];
+};
 
 
 export type EnrichedVerboseFile = EnrichedFile<db3.FilePayload>;
@@ -39,7 +41,7 @@ export type EnrichedVerboseFile = EnrichedFile<db3.FilePayload>;
 export function enrichFile<T extends EnrichFileInput>(
     item: T,
     data: {
-        instrument: TableAccessor<Prisma.InstrumentGetPayload<{}>>;
+        instrument: TableAccessor<db3.InstrumentClientPayload>;
         fileTag: TableAccessor<Prisma.FileTagGetPayload<{}>>;
         permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     },
@@ -51,7 +53,7 @@ export function enrichFile<T extends EnrichFileInput>(
         ...item,
         visiblePermission: data.permission.getById(item.visiblePermissionId),
         taggedInstruments: (item.taggedInstruments || []).map((t) => {
-            const ret: Prisma.FileInstrumentTagGetPayload<{ include: { instrument: true } }> = {
+            const ret: EnrichedFileInstrumentTag = {
                 ...t,
                 instrument: data.instrument.getById(t.instrumentId)!, // enrich!
             };

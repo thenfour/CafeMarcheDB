@@ -74,6 +74,39 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export class PublicIdColumnClient extends DB3ClientCore.IColumnClient {
+    constructor() {
+        super({
+            columnName: "publicId",
+            editable: false,
+            headerName: "Public ID",
+            visible: true,
+            width: 170,
+            className: undefined,
+            fieldCaption: "Public ID",
+            isAutoFocusable: false,
+            fieldDescriptionSettingName: undefined,
+            GridColProps: {
+                type: "string",
+                sortable: false,
+                filterable: false,
+            },
+        });
+    }
+
+    renderForNewDialog = undefined;
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        isReadOnly={true}
+        fieldName={this.columnName}
+    />;
+    onSchemaConnected() { };
+    ApplyClientToPostClient = undefined;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GenericStringColumnArgs {
     columnName: string;
     cellWidth: number;

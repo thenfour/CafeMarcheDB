@@ -432,11 +432,23 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 
         const dbModel = this.prepareMutation(row, "update");
 
+        const identity = row[this.schema.clientIdMember];
+
+        // sanity. this is not a perfect check: in theory, non-string publicids could exist.
+        if (this.schema.publicIdMember && typeof identity !== "string") {
+            throw new Error(`Expected public ID for ${this.schema.tableName}`);
+        }
+        // also not perfect: in theory, non-numeric natural ids could also exist.
+        if (!this.schema.publicIdMember && typeof identity !== "number") {
+            throw new Error(`Expected natural ID for ${this.schema.tableName}`);
+        }
         const ret = await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
             mutationType: "update",
-            updateId: row[this.schema.pkMember],
+            ...(this.schema.publicIdMember
+                ? { updatePublicId: identity }
+                : { updateId: identity }),
             updateModel: dbModel,
         });
         this.refetch();
@@ -458,14 +470,25 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
         });
     };
 
-    doDeleteMutation = async (pk: number, deleteType: "softWhenPossible" | "hard") => {
-        return await this.mutateFn({
+    doDeleteMutation = async (identity: number | string, deleteType: "softWhenPossible" | "hard") => {
+        const common = {
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            mutationType: "delete",
+            mutationType: "delete" as const,
             deleteType,
-            deleteId: pk,
-        });
+        };
+        if (this.schema.publicIdMember) {
+            // sanity, but this is not 100% accurate. in theory, non-string publicids could exist.
+            if (typeof identity !== "string") {
+                throw new Error(`Expected public ID for ${this.schema.tableName}`);
+            }
+            return await this.mutateFn({ ...common, deletePublicId: identity });
+        }
+        // sanity; not accurate: in theory, non-numeric natural ids could exist.
+        if (typeof identity !== "number") {
+            throw new Error(`Expected natural ID for ${this.schema.tableName}`);
+        }
+        return await this.mutateFn({ ...common, deleteId: identity });
     };
 
 };

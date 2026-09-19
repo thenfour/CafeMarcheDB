@@ -152,7 +152,7 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 
 
 export interface InstrumentChipProps {
-    value: number | db3.InstrumentPayloadMinimum;
+    value: number | db3.InstrumentClientOrDbPayload | db3.InstrumentPayloadMinimum;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -165,7 +165,15 @@ export const InstrumentChip = (props: InstrumentChipProps) => {
     const dashboardContext = useDashboardContext();
 
     let instrument = typeof (props.value) === "number" ? dashboardContext.instrument.getById(props.value) : props.value;
-    const functionalGroup = dashboardContext.instrumentFunctionalGroup.getById(instrument?.functionalGroupId || -1);
+
+    // here we use `=== "string"` to check if it's a publicId or id. not really very clean.
+    // even though we're using InstrumentClientOrDbPayload, where functionalGroupId can be either number or string,
+    // this code is on the client and should always be a string.
+    if (typeof instrument?.functionalGroupId !== "string") {
+        throw new Error(`Expected functionalGroupId to be a string for instrument ${instrument?.name}`);
+    }
+    const clientFunctionalGroupId = instrument.functionalGroupId;
+    const functionalGroup = dashboardContext.instrumentFunctionalGroup.getById(clientFunctionalGroupId);
 
     return <CMChip
         variation={props.variation}
@@ -181,7 +189,7 @@ export const InstrumentChip = (props: InstrumentChipProps) => {
 }
 
 export interface InstrumentFunctionalGroupChipProps {
-    value: db3.InstrumentFunctionalGroupPayloadMinimum;
+    value: Pick<db3.InstrumentFunctionalGroupClientPayload, "name" | "color">;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;

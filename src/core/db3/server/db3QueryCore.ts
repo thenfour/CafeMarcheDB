@@ -6,6 +6,7 @@ import { getRequestAuthorization, type RequestAuthorization } from "@/src/auth/s
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import type { TAnyModel } from "@/shared/rootroot";
+import { projectDB3ModelPublicIds } from "./db3PublicIds";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -31,6 +32,7 @@ async function prepareTableQuery(input: db3.QueryInputBase, authorization: Reque
     input.filter.items?.forEach(item => authorizeField(item.field));
     if (input.orderBy) authorizeField(Object.keys(input.orderBy)[0]!);
     if (input.filter.pks) authorizeField(table.pkMember);
+    if (input.filter.publicIds) authorizeField(table.publicIdMember!);
     Object.keys(input.filter.tableParams || {}).forEach(parameterName => {
         if (!table.authorizeQueryParameter(parameterName, publicData)) throw new DB3QueryAuthorizationError();
     });
@@ -47,7 +49,11 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
         rowMode: "view",
         model,
         fallbackOwnerId: null,
-    })).filter(result => result.rowIsAuthorized).map(result => result.authorizedModel);
+    }))
+        .filter(result => result.rowIsAuthorized)
+        .map(result => (
+            projectDB3ModelPublicIds(query.table, result.authorizedModel, query.publicData)
+        ));
 }
 
 export async function queryTable(input: db3.QueryRequestInput, authorization: RequestAuthorization, database: TransactionalPrismaClient = db) {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import * as db3 from "../db3";
+import { isPublicId } from "shared/publicId";
 
 const MAX_FILTER_ITEMS = 100;
 const MAX_FILTER_VALUES = 1000;
@@ -9,6 +10,7 @@ const MAX_TAKE = 1000;
 
 const SafeInteger = z.number().int().refine(Number.isSafeInteger, "Expected a safe integer");
 const RecordId = SafeInteger.refine(value => value > 0, "Expected a positive record ID");
+const PublicId = z.string().refine(isPublicId, "Expected a 16-character public ID");
 const Take = SafeInteger.refine(value => value >= 1 && value <= MAX_TAKE, `Expected a value between 1 and ${MAX_TAKE}`);
 const Skip = SafeInteger.refine(value => value >= 0 && value <= 10_000_000, "Expected a value between 0 and 10000000");
 const Delay = SafeInteger.refine(value => value >= 0 && value <= 2_000, "Expected a value between 0 and 2000");
@@ -32,6 +34,7 @@ const FilterModelSchema = z.object({
     items: z.array(FilterItemSchema).max(MAX_FILTER_ITEMS).optional(),
     quickFilterValues: z.array(z.string().max(MAX_QUERY_TEXT_LENGTH)).max(20).optional(),
     pks: z.array(SafeInteger).max(MAX_FILTER_VALUES).optional(),
+    publicIds: z.array(PublicId).max(MAX_FILTER_VALUES).optional(),
     tagIds: z.array(SafeInteger).max(MAX_FILTER_VALUES).optional(),
     tableParams: z.record(z.unknown()).optional(),
 }).strict();
@@ -70,7 +73,8 @@ const MutationRequestSchema = z.discriminatedUnion("mutationType", [
         tableID: Identifier,
         tableName: Identifier,
         mutationType: z.literal("delete"),
-        deleteId: RecordId,
+        deleteId: RecordId.optional(),
+        deletePublicId: PublicId.optional(),
         deleteType: z.enum(["softWhenPossible", "hard"]),
     }).strict(),
     z.object({
@@ -83,7 +87,8 @@ const MutationRequestSchema = z.discriminatedUnion("mutationType", [
         tableID: Identifier,
         tableName: Identifier,
         mutationType: z.literal("update"),
-        updateId: RecordId,
+        updateId: RecordId.optional(),
+        updatePublicId: PublicId.optional(),
         updateModel: MutationModelSchema,
     }).strict(),
 ]);
@@ -188,6 +193,9 @@ function validateQueryForTable<T extends db3.QueryRequestInput | db3.PaginatedQu
     if (input.orderBy) {
         validateFieldName(table, Object.keys(input.orderBy)[0]!, "order");
     }
+    if (input.filter.publicIds && !table.publicIdMember) {
+        throw new DB3RequestValidationError(`table '${table.tableID}' does not use public IDs`);
+    }
     input.filter.tableParams = validateTableParameters(table, input.filter.tableParams);
     return input;
 }
@@ -203,18 +211,45 @@ export function validateDB3PaginatedQueryRequest(input: unknown): db3.PaginatedQ
 }
 
 export function validateDB3MutationRequest(input: unknown): db3.MutatorInput {
-    const parsed = parseRequest(MutationRequestSchema, input) as db3.MutatorInput;
+    const parsed = parseRequest(MutationRequestSchema, input);
     const table = getRequestTable(parsed);
+    const usesPublicId = !!table.publicIdMember;
+
+    if (parsed.mutationType === "delete") {
+        if (usesPublicId && (!parsed.deletePublicId || parsed.deleteId !== undefined)) {
+            throw new DB3RequestValidationError(`table '${table.tableID}' deletes require deletePublicId`);
+        }
+        if (!usesPublicId && (!parsed.deleteId || parsed.deletePublicId !== undefined)) {
+            throw new DB3RequestValidationError(`table '${table.tableID}' deletes require deleteId`);
+        }
+    }
+    if (parsed.mutationType === "update") {
+        if (usesPublicId && (!parsed.updatePublicId || parsed.updateId !== undefined)) {
+            throw new DB3RequestValidationError(`table '${table.tableID}' updates require updatePublicId`);
+        }
+        if (!usesPublicId && (!parsed.updateId || parsed.updatePublicId !== undefined)) {
+            throw new DB3RequestValidationError(`table '${table.tableID}' updates require updateId`);
+        }
+    }
 
     if (parsed.mutationType === "insert") {
         Object.keys(parsed.insertModel).forEach(field => validateFieldName(table, field, "mutation"));
+        if (table.publicIdMember && Object.prototype.hasOwnProperty.call(parsed.insertModel, table.publicIdMember)) {
+            throw new DB3RequestValidationError(`field '${table.publicIdMember}' is server-generated`);
+        }
     }
     if (parsed.mutationType === "update") {
         Object.keys(parsed.updateModel).forEach(field => validateFieldName(table, field, "mutation"));
-        if (Object.prototype.hasOwnProperty.call(parsed.updateModel, table.pkMember)
+        if (usesPublicId && Object.prototype.hasOwnProperty.call(parsed.updateModel, table.pkMember)) {
+            throw new DB3RequestValidationError(`database primary key field '${table.pkMember}' cannot be supplied`);
+        }
+        if (table.publicIdMember && Object.prototype.hasOwnProperty.call(parsed.updateModel, table.publicIdMember)) {
+            throw new DB3RequestValidationError(`field '${table.publicIdMember}' is immutable`);
+        }
+        if (!usesPublicId && Object.prototype.hasOwnProperty.call(parsed.updateModel, table.pkMember)
             && parsed.updateModel[table.pkMember] !== parsed.updateId) {
             throw new DB3RequestValidationError(`update model field '${table.pkMember}' must match updateId`);
         }
     }
-    return parsed;
+    return parsed as db3.MutatorInput;
 }

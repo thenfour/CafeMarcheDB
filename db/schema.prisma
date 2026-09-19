@@ -451,6 +451,7 @@ model SongTagAssociation {
 // individual instruments are user-managed.
 model InstrumentFunctionalGroup {
   id          Int          @id @default(autoincrement())
+  publicId    String       @unique @db.Char(16)
   name        String       @unique
   description String       @db.MediumText
   sortOrder   Int

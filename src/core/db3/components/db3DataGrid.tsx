@@ -435,6 +435,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             // actual data
             rows={tableClient.items as any}
             rowCount={tableClient.rowCount}
+            getRowId={row => row[tableSpec.args.table.clientIdMember]}
 
             // initial state
             initialState={{

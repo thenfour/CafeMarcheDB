@@ -112,6 +112,7 @@ export default resolver.pipe(
                 return updatedUser;
             }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
         } catch (error) {
+            // P2002 = "Unique constraint failed on the {constraint}"
             if (
                 error instanceof AdminBootstrapClaimError
                 || (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")

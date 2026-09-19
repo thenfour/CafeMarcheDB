@@ -24,7 +24,7 @@ import {
     EventTagAssignmentNaturalOrderBy, type EventTagAssignmentPayload, EventTagNaturalOrderBy, type EventTagPayload, EventTagSignificance, type EventTaggedFilesPayload,
     EventTypeArgs, EventTypeNaturalOrderBy, type EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     type EventUserResponsePayload,
-    type InstrumentPayload,
+    type InstrumentClientOrDbPayload,
     type UserWithInstrumentsPayload
 } from "./prismArgs";
 import { MakeCreatedByField, MakeUpdatedByField, MakeVisiblePermissionField } from "./user";
@@ -1228,7 +1228,7 @@ export interface EventUserResponse<TEvent extends EventResponses_MinimalEvent, T
     // if the user is not invited but has responded, show them.
     isRelevantForDisplay: boolean;
 
-    instrument: InstrumentPayload | null;
+    instrument: InstrumentClientOrDbPayload | null;
 };
 
 export interface EventSegmentUserResponse<

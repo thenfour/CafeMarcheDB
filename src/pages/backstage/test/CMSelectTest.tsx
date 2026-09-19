@@ -39,10 +39,10 @@ export const SelectionExamples = () => {
         if (failNext.current) { failNext.current = false; throw new Error("Example loading failure"); }
         return people;
     }, []);
-    const [instrument, setInstrument] = React.useState<db3.InstrumentPayloadMinimum | null>(null);
-    const [instruments, setInstruments] = React.useState<db3.InstrumentPayloadMinimum[]>([]);
+    const [instrument, setInstrument] = React.useState<db3.InstrumentClientPayload | null>(null);
+    const [instruments, setInstruments] = React.useState<db3.InstrumentClientPayload[]>([]);
     const [tags, setTags] = React.useState<db3.InstrumentTagPayload[]>([]);
-    const [group, setGroup] = React.useState<db3.InstrumentFunctionalGroupPayloadMinimum | null>(null);
+    const [group, setGroup] = React.useState<db3.InstrumentFunctionalGroupClientPayload | null>(null);
     const [user, setUser] = React.useState<db3.UserPayloadMinimum | null>(null);
     const [displayStyle, setDisplayStyle] = React.useState(CMSelectDisplayStyle.SelectedWithDialog);
     const [readonly, setReadonly] = React.useState(false);

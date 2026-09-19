@@ -6,6 +6,7 @@ import db from "db"
 import { execSync } from "child_process";
 import { nanoid } from "nanoid";
 import { instrumentationSetup } from "./setup/instrumentation-setup";
+import { repairPublicIdPlaceholders } from "./server/publicId";
 
 type GitVersionInfo = {
     versionTag: string;
@@ -91,12 +92,21 @@ async function CorrectEventSegmentUids() {
     }
 };
 
+export async function CorrectInstrumentFunctionalGroupPublicIds() {
+    const replacementCount = await repairPublicIdPlaceholders({
+        delegate: db.instrumentFunctionalGroup,
+        modelName: "InstrumentFunctionalGroup",
+    });
+    console.log(`Replaced ${replacementCount} InstrumentFunctionalGroup public-ID placeholders.`);
+}
+
 export async function register() {
     console.log(`INSTRUMENTATION RUNNING`);
     await instrumentationSetup();
 
     await CorrectUserUids();
     await CorrectEventSegmentUids();
+    await CorrectInstrumentFunctionalGroupPublicIds();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

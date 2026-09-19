@@ -8,7 +8,7 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakePKfield, MakeSortOrderField, TagsField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakePKfield, MakePublicIdField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 import { GenericStringField, MakeTitleField } from "../genericStringField";
@@ -44,7 +44,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
     getRowInfo: (row: InstrumentFunctionalGroupPayload) => ({
-        pk: row.id,
+        pk: row.publicId || row.id,
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -56,7 +56,8 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
         sortOrder: 0,
     }),
     columns: [
-        MakePKfield(),
+        MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        MakePublicIdField(),
         MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EAdmins }),
         new GenericStringField({
             columnName: "description",

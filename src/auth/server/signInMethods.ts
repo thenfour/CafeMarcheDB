@@ -105,6 +105,7 @@ export const addSignInMethod = async (db: TransactionalPrismaClient, userId: num
     try {
         return await db.userSignInMethod.create({ data: { userId, ...method } });
     } catch (error) {
+        // P2002 = "Unique constraint failed on the {constraint}"
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             throw new SignInMethodConflictError();
         }

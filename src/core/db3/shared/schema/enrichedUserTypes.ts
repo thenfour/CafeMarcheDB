@@ -1,6 +1,5 @@
 import { TableAccessor } from "@/shared/rootroot";
 import { Prisma } from "db";
-import { EnrichedInstrument } from "./enrichedInstrumentTypes";
 import * as db3 from "@db3/db3";
 
 export type EnrichUserInput = Partial<Prisma.UserGetPayload<{
@@ -9,6 +8,11 @@ export type EnrichUserInput = Partial<Prisma.UserGetPayload<{
         instruments: true,
     }
 }>>;
+
+type EnrichedUserInstrument = Prisma.UserInstrumentGetPayload<{}> & {
+    instrument: db3.InstrumentClientPayload;
+};
+
 export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
     'tags'
     | 'instruments'
@@ -20,17 +24,10 @@ export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
                 userTag: true,
             }
         },
-        instruments: {
-            include: {
-                instrument: {
-                    include: {
-                        functionalGroup: true,
-                    }
-                }
-            }
-        }
     },
-}>;
+}> & {
+    instruments: EnrichedUserInstrument[];
+};
 
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
@@ -38,7 +35,7 @@ export function enrichUser<T extends EnrichUserInput>(
     item: T,
     roles: TableAccessor<Prisma.RoleGetPayload<{}>>,
     userTags: TableAccessor<Prisma.UserTagGetPayload<{}>>,
-    instruments: TableAccessor<EnrichedInstrument<Prisma.InstrumentGetPayload<{}>>>
+    instruments: TableAccessor<db3.InstrumentClientPayload>
 ): EnrichedUser<T> {
     // original payload type,
     // removing items we're replacing,
@@ -56,7 +53,7 @@ export function enrichUser<T extends EnrichUserInput>(
         }).sort((a, b) => a.userTag.sortOrder - b.userTag.sortOrder), // respect ordering
 
         instruments: (item.instruments || []).map((assoc) => {
-            const ret: Prisma.UserInstrumentGetPayload<{ include: { instrument: { include: { functionalGroup: true } } } }> = {
+            const ret: EnrichedUserInstrument = {
                 ...assoc,
                 instrument: instruments.getById(assoc.instrumentId)! // enrich!
             };
@@ -64,7 +61,7 @@ export function enrichUser<T extends EnrichUserInput>(
         }).sort((a, b) => a.instrument.sortOrder - b.instrument.sortOrder), // respect ordering
     };
 
-    return ret;
+    return ret as EnrichedUser<T>;
 }
 
 export type EnrichedVerboseUser = EnrichedUser<db3.UserPayload>;

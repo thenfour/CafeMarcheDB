@@ -1,28 +1,21 @@
 import { TableAccessor } from "@/shared/rootroot";
 import { Prisma } from "db";
+import type { DashboardInstrumentPayload, InstrumentClientPayload, InstrumentFunctionalGroupClientPayload } from "./prismArgs";
+import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
 
 
-export type EnrichInstrumentInput = Partial<Prisma.InstrumentGetPayload<{ include: { instrumentTags: true } }>>;
+export type EnrichInstrumentInput = DashboardInstrumentPayload;
 export type EnrichedInstrument<T extends EnrichInstrumentInput> = Omit<T,
     // omit fields that may appear on input that we'll replace.
     "functionalGroup"
     | "instrumentTags"
-> & Prisma.InstrumentGetPayload<{
-    select: { // must be select so we don't accidentally require all fields.
-        functionalGroup: true,
-        instrumentTags: {
-            include: {
-                tag: true,
-            }
-        },
-    }
-}>;
+> & Pick<InstrumentClientPayload, "functionalGroup" | "instrumentTags">;
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichInstrument<T extends EnrichInstrumentInput>(
     item: T,
     data: {
-        instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;
+        instrumentFunctionalGroup: TableAccessor<InstrumentFunctionalGroupClientPayload, InstrumentFunctionalGroupPublicId>;
         instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
     },
 ): EnrichedInstrument<T> {
@@ -39,7 +32,7 @@ export function enrichInstrument<T extends EnrichInstrumentInput>(
             };
             return ret;
         }).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder), // respect ordering
-    };
+    } as EnrichedInstrument<T>;
 }
 
 

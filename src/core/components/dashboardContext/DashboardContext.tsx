@@ -143,7 +143,7 @@ export class DashboardContextData extends DashboardContextDataBase {
         return partition(segments, isCancelled);
     }
 
-    sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[] {
+    sortInstruments<Tinst extends { sortOrder: number, functionalGroupId: db3.InstrumentFunctionalGroupClientPayload["publicId"] }>(instruments: Tinst[]): Tinst[] {
         // sort first by functional group, then by instrument sort order.
         const ret = [...instruments];
         ret.sort((a, b) => {
@@ -245,7 +245,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
     valueRef.current.instrumentTag = new TableAccessor(dashboardData.instrumentTag);
-    valueRef.current.instrumentFunctionalGroup = new TableAccessor(dashboardData.instrumentFunctionalGroup);
+    valueRef.current.instrumentFunctionalGroup = new TableAccessor(
+        dashboardData.instrumentFunctionalGroup,
+        group => group.publicId,
+    );
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;

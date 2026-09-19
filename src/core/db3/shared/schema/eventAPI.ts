@@ -56,11 +56,11 @@ export function createMockEventSegmentUserResponse
 // Response preparation needs only an instrument lookup, not a dashboard or DB.
 export interface EventResponseInstrumentLookup {
     instrument: {
-        getById: (id: number | null | undefined) => db3.InstrumentPayload | null
+        getById: (id: number | null | undefined) => db3.InstrumentClientOrDbPayload | null
     };
 }
 
-export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, data: EventResponseInstrumentLookup): (db3.InstrumentPayload | null) {
+export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, data: EventResponseInstrumentLookup): (db3.InstrumentClientOrDbPayload | null) {
     if (user.instruments.length < 1) return null;
     const p = user.instruments.find(i => i.isPrimary);
     if (p) {
@@ -69,7 +69,7 @@ export function getUserPrimaryInstrument(user: db3.UserWithInstrumentsPayload, d
     return data.instrument.getById(user.instruments[0]!.instrumentId);
 }
 
-export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: number, data: EventResponseInstrumentLookup, users: UserInstrumentList): (db3.InstrumentPayload | null) {
+export function getInstrumentForEventUserResponse<TEventResponse extends db3.EventResponses_MinimalEventUserResponse>(response: TEventResponse, userId: number, data: EventResponseInstrumentLookup, users: UserInstrumentList): (db3.InstrumentClientOrDbPayload | null) {
     if (response.instrumentId != null) {
         return data.instrument.getById(response.instrumentId);
     }

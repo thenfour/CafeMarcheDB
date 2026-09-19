@@ -7,12 +7,14 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
-import { EventStatusSignificance, xEvent, xMenuLink } from "src/core/db3/db3";
+import { createDB3Authorization, EventStatusSignificance, xEvent, xInstrument, xInstrumentFunctionalGroup, xMenuLink } from "src/core/db3/db3";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
+import { projectDB3ModelPublicIds } from "src/core/db3/server/db3PublicIds";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadUserSettings } from "../server/userSettings";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
+import type { DashboardInstrumentPayload, InstrumentFunctionalGroupClientPayload } from "@/src/core/db3/shared/schema/prismArgs";
 
 
 // returns a list of eventIds to show in the dashboard for the current user.
@@ -124,6 +126,7 @@ export default resolver.pipe(
             const authorization = await getRequestAuthorization(ctx.session);
             const currentUser = authorization.user;
             const effectivePermissions = authorization.effectivePermissions;
+            const publicData = createDB3Authorization(currentUser, effectivePermissions);
 
             const menuItemsCall = queryTable({
                 filter: { items: [] },
@@ -148,7 +151,7 @@ export default resolver.pipe(
                 db.eventTag.findMany(),
                 db.eventAttendance.findMany({ where: { isDeleted: false } }),
                 db.fileTag.findMany(),
-                db.instrument.findMany({ include: { instrumentTags: true } }),
+                db.instrument.findMany({ include: { instrumentTags: true, functionalGroup: true } }),
                 db.instrumentTag.findMany(),
                 db.instrumentFunctionalGroup.findMany(),
                 db.songTag.findMany(),
@@ -182,6 +185,13 @@ export default resolver.pipe(
             ] = results;
 
             const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
+            const clientInstrumentFunctionalGroups = instrumentFunctionalGroup
+                .map(group => (
+                    projectDB3ModelPublicIds(xInstrumentFunctionalGroup, group, publicData) as InstrumentFunctionalGroupClientPayload
+                ));
+            const clientInstruments = instrument.map(item => (
+                projectDB3ModelPublicIds(xInstrument, item, publicData) as DashboardInstrumentPayload
+            ));
 
             const ret = {
                 userTag,
@@ -192,9 +202,9 @@ export default resolver.pipe(
                 eventTag,
                 eventAttendance,
                 fileTag,
-                instrument,
+                instrument: clientInstruments,
                 instrumentTag,
-                instrumentFunctionalGroup,
+                instrumentFunctionalGroup: clientInstrumentFunctionalGroups,
                 songTag,
                 songCreditType,
                 dynMenuLinks: dynMenuLinks.items as Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>[],

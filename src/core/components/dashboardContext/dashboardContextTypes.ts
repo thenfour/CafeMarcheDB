@@ -4,7 +4,8 @@ import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
-import { EnrichedInstrument } from "../../db3/shared/schema/enrichedInstrumentTypes";
+import type { InstrumentClientPayload, InstrumentFunctionalGroupClientPayload } from "../../db3/shared/schema/prismArgs";
+import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
@@ -27,8 +28,8 @@ export abstract class DashboardContextDataBase {
     permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     role: TableAccessor<Prisma.RoleGetPayload<{}>>;
 
-    instrument: TableAccessor<EnrichedInstrument<Prisma.InstrumentGetPayload<{ include: { instrumentTags: true } }>>>;
-    instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;
+    instrument: TableAccessor<InstrumentClientPayload>;
+    instrumentFunctionalGroup: TableAccessor<InstrumentFunctionalGroupClientPayload, InstrumentFunctionalGroupPublicId>;
 
     currentUser: db3.UserPayload | null;
     serverBaseUri: string;
@@ -120,7 +121,7 @@ export abstract class DashboardContextDataBase {
     brand: DbBrandConfig;
 
     abstract partitionEventSegmentsByCancellation<Tseg extends Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>>(segments: Tseg[]): [Tseg[], Tseg[]];
-    abstract sortInstruments<Tinst extends Prisma.InstrumentGetPayload<{ select: { id: true, sortOrder: true, functionalGroupId: true } }>>(instruments: Tinst[]): Tinst[];
+    abstract sortInstruments<Tinst extends { sortOrder: number, functionalGroupId: InstrumentFunctionalGroupPublicId }>(instruments: Tinst[]): Tinst[];
     abstract isAttendanceIdGoing(attendanceId: number | null): boolean;
     abstract getVisibilityPermissions(): Prisma.PermissionGetPayload<{}>[];
 }

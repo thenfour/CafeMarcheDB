@@ -22,7 +22,10 @@ export interface CMDBTableFilterItem { // from MUI GridFilterItem
 export interface CMDBTableFilterModel {
     items?: CMDBTableFilterItem[];
     quickFilterValues?: any[];
+
+    // policy: pks only searchable by sysadmins (natural ids are not considered publicly-knowable)
     pks?: number[]; // if specified, find items `where id in (...pks)`
+    publicIds?: string[]; // public transport identity for converted tables
 
     tagIds?: number[];
     tableParams?: TAnyModel;

@@ -24,6 +24,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
+import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, type TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconMap";
 import { type ColorPaletteEntry, type ColorVariationSpec, StandardVariationSpec } from "../../components/color/palette";
@@ -84,7 +85,7 @@ export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(prop
             return false;
         }
         // both non-null.
-        const ret = a![props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember] === b![props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember];
+        const ret = a![props.foreignSpec.typedSchemaColumn.getForeignTableSchema().clientIdMember] === b![props.foreignSpec.typedSchemaColumn.getForeignTableSchema().clientIdMember];
         return ret;
     };
 
@@ -107,7 +108,7 @@ export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(prop
         {nullItem}
         {items.map(item => {
             const selected = isEqual(item, props.value);
-            return <React.Fragment key={item[props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
+            return <React.Fragment key={item[props.foreignSpec.typedSchemaColumn.getForeignTableSchema().clientIdMember]}>
                 {props.foreignSpec.args.renderAsChip!({
                     value: item,
                     // this doesn't work and isn't really useful anyway.
@@ -324,18 +325,22 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
 
 
         if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!] != null) {
-            const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!]);
+            const foreignTable = this.typedSchemaColumn.getForeignTableSchema();
+            const rawForeignId = tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkidMember!];
+            const filter: CMDBTableFilterModel = foreignTable.publicIdMember
+                ? { items: [], publicIds: [String(rawForeignId)] } // todo: a helper to coerce rawForeignId to a public id for this table; in theory it may not be a string.
+                : {
+                    items: [{
+                        field: foreignTable.pkMember,
+                        operator: "equals",
+                        value: parseIntOrNull(rawForeignId),
+                    }],
+                };
 
             const queryInput: db3.QueryRequestInput = {
                 table: this.typedSchemaColumn.getForeignTableSchema(),
                 orderBy: undefined,
-                filter: {
-                    items: [{
-                        field: this.typedSchemaColumn.getForeignTableSchema().pkMember,
-                        operator: "equals",
-                        value: fkid,
-                    }]
-                },
+                filter,
                 cmdbQueryContext: `ForeignSingleFieldClient querying table ${this.typedSchemaColumn.getForeignTableSchema().tableName} for table.column ${this.schemaTable.tableName}.${this.columnName}`
             };
 
@@ -394,7 +399,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         // for NEW items, use the fixed value passed in as table params.
         // so when you filter by some master object (editing event segments for event XYZ), the master object is a fixed and pre-selected.
         if (this.fixedValue != null) {
-            const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
+            const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().clientIdMember;
             const currentVal = params.row[this.typedSchemaColumn.member];
             if (currentVal === null || (this.fixedValue[foreignPkMember] !== currentVal[foreignPkMember])) {
                 value = this.fixedValue;
@@ -422,7 +427,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
                     validationError={validationValue}
                     value={value as any}
                     onChange={(newValue: TForeign | null) => {
-                        const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
+                        const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().clientIdMember;
                         params.api.setFieldValues({
                             [this.args.columnName]: newValue,
                             [this.typedSchemaColumn.fkidMember!]: !!newValue ? newValue[foreignPkMember] : null,
@@ -527,7 +532,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
     const nullBehavior = allowNull ? CMSelectNullBehavior.AllowNull : CMSelectNullBehavior.NonNullable;
     const descriptionSettingName = props.descriptionSettingName || props.spec.fieldDescriptionSettingName;
     const source: SelectionSource<TForeign> = {
-        getKey: item => item[foreignSchema.pkMember],
+        getKey: item => item[foreignSchema.clientIdMember],
         getLabel: props.spec.getSelectionLabel,
         renderValue: item => props.spec.args.renderAsChip!({ value: item, colorVariant: StandardVariationSpec.Strong }),
         renderOption: (item, selected) => props.spec.args.renderAsListItem!({}, item, selected),

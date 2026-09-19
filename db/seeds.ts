@@ -6,6 +6,7 @@ import { SeedEvents_VeryRandom } from './seeding/events';
 import { SeedActivity } from './seeding/activitySeeding';
 import { SeedWikiPages } from './seeding/wikiPageSeeding';
 import { DefaultRolePermissionAssignments, DefaultRoles } from '../shared/defaultRolePermissionAssignments';
+import { generatePublicId } from '../src/server/publicId';
 
 const gState = new SeedingState();
 
@@ -484,7 +485,7 @@ const main = async () => {
         "color": null,
         "sortOrder": 500
       }
-    ]
+    ].map(group => ({ ...group, publicId: generatePublicId<"InstrumentFunctionalGroup">() }));
 
   const functionalGroupsResult = await SeedTable("instrumentFunctionalGroup", gState.prisma.instrumentFunctionalGroup, functionalGroupSeed);
 

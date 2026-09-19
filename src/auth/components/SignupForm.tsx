@@ -44,6 +44,7 @@ export const SignupForm = (props: SignupFormProps) => {
       props.onSuccess?.();
     } catch (error: any) {
       console.log(error);
+      // P2002 = "Unique constraint failed on the {constraint}"
       if (error.code === "P2002" && error.meta?.target?.includes("email")) {
         showSnackbar({ severity: "error", children: "This email is already being used" });
       } else {

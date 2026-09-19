@@ -376,9 +376,9 @@ export const FileEditor = (props: FileEditorProps) => {
             new DB3Client.DateTimeColumn({ columnName: "fileCreatedAt" }),
 
             new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline' }),
-            new DB3Client.TagsFieldClient<db3.FileInstrumentTagPayload>({
+            new DB3Client.TagsFieldClient<db3.FileInstrumentTagClientPayload>({
                 columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
-                overrideRowInfo: (association: db3.FileInstrumentTagPayload, rowInfo: db3.RowInfo) => {
+                overrideRowInfo: (association: db3.FileInstrumentTagClientPayload, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
                     const fg = dashboardContext.instrumentFunctionalGroup.getById(association.instrument.functionalGroupId);
                     if (!fg) return rowInfo;
@@ -614,14 +614,14 @@ const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): Calculate
 export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps) => {
     const dashboardContext = useDashboardContext();
 
-    const getInstrumentColor = (instrument: db3.InstrumentPayloadMinimum) => {
+    const getInstrumentColor = (instrument: db3.InstrumentClientPayload) => {
         const fg = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
         if (!fg) return null;
         return fg.color;
     };
 
     const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ selector: 'tags', foreignSelector: "fileTag", fileTags: props.fileTags });
-    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedInstruments', foreignSelector: "instrument", fileTags: props.fileTags });
+    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentClientPayload>({ selector: 'taggedInstruments', foreignSelector: "instrument", fileTags: props.fileTags });
     const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedEvents', foreignSelector: "event", fileTags: props.fileTags });
     const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ selector: 'taggedUsers', foreignSelector: "user", fileTags: props.fileTags });
     const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ selector: 'taggedSongs', foreignSelector: "song", fileTags: props.fileTags });

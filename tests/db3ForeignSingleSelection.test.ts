@@ -71,7 +71,7 @@ beforeEach(() => {
     spec.schemaColumn = {
         member: "instrument", allowNull: true, allowInsertFromString: true,
         getForeignTableSchema: () => ({
-            pkMember: "id", tableID: "Instrument", tableName: "Instrument",
+            pkMember: "id", clientIdMember: "id", tableID: "Instrument", tableName: "Instrument",
             getRowInfo: (item: Instrument) => ({ name: item.name }),
             createInsertModelFromString: (name: string) => ({ name }),
             authorizeRowBeforeInsert: () => insertAuthorized,

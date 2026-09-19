@@ -23,7 +23,7 @@ export type AttendanceChange =
 
 export interface AttendanceControlEnvironment {
     attendances: Prisma.EventAttendanceGetPayload<{}>[];
-    instruments: db3.InstrumentPayload[];
+    instruments: db3.InstrumentClientOrDbPayload[];
     // Reject on failure. The adapter owns persistence, refetching, telemetry,
     // and feedback; the view owns only the in-progress and editing states.
     onSave: (change: AttendanceChange) => Promise<void>;
@@ -48,7 +48,9 @@ const captions: Record<Timing, readonly string[]> = {
 };
 
 const InstrumentButton = ({ value, selected, onSelect }: {
-    value: db3.InstrumentPayload | null; selected: boolean; onSelect: () => void;
+    value: db3.InstrumentClientOrDbPayload | null;
+    selected: boolean;
+    onSelect: () => void;
 }) => !value?.name ? null : <CMChip
     onClick={onSelect} shape="rounded" border="noBorder"
     className={`attendanceInstrument CMChipNoMargin ${selected ? "" : "HalfOpacity"}`}
@@ -88,11 +90,11 @@ const CommentEditor = ({ response, environment, onClose }: {
         onClose={onClose}
         title={environment.commentDialogTitle}
         actions={<>
-                <CMButton className="freeButton cancelButton" onClick={onClose}>Cancel</CMButton>
-                <CMButton className="saveButton saveAndCloseButton freeButton changed" onClick={async () => { await save(); onClose(); }}>
-                    {gIconMap.CheckCircleOutline()}Save
-                </CMButton>
-            </>}
+            <CMButton className="freeButton cancelButton" onClick={onClose}>Cancel</CMButton>
+            <CMButton className="saveButton saveAndCloseButton freeButton changed" onClick={async () => { await save(); onClose(); }}>
+                {gIconMap.CheckCircleOutline()}Save
+            </CMButton>
+        </>}
     >
         {environment.commentDialogDescription}
         <Markdown3Editor value={value} onChange={setValue} nominalHeight={200}

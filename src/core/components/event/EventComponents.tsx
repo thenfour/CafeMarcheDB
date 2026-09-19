@@ -685,7 +685,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xInstrumentFunctionalGroup,
             columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
+                new DB3Client.PublicIdColumnClient(),
             ],
         }),
     });
@@ -726,8 +726,8 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                         </th>;
                     })}
                 </tr>
-                {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
-                    return <tr key={functionalGroup.id}>
+                {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupClientPayload[]).map(functionalGroup => {
+                    return <tr key={functionalGroup.publicId}>
                         <td className='instrumentFunctionalGroupTD'>
                             <InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} border={'noBorder'} shape='rectangle' />
                         </td>
@@ -744,7 +744,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                                 const eventResponse = responseInfo.getEventResponseForUser(resp.user, dashboardContext, userMap);
                                 assert(eventResponse, "eventResponse null; usermap must not be complete");
                                 const responseInstrument = eventResponse.instrument;
-                                if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
+                                if (responseInstrument?.functionalGroupId !== functionalGroup.publicId) return false;
                                 return eventResponse.isRelevantForDisplay;
                             });
                             sortedResponses.sort((a, b) => {

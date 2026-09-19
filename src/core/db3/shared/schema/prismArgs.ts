@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
 //import * as db3 from "../db3core"; // circular
 import { TAnyModel } from "shared/rootroot";
 import { AuxUserArgs } from "types";
@@ -332,6 +333,13 @@ export const InstrumentArgs = Prisma.validator<Prisma.InstrumentArgs>()({
 
 export type InstrumentPayload = Prisma.InstrumentGetPayload<typeof InstrumentArgs>;
 
+const InstrumentWithFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentArgs>()({
+    include: {
+        functionalGroup: true,
+    },
+});
+type InstrumentWithFunctionalGroupPayload = Prisma.InstrumentGetPayload<typeof InstrumentWithFunctionalGroupArgs>;
+
 
 ////////////////////////////////////////////////////////////////
 export const InstrumentMinimumArgs = Prisma.validator<Prisma.InstrumentArgs>()({
@@ -554,13 +562,46 @@ export type SongPayloadMinimum = Prisma.SongGetPayload<{
 
 ////////////////////////////////////////////////////////////////
 export const InstrumentFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentFunctionalGroupArgs>()({
-    include: {
-        instruments: true,
-    },
 });
 
 export type InstrumentFunctionalGroupPayload = Prisma.InstrumentFunctionalGroupGetPayload<typeof InstrumentFunctionalGroupArgs>;
 export type InstrumentFunctionalGroupPayloadMinimum = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
+
+// i'm thinking of a generic way to do this, but probably done together with an enrichment step.
+export type InstrumentFunctionalGroupClientPayload = Omit<InstrumentFunctionalGroupPayload, "id" | "publicId"> & {
+    publicId: InstrumentFunctionalGroupPublicId;
+    id?: number;
+};
+
+// Canonical client representation of an instrument. Instrument itself has not
+// yet been converted to public IDs, so its own id remains numeric; the foreign
+// key to the converted functional-group table does not.
+export type InstrumentClientPayload = Omit<InstrumentPayload, "functionalGroupId" | "functionalGroup"> & {
+    functionalGroupId: InstrumentFunctionalGroupPublicId;
+    functionalGroup: InstrumentFunctionalGroupClientPayload;
+};
+
+// Some shared calculation code is also used by server-side/scenario data that
+// still carries Prisma's numeric foreign key.
+export type InstrumentClientOrDbPayload = InstrumentClientPayload | InstrumentPayload;
+
+// replaces natural-id-variants from prisma with publicid variants.
+export type InstrumentWithFunctionalGroupClientPayload = Omit<InstrumentWithFunctionalGroupPayload, "functionalGroupId" | "functionalGroup"> & {
+    functionalGroupId: InstrumentFunctionalGroupPublicId;
+    functionalGroup: InstrumentFunctionalGroupClientPayload;
+};
+
+type DashboardInstrumentDbPayload = Prisma.InstrumentGetPayload<{
+    include: {
+        instrumentTags: true;
+        functionalGroup: true;
+    };
+}>;
+
+export type DashboardInstrumentPayload = Omit<DashboardInstrumentDbPayload, "functionalGroupId" | "functionalGroup"> & {
+    functionalGroupId: InstrumentFunctionalGroupPublicId;
+    functionalGroup: InstrumentFunctionalGroupClientPayload;
+};
 
 export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
@@ -1170,10 +1211,13 @@ export const FileEventTagNaturalOrderBy: Prisma.FileEventTagOrderByWithRelationI
 export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagArgs>()({
     include: {
         file: true,
-        instrument: true,
+        instrument: InstrumentWithFunctionalGroupArgs,
     }
 });
 export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
+export type FileInstrumentTagClientPayload = Omit<FileInstrumentTagPayload, "instrument"> & {
+    instrument: InstrumentWithFunctionalGroupClientPayload;
+};
 export type FileInstrumentTagPayloadWithInstrument = Prisma.FileInstrumentTagGetPayload<{
     include: {
         instrument: true,
