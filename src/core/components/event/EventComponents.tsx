@@ -5,7 +5,7 @@ import { HostingMode } from '@/shared/brandConfigBase';
 import { EditNote, LibraryMusic } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, DialogContent, DialogTitle, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Switch, Tooltip } from "@mui/material";
+import { Breadcrumbs, Divider, FormControlLabel, Link, ListItemIcon, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
@@ -29,7 +29,8 @@ import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtil
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { InstrumentChip, InstrumentFunctionalGroupChip } from '../CMCoreComponents';
-import { AdminInspectObject, CMButton, CMDialogContentText, DialogActionsCM, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
+import { CMDialog } from '../CMDialog';
+import { AdminInspectObject, CMButton, CMDialogContentText, DotMenu, EventDateField, NameValuePair } from '../CMCoreComponents2';
 import { CMLink } from '../CMLink';
 import { GetStyleVariablesForColor } from '../color/ColorClientUtils';
 import { ColorVariationSpec, gLightSwatchColors, StandardVariationSpec } from '../color/palette';
@@ -40,7 +41,6 @@ import { EventAttendanceControl } from '../EventAttendanceComponents';
 import { EventSongListTabContent } from '../EventSongListComponents';
 import { ActivityFeature } from '../featureReports/activityTracking';
 import { Markdown } from '../markdown/Markdown';
-import { ReactiveInputDialog } from '../ReactiveInputDialog';
 import { SearchItemBigCardLink } from '../SearchItemBigCardLink';
 import { SettingMarkdown } from '../SettingMarkdown';
 import { FilesTabContent } from '../SongFileComponents';
@@ -258,14 +258,19 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const [cancelledSegments, uncancelledSegments] = dashboardContext.partitionEventSegmentsByCancellation(props.event.segments);
     const segmentsToShow = showCancelledSegments ? props.event.segments : uncancelledSegments;
 
-    return <ReactiveInputDialog onCancel={props.onCancel}>
-
-        <DialogTitle>
+    return <CMDialog
+        open
+        onClose={props.onCancel}
+        title={<>
             <SettingMarkdown setting="EventAttendanceEditDialog_TitleMarkdown" />
             <AdminInspectObject src={eventResponseValue} label="event response" />
             <AdminInspectObject src={eventSegmentResponseValues} label="segment responses" />
-        </DialogTitle>
-        <DialogContent dividers>
+        </>}
+        actions={<>
+            <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
+            <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</CMButton>
+        </>}
+    >
             <CMDialogContentText>
                 <SettingMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
             </CMDialogContentText>
@@ -301,13 +306,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                 {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, false)}
 
             </div>
-            <DialogActionsCM>
-                <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
-                <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</CMButton>
-            </DialogActionsCM>
-        </DialogContent>
-
-    </ReactiveInputDialog>;
+    </CMDialog>;
 };
 
 

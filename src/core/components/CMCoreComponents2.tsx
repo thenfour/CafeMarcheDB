@@ -23,44 +23,6 @@ export const AbsoluteUriText = (props: { relativeUri: string }) => {
 
 
 
-// <DialogActions> causes issues on safari mobile; bottom of the dialog easily becomes inaccessible.
-// use this instead , but PUT IT IN THE <DialogContent> area, not the <Dialog> area.
-// this brings the action buttons into the normal scrolling area of the dialog so they aren't subject
-// to weird behavior that cuts them off permanently. It also adds a tall footer so you can scroll
-// the action buttons into view more readily.
-export const DialogActionsCM = (props: React.PropsWithChildren<{ fullScreen?: boolean; className?: string }>) => {
-    //     sx={{
-    //     flexShrink: 0, gap: 1, px: 3, pt: 2,
-    //     pb: "max(16px, env(safe-area-inset-bottom))",
-    //     "& .MuiButton-root": { minHeight: 44, minWidth: 88, ml: 0, flex: fullScreen ? 1 : undefined },
-    // }}
-
-    return <Box
-        className={`CMDialogActions MuiDialogActions-root ${props.className}`}
-    // sx={{
-    //     flexShrink: 0,
-    //     gap: 1,
-    //     px: 3,
-    //     pt: 2,
-    //     pb: "max(16px, env(safe-area-inset-bottom))",
-    //     "& .MuiButton-root": {
-    //         minHeight: 44,
-    //         minWidth: 88,
-    //         ml: 0,
-    //         flex: props.fullScreen ? 1 : undefined,
-    //     },
-    // }}
-    >
-        <div className="CMDialogActionsButtonContainer">
-            {props.children}
-        </div>
-        <div className="CMDialogActionsFooter">
-            --
-        </div>
-    </Box>;
-};
-
-
 export const CMLinkButton = (props: { href: string; children: React.ReactNode }) => {
     return <CMButton component="a" href={props.href}>
         {props.children}
@@ -641,7 +603,10 @@ export const CMTextarea: React.FC<CMTextareaProps> = ({ autoHeight = true, autoF
 
 
 
-export const DotMenu = (props: React.PropsWithChildren<{ setCloseMenuProc: (proc: () => void) => void }>) => {
+export const DotMenu = (props: React.PropsWithChildren<{
+    setCloseMenuProc: (proc: () => void) => void;
+    onExited?: () => void;
+}>) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     return <>
         <CMSmallButton className='DotMenu' onClick={(e) => {
@@ -654,6 +619,7 @@ export const DotMenu = (props: React.PropsWithChildren<{ setCloseMenuProc: (proc
             keepMounted
             open={Boolean(anchorEl)}
             onClose={() => setAnchorEl(null)}
+            TransitionProps={{ onExited: props.onExited }}
         >
             {props.children}
         </Menu >

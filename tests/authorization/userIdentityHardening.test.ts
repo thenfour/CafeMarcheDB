@@ -11,7 +11,6 @@ vi.mock("db", async () => {
 
 import db3Mutation from "@db3/mutations/db3mutations"
 import { getVerifiedGoogleProfileEmail } from "src/auth/server/googleProfile"
-import { Permission } from "shared/permissions"
 import {
   createAuthorizationPersona,
   createAuthorizationTestUser,

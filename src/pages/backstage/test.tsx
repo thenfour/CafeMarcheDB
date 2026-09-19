@@ -1,12 +1,12 @@
 import { makeServerSidePermissionGuard } from "@/src/auth/server/serverPageAuthorization";
-import { CMButton, DialogActionsCM } from "@/src/core/components/CMCoreComponents2";
-import { ResponsiveDialog } from "@/src/core/components/ResponsiveDialog";
+import { CMDialog } from "@/src/core/components/CMDialog";
+import { CMButton } from "@/src/core/components/CMCoreComponents2";
 import { BlitzPage } from "@blitzjs/next";
 import MenuIcon from '@mui/icons-material/Menu';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { AppBar, Box, DialogContent, DialogTitle, Drawer, IconButton, List, ListItem, ListItemText, Paper, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { AppBar, Box, Drawer, IconButton, List, ListItem, ListItemText, Paper, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Permission } from "shared/permissions";
 
@@ -216,32 +216,17 @@ grid-template-areas:
             </Paper>
 
             {/* Modal Dialog */}
-            <ResponsiveDialog
+            <CMDialog
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 maxWidth="sm"
                 fullWidth
-                sx={{
-                    '& .MuiBackdrop-root': {
-                        // Add padding to backdrop to prevent overlap with media bar
-                        paddingBottom: `${mediaBarHeight}px`,
-                    },
-                    '& .MuiDialog-container': {
-                        // Ensure dialog container respects the padding
-                        paddingBottom: `${mediaBarHeight}px`,
-                        alignItems: 'flex-start', // Align to top instead of center
-                        paddingTop: '64px', // Add some top padding for better positioning
-                    },
-                    '& .MuiDialog-paper': {
-                        // Dialog should be above content but below media bar
-                        zIndex: theme.zIndex.modal - 1,
-                        margin: 'auto',
-                        maxHeight: `calc(100vh - ${mediaBarHeight + 64}px)`, // Account for media bar + top padding
-                    }
-                }}
+                title="Modal Dialog Test"
+                actions={<>
+                    <CMButton onClick={() => setModalOpen(false)}>Close</CMButton>
+                    <CMButton onClick={() => setIsPlaying(!isPlaying)}>Toggle Media Player</CMButton>
+                </>}
             >
-                <DialogTitle>Modal Dialog Test</DialogTitle>
-                <DialogContent>
                     <Typography variant="body1" sx={{ mb: 2 }}>
                         This modal dialog demonstrates that:
                     </Typography>
@@ -267,14 +252,7 @@ grid-template-areas:
                             is too long to fit in the available space.
                         </Typography>
                     ))}
-                </DialogContent>
-                <DialogActionsCM>
-                    <CMButton onClick={() => setModalOpen(false)}>Close</CMButton>
-                    <CMButton onClick={() => setIsPlaying(!isPlaying)}>
-                        Toggle Media Player
-                    </CMButton>
-                </DialogActionsCM>
-            </ResponsiveDialog>
+            </CMDialog>
         </Box>
     );
 };

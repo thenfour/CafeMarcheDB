@@ -1,6 +1,5 @@
 import { hash256 } from "@blitzjs/auth";
 import { timingSafeEqual } from "crypto";
-import { UserEmailSchema } from "../schemas";
 
 export const kMinimumAdminBootstrapSecretLength = 32;
 

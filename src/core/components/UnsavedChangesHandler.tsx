@@ -1,13 +1,8 @@
 // UnsavedChangesHandler.tsx
-import {
-  Button,
-  DialogContent,
-  DialogTitle
-} from '@mui/material';
+import { Button } from '@mui/material';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
-import { DialogActionsCM } from './CMCoreComponents2';
-import { ResponsiveDialog } from './ResponsiveDialog';
+import { CMDialog } from './CMDialog';
 
 interface UnsavedChangesHandlerProps {
   isDirty: boolean;
@@ -73,18 +68,18 @@ const UnsavedChangesHandler: React.FC<UnsavedChangesHandlerProps> = ({
     setNextRoute(null);
   };
 
-  return <ResponsiveDialog open={showDialog}>
-    <DialogTitle>Unsaved Changes</DialogTitle>
-    <DialogContent>
-      You have unsaved changes. Are you sure you want to leave?
-      <DialogActionsCM>
+  return <CMDialog
+    open={showDialog}
+    title="Unsaved Changes"
+    actions={<>
         <Button onClick={cancelNavigation}>Stay</Button>
         <Button onClick={confirmNavigation} color="primary">
           Leave
         </Button>
-      </DialogActionsCM>
-    </DialogContent>
-  </ResponsiveDialog>;
+      </>}
+  >
+    You have unsaved changes. Are you sure you want to leave?
+  </CMDialog>;
 };
 
 export default UnsavedChangesHandler;

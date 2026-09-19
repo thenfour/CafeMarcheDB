@@ -1,14 +1,14 @@
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { Alert, Button, DialogContent, DialogTitle, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Alert, Button, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import React, { Suspense } from "react";
 import addUserSignInMethod from "src/auth/mutations/addUserSignInMethod";
 import removeUserSignInMethod from "src/auth/mutations/removeUserSignInMethod";
 import getUserSignInMethods from "src/auth/queries/getUserSignInMethods";
 import { SignInMethodSchema } from "src/auth/signInMethodSchemas";
 import { CMChip, CMChipContainer } from "../CMChip";
-import { CMButton, DialogActionsCM } from "../CMCoreComponents2";
+import { CMButton } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
 import { useConfirm } from "../ConfirmationDialog";
-import { ResponsiveDialog } from "../ResponsiveDialog";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
 import type { EnrichedVerboseUser } from "./UserListItem";
 
@@ -84,14 +84,17 @@ export const UserSignInMethodsButton = (props: Props) => {
     const [open, setOpen] = React.useState(false);
     return <>
         <CMButton onClick={() => setOpen(true)}>Manage Sign-in methods</CMButton>
-        <ResponsiveDialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-            <DialogTitle>Sign-in methods for {props.user.name}</DialogTitle>
-            <DialogContent dividers>
-                {open && <Suspense fallback={<div>Loading sign-in methods...</div>}>
-                    <SignInMethodsEditor {...props} />
-                </Suspense>}
-                <DialogActionsCM><Button onClick={() => setOpen(false)}>Close</Button></DialogActionsCM>
-            </DialogContent>
-        </ResponsiveDialog>
+        <CMDialog
+            open={open}
+            onClose={() => setOpen(false)}
+            fullWidth
+            maxWidth="sm"
+            title={<>Sign-in methods for {props.user.name}</>}
+            actions={<Button onClick={() => setOpen(false)}>Close</Button>}
+        >
+            {open && <Suspense fallback={<div>Loading sign-in methods...</div>}>
+                <SignInMethodsEditor {...props} />
+            </Suspense>}
+        </CMDialog>
     </>;
 };

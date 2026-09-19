@@ -4,7 +4,7 @@
 // - break out all util components
 // - break out setlist planner client utils into a lib
 
-import { Button, DialogContent, Tooltip } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { QuickSearchItemTypeSets } from "shared/quickFilter";
@@ -13,11 +13,11 @@ import { CMTextInputBase } from "src/core/components/CMTextField";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import { GetUserAttendanceRet } from "src/core/db3/shared/apiTypes";
 import { SetlistPlan, SetlistPlanAssociatedItem, SetlistPlanLedDef, SetlistPlanLedValue } from "src/core/db3/shared/setlistPlanTypes";
-import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
+import { NameValuePair } from "../CMCoreComponents2";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
 import { Markdown } from "../markdown/Markdown";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SetlistPlanMutator } from "./SetlistPlanUtilities";
 import { ColorPick } from "../color/ColorPick";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
@@ -100,8 +100,11 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
             </div>
         </Tooltip>
         {open && (
-            <ReactiveInputDialog onCancel={() => setOpen(false)}>
-                <DialogContent>
+            <CMDialog
+                open
+                onClose={() => setOpen(false)}
+                actions={<Button onClick={() => setOpen(false)}>Close</Button>}
+            >
                     <CMTextInputBase
                         value={props.value?.text || ""}
                         //autoFocus={true}
@@ -122,11 +125,7 @@ export const SetlistPlannerLed = (props: SetlistPlannerLedProps) => {
                             });
                         }}
                     />
-                    <DialogActionsCM>
-                        <Button onClick={() => setOpen(false)}>Close</Button>
-                    </DialogActionsCM>
-                </DialogContent>
-            </ReactiveInputDialog >
+            </CMDialog>
         )}
     </>;
 };

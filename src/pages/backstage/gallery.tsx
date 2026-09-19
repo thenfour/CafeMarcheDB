@@ -364,6 +364,9 @@ const MainContent = () => {
         <div>
             <a href="test/quickSearchTest">quickSearchTest.tsx</a>
         </div>
+        <div>
+            <a href="test/dialogs">Dialog UX test</a>
+        </div>
 
         <ClientInfoTester />
 

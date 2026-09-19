@@ -1,7 +1,7 @@
 import { formatEventDateRangeTranslations } from "shared/dateTimePresentation";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 
-import { DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
+import { FormControlLabel, Switch } from "@mui/material";
 import { Prisma } from "db";
 import React from "react";
 import { EnNlFr, LangSelectStringWithDetail } from "shared/lang";
@@ -14,11 +14,11 @@ import { getAgendaItem } from "../../db3/shared/publicFeedApi";
 import { PublicAgendaItemSpec } from "../../db3/shared/publicTypes";
 import { CMChip, CMChipContainer } from "../CMChip";
 import { EditTextField } from "../CMCoreComponents";
-import { CMButton, CMDialogContentText, DialogActionsCM } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
+import { CMButton, CMDialogContentText } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { ActivityFeature } from "../featureReports/activityTracking";
 import { AgendaItem } from '../frontpage/homepageComponents';
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { SettingMarkdown } from "../SettingMarkdown";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
@@ -52,16 +52,18 @@ const EditTextDialog = (props: EditTextDialogProps) => {
     const [valueEn, setValueEn] = React.useState<string>(props.valueEn);
     const [valueNl, setValueNl] = React.useState<string>(props.valueNl);
     const [valueFr, setValueFr] = React.useState<string>(props.valueFr);
-    return <ReactiveInputDialog
-        onCancel={props.onCancel}
+    return <CMDialog
+        open
+        onClose={props.onCancel}
+        title={props.title}
+        actions={<>
+            <CMButton onClick={props.onCancel}>Cancel</CMButton>
+            <CMButton onClick={() => { props.onOK(valueEn, valueNl, valueFr) }}>OK</CMButton>
+        </>}
     >
-        <DialogTitle>
-            {props.title}
-        </DialogTitle>
-        <DialogContent dividers>
-            <CMDialogContentText>
-                {props.description}
-            </CMDialogContentText>
+        <CMDialogContentText>
+            {props.description}
+        </CMDialogContentText>
             <h3>EN</h3>
             <EditTextField
                 columnSpec={props.columnSpecEn}
@@ -83,12 +85,7 @@ const EditTextDialog = (props: EditTextDialogProps) => {
                 onChange={(newValue) => { setValueFr(newValue) }}
                 value={valueFr}
             />
-            <DialogActionsCM>
-                <CMButton onClick={props.onCancel}>Cancel</CMButton>
-                <CMButton onClick={() => { props.onOK(valueEn, valueNl, valueFr) }}>OK</CMButton>
-            </DialogActionsCM>
-        </DialogContent>
-    </ReactiveInputDialog>;
+    </CMDialog>;
 };
 
 

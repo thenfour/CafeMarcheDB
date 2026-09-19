@@ -1,9 +1,9 @@
-import { DialogContent, DialogTitle, InputBase } from "@mui/material";
+import { InputBase } from "@mui/material";
 import React from "react";
 import { QuickSearchItemMatch, QuickSearchItemTypeSets } from "shared/quickFilter";
 import { IsNullOrWhitespace } from "shared/utils";
-import { DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
+import { CMDialog } from "../CMDialog";
+import { NameValuePair } from "../CMCoreComponents2";
 import { AssociationAutocomplete } from "../ItemAssociation";
 import { MarkdownWikiLinkRegexWithSurroundingWhitespace } from "./CMDBLinkMarkdownPlugin";
 import { MarkdownEditorCommand, MarkdownEditorCommandApi, MarkdownTokenContext } from "./MarkdownEditorCommandBase";
@@ -91,11 +91,15 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationT
             setOpen(true);
         }}
     >
-        <ReactiveInputDialog open={open} onCancel={closeDialog}>
-            <DialogTitle>
-                Insert reference to Wiki article
-            </DialogTitle>
-            <DialogContent>
+        <CMDialog
+            open={open}
+            onClose={closeDialog}
+            title="Insert reference to Wiki article"
+            actions={<>
+                <MuiButtonWithEnterHandler onClick={handleOK}>Ok</MuiButtonWithEnterHandler>
+                <MuiButtonWithEnterHandler onClick={closeDialog}>Cancel</MuiButtonWithEnterHandler>
+            </>}
+        >
                 <NameValuePair
                     name="Wiki link"
                     value={<>
@@ -134,12 +138,7 @@ const WikiReferenceDialog: React.FC<{ api: MarkdownEditorCommandApi, invocationT
                         />
                     }
                 />
-                <DialogActionsCM>
-                    <MuiButtonWithEnterHandler onClick={handleOK}>Ok</MuiButtonWithEnterHandler>
-                    <MuiButtonWithEnterHandler onClick={closeDialog}>Cancel</MuiButtonWithEnterHandler>
-                </DialogActionsCM>
-            </DialogContent>
-        </ReactiveInputDialog>
+        </CMDialog>
     </MarkdownEditorToolbarItem >;
 };
 

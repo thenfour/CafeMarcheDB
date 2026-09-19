@@ -2,7 +2,7 @@
 import { useMutation } from '@blitzjs/rpc';
 import { PushPin } from '@mui/icons-material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { Button, Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
+import { Divider, ListItemIcon, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { existsInArray, toggleValueInArray } from 'shared/arrayUtils';
 import { Permission } from 'shared/permissions';

@@ -1,7 +1,7 @@
-import { DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { DialogContentText } from '@mui/material';
 import React from 'react';
-import { CMButton, DialogActionsCM } from './CMCoreComponents2';
-import { ReactiveInputDialog } from './ReactiveInputDialog';
+import { CMButton } from './CMCoreComponents2';
+import { CMDialog } from './CMDialog';
 
 
 export type MessageBoxButton = "ok" | "cancel" | "yes" | "no";
@@ -62,8 +62,12 @@ export const MessageBoxProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
             handleClose(defaultButton); // Default to "ok" on Enter key press
         } else if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
             handleClose(cancelButton); // Default to "cancel" on Escape key press
         }
     };
@@ -71,19 +75,19 @@ export const MessageBoxProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return (
         <MessageBoxContext.Provider value={{ showMessage }}>
             {children}
-            <ReactiveInputDialog open={open} onCancel={() => handleClose("cancel")} onKeyDown={handleKeyDown}>
-                {title && <DialogTitle>{title}</DialogTitle>}
-                <DialogContent dividers>
-                    <DialogContentText>{message}</DialogContentText>
-                    <DialogActionsCM>
-                        {buttons.map((btn) => (
-                            <CMButton key={btn} onClick={() => handleClose(btn)}>
-                                {btn.toUpperCase()}
-                            </CMButton>
-                        ))}
-                    </DialogActionsCM>
-                </DialogContent>
-            </ReactiveInputDialog>
+            <CMDialog
+                open={open}
+                onClose={() => handleClose(cancelButton)}
+                onKeyDown={handleKeyDown}
+                title={title || undefined}
+                actions={buttons.map((btn) => (
+                    <CMButton key={btn} onClick={() => handleClose(btn)}>
+                        {btn.toUpperCase()}
+                    </CMButton>
+                ))}
+            >
+                <DialogContentText>{message}</DialogContentText>
+            </CMDialog>
         </MessageBoxContext.Provider>
     );
 };

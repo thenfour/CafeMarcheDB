@@ -1,5 +1,4 @@
 import { TAnyModel } from "@/shared/rootroot";
-import { DialogContent, DialogTitle } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
@@ -13,7 +12,8 @@ import * as db3 from "src/core/db3/db3";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { gIconMap } from "../../db3/components/IconMap";
 import { AppContextMarker } from "../AppContext";
-import { CMButton, DialogActionsCM } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
+import { CMButton } from "../CMCoreComponents2";
 import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
 import { ActivityFeature } from "../featureReports/activityTracking";
@@ -127,12 +127,16 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], autoFocus });
     };
 
-    return <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
-
-        <DialogTitle>
-            Create a new event
-        </DialogTitle>
-        <DialogContent dividers>
+    return <CMDialog
+        open
+        onClose={props.onCancel}
+        className="EventSongListValueEditor"
+        title="Create a new event"
+        actions={<>
+            <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()} enabled={!grayed}>Cancel</CMButton>
+            <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
+        </>}
+    >
             <SettingMarkdown setting="NewEventDialogDescription" />
 
             <div className="NameValuePairList">
@@ -152,13 +156,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                 {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)}
 
             </div>
-            <DialogActionsCM>
-                <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()} enabled={!grayed}>Cancel</CMButton>
-                <CMButton onClick={handleSaveClick} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
-            </DialogActionsCM>
-        </DialogContent>
-
-    </ReactiveInputDialog>;
+    </CMDialog>;
 };
 
 export const NewEventButton = (props: {}) => {

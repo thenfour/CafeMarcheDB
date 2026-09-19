@@ -5,17 +5,17 @@ import { UserChip } from "@/src/core/components/user/userChip";
 import { EnrichedUser } from "@/src/core/db3/shared/schema/enrichedUserTypes";
 import { BlitzPage, useRouterQuery } from "@blitzjs/next";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { DialogContent, DialogTitle, Tooltip } from "@mui/material";
+import { Tooltip } from "@mui/material";
 import { Prisma } from "db";
 import React, { Suspense } from "react";
 import ReactDiffViewer from 'react-diff-viewer';
 import { toSorted } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
-import { CMButton, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
+import { CMDialog } from "src/core/components/CMDialog";
+import { CMButton, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { Markdown } from "src/core/components/markdown/Markdown";
 import { useMessageBox } from "src/core/components/MessageBoxContext";
-import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
@@ -57,17 +57,20 @@ const WikiDiffViewer = (props: WikiDiffViewerProps) => {
 
 const WikiRevisionPreviewDialog = (props: { revisionId: number, onClose: () => void }) => {
     const [revision, revisionX] = useQuery(getWikiPageRevision, { revisionId: props.revisionId });
-    return <ReactiveInputDialog onCancel={props.onClose} defaultAction={props.onClose}>
-        <DialogTitle>Previewing {revision?.name} @ {revision?.createdAt.toLocaleString()}</DialogTitle>
-        <DialogContent>
-            <Markdown markdown={revision?.content || ""} />
-            <DialogActionsCM>
-                <CMButton onClick={props.onClose}>
-                    Close
-                </CMButton>
-            </DialogActionsCM>
-        </DialogContent>
-    </ReactiveInputDialog>;
+    return <CMDialog
+        open
+        onClose={props.onClose}
+        title={<>Previewing {revision?.name} @ {revision?.createdAt.toLocaleString()}</>}
+        actions={<CMButton onClick={props.onClose}>Close</CMButton>}
+        onKeyDown={event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                props.onClose();
+            }
+        }}
+    >
+        <Markdown markdown={revision?.content || ""} />
+    </CMDialog>;
 };
 
 const WikiRevisionPreviewButton = (props: { revisionId: number }) => {

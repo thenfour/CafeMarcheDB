@@ -20,6 +20,7 @@ import { API } from "../../db3/clientAPI";
 import { gIconMap } from "../../db3/components/IconMap";
 import { QrHelpers } from "../../db3/shared/qrApi";
 import { AppContextMarker } from "../AppContext";
+import { useDialogAfterMenuClose } from "../CMDialog";
 import { AdminInspectObject } from "../CMCoreComponents2";
 import { ConfirmProvider } from "../ConfirmationDialog";
 import { DashboardContextProvider, useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
@@ -28,7 +29,7 @@ import { LoginSignup } from "../LoginSignupForm";
 import { MediaPlayerBar } from "../mediaPlayer/MediaPlayerBar";
 import { MediaPlayerProvider, useMediaPlayer } from "../mediaPlayer/MediaPlayerContext";
 import { MessageBoxProvider } from "../MessageBoxContext";
-import { QrCodeButton } from "../QrCode";
+import { QrCodeDialog } from "../QrCode";
 import { MainSiteSearch } from "../search/MainSiteSearch";
 import { SettingMarkdown } from "../SettingMarkdown";
 import {
@@ -52,7 +53,7 @@ const formatVersionLabel = (versionInfo?: ServerStartInfo | null): string => {
 };
 
 
-const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
+const AppBarUserIcon_MenuItems = ({ closeMenu, showQrCode }: { closeMenu: () => void, showQrCode: () => void }) => {
     //const [logoutMutation] = useMutation(logout);
     const router = useRouter();
     //const [currentUser] = useCurrentUser();
@@ -120,17 +121,16 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
                 </MenuItem>
                 }
                 <AppContextMarker name="appBarQrCode">
-                    <QrCodeButton
-                        content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
-                        title="QR code for this page"
-                        description={<SettingMarkdown setting={Setting.QrCodeForThisPageDescriptionMarkdown} />}
-                        renderButton={({ onClick }) => (
-                            <MenuItem onClick={() => { onClick(); closeMenu(); }}>
-                                <ListItemIcon><QrCode /></ListItemIcon>
-                                Show QR code for this page
-                            </MenuItem>
-                        )}
-                    />
+                    <MenuItem onClick={() => {
+                        void recordFeature({
+                            feature: ActivityFeature.qr_code_generate,
+                            context: "appBarQrCode/QrCodeButton",
+                        });
+                        showQrCode();
+                    }}>
+                        <ListItemIcon><QrCode /></ListItemIcon>
+                        Show QR code for this page
+                    </MenuItem>
                 </AppContextMarker>
                 <Divider />
             </>
@@ -155,9 +155,25 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
     </>;
 };
 
+const AppBarPageQrDialog = ({ open, onClose }: { open: boolean, onClose: () => void }) => {
+    const router = useRouter();
+    const dashboardContext = useDashboardContext();
+
+    return <AppContextMarker name="appBarQrCodeDialog">
+        <QrCodeDialog
+            open={open}
+            onClose={onClose}
+            content={QrHelpers.url(dashboardContext.getAbsoluteUri(router.asPath))}
+            title="QR code for this page"
+            description={<SettingMarkdown setting={Setting.QrCodeForThisPageDescriptionMarkdown} />}
+        />
+    </AppContextMarker>;
+};
+
 const AppBarUserIcon_Desktop = () => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [currentUser] = useCurrentUser();
+    const qrDialog = useDialogAfterMenuClose();
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -184,20 +200,25 @@ const AppBarUserIcon_Desktop = () => {
             <Menu
                 id="menu-appbar"
                 anchorEl={anchorEl}
-                keepMounted
                 open={Boolean(anchorEl)}
                 onClose={() => {
                     setAnchorEl(null)
                 }}
+                TransitionProps={{ onExited: qrDialog.onMenuExited }}
             >
-                <AppBarUserIcon_MenuItems closeMenu={() => setAnchorEl(null)} />
+                <AppBarUserIcon_MenuItems
+                    closeMenu={() => setAnchorEl(null)}
+                    showQrCode={() => qrDialog.requestOpen(() => setAnchorEl(null))}
+                />
             </Menu>
+            <AppBarPageQrDialog open={qrDialog.dialogOpen} onClose={qrDialog.closeDialog} />
         </Box>
     );
 };
 
 const AppBarUserIcon_Mobile = () => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const qrDialog = useDialogAfterMenuClose();
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -220,16 +241,20 @@ const AppBarUserIcon_Mobile = () => {
                     vertical: 'top',
                     horizontal: 'right',
                 }}
-                keepMounted
                 transformOrigin={{
                     vertical: 'top',
                     horizontal: 'right',
                 }}
                 open={Boolean(anchorEl)}
                 onClose={() => setAnchorEl(null)}
+                TransitionProps={{ onExited: qrDialog.onMenuExited }}
             >
-                <AppBarUserIcon_MenuItems closeMenu={() => setAnchorEl(null)} />
+                <AppBarUserIcon_MenuItems
+                    closeMenu={() => setAnchorEl(null)}
+                    showQrCode={() => qrDialog.requestOpen(() => setAnchorEl(null))}
+                />
             </Menu>
+            <AppBarPageQrDialog open={qrDialog.dialogOpen} onClose={qrDialog.closeDialog} />
         </Box>
     );
 };
@@ -376,6 +401,28 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
     // Grid layout configuration
     const isMediaBarVisible = !!(mediaPlayer.currentTrack || mediaPlayer.playlist.length > 0);
+    const mediaBarRef = React.useRef<HTMLDivElement | null>(null);
+
+    React.useLayoutEffect(() => {
+        const element = mediaBarRef.current;
+        if (!element) return;
+
+        const updateMediaBarHeight = () => {
+            document.documentElement.style.setProperty('--media-bar-height', `${element.getBoundingClientRect().height}px`);
+        };
+
+        updateMediaBarHeight();
+        const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateMediaBarHeight);
+        resizeObserver?.observe(element);
+        window.addEventListener("resize", updateMediaBarHeight);
+
+        return () => {
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", updateMediaBarHeight);
+            document.documentElement.style.removeProperty('--media-bar-height');
+        };
+    }, [isMediaBarVisible]);
+
     const gridStyles = {
         display: 'grid',
         height: '100dvh', /* dvh = dynamic viewport height; doesn' let browser chrome hide media bar */
@@ -430,13 +477,7 @@ const Dashboard3 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
             {/* Media Player Footer */}
             <Box
-                ref={(el: HTMLDivElement | null) => {
-                    // Measure media bar height for dialog positioning
-                    if (el) {
-                        const height = el.getBoundingClientRect().height;
-                        document.documentElement.style.setProperty('--media-bar-height', `${height}px`);
-                    }
-                }}
+                ref={mediaBarRef}
                 className={`mediaPlayerBarContainer${isMediaBarVisible
                     ? ' mediaPlayerBarContainer--visible'
                     : ''

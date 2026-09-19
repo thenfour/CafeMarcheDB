@@ -1,5 +1,5 @@
 import { invoke, useMutation, useQuery } from "@blitzjs/rpc";
-import { Alert, Button, DialogContent, DialogTitle } from "@mui/material";
+import { Alert, Button } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import mergeUsers from "src/auth/mutations/mergeUsers";
@@ -8,11 +8,11 @@ import searchUserMergeCandidates from "src/auth/queries/searchUserMergeCandidate
 import type { MergeIdentity, UserMergePreview } from "src/auth/userMergeSchemas";
 import getUserMassAnalysis from "../../db3/queries/getUserMassAnalysis";
 import { UserMassAnalysisResult } from "../../db3/shared/getUserMassAnalysisTypes";
-import { CMUserMgmtButton, DialogActionsCM } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
+import { CMUserMgmtButton } from "../CMCoreComponents2";
 import { CMTable } from "../CMTable";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { DateValue } from "../DateTime/DateTimeComponents";
-import { ResponsiveDialog } from "../ResponsiveDialog";
 import { RoleChip } from "../RoleChip";
 import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/selectionSource";
@@ -165,14 +165,23 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
     const mainUserMassAnalysis = mainIsProfile ? userMassAnalysis : otherUserMassAnalysis;
     const otherUserMassAnalysisToShow = mainIsProfile ? otherUserMassAnalysis : userMassAnalysis;
 
-    return <ResponsiveDialog
+    return <CMDialog
         open
         onClose={pending ? undefined : onClose}
         fullWidth
         maxWidth="md"
+        title="Merge users"
+        actions={<>
+            <Button disabled={pending} onClick={onClose}>Cancel</Button>
+            {preview
+                ? <Button disabled={pending || !preview.canCommit} onClick={commit}>
+                    Accept report and merge accounts
+                </Button>
+                : <Button disabled={pending || !other} onClick={showPreview}>
+                    Preview merge
+                </Button>}
+        </>}
     >
-        <DialogTitle>Merge users</DialogTitle>
-        <DialogContent dividers>
             <p>Select a second account, choose which one remains main and which one will be retired.
                 The report will explain the merge outcomes and policies; merging accepts all of them.</p>
 
@@ -208,18 +217,7 @@ function MergeUsersDialog({ user, onClose }: { user: { id: number; name: string 
             {error && <Alert severity="error">{error}</Alert>}
             {pending && <p role="status">{preview ? "Merging accounts..." : "Preparing report..."}</p>}
             {preview && <UserMergeReport preview={preview} />}
-            <DialogActionsCM>
-                <Button disabled={pending} onClick={onClose}>Cancel</Button>
-                {preview
-                    ? <Button disabled={pending || !preview.canCommit} onClick={commit}>
-                        Accept report and merge accounts
-                    </Button>
-                    : <Button disabled={pending || !other} onClick={showPreview}>
-                        Preview merge
-                    </Button>}
-            </DialogActionsCM>
-        </DialogContent>
-    </ResponsiveDialog>;
+    </CMDialog>;
 }
 
 export function MergeUsersButton({ user }: { user: { id: number; name: string } }) {

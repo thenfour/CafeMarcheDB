@@ -1,7 +1,11 @@
+import { BackstageRouteKey, getBackstageRoute } from "@/src/auth/shared/backstageRoutes";
 import {
     AudioFileOutlined,
+    BackHand,
     CalendarMonthOutlined as CalendarMonthOutlinedIcon,
     FeaturedPlayList,
+    List,
+    Monitor,
     MusicNote as MusicNoteIcon,
     MusicNoteOutlined as MusicNoteOutlinedIcon,
     Palette,
@@ -15,7 +19,6 @@ import SecurityIcon from '@mui/icons-material/Security';
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { gIconMap } from "../../db3/components/IconMap";
-import { BackstageRouteKey, getBackstageRoute } from "@/src/auth/shared/backstageRoutes";
 
 export enum NavRealm {
     backstageHome = "",
@@ -183,8 +186,10 @@ export const gMenuSections: MenuSection[] = [
                     backstageLink("serverHealth", { renderIcon: () => <SettingsIcon /> }),
                     backstageLink("calendarPreview", { renderIcon: () => gIconMap.CalendarMonth() }),
                     backstageLink("gallery", { renderIcon: () => <CollectionsIcon /> }),
-                    backstageLink("attendanceTest", { renderIcon: gIconMap.CalendarMonth }),
+                    backstageLink("attendanceTest", { renderIcon: () => <BackHand /> }),
                     backstageLink("dateTest", { renderIcon: gIconMap.CalendarMonth }),
+                    backstageLink("dialogTest", { renderIcon: () => <Monitor /> }),
+                    backstageLink("selectTest", { renderIcon: () => <List /> }),
                     backstageLink("colorEditor", { renderIcon: () => <Palette /> }),
                 ]
             },

@@ -2,9 +2,10 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { Button, DialogContent, DialogTitle } from "@mui/material";
+import { Button } from "@mui/material";
 import React, { Suspense } from "react";
-import { CMDialogContentText, DialogActionsCM } from "./CMCoreComponents2";
+import { CMDialog } from "./CMDialog";
+import { CMDialogContentText } from "./CMCoreComponents2";
 import { ResponsiveDialog } from "./ResponsiveDialog";
 
 
@@ -67,21 +68,29 @@ export interface ConfirmationDialogProps {
     description?: () => React.ReactNode;
 };
 export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
-    return <ReactiveInputDialog
-        onCancel={props.onCancel}
+    return <CMDialog
+        open
+        onClose={props.onCancel}
+        title={props.title === undefined ? "Confirm?" : ((typeof props.title === 'string' ? props.title : props.title()))}
+        actions={<>
+            <Button onClick={props.onCancel}>{props.cancelLabel || "Cancel"}</Button>
+            <Button onClick={props.onConfirm}>{props.confirmLabel || "OK"}</Button>
+        </>}
+        onKeyDown={event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                event.stopPropagation();
+                props.onConfirm();
+            } else if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                props.onCancel();
+            }
+        }}
     >
-        <DialogTitle>
-            {props.title === undefined ? "Confirm?" : ((typeof props.title === 'string' ? props.title : props.title()))}
-        </DialogTitle>
-        <DialogContent dividers>
-            <CMDialogContentText>
-                {(props.description !== undefined) && ((typeof props.description === 'string' ? props.description : props.description()))}
-            </CMDialogContentText>
-            <DialogActionsCM>
-                <Button onClick={props.onCancel}>{props.cancelLabel || "Cancel"}</Button>
-                <Button onClick={props.onConfirm}>{props.confirmLabel || "OK"}</Button>
-            </DialogActionsCM>
-        </DialogContent>
-    </ReactiveInputDialog>;
+        <CMDialogContentText>
+            {(props.description !== undefined) && ((typeof props.description === 'string' ? props.description : props.description()))}
+        </CMDialogContentText>
+    </CMDialog>;
 };
 

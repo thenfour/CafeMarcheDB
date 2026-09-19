@@ -1,10 +1,10 @@
 // TODO: replace with useMessageBox
 
 // ConfirmContext.tsx
-import { DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { DialogContentText } from '@mui/material';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
-import { CMButton, DialogActionsCM } from './CMCoreComponents2';
-import { ResponsiveDialog } from './ResponsiveDialog';
+import { CMButton } from './CMCoreComponents2';
+import { CMDialog } from './CMDialog';
 
 interface ConfirmOptions {
     title?: React.ReactNode;
@@ -82,9 +82,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     }
 
     return (
-        <ResponsiveDialog
+        <CMDialog
             open={open}
             onClose={() => onClose(false)}
+            title={title}
+            actions={<>
+                <CMButton onClick={() => onClose(false)}>Cancel</CMButton>
+                <CMButton onClick={() => onClose(true)} autoFocus>OK</CMButton>
+            </>}
             onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -92,19 +97,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 }
             }}
         >
-            <DialogTitle>{title}</DialogTitle>
-            <DialogContent>
-                {descElement}
-                <DialogActionsCM>
-                    <CMButton onClick={() => onClose(false)} >
-                        Cancel
-                    </CMButton>
-                    <CMButton onClick={() => onClose(true)} autoFocus>
-                        OK
-                    </CMButton>
-                </DialogActionsCM>
-
-            </DialogContent>
-        </ResponsiveDialog>
+            {descElement}
+        </CMDialog>
     );
 };

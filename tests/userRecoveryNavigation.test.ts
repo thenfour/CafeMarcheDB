@@ -24,7 +24,6 @@ vi.mock("src/core/components/SnackbarContext", () => ({ useSnackbar: () => ({ sh
 vi.mock("src/core/components/EditFieldsDialog", () => ({ EditFieldsDialogButton: () => null }));
 vi.mock("src/core/components/CMCoreComponents2", () =>
 ({
-    DialogActionsCM: () => null,
     CMButtonGroup: () => null,
     CMUserMgmtButton: ({ children, onClick, enabled = true }: any) =>
         React.createElement("button", { onClick, disabled: !enabled }, children),

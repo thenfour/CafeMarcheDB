@@ -84,11 +84,13 @@ const routes = [
     { key: "colorEditor", pattern: "/backstage/colorEditor2", caption: "Color Editor", permission: Permission.sysadmin },
     { key: "adminLogs", pattern: "/backstage/adminLogs", caption: "Admin Logs", permission: Permission.sysadmin },
     { key: "test", pattern: "/backstage/test", caption: "Tests", permission: Permission.sysadmin },
+
     { key: "testIndex", pattern: "/backstage/test/test", caption: "Tests", permission: Permission.sysadmin },
     { key: "quickSearchTest", pattern: "/backstage/test/quickSearchTest", caption: "Quick Search Test", permission: Permission.sysadmin },
     { key: "selectTest", pattern: "/backstage/test/CMSelectTest", caption: "Select Test", permission: Permission.sysadmin },
     { key: "attendanceTest", pattern: "/backstage/test/attendance", caption: "Attendance scenarios", permission: Permission.sysadmin },
     { key: "dateTest", pattern: "/backstage/test/date", caption: "Date Test", permission: Permission.sysadmin },
+    { key: "dialogTest", pattern: "/backstage/test/dialogs", caption: "Dialog UX Test", permission: Permission.sysadmin },
 ] as const satisfies readonly BackstageRouteDefinition[];
 
 export type BackstageRouteKey = (typeof routes)[number]["key"];

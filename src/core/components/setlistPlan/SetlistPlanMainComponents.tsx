@@ -1,5 +1,5 @@
 import { useQuery } from "@blitzjs/rpc";
-import { Button, ButtonGroup, DialogContent, DialogTitle, Divider, FormControlLabel, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, Divider, FormControlLabel, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { QuickSearchItemType, QuickSearchItemTypeSets } from "shared/quickFilter";
@@ -7,7 +7,8 @@ import { formatSongLength } from "shared/time";
 import { getHashedColor } from "shared/utils";
 import { CMChip } from "src/core/components/CMChip";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
-import { AdminInspectObject, CMSmallButton, DialogActionsCM, DotMenu, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMDialog } from "src/core/components/CMDialog";
+import { AdminInspectObject, CMSmallButton, DotMenu, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { getClipboardSongList, PortableSongList } from "src/core/components/EventSongListComponents";
@@ -30,7 +31,6 @@ import { useDashboardContext } from "../dashboardContext/DashboardContext";
 import { AssociationSelect, AssociationValueLink } from "../ItemAssociation";
 import { MediaPlayerTrack } from "../mediaPlayer/MediaPlayerTypes";
 import { SongPlayButton } from "../mediaPlayer/SongPlayButton";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { useSongsContext } from "../song/SongsContext";
 import { SongTagIndicatorContainer } from "../SongTagIndicatorContainer";
 import { VisibilityControl } from "../VisibilityControl";
@@ -184,25 +184,19 @@ const SetlistPlannerRowEditorDialog = (props: SetlistPlannerRowEditorDialogProps
     const song = row.type === "song" ? allSongs.find((x) => x.id === row.songId) : null;
 
     return (
-        <ReactiveInputDialog
+        <CMDialog
             open={props.open}
-            onCancel={props.onClose}
+            onClose={props.onClose}
+            title={<>Edit {row.type === "song" ? "Song" : "Divider"}: {song?.name || ""}</>}
+            actions={<Button onClick={props.onClose}>Close</Button>}
         >
-            <DialogTitle>
-                Edit {row.type === "song" ? "Song" : "Divider"}: {song?.name || ""}
-            </DialogTitle>
-            <DialogContent dividers>
-                <SetlistPlannerRowEditor
-                    doc={props.doc}
-                    mutator={props.mutator}
-                    rowId={props.rowId}
-                    onDelete={props.onClose}
-                />
-                <DialogActionsCM>
-                    <Button onClick={props.onClose}>Close</Button>
-                </DialogActionsCM>
-            </DialogContent>
-        </ReactiveInputDialog>
+            <SetlistPlannerRowEditor
+                doc={props.doc}
+                mutator={props.mutator}
+                rowId={props.rowId}
+                onDelete={props.onClose}
+            />
+        </CMDialog>
     );
 };
 

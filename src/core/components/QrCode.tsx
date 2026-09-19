@@ -1,10 +1,10 @@
-import { Button, DialogContent, DialogTitle, ListItemIcon, MenuItem } from '@mui/material';
+import { ListItemIcon, MenuItem } from '@mui/material';
 import React, { useState } from 'react';
 import { gIconMap } from '../db3/components/IconMap';
 import { generateQrApiUrl, QrCodeErrorCorrectionLevel, QrContentConfig, QrHelpers } from '../db3/shared/qrApi';
 import { CMSinglePageSurfaceCard } from './CMCoreComponents';
-import { DialogActionsCM, DotMenu } from './CMCoreComponents2';
-import { ReactiveInputDialog } from './ReactiveInputDialog';
+import { CMDialog, useDialogAfterMenuClose } from './CMDialog';
+import { CMButton, DotMenu } from './CMCoreComponents2';
 import { ActivityFeature } from './featureReports/activityTracking';
 import { useClientTelemetryEvent, useDashboardContext } from './dashboardContext/DashboardContext';
 
@@ -55,17 +55,8 @@ export const QrCode: React.FC<QrCodeProps> = ({
 };
 
 
-// this component will render a button (could be a button, menuitem, ...) which
-// when clicked, opens a modal which displays the QR code clearly and prominently.
-interface QrCodeButtonProps {
-    // New content-based props
+interface QrCodeDialogContentProps {
     content: QrContentConfig;
-
-    buttonText?: string;
-    buttonClassName?: string;
-    buttonStyle?: React.CSSProperties;
-
-    // QR code options
     qrSize?: number;
     errorCorrectionLevel?: QrCodeErrorCorrectionLevel;
     margin?: number;
@@ -76,9 +67,68 @@ interface QrCodeButtonProps {
     // Modal options
     title?: string;
     description?: React.ReactNode;
+}
 
-    // Render props pattern for custom button
-    renderButton?: (props: { onClick: () => void }) => React.ReactNode;
+export interface QrCodeDialogProps extends QrCodeDialogContentProps {
+    open: boolean;
+    onClose: () => void;
+}
+
+export const QrCodeDialog = ({ open, onClose, ...props }: QrCodeDialogProps) => {
+    if (!open) return null;
+
+    const displayText = (props.content.contentType === 'text' || props.content.contentType === 'url' ? props.content.text : `${props.content.contentType} QR code`);
+
+    return <CMDialog
+        open
+        onClose={onClose}
+        title={props.title || 'QR Code'}
+        actions={<CMButton onClick={onClose}>Close</CMButton>}
+    >
+        {props.description && (
+            <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+                {props.description}
+            </div>
+        )}
+
+        <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px'
+        }}>
+            <QrCode
+                content={props.content}
+                size={props.qrSize || 300}
+                errorCorrectionLevel={props.errorCorrectionLevel}
+                margin={props.margin}
+                color={props.color}
+                backgroundColor={props.backgroundColor}
+                width={props.width}
+            />
+        </div>
+
+        <div style={{
+            marginTop: '16px',
+            textAlign: 'center',
+            wordBreak: 'break-all',
+            fontSize: '12px',
+            color: '#666',
+            maxHeight: '100px',
+            overflow: 'auto'
+        }}>
+            {displayText}
+        </div>
+    </CMDialog>;
+};
+
+// this component will render a button which opens a QR code dialog. Dialogs
+// launched from a Menu use QrCodeDialog directly so the Menu can finish its
+// exit transition before the dialog opens.
+interface QrCodeButtonProps extends QrCodeDialogContentProps {
+    buttonText?: string;
+    buttonClassName?: string;
+    buttonStyle?: React.CSSProperties;
 }
 
 export const QrCodeButton = (props: QrCodeButtonProps) => {
@@ -97,82 +147,23 @@ export const QrCodeButton = (props: QrCodeButtonProps) => {
         setIsOpen(false);
     };
 
-    const renderButton = () => {
-        if (props.renderButton) {
-            return props.renderButton({ onClick: handleOpen });
-        }
-
-        return (
-            <Button
+    return (
+        <>
+            <CMButton
                 onClick={handleOpen}
                 className={props.buttonClassName}
                 style={props.buttonStyle}
             >
                 {props.buttonText || 'Show QR Code'}
-            </Button>
-        );
-    };
-
-    // Generate display text for modal
-    const displayText = (props.content.contentType === 'text' || props.content.contentType === 'url' ? props.content.text : `${props.content.contentType} QR code`);
-
-    return (
-        <>
-            {renderButton()}
-
-            {isOpen && (
-                <ReactiveInputDialog onCancel={handleClose}>
-                    <DialogTitle>
-                        {props.title || 'QR Code'}
-                    </DialogTitle>
-                    <DialogContent dividers>
-                        {props.description && (
-                            <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-                                {props.description}
-                            </div>
-                        )}
-
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            padding: '16px'
-                        }}>
-                            <QrCode
-                                content={props.content}
-                                size={props.qrSize || 300}
-                                errorCorrectionLevel={props.errorCorrectionLevel}
-                                margin={props.margin}
-                                color={props.color}
-                                backgroundColor={props.backgroundColor}
-                                width={props.width}
-                            />
-                        </div>
-
-                        <div style={{
-                            marginTop: '16px',
-                            textAlign: 'center',
-                            wordBreak: 'break-all',
-                            fontSize: '12px',
-                            color: '#666',
-                            maxHeight: '100px',
-                            overflow: 'auto'
-                        }}>
-                            {displayText}
-                        </div>
-
-                        <DialogActionsCM>
-                            <Button onClick={handleClose}>Close</Button>
-                        </DialogActionsCM>
-                    </DialogContent>
-                </ReactiveInputDialog>
-            )}
+            </CMButton>
+            <QrCodeDialog {...props} open={isOpen} onClose={handleClose} />
         </>
     );
 };
 
 export const QrTester = () => {
     const [closeMenuProc, setCloseMenuProc] = useState<() => void>(() => () => { });
+    const menuQrDialog = useDialogAfterMenuClose();
     return (
         <CMSinglePageSurfaceCard>
             <h2>QR Code Tester</h2>
@@ -255,35 +246,37 @@ export const QrTester = () => {
             </div>
 
             <h3>Menu Integration Example</h3>
-            <DotMenu setCloseMenuProc={(newProc) => setCloseMenuProc(() => newProc)}>
+            <DotMenu
+                setCloseMenuProc={(newProc) => setCloseMenuProc(() => newProc)}
+                onExited={menuQrDialog.onMenuExited}
+            >
                 <MenuItem onClick={async () => { closeMenuProc(); }}>
                     <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
                     Regular menu item
                 </MenuItem>
 
-                <QrCodeButton
-                    content={QrHelpers.wifi({
-                        ssid: 'CafeWiFi',
-                        password: 'freewifi123',
-                        security: 'WPA'
-                    })}
-                    buttonText="WiFi QR Code"
-                    qrSize={256}
-                    title="Cafe WiFi"
-                    description="Scan to connect to our WiFi"
-                    renderButton={({ onClick }) => (
-                        <MenuItem onClick={() => { onClick(); closeMenuProc(); }}>
-                            <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
-                            Share WiFi QR
-                        </MenuItem>
-                    )}
-                />
+                <MenuItem onClick={() => menuQrDialog.requestOpen(closeMenuProc)}>
+                    <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
+                    Share WiFi QR
+                </MenuItem>
 
                 <MenuItem onClick={async () => { closeMenuProc(); }}>
                     <ListItemIcon>{gIconMap.ContentCopy()}</ListItemIcon>
                     Another menu item
                 </MenuItem>
             </DotMenu>
+            <QrCodeDialog
+                open={menuQrDialog.dialogOpen}
+                onClose={menuQrDialog.closeDialog}
+                content={QrHelpers.wifi({
+                    ssid: 'CafeWiFi',
+                    password: 'freewifi123',
+                    security: 'WPA'
+                })}
+                qrSize={256}
+                title="Cafe WiFi"
+                description="Scan to connect to our WiFi"
+            />
         </CMSinglePageSurfaceCard>
     );
 };

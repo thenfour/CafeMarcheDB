@@ -3,14 +3,11 @@ import { AuthorizationError } from "blitz";
 import db, { Prisma } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/activityLog";
 import { Permission } from "shared/permissions";
-import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import {
     UserWithRolesArgs,
     type UserWithRolesPayload,
 } from "src/core/db3/shared/schema/userPayloads";
-import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 import { z } from "zod";
-import { findSignInUser } from "../server/signInMethods";
 import {
     adminBootstrapSecretMatches,
     getAdminBootstrapConfiguration,
@@ -20,6 +17,7 @@ import {
     hasAdminBootstrapTokenBeenClaimed,
     recordAdminBootstrapTokenClaim,
 } from "../server/adminBootstrapClaims";
+import { createPublicDataFromDatabase } from "../server/effectivePermissions";
 
 export const ClaimAdminBootstrapInput = z.object({
     secret: z.string().min(kMinimumAdminBootstrapSecretLength).max(4096),

@@ -11,7 +11,12 @@ vi.mock("src/core/db3/components/DB3ClientCore", () => ({
 }));
 vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
 vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: () => null }));
-vi.mock("src/core/components/CMCoreComponents2", () => ({ useIsShowingAdminControls: () => false }));
+vi.mock("src/core/components/CMCoreComponents2", () => ({
+    useIsShowingAdminControls: () => false,
+    CMButton: ({ children, onClick, disabled, enabled = true, type, ...props }: any) => React.createElement("button", {
+        ...props, type, onClick, disabled: disabled ?? !enabled,
+    }, children),
+}));
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ refreshCachedData: vi.fn() }) }));
 vi.mock("src/core/components/SettingMarkdown", () => ({
     GenerateForeignSingleSelectStyleSettingName: () => "selection-style",

@@ -8,7 +8,7 @@ import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization
 import { TAnyModel } from '@/shared/rootroot';
 import { useQuery } from '@blitzjs/rpc';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
-import { DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
+import { Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import React, { useCallback, useRef } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
@@ -27,7 +27,8 @@ import { enrichSong } from '../db3/shared/schema/enrichedSongTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AppContextMarker } from './AppContext';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
-import { AdminInspectObject, CMButton, CMDialogContentText, CMSmallButton, CMTextarea, DialogActionsCM, NameValuePair } from './CMCoreComponents2';
+import { CMDialog } from './CMDialog';
+import { AdminInspectObject, CMButton, CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from './CMCoreComponents2';
 import { CMLink } from './CMLink';
 import { CMTextInputBase, SongLengthInput } from './CMTextField';
 import { GetStyleVariablesForColor } from './color/ColorClientUtils';
@@ -41,7 +42,6 @@ import { MediaPlayerTrack } from './mediaPlayer/MediaPlayerTypes';
 import { SongPlayButton } from './mediaPlayer/SongPlayButton';
 import { useMessageBox } from './MessageBoxContext';
 import { MetronomeButton } from './Metronome';
-import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { SongTagIndicatorContainer } from './SongTagIndicatorContainer';
@@ -101,12 +101,20 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
         return ret;
     };
 
-    return <ReactiveInputDialog
-        onCancel={onClose}
+    return <CMDialog
+        open
+        onClose={onClose}
+        fullWidth
+        maxWidth="md"
+        title={<>Setlist <ArrowForward /> Edit setlist divider</>}
+        titleProps={{ style: { display: "flex", alignItems: "center" } }}
+        contentProps={{ style: { width: "var(--content-max-width)" } }}
+        actions={<>
+            <CMButton onClick={() => { onClick(controlledValue); onClose(); }} startIcon={gIconMap.Save()}>Ok</CMButton>
+            <CMButton onClick={onClose} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
+        </>}
     >
-        <DialogTitle style={{ display: "flex", alignItems: "center" }}>Setlist <ArrowForward /> Edit setlist divider</DialogTitle>
-        <DialogContent style={{ width: "var(--content-max-width)" }}>
-            {/* <Markdown3Editor
+        {/* <Markdown3Editor
                 onChange={(v) => setControlledValue({ ...controlledValue, subtitle: v })}
                 nominalHeight={100}
                 value={controlledValue.subtitle || ""}
@@ -114,89 +122,84 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                 handleSave={() => onClick(controlledValue)}
                 startWithPreviewOpen={false}
             /> */}
-            <NameValuePair
-                name={"Options"}
-                value={
-                    <>
-                        <FormControlLabel
-                            label={"Text"}
-                            control={
-                                <CMTextInputBase
-                                    style={{ backgroundColor: "white", margin: "8px" }}
-                                    onChange={(e) => setControlledValue({ ...controlledValue, subtitle: e.target.value })}
-                                    value={controlledValue.subtitle || ""}
-                                />
-                            } />
+        <NameValuePair
+            name={"Options"}
+            value={
+                <>
+                    <FormControlLabel
+                        label={"Text"}
+                        control={
+                            <CMTextInputBase
+                                style={{ backgroundColor: "white", margin: "8px" }}
+                                onChange={(e) => setControlledValue({ ...controlledValue, subtitle: e.target.value })}
+                                value={controlledValue.subtitle || ""}
+                            />
+                        } />
 
-                        <div>
-                            <FormControlLabel
-                                label={"Color"}
-                                control={
-                                    <ColorPick
-                                        onChange={(value) => setControlledValue({ ...controlledValue, color: value?.id || null })}
-                                        value={controlledValue.color}
-                                        allowNull
-                                    />} />
-                        </div>
+                    <div>
                         <FormControlLabel
-                            label={"This is a break, and resets the running time"}
+                            label={"Color"}
                             control={
-                                <Switch
-                                    checked={controlledValue.isInterruption}
-                                    onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
-                                />
-                            } />
-                        <FormControlLabel
-                            label={"This is considered a song, with ordinal number and duration"}
-                            control={
-                                <Switch
-                                    checked={controlledValue.isSong}
-                                    onChange={(e) => setControlledValue({ ...controlledValue, isSong: e.target.checked })}
-                                />
-                            } />
-
-                        <FormControlLabel
-                            label={"Subtitle"}
-                            control={
-                                <CMTextInputBase
-                                    readOnly={!controlledValue.isSong}
-                                    style={{ backgroundColor: "white", margin: "8px" }}
-                                    onChange={(e) => setControlledValue({ ...controlledValue, subtitleIfSong: e.target.value })}
-                                    value={controlledValue.subtitleIfSong || ""}
-                                />
-                            } />
-
-                        <FormControlLabel
-                            label={"Length / duration"}
-                            control={
-                                <SongLengthInput
-                                    readonly={!controlledValue.isSong}
-                                    inputStyle={{ backgroundColor: "white", margin: "8px" }}
-                                    initialValue={controlledValue.lengthSeconds || null}
-                                    onChange={(v) => setControlledValue({ ...controlledValue, lengthSeconds: v })}
-                                />
-                            } />
-                    </>}
-            />
-            <NameValuePair
-                name={"Style"}
-                value={
-                    <div style={{ backgroundColor: "white" }}>
-                        <Select value={controlledValue.textStyle} onChange={(v) => setControlledValue({ ...controlledValue, textStyle: v.target.value as db3.EventSongListDividerTextStyle })}>
-                            {Object.values(db3.EventSongListDividerTextStyle).map(option => <MenuItem key={option} value={option} style={{ display: "flex", flexDirection: "column" }}>
-                                <h3>{option}</h3>
-                                <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(option)} event={undefined} showHeader={false} disableInteraction />
-                            </MenuItem>)}
-                        </Select>
+                                <ColorPick
+                                    onChange={(value) => setControlledValue({ ...controlledValue, color: value?.id || null })}
+                                    value={controlledValue.color}
+                                    allowNull
+                                />} />
                     </div>
-                }
-            />
-            <DialogActionsCM>
-                <CMButton onClick={() => { onClick(controlledValue); onClose(); }} startIcon={gIconMap.Save()}>Ok</CMButton>
-                <CMButton onClick={onClose} startIcon={gIconMap.Cancel()}>Cancel</CMButton>
-            </DialogActionsCM>
-        </DialogContent>
-    </ReactiveInputDialog >
+                    <FormControlLabel
+                        label={"This is a break, and resets the running time"}
+                        control={
+                            <Switch
+                                checked={controlledValue.isInterruption}
+                                onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
+                            />
+                        } />
+                    <FormControlLabel
+                        label={"This is considered a song, with ordinal number and duration"}
+                        control={
+                            <Switch
+                                checked={controlledValue.isSong}
+                                onChange={(e) => setControlledValue({ ...controlledValue, isSong: e.target.checked })}
+                            />
+                        } />
+
+                    <FormControlLabel
+                        label={"Subtitle"}
+                        control={
+                            <CMTextInputBase
+                                readOnly={!controlledValue.isSong}
+                                style={{ backgroundColor: "white", margin: "8px" }}
+                                onChange={(e) => setControlledValue({ ...controlledValue, subtitleIfSong: e.target.value })}
+                                value={controlledValue.subtitleIfSong || ""}
+                            />
+                        } />
+
+                    <FormControlLabel
+                        label={"Length / duration"}
+                        control={
+                            <SongLengthInput
+                                readonly={!controlledValue.isSong}
+                                inputStyle={{ backgroundColor: "white", margin: "8px" }}
+                                initialValue={controlledValue.lengthSeconds || null}
+                                onChange={(v) => setControlledValue({ ...controlledValue, lengthSeconds: v })}
+                            />
+                        } />
+                </>}
+        />
+        <NameValuePair
+            name={"Style"}
+            value={
+                <div style={{ backgroundColor: "white" }}>
+                    <Select value={controlledValue.textStyle} onChange={(v) => setControlledValue({ ...controlledValue, textStyle: v.target.value as db3.EventSongListDividerTextStyle })}>
+                        {Object.values(db3.EventSongListDividerTextStyle).map(option => <MenuItem key={option} value={option} style={{ display: "flex", flexDirection: "column" }}>
+                            <h3>{option}</h3>
+                            <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(option)} event={undefined} showHeader={false} disableInteraction />
+                        </MenuItem>)}
+                    </Select>
+                </div>
+            }
+        />
+    </CMDialog>
 };
 
 
@@ -1572,9 +1575,14 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
     };
 
     return <>
-        <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor" style={{ minHeight: "100vh" }}>
-
-            <DialogTitle>
+        <CMDialog
+            open
+            onClose={props.onCancel}
+            className="EventSongListValueEditor"
+            fillHeight
+            fullWidth
+            maxWidth="md"
+            title={<>
                 <div>Edit setlist</div>
                 <SettingMarkdown setting='EditEventSongListDialogTitle' />
                 <div style={{ display: "flex" }}>
@@ -1586,39 +1594,31 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
                         Delete
                     </CMButton>}
                 </div>
-            </DialogTitle>
-            <DialogContent dividers>
-                <CMDialogContentText>
-                    <SettingMarkdown setting='EditEventSongListDialogDescription' />
-                    <AdminInspectObject src={props.initialValue} label="initial value" />
-                    <AdminInspectObject src={value} label="value" />
-                    <AdminInspectObject src={stats} label="stats" />
-                    <AdminInspectObject src={rowItems} label="rowitems" />
-                </CMDialogContentText>
+            </>}
+            actions={<>
+                <CMButton onClick={() => {
+                    setGrayed(true);
+                    props.onSave(value);
+                }} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
+                <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()} enabled={!grayed}>Cancel</CMButton>
+            </>}
+        >
+            <CMDialogContentText>
+                <SettingMarkdown setting='EditEventSongListDialogDescription' />
+                <AdminInspectObject src={props.initialValue} label="initial value" />
+                <AdminInspectObject src={value} label="value" />
+                <AdminInspectObject src={stats} label="stats" />
+                <AdminInspectObject src={rowItems} label="rowitems" />
+            </CMDialogContentText>
 
-                {preview ? (
-                    <div style={{ pointerEvents: "none" }}>
-                        <EventSongListValueViewer readonly={true} value={value} event={props.event} />
-                    </div>
-                ) : (
-                    <EventSongListValueEditor {...props} value={value} setValue={setValue} />
-                )}
-
-
-
-                <DialogActionsCM>
-
-                    <CMButton onClick={() => {
-                        setGrayed(true);
-                        props.onSave(value);
-                    }} startIcon={gIconMap.Save()} enabled={!grayed}>OK</CMButton>
-                    <CMButton onClick={props.onCancel} startIcon={gIconMap.Cancel()} enabled={!grayed}>Cancel</CMButton>
-
-                </DialogActionsCM>
-
-            </DialogContent>
-
-        </ReactiveInputDialog>
+            {preview ? (
+                <div style={{ pointerEvents: "none" }}>
+                    <EventSongListValueViewer readonly={true} value={value} event={props.event} />
+                </div>
+            ) : (
+                <EventSongListValueEditor {...props} value={value} setValue={setValue} />
+            )}
+        </CMDialog>
     </>;
 };
 

@@ -1,17 +1,14 @@
 import { TAnyModel } from "@/shared/rootroot";
 import {
     Alert,
-    DialogContent,
-    DialogTitle,
     FormControl
 } from "@mui/material";
 import React, { Suspense } from "react";
 import type { SettingKey } from "shared/settingKeys";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
-import { AdminInspectObject, CMButton, CMButtonGroup, CMDialogContentText, CMSmallButton, DialogActionsCM } from "src/core/components/CMCoreComponents2";
-import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
-import { ResponsiveDialog } from "src/core/components/ResponsiveDialog";
+import { CMDialog } from "src/core/components/CMDialog";
+import { AdminInspectObject, CMButton, CMButtonGroup, CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization";
 import * as db3 from "../db3";
@@ -74,50 +71,44 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, ...props }: db3NewOb
 
     return (
         <Suspense>
-            <ReactiveInputDialog
-                onCancel={onCancel}
+            <CMDialog
+                open
+                onClose={onCancel}
+                title={props.caption || <>New {table.args.table.tableName}</>}
+                actions={<>
+                    <CMButton onClick={onCancel} disabled={grayed}>Cancel</CMButton>
+                    <CMButton onClick={handleOK} disabled={grayed}>OK</CMButton>
+                </>}
             >
-                <DialogTitle>
-                    {props.caption || <>New {table.args.table.tableName}</>}
-                </DialogTitle>
-                <DialogContent dividers>
+                {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
 
-                    {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
-
-                    <FormControl>
-
-                        {
-                            tableClient.clientColumns.filter(c => {
-                                if (!c.visible) return false;
-                                return tableClient.schema.authorizeColumnForInsert({
-                                    model: obj,
-                                    columnName: c.columnName,
-                                    publicData,
-                                });
-                            }).map(column => {
-                                let autoFocus = false;
-                                if (!encounteredAutofocusable && column.isAutoFocusable) {
-                                    encounteredAutofocusable = true;
-                                    autoFocus = true;
-                                }
-                                return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
-                                    key: column.columnName,
-                                    api,
-                                    autoFocus,
-                                    row: obj,
-                                    value: obj[column.columnName],
-                                    validationResult,
-                                })}</React.Fragment>;
-                            })
-                        }
-
-                    </FormControl>
-                    <DialogActionsCM>
-                        <CMButton onClick={onCancel} disabled={grayed}>Cancel</CMButton>
-                        <CMButton onClick={handleOK} disabled={grayed}>OK</CMButton>
-                    </DialogActionsCM>
-                </DialogContent>
-            </ReactiveInputDialog>
+                <FormControl>
+                    {
+                        tableClient.clientColumns.filter(c => {
+                            if (!c.visible) return false;
+                            return tableClient.schema.authorizeColumnForInsert({
+                                model: obj,
+                                columnName: c.columnName,
+                                publicData,
+                            });
+                        }).map(column => {
+                            let autoFocus = false;
+                            if (!encounteredAutofocusable && column.isAutoFocusable) {
+                                encounteredAutofocusable = true;
+                                autoFocus = true;
+                            }
+                            return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
+                                key: column.columnName,
+                                api,
+                                autoFocus,
+                                row: obj,
+                                value: obj[column.columnName],
+                                validationResult,
+                            })}</React.Fragment>;
+                        })
+                    }
+                </FormControl>
+            </CMDialog>
         </Suspense>
     );
 };
@@ -180,34 +171,32 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
 
     return (
         <Suspense>
-            <ResponsiveDialog
+            <CMDialog
                 open={true}
                 onClose={onCancel}
-                scroll="paper"
                 className="ReactiveInputDialog"
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
-            >
-                <DialogTitle>
+                title={<>
                     {props.title || <>Edit {tableRenderClient.tableSpec.args.table.tableName}</>}
                     <AdminInspectObject src={initialValue} label="initial value" />
-                </DialogTitle>
-                <DialogContent dividers>
-                    {
-                        props.description && <CMDialogContentText>{props.description}</CMDialogContentText>
-                    }
-                    {
-                        onDelete && (<div className="deleteConfirmationControlContainer">
-                            <CMButton onClick={() => setShowingDeleteConfirmation(true)}>{gIconMap.Delete()}Delete</CMButton>
-                            {showingDeleteConfirmation && (<Alert severity="warning">
-                                <CMButtonGroup className="deleteConfirmationControl">
-                                    <span>Are you sure you want to delete this item?</span>
-                                    <CMButton onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</CMButton>
-                                    <CMButton onClick={() => { handleDelete(); setShowingDeleteConfirmation(false) }}>yes</CMButton>
-                                </CMButtonGroup>
-                            </Alert>)}
-                        </div>)
-                    }
-                    <FormControl>
+                </>}
+                actions={<>
+                    <CMButton onClick={onCancel}>Cancel</CMButton>
+                    <CMButton onClick={handleOK}>OK</CMButton>
+                </>}
+            >
+                {props.description && <CMDialogContentText>{props.description}</CMDialogContentText>}
+                {onDelete && (<div className="deleteConfirmationControlContainer">
+                    <CMButton onClick={() => setShowingDeleteConfirmation(true)}>{gIconMap.Delete()}Delete</CMButton>
+                    {showingDeleteConfirmation && (<Alert severity="warning">
+                        <CMButtonGroup className="deleteConfirmationControl">
+                            <span>Are you sure you want to delete this item?</span>
+                            <CMButton onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</CMButton>
+                            <CMButton onClick={() => { handleDelete(); setShowingDeleteConfirmation(false) }}>yes</CMButton>
+                        </CMButtonGroup>
+                    </Alert>)}
+                </div>)}
+                <FormControl>
 
                         {
                             tableRenderClient.clientColumns.filter(c => {
@@ -235,13 +224,8 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                             })
                         }
 
-                    </FormControl>
-                    <DialogActionsCM>
-                        <CMButton onClick={onCancel}>Cancel</CMButton>
-                        <CMButton onClick={handleOK}>OK</CMButton>
-                    </DialogActionsCM>
-                </DialogContent>
-            </ResponsiveDialog>
+                </FormControl>
+            </CMDialog>
         </Suspense >
     );
 };

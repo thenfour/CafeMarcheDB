@@ -7,9 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Keep attendance decisions, state, and callbacks real. Stub application chrome
 // and rich text infrastructure so this suite needs neither a dashboard nor RPC.
 vi.mock("src/core/components/CMCoreComponents2", () => ({
+    CMButton: ({ children, onClick, className }: any) => React.createElement("button", { onClick, className }, children),
     CMSmallButton: ({ children, onClick }: any) => React.createElement("button", { onClick }, children),
-    DialogActionsCM: ({ children }: any) => React.createElement("div", {}, children),
     NameValuePair: ({ name, value }: any) => React.createElement("section", {}, name, value),
+}));
+vi.mock("src/core/components/CMDialog", () => ({
+    CMDialog: ({ children, actions, title }: any) => React.createElement("div", { role: "dialog" }, title, children, actions),
 }));
 vi.mock("src/core/components/CMChip", () => ({
     CMChip: ({ children, onClick, className }: any) => React.createElement("button", { onClick, className }, children),
@@ -23,8 +26,6 @@ vi.mock("src/core/components/markdown/MarkdownControl3", () => ({
         value, onChange: (e: any) => onChange(e.target.value), "data-uploads": String(allowUploads),
     }),
 }));
-vi.mock("src/core/components/ReactiveInputDialog", () => ({ ReactiveInputDialog: ({ children }: any) => React.createElement("div", { role: "dialog" }, children) }));
-
 import { AttendanceControlView, AttendanceChange } from "src/core/components/event/AttendanceControlView";
 import { AttendanceScenario, applyAttendanceScenarioChange, buildAttendanceScenario, createAttendanceScenario, scenarioAttendances, scenarioInstruments } from "src/core/components/event/attendanceScenario";
 

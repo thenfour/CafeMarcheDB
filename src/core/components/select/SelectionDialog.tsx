@@ -1,8 +1,8 @@
 import SearchIcon from "@mui/icons-material/Search";
-import { Box, DialogContent, DialogTitle, InputAdornment, TextField, Typography } from "@mui/material";
+import { Box, InputAdornment, TextField, Typography } from "@mui/material";
 import React from "react";
-import { ResponsiveDialog, useResponsiveDialogFullscreen } from "../ResponsiveDialog";
-import { CMButton, DialogActionsCM } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
+import { CMButton } from "../CMCoreComponents2";
 
 interface SelectionDialogProps {
     title: React.ReactNode;
@@ -19,38 +19,24 @@ interface SelectionDialogProps {
 
 // Callers can accept an option immediately, or provide Apply to confirm a draft.
 export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogProps>) => {
-    const fullScreen = useResponsiveDialogFullscreen();
     const titleId = React.useId();
     const descriptionId = React.useId();
     const titleRef = React.useRef<HTMLHeadingElement>(null);
 
-    return <ResponsiveDialog
+    return <CMDialog
         open
         className="CMSelectionDialog"
+        fillHeight
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         onClose={() => { if (!props.busy) props.onCancel(); }}
         // Keep keyboard activation inside a nested editor, without swallowing button clicks.
         onKeyDown={event => { if (event.key === "Enter") event.stopPropagation(); }}
         TransitionProps={{ onEntered: () => titleRef.current?.focus() }}
-        sx={{
-            "& .MuiButton-root": { textTransform: "none" },
-            "& .MuiDialog-container": {
-                paddingTop: fullScreen ? 0 : "32px",
-                paddingBottom: "var(--media-bar-height, 0px)",
-            },
-            "& .MuiDialog-paper": {
-                m: 0,
-                width: fullScreen ? "100%" : "min(600px, calc(100vw - 48px))",
-                minWidth: 0,
-                height: fullScreen ? "calc(100dvh - var(--media-bar-height, 0px))" : "min(660px, calc(100dvh - 64px - var(--media-bar-height, 0px)))",
-                maxHeight: "calc(100dvh - var(--media-bar-height, 0px))",
-                borderRadius: fullScreen ? 0 : 2,
-            },
-        }}
-    >
-        <Box sx={{ p: 3, pb: 2, flexShrink: 0 }}>
-            <DialogTitle id={titleId} ref={titleRef} tabIndex={-1} sx={{ p: 0, outline: "none" }}>{props.title}</DialogTitle>
+        title={props.title}
+        titleProps={{ id: titleId, ref: titleRef, tabIndex: -1, sx: { p: 0, outline: "none" } }}
+        headerProps={{ sx: { p: 3, pb: 2 } }}
+        header={<>
             <Box id={descriptionId} sx={{ mt: 1, color: "text.secondary", fontSize: 14 }}>
                 {props.description || "Choose one or more options."}
             </Box>
@@ -68,21 +54,25 @@ export const SelectionDialog = (props: React.PropsWithChildren<SelectionDialogPr
                 sx={{ mt: 2, mb: 1 }}
             />}
             {props.summary}
-        </Box>
-        <DialogContent dividers sx={{ p: 0, minHeight: 0, overscrollBehavior: "contain" }}>
-            {props.children}
-        </DialogContent>
-        <DialogActionsCM fullScreen={fullScreen}
-        // sx={{
-        //     flexShrink: 0, gap: 1, px: 3, pt: 2,
-        //     pb: "max(16px, env(safe-area-inset-bottom))",
-        //     "& .MuiButton-root": { minHeight: 44, minWidth: 88, ml: 0, flex: fullScreen ? 1 : undefined },
-        // }}
-        >
+        </>}
+        contentProps={{ sx: { p: 0 } }}
+        actions={<>
             <CMButton type="button" disabled={props.busy} onClick={props.onCancel}>Cancel</CMButton>
             {props.onApply && <CMButton type="button" disabled={props.applyDisabled || props.busy} onClick={props.onApply}>Apply</CMButton>}
-        </DialogActionsCM>
-    </ResponsiveDialog>;
+        </>}
+        sx={{
+            "& .MuiButton-root": { textTransform: "none" },
+            "& .MuiDialog-paper": {
+                width: "min(600px, calc(100vw - 48px))",
+                minWidth: 0,
+            },
+            "&.smallScreen .MuiDialog-paper": {
+                width: "100%",
+            },
+        }}
+    >
+        {props.children}
+    </CMDialog>;
 };
 
 export const SelectionSummary = (props: React.PropsWithChildren<{ count: number }>) => {

@@ -1,6 +1,6 @@
 import { formatEventDateRange, EventDatePresentation } from "shared/dateTimePresentation";
 import React from "react";
-import { CircularProgress, DialogContent, DialogTitle } from "@mui/material";
+import { CircularProgress } from "@mui/material";
 import type { Prisma } from "@prisma/client";
 import type * as db3 from "src/core/db3/db3";
 import { getEventSegmentDateTimeRange } from "src/core/db3/shared/schema/event";
@@ -8,10 +8,10 @@ import { isAttendanceGoing } from "shared/eventAttendance";
 import { Timing } from "shared/time";
 import { RenderMuiIcon, gIconMap } from "../../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "../CMChip";
-import { CMButton, CMSmallButton, DialogActionsCM, NameValuePair } from "../CMCoreComponents2";
+import { CMDialog } from "../CMDialog";
+import { CMButton, CMSmallButton, NameValuePair } from "../CMCoreComponents2";
 import { Markdown } from "../markdown/Markdown";
 import { Markdown3Editor } from "../markdown/MarkdownControl3";
-import { ReactiveInputDialog } from "../ReactiveInputDialog";
 import { AppContextMarker } from "../AppContext";
 import { AttendanceChipView, AttendanceChipTooltipContent } from "./AttendanceChipView";
 import type { EventAttendanceResult } from "./attendanceCalculation";
@@ -83,21 +83,22 @@ const CommentEditor = ({ response, environment, onClose }: {
         try { await environment.onSave({ type: "comment", comment: value }); }
         catch { /* Feedback belongs to the adapter. */ }
     };
-    return <AppContextMarker name="EventAttendanceCommentEditorDialog"><ReactiveInputDialog onCancel={onClose}>
-        <DialogTitle>{environment.commentDialogTitle}</DialogTitle>
-        <DialogContent dividers>
-            {environment.commentDialogDescription}
-            <Markdown3Editor value={value} onChange={setValue} nominalHeight={200}
-                handleSave={() => { void save(); }} allowUploads={environment.allowUploads}
-                uploadFileContext={environment.allowUploads ? { taggedEventId: response.event.id } : undefined} />
-            <DialogActionsCM>
+    return <AppContextMarker name="EventAttendanceCommentEditorDialog"><CMDialog
+        open
+        onClose={onClose}
+        title={environment.commentDialogTitle}
+        actions={<>
                 <CMButton className="freeButton cancelButton" onClick={onClose}>Cancel</CMButton>
                 <CMButton className="saveButton saveAndCloseButton freeButton changed" onClick={async () => { await save(); onClose(); }}>
                     {gIconMap.CheckCircleOutline()}Save
                 </CMButton>
-            </DialogActionsCM>
-        </DialogContent>
-    </ReactiveInputDialog></AppContextMarker>;
+            </>}
+    >
+        {environment.commentDialogDescription}
+        <Markdown3Editor value={value} onChange={setValue} nominalHeight={200}
+            handleSave={() => { void save(); }} allowUploads={environment.allowUploads}
+            uploadFileContext={environment.allowUploads ? { taggedEventId: response.event.id } : undefined} />
+    </CMDialog></AppContextMarker>;
 };
 
 const CommentControl = ({ response, environment }: {

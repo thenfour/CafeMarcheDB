@@ -1,9 +1,9 @@
 import { invoke } from "@blitzjs/rpc";
-import { Button, CircularProgress, DialogContent, DialogTitle } from '@mui/material';
+import { Button, CircularProgress } from '@mui/material';
 import * as React from 'react';
 //
-import { CMButton, DialogActionsCM } from "../CMCoreComponents2";
-import { ResponsiveDialog } from "../ResponsiveDialog";
+import { CMDialog } from "../CMDialog";
+import { CMButton } from "../CMCoreComponents2";
 import getDetailCsv from "./queries/getDetailCsv";
 import { FeatureReportFilterSpec } from './server/facetProcessor';
 
@@ -67,14 +67,20 @@ const ExportDialog = ({ open, onClose, filterSpec }: ExportDialogProps) => {
     };
 
     return (
-        <ResponsiveDialog
+        <CMDialog
             open={open}
             onClose={handleClose}
             maxWidth="sm"
             fullWidth
+            title="Export Activity Data"
+            actions={<>
+                <CMButton onClick={handleClose} disabled={status === 'exporting'}>
+                    {status === 'success' ? 'Close' : 'Cancel'}
+                </CMButton>
+                {status === 'idle' && <CMButton onClick={handleExport}>Export CSV</CMButton>}
+                {status === 'error' && <CMButton onClick={handleExport}>Retry</CMButton>}
+            </>}
         >
-            <DialogTitle>Export Activity Data</DialogTitle>
-            <DialogContent>
                 {status === 'idle' && (
                     <div>
                         <p>This will export activity records to a file.</p>
@@ -97,23 +103,7 @@ const ExportDialog = ({ open, onClose, filterSpec }: ExportDialogProps) => {
                         ❌ {errorMessage}
                     </div>
                 )}
-            </DialogContent>
-            <DialogActionsCM>
-                <CMButton onClick={handleClose} disabled={status === 'exporting'}>
-                    {status === 'success' ? 'Close' : 'Cancel'}
-                </CMButton>
-                {status === 'idle' && (
-                    <CMButton onClick={handleExport} >
-                        Export CSV
-                    </CMButton>
-                )}
-                {status === 'error' && (
-                    <CMButton onClick={handleExport} >
-                        Retry
-                    </CMButton>
-                )}
-            </DialogActionsCM>
-        </ResponsiveDialog>
+        </CMDialog>
     );
 };
 

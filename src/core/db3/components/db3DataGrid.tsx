@@ -11,10 +11,6 @@ import {
     Save as SaveIcon
 } from '@mui/icons-material';
 import {
-    DialogContent,
-    DialogTitle
-} from "@mui/material";
-import {
     DataGrid,
     GridActionsCellItem,
     type GridColDef,
@@ -26,9 +22,9 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { CoerceToBoolean } from 'shared/utils';
-import { AdminInspectObject, CMButton, CMButtonGroup, DialogActionsCM, KeyValueTable } from 'src/core/components/CMCoreComponents2';
+import { CMDialog } from 'src/core/components/CMDialog';
+import { AdminInspectObject, CMButton, CMButtonGroup, KeyValueTable } from 'src/core/components/CMCoreComponents2';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { ResponsiveDialog } from "../../components/ResponsiveDialog";
 import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 import * as DB3Client from "../DB3Client";
 import * as db3 from '../db3';
@@ -244,20 +240,18 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         // }
 
         return (
-            <ResponsiveDialog
+            <CMDialog
                 open={true}
                 onClose={handleClose}
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
+                title={tableClient.schema.deletePolicy === "softOnly" ? "Deactivate row?" : "Permanently delete row?"}
+                actions={<>
+                    <CMButton onClick={handleClose}>No</CMButton>
+                    <CMButton onClick={handleYes}>Yes</CMButton>
+                </>}
             >
-                <DialogTitle>{tableClient.schema.deletePolicy === "softOnly" ? "Deactivate row?" : "Permanently delete row?"}</DialogTitle>
-                <DialogContent dividers>
-                    confirm delete
-                    <DialogActionsCM>
-                        <CMButton onClick={handleClose}>No</CMButton>
-                        <CMButton onClick={handleYes}>Yes</CMButton>
-                    </DialogActionsCM>
-                </DialogContent>
-            </ResponsiveDialog>
+                confirm delete
+            </CMDialog>
         );
     };
 
@@ -269,23 +263,19 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         // const { oldRow, newRow, validateResult } = confirmDialogArgs;
 
         return (
-            <ResponsiveDialog
+            <CMDialog
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 open={true}
                 onClose={isSaving ? undefined : handleNo}
+                title={explicitSave ? "Are you sure?" : "Save your changes?"}
+                actions={<>
+                    <CMButton disabled={isSaving} onClick={handleNo}>No</CMButton>
+                    {/* type=submit doesn't seem to work. why? */}
+                    <CMButton disabled={isSaving} autoFocus={true} type="submit" onClick={handleYes}>Yes</CMButton>
+                </>}
             >
-                <DialogTitle>{explicitSave ? "Are you sure?" : "Save your changes?"}</DialogTitle>
-                <DialogContent dividers>
-                    confirm update...
-                    <DialogActionsCM>
-                        <CMButton disabled={isSaving} onClick={handleNo}>No</CMButton>
-                        {/* type=submit doesn't seem to work. why? */}
-                        <CMButton
-                            disabled={isSaving} autoFocus={true}
-                            type="submit" onClick={handleYes}>Yes</CMButton>
-                    </DialogActionsCM>
-                </DialogContent>
-            </ResponsiveDialog>
+                confirm update...
+            </CMDialog>
         );
     };
 
