@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { defineEntity } from "../../core/db3Entity";
-import { xFile, xFileTag } from "../../schema/file";
+import { xFile, xFileTag, xFrontpageGalleryItem } from "../../schema/file";
 
 export const fileEntity = defineEntity<Prisma.FileDelegate>()({
     schema: xFile,
@@ -10,4 +10,9 @@ export const fileEntity = defineEntity<Prisma.FileDelegate>()({
 export const fileTagEntity = defineEntity<Prisma.FileTagDelegate>()({
     schema: xFileTag,
     getIdentity: (tag: Prisma.FileTagGetPayload<{}>) => tag.id,
+});
+
+export const frontpageGalleryItemEntity = defineEntity<Prisma.FrontpageGalleryItemDelegate>()({
+    schema: xFrontpageGalleryItem,
+    getIdentity: (item: { id: number }) => item.id,
 });

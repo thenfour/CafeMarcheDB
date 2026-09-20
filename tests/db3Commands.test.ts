@@ -400,6 +400,7 @@ describe("DB3 commands", () => {
             db3.wikiPageTagEditorView,
             db3.permissionEditorView,
             db3.settingEditorView,
+            db3.frontpageGalleryItemEditorView,
         ];
 
         for (const view of views) {
@@ -483,6 +484,55 @@ describe("DB3 commands", () => {
         });
         expect(db3.hasGeneratedDeleteCommand(db3.settingEditorView.crud)).toBe(false);
         expect(db3.getDB3CrudViewForCommand("Setting_Delete")).toBeUndefined();
+        expect(db3.frontpageGalleryItemEditorView.parseDto({
+            id: 1,
+            caption: "Opening night",
+            caption_nl: null,
+            caption_fr: null,
+            fileId: 42,
+            file: {
+                id: 42,
+                fileLeafName: "opening-night.jpg",
+                description: "",
+                uploadedByUserId: 7,
+            },
+            createdByUserId: 7,
+            createdByUser: { id: 7, name: "Editor" },
+            visiblePermissionId: 3,
+            visiblePermission: {
+                id: 3,
+                name: "visibility_public",
+                description: "Public",
+                color: null,
+            },
+        })).toMatchObject({
+            id: 1,
+            caption_nl: null,
+            file: { id: 42, fileLeafName: "opening-night.jpg" },
+            createdByUser: { id: 7, name: "Editor" },
+            visiblePermission: { id: 3, name: "visibility_public" },
+        });
+        expect(db3.frontpageGalleryItemEditorView.crud.createCommand.parseDto({
+            caption: "Opening night",
+            caption_nl: "",
+            caption_fr: "",
+            sortOrder: 1,
+            fileId: 42,
+            displayParams: "{}",
+            createdByUserId: 7,
+            visiblePermissionId: null,
+            isDeleted: false,
+        })).toMatchObject({
+            caption: "Opening night",
+            fileId: 42,
+            displayParams: "{}",
+        });
+        expect(() => db3.frontpageGalleryItemEditorView.crud.updateCommand.parseDto({
+            identity: 1,
+            patch: { file: { id: 42 } },
+        })).toThrow();
+        expect(db3.frontpageGalleryItemEditorView.crud.deleteType)
+            .toBe("softWhenPossible");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {

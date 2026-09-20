@@ -25,7 +25,7 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="EditFrontpageGalleryItemsPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
+        <DB3EditGrid tableSpec={tableSpec} view={db3.frontpageGalleryItemEditorView} />
     </>;
 };
 

@@ -770,7 +770,7 @@ The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary grids | User/Event/File/Song/Instrument grids, roles, and gallery-item administration | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Ordinary grids | User/Event/File/Song/Instrument grids and roles | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
@@ -806,6 +806,15 @@ User/Event/File/Song/Instrument/gallery grids are not part of this scalar
 batch: their visible columns include associations, privileged operations, or
 workflow semantics that must be separated before selecting CRUD or a named
 domain command.
+
+The fourth slice migrates the standalone Frontpage Gallery Item administration
+grid. Its editor view owns the finite file, creator, and visibility-permission
+reference shapes required by the grid, while mutations carry only their scalar
+foreign keys. The table's existing soft-delete and recovery policy remains the
+authority for generated deletion. This does not migrate the separate
+frontpage-gallery composition workflow: upload, crop/display adjustment,
+caption editing, deletion/restoration, and reorder remain inventoried as a
+multi-step workflow that needs named domain commands.
 
 ## Design principles
 
@@ -953,6 +962,9 @@ boundary safely.
     generated create/update commands and no delete command, keeping
     permission-role associations and bulk setting import on their existing
     explicit command/RPC boundaries.
+  - [x] Migrate the standalone Frontpage Gallery Item administration grid,
+    retaining the separate gallery-composition workflow in the named-command
+    migration inventory.
   - [ ] Migrate the remaining ordinary grids, then entity-detail,
     nested/relationship, collection, and workflow categories in that order.
     Split out named domain commands wherever row CRUD is not truthful, and

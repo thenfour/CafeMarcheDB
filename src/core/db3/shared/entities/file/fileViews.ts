@@ -5,7 +5,7 @@ import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { instrumentEntity } from "../instrument/instrumentViews";
 import { permissionEntity } from "../user/userEntities";
-import { fileEntity, fileTagEntity } from "./fileEntities";
+import { fileEntity, fileTagEntity, frontpageGalleryItemEntity } from "./fileEntities";
 
 const FileTagEditorDtoSchema = z.object({
     id: z.number().int(),
@@ -32,6 +32,81 @@ export const fileTagEditorView = defineCrudView({
     entity: fileTagEntity,
     selection: fileTagEditorSelection,
     dtoSchema: FileTagEditorDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
+
+const FrontpageGalleryItemEditorDtoSchema = z.object({
+    id: z.number().int(),
+    isDeleted: z.boolean().optional(),
+    caption: z.string().optional(),
+    caption_nl: z.string().nullable().optional(),
+    caption_fr: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    fileId: z.number().int().optional(),
+    file: z.object({
+        id: z.number().int(),
+        fileLeafName: z.string().optional(),
+        description: z.string().optional(),
+        uploadedByUserId: z.number().int().nullable().optional(),
+    }).nullable().optional(),
+    displayParams: z.string().optional(),
+    createdByUserId: z.number().int().nullable().optional(),
+    createdByUser: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+    }).nullable().optional(),
+    visiblePermissionId: z.number().int().nullable().optional(),
+    visiblePermission: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+        description: z.string().nullable().optional(),
+        color: z.string().nullable().optional(),
+    }).nullable().optional(),
+});
+
+const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
+    select: {
+        id: true,
+        isDeleted: true,
+        caption: true,
+        caption_nl: true,
+        caption_fr: true,
+        sortOrder: true,
+        fileId: true,
+        file: {
+            select: {
+                id: true,
+                fileLeafName: true,
+                description: true,
+                uploadedByUserId: true,
+            },
+        },
+        displayParams: true,
+        createdByUserId: true,
+        createdByUser: {
+            select: {
+                id: true,
+                name: true,
+            },
+        },
+        visiblePermissionId: true,
+        visiblePermission: {
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                color: true,
+            },
+        },
+    },
+});
+
+export const frontpageGalleryItemEditorView = defineCrudView({
+    viewID: "FrontpageGalleryItem_Editor",
+    entity: frontpageGalleryItemEntity,
+    selection: frontpageGalleryItemEditorSelection,
+    dtoSchema: FrontpageGalleryItemEditorDtoSchema,
     hydrate: dto => dto,
     getIdentity: client => client.id,
 });
