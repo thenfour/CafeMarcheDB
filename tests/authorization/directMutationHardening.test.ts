@@ -103,6 +103,110 @@ describe("DB3 command boundary", () => {
     }, ctx)).rejects.toThrow("Unknown DB3 command 'Missing_Command'")
   })
 
+  it("sets RolePermission associations through the registered command and schema policy", async () => {
+    const actor = createAuthorizationTestUser("sysadmin", { id: 94 })
+    const role = {
+      id: 200,
+      name: "Members",
+      description: "",
+      color: null,
+      significance: null,
+      sortOrder: 0,
+      isPublicRole: false,
+      isSysAdminRole: false,
+      isRoleForNewUsers: false,
+      permissions: [],
+    }
+    const permission = {
+      id: 300,
+      name: Permission.manage_events,
+      description: "",
+      color: null,
+      iconName: null,
+      significance: null,
+      sortOrder: 0,
+      isVisibility: false,
+      roles: [],
+    }
+    authorizationTestDb.reset({
+      user: [actor],
+      role: [role],
+      permission: [permission],
+      rolePermission: [],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("sysadmin", { id: actor.id })
+    const makeRequest = (isAssociated: boolean) => ({
+      commandID: db3.setRolePermissionCommand.commandID,
+      payload: {
+        localIdentity: permission.id,
+        foreignIdentity: role.id,
+        isAssociated,
+      },
+    })
+
+    await expect(invokeResolver(
+      executeDB3CommandMutation,
+      makeRequest(true),
+      ctx,
+    )).resolves.toEqual(makeRequest(true).payload)
+    expect(authorizationTestDb.snapshot("rolePermission")).toEqual([
+      expect.objectContaining({ roleId: role.id, permissionId: permission.id }),
+    ])
+
+    // Setting the same state is idempotent and does not duplicate the join row.
+    await invokeResolver(executeDB3CommandMutation, makeRequest(true), ctx)
+    expect(authorizationTestDb.snapshot("rolePermission")).toHaveLength(1)
+
+    await invokeResolver(executeDB3CommandMutation, makeRequest(false), ctx)
+    expect(authorizationTestDb.snapshot("rolePermission")).toEqual([])
+  })
+
+  it("rejects RolePermission commands for a logged-in non-sysadmin", async () => {
+    const actor = createAuthorizationTestUser("limited", { id: 95 })
+    const role = {
+      id: 201,
+      name: "Members",
+      description: "",
+      color: null,
+      significance: null,
+      sortOrder: 0,
+      isPublicRole: false,
+      isSysAdminRole: false,
+      isRoleForNewUsers: false,
+      permissions: [],
+    }
+    const permission = {
+      id: 301,
+      name: Permission.manage_events,
+      description: "",
+      color: null,
+      iconName: null,
+      significance: null,
+      sortOrder: 0,
+      isVisibility: false,
+      roles: [],
+    }
+    authorizationTestDb.reset({
+      user: [actor],
+      role: [role],
+      permission: [permission],
+      rolePermission: [],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("limited", { id: actor.id })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.setRolePermissionCommand.commandID,
+      payload: {
+        localIdentity: permission.id,
+        foreignIdentity: role.id,
+        isAssociated: true,
+      },
+    }, ctx)).rejects.toThrow("Not authorized to mutate Permission")
+    expect(authorizationTestDb.snapshot("rolePermission")).toEqual([])
+  })
+
   it("revalidates command DTOs and enforces server-side entity authorization", async () => {
     const permissions = [Permission.login, Permission.view_events]
     const actor = createAuthorizationTestUser("normal", { id: 92, permissions })

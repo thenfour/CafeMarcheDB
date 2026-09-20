@@ -224,19 +224,19 @@ describe("shared DB3 foreign-single selection", () => {
     it("offers creation only with permission and a fresh, nonempty unmatched search", async () => {
         await renderDialog();
         await search(" ");
-        expect(button("Create “ ”")).toBeUndefined();
+        expect(button("Create ' '")).toBeUndefined();
         await search(" Trumpet ");
-        expect(button("Create “Trumpet”")).toBeUndefined();
+        expect(button("Create 'Trumpet'")).toBeUndefined();
         insertAuthorized = false;
         await search("Flute");
-        expect(button("Create “Flute”")).toBeUndefined();
+        expect(button("Create 'Flute'")).toBeUndefined();
         insertAuthorized = true;
         queryState = { ...queryState, isFetching: true, isPreviousData: true };
         await renderDialog();
-        expect(button("Create “Flute”")).toBeUndefined();
+        expect(button("Create 'Flute'")).toBeUndefined();
         queryState = { ...queryState, isFetching: false, isPreviousData: false };
         await renderDialog();
-        expect(button("Create “Flute”")).toBeDefined();
+        expect(button("Create 'Flute'")).toBeDefined();
     });
 
     it("locks pending creation, retains the draft after failure, and applies a created option explicitly", async () => {
@@ -244,7 +244,7 @@ describe("shared DB3 foreign-single selection", () => {
         await search(" Flute ");
         let rejectCreate!: (error: Error) => void;
         createOption.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectCreate = reject; }));
-        await click(button("Create “Flute”"));
+        await click(button("Create 'Flute'"));
         expect(createOption).toHaveBeenCalledOnce();
         expect(createOption.mock.calls[0]![0].insertModel).toEqual({ name: "Flute" });
         expect(button("Creating...").disabled).toBe(true);
@@ -261,7 +261,7 @@ describe("shared DB3 foreign-single selection", () => {
         expect(button("Cancel").disabled).toBe(false);
         const flute = { id: 4, name: "Flute" };
         createOption.mockResolvedValueOnce(flute);
-        await click(button("Create “Flute”"));
+        await click(button("Create 'Flute'"));
         expect(onChange).not.toHaveBeenCalled();
         expect(button("Apply").disabled).toBe(false);
         await click(button("Apply"));
@@ -275,7 +275,7 @@ describe("shared DB3 foreign-single selection", () => {
         await renderField();
         await click(button("Edit Instrument"));
         await search("Flute");
-        await click(button("Create “Flute”"));
+        await click(button("Create 'Flute'"));
         expect(onChange).toHaveBeenCalledTimes(1);
         expect(onChange).toHaveBeenCalledWith(flute);
         expect(document.querySelector('[role="dialog"]')).toBeNull();

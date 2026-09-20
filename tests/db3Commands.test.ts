@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { eventSongListSaveCommandHandler } from "@db3/server/commands/eventSongListSaveCommand";
+import { rolePermissionSetCommandHandler } from "@db3/server/commands/rolePermissionSetCommand";
 import type { DB3CommandExecutionContext } from "@db3/server/db3CommandCore";
 import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
 import { defineEntityCrudCommandHandlers } from "@db3/server/db3EntityCrudCommand";
@@ -86,6 +87,14 @@ const instrumentFunctionalGroupCrudHandlers = defineEntityCrudCommandHandlers(
     instrumentFunctionalGroupCrud,
 );
 const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
+const otherFunctionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn02");
+const publicIdentityAssociationCommand = db3.defineAssociationCommand({
+    commandID: "InstrumentFunctionalGroup_RelationshipTest",
+    localEntity: db3.instrumentFunctionalGroupEntity,
+    foreignEntity: db3.instrumentFunctionalGroupEntity,
+    localIdentitySchema: InstrumentFunctionalGroupPublicIdSchema,
+    foreignIdentitySchema: InstrumentFunctionalGroupPublicIdSchema,
+});
 
 describe("DB3 commands", () => {
     it("validates strict command DTOs and results at the shared boundary", () => {
@@ -221,6 +230,111 @@ describe("DB3 commands", () => {
             sortOrder: 1,
             color: null,
         }, context)).rejects.toThrow("Expected an InstrumentFunctionalGroup public ID");
+    });
+
+    it("defines a strict association command that serializes rich rows to identities", () => {
+        const command = db3.setRolePermissionCommand;
+        const payload = command.serialize({
+            local: { id: 300 } as any,
+            foreign: { id: 200 } as any,
+            isAssociated: true,
+        });
+
+        expect(command.commandID).toBe("RolePermission_Set");
+        expect(payload).toEqual({
+            localIdentity: 300,
+            foreignIdentity: 200,
+            isAssociated: true,
+        });
+        expect(command.parseDto(payload)).toEqual(payload);
+        expect(command.parseResult(payload)).toEqual(payload);
+        expect(() => command.parseDto({ ...payload, unexpected: true })).toThrow();
+        expect(() => command.parseDto({ ...payload, localIdentity: -1 })).toThrow();
+        expect(command.invalidation).toEqual({
+            mode: "caller",
+            entityIDs: ["Permission", "Role", "RolePermission"],
+        });
+        expect(getDB3CommandHandler(command.commandID))
+            .toBe(rolePermissionSetCommandHandler);
+    });
+
+    it("keeps the generic association contract on public client identities", () => {
+        const payload = publicIdentityAssociationCommand.serialize({
+            local: { publicId: functionalGroupPublicId } as any,
+            foreign: { publicId: otherFunctionalGroupPublicId } as any,
+            isAssociated: false,
+        });
+
+        expect(payload).toEqual({
+            localIdentity: functionalGroupPublicId,
+            foreignIdentity: otherFunctionalGroupPublicId,
+            isAssociated: false,
+        });
+        expect(publicIdentityAssociationCommand.parseDto(payload)).toEqual(payload);
+        expect(() => publicIdentityAssociationCommand.parseDto({
+            ...payload,
+            localIdentity: 42,
+        })).toThrow("Expected an InstrumentFunctionalGroup public ID");
+    });
+
+    it("sets one RolePermission cell from authoritative current associations", async () => {
+        const update = vi.fn(async () => ({}));
+        const requireVisible = vi.fn(async (_entity, identity) => ({ id: identity }));
+        const findMany = vi.fn()
+            .mockResolvedValueOnce([{ roleId: 100 }, { roleId: 200 }])
+            .mockResolvedValueOnce([{ roleId: 100 }, { roleId: 200 }])
+            .mockResolvedValueOnce([{ roleId: 100 }, { roleId: 200 }]);
+        const context = {
+            authorization: {} as any,
+            transaction: { rolePermission: { findMany } } as any,
+            rowServices: {
+                insert: vi.fn(),
+                update,
+                delete: vi.fn(),
+                requireVisible,
+                afterMutation: vi.fn(),
+            },
+        } as DB3CommandExecutionContext;
+
+        await expect(rolePermissionSetCommandHandler.execute({
+            localIdentity: 300,
+            foreignIdentity: 250,
+            isAssociated: true,
+        }, context)).resolves.toEqual({
+            localIdentity: 300,
+            foreignIdentity: 250,
+            isAssociated: true,
+        });
+        expect(update).toHaveBeenLastCalledWith(
+            db3.permissionEntity,
+            300,
+            { roles: [100, 200, 250] },
+        );
+
+        await rolePermissionSetCommandHandler.execute({
+            localIdentity: 300,
+            foreignIdentity: 200,
+            isAssociated: false,
+        }, context);
+        expect(update).toHaveBeenLastCalledWith(
+            db3.permissionEntity,
+            300,
+            { roles: [100] },
+        );
+
+        await rolePermissionSetCommandHandler.execute({
+            localIdentity: 300,
+            foreignIdentity: 200,
+            isAssociated: true,
+        }, context);
+        expect(update).toHaveBeenLastCalledWith(
+            db3.permissionEntity,
+            300,
+            { roles: [100, 200] },
+        );
+        expect(requireVisible).toHaveBeenCalledWith(db3.permissionEntity, 300);
+        expect(requireVisible).toHaveBeenCalledWith(db3.roleEntity, 250);
+        expect(findMany).toHaveBeenCalledWith({ where: { permissionId: 300 } });
     });
 
     it("composes and registers CRUD from the InstrumentFunctionalGroup editor view", async () => {

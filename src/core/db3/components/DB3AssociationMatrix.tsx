@@ -1,5 +1,3 @@
-// TODO: authorization for rows & columns
-
 // this will differ from the other EditGrid
 // rows & columns are dynamic based on the associated DB tables
 // CELLS are rows in an association table.
@@ -9,6 +7,7 @@
 // but the grid only edits 1 single tags field, where columns are all tag options.
 // so internally it works similar to the other edit grid.
 
+import type { TAnyModel } from '@/shared/rootroot';
 import { Checkbox } from '@mui/material';
 import {
     DataGrid,
@@ -20,7 +19,7 @@ import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import type { CMDBTableFilterItem, CMDBTableFilterModel } from '../shared/apiTypes';
-import { TAnyModel } from '@/shared/rootroot';
+import type { AnyDB3AssociationCommand } from '../shared/core/db3AssociationCommand';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 
@@ -31,16 +30,21 @@ export interface DB3AssMatrxiExtraActionsArgs {
     row: TAnyModel,
 };
 
-export type DB3BooleanMatrixProps<TLocal extends TAnyModel, TAssociation extends TAnyModel> = {
+export type DB3BooleanMatrixProps<
+    TLocal extends TAnyModel,
+    TAssociation extends TAnyModel,
+> = {
     localTableSpec: DB3Client.xTableClientSpec,
     foreignTableSpec: DB3Client.xTableClientSpec,
     tagsField: DB3Client.TagsFieldClient<TAssociation>,
+    associationCommand: AnyDB3AssociationCommand,
     renderExtraActions?: (args: DB3AssMatrxiExtraActionsArgs) => React.ReactNode,
     filterRow?: (row: TLocal) => boolean;
 };
 
 export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation extends TAnyModel>(props: DB3BooleanMatrixProps<TLocal, TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const associationCommand = DB3Client.useDB3Command(props.associationCommand);
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState({
@@ -65,7 +69,7 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
     };
 
     const dbRows = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery | DB3Client.xTableClientCaps.Mutation,
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
         tableSpec: props.localTableSpec,
         filterModel: convertedFilter,// quick filter will apply to both rows & columns
         sortModel,
@@ -81,11 +85,28 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         // use the table's natural sort
     });
 
+    if (props.associationCommand.localEntity.schema.tableID
+        !== props.localTableSpec.args.table.tableID) {
+        throw new Error("Association command local entity does not match the matrix row table.");
+    }
+    if (props.associationCommand.foreignEntity.schema.tableID
+        !== props.foreignTableSpec.args.table.tableID) {
+        throw new Error("Association command foreign entity does not match the matrix column table.");
+    }
+
+    const getAssociationForeignIdentity = (association: TAssociation) => {
+        const foreignObject = association[
+            props.tagsField.typedSchemaColumn.associationForeignObjectMember
+        ] as TAnyModel | undefined;
+        return foreignObject?.[props.foreignTableSpec.args.table.clientIdMember]
+            ?? association[props.tagsField.associationForeignIDMember];
+    };
+
     const columns: GridColDef[] = [{
         field: "id",
         editable: false,
         valueGetter: (params) => {
-            return params.row[props.localTableSpec.args.table.pkMember];
+            return params.row[props.localTableSpec.args.table.clientIdMember];
         }
     }, {
         field: "name",
@@ -97,38 +118,31 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         }
     },
     ...dbColumns.items.map((tag): GridColDef => ({
-        field: `id:${tag[props.foreignTableSpec.args.table.pkMember]}`,
+        field: `id:${tag[props.foreignTableSpec.args.table.clientIdMember]}`,
         editable: false,
         headerName: props.foreignTableSpec.args.table.getRowInfo(tag).name,
         width: 120,
         sortable: false,
         disableColumnMenu: true,
         renderCell: (params) => {
-            const tagId = tag[props.foreignTableSpec.args.table.pkMember];
+            const tagIdentity = tag[props.foreignTableSpec.args.table.clientIdMember];
             const fieldVal = params.row[props.tagsField.columnName] as TAssociation[];
             if (!fieldVal) {
                 throw new Error(`property '${props.tagsField.columnName}' was not found on the row; maybe your query didn't include it?`);
             }
-            const association = fieldVal.find(a => a[props.tagsField.associationForeignIDMember] === tagId); // find the association for this tag.
+            const association = fieldVal.find(
+                value => getAssociationForeignIdentity(value) === tagIdentity,
+            );
             return <div className='MuiDataGrid-cellContent'><Checkbox
                 checked={!!association}
-                onChange={(event, value) => {
-                    let newFieldVal = fieldVal;
-                    if (!association) {
-                        // add a mock association
-                        newFieldVal.push(props.tagsField.typedSchemaColumn.createMockAssociation(params.row, tag));
-                    } else {
-                        // remove this association.
-                        newFieldVal = fieldVal.filter(a => a[props.tagsField.associationForeignIDMember] !== tagId);
-                    }
-
-                    // create an update obj with just the id & the tags field.
-                    dbRows.doUpdateMutation({
-                        [props.localTableSpec.args.table.pkMember]: params.row[props.localTableSpec.args.table.pkMember],
-                        [props.tagsField.columnName]: newFieldVal,
-                    }).then((result) => {
+                onChange={(_event, value) => {
+                    associationCommand.invoke({
+                        local: params.row,
+                        foreign: tag,
+                        isAssociated: value,
+                    }).then(() => {
                         showSnackbar({ children: "change successful", severity: 'success' });
-                    }).catch(e => {
+                    }).catch(() => {
                         showSnackbar({ children: "change failed", severity: 'error' });
                     }).finally(() => {
                         dbRows.refetch();
@@ -174,7 +188,7 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
         for (let ix = 0; ix < orderedColumns.length; ++ix) {
             // "tag" = X (foreign) (column) (role)
             const role = orderedColumns[ix]!;
-            const roleId = role[props.foreignTableSpec.args.table.pkMember];
+            const roleIdentity = role[props.foreignTableSpec.args.table.clientIdMember];
 
             for (let iy = 0; iy < orderedRows.length; ++iy) {
                 const permission = orderedRows[iy]!;// as db3.PermissionPayload;
@@ -182,7 +196,9 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
                 const permissionInfo = props.localTableSpec.args.table.getRowInfo(permission);
 
 
-                const association = associations.find(a => a[props.tagsField.associationForeignIDMember] === roleId);
+                const association = associations.find(
+                    value => getAssociationForeignIdentity(value) === roleIdentity,
+                );
                 if (!association) continue;
 
                 const roleInfo = props.foreignTableSpec.args.table.getRowInfo(role);
@@ -213,6 +229,7 @@ export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation exte
 
             // actual data
             rows={filteredRows}
+            getRowId={row => row[props.localTableSpec.args.table.clientIdMember]}
             rowCount={filteredRows.length}
 
             // initial state

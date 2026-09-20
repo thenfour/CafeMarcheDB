@@ -51,6 +51,7 @@ const MainContent = () => {
             localTableSpec={PermissionClientSchema}
             foreignTableSpec={RoleClientSchema}
             tagsField={PermissionClientSchema.getColumn("roles") as DB3Client.TagsFieldClient<db3.RolePermissionAssociationPayload>}
+            associationCommand={db3.setRolePermissionCommand}
             filterRow={(row: db3.PermissionPayloadMinimum) => {
                 if (showUnknown) return true;
                 return codePermissions.some(k => k === row.name);

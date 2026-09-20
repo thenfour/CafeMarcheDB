@@ -175,19 +175,19 @@ describe("shared DB3 tags selection", () => {
         await search("Tuba");
         expect(checkbox("Tuba").disabled).toBe(true);
         expect(document.body.textContent).toContain("Updating options");
-        expect([...document.querySelectorAll("button")].some(b => b.textContent?.startsWith("Create “"))).toBe(false);
+        expect([...document.querySelectorAll("button")].some(b => b.textContent?.startsWith("Create '"))).toBe(false);
     });
 
     it("respects creation permission and retains the draft when creation fails", async () => {
         insertAuthorized = false;
         await open();
         await search("Flute");
-        expect(button("Create “Flute”")).toBeUndefined();
+        expect(button("Create 'Flute'")).toBeUndefined();
         insertAuthorized = true;
         await render();
         let rejectCreate!: (error: Error) => void;
         createOption.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectCreate = reject; }));
-        await click(button("Create “Flute”"));
+        await click(button("Create 'Flute'"));
         expect(button("Creating...").disabled).toBe(true);
         expect(button("Cancel").disabled).toBe(true);
         expect(button("Apply").disabled).toBe(true);
@@ -197,7 +197,7 @@ describe("shared DB3 tags selection", () => {
         expect(document.body.textContent).toContain("2 selected");
         expect(button("Cancel").disabled).toBe(false);
         createOption.mockResolvedValueOnce({ id: 4, name: "Flute" });
-        await click(button("Create “Flute”"));
+        await click(button("Create 'Flute'"));
         expect(document.body.textContent).toContain("3 selected");
         expect(onChange).not.toHaveBeenCalled();
         await click(button("Apply"));
@@ -231,7 +231,7 @@ describe("shared DB3 tags selection", () => {
     it("allows clearing the selection and does not offer to create an existing trimmed name", async () => {
         await open();
         await search("Trumpet ");
-        expect(button("Create “Trumpet”")).toBeUndefined();
+        expect(button("Create 'Trumpet'")).toBeUndefined();
         await search("");
         await click(checkbox("Trumpet"));
         await click(checkbox("Flugelhorn"));

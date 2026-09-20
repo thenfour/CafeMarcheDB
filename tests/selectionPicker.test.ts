@@ -159,9 +159,9 @@ describe("public picker APIs", () => {
             ...strings, initialValues: [], title: "Tags", description: "", doInsertFromString: create, onOK: onChange, onCancel,
         }));
         await search("Existing");
-        expect(button("Create “Existing”")).toBeUndefined();
+        expect(button("Create 'Existing'")).toBeUndefined();
         await search(" New ");
-        await click(button("Create “New”"));
+        await click(button("Create 'New'"));
         expect(create).toHaveBeenCalledWith("New");
         expect(button("Cancel").disabled).toBe(true);
         await click(button("Creating..."));
@@ -198,10 +198,10 @@ describe("DB3 picker adapters", () => {
         await click(button("Edit Instrument"));
         expect(button("Trumpet")).toBeDefined();
         await search("Flute");
-        expect(button("Create “Flute”")).toBeUndefined();
+        expect(button("Create 'Flute'")).toBeUndefined();
         allowed = true;
         await search(" Flute ");
-        await click(button("Create “Flute”"));
+        await click(button("Create 'Flute'"));
         expect(insert).toHaveBeenCalledWith({ name: "Flute" });
         expect(onInsert).toHaveBeenCalledWith(created);
         expect(onChange).toHaveBeenCalledWith(created);

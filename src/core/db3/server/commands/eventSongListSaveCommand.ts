@@ -16,7 +16,6 @@ import {
     defineCommandHandler,
     type DB3CommandExecutionContext,
 } from "../db3CommandCore";
-import { registerDB3CommandHandler } from "../db3CommandRegistry";
 
 type PersistedSong = Prisma.EventSongListSongGetPayload<{}>;
 type PersistedDivider = Prisma.EventSongListDividerGetPayload<{}>;
@@ -166,12 +165,10 @@ async function saveEventSongList(
     return { id: songListId };
 }
 
-// this needs also to be added to the command handler registry; see:
+// NB:
+// registrations like these need also to be added to the command handler registry; see:
 // const commandHandlers = new Map<string, AnyDB3CommandHandler>([
 export const eventSongListSaveCommandHandler = defineCommandHandler(
     saveEventSongListCommand,
     saveEventSongList,
 );
-
-registerDB3CommandHandler(eventSongListSaveCommandHandler);
-

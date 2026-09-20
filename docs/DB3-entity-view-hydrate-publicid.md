@@ -709,6 +709,16 @@ a per-row compatibility flag or a second lookup mode.
 - `DB3NewObjectDialog` now requires its table-render client to be injected. The
   grid-owned dialog therefore cannot silently construct a second legacy
   mutation client underneath a command-backed grid.
+- `DB3AssociationMatrix` now requires an explicit association command and no
+  longer requests TableClient mutation capability or posts a client-built tags
+  array. `defineAssociationCommand()` standardizes rich-row-to-identity
+  serialization and strict desired-state DTO/result validation. The
+  RolePermission handler reloads both authorized endpoints and the current join
+  set inside the command transaction, then applies the idempotent change through
+  the schema-owned `Permission.roles` association field so its authorization,
+  auditing, and mutation hooks remain authoritative. Role and Permission still
+  use numeric identities; generalized public-ID association transport remains a
+  separate migration slice.
 - The registered event-song-list save handler now performs parent, song, and
   divider synchronization atomically in one serializable transaction by
   composing authorized DB3 row services. The two legacy insert/update RPCs and
@@ -867,7 +877,7 @@ boundary safely.
   - [x] `DB3EditGrid` and its injected-client `DB3NewObjectDialog` path.
   - [x] Selection-source creation, proved through the public-ID
     `InstrumentFunctionalGroup` CRUD view.
-  - [ ] `DB3AssociationMatrix`, using an explicit association-command contract
+  - [x] `DB3AssociationMatrix`, using an explicit association-command contract
     rather than ordinary row CRUD.
 - [ ] Prohibit new consumers of the legacy TableClient mutation transport, then
   migrate existing writers by category: generated CRUD for ordinary rows and
