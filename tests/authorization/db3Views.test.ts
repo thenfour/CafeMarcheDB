@@ -856,6 +856,49 @@ describe("DB3 named views", () => {
         expectTypeOf(draft).toEqualTypeOf<db3.EventSongListDraft | undefined>();
     });
 
+    it("replaces an edited setlist row without moving it", () => {
+        const draft = db3.createEventSongListDraft({
+            clientId: -1,
+            eventId: 5,
+            name: "New set",
+        });
+        draft.items = [{
+            type: "divider",
+            clientId: -10,
+            color: null,
+            isInterruption: false,
+            isSong: false,
+            subtitleIfSong: null,
+            lengthSeconds: null,
+            textStyle: null,
+            subtitle: "First",
+        }, {
+            type: "divider",
+            clientId: -11,
+            color: null,
+            isInterruption: false,
+            isSong: false,
+            subtitleIfSong: null,
+            lengthSeconds: null,
+            textStyle: null,
+            subtitle: "Second",
+        }];
+
+        const rows = db3.getEventSongListDraftContent(draft).items;
+        const firstRow = rows[0]!;
+        expect(firstRow.type).toBe("divider");
+        if (firstRow.type !== "divider") throw new Error("Expected the first row to be a divider.");
+        const editedRows = db3.replaceEventSongListEditorRow(rows, firstRow.id, {
+            ...firstRow,
+            subtitle: "Edited first",
+        });
+
+        expect(editedRows.map(row => row.id)).toEqual([-10, -11]);
+        expect(editedRows.map(row => row.type === "divider" ? row.subtitle : null))
+            .toEqual(["Edited first", "Second"]);
+        expect(rows[0]).toBe(firstRow);
+    });
+
     it("does not create an editable EventSongList draft from an authorization-incomplete client", () => {
         const incomplete = db3.hydrateEventSongListDetailDto(
             db3.eventSongListDetailView.parseDto({ id: 50, songs: [], dividers: [] }),

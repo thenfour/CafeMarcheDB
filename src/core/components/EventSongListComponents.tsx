@@ -760,9 +760,9 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                 {editAuthorized && <div className="dragHandleIcon ">{gCharMap.Hamburger()}</div>}
                 {props.value.name ?? ""}
                 {props.value.isActuallyPlayed === true && <Tooltip disableInteractive title={`This is the playlist that was actually played or will be played`}><span className='verified songListVerified'>{gIconMap.Check()}</span></Tooltip>}
+                <AdminInspectObject src={props.value} />
             </div>
             {!props.readonly && editAuthorized && <CMButton onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</CMButton>}
-
         </div>
         <div className="content">
             {/* 
@@ -794,7 +794,6 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 interface EventSongListValueEditorRowProps {
     value: SetlistAPI.EventSongListItem;
     rowIndex: number; // The index of this row in the setlistRowItems array
-    setlistRowItems: SetlistAPI.EventSongListItem[];
     songList: db3.EventSongListDraft;
     pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
     showDragHandle?: boolean;
@@ -808,11 +807,33 @@ interface EventSongListValueEditorRowProps {
     maxBpm: number | null;
 };
 
-// Editor component for song-like dividers (when isSong is true)
-export const EventSongListValueEditorDividerSongRow = (props: EventSongListValueEditorRowProps) => {
-    if (props.value.type !== 'divider') throw new Error(`wrongtype`);
+type EventSongListValueEditorRowPropsFor<TValue extends SetlistAPI.EventSongListItem> =
+    Omit<EventSongListValueEditorRowProps, "value"> & { value: TValue };
 
-    const showDragHandle = CoalesceBool(props.showDragHandle, true);
+interface EventSongListValueEditorRowShellProps {
+    className: string;
+    style?: React.CSSProperties;
+    onDelete?: () => void;
+    songIndex?: React.ReactNode;
+    showDragHandle?: boolean;
+    playButton?: React.ReactNode;
+    children: React.ReactNode;
+}
+
+const EventSongListValueEditorRowShell = (props: EventSongListValueEditorRowShellProps) => {
+    return <div className={`tr ${props.className}`} style={props.style}>
+        <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
+        <div className="td songIndex">{props.songIndex}</div>
+        <div className="td dragHandle draggable">{CoalesceBool(props.showDragHandle, true) && gCharMap.Hamburger()}</div>
+        <div className="td play">{props.playButton}</div>
+        {props.children}
+    </div>;
+};
+
+// Editor component for song-like dividers (when isSong is true)
+export const EventSongListValueEditorDividerSongRow = (
+    props: EventSongListValueEditorRowPropsFor<SetlistAPI.EventSongListDividerItem>,
+) => {
 
     const colorInfo = GetStyleVariablesForColor({
         color: props.value.color || gSwatchColors.lighter_gray,
@@ -843,14 +864,13 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
     const bpmValue = getRowStartBpm(props.value);
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
-    return <div
-        className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
+    return <EventSongListValueEditorRowShell
+        className={`${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
         style={style as any}
+        onDelete={props.onDelete}
+        songIndex={props.value.index != null && (props.value.index + 1)}
+        showDragHandle={props.showDragHandle}
     >
-        <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
-        <div className="td songIndex">{props.value.index != null && (props.value.index + 1)}</div>
-        <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
-        <div className="td play"></div>
         <div className="td songName">
             <CMTextInputBase
                 className="cmdbSimpleInput"
@@ -882,14 +902,15 @@ export const EventSongListValueEditorDividerSongRow = (props: EventSongListValue
                 }}
             />
         </div>
-    </div >;
+    </EventSongListValueEditorRowShell>;
 };
 
-export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
+const EventSongListValueEditorSongRow = (
+    props: EventSongListValueEditorRowPropsFor<SetlistAPI.EventSongListSongItem>,
+) => {
     const dashboardContext = useDashboardContext();
     const mediaPlayer = useMediaPlayer();
-    const enrichedSong = (props.value.type === 'song') ? enrichSong(props.value.song, dashboardContext) : null;
-    const showDragHandle = CoalesceBool(props.showDragHandle, true);
+    const enrichedSong = enrichSong(props.value.song, dashboardContext);
     const bpmValue = getRowStartBpm(props.value);
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
@@ -903,62 +924,139 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         return Array.from(tagIds);
     }, [props.songList.items]);
 
-    const colorInfo = props.value.type === 'divider' ? GetStyleVariablesForColor({
-        color: props.value.color || gSwatchColors.lighter_gray,// gAppColors.attendance_yes,
-        enabled: true,
-        fillOption: 'filled',
-        selected: false,
-        variation: 'strong',
-    }) : {
-        cssClass: "",
-        style: {},
-    };
-
-    const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
+    const pinnedRecording = props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
         fileId: pinnedRecording.id,
         setlistId: props.songList.clientId,
         setlistItemIndex: props.rowIndex,
     });
 
-    const handleAutocompleteChange = (song: db3.SongPayload | null) => {
-        if (!song) return;
-        const { id, eventSongListId, sortOrder } = props.value;
-        const item: SetlistAPI.EventSongListSongItem = {
-            type: "song",
-            eventSongListId,
-            id,
-            sortOrder,
-            subtitle: "",
-            songId: song.id,
-            song: song,
-            index: 0, // will be set later
-            //songArrayIndex: 0, // will be set later by GetRowItems
-            runningTimeSeconds: null, // populated later
-            songsWithUnknownLength: 0, // populated later
-        }
-        props.onChange(item);
-    }
-
     const handleCommentChange = React.useCallback((newText: string) => {
-        if (props.value.type === 'new') return;
         const item = { ...props.value, subtitle: newText };
         props.onChange(item);
     }, [props.value, props.onChange]);
 
-    let occurrences = 0;
-    if (props.value.type === 'song') {
-        const songId = props.value.songId;
-        occurrences = props.songList.items.reduce(
-            (acc, val) => acc + (val.type === "song" && val.songId === songId ? 1 : 0),
-            0,
-        );
-    }
+    const occurrences = props.songList.items.reduce(
+        (acc, val) => acc + (val.type === "song" && val.songId === props.value.songId ? 1 : 0),
+        0,
+    );
     const isDupeWarning = occurrences > 1;
 
     const style = {
-        "--song-hash-color": getHashedColor(props.value.type === "song" ? props.value.song.name : ""),
+        "--song-hash-color": getHashedColor(props.value.song.name),
+    };
+
+    return <EventSongListValueEditorRowShell
+        className={`${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_song ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}
+        style={style as any}
+        onDelete={props.onDelete}
+        songIndex={props.value.index + 1}
+        showDragHandle={props.showDragHandle}
+        playButton={props.mediaPlayerTrack && <SongPlayButton
+            rowIndex={props.rowIndex}
+            getPlaylist={props.getPlaylist}
+            track={props.mediaPlayerTrack}
+        />}
+    >
+        {/* while it's tempting to make song names draggable themselves for very fast sorting, it interferes with
+        pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad.
+        "dragHandle draggable" */}
+        <div className="td songName">
+            <div>{props.value.song.name}</div>
+            <SongTagIndicatorContainer
+                tagIds={props.value.song.tags.map(tag => tag.tagId)}
+                allPossibleTags={allTagIds}
+            />
+        </div>
+        <div className={`td ${props.lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
+            {props.lengthColumnMode === "length"
+                ? (props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds))
+                : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)}
+        </div>
+        <div className="td tempo" style={tempoCellStyle}>
+            {enrichedSong.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
+        </div>
+        <div className="td comment">
+            <div className="comment">
+                {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>!{occurrences}</div></Tooltip>}
+                <InputBase
+                    className="cmdbSimpleInput"
+                    placeholder="Comment"
+                    value={props.value.subtitle || ""}
+                    onChange={(e) => handleCommentChange(e.target.value)}
+                />
+            </div>
+        </div>
+    </EventSongListValueEditorRowShell>;
+};
+
+const EventSongListValueEditorDividerRow = (
+    props: EventSongListValueEditorRowPropsFor<SetlistAPI.EventSongListDividerItem>,
+) => {
+    const colorInfo = GetStyleVariablesForColor({
+        color: props.value.color || gSwatchColors.lighter_gray,
+        enabled: true,
+        fillOption: 'filled',
+        selected: false,
+        variation: 'strong',
+    });
+    const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.textStyle);
+    const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
+    const style = {
+        "--song-hash-color": getHashedColor(""),
         ...colorInfo.style,
+    };
+    const handleCommentChange = React.useCallback((newText: string) => {
+        props.onChange({ ...props.value, subtitle: newText });
+    }, [props.value, props.onChange]);
+
+    return <EventSongListValueEditorRowShell
+        className={`${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${styleClasses} ${colorInfo.cssClass}`}
+        style={style as any}
+        onDelete={props.onDelete}
+        showDragHandle={props.showDragHandle}
+    >
+        <div className="td comment dividerCommentCell">
+            <div className='comment dividerCommentContainer'>
+                <div className='dividerBreakDiv before'></div>
+                <CMTextarea
+                    //autoFocus={true} // see #408
+                    className="cmdbSimpleInput dividerCommentText"
+                    placeholder="Comment"
+                    value={props.value.subtitle || ""}
+                    onChange={(e) => handleCommentChange(e.target.value)}
+                />
+                <div className='dividerBreakDiv after'></div>
+            </div>
+            <div className='dividerButtonGroup'>
+                <DividerEditInDialogButton
+                    value={props.value}
+                    sortOrder={props.value.sortOrder}
+                    songList={props.songList}
+                    onClick={props.onChange}
+                />
+            </div>
+        </div>
+    </EventSongListValueEditorRowShell>;
+};
+
+const EventSongListValueEditorNewRow = (
+    props: EventSongListValueEditorRowPropsFor<SetlistAPI.EventSongListNewItem>,
+) => {
+    const handleAutocompleteChange = (song: db3.SongPayload | null) => {
+        if (!song) return;
+        props.onChange({
+            type: "song",
+            eventSongListId: props.value.eventSongListId,
+            id: props.value.id,
+            sortOrder: props.value.sortOrder,
+            subtitle: "",
+            songId: song.id,
+            song,
+            index: 0,
+            runningTimeSeconds: null,
+            songsWithUnknownLength: 0,
+        });
     };
 
     const handleNewDivider = (type: "break" | "divider") => {
@@ -978,113 +1076,45 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             sortOrder: props.value.sortOrder,
             subtitle: "",
         });
-    }
+    };
 
-    const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.type === 'divider' ? props.value.textStyle : null);
-    const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
-
-    // Handle different divider types
-    if (props.value.type === 'divider') {
-        if (props.value.isSong) {
-            return <EventSongListValueEditorDividerSongRow {...props} />;
-        } else {
-            // Regular break-style divider
-            return <div
-                className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_${props.value.type} ${styleClasses} ${colorInfo.cssClass} ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}
-                style={style as any}
-            >
-                <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
-                <div className="td songIndex"></div>
-                <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}</div>
-                <div className="td play"></div>
-                <div className="td comment dividerCommentCell">
-                    <div className='comment dividerCommentContainer'>
-                        <div className='dividerBreakDiv before'></div>
-                        <CMTextarea
-                            //autoFocus={true} // see #408
-                            className="cmdbSimpleInput dividerCommentText"
-                            placeholder="Comment"
-                            value={props.value.subtitle || ""}
-                            onChange={(e) => handleCommentChange(e.target.value)}
-                        />
-                        <div className='dividerBreakDiv after'></div>
-                    </div>
-                    <div className='dividerButtonGroup'>
-                        <DividerEditInDialogButton
-                            value={props.value}
-                            sortOrder={props.value.sortOrder}
-                            songList={props.songList}
-                            onClick={(newVals) => {
-                                props.onChange(newVals);
-                            }}
-                        />
-                    </div>
-                </div>
-            </div>;
-        }
-    }
-
-    // Regular song or new item row
-    return <div
-        className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
-        style={style as any}
+    return <EventSongListValueEditorRowShell
+        className="newItem item invalidItem type_new"
+        showDragHandle={false}
     >
-        <div className="td delete">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
-        <div className="td songIndex">{props.value.type === 'song' && (props.value.index + 1)}
-        </div>
-        <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
-        </div>
-        <div className="td play">{props.value.type === 'song' && props.mediaPlayerTrack && <SongPlayButton
-            rowIndex={props.rowIndex}
-            getPlaylist={props.getPlaylist}
-            track={props.mediaPlayerTrack}
-        />}</div>
-        {/* while it's tempting to make song names draggable themselves for very fast sorting, it interferes with
-        pinch zooming and if you try to pinch zoom but accidentally drag songs around, you'll be sad. 
-        ${props.value.type === 'song' && "dragHandle draggable"}*/}
-        <div className={`td songName `}>
-            {props.value.type === 'song' && <>
-                <div>{props.value.song.name}</div>
-                <SongTagIndicatorContainer
-                    tagIds={props.value.song.tags.map(tag => tag.tagId)}
-                    allPossibleTags={allTagIds}
-                />
-            </>}
-
-            {/* value used to be props.value.song || null */}
-            {props.value.type === 'new' && <SongAutocomplete
+        <div className="td songName newItemSong">
+            <SongAutocomplete
                 onChange={handleAutocompleteChange}
                 value={null}
                 fadedSongIds={props.songList.items.flatMap(item => item.type === "song" ? [item.songId] : [])}
-            />}
+            />
         </div>
-        <div className={`td ${props.lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
-            {props.value.type === 'song' && (
-                props.lengthColumnMode === "length"
-                    ? (props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds))
-                    : (props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>)
-            )}
+        <div className="td newItemActions">
+            <CMSmallButton
+                className='SetlistEditorNewDividerButton'
+                tooltip="Add a divider"
+                onClick={() => handleNewDivider("divider")}
+            >+Divider</CMSmallButton>
+            <CMSmallButton
+                className='SetlistEditorNewDividerButton'
+                tooltip="Add a break"
+                onClick={() => handleNewDivider("break")}
+            >+Break</CMSmallButton>
         </div>
-        <div className="td tempo" style={tempoCellStyle}>
-            {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
-            {(props.value.type === 'new') && <Tooltip title="Add a divider"><span>
-                <CMSmallButton className='SetlistEditorNewDividerButton' onClick={() => handleNewDivider("divider")}>+Divider</CMSmallButton>
-                <CMSmallButton className='SetlistEditorNewDividerButton' onClick={() => handleNewDivider("break")}>+Break</CMSmallButton>
-            </span></Tooltip>}
-        </div>
-        <div className="td comment">
-            <div className="comment">
-                {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>!{occurrences}</div></Tooltip>}
-                {props.value.type !== 'new' &&
-                    <InputBase
-                        className="cmdbSimpleInput"
-                        placeholder="Comment"
-                        value={props.value.subtitle || ""}
-                        onChange={(e) => handleCommentChange(e.target.value)}
-                    />}
-            </div>
-        </div>
-    </div>;
+    </EventSongListValueEditorRowShell>;
+};
+
+export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
+    switch (props.value.type) {
+        case "song":
+            return <EventSongListValueEditorSongRow {...props} value={props.value} />;
+        case "divider":
+            return props.value.isSong
+                ? <EventSongListValueEditorDividerSongRow {...props} value={props.value} />
+                : <EventSongListValueEditorDividerRow {...props} value={props.value} />;
+        case "new":
+            return <EventSongListValueEditorNewRow {...props} value={props.value} />;
+    }
 };
 
 
@@ -1185,9 +1215,12 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         });
     };
 
-    const handleRowChange = React.useCallback((newValue: SetlistAPI.EventSongListItem) => {
-        handleRowsUpdated([...rowItems.filter(row => row.id !== newValue.id), newValue]);
-    }, [rowItems]);
+    const handleRowChange = (sourceRowId: number, newValue: SetlistAPI.EventSongListItem) => {
+        const updatedRows = sourceRowId === newRowId
+            ? [...rowItems, newValue]
+            : db3.replaceEventSongListEditorRow(rowItems, sourceRowId, newValue);
+        handleRowsUpdated(updatedRows);
+    };
 
     const handleRowDelete = (row: SetlistAPI.EventSongListItem) => {
         handleRowsUpdated(rowItems.filter(existing => existing.id !== row.id));
@@ -1358,9 +1391,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                             key={s.id}
                             rowIndex={index}
                             value={s}
-                            setlistRowItems={rowItems}
                             pinnedRecordings={pinnedRecordings || {}}
-                            onChange={handleRowChange}
+                            onChange={(newValue) => handleRowChange(s.id, newValue)}
                             songList={value}
                             onDelete={() => handleRowDelete(s)}
                             lengthColumnMode={lengthColumnMode}
@@ -1389,9 +1421,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         songsWithUnknownLength: 0,
                         runningTimeSeconds: null,
                     }}
-                    setlistRowItems={rowItems}
                     pinnedRecordings={pinnedRecordings || {}}
-                    onChange={handleRowChange}
+                    onChange={(newValue) => handleRowChange(newRowId, newValue)}
                     songList={value}
                     lengthColumnMode={lengthColumnMode}
                     toggleLengthColumnMode={toggleLengthColumnMode}

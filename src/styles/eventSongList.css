@@ -83,7 +83,7 @@
     /* font-style: italic; */
 }
 
-.songListSongTable .td:hover {
+.songListSongTable .td.interactable:hover {
     background-color: #8881;
 }
 
@@ -288,15 +288,20 @@
 
 
 .songListSongTable .SetlistEditorNewDividerButton {
+    flex: 0 0 auto;
     padding: 4px;
     border-radius: 4px;
     border: 1px solid #0003;
     background-color: #fff8;
 }
 
-/* when hovering over this when there are buttons covering it, there are conflicts. best to just hide it ; unused */
-.songListSongTable .tr.newItem .td.comment {
-    visibility: hidden;
+.songListSongTable .tr.type_new .newItemActions {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+    padding-left: 8px;
 }
 
 .songListSongTable .td.tempo,

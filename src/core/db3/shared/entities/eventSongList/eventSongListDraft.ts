@@ -142,6 +142,27 @@ export function eventSongListRowToDraftItem(
     return itemToDraft({ ...item, id: clientId });
 }
 
+/**
+ * Replaces an editor row without changing its position in the ordered setlist.
+ *
+ * The source ID is passed separately so callers identify the rendered row
+ * independently of the replacement value. Adding a new row remains explicit.
+ */
+export function replaceEventSongListEditorRow(
+    rows: readonly EventSongListItem[],
+    sourceRowId: number,
+    newValue: EventSongListItem,
+): EventSongListItem[] {
+    const rowIndex = rows.findIndex(row => row.id === sourceRowId);
+    if (rowIndex < 0) {
+        throw new Error(`Cannot replace missing setlist row ${sourceRowId}.`);
+    }
+
+    const updatedRows = [...rows];
+    updatedRows[rowIndex] = newValue;
+    return updatedRows;
+}
+
 const draftToLocalPayload = (value: EventSongListDraft): LocalSongListPayload => ({
     songs: value.items.flatMap((item, sortOrder) => item.type === "song" ? [{
         id: item.clientId,
