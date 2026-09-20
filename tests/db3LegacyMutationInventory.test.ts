@@ -71,9 +71,7 @@ const legacyGridSites: Record<string, LegacyWriterCategory> = {
     "src/pages/backstage/editSongCredits.tsx": "nested-row",
     "src/pages/backstage/editSongs.tsx": "ordinary-grid",
     "src/pages/backstage/instruments.tsx": "ordinary-grid",
-    "src/pages/backstage/permissions.tsx": "ordinary-grid",
     "src/pages/backstage/roles.tsx": "ordinary-grid",
-    "src/pages/backstage/settings.tsx": "ordinary-grid",
     "src/pages/backstage/userInstruments.tsx": "relationship",
 };
 

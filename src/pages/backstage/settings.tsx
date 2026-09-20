@@ -81,7 +81,7 @@ const SettingsContent = () => {
             <div className="content">
                 <SettingMarkdown setting="settings_markdown"></SettingMarkdown>
                 <SettingsControls></SettingsControls>
-                <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
+                <DB3EditGrid tableSpec={tableSpec} view={db3.settingEditorView} />
             </div>
         </CMSinglePageSurfaceCard>
     </>;

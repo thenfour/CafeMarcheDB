@@ -770,7 +770,7 @@ The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary grids | User/Event/File/Song/Instrument grids, permissions, roles, settings, attendance, song credits, and gallery-item administration | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Ordinary grids | User/Event/File/Song/Instrument grids, roles, and gallery-item administration | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
@@ -793,6 +793,19 @@ writers only. Create-from-string behavior in foreign/tag selection controls is
 still represented by the separate selection-fallback inventory and must be
 wired to these CRUD views at its actual consumers before those entity write
 surfaces are complete.
+
+The third slice starts the remaining ordinary-grid category with the two scalar
+configuration grids: Permission and Setting. Their command-backed editor views
+generate create/update commands but no delete command, preserving both tables'
+schema-owned disabled-delete policy. Each view exposes only the columns edited
+by its grid. In particular, the Permission DTO omits
+the `roles` association, which remains owned by the explicit role-permission
+command, while Setting writes continue through the existing row service and
+therefore retain setting-name/value validation. The Role grid and the larger
+User/Event/File/Song/Instrument/gallery grids are not part of this scalar
+batch: their visible columns include associations, privileged operations, or
+workflow semantics that must be separated before selecting CRUD or a named
+domain command.
 
 ## Design principles
 
@@ -936,6 +949,10 @@ boundary safely.
     generated CRUD views and commands.
   - [x] Migrate the remaining standalone lookup grids: File Tag, Instrument
     Tag, Song Tag, Song Credit Type, User Tag, and Wiki Page Tag.
+  - [x] Migrate the scalar Permission and Setting configuration grids with
+    generated create/update commands and no delete command, keeping
+    permission-role associations and bulk setting import on their existing
+    explicit command/RPC boundaries.
   - [ ] Migrate the remaining ordinary grids, then entity-detail,
     nested/relationship, collection, and workflow categories in that order.
     Split out named domain commands wherever row CRUD is not truthful, and

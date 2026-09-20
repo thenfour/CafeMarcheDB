@@ -4,7 +4,7 @@ import { useDashboardContext } from "src/core/components/dashboardContext/Dashbo
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import type { GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import type { AnyDB3CrudView, ClientOf } from "../db3";
-import { createEntityCrudUpdatePatch } from "../db3";
+import { createEntityCrudUpdatePatch, hasGeneratedDeleteCommand } from "../db3";
 import {
     useTableRenderContext,
     type xTableClientSpec,
@@ -41,7 +41,11 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     const dashboardContext = useDashboardContext();
     const create = useDB3Command(args.view.crud.createCommand);
     const update = useDB3Command(args.view.crud.updateCommand);
-    const deleteCommand = useDB3Command(args.view.crud.deleteCommand);
+    const deleteCommand = useDB3Command(
+        hasGeneratedDeleteCommand(args.view.crud)
+            ? args.view.crud.deleteCommand
+            : undefined,
+    );
     const tableClient = useTableRenderContext<ClientOf<TView>>({
         requestedCaps: args.paginated
             ? xTableClientCaps.PaginatedQuery
@@ -82,6 +86,9 @@ export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
         return result;
     };
     tableClient.doDeleteMutation = async identity => {
+        if (!deleteCommand) {
+            throw new Error(`DB3 editor view '${args.view.viewID}' does not permit deletion.`);
+        }
         const result = await deleteCommand.invoke({ identity });
         await refresh();
         return result;

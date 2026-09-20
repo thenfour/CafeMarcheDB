@@ -387,7 +387,7 @@ describe("DB3 commands", () => {
         );
     });
 
-    it("registers generated CRUD for the lookup-grid migration batches", () => {
+    it("registers generated CRUD for the scalar-grid migration batches", () => {
         const views = [
             db3.eventTypeEditorView,
             db3.eventStatusEditorView,
@@ -398,6 +398,8 @@ describe("DB3 commands", () => {
             db3.songCreditTypeEditorView,
             db3.userTagEditorView,
             db3.wikiPageTagEditorView,
+            db3.permissionEditorView,
+            db3.settingEditorView,
         ];
 
         for (const view of views) {
@@ -406,8 +408,10 @@ describe("DB3 commands", () => {
                 .toBe(view.crud.createCommand);
             expect(getDB3CommandHandler(view.crud.updateCommand.commandID).command)
                 .toBe(view.crud.updateCommand);
-            expect(getDB3CommandHandler(view.crud.deleteCommand.commandID).command)
-                .toBe(view.crud.deleteCommand);
+            if (db3.hasGeneratedDeleteCommand(view.crud)) {
+                expect(getDB3CommandHandler(view.crud.deleteCommand.commandID).command)
+                    .toBe(view.crud.deleteCommand);
+            }
         }
 
         expect(db3.eventTypeEditorView.crud.createCommand.parseDto({
@@ -457,6 +461,28 @@ describe("DB3 commands", () => {
             text: "Policy",
             wikiPages: [],
         })).toThrow();
+        expect(db3.permissionEditorView.crud.updateCommand.parseDto({
+            identity: 1,
+            patch: { isVisibility: true, significance: null },
+        })).toEqual({
+            identity: 1,
+            patch: { isVisibility: true, significance: null },
+        });
+        expect(() => db3.permissionEditorView.crud.updateCommand.parseDto({
+            identity: 1,
+            patch: { roles: [] },
+        })).toThrow();
+        expect(db3.hasGeneratedDeleteCommand(db3.permissionEditorView.crud)).toBe(false);
+        expect(db3.getDB3CrudViewForCommand("Permission_Delete")).toBeUndefined();
+        expect(db3.settingEditorView.crud.createCommand.parseDto({
+            name: "settings_markdown",
+            value: "Welcome",
+        })).toEqual({
+            name: "settings_markdown",
+            value: "Welcome",
+        });
+        expect(db3.hasGeneratedDeleteCommand(db3.settingEditorView.crud)).toBe(false);
+        expect(db3.getDB3CrudViewForCommand("Setting_Delete")).toBeUndefined();
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {

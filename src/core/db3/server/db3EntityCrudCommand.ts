@@ -2,6 +2,7 @@
 // it still has a better ring than "CUD"
 import type { TAnyModel } from "@/shared/rootroot";
 import type {
+    AnyDB3EntityCreateUpdateCommands,
     AnyDB3EntityCrudCommands,
     EntityIdOf,
 } from "../db3";
@@ -21,6 +22,39 @@ type CrudCommandHandlers<TCrud extends AnyDB3EntityCrudCommands> = {
     ];
 };
 
+type CreateUpdateCommandHandlers<TCommands extends AnyDB3EntityCreateUpdateCommands> = {
+    readonly create: DB3CommandHandler<TCommands["createCommand"]>;
+    readonly update: DB3CommandHandler<TCommands["updateCommand"]>;
+    readonly all: readonly [
+        DB3CommandHandler<TCommands["createCommand"]>,
+        DB3CommandHandler<TCommands["updateCommand"]>,
+    ];
+};
+
+export function defineEntityCreateUpdateCommandHandlers<
+    TCommands extends AnyDB3EntityCreateUpdateCommands,
+>(commands: TCommands): CreateUpdateCommandHandlers<TCommands> {
+    const create = defineCommandHandler(commands.createCommand, async (dto, context) => {
+        const inserted = await context.rowServices.insert(commands.entity, dto as TAnyModel);
+        const identity = commands.identitySchema.parse(
+            inserted[commands.entity.schema.clientIdMember],
+        );
+        return commands.createCommand.parseResult({ identity });
+    });
+
+    const update = defineCommandHandler(commands.updateCommand, async (dto, context) => {
+        const { identity, patch } = dto as { identity: unknown; patch: TAnyModel };
+        await context.rowServices.update(
+            commands.entity,
+            identity as EntityIdOf<TCommands["entity"]>,
+            patch,
+        );
+        return commands.updateCommand.parseResult({ identity });
+    });
+
+    return { create, update, all: [create, update] };
+}
+
 /**
  * Binds generated entity CRUD descriptors to the authoritative DB3 row
  * services. Registration remains explicit in db3CommandRegistry so importing a
@@ -29,23 +63,7 @@ type CrudCommandHandlers<TCrud extends AnyDB3EntityCrudCommands> = {
 export function defineEntityCrudCommandHandlers<
     TCrud extends AnyDB3EntityCrudCommands,
 >(crud: TCrud): CrudCommandHandlers<TCrud> {
-    const create = defineCommandHandler(crud.createCommand, async (dto, context) => {
-        const inserted = await context.rowServices.insert(crud.entity, dto as TAnyModel);
-        const identity = crud.identitySchema.parse(
-            inserted[crud.entity.schema.clientIdMember],
-        );
-        return crud.createCommand.parseResult({ identity });
-    });
-
-    const update = defineCommandHandler(crud.updateCommand, async (dto, context) => {
-        const { identity, patch } = dto as { identity: unknown; patch: TAnyModel };
-        await context.rowServices.update(
-            crud.entity,
-            identity as EntityIdOf<TCrud["entity"]>,
-            patch,
-        );
-        return crud.updateCommand.parseResult({ identity });
-    });
+    const { create, update } = defineEntityCreateUpdateCommandHandlers(crud);
 
     const deleteHandler = defineCommandHandler(crud.deleteCommand, async (dto, context) => {
         const { identity } = dto as { identity: unknown };

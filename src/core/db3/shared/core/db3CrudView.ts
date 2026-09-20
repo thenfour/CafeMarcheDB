@@ -1,7 +1,12 @@
 import type { TAnyModel } from "@/shared/rootroot";
 import type { z } from "zod";
 import { z as zod } from "zod";
-import { defineEntityCrudCommands, type AnyDB3EntityCrudCommands } from "./db3EntityCrud";
+import {
+    defineEntityCreateUpdateCommands,
+    defineEntityCrudCommands,
+    hasGeneratedDeleteCommand,
+    type AnyDB3EntityEditorCommands,
+} from "./db3EntityCrud";
 import type { AnyDB3Entity, EntityIdOf } from "./db3Entity";
 import {
     defineView,
@@ -15,7 +20,7 @@ export interface DB3CrudView<
     TSelection,
     TDtoSchema extends z.ZodTypeAny,
     TClient extends TAnyModel,
-    TCrud extends AnyDB3EntityCrudCommands,
+    TCrud extends AnyDB3EntityEditorCommands,
 > extends DB3View<TEntity, TSelection, TDtoSchema, TClient> {
     readonly crud: TCrud;
 }
@@ -25,7 +30,7 @@ export type AnyDB3CrudView = DB3View<
     any,
     z.ZodTypeAny,
     TAnyModel
-> & { readonly crud: AnyDB3EntityCrudCommands };
+> & { readonly crud: AnyDB3EntityEditorCommands };
 
 const crudViewsByCommandID = new Map<string, AnyDB3CrudView>();
 
@@ -101,7 +106,7 @@ function registerCrudView(view: AnyDB3CrudView): void {
     const commands = [
         view.crud.createCommand,
         view.crud.updateCommand,
-        view.crud.deleteCommand,
+        ...(hasGeneratedDeleteCommand(view.crud) ? [view.crud.deleteCommand] : []),
     ];
     for (const command of commands) {
         const existing = crudViewsByCommandID.get(command.commandID);
@@ -142,6 +147,58 @@ export function defineCrudView<
     const createSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "new");
     const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
     const crud = defineEntityCrudCommands({
+        entity: args.entity,
+        identitySchema: createIdentitySchema(args.entity),
+        createSchema,
+        updateFieldsSchema,
+    });
+    const crudView = Object.assign(view, { crud }) as DB3CrudView<
+        TEntity,
+        TSelection,
+        TDtoSchema,
+        TClient,
+        typeof crud
+    >;
+    registerCrudView(crudView as unknown as AnyDB3CrudView);
+    return crudView;
+}
+
+/**
+ * same as crud view, but without delete.
+ * 
+ * TODO: unify with defineCrudView to reduce code duplication.
+ */
+export function defineCreateUpdateView<
+    TEntity extends AnyDB3Entity,
+    TSelection,
+    TDtoSchema extends z.AnyZodObject,
+    TClient extends TAnyModel,
+>(args: {
+    viewID: string;
+    entity: TEntity;
+    selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+    dtoSchema: TDtoSchema;
+    hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
+}) {
+    if (args.entity.schema.deletePolicy !== "disabled") {
+        // well, we *could* allow this; if a client view wants to restrict deletion go ahead.
+        // but this is mostly a sanity check because you can still define a full CRUD view
+        // and just not expose the delete command.
+        throw new Error(
+            `${args.entity.entityID} permits deletion; define a full CRUD view instead.`,
+        );
+    }
+    const view = defineView({
+        ...args,
+        hydrate: (dto, references) => args.hydrate(
+            applyTableSchemaDbToClient(args.entity, dto, "view"),
+            references,
+        ),
+    });
+    const createSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "new");
+    const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
+    const crud = defineEntityCreateUpdateCommands({
         entity: args.entity,
         identitySchema: createIdentitySchema(args.entity),
         createSchema,

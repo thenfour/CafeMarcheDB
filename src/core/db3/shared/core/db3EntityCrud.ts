@@ -45,6 +45,18 @@ function getDeleteType(entity: AnyDB3Entity): "softWhenPossible" | "hard" {
     }
 }
 
+interface EntityCreateUpdateCommandArgs<
+    TEntity extends AnyDB3Entity,
+    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TCreateSchema extends z.AnyZodObject,
+    TUpdateFieldsSchema extends z.AnyZodObject,
+> {
+    entity: TEntity;
+    identitySchema: TIdentitySchema;
+    createSchema: TCreateSchema;
+    updateFieldsSchema: TUpdateFieldsSchema;
+}
+
 /**
  * Defines the ordinary single-row write contract for an entity.
  *
@@ -53,17 +65,17 @@ function getDeleteType(entity: AnyDB3Entity): "softWhenPossible" | "hard" {
  * update. The public DTOs therefore never expose xTable names, numeric table
  * IDs, or the legacy generic mutation envelope.
  */
-export function defineEntityCrudCommands<
+export function defineEntityCreateUpdateCommands<
     TEntity extends AnyDB3Entity,
     TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
     TCreateSchema extends z.AnyZodObject,
     TUpdateFieldsSchema extends z.AnyZodObject,
->(args: {
-    entity: TEntity;
-    identitySchema: TIdentitySchema;
-    createSchema: TCreateSchema;
-    updateFieldsSchema: TUpdateFieldsSchema;
-}) {
+>(args: EntityCreateUpdateCommandArgs<
+    TEntity,
+    TIdentitySchema,
+    TCreateSchema,
+    TUpdateFieldsSchema
+>) {
     requireWritableSchemasDoNotOwnIdentity(args.entity, "create schema", args.createSchema);
 
     // when updating, the patch object is separate from the "what to update" identity.
@@ -98,9 +110,6 @@ export function defineEntityCrudCommands<
         identity: args.identitySchema,
         patch: patchSchema,
     }).strict();
-    const deleteSchema = z.object({
-        identity: args.identitySchema,
-    }).strict();
     const resultSchema = identityResultSchema(args.identitySchema);
     const invalidation = {
         mode: "caller" as const,
@@ -110,7 +119,6 @@ export function defineEntityCrudCommands<
     return {
         entity: args.entity,
         identitySchema: args.identitySchema,
-        deleteType: getDeleteType(args.entity),
         createCommand: defineCommand({
             commandID: `${args.entity.entityID}_Create`,
             entity: args.entity,
@@ -127,6 +135,33 @@ export function defineEntityCrudCommands<
             serialize: (input: z.infer<typeof updateSchema>) => input,
             invalidation,
         }),
+    } as const;
+}
+
+export function defineEntityCrudCommands<
+    TEntity extends AnyDB3Entity,
+    TIdentitySchema extends z.ZodType<EntityIdOf<TEntity>>,
+    TCreateSchema extends z.AnyZodObject,
+    TUpdateFieldsSchema extends z.AnyZodObject,
+>(args: EntityCreateUpdateCommandArgs<
+    TEntity,
+    TIdentitySchema,
+    TCreateSchema,
+    TUpdateFieldsSchema
+>) {
+    const createUpdate = defineEntityCreateUpdateCommands(args);
+    const deleteSchema = z.object({
+        identity: args.identitySchema,
+    }).strict();
+    const resultSchema = identityResultSchema(args.identitySchema);
+    const invalidation = {
+        mode: "caller" as const,
+        entityIDs: [args.entity.entityID],
+    };
+
+    return {
+        ...createUpdate,
+        deleteType: getDeleteType(args.entity),
         deleteCommand: defineCommand({
             commandID: `${args.entity.entityID}_Delete`,
             entity: args.entity,
@@ -138,13 +173,26 @@ export function defineEntityCrudCommands<
     } as const;
 }
 
-export interface AnyDB3EntityCrudCommands {
+export interface AnyDB3EntityCreateUpdateCommands {
     readonly entity: AnyDB3Entity;
     readonly identitySchema: z.ZodTypeAny;
-    readonly deleteType: "softWhenPossible" | "hard";
     readonly createCommand: AnyDB3Command;
     readonly updateCommand: AnyDB3Command;
+}
+
+export interface AnyDB3EntityCrudCommands extends AnyDB3EntityCreateUpdateCommands {
+    readonly deleteType: "softWhenPossible" | "hard";
     readonly deleteCommand: AnyDB3Command;
+}
+
+export type AnyDB3EntityEditorCommands =
+    | AnyDB3EntityCreateUpdateCommands
+    | AnyDB3EntityCrudCommands;
+
+export function hasGeneratedDeleteCommand(
+    commands: AnyDB3EntityEditorCommands,
+): commands is AnyDB3EntityCrudCommands {
+    return "deleteCommand" in commands;
 }
 
 function preparedValuesEqual(a: unknown, b: unknown): boolean {
