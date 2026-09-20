@@ -64,9 +64,9 @@ export abstract class DashboardContextDataBase {
             return this.getAbsoluteUri(`/backstage/event/${parts.join("/")}`);
         },
 
-        getURIForSong: (song: Prisma.SongGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) => {
+        getURIForSong: (song: { id: number, name?: string }, tabSlug?: string) => {
             const parts: string[] = [song.id.toString()];
-            parts.push(slugify(song.name));
+            if (song.name) parts.push(slugify(song.name));
             if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
             return this.getAbsoluteUri(`/backstage/song/${parts.join("/")}`);
         },

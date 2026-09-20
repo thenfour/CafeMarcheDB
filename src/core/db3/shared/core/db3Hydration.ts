@@ -15,12 +15,18 @@ export class DB3HydrationError extends Error {
 export interface DB3ReferenceProvider {
     get<TEntity extends AnyDB3Entity>(
         entity: TEntity,
-        id: EntityIdOf<TEntity>,
+        id: EntityIdOf<TEntity> | null | undefined,
     ): ClientEntityOf<TEntity> | undefined;
+
+    // convenience when hydrating a -to-many association, such as tags on a song.
+    getTags<TAssociation, Treturn>(
+        associations: (TAssociation | null | undefined)[] | null | undefined,
+        hydrate: (association: TAssociation, index: number) => Treturn,
+    ): Treturn[];
 
     require<TEntity extends AnyDB3Entity>(
         entity: TEntity,
-        id: EntityIdOf<TEntity>,
+        id: EntityIdOf<TEntity> | null | undefined,
         path: string,
     ): ClientEntityOf<TEntity>;
 }
@@ -43,14 +49,30 @@ export class DB3ReferenceStore implements DB3ReferenceProvider {
 
     get<TEntity extends AnyDB3Entity>(
         entity: TEntity,
-        id: EntityIdOf<TEntity>,
+        id: EntityIdOf<TEntity> | null | undefined, // null/undefined supported for convenience to callers to avoid ternaries everywhere.
     ): ClientEntityOf<TEntity> | undefined {
+        if (id == null) {
+            return undefined;
+        }
         return this.entities.get(entity.entityID)?.get(id) as ClientEntityOf<TEntity> | undefined;
     }
 
+    // convenience when hydrating a -to-many association, such as tags on a song.
+    getTags<TAssociation, Treturn>(
+        associations: (TAssociation | null | undefined)[] | null | undefined,
+        hydrate: (association: TAssociation, index: number) => Treturn,
+    ): Treturn[] {
+        if (!associations) {
+            return [];
+        }
+        return associations.flatMap((association, index) => association == null ? [] : [hydrate(association, index)]);
+    }
+
+
+    // wraps get() and throws if the entity is not found.
     require<TEntity extends AnyDB3Entity>(
         entity: TEntity,
-        id: EntityIdOf<TEntity>,
+        id: EntityIdOf<TEntity> | null | undefined,
         path: string,
     ): ClientEntityOf<TEntity> {
         const value = this.get(entity, id);

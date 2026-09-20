@@ -20,5 +20,9 @@ export * from "./shared/schema/wikiPageTag"
 export * from "./shared/schema/menuLink"
 export * from "./shared/schema/setlistPlan"
 export * from "./shared/entities/instrument/instrumentViews"
+export * from "./shared/entities/file/fileEntities"
+export * from "./shared/entities/song/songEntities"
+export * from "./shared/entities/song/songViews"
+export * from "./shared/entities/user/userEntities"
 
 

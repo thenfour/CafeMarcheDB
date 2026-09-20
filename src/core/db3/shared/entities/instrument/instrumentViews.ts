@@ -84,6 +84,7 @@ export const instrumentFunctionalGroupListView = defineView({
     selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => dto,
+    getIdentity: client => client.publicId,
 });
 
 export const instrumentFunctionalGroupDashboardView = defineView({
@@ -92,6 +93,7 @@ export const instrumentFunctionalGroupDashboardView = defineView({
     selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupDashboardDtoSchema,
     hydrate: dto => dto,
+    getIdentity: client => client.publicId,
 });
 
 export const instrumentDashboardView = defineView({
@@ -115,6 +117,7 @@ export const instrumentDashboardView = defineView({
             ),
         })).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
     }),
+    getIdentity: client => client.id,
 });
 
 export type InstrumentFunctionalGroupListItem = ClientOf<typeof instrumentFunctionalGroupListView>;

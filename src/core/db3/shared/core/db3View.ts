@@ -3,7 +3,7 @@ import type { Prisma } from "db";
 import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
 import type { DB3ReferenceProvider } from "./db3Hydration";
-import type { AnyDB3Entity, PrismaDelegateOf } from "./db3Entity";
+import type { AnyDB3Entity, DB3EntityId, PrismaDelegateOf } from "./db3Entity";
 
 type ArrayItem<T> = T extends readonly (infer TItem)[] ? TItem : never;
 
@@ -20,6 +20,7 @@ export interface DB3View<
     readonly dtoSchema: TDtoSchema;
     readonly getSelectionArgs: (filter: CMDBTableFilterModel) => TSelection;
     readonly hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    readonly getIdentity: (client: TClient) => DB3EntityId;
 
     parseDto(value: unknown): z.infer<TDtoSchema>;
 }
@@ -51,6 +52,7 @@ export function defineView<
     selection: TSelection | ((filter: CMDBTableFilterModel) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    getIdentity: (client: TClient) => DB3EntityId;
 }): DB3View<TEntity, TSelection, TDtoSchema, TClient> {
     const view: DB3View<TEntity, TSelection, TDtoSchema, TClient> = {
         viewID: args.viewID,
@@ -62,6 +64,7 @@ export function defineView<
             ? args.selection as (filter: CMDBTableFilterModel) => TSelection
             : () => args.selection as TSelection,
         hydrate: args.hydrate,
+        getIdentity: args.getIdentity,
         parseDto: value => args.dtoSchema.parse(value),
     };
 

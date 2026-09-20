@@ -1,45 +1,95 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet } from 'src/core/db3/shared/apiTypes';
-import { useDashboardContext } from '../components/dashboardContext/DashboardContext';
+import type { TAnyModel } from 'shared/rootroot';
+import * as db3 from 'src/core/db3/db3';
+import { DashboardContextData, useDashboardContext } from '../components/dashboardContext/DashboardContext';
 import { fetchSearchResultsApi } from '../components/search/SearchBase';
 import { useSnackbar } from '../components/SnackbarContext';
 
 const DEFAULT_PAGE_SIZE = 20;
 
 // Generic configuration for different search types
-export interface SearchableListConfig<TFilterSpec, TRawItem, TEnrichedItem> {
+export interface SearchableListConfig<
+    TFilterSpec,
+    TTransportItem extends TAnyModel,
+    TClientItem extends TAnyModel,
+> {
     // Function to build the search query arguments from filter spec
     getQueryArgs: (filterSpec: TFilterSpec, offset: number, take: number) => GetSearchResultsInput;
-
-    // Function to enrich raw items from the API
-    enrichItem: (rawItem: TRawItem, dashboardContext: any, ...additionalArgs: any[]) => TEnrichedItem;
-
-    // Optional function to extract additional enrichment arguments
-    getEnrichmentArgs?: (dashboardContext: any) => any[];
+    materializeItem: (transportItem: TTransportItem, dashboardContext: DashboardContextData) => TClientItem;
+    getItemKey: (clientItem: TClientItem) => string | number;
 
     // Error message to show when fetch fails
     errorMessage?: string;
 }
 
-export interface UseSearchableListResult<TEnrichedItem> {
-    enrichedItems: TEnrichedItem[];
-    results: SearchResultsRet;
+type ViewSearchQueryInput = Omit<GetSearchResultsInput, "tableID" | "viewID">;
+
+export function defineViewSearchConfig<
+    TFilterSpec,
+    TView extends db3.AnyDB3View,
+>(args: {
+    view: TView;
+    getQueryArgs: (filterSpec: TFilterSpec, offset: number, take: number) => ViewSearchQueryInput;
+    errorMessage?: string;
+}): SearchableListConfig<TFilterSpec, db3.DtoOf<TView>, db3.ClientOf<TView>> {
+    return {
+        getQueryArgs: (filterSpec, offset, take) => ({
+            ...args.getQueryArgs(filterSpec, offset, take),
+            tableID: args.view.tableID,
+            viewID: args.view.viewID,
+        }),
+        materializeItem: (transportItem, dashboardContext) => db3.hydrateView(
+            args.view,
+            args.view.parseDto(transportItem),
+            dashboardContext.referenceStore,
+        ),
+        getItemKey: args.view.getIdentity,
+        errorMessage: args.errorMessage,
+    };
+}
+
+export function defineLegacySearchConfig<
+    TFilterSpec,
+    TRawItem extends TAnyModel,
+    TEnrichedItem extends TAnyModel,
+>(args: {
+    getQueryArgs: (filterSpec: TFilterSpec, offset: number, take: number) => GetSearchResultsInput;
+    enrichItem: (rawItem: TRawItem, dashboardContext: DashboardContextData) => TEnrichedItem;
+    getItemKey: (clientItem: TEnrichedItem) => string | number;
+    errorMessage?: string;
+}): SearchableListConfig<TFilterSpec, TRawItem, TEnrichedItem> {
+    return {
+        getQueryArgs: args.getQueryArgs,
+        materializeItem: args.enrichItem,
+        getItemKey: args.getItemKey,
+        errorMessage: args.errorMessage,
+    };
+}
+
+export interface UseSearchableListResult<TTransportItem extends TAnyModel, TClientItem extends TAnyModel> {
+    enrichedItems: TClientItem[];
+    results: SearchResultsRet<TTransportItem>;
     loadMoreData: () => void;
     loading: boolean;
 }
 
-export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
+export function useSearchableList<
+    TFilterSpec,
+    TTransportItem extends TAnyModel,
+    TClientItem extends TAnyModel,
+>(
     filterSpec: TFilterSpec,
-    config: SearchableListConfig<TFilterSpec, TRawItem, TEnrichedItem>,
+    config: SearchableListConfig<TFilterSpec, TTransportItem, TClientItem>,
     pageSize: number = DEFAULT_PAGE_SIZE
-): UseSearchableListResult<TEnrichedItem> {
+): UseSearchableListResult<TTransportItem, TClientItem> {
     const dashboardContext = useDashboardContext();
     const snackbarContext = useSnackbar();
 
     const filterSpecHash = JSON.stringify(filterSpec);
 
-    const [enrichedItems, setEnrichedItems] = useState<TEnrichedItem[]>([]);
-    const [results, setResults] = useState<SearchResultsRet>(MakeEmptySearchResultsRet());
+    const [enrichedItems, setEnrichedItems] = useState<TClientItem[]>([]);
+    const [results, setResults] = useState<SearchResultsRet<TTransportItem>>(MakeEmptySearchResultsRet<TTransportItem>());
     const [loading, setLoading] = useState(false);
 
     const activeRequest = useRef<AbortController | null>(null);
@@ -53,26 +103,18 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
         try {
             const queryArgs = config.getQueryArgs(filterSpec, offset, pageSize);
             //console.log('Fetching search results with args:', queryArgs);
-            const searchResult = await fetchSearchResultsApi(queryArgs, request.signal);
+            const searchResult = await fetchSearchResultsApi<TTransportItem>(queryArgs, request.signal);
             if (request.signal.aborted || activeRequest.current !== request) return;
-            const enrichmentArgs = config.getEnrichmentArgs ? config.getEnrichmentArgs(dashboardContext) : [];
-
-            const newItemsDb = searchResult.results.map(rawItem =>
-                config.enrichItem(rawItem as TRawItem, dashboardContext, ...enrichmentArgs)
-            );
+            const newItemsDb = searchResult.results.map(rawItem => config.materializeItem(rawItem, dashboardContext));
 
             setEnrichedItems(prevItems => {
-                const newItems: TEnrichedItem[] = [];
-                const overlaps: TEnrichedItem[] = [];
+                const newItems: TClientItem[] = [];
 
                 for (const item of newItemsDb) {
-                    // Assume all items have an 'id' property for deduplication
-                    const foundIndex = prevItems.findIndex(e => (e as any).id === (item as any).id);
+                    const itemKey = config.getItemKey(item);
+                    const foundIndex = prevItems.findIndex(existing => config.getItemKey(existing) === itemKey);
                     if (foundIndex === -1) {
                         newItems.push(item);
-                    } else {
-                        // the item already exists; just leave it.
-                        overlaps.push(item);
                     }
                 }
 
@@ -99,7 +141,7 @@ export function useSearchableList<TFilterSpec, TRawItem, TEnrichedItem>(
         activeRequest.current?.abort();
         activeRequest.current = null;
         setEnrichedItems([]);
-        setResults(MakeEmptySearchResultsRet());
+        setResults(MakeEmptySearchResultsRet<TTransportItem>());
         // Fetch the first page
         void fetchData(0);
         return () => {

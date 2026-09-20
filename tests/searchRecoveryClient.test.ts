@@ -15,7 +15,7 @@ vi.mock("src/core/components/SnackbarContext", async () => {
 
 import { useURLState } from "src/core/components/CMCoreComponents2";
 import { fetchSearchResultsApi } from "src/core/components/search/SearchBase";
-import { useSearchableList, SearchableListConfig } from "src/core/hooks/useSearchableList";
+import { defineLegacySearchConfig, useSearchableList } from "src/core/hooks/useSearchableList";
 import { useSearchPage } from "src/core/hooks/useSearchFilters";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 
@@ -85,12 +85,17 @@ describe("search recovery filter state", () => {
 });
 
 describe("search responses during recovery filter changes", () => {
-    const config: SearchableListConfig<{ includeDeleted: boolean }, { id: number }, { id: number }> = {
+    const config = defineLegacySearchConfig<
+        { includeDeleted: boolean },
+        { id: number },
+        { id: number }
+    >({
         getQueryArgs: (filter, offset, take) => ({
             tableID: "User", ...filter, offset, take, quickFilter: "", discreteCriteria: [], sort: [],
         }),
         enrichItem: item => item,
-    };
+        getItemKey: item => item.id,
+    });
 
     it("resets pagination and ignores an older response after recovery is switched off", async () => {
         const pending: Array<{ resolve: (value: SearchResultsRet) => void; signal?: AbortSignal }> = [];

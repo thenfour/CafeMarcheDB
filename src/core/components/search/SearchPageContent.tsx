@@ -4,7 +4,7 @@ import { SearchResultsList } from "./SearchResultsList";
 import { SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { DiscreteFilterState, useSearchPage } from "src/core/hooks/useSearchFilters";
 import { SearchableListConfig, useSearchableList } from "src/core/hooks/useSearchableList";
-import { useDashboardContext } from "../dashboardContext/DashboardContext";
+import type { TAnyModel } from "shared/rootroot";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // Configuration interfaces for SearchPageContent
@@ -18,7 +18,12 @@ export interface FilterGroupDefinition {
     chipTransformer?: (option: any) => any; // Optional chip transformer
 }
 
-export interface SearchPageContentConfig<TStaticFilterSpec extends Record<string, any>, TFilterSpec, TRawItem, TItem> {
+export interface SearchPageContentConfig<
+    TStaticFilterSpec extends Record<string, any>,
+    TFilterSpec,
+    TRawItem extends TAnyModel,
+    TItem extends TAnyModel,
+> {
     // Static filters configuration
     staticFilters: TStaticFilterSpec[];
     defaultStaticFilter: TStaticFilterSpec;
@@ -44,7 +49,12 @@ export interface SearchPageContentConfig<TStaticFilterSpec extends Record<string
     showAdminControls?: boolean;
 }
 
-export interface SearchPageContentProps<TStaticFilterSpec extends Record<string, any>, TFilterSpec, TRawItem, TItem> {
+export interface SearchPageContentProps<
+    TStaticFilterSpec extends Record<string, any>,
+    TFilterSpec,
+    TRawItem extends TAnyModel,
+    TItem extends TAnyModel,
+> {
     config: SearchPageContentConfig<TStaticFilterSpec, TFilterSpec, TRawItem, TItem>;
     // The calling component must pass these due to React hook constraints
     filterHooks: Record<string, DiscreteFilterState<any>>;
@@ -63,15 +73,14 @@ export interface SearchPageContentProps<TStaticFilterSpec extends Record<string,
 export const SearchPageContent = <
     TStaticFilterSpec extends Record<string, any> & { label: string; helpText: string },
     TFilterSpec extends { quickFilter?: string },
-    TRawItem,
-    TItem
+    TRawItem extends TAnyModel,
+    TItem extends TAnyModel,
 >({
     config,
     filterHooks,
     filterGroupDefinitions,
     searchPageHook
 }: SearchPageContentProps<TStaticFilterSpec, TFilterSpec, TRawItem, TItem>): React.JSX.Element => {
-    const dashboardContext = useDashboardContext();
     const dataHookRet = useSearchableList(searchPageHook.filterSpec, config.searchConfig);
     const { enrichedItems = [], results, loadMoreData } = dataHookRet;
 

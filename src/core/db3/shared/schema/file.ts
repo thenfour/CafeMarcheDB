@@ -151,7 +151,10 @@ export const xFileTagAssignment = new db3.xTable({
             name: row.fileTag?.text || "",
             description: row.fileTag?.description || "",
             color: gGeneralPaletteList.findEntry(row.fileTag?.color || null),
-            ownerUserId: row.file.uploadedByUserId,
+            // A view may select only the association IDs and hydrate the tag
+            // from a reference store, so the owning file is not guaranteed to
+            // be present in every legitimate query shape.
+            ownerUserId: row.file?.uploadedByUserId,
         };
     }
     ,
@@ -253,6 +256,14 @@ export const xFileSongTag = new db3.xTable({
     },
     columns: [
         MakePKfield(),
+        new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+            columnName: "file",
+            fkidMember: "fileId",
+            allowNull: false,
+            authMap: xFileAuthMap_FileObjects,
+            foreignTableID: "File",
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
         new ForeignSingleField<Prisma.FileSongTagGetPayload<{}>>({
             columnName: "song",
             fkidMember: "songId",

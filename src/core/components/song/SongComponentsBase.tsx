@@ -14,12 +14,31 @@ export interface SongWithMetadata {
     formattedLength: null | string;
 };
 
-export const CalculateSongMetadata = (song: EnrichedVerboseSong, tabSlug: string | undefined | null, dashboardContext: DashboardContextData): SongWithMetadata => {
+export interface SongMetadataSource {
+    id: number;
+    name?: string;
+    startBPM?: number | null;
+    endBPM?: number | null;
+    lengthSeconds?: number | null;
+}
+
+export interface SongMetadata<TSong extends SongMetadataSource> {
+    song: TSong;
+    songURI: string;
+    formattedBPM: null | string;
+    formattedLength: null | string;
+}
+
+export const CalculateSongMetadata = <TSong extends SongMetadataSource>(
+    song: TSong,
+    tabSlug: string | undefined | null,
+    dashboardContext: DashboardContextData,
+): SongMetadata<TSong> => {
     return {
         song,
         songURI: dashboardContext.routingApi.getURIForSong(song, tabSlug || undefined),
-        formattedBPM: (song.startBPM === null && song.endBPM === null) ? null : getFormattedBPM(song),
-        formattedLength: song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds),
+        formattedBPM: (song.startBPM == null && song.endBPM == null) ? null : getFormattedBPM(song),
+        formattedLength: song.lengthSeconds == null ? null : formatSongLength(song.lengthSeconds),
     };
 };
 

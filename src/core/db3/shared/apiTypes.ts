@@ -607,10 +607,9 @@ export interface CalculateFilterQueryResult {
 };
 
 
-export interface SearchResultsRet {
+export interface SearchResultsRet<TResult extends TAnyModel = TAnyModel> {
     rowCount: number;
-    allIdsInOrder: number[];
-    results: any[];
+    results: TResult[];
     facets: SearchResultsFacet[];
     filterQueryResult: CalculateFilterQueryResult;
 
@@ -622,10 +621,9 @@ export interface SearchResultsRet {
     queryMetrics: SearchQueryMetric[];
 };
 
-export function MakeEmptySearchResultsRet(): SearchResultsRet {
+export function MakeEmptySearchResultsRet<TResult extends TAnyModel = TAnyModel>(): SearchResultsRet<TResult> {
     return {
         facets: [],
-        allIdsInOrder: [],
         results: [],
         rowCount: 0,
         customData: null,
@@ -701,7 +699,9 @@ export interface GetSearchResultsSortModel {
 export interface GetSearchResultsInput {
     calendarWindow?: CalendarWindow;
     tableID: string;
+    viewID?: string;
     includeDeleted?: boolean;
+    refreshSerial?: number;
 
     // pageSize: number;
     // page: number;
@@ -742,12 +742,15 @@ const ZGetSearchResultsSortModel = z.object({
 export const ZGetSearchResultsInput = z.object({
     calendarWindow: CalendarWindowSchema.optional(),
     tableID: ZDBSymbol,
+    viewID: ZDBSymbol.optional(),
     includeDeleted: z.boolean().optional(),
+    refreshSerial: z.number().optional(),
 
     offset: z.number(),
     take: z.number(),
 
-    sort: z.array(ZGetSearchResultsSortModel),
+    // unspecified sort is not allowed
+    sort: z.array(ZGetSearchResultsSortModel).min(1),
 
     quickFilter: z.string(),
     discreteCriteria: z.array(ZDiscreteCriterion),

@@ -2,7 +2,6 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { SongOrderByColumnNames, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "@/src/core/components/song/SongClientBaseTypes";
 import { SongListItem } from "@/src/core/components/song/SongListItem";
-import { EnrichedVerboseSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
@@ -93,7 +92,7 @@ const SongListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, db3.SongPayload_Verbose, EnrichedVerboseSong> = {
+    const config: SearchPageContentConfig<SongsFilterSpecStatic, SongsFilterSpec, db3.SongSearchDto, db3.SongSearchClient> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: SongOrderByColumnOptions,
@@ -114,7 +113,7 @@ const SongListOuter = () => {
             itemToCSVRow: (song, index) => ({
                 Order: index.toString(),
                 ID: song.id.toString(),
-                Name: song.name,
+                Name: song.name || "",
                 URL: dashboardContext.routingApi.getURIForSong(song),
             }),
             filename: "songs"

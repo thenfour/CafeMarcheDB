@@ -226,6 +226,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     const [dashboardData, { refetch }] = useQuery(getDashboardData, { userId: currentUser?.id ?? null });
     valueRef.current.refetchDashboardData = refetch;
     valueRef.current.permission = new TableAccessor(dashboardData.permission);
+    valueRef.current.referenceStore.register(
+        db3.permissionEntity,
+        valueRef.current.permission.items,
+    );
 
     valueRef.current.effectivePermissions = new PermissionSet(zip(
         dashboardData.effectivePermissionIds,
@@ -243,6 +247,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
+    valueRef.current.referenceStore.register(
+        db3.fileTagEntity,
+        valueRef.current.fileTag.items,
+    );
     valueRef.current.instrumentTag = new TableAccessor(dashboardData.instrumentTag);
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(
         dashboardData.instrumentFunctionalGroup,
@@ -257,6 +265,10 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         valueRef.current.instrumentTag.items,
     );
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
+    valueRef.current.referenceStore.register(
+        db3.songTagEntity,
+        valueRef.current.songTag.items,
+    );
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
     valueRef.current.serverStartupState = dashboardData.serverStartupState;

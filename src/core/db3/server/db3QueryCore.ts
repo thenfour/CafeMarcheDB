@@ -78,7 +78,42 @@ function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof 
         ));
 }
 
-export async function queryTable(input: db3.QueryRequestInput, authorization: RequestAuthorization, database: TransactionalPrismaClient = db) {
+export interface QueryTableExecutionOptions {
+
+    // allows a caller to specify the returned sort order.
+    // used by search queries;
+    // those queries work in 2 stages:
+    // 1. do filtering/sorting; collect list of primary keys in order. this is done in raw SQL.
+    // 2. load full objects, using Prisma.
+    // so this is the bridge between 1 and 2
+    orderedPrimaryKeys?: readonly (number | string)[];
+}
+
+// takes an ordered list of pks, and an unordered list of items;
+// returns items ordered according to the orderedPrimaryKeys array
+function orderRawRowsByPrimaryKey<T extends TAnyModel>(
+    items: T[],
+    primaryKeyMember: string,
+    orderedPrimaryKeys: readonly (number | string)[] | undefined,
+): T[] {
+    if (!orderedPrimaryKeys) {
+        return items;
+    }
+    // map of pk -> item
+    const byPrimaryKey = new Map(items.map(item => [item[primaryKeyMember], item]));
+
+    return orderedPrimaryKeys.flatMap(primaryKey => {
+        const item = byPrimaryKey.get(primaryKey);
+        return item ? [item] : [];
+    });
+}
+
+export async function queryTable(
+    input: db3.QueryRequestInput,
+    authorization: RequestAuthorization,
+    database: TransactionalPrismaClient = db,
+    executionOptions: QueryTableExecutionOptions = {},
+) {
     const startTimestamp = Date.now();
     const query = await prepareTableQuery(input, authorization);
     const items = await database[query.table.tableName].findMany({
@@ -87,9 +122,14 @@ export async function queryTable(input: db3.QueryRequestInput, authorization: Re
         take: input.take,
         ...query.selectionArgs,
     });
+    const orderedItems = orderRawRowsByPrimaryKey(
+        items,
+        query.table.pkMember,
+        executionOptions.orderedPrimaryKeys,
+    );
     if (input.delayMS) await sleep(input.delayMS);
     return {
-        items: sanitizeQueryRows(items, query, `query:${query.table.tableName}`),
+        items: sanitizeQueryRows(orderedItems, query, `query:${query.table.tableName}`),
         where: query.where,
         selectionArgs: query.selectionArgs,
         executionTimeMillis: Date.now() - startTimestamp,

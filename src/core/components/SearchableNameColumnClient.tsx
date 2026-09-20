@@ -34,7 +34,7 @@ export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
     });
 
-    const items = songsClient.items as db3.SongPayload_Verbose[];
+    const items = songsClient.items;
 
     return <div className="searchableValueContainer">
         <CMTextInputBase {...props} />

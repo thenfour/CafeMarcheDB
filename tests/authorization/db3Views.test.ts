@@ -95,6 +95,40 @@ describe("DB3 named views", () => {
         expectTypeOf(restrictedDto.name).toEqualTypeOf<string | undefined>();
     });
 
+    it("preserves a server-computed page order before a view removes database IDs", async () => {
+        const secondPublicId = parsePublicId<"InstrumentFunctionalGroup">("BcDeFgHiJkLmNo12");
+        const findMany = vi.fn(async () => [
+            { id: 1, ...group },
+            { id: 2, ...group, publicId: secondPublicId, name: "Woodwind" },
+        ]);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.sysadmin },
+        ]);
+
+        const result = await queryTable({
+            table: {
+                tableID: "InstrumentFunctionalGroup",
+                tableName: "InstrumentFunctionalGroup",
+                viewID: db3.instrumentFunctionalGroupListView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "db3-view-ordered-test",
+        }, {
+            user: { id: 100 } as any,
+            effectivePermissions,
+        }, {
+            InstrumentFunctionalGroup: { findMany },
+        } as any, {
+            orderedPrimaryKeys: [2, 1],
+        });
+
+        expect(result.items.map(item => item.publicId)).toEqual([secondPublicId, groupPublicId]);
+        expect(result.items.every(item => !("id" in item))).toBe(true);
+    });
+
     it("represents authorization-stripped fields as absent optional DTO members", () => {
         const publicData = db3.createDB3Authorization(null, new PermissionSet([
             { id: 1, name: Permission.always_grant },
@@ -139,6 +173,122 @@ describe("DB3 named views", () => {
                 functionalGroup: { id: number; publicId: string };
                 instrumentTags: { id: number; instrumentId: number; tagId: number }[];
             }>();
+    });
+
+    it("hydrates the Song search view recursively and keeps authorized fields optional", () => {
+        const references = new db3.DB3ReferenceStore();
+        const permission = {
+            id: 4,
+            name: "members",
+            description: "",
+            isVisibility: true,
+            sortOrder: 1,
+            significance: null,
+            color: null,
+            iconName: null,
+        };
+        const songTag = { id: 20, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
+        const fileTag = { id: 30, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
+        references.register(db3.permissionEntity, [permission]);
+        references.register(db3.songTagEntity, [songTag]);
+        references.register(db3.fileTagEntity, [fileTag]);
+
+        const dto = db3.songSearchView.parseDto({
+            id: 7,
+            name: "A song",
+            visiblePermissionId: permission.id,
+            tags: [{ id: 70, songId: 7, tagId: songTag.id }],
+            taggedFiles: [{
+                id: 80,
+                fileId: 8,
+                songId: 7,
+                file: {
+                    id: 8,
+                    tags: [{ id: 90, fileTagId: fileTag.id }],
+                },
+            }],
+        });
+        const hydrated = db3.hydrateView(db3.songSearchView, dto, references);
+
+        expect(hydrated.visiblePermission).toBe(permission);
+        expect(hydrated.tags?.[0]?.tag).toBe(songTag);
+        expect(hydrated.taggedFiles?.[0]?.file?.tags?.[0]?.fileTag).toBe(fileTag);
+        expectTypeOf(dto.aliases).toEqualTypeOf<string | undefined>();
+        expectTypeOf(hydrated).toEqualTypeOf<db3.SongSearchClient>();
+    });
+
+    it("projects the Song search DTO through nested field authorization", async () => {
+        const findMany = vi.fn(async () => [{
+            id: 7,
+            name: "A song",
+            aliases: "",
+            startBPM: null,
+            endBPM: null,
+            introducedYear: null,
+            lengthSeconds: null,
+            createdByUserId: 100,
+            visiblePermissionId: null,
+            isDeleted: false,
+            tags: [{ id: 70, songId: 7, tagId: 20 }],
+            taggedFiles: [{
+                id: 80,
+                fileId: 8,
+                songId: 7,
+                file: {
+                    id: 8,
+                    uploadedByUserId: 100,
+                    visiblePermissionId: null,
+                    isDeleted: false,
+                    tags: [{ id: 90, fileTagId: 30 }],
+                },
+            }],
+            credits: [{
+                id: 100,
+                userId: 100,
+                songId: 7,
+                typeId: 2,
+                year: "2026",
+                comment: "",
+                user: { id: 100, name: "Composer" },
+            }],
+        }]);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.visibility_members },
+            { id: 4, name: Permission.view_songs },
+            { id: 5, name: Permission.view_files },
+        ]);
+
+        const result = await queryTable({
+            table: {
+                tableID: db3.xSong.tableID,
+                tableName: db3.xSong.tableName,
+                viewID: db3.songSearchView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "song-search-view-test",
+        }, {
+            user: { id: 100 } as any,
+            effectivePermissions,
+        }, {
+            Song: { findMany },
+        } as any);
+
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0]).toMatchObject({
+            id: 7,
+            tags: [{ id: 70, tagId: 20 }],
+            taggedFiles: [{
+                id: 80,
+                file: { id: 8, tags: [{ id: 90, fileTagId: 30 }] },
+            }],
+            credits: [{ id: 100, user: { id: 100, name: "Composer" } }],
+        });
+        expect(result.items[0]).not.toHaveProperty("createdByUserId");
+        expect(result.items[0]?.taggedFiles?.[0]).not.toHaveProperty("fileId");
+        expect(result.items[0]?.credits?.[0]).not.toHaveProperty("songId");
     });
 
     it("reports the exact missing reference path", () => {

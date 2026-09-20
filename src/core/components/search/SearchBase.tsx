@@ -1,7 +1,8 @@
 import superjson from 'superjson';
 import { GetSearchResultsInput, SearchResultsRet } from "../../db3/shared/apiTypes";
+import type { TAnyModel } from 'shared/rootroot';
 
-export async function fetchSearchResultsApi(args: GetSearchResultsInput, signal?: AbortSignal): Promise<SearchResultsRet> {
+export async function fetchSearchResultsApi<TResult extends TAnyModel>(args: GetSearchResultsInput, signal?: AbortSignal): Promise<SearchResultsRet<TResult>> {
     const serializedArgs = superjson.stringify(args);
     const encodedArgs = encodeURIComponent(serializedArgs);
 
@@ -13,6 +14,6 @@ export async function fetchSearchResultsApi(args: GetSearchResultsInput, signal?
     if (!response.ok) {
         throw new Error('Network response was not ok');
     }
-    return superjson.parse(await response.text());
+    return superjson.parse(await response.text()) as SearchResultsRet<TResult>;
 }
 

@@ -1,10 +1,8 @@
 // stuff that clientAPI uses which doesn't require DB3ClientBasicFields to avoid a dependency cycle.
 
-import { Prisma } from "db";
-
 // i don't know why i wrote this function twice; if issues happen because of this one,
 // explain it.
-export function getFormattedBPM(song: Prisma.SongGetPayload<{ select: { startBPM: true, endBPM: true } }>) {
+export function getFormattedBPM(song: { startBPM?: number | null, endBPM?: number | null }) {
     if (!song.startBPM) {
         if (!song.endBPM) {
             return "";// neither specified

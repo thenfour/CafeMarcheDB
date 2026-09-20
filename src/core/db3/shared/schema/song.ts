@@ -5,7 +5,7 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { CMDBTableFilterModel } from "../apiTypes";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignCollectionField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
@@ -140,6 +140,7 @@ export const xSongTagAssociation = new db3.xTable({
     }),
     columns: [
         MakePKfield(),
+        new GhostField({ memberName: "songId", authMap: xSongAuthMap_R_EOwn_EManagers }),
         new ForeignSingleField<Prisma.SongTagGetPayload<{}>>({
             columnName: "tag",
             fkidMember: "tagId",
@@ -278,7 +279,11 @@ const xSongArgs_Base: db3.TableDesc = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.SongWhereInput | boolean => false,
         }), // tags
 
-        new GhostField({ memberName: "credits", authMap: xSongAuthMap_R_EOwn_EManagers }),
+        new ForeignCollectionField({
+            memberName: "credits",
+            foreignTableID: "SongCredit",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+        }),
         new GhostField({ memberName: "pinnedRecordingId", authMap: xSongAuthMap_R_EOwn_EManagers }),
     ]
 };

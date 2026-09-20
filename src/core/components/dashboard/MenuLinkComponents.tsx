@@ -157,7 +157,7 @@ export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => 
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
     });
 
-    const items = songsClient.items as db3.SongPayload_Verbose[];
+    const items = songsClient.items;
     const hasMatch = items.length > 0;
     const item = items[0];
     const matchValue = (item && (item[props.columnName] as string)) || "";

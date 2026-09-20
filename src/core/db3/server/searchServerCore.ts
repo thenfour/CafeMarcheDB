@@ -61,7 +61,7 @@ const gSearchCustomHookMap: { [key in SearchCustomDataHookId]: CustomSearchHookP
 
 
 
-function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQueryElements {
+export function processSearchSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQueryElements {
     // the sort order value is best added to this query to avoid having to join to the same table later in the paginated results query.
     const sortElementsArray: SortQueryElements[] = [];
     let sortSymbolNameId = 0;
@@ -91,18 +91,6 @@ function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQ
             sortElementsArray.push(sortElements);
         }
     }
-
-    // now finally sort by ID to ensure the search results are 100% deterministic.
-    // without this, #342 items can return in slightly different order each paginated query,
-    // resulting in skipping and incomplete results or mismatch between total rows & total rows returned
-    sortElementsArray.push({
-        join: [],
-        select: [{
-            alias: getSortColumnAPI.getColumnAlias(),
-            expression: `P.id`,
-            direction: "asc",
-        }],
-    });
 
     // flatten sort columns
     const emptySortElements: SortQueryElements = {
@@ -235,6 +223,10 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
         if (!table) {
             throw new Error(`table ${args.tableID} not found`);
         }
+        const view = args.viewID ? db3.getDB3View(args.viewID) : undefined;
+        if (view && view.tableID !== table.tableID) {
+            throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
+        }
 
         if (!table.authorizeTableForView(publicData)
             || (args.includeDeleted === true && !table.getSearchCapabilities(publicData).includeDeleted)) {
@@ -267,7 +259,7 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
         });
         const authorizedSearchArgs = { ...args, discreteCriteria: readableDiscreteCriteria };
 
-        const sortElements = ProcessSortModel(table, authorizedSearchArgs);
+        const sortElements = processSearchSortModel(table, authorizedSearchArgs);
         const bandTimeZone = await loadBandTimeZone(database);
         const calendarPredicate = args.calendarWindow ? calendarWindowSql(args.calendarWindow, bandTimeZone) : null;
 
@@ -371,38 +363,6 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
 
         queries.push(totalRowCountQueryProc());
 
-        // // TOTAL filtered row IDs (for debugging purposes)
-        // const allFilteredIdsQueryProc = async () => {
-        //     const sw = new Stopwatch();
-        //     const orderBy: string[] = [];
-        //     sortElements.select.forEach(s => {
-        //         orderBy.push(`${s.alias} ${s.direction}`);
-        //     });
-
-        //     const query = `
-        //         with FilteredItems as (
-        //             ${filterResult.sqlSelect}
-        //         )
-        //         select
-        //             id
-        //         from
-        //             FilteredItems
-        //         order by
-        //             ${orderBy.join(`,\n`)}
-        //             `;
-        //     const r: { id: bigint }[] = await database.$queryRaw(Prisma.raw(query));
-        //     //ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
-        //     ret.queryMetrics.push({
-        //         title: "all row IDs in order",
-        //         millis: sw.ElapsedMillis,
-        //         query,
-        //         rowCount: r.length,
-        //     });
-        //     ret.allIdsInOrder = r.map(x => BigintToNumber(x.id));
-        // };
-
-        // queries.push(allFilteredIdsQueryProc());
-
         const parallelsw = new Stopwatch();
         await Promise.all(queries);
         ret.queryMetrics.push({
@@ -412,27 +372,34 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
             rowCount: 0,
         });
 
-        // FULL EVENT DETAILS USING DB3.
+        // FULL DETAILS USING DB3.
         if (resultIds.length) {
             const queryResult = await queryTable({
                 cmdbQueryContext: `getSearchResults[${table.tableName}]`,
-                table,
+                table: {
+                    tableID: table.tableID,
+                    tableName: table.tableName,
+                    viewID: view?.viewID,
+                },
                 includeDeleted: args.includeDeleted === true,
                 filter: {
                     pks: resultIds,
                 },
                 orderBy: undefined,
-            }, authorization, database);
+            },
+                authorization,
+                database,
+                {
+                    orderedPrimaryKeys: resultIds,
+                });
             ret.queryMetrics.push({
-                title: "db3 verbose items",
+                title: view ? `db3 view items [${view.viewID}]` : "db3 legacy items",
                 millis: queryResult.executionTimeMillis,
                 query: "",
                 rowCount: queryResult.items.length,
             });
 
-            // apply sorting to make sure the page looks correct.
-            // the filter *should* be unnecessary but some edge cases (race conditions) could result in mismatches so play safe.
-            ret.results = resultIds.map(id => queryResult.items.find(r => r[table.pkMember] === id)).filter(r => !!r);
+            ret.results = queryResult.items;
         }
 
         if (table.SearchCustomDataHookId) {
