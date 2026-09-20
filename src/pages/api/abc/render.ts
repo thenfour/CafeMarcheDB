@@ -89,108 +89,91 @@ function cropSvgToContent(svgElement: Element): string {
     }
 }
 
-// Custom ABC to SVG renderer using abcjs and jsdom
-function renderAbcToSvg(abcNotation: string, options: any = {}): Promise<string> {
-    return new Promise((resolve, reject) => {
-        try {
-            // Create a virtual DOM environment
-            const dom = new JSDOM(`
-                <!DOCTYPE html>
-                <html>
-                <body>
-                    <div id="abc-target"></div>
-                </body>
-                </html>
-            `, {
-                pretendToBeVisual: true,
-                resources: "usable"
-            });
+const abcBrowserGlobalNames = ["window", "document", "navigator"] as const;
 
-            // Set up global window and document for abcjs
-            global.window = dom.window as any;
-            global.document = dom.window.document as any;
-            global.navigator = dom.window.navigator as any;
+type AbcBrowserGlobalName = typeof abcBrowserGlobalNames[number];
 
-            const targetElement = dom.window.document.getElementById('abc-target');
+function restoreGlobalProperty(name: AbcBrowserGlobalName, descriptor: PropertyDescriptor | undefined) {
+    if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+    } else {
+        Reflect.deleteProperty(globalThis, name);
+    }
+}
 
-            if (!targetElement) {
-                reject(new Error('Failed to create target element'));
-                return;
-            }
-
-            // Configure abcjs rendering options
-            const renderOptions = {
-                responsive: "resize",
-                staffwidth: options.width || 540,
-                scale: options.scale || 1.0,
-                // paddingtop: 15,
-                // paddingbottom: 15,
-                // paddingleft: 15,
-                // paddingright: 15,
-                add_classes: true,
-                ...options
-            };
-
-            // Render ABC notation
-            const visualObj = abcjs.renderAbc(targetElement, abcNotation, renderOptions);
-
-            // Poll for SVG completion with early exit and max timeout
-            const pollInterval = 20; // Check every
-            const maxTimeout = 2000; // Maximum wait time of 2 seconds
-            const startTime = Date.now();
-
-            const pollForSvg = () => {
-                try {
-                    // Check if SVG has been generated
-                    const svgElements = targetElement.querySelectorAll('svg');
-
-                    if (svgElements.length > 0) {
-                        // SVG found! Process it immediately
-                        const svgElement = svgElements[0];
-                        if (!svgElement) {
-                            reject(new Error('SVG element is undefined'));
-                            return;
-                        }
-
-                        // Crop SVG to content bounds
-                        const croppedSvg = cropSvgToContent(svgElement);
-
-                        // Ensure the SVG has proper attributes for standalone rendering
-                        let svgContent = croppedSvg;
-                        if (!svgContent.includes('xmlns=')) {
-                            svgContent = svgContent.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
-                        }
-
-                        // Clean up globals
-                        delete (global as any).window;
-                        delete (global as any).document;
-                        delete (global as any).navigator;
-
-                        resolve(svgContent);
-                        return;
-                    }
-
-                    // Check if we've exceeded the maximum timeout
-                    if (Date.now() - startTime > maxTimeout) {
-                        reject(new Error('Timeout: No SVG generated from ABC notation within 2 seconds'));
-                        return;
-                    }
-
-                    // Continue polling
-                    setTimeout(pollForSvg, pollInterval);
-
-                } catch (extractError) {
-                    reject(extractError);
-                }
-            };
-
-            // Start polling
-            pollForSvg();
-
-        } catch (error) {
-            reject(error);
-        }
+// abcjs expects browser globals, but renders synchronously. Keeping the entire
+// override synchronous prevents another request from observing a browser-like
+// server, while descriptor restoration preserves Node's getter-only navigator.
+export function renderAbcToSvg(abcNotation: string, options: any = {}): string {
+    const dom = new JSDOM(`
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <div id="abc-target"></div>
+        </body>
+        </html>
+    `, {
+        pretendToBeVisual: true,
     });
+
+    const originalDescriptors = new Map<AbcBrowserGlobalName, PropertyDescriptor | undefined>(
+        abcBrowserGlobalNames.map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)])
+    );
+
+    try {
+        const browserGlobals: Record<AbcBrowserGlobalName, unknown> = {
+            window: dom.window,
+            document: dom.window.document,
+            navigator: dom.window.navigator,
+        };
+
+        for (const name of abcBrowserGlobalNames) {
+            Object.defineProperty(globalThis, name, {
+                configurable: true,
+                enumerable: true,
+                value: browserGlobals[name],
+                writable: true,
+            });
+        }
+
+        const targetElement = dom.window.document.getElementById('abc-target');
+        if (!targetElement) {
+            throw new Error('Failed to create target element');
+        }
+
+        const renderOptions = {
+            responsive: "resize",
+            staffwidth: options.width || 540,
+            scale: options.scale || 1.0,
+            // paddingtop: 15,
+            // paddingbottom: 15,
+            // paddingleft: 15,
+            // paddingright: 15,
+            add_classes: true,
+            ...options
+        };
+
+        abcjs.renderAbc(targetElement, abcNotation, renderOptions);
+
+        const svgElement = targetElement.querySelector('svg');
+        if (!svgElement) {
+            throw new Error('No SVG generated from ABC notation');
+        }
+
+        const croppedSvg = cropSvgToContent(svgElement);
+        if (croppedSvg.includes('xmlns=')) {
+            return croppedSvg;
+        }
+        return croppedSvg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    } finally {
+        try {
+            dom.window.close();
+        } finally {
+            for (const name of abcBrowserGlobalNames) {
+                restoreGlobalProperty(name, originalDescriptors.get(name));
+            }
+        }
+    }
 }
 
 // API endpoint for rendering ABC music notation to SVG
@@ -254,7 +237,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Render ABC notation to SVG
         let svgContent: string;
         try {
-            svgContent = await renderSvg(decodedNotation, options);
+            svgContent = renderSvg(decodedNotation, options);
         } catch (renderError: any) {
             console.error("ABC rendering error:", renderError);
             return res.status(422).json({
