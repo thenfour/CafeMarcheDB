@@ -51,11 +51,22 @@ const InstrumentFunctionalGroupDashboardDtoSchema = z.object({
 
 const InstrumentTagDtoSchema = z.object({
     id: z.number().int(),
-    text: z.string(),
-    description: z.string(),
-    sortOrder: z.number().int(),
-    color: z.string().nullable(),
-    significance: z.string().nullable(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    sortOrder: z.number().int().optional(),
+    color: z.string().nullable().optional(),
+    significance: z.string().nullable().optional(),
+});
+
+const instrumentTagEditorSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        sortOrder: true,
+        color: true,
+        significance: true,
+    },
 });
 
 const DashboardInstrumentDtoSchema = z.object({
@@ -104,6 +115,15 @@ export const instrumentFunctionalGroupDashboardView = defineView({
     dtoSchema: InstrumentFunctionalGroupDashboardDtoSchema,
     hydrate: dto => dto,
     getIdentity: client => client.publicId,
+});
+
+export const instrumentTagEditorView = defineCrudView({
+    viewID: "InstrumentTag_Editor",
+    entity: instrumentTagEntity,
+    selection: instrumentTagEditorSelection,
+    dtoSchema: InstrumentTagDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
 });
 
 export const instrumentDashboardView = defineView({

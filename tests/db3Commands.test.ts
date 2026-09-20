@@ -387,11 +387,17 @@ describe("DB3 commands", () => {
         );
     });
 
-    it("registers generated CRUD for the event lookup-grid migration batch", () => {
+    it("registers generated CRUD for the lookup-grid migration batches", () => {
         const views = [
             db3.eventTypeEditorView,
             db3.eventStatusEditorView,
             db3.eventTagEditorView,
+            db3.fileTagEditorView,
+            db3.instrumentTagEditorView,
+            db3.songTagEditorView,
+            db3.songCreditTypeEditorView,
+            db3.userTagEditorView,
+            db3.wikiPageTagEditorView,
         ];
 
         for (const view of views) {
@@ -424,6 +430,32 @@ describe("DB3 commands", () => {
         expect(() => db3.eventTagEditorView.crud.deleteCommand.parseDto({
             identity: 1,
             deleteType: "hard",
+        })).toThrow();
+        expect(db3.songTagEditorView.crud.createCommand.parseDto({
+            text: "Ballad",
+            group: "Style",
+            indicator: "B",
+            indicatorCssClass: "ballad",
+        })).toEqual({
+            text: "Ballad",
+            group: "Style",
+            indicator: "B",
+            indicatorCssClass: "ballad",
+        });
+        expect(db3.userTagEditorView.crud.updateCommand.parseDto({
+            identity: 1,
+            patch: { cssClass: null },
+        })).toEqual({
+            identity: 1,
+            patch: { cssClass: null },
+        });
+        expect(() => db3.fileTagEditorView.crud.createCommand.parseDto({
+            text: "Chart",
+            fileAssignments: [],
+        })).toThrow();
+        expect(() => db3.wikiPageTagEditorView.crud.createCommand.parseDto({
+            text: "Policy",
+            wikiPages: [],
         })).toThrow();
     });
 

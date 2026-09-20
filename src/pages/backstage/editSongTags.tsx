@@ -26,7 +26,7 @@ const songTagsTableSpec = new DB3Client.xTableClientSpec({
 const MainContent = () => {
     return <>
         <SettingMarkdown setting="editSongTags_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={songTagsTableSpec} legacyMutationTransport />
+        <DB3EditGrid tableSpec={songTagsTableSpec} view={db3.songTagEditorView} />
     </>;
 };
 

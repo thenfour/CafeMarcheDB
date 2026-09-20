@@ -1,10 +1,40 @@
 import { Prisma } from "db";
 import { z } from "zod";
+import { defineCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { instrumentEntity } from "../instrument/instrumentViews";
 import { permissionEntity } from "../user/userEntities";
 import { fileEntity, fileTagEntity } from "./fileEntities";
+
+const FileTagEditorDtoSchema = z.object({
+    id: z.number().int(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+});
+
+const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
+});
+
+export const fileTagEditorView = defineCrudView({
+    viewID: "FileTag_Editor",
+    entity: fileTagEntity,
+    selection: fileTagEditorSelection,
+    dtoSchema: FileTagEditorDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
 
 const FileTagAssignmentDtoSchema = z.object({
     id: z.number().int(),

@@ -1,10 +1,75 @@
 import { Prisma } from "db";
 import { z } from "zod";
+import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { fileTagEntity } from "../file/fileEntities";
 import { FileDetailDtoSchema, fileDetailSelection, hydrateFileDetailDto } from "../file/fileViews";
 import { permissionEntity } from "../user/userEntities";
-import { songEntity, songTagEntity } from "./songEntities";
+import { songCreditTypeEntity, songEntity, songTagEntity } from "./songEntities";
+
+const SongTagEditorDtoSchema = z.object({
+    id: z.number().int(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+    group: z.string().nullable().optional(),
+    indicator: z.string().nullable().optional(),
+    indicatorCssClass: z.string().nullable().optional(),
+});
+
+const SongCreditTypeEditorDtoSchema = z.object({
+    id: z.number().int(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+});
+
+const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+        group: true,
+        indicator: true,
+        indicatorCssClass: true,
+    },
+});
+
+const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+    },
+});
+
+export const songTagEditorView = defineCrudView({
+    viewID: "SongTag_Editor",
+    entity: songTagEntity,
+    selection: songTagEditorSelection,
+    dtoSchema: SongTagEditorDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
+
+export const songCreditTypeEditorView = defineCrudView({
+    viewID: "SongCreditType_Editor",
+    entity: songCreditTypeEntity,
+    selection: songCreditTypeEditorSelection,
+    dtoSchema: SongCreditTypeEditorDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
 
 const SongTagAssociationDtoSchema = z.object({
     id: z.number().int(),

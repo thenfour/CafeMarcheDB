@@ -770,7 +770,7 @@ The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary and lookup grids | User/Event/File/Song/Instrument grids, tags, permissions, roles, settings, attendance, song credits, and gallery-item administration | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Ordinary grids | User/Event/File/Song/Instrument grids, permissions, roles, settings, attendance, song credits, and gallery-item administration | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
@@ -783,6 +783,16 @@ view and uses generated create/update/delete commands. Their editor DTOs keep
 authorization-removable fields optional, omit relation collections that the
 grid does not edit, and retain the existing `xTable` client-value conversion
 behavior for fields such as color.
+
+The second slice completes the standalone lookup-grid category: File Tag,
+Instrument Tag, Song Tag, Song Credit Type, User Tag, and Wiki Page Tag now use
+the same CRUD-view path. Song Tag's additional grouping and indicator fields
+and User Tag's CSS class are part of their strict editor DTOs; schema-owned
+association collections are deliberately absent. This migrates the admin-grid
+writers only. Create-from-string behavior in foreign/tag selection controls is
+still represented by the separate selection-fallback inventory and must be
+wired to these CRUD views at its actual consumers before those entity write
+surfaces are complete.
 
 ## Design principles
 
@@ -924,9 +934,13 @@ boundary safely.
     read-only grids never acquire mutation capability.
   - [x] Migrate the Event Type, Event Status, and Event Tag lookup-grid batch to
     generated CRUD views and commands.
-  - [ ] Migrate the remaining ordinary and lookup grids, then entity-detail,
-    nested/relationship, collection, and workflow categories in that order,
-    splitting out named domain commands wherever row CRUD is not truthful.
+  - [x] Migrate the remaining standalone lookup grids: File Tag, Instrument
+    Tag, Song Tag, Song Credit Type, User Tag, and Wiki Page Tag.
+  - [ ] Migrate the remaining ordinary grids, then entity-detail,
+    nested/relationship, collection, and workflow categories in that order.
+    Split out named domain commands wherever row CRUD is not truthful, and
+    separately migrate selection create-from-string consumers to the matching
+    CRUD views.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,

@@ -21,7 +21,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 const MainContent = () => {
     return <>
         <SettingMarkdown setting="EditFileTagsPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
+        <DB3EditGrid tableSpec={tableSpec} view={db3.fileTagEditorView} />
     </>;
 };
 

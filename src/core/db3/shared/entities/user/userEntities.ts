@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { defineEntity } from "../../core/db3Entity";
-import { xPermission, xRole, xRolePermissionAssociation } from "../../schema/user";
+import { xPermission, xRole, xRolePermissionAssociation, xUserTag } from "../../schema/user";
 
 export const permissionEntity = defineEntity<Prisma.PermissionDelegate>()({
     schema: xPermission,
@@ -15,4 +15,9 @@ export const roleEntity = defineEntity<Prisma.RoleDelegate>()({
 export const rolePermissionEntity = defineEntity<Prisma.RolePermissionDelegate>()({
     schema: xRolePermissionAssociation,
     getIdentity: (rolePermission: Prisma.RolePermissionGetPayload<{}>) => rolePermission.id,
+});
+
+export const userTagEntity = defineEntity<Prisma.UserTagDelegate>()({
+    schema: xUserTag,
+    getIdentity: (tag: Prisma.UserTagGetPayload<{}>) => tag.id,
 });
