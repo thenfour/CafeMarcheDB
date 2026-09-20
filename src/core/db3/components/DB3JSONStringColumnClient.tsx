@@ -13,7 +13,7 @@ import { useSnackbar } from "src/core/components/SnackbarContext";
 import { EventAPI } from "../db3";
 import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
 import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
-import type { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
+import type { EventSongListMutationCommand } from "../shared/entities/eventSongList/eventSongListCommands";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
@@ -275,7 +275,7 @@ type ActivityLogSongListDividerPayload = {
     type: "div",
 };
 type ActivityLogSongListV1 = { id: number, songId: number, sortOrder: number, subtitle: string }[];
-type ActivityLogSongListV2 = Partial<TinsertOrUpdateEventSongListArgs> & Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'>;
+type ActivityLogSongListV2 = Partial<EventSongListMutationCommand> & Pick<EventSongListMutationCommand, 'songs' | 'dividers'>;
 
 const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogSongListV2, cacheData: ActivityLogCacheData }) => {
     if (!value.songs) {

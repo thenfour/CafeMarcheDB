@@ -795,6 +795,90 @@ describe("DB3 named views", () => {
         expectTypeOf(hydrated.content).toEqualTypeOf<db3.EventSongListContent | undefined>();
     });
 
+    it("adapts a hydrated EventSongList to ordered editor state and one legacy mutation boundary", () => {
+        const client = db3.hydrateEventSongListDetailDto(
+            db3.eventSongListDetailView.parseDto({
+                id: 50,
+                name: "Concert set",
+                description: "Main set",
+                eventId: 5,
+                sortOrder: 10,
+                isOrdered: true,
+                isActuallyPlayed: false,
+                songs: [{
+                    id: 501,
+                    eventSongListId: 50,
+                    subtitle: "Open quietly",
+                    sortOrder: 20,
+                    songId: 7,
+                    song: {
+                        id: 7,
+                        name: "First song",
+                        lengthSeconds: 120,
+                        startBPM: 110,
+                        endBPM: 120,
+                        pinnedRecordingId: null,
+                        tags: [],
+                    },
+                }],
+                dividers: [{
+                    id: 601,
+                    eventSongListId: 50,
+                    subtitle: "Break",
+                    sortOrder: 10,
+                    color: null,
+                    isInterruption: true,
+                    isSong: false,
+                    subtitleIfSong: null,
+                    lengthSeconds: null,
+                    textStyle: null,
+                }],
+            }),
+        );
+
+        const draft = db3.eventSongListClientToDraft(client);
+        expect(draft?.items.map(item => item.type)).toEqual(["divider", "song"]);
+        expect(draft).not.toHaveProperty("songs");
+        expect(draft).not.toHaveProperty("dividers");
+
+        draft!.items = [draft!.items[1]!, draft!.items[0]!];
+        const mutation = db3.eventSongListDraftToMutationCommand(draft!);
+
+        expect(db3.EventSongListMutationCommandSchema.safeParse(mutation).success).toBe(true);
+        expect(mutation).toMatchObject({
+            id: 50,
+            eventId: 5,
+            songs: [{ id: 501, songId: 7, sortOrder: 0, subtitle: "Open quietly" }],
+            dividers: [{ id: 601, sortOrder: 1, subtitle: "Break" }],
+        });
+        expect(db3.eventSongListDraftToClient(draft!).content?.items.map(item => item.type))
+            .toEqual(["song", "divider"]);
+        expectTypeOf(draft).toEqualTypeOf<db3.EventSongListDraft | undefined>();
+    });
+
+    it("does not create an editable EventSongList draft from an authorization-incomplete client", () => {
+        const incomplete = db3.hydrateEventSongListDetailDto(
+            db3.eventSongListDetailView.parseDto({ id: 50, songs: [], dividers: [] }),
+        );
+        const newDraft = db3.createEventSongListDraft({
+            clientId: -1,
+            eventId: 5,
+            name: "New set",
+        });
+
+        expect(db3.eventSongListClientToDraft(incomplete)).toBeUndefined();
+        expect(db3.eventSongListDraftToMutationCommand(newDraft)).toEqual({
+            eventId: 5,
+            name: "New set",
+            description: "",
+            isActuallyPlayed: false,
+            isOrdered: true,
+            sortOrder: 0,
+            songs: [],
+            dividers: [],
+        });
+    });
+
     it("keeps EventSongList content unavailable when field authorization leaves an incomplete shape", () => {
         const missingCollection = db3.hydrateEventSongListDetailDto(
             db3.eventSongListDetailView.parseDto({ id: 50, songs: [] }),

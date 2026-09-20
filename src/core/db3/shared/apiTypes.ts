@@ -221,39 +221,6 @@ export interface TdeleteEventCommentArgs {
 };
 
 
-export interface TinsertOrUpdateEventSongListSong {
-    id?: number;
-    // don't rely on array ordering because it's shuffled etc during the change plan computation
-    sortOrder: number;
-    songId: number;
-    subtitle: string;
-};
-
-export interface TinsertOrUpdateEventSongListDivider {
-    id?: number;
-    // don't rely on array ordering because it's shuffled etc during the change plan computation
-    sortOrder: number;
-    color: string | null | undefined;
-    isInterruption: boolean;
-    subtitleIfSong: string | null;
-    isSong: boolean;
-    lengthSeconds: number | null;
-    textStyle: null | string; // EventSongListDividerTextStyle
-    subtitle: string;
-};
-
-export interface TinsertOrUpdateEventSongListArgs {
-    id?: number; // for insertion, this is not used / specified.
-    name: string;
-    description: string;
-    isActuallyPlayed: boolean;
-    isOrdered: boolean;
-    eventId: number;
-    sortOrder: number;
-    songs: TinsertOrUpdateEventSongListSong[];
-    dividers: TinsertOrUpdateEventSongListDivider[];
-};
-
 export const ZupdateGenericSortOrderArgs = z.object({
     tableID: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
     tableName: z.string().min(1).max(128).regex(/^[A-Za-z][A-Za-z0-9_]*$/),

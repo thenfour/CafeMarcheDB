@@ -15,7 +15,6 @@ import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-
 import { moveItemInArray } from 'shared/arrayUtils';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -69,15 +68,11 @@ const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, T
     }
 }
 
-const hydrateLegacyEventSongList = (value: db3.EventSongListPayload): db3.EventSongListDetailClient => (
-    db3.hydrateEventSongListDetailDto(db3.eventSongListDetailView.parseDto(value))
-);
-
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
     sortOrder: number,
     value: SetlistAPI.EventSongListDividerItem,
     onClick: (x: SetlistAPI.EventSongListDividerItem) => void,
-    songList: db3.EventSongListPayload,
+    songList: db3.EventSongListDraft,
     onClose: () => void,
 }) => {
     //const [open, setOpen] = React.useState<boolean>(false);
@@ -89,20 +84,14 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
         setControlledValue({ ...value });
     }, [value.id]);
 
-    const makeFakeSongList = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListPayload => {
-
-        const ret = {
-            ...songList,
-            isOrdered: songList.isOrdered,
-            isActuallyPlayed: songList.isActuallyPlayed,
-            dividers: songList.dividers.filter(item => Math.abs(item.sortOrder - sortOrder) <= 2).map(d => ({ ...d })),
-            songs: songList.songs.filter(item => Math.abs(item.sortOrder - sortOrder) <= 2).map(d => ({ ...d })),
-        };
-        const d = ret.dividers.find(x => x.sortOrder === sortOrder);
-        if (!d) throw new Error();
-        Object.assign(d, controlledValue);
-        d.textStyle = testFormat;
-        return ret;
+    const makePreview = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListDetailClient => {
+        const ret = db3.cloneEventSongListDraft(songList);
+        ret.items = ret.items.slice(Math.max(0, sortOrder - 2), sortOrder + 3);
+        const divider = ret.items.find(item => item.clientId === value.id);
+        if (!divider || divider.type !== "divider") throw new Error("Divider is missing from preview.");
+        Object.assign(divider, db3.eventSongListDividerRowToDraftItem(controlledValue));
+        divider.textStyle = testFormat;
+        return db3.eventSongListDraftToClient(ret);
     };
 
     return <CMDialog
@@ -199,8 +188,7 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                             <h3>{option}</h3>
                             <EventSongListValueViewerTable
                                 readonly={true}
-                                value={hydrateLegacyEventSongList(makeFakeSongList(option))}
-                                event={undefined}
+                                value={makePreview(option)}
                                 showHeader={false}
                                 disableInteraction
                             />
@@ -213,7 +201,7 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
 };
 
 
-const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { sortOrder: number, value: SetlistAPI.EventSongListDividerItem, onClick: (x: SetlistAPI.EventSongListDividerItem) => void, songList: db3.EventSongListPayload }) => {
+const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { sortOrder: number, value: SetlistAPI.EventSongListDividerItem, onClick: (x: SetlistAPI.EventSongListDividerItem) => void, songList: db3.EventSongListDraft }) => {
     const [open, setOpen] = React.useState<boolean>(false);
 
     return <>
@@ -419,7 +407,7 @@ async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, c
 export type PortableSongListSong = {
     sortOrder: number;
     comment: string;
-    song: db3.SongPayload;
+    song: SetlistAPI.EventSongListSongItem["song"];
     type: 'song';
 };
 
@@ -437,30 +425,31 @@ export type PortableSongListDivider = {
 
 export type PortableSongList = (PortableSongListSong | PortableSongListDivider)[];
 
-async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const obj: PortableSongList = value.songs.map((s, i): PortableSongListSong => ({
-        sortOrder: s.sortOrder,
-        song: s.song,
-        comment: s.subtitle || "",
-        type: 'song'
-    }));
-
-    obj.push(...value.dividers.map(d => {
-        const x: PortableSongListDivider = {
-            type: 'divider',
-            color: d.color,
-            isInterruption: d.isInterruption,
-            isSong: d.isSong,
-            subtitleIfSong: d.subtitleIfSong,
-            lengthSeconds: d.lengthSeconds,
-            textStyle: d.textStyle,
-            sortOrder: d.sortOrder,
-            comment: d.subtitle || "",
-        };
-        return x;
-    }));
-
-    obj.sort((a, b) => a.sortOrder - b.sortOrder);
+async function CopySongListJSON(snackbarContext: SnackbarContextType, content: db3.EventSongListContent) {
+    const obj: PortableSongList = content.items.flatMap<PortableSongListSong | PortableSongListDivider>((item, sortOrder) => {
+        if (item.type === "song") {
+            return [{
+                sortOrder,
+                song: item.song,
+                comment: item.subtitle ?? "",
+                type: "song" as const,
+            }];
+        }
+        if (item.type === "divider") {
+            return [{
+                type: "divider" as const,
+                color: item.color,
+                isInterruption: item.isInterruption,
+                isSong: item.isSong,
+                subtitleIfSong: item.subtitleIfSong,
+                lengthSeconds: item.lengthSeconds,
+                textStyle: item.textStyle,
+                sortOrder,
+                comment: item.subtitle ?? "",
+            }];
+        }
+        return [];
+    });
 
     const txt = JSON.stringify(obj, null, 2);
     await navigator.clipboard.writeText(txt);
@@ -605,8 +594,7 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
     value: db3.EventSongListDetailClient;
-    legacyMutationValue?: db3.EventSongListPayload;
-    event: db3.EventClientPayload_Verbose | undefined;
+    allSongLists?: readonly db3.EventSongListDetailClient[];
     readonly: boolean;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
 };
@@ -665,29 +653,24 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         setLengthColumnMode(prev => prev === "length" ? "runningTime" : "length");
     };
 
-    const getCombinedList = (): db3.EventSongListPayload => {
-        if (!props.event) throw new Error();
-
-        const t: db3.EventSongListPayload = { ...props.event.songLists[0]!, songs: [] }; // create a copy of any random list
-        // replace its song lists with a new array of combined
-        const d = new Map<number, db3.EventSongListSongPayload>();
-        props.event.songLists.forEach(sl => {
-            sl.songs.forEach(sls => {
-                d.set(sls.songId, sls);
-            });
-        });
-
-        t.songs = [...d.values()];
-        t.songs.sort((a, b) => {
-            return a.song.name < b.song.name ? -1 : 1;
-        });
-        return t;
-    };
-
     const getCombinedContent = (): db3.EventSongListContent => {
-        const content = hydrateLegacyEventSongList(getCombinedList()).content;
-        if (!content) throw new Error("Combined setlist content is incomplete.");
-        return content;
+        if (!props.allSongLists) throw new Error("Combined setlists are unavailable.");
+
+        const songsById = new Map<number, SetlistAPI.EventSongListSongItem>();
+        props.allSongLists.forEach(songList => {
+            songList.content?.songItems.forEach(item => songsById.set(item.songId, item));
+        });
+        const songs = [...songsById.values()]
+            .sort((a, b) => a.song.name.localeCompare(b.song.name))
+            .map((item, sortOrder) => ({
+                id: item.id,
+                eventSongListId: item.eventSongListId,
+                subtitle: item.subtitle,
+                sortOrder,
+                songId: item.songId,
+                song: item.song,
+            }));
+        return new db3.EventSongListContent({ songs, dividers: [] });
     };
 
     // Store current dependencies in a ref so the playlist function always returns current data
@@ -715,24 +698,20 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                 <div className="th tempo interactable" onClick={handleClickBpmTH}>Bpm {sortSpec === 'bpmAsc' && gCharMap.DownArrow()} {sortSpec === 'bpmDesc' && gCharMap.UpArrow()}</div>
                 <div className="th comment">
                     Comment
-                    {props.event &&
+                    {props.allSongLists &&
                         <EventSongListDotMenu
                             readonly={true}
-                            multipleLists={props.event.songLists.length > 1}
+                            multipleLists={props.allSongLists.length > 1}
                             handleCopySongNames={async () => await CopySongListNames(props.value.content!, snackbarContext)}
                             handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value.content!)}
                             handleCopyTSV={async () => await CopySongListTSV(snackbarContext, props.value.content!)}
-                            handleCopyJSON={async () => {
-                                if (props.legacyMutationValue) {
-                                    await CopySongListJSON(snackbarContext, props.legacyMutationValue);
-                                }
-                            }}
+                            handleCopyJSON={async () => await CopySongListJSON(snackbarContext, props.value.content!)}
                             handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value.content!)}
 
                             handleCopyCombinedSongNames={async () => await CopySongListNames(getCombinedContent(), snackbarContext)}
                             handleCopyCombinedMarkdown={async () => await CopySongListMarkdown(snackbarContext, getCombinedContent())}
                             handleCopyCombinedTSV={async () => await CopySongListTSV(snackbarContext, getCombinedContent())}
-                            handleCopyCombinedJSON={async () => await CopySongListJSON(snackbarContext, getCombinedList())}
+                            handleCopyCombinedJSON={async () => await CopySongListJSON(snackbarContext, getCombinedContent())}
 
                             handlePasteAppend={async () => { }}
                             handlePasteReplace={async () => { }}
@@ -816,7 +795,7 @@ interface EventSongListValueEditorRowProps {
     value: SetlistAPI.EventSongListItem;
     rowIndex: number; // The index of this row in the setlistRowItems array
     setlistRowItems: SetlistAPI.EventSongListItem[];
-    songList: db3.EventSongListPayload;
+    songList: db3.EventSongListDraft;
     pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
     showDragHandle?: boolean;
     onChange: (newValue: SetlistAPI.EventSongListItem) => void;
@@ -917,11 +896,12 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     // Collect all unique tag IDs from all songs in the song list
     const allTagIds = React.useMemo(() => {
         const tagIds = new Set<number>();
-        props.songList.songs.forEach(songListItem => {
+        props.songList.items.forEach(songListItem => {
+            if (songListItem.type !== "song") return;
             songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
         });
         return Array.from(tagIds);
-    }, [props.songList.songs]);
+    }, [props.songList.items]);
 
     const colorInfo = props.value.type === 'divider' ? GetStyleVariablesForColor({
         color: props.value.color || gSwatchColors.lighter_gray,// gAppColors.attendance_yes,
@@ -937,7 +917,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     const pinnedRecording = props.value.type === "song" && props.pinnedRecordings?.[props.value.songId];
     const isCurrentMediaPlayerTrack = !!pinnedRecording && mediaPlayer.isPlayingSetlistItem({
         fileId: pinnedRecording.id,
-        setlistId: props.songList.id,
+        setlistId: props.songList.clientId,
         setlistItemIndex: props.rowIndex,
     });
 
@@ -969,7 +949,10 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     let occurrences = 0;
     if (props.value.type === 'song') {
         const songId = props.value.songId;
-        occurrences = props.songList.songs.reduce((acc, val) => acc + (val.songId === songId ? 1 : 0), 0);
+        occurrences = props.songList.items.reduce(
+            (acc, val) => acc + (val.type === "song" && val.songId === songId ? 1 : 0),
+            0,
+        );
     }
     const isDupeWarning = occurrences > 1;
 
@@ -1069,7 +1052,11 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             </>}
 
             {/* value used to be props.value.song || null */}
-            {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
+            {props.value.type === 'new' && <SongAutocomplete
+                onChange={handleAutocompleteChange}
+                value={null}
+                fadedSongIds={props.songList.items.flatMap(item => item.type === "song" ? [item.songId] : [])}
+            />}
         </div>
         <div className={`td ${props.lengthColumnMode === "length" ? "length" : "runningLength"} interactable`} onClick={props.toggleLengthColumnMode}>
             {props.value.type === 'song' && (
@@ -1126,17 +1113,16 @@ export const getClipboardSongList = async (): Promise<PortableSongList | null> =
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // song list editor, but doesn't perform saving or db ops. parent component should handle that.
 interface EventSongListValueEditorProps {
-    initialValue: db3.EventSongListPayload;
-    event: db3.EventClientPayload_Verbose;
-    onSave: (newValue: db3.EventSongListPayload) => void;
+    initialValue: db3.EventSongListDraft;
+    onSave: (newValue: db3.EventSongListDraft) => void;
     onCancel: () => void;
     onDelete?: () => void;
     rowMode: db3.DB3RowMode;
 };
 
 export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSongListValueEditorProps & {
-    value: db3.EventSongListPayload,
-    setValue: (x: db3.EventSongListPayload) => void,
+    value: db3.EventSongListDraft,
+    setValue: (x: db3.EventSongListDraft) => void,
 }) => {
     const snackbarContext = React.useContext(SnackbarContext);
 
@@ -1144,7 +1130,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
 
     // Fetch all pinned recordings for songs in this list at once
-    const songIds = value.songs.map(s => s.song.id);
+    const songIds = value.items.flatMap(item => item.type === "song" ? [item.songId] : []);
     const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
         songIds: songIds,
     }, {
@@ -1153,9 +1139,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         useErrorBoundary: false,
     });
 
-    const rowItems = SetlistAPI.GetRowItems(value);
-    const hydratedContent = hydrateLegacyEventSongList(value).content;
-    if (!hydratedContent) throw new Error("Editor setlist content is incomplete.");
+    const hydratedContent = db3.getEventSongListDraftContent(value);
+    const rowItems = [...hydratedContent.items];
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSongList,
@@ -1181,27 +1166,23 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
 
     const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode);
 
-    const stats = API.events.getSongListStats(value);
+    const stats = hydratedContent.stats;
 
     const toggleLengthColumnMode = () => {
         setLengthColumnMode(prev => prev === "length" ? "runningTime" : "length");
     };
 
-    const itemToEventSongListSong = (x: SetlistAPI.EventSongListSongItem) => {
-        const { type, songId, song, ...rest } = x;
-        if (!songId) throw new Error(`expected songId here`);
-        if (!song) throw new Error(`expected song here`);
-        const id = x.id === newRowId ? getUniqueNegativeID() : x.id;
-        const p: SetlistAPI.EventSongListSongItemWithSong = { ...rest, songId, song, id };
-        return p;
-    };
-
-    // after you mutate rowItems (ordering, data, whatever), call this to apply to the setlist object
+    // after mutating presentation rows, fold them back into the ordered editor model
     const handleRowsUpdated = (rows: SetlistAPI.EventSongListItem[]) => {
-        const newValue = JSON.parse(JSON.stringify(value));
-        newValue.songs = rows.filter(r => r.type === 'song').map(item => itemToEventSongListSong(item));
-        newValue.dividers = rows.filter(r => r.type === "divider");
-        setValue(newValue);
+        setValue({
+            ...value,
+            items: rows.flatMap(row => row.type === "new" ? [] : [
+                db3.eventSongListRowToDraftItem(
+                    row,
+                    row.id === newRowId ? getUniqueNegativeID() : row.id,
+                ),
+            ]),
+        });
     };
 
     const handleRowChange = React.useCallback((newValue: SetlistAPI.EventSongListItem) => {
@@ -1229,74 +1210,58 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
         return x;
     };
 
-    const appendPortableSongList = (list: db3.EventSongListPayload, obj: PortableSongList) => {
-        const newItems: SetlistAPI.EventSongListItem[] = [...rowItems.filter(item => item.type !== 'new')];
-        const highestSortOrder = 1 + newItems.reduce((acc, val) => Math.max(acc, val.sortOrder), 0);
-
-        newItems.push(...obj.map(p => {
+    const appendPortableSongList = (obj: PortableSongList, replace: boolean) => {
+        const newItems: db3.EventSongListDraftItem[] = replace ? [] : [...value.items];
+        const orderedPortableItems = [...obj].sort((a, b) => a.sortOrder - b.sortOrder);
+        newItems.push(...orderedPortableItems.map(p => {
             switch (p.type) {
                 case 'divider':
-                    const div: SetlistAPI.EventSongListDividerItem = {
+                    const div: db3.EventSongListDraftDivider = {
                         type: 'divider',
-                        id: getUniqueNegativeID(),
+                        clientId: getUniqueNegativeID(),
                         color: p.color,
                         isInterruption: p.isInterruption,
                         isSong: p.isSong,
                         subtitleIfSong: p.subtitleIfSong,
                         lengthSeconds: p.lengthSeconds,
                         textStyle: p.textStyle,
-                        eventSongListId: list.id,
-                        sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
                         subtitle: p.comment,
-                        runningTimeSeconds: null, // populated later
-                        songsWithUnknownLength: -1, // populated later
-                        index: -1, // populated later
                     };
                     return div;
                 case 'song':
-                    const song: SetlistAPI.EventSongListSongItem = {
+                    const song: db3.EventSongListDraftSong = {
                         type: 'song',
-                        id: getUniqueNegativeID(),
-                        eventSongListId: list.id,
-                        sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
+                        clientId: getUniqueNegativeID(),
                         subtitle: p.comment,
                         songId: p.song.id,
                         song: p.song,
-                        index: 0, // it doesn't matter; it will get populated later
-                        //songArrayIndex: 0, // will be set later by GetRowItems
-                        runningTimeSeconds: null, // populated later
-                        songsWithUnknownLength: 0, // populated later
                     }
                     return song;
             }
             throw new Error(`unknown type?`);
         }));
 
-        handleRowsUpdated(newItems);
+        setValue({ ...value, items: newItems });
     };
 
     const handlePasteAppend = async () => {
         const obj = await getClipboardSongList2();
         if (!obj) return;
-        const newList = { ...value };
-        appendPortableSongList(newList, obj);
-        //setValue(newList);
+        appendPortableSongList(obj, false);
     };
 
     const handlePasteReplace = async () => {
         const obj = await getClipboardSongList2();
         if (!obj) return;
-        const newList = { ...value, dividers: [], songs: [] };
-        appendPortableSongList(newList, obj);
-        //setValue(newList);
+        appendPortableSongList(obj, true);
     };
 
     const nameColumn = tableSpec.getColumn("name");
     const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, autoFocus: true });
 
     // Store current dependencies in a ref so the playlist function always returns current data
-    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: value.id });
-    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: value.id };
+    const playlistDataRef = useRef({ rowItems, pinnedRecordings, songListId: value.clientId });
+    playlistDataRef.current = { rowItems, pinnedRecordings, songListId: value.clientId };
 
     // Use a stable function reference that always reads current data
     const getPlaylist = useCallback(() => {
@@ -1370,7 +1335,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                             handleCopySongNames={async () => await CopySongListNames(hydratedContent, snackbarContext)}
                             handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, hydratedContent)}
                             handleCopyTSV={async () => await CopySongListTSV(snackbarContext, hydratedContent)}
-                            handleCopyJSON={async () => await CopySongListJSON(snackbarContext, value)}
+                            handleCopyJSON={async () => await CopySongListJSON(snackbarContext, hydratedContent)}
                             handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, hydratedContent)}
                             handleCopyCombinedSongNames={async () => { }}
                             handleCopyCombinedMarkdown={async () => { }}
@@ -1405,7 +1370,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                                 allPinnedRecordings: pinnedRecordings || {},
                                 rowItem: s,
                                 rowIndex: index,
-                                songListId: value.id,
+                                songListId: value.clientId,
                             })}
                             maxBpm={stats.maxBpm}
                         />
@@ -1419,7 +1384,7 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                     value={{
                         type: 'new',
                         id: newRowId,
-                        eventSongListId: value.id,
+                        eventSongListId: value.clientId,
                         sortOrder: rowItems.length,
                         songsWithUnknownLength: 0,
                         runningTimeSeconds: null,
@@ -1452,11 +1417,13 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
     const [grayed, setGrayed] = React.useState<boolean>(false);
     const [preview, setPreview] = React.useState<boolean>(false);
     const messageBox = useMessageBox();
-    const [value, setValue] = React.useState<db3.EventSongListPayload>(JSON.parse(JSON.stringify(props.initialValue)));
+    const [value, setValue] = React.useState<db3.EventSongListDraft>(
+        db3.cloneEventSongListDraft(props.initialValue),
+    );
 
-    const rowItems = SetlistAPI.GetRowItems(value);
-
-    const stats = API.events.getSongListStats(value);
+    const content = db3.getEventSongListDraftContent(value);
+    const rowItems = content.items;
+    const stats = content.stats;
 
     const handleDeleteClick = async () => {
         if (!props.onDelete) return;
@@ -1512,9 +1479,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
                 <div style={{ pointerEvents: "none" }}>
                     <EventSongListValueViewer
                         readonly={true}
-                        value={hydrateLegacyEventSongList(value)}
-                        legacyMutationValue={value}
-                        event={props.event}
+                        value={db3.eventSongListDraftToClient(value)}
                     />
                 </div>
             ) : (
@@ -1535,8 +1500,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
 //             <EventSongListValueEditor>
 interface EventSongListControlProps {
     value: db3.EventSongListDetailClient;
-    legacyMutationValue?: db3.EventSongListPayload;
-    event: db3.EventClientPayload_Verbose;
+    allSongLists: readonly db3.EventSongListDetailClient[];
     readonly: boolean;
     refetch: () => void;
 };
@@ -1548,45 +1512,22 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     const publicData = useDB3Authorization();
 
 
-    const editAuthorized = !!props.legacyMutationValue && db3.xEventSongList.authorizeRowForEdit({
+    const draft = db3.eventSongListClientToDraft(props.value);
+    const editAuthorized = !!draft && db3.xEventSongList.authorizeRowForEdit({
         publicData,
-        model: props.legacyMutationValue,
+        model: draft,
     });
 
     const recordFeature = useFeatureRecorder();
     const deleteMutation = API.events.deleteEventSongListx.useToken();
     const updateMutation = API.events.updateEventSongListx.useToken();
 
-    const handleSave = (newValue: db3.EventSongListPayload) => {
+    const handleSave = (newValue: db3.EventSongListDraft) => {
         void recordFeature({
             feature: ActivityFeature.setlist_edit,
-            eventSongListId: newValue.id,
+            eventSongListId: props.value.id,
         });
-        updateMutation.invoke({
-            id: newValue.id,
-            //visiblePermissionId: newValue.visiblePermissionId,
-            eventId: newValue.eventId,
-            description: newValue.description,
-            isActuallyPlayed: newValue.isActuallyPlayed,
-            isOrdered: newValue.isOrdered,
-            name: newValue.name,
-            sortOrder: newValue.sortOrder,
-            songs: newValue.songs.filter(s => !!s.song).map(s => ({ // new (blank) items might be in the list; filter them.
-                songId: s.songId,
-                sortOrder: s.sortOrder,
-                subtitle: s.subtitle || "",
-            })),
-            dividers: newValue.dividers.map(d => ({
-                sortOrder: d.sortOrder,
-                isInterruption: d.isInterruption,
-                subtitleIfSong: d.subtitleIfSong,
-                isSong: d.isSong,
-                lengthSeconds: d.lengthSeconds,
-                textStyle: d.textStyle,
-                color: d.color,
-                subtitle: d.subtitle || "",
-            })),
-        }).then(() => {
+        updateMutation.invoke(db3.eventSongListDraftToMutationCommand(newValue)).then(() => {
             showSnackbar({ severity: "success", children: "song list edit successful" });
             props.refetch();
             setEditMode(false);
@@ -1614,19 +1555,17 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     };
 
     return <>
-        {!props.readonly && editAuthorized && editMode && props.legacyMutationValue && <EventSongListValueEditorDialog
-            initialValue={props.legacyMutationValue}
+        {!props.readonly && editAuthorized && editMode && draft && <EventSongListValueEditorDialog
+            initialValue={draft}
             onSave={handleSave}
             onDelete={handleDelete}
-            event={props.event}
             onCancel={() => setEditMode(false)} rowMode="update"
         />}
         <EventSongListValueViewer
             readonly={props.readonly}
             value={props.value}
-            legacyMutationValue={props.legacyMutationValue}
+            allSongLists={props.allSongLists}
             onEnterEditMode={editAuthorized ? () => setEditMode(true) : undefined}
-            event={props.event}
         />
     </>;
 };
@@ -1644,43 +1583,20 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     const recordFeature = useFeatureRecorder();
     const insertMutation = API.events.insertEventSongListx.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const [currentUser] = useCurrentUser();
+    const initialValue = React.useMemo(() => db3.createEventSongListDraft({
+        clientId: getUniqueNegativeID(),
+        eventId: props.event.id,
+        name: props.event.songLists.length > 0
+            ? `Set ${props.event.songLists.length + 1}`
+            : "Setlist",
+    }), [props.event.id, props.event.songLists.length]);
 
-    const initialValue = db3.xEventSongList.createNew(currentUser!) as db3.EventSongListPayload;
-    initialValue.dividers = []; // because it's just not created (i would need to create like a db3.ArrayColumnType or something)
-    initialValue.name = `Setlist`;
-    if (props.event.songLists.length > 0) {
-        initialValue.name = `Set ${props.event.songLists.length + 1}`;
-    }
-
-    const handleSave = (value: db3.EventSongListPayload) => {
+    const handleSave = (value: db3.EventSongListDraft) => {
         void recordFeature({
             feature: ActivityFeature.setlist_create,
             eventId: props.event.id,
         });
-        insertMutation.invoke({
-            eventId: props.event.id,
-            description: value.description,
-            name: value.name,
-            isActuallyPlayed: value.isActuallyPlayed,
-            isOrdered: value.isOrdered,
-            sortOrder: value.sortOrder,
-            songs: value.songs.filter(s => !!s.song).map(s => ({ // new (blank) items might be in the list; filter them.
-                songId: s.songId,
-                sortOrder: s.sortOrder,
-                subtitle: s.subtitle || "",
-            })),
-            dividers: value.dividers.map(d => ({
-                sortOrder: d.sortOrder,
-                color: d.color,
-                isInterruption: d.isInterruption,
-                subtitleIfSong: d.subtitleIfSong,
-                isSong: d.isSong,
-                lengthSeconds: d.lengthSeconds,
-                textStyle: d.textStyle,
-                subtitle: d.subtitle || "",
-            })),
-        }).then(() => {
+        insertMutation.invoke(db3.eventSongListDraftToMutationCommand(value)).then(() => {
             showSnackbar({ severity: "success", children: "added new song list" });
             props.onSuccess();
         }).catch(e => {
@@ -1691,7 +1607,6 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 
     return <EventSongListValueEditorDialog
         onSave={handleSave}
-        event={props.event}
         initialValue={initialValue}
         onCancel={props.onCancel}
         rowMode="new"
@@ -1758,10 +1673,9 @@ export const EventSongListList = ({ values, event, readonly, refetch }: {
                         <EventSongListControl
                             key={c.id}
                             value={c}
-                            legacyMutationValue={event.songLists.find(item => item.id === c.id)}
+                            allSongLists={values}
                             readonly={readonly}
                             refetch={refetch}
-                            event={event}
                         />
                     </AppContextMarker>
                 </ReactSmoothDndDraggable>

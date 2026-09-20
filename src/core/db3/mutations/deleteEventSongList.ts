@@ -11,8 +11,8 @@ import * as mutationCore from "../server/db3mutationCore";
 import {
     TGeneralDeleteArgs,
     TGeneralDeleteArgsSchema,
-    TinsertOrUpdateEventSongListArgs,
 } from "../shared/apiTypes";
+import type { EventSongListMutationCommand } from "../shared/entities/eventSongList/eventSongListCommands";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
@@ -53,7 +53,7 @@ export default resolver.pipe(
                 }),
             ]);
 
-            const oldValues: TinsertOrUpdateEventSongListArgs = {
+            const oldValues: EventSongListMutationCommand = {
                 ...oldSongList,
                 songs: oldSongs.map(song => ({
                     id: song.id,

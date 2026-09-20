@@ -5,13 +5,17 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
+import {
+    EventSongListMutationCommandSchema,
+    type EventSongListMutationCommand,
+} from "../shared/entities/eventSongList/eventSongListCommands";
 import { CreateChangeContext } from "shared/activityLog";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.manage_events),
-    async (args: TinsertOrUpdateEventSongListArgs, ctx: AuthenticatedCtx) => {
+    resolver.zod(EventSongListMutationCommandSchema),
+    async (args: EventSongListMutationCommand, ctx: AuthenticatedCtx) => {
 
         if (!args.id) {
             throw new Error(`can't update a song list without a pk`);

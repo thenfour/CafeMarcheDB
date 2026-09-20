@@ -20,7 +20,12 @@ import { ObjectDiff } from "shared/utils";
 import sharp from "sharp";
 import { z } from "zod";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient } from "../shared/apiTypes";
+import { CMDBTableFilterModel, TransactionalPrismaClient } from "../shared/apiTypes";
+import type {
+    EventSongListDividerCommand,
+    EventSongListMutationCommand,
+    EventSongListSongCommand,
+} from "../shared/entities/eventSongList/eventSongListCommands";
 import { getFileCustomData } from "../shared/fileAPI";
 import { FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata } from "../shared/fileTypes";
 import { UserWithRolesArgs } from "../shared/schema/userPayloads";
@@ -793,8 +798,8 @@ model EventSongListSong {
 export interface UpdateEventSongListSongsArgs {
     ctx: AuthenticatedCtx;
     changeContext: ChangeContext;
-    desiredSongs: TinsertOrUpdateEventSongListSong[];
-    desiredDividers: TinsertOrUpdateEventSongListDivider[];
+    desiredSongs: EventSongListSongCommand[];
+    desiredDividers: EventSongListDividerCommand[];
     songListID: number;
 };
 
@@ -808,7 +813,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     // SONGS:
 
     // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
-    const desiredSongs: TinsertOrUpdateEventSongListSong[] = args.desiredSongs.map((a, index) => ({
+    const desiredSongs: EventSongListSongCommand[] = args.desiredSongs.map((a, index) => ({
         id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
         songId: a.songId,
         sortOrder: a.sortOrder,
@@ -821,7 +826,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     });
 
     // in order to make the change plan, unify the types into the kind that's passed in args
-    const currentAssociations: TinsertOrUpdateEventSongListSong[] = currentAssociationsRaw.map(a => ({
+    const currentAssociations: EventSongListSongCommand[] = currentAssociationsRaw.map(a => ({
         id: a.id,
         songId: a.songId,
         sortOrder: a.sortOrder,
@@ -891,7 +896,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     // DIVIDERS:
 
     // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
-    const desiredDividers: TinsertOrUpdateEventSongListDivider[] = args.desiredDividers.map((a, index) => ({
+    const desiredDividers: EventSongListDividerCommand[] = args.desiredDividers.map((a, index) => ({
         id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
         sortOrder: a.sortOrder,
         color: a.color,
@@ -909,7 +914,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     });
 
     // in order to make the change plan, unify the types into the kind that's passed in args
-    const currentDivAssociations: TinsertOrUpdateEventSongListDivider[] = currentDivAssociationsRaw.map(a => ({
+    const currentDivAssociations: EventSongListDividerCommand[] = currentDivAssociationsRaw.map(a => ({
         id: a.id,
         sortOrder: a.sortOrder,
         isInterruption: a.isInterruption,
@@ -990,13 +995,13 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         });
     }
 
-    // const newValues: Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'> = {
+    // const newValues: Pick<EventSongListMutationCommand, 'songs' | 'dividers'> = {
     //     songs: cp.desiredState,
     //     dividers: cpDiv.desiredState,
     // }
 
     // #340 / #331 removing activity log bloat temporarily
-    const newValues: Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'> = {
+    const newValues: Pick<EventSongListMutationCommand, 'songs' | 'dividers'> = {
         songs: [],
         dividers: [],
     }
