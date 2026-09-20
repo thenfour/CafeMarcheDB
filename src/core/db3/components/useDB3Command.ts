@@ -9,6 +9,7 @@ import type {
 // hook return value; provides callers with the facilities
 export interface DB3CommandToken<TCommand extends AnyDB3Command> {
     invoke(input: CommandClientInputOf<TCommand>): Promise<CommandResultOf<TCommand>>;
+    readonly invalidation: TCommand["invalidation"];
 }
 
 export function useDB3Command<TCommand extends AnyDB3Command>(
@@ -16,6 +17,7 @@ export function useDB3Command<TCommand extends AnyDB3Command>(
 ): DB3CommandToken<TCommand> {
     const [mutate] = useMutation(executeDB3CommandMutation);
     return {
+        invalidation: command.invalidation,
         invoke: async input => {
             const payload = command.parseDto(command.serialize(input));
             const result = await mutate({

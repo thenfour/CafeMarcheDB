@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { defineCommand } from "../../core/db3Command";
 import type { EventSongListDraft } from "./eventSongListDraft";
-import { eventSongListEntity } from "./eventSongListEntities";
+import {
+    eventSongListDividerEntity,
+    eventSongListEntity,
+    eventSongListSongEntity,
+} from "./eventSongListEntities";
 
 const PersistedIdSchema = z.number().int().positive();
 const SortOrderSchema = z.number().int();
@@ -54,6 +58,14 @@ export const saveEventSongListCommand = defineCommand({
     entity: eventSongListEntity,
     dtoSchema: EventSongListMutationCommandSchema,
     resultSchema: EventSongListSaveResultSchema,
+    invalidation: {
+        mode: "caller",
+        entityIDs: [
+            eventSongListEntity.entityID,
+            eventSongListSongEntity.entityID,
+            eventSongListDividerEntity.entityID,
+        ],
+    },
     // converts a mutable client react code facing draft object
     // to a serializable format over the wire.
     serialize: (value: EventSongListDraft): EventSongListMutationCommand => ({

@@ -10,7 +10,7 @@ import type {
     CommandResultOf,
     DB3Authorization,
     DB3CommandRequest,
-    DB3EntityId,
+    EntityIdOf
 } from "../db3";
 import { createDb3RequestAuthorization } from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
@@ -41,19 +41,19 @@ export interface DB3CommandRowService {
 
     update<TEntity extends AnyDB3Entity>(
         entity: TEntity,
-        identity: DB3EntityId,
+        identity: EntityIdOf<TEntity>,
         values: TAnyModel,
     ): Promise<TAnyModel>;
 
     delete<TEntity extends AnyDB3Entity>(
         entity: TEntity,
-        identity: DB3EntityId,
+        identity: EntityIdOf<TEntity>,
         deleteType?: "softWhenPossible" | "hard",
     ): Promise<void>;
 
     requireVisible<TEntity extends AnyDB3Entity>(
         entity: TEntity,
-        identity: DB3EntityId,
+        identity: EntityIdOf<TEntity>,
     ): Promise<TAnyModel>;
 
     afterMutation<TEntity extends AnyDB3Entity>(
@@ -94,9 +94,9 @@ export function defineCommandHandler<TCommand extends AnyDB3Command>(
 // entities already have a getIdentity() method,
 // but that operates on the entity model, not the id value
 // this function resolves public ID using async db calls so it's a little bit special and deserves to be here at least for now.
-async function resolveEntityIdentity(
-    entity: AnyDB3Entity,
-    identity: DB3EntityId,
+async function resolveEntityIdentity<TEntity extends AnyDB3Entity>(
+    entity: TEntity,
+    identity: EntityIdOf<TEntity>,
     authorization: DB3Authorization,
     transactionalDb: TransactionalPrismaClient,
 ): Promise<number | string> {

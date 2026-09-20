@@ -297,6 +297,27 @@ must not expose `TAnyModel`, table names, numeric table IDs, or the generic
 mutation envelope merely because the implementation delegates to mature DB3
 row services.
 
+`defineEntityCrudCommands()` establishes that contract from an entity, its
+runtime identity schema, and explicit create/update field schemas:
+
+- create accepts the strict create DTO directly; natural and public identity
+  fields are server-owned and cannot be declared by the writable schema;
+- update accepts `{ identity, patch }`, where the patch is shallow, strict,
+  non-empty, and applies only its present keys; `undefined` is rejected rather
+  than being confused with omission, while `null` remains field-schema-defined;
+- delete accepts only `{ identity }`; hard-versus-soft behavior comes from the
+  trusted `xTable.deletePolicy`, not from client input; and
+- all three operations return the strict `{ identity }` result needed to find
+  or refetch the affected row without returning a persistence-shaped object.
+
+The shared generated handlers compose `DB3CommandExecutionContext.rowServices`,
+so validation and authorization failures continue to use the existing thrown
+DB3/Zod error path and the generic command RPC transaction. They do not convert
+failures into a second result union. Command descriptors declare affected entity
+IDs with `invalidation.mode: "caller"`; `useDB3Command()` exposes that metadata,
+but callers still own refetching until DB3 has a normalized client query cache.
+Handler registration remains explicit and server-only.
+
 A handwritten command is preferable to generated CRUD when the operation:
 
 - accepts a rich client value that is not a table row;
@@ -577,6 +598,11 @@ a per-row compatibility flag or a second lookup mode.
   server handler registry, and `DB3CommandExecutionContext` establish the first
   named write-contract path. DTO and result validation occur on both sides of
   transport as appropriate; server authorization remains authoritative.
+- `defineEntityCrudCommands()` and `defineEntityCrudCommandHandlers()` establish
+  strict create/update/delete contracts for ordinary rows. Generated deletes
+  derive hard-versus-soft behavior from trusted table metadata, update patches
+  use present-keys-only semantics, results return canonical identity, and
+  callers explicitly own refetching declared by command invalidation metadata.
 - The registered event-song-list save handler now performs parent, song, and
   divider synchronization atomically in one serializable transaction by
   composing authorized DB3 row services. The two legacy insert/update RPCs and
@@ -710,7 +736,7 @@ boundary safely.
   registry, an authorized transactional context, and reusable DB3 row services.
 - [x] Migrate setlist create/update to one atomic aggregate save command and
   remove its legacy RPC and raw child-synchronization paths.
-- [ ] Define strict generated entity CRUD command contracts and shared handlers,
+- [x] Define strict generated entity CRUD command contracts and shared handlers,
   including create/update/delete identity, patch semantics, result types,
   validation, error behavior, and refetch/invalidation expectations.
 - [ ] Prove generated CRUD against `InstrumentFunctionalGroup`, the existing

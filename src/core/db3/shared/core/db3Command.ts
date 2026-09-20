@@ -3,6 +3,16 @@
 import type { z } from "zod";
 import type { AnyDB3Entity } from "./db3Entity";
 
+export interface DB3CommandInvalidation {
+    /**
+     * DB3 does not currently own a normalized client query cache. Callers must
+     * therefore refetch the affected views after a successful command.
+     */
+    // todo: explain what "mode" is -- with only "caller" it's not clear what that means.
+    readonly mode: "caller";
+    readonly entityIDs: readonly string[];
+}
+
 /**
  * A named write operation rooted at a DB3 entity.
  *
@@ -28,6 +38,9 @@ export interface DB3Command<
     readonly dtoSchema: TDtoSchema;
     // zod schema for the result sent back to client; that also needs to be validated.
     readonly resultSchema: TResultSchema;
+
+    // describes the effect on cache
+    readonly invalidation: DB3CommandInvalidation;
 
     // converts a mutable client react code facing draft object
     // to a serializable format over the wire.
@@ -62,9 +75,14 @@ export function defineCommand<
     dtoSchema: TDtoSchema;
     resultSchema: TResultSchema;
     serialize: (input: TClientInput) => z.infer<TDtoSchema>;
+    invalidation?: DB3CommandInvalidation;
 }): DB3Command<TEntity, TClientInput, TDtoSchema, TResultSchema> {
     return {
         ...args,
+        invalidation: args.invalidation ?? {
+            mode: "caller",
+            entityIDs: [args.entity.entityID],
+        },
         parseDto: value => args.dtoSchema.parse(value),
         parseResult: value => args.resultSchema.parse(value),
     };
