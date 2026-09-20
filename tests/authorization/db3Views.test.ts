@@ -842,7 +842,7 @@ describe("DB3 named views", () => {
         expect(draft).not.toHaveProperty("dividers");
 
         draft!.items = [draft!.items[1]!, draft!.items[0]!];
-        const mutation = db3.eventSongListDraftToMutationCommand(draft!);
+        const mutation = db3.saveEventSongListCommand.serialize(draft!);
 
         expect(db3.EventSongListMutationCommandSchema.safeParse(mutation).success).toBe(true);
         expect(mutation).toMatchObject({
@@ -910,7 +910,7 @@ describe("DB3 named views", () => {
         });
 
         expect(db3.eventSongListClientToDraft(incomplete)).toBeUndefined();
-        expect(db3.eventSongListDraftToMutationCommand(newDraft)).toEqual({
+        expect(db3.saveEventSongListCommand.serialize(newDraft)).toEqual({
             eventId: 5,
             name: "New set",
             description: "",

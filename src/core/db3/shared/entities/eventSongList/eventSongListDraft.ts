@@ -5,7 +5,6 @@ import type {
     LocalSongListPayload,
 } from "../../setlistApi";
 import { EventSongListContent } from "./eventSongListContent";
-import type { EventSongListMutationCommand } from "./eventSongListCommands";
 import type { EventSongListDetailClient } from "./eventSongListViews";
 
 export interface EventSongListDraftSong {
@@ -200,41 +199,6 @@ export function eventSongListDraftToClient(value: EventSongListDraft): EventSong
         isOrdered: value.isOrdered,
         sortOrder: value.sortOrder,
         content: getEventSongListDraftContent(value),
-    };
-}
-
-/**
- * The only adapter from editor state to the split-collection RPC shape. This
- * keeps persistence collection layout and sortOrder bookkeeping out of the UI.
- */
-export function eventSongListDraftToMutationCommand(
-    value: EventSongListDraft,
-): EventSongListMutationCommand {
-    return {
-        ...(value.id === undefined ? {} : { id: value.id }),
-        eventId: value.eventId,
-        name: value.name,
-        description: value.description,
-        isActuallyPlayed: value.isActuallyPlayed,
-        isOrdered: value.isOrdered,
-        sortOrder: value.sortOrder,
-        songs: value.items.flatMap((item, sortOrder) => item.type === "song" ? [{
-            ...(item.clientId > 0 ? { id: item.clientId } : {}),
-            songId: item.songId,
-            sortOrder,
-            subtitle: item.subtitle,
-        }] : []),
-        dividers: value.items.flatMap((item, sortOrder) => item.type === "divider" ? [{
-            ...(item.clientId > 0 ? { id: item.clientId } : {}),
-            sortOrder,
-            color: item.color,
-            isInterruption: item.isInterruption,
-            subtitleIfSong: item.subtitleIfSong,
-            isSong: item.isSong,
-            lengthSeconds: item.lengthSeconds,
-            textStyle: item.textStyle,
-            subtitle: item.subtitle,
-        }] : []),
     };
 }
 

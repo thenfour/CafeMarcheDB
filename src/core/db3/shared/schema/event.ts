@@ -1150,12 +1150,12 @@ export const xEventSongListDivider = new db3.xTable({
         MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        new GhostField({ memberName: "isSong", authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        new GhostField({ memberName: "subtitleIfSong", authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        new GhostField({ memberName: "lengthSeconds", authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isSong", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        MakeNullableRawTextField("subtitleIfSong", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GenericIntegerField({ columnName: "lengthSeconds", allowNull: true, authMap: xEventAuthMap_R_EOwn_EManagers, }),
 
         new BoolField({ columnName: "isInterruption", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
-        new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "textStyle", defaultValue: EventSongListDividerTextStyle.Default, options: EventSongListDividerTextStyle }),
+        new ConstEnumStringField({ allowNull: true, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "textStyle", defaultValue: EventSongListDividerTextStyle.Default, options: EventSongListDividerTextStyle }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "eventSongList",
             fkidMember: "eventSongListId",

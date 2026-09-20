@@ -15,9 +15,7 @@ import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import deleteEventSongList from "./mutations/deleteEventSongList";
 import insertEvent from "./mutations/insertEvent";
-import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
-import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
 import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateSongBasicFields from "./mutations/updateSongBasicFields";
@@ -143,10 +141,7 @@ class EventsAPI {
     updateUserEventAttendance = CreateAPIMutationFunction(updateUserEventAttendanceMutation);
     updateEventBasicFields = CreateAPIMutationFunction(updateEventBasicFields);
 
-    // lol consistent naming
-    insertEventSongListx = CreateAPIMutationFunction(insertEventSongListMutation);
     deleteEventSongListx = CreateAPIMutationFunction(deleteEventSongList);
-    updateEventSongListx = CreateAPIMutationFunction(updateEventSongListMutation);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -10,6 +10,7 @@ vi.mock("db", async () => {
 })
 
 import db3Mutation from "@db3/mutations/db3mutations"
+import executeDB3CommandMutation from "@db3/mutations/executeDB3Command"
 import * as db3 from "@db3/db3"
 import deleteEventSongList from "src/core/db3/mutations/deleteEventSongList"
 import updateGenericSortOrder from "src/core/db3/mutations/updateGenericSortOrder"
@@ -82,6 +83,171 @@ const makeEvent = (overrides: Record<string, unknown> = {}) => ({
   calendarInputHash: "unchanged",
   segments: [],
   ...overrides,
+})
+
+describe("DB3 command boundary", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    authorizationTestDb.reset({ change: [] })
+  })
+
+  it("rejects unknown command IDs at the registered server boundary", async () => {
+    const permissions = [Permission.login]
+    const actor = createAuthorizationTestUser("normal", { id: 91, permissions })
+    authorizationTestDb.reset({ user: [actor], change: [] })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: "Missing_Command",
+      payload: {},
+    }, ctx)).rejects.toThrow("Unknown DB3 command 'Missing_Command'")
+  })
+
+  it("revalidates command DTOs and enforces server-side entity authorization", async () => {
+    const permissions = [Permission.login, Permission.view_events]
+    const actor = createAuthorizationTestUser("normal", { id: 92, permissions })
+    authorizationTestDb.reset({
+      user: [actor],
+      event: [makeEvent({ id: 100 })],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+    const payload = {
+      eventId: 100,
+      name: "Setlist",
+      description: "",
+      isActuallyPlayed: false,
+      isOrdered: true,
+      sortOrder: 0,
+      songs: [],
+      dividers: [],
+    }
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.saveEventSongListCommand.commandID,
+      payload: { ...payload, unexpected: true },
+    }, ctx)).rejects.toThrow("Unrecognized key")
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.saveEventSongListCommand.commandID,
+      payload,
+    }, ctx)).rejects.toThrow("Not authorized to mutate EventSongList")
+  })
+
+  it("saves an authorized setlist aggregate through the command dispatcher", async () => {
+    const permissions = [
+      Permission.login,
+      Permission.manage_events,
+      Permission.view_events_nonpublic,
+      Permission.view_songs,
+    ]
+    const actor = createAuthorizationTestUser("normal", { id: 93, permissions })
+    authorizationTestDb.reset({
+      user: [actor],
+      event: [makeEvent({ id: 100 })],
+      song: [{
+        id: 300,
+        name: "Visible song",
+        description: "",
+        aliases: "",
+        isDeleted: false,
+        createdByUserId: actor.id,
+        visiblePermissionId: publicVisibility.id,
+      }],
+      eventSongList: [],
+      eventSongListSong: [],
+      eventSongListDivider: [],
+      eventSegment: [],
+      eventStatus: [],
+      setting: [],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+
+    const result = await invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.saveEventSongListCommand.commandID,
+      payload: {
+        eventId: 100,
+        name: "Setlist",
+        description: "",
+        isActuallyPlayed: false,
+        isOrdered: true,
+        sortOrder: 0,
+        songs: [{ songId: 300, sortOrder: 0, subtitle: "Open quietly" }],
+        dividers: [{
+          sortOrder: 1,
+          color: null,
+          isInterruption: true,
+          subtitleIfSong: null,
+          isSong: false,
+          lengthSeconds: null,
+          textStyle: null,
+          subtitle: "Break",
+        }],
+      },
+    }, ctx)
+
+    expect(result).toEqual({ id: 1 })
+    expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
+      expect.objectContaining({ id: 1, eventId: 100, name: "Setlist" }),
+    ])
+    expect(authorizationTestDb.snapshot("eventSongListSong")).toEqual([
+      expect.objectContaining({ eventSongListId: 1, songId: 300, sortOrder: 0 }),
+    ])
+    expect(authorizationTestDb.snapshot("eventSongListDivider")).toEqual([
+      expect.objectContaining({ eventSongListId: 1, subtitle: "Break", sortOrder: 1 }),
+    ])
+
+    const updateResult = await invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.saveEventSongListCommand.commandID,
+      payload: {
+        id: 1,
+        eventId: 100,
+        name: "Updated setlist",
+        description: "Second pass",
+        isActuallyPlayed: true,
+        isOrdered: true,
+        sortOrder: 2,
+        songs: [],
+        dividers: [{
+          id: 1,
+          sortOrder: 0,
+          color: null,
+          isInterruption: false,
+          subtitleIfSong: "Optional tune",
+          isSong: true,
+          lengthSeconds: 90,
+          textStyle: null,
+          subtitle: "Encore",
+        }],
+      },
+    }, ctx)
+
+    expect(updateResult).toEqual({ id: 1 })
+    expect(authorizationTestDb.snapshot("eventSongList")).toEqual([
+      expect.objectContaining({
+        id: 1,
+        eventId: 100,
+        name: "Updated setlist",
+        description: "Second pass",
+        isActuallyPlayed: true,
+        sortOrder: 2,
+      }),
+    ])
+    expect(authorizationTestDb.snapshot("eventSongListSong")).toEqual([])
+    expect(authorizationTestDb.snapshot("eventSongListDivider")).toEqual([
+      expect.objectContaining({
+        id: 1,
+        eventSongListId: 1,
+        subtitle: "Encore",
+        subtitleIfSong: "Optional tune",
+        isSong: true,
+        isInterruption: false,
+        lengthSeconds: 90,
+        sortOrder: 0,
+      }),
+    ])
+  })
 })
 
 describe("BA-S003 generic sort-order authorization", () => {

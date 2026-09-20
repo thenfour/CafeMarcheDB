@@ -7,4 +7,5 @@ export * from './components/DB3JSONStringColumnClient';
 export * from './components/DB3ClientDateRangeColumn';
 export * from './components/db3ForeignSingleFieldClient';
 export * from './components/DB3ClientTagsField';
+export * from './components/useDB3Command';
 

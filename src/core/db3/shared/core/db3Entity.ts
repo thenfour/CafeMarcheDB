@@ -51,4 +51,3 @@ export const defineEntity = <TDelegate,>() => <
     schema: args.schema,
     getIdentity: args.getIdentity,
 });
-

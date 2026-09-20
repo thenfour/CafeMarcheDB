@@ -1,3 +1,5 @@
+import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
+import { AuthenticatedCtx } from "blitz";
 import { assert } from "blitz";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 
@@ -12,4 +14,22 @@ export function createDB3Authorization(
 ): DB3Authorization {
     assert(effectivePermissions instanceof PermissionSet, "DB3 effective permissions are required.");
     return { userId: user?.id ?? null, effectivePermissions };
+}
+
+// convenience helper that wraps
+// const requestAuthorization = await getRequestAuthorization(ctx.session);
+// const authorization = createDB3Authorization(
+//     requestAuthorization.user,
+//     requestAuthorization.effectivePermissions,
+// );
+export async function createDb3RequestAuthorization(ctx: AuthenticatedCtx) {
+    const requestAuthorization = await getRequestAuthorization(ctx.session);
+    const ret = createDB3Authorization(
+        requestAuthorization.user,
+        requestAuthorization.effectivePermissions,
+    );
+    return {
+        ...ret,
+        ...requestAuthorization,
+    }
 }

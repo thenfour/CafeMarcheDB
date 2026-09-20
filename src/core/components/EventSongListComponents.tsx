@@ -15,7 +15,7 @@ import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-
 import { moveItemInArray } from 'shared/arrayUtils';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor, getUniqueNegativeID } from "shared/utils";
-import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
+import { SnackbarContext, SnackbarContextType, useSnackbar } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../db3/clientAPI';
@@ -1539,9 +1539,8 @@ interface EventSongListControlProps {
 export const EventSongListControl = (props: EventSongListControlProps) => {
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const snackbar = useSnackbar();
     const publicData = useDB3Authorization();
-
 
     const draft = db3.eventSongListClientToDraft(props.value);
     const editAuthorized = !!draft && db3.xEventSongList.authorizeRowForEdit({
@@ -1551,37 +1550,31 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 
     const recordFeature = useFeatureRecorder();
     const deleteMutation = API.events.deleteEventSongListx.useToken();
-    const updateMutation = API.events.updateEventSongListx.useToken();
+    const saveCommand = DB3Client.useDB3Command(db3.saveEventSongListCommand);
 
-    const handleSave = (newValue: db3.EventSongListDraft) => {
+    const handleSave = async (newValue: db3.EventSongListDraft) => {
         void recordFeature({
             feature: ActivityFeature.setlist_edit,
             eventSongListId: props.value.id,
         });
-        updateMutation.invoke(db3.eventSongListDraftToMutationCommand(newValue)).then(() => {
-            showSnackbar({ severity: "success", children: "song list edit successful" });
+        await snackbar.invokeAsync(async () => {
+            await saveCommand.invoke(newValue);
             props.refetch();
             setEditMode(false);
-        }).catch((e) => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "Error; see console" });
         });
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         void recordFeature({
             feature: ActivityFeature.setlist_delete,
             eventSongListId: props.value.id,
         });
-        deleteMutation.invoke({
-            id: props.value.id,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "song list delete successful" });
+        await snackbar.invokeAsync(async () => {
+            await deleteMutation.invoke({
+                id: props.value.id,
+            });
             props.refetch();
             setEditMode(false);
-        }).catch((e) => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "Error; see console" });
         });
     };
 
@@ -1612,8 +1605,8 @@ interface EventSongListNewEditorProps {
 
 export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     const recordFeature = useFeatureRecorder();
-    const insertMutation = API.events.insertEventSongListx.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const saveCommand = DB3Client.useDB3Command(db3.saveEventSongListCommand);
+    const snackbar = React.useContext(SnackbarContext);
     const initialValue = React.useMemo(() => db3.createEventSongListDraft({
         clientId: getUniqueNegativeID(),
         eventId: props.event.id,
@@ -1622,17 +1615,15 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
             : "Setlist",
     }), [props.event.id, props.event.songLists.length]);
 
-    const handleSave = (value: db3.EventSongListDraft) => {
+    const handleSave = async (value: db3.EventSongListDraft) => {
         void recordFeature({
             feature: ActivityFeature.setlist_create,
             eventId: props.event.id,
         });
-        insertMutation.invoke(db3.eventSongListDraftToMutationCommand(value)).then(() => {
-            showSnackbar({ severity: "success", children: "added new song list" });
+
+        await snackbar.invokeAsync(async () => {
+            await saveCommand.invoke(value);
             props.onSuccess();
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "Error; see console" });
         });
     };
 
