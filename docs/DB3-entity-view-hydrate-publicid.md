@@ -1,4 +1,4 @@
-# DB3 entity, view, hydration, and public identity
+# DB3 entity, view, hydration, commands, and public identity
 
 GitHub issues:
 
@@ -44,12 +44,21 @@ Prisma selection
 Writes have a separate pipeline:
 
 ```text
-editable draft or client command
-    -> validated mutation command
-    -> public-ID resolution at the server boundary
-    -> authorized transaction using natural database IDs
-    -> public DTO/result
+arbitrary client input (often an editable draft)
+    -> named command serializer
+    -> runtime-validated command DTO
+    -> generic command RPC envelope
+    -> server registry and repeated DTO validation
+    -> authorized transaction and public-ID resolution
+    -> command handler composed from DB3 row services
+    -> runtime-validated result DTO
 ```
+
+The two pipelines are intentionally not inverses. Hydration constructs a useful
+read value from an authorized DTO. A command accepts whatever client-side input
+best expresses an operation and serializes it to a purpose-specific write DTO.
+The server remains authoritative for validation, authorization, persisted-state
+invariants, and transactionality.
 
 ## Current vocabulary and responsibilities
 
@@ -180,6 +189,99 @@ expansion: a relation either stops at an identity/reference view or names a
 different finite nested shape. Hydration never discovers and fetches another
 level on demand.
 
+### Command: one named write contract
+
+`defineCommand()` is the write-side sibling of `defineView()`. A command owns:
+
+- a globally meaningful `commandID` and root entity;
+- an arbitrary typed client input;
+- a pure serializer from that client input to a strict transport DTO;
+- Zod schemas for both the command DTO and result; and
+- the corresponding inferred client-input, DTO, and result types.
+
+The client descriptor and server handler are deliberately separate. The shared
+command describes the transport contract without importing server code. A
+server-only `defineCommandHandler()` binds that descriptor to its implementation,
+and the handler must be added to the server command registry. The generic RPC
+entry point rejects unknown command IDs, opens one serializable transaction,
+revalidates the DTO, builds fresh request authorization, executes the registered
+handler, and validates its result.
+
+A handler receives a `DB3CommandExecutionContext` containing the transaction,
+request authorization, and DB3 row services. Those services wrap the existing
+server `insertImpl`, `updateImpl`, and `deleteImpl` primitives rather than
+reimplementing row mutation policy. They therefore preserve authoritative
+`xTable` validation and authorization, public-ID and foreign-ID resolution,
+auditing, and mutation hooks. The context also provides explicit visibility
+checks for referenced entities and an aggregate-level post-mutation hook.
+
+Commands may operate on aggregates. This is analogous to a view selecting and
+authorizing a finite graph rather than only one table row: the command handler
+coordinates the finite write graph, while each participating row still passes
+through its entity's DB3 policy. Aggregate invariants such as child ownership,
+reference visibility, omission-as-deletion, ordering, and final domain effects
+belong to the command handler.
+
+#### Why `useDB3Command()` exists
+
+`useDB3Command(command)` is more than a naming wrapper around Blitz
+`useMutation()`:
+
+- it preserves one compile-time chain from the command's client input through
+  its DTO to its result;
+- it calls the command-owned serializer, so a component does not construct or
+  know the transport shape;
+- it validates the serialized DTO on the client, sends the generic
+  `{ commandID, payload }` envelope, and validates the returned result;
+- one save command can choose insert versus update from the input instead of
+  making the component select separate RPC endpoints; and
+- callers depend on a shared operation contract, not on a server resolver
+  module or its incidental parameter shape.
+
+| Concern | Raw `useMutation()` | Legacy DB3 TableClient | `useDB3Command()` |
+| --- | --- | --- | --- |
+| Client input | Resolver input | Table/client-column row | Arbitrary command input |
+| Client transformation | Caller or endpoint-specific helper | Generic `prepareMutation()` | Command-owned `serialize()` |
+| Transport contract | One imported RPC resolver | Generic table-mutation envelope | Named strict command DTO and result |
+| Server unit of work | Whatever that resolver implements | One generic row operation | One registered aggregate-capable handler |
+| Authorization | Resolver-defined | DB3 table/row/field policy | Handler invariants plus the same DB3 row policy |
+| Transaction | Resolver-defined | One row mutation request | One serializable command transaction |
+| Refetch/editor lifecycle | Caller-defined | Partly integrated | Currently caller-defined |
+
+These are client ergonomics and contract guarantees, not the security boundary.
+The server reparses the DTO and performs all authoritative authorization and
+persisted-state checks. The hook also does not currently refetch queries or
+manage editor state automatically; callers still choose their cache/refetch and
+success/error behavior.
+
+Raw Blitz `useMutation()` remains appropriate for endpoints that have not been
+migrated or that do not need a DB3 command contract. It leaves input shaping,
+endpoint selection, result interpretation, and any client-side runtime checking
+to each caller.
+
+The legacy DB3 TableClient (`xTableRenderClient`) solves a different problem.
+Its mutation methods provide generic single-table CRUD. `prepareMutation()`
+walks configured client columns and `xTable` columns, converts client fields to
+database-shaped fields, performs advisory client-side authorization filtering,
+selects numeric or public identity, invokes the generic table mutation endpoint,
+and may refetch the table query. That remains useful for conventional row
+editors.
+
+A command is preferable when the operation:
+
+- accepts a rich client value that is not a table row;
+- has an operation-specific strict DTO or result;
+- spans multiple entities or tables;
+- must enforce aggregate invariants in one transaction; or
+- should hide insert/update choice and persistence layout from the component.
+
+Commands do not call the legacy client `prepareMutation()` path. Their serializer
+is the explicit client-input-to-DTO transformation, while the server command row
+services reuse the authoritative DB3 row mutation core. This avoids making a
+table-shaped client sanitizer responsible for aggregate semantics without
+discarding the mature row-level validation, authorization, audit, public-ID,
+and hook behavior already implemented there.
+
 ### Client values, editable drafts, and mutation commands are distinct
 
 A hydrated client value is optimized for reading and application behavior; it is
@@ -194,17 +296,47 @@ Complex editors should use an explicit progression:
 
 The event-song-list work is the current example: separate persistence
 collections hydrate into `EventSongListContent`, then adapt to an editor draft,
-and finally serialize to one runtime-validated mutation command. The draft owns
-one ordered `items` collection and has temporary client identities; the adapter
-alone recreates persistence's split `songs`/`dividers` collections and
-`sortOrder` values. Authorization-incomplete client values cannot become
-editable drafts. Generic DB3 editing still uses legacy mechanisms in many
-places, so this pattern is not yet universal.
+and finally serialize through `saveEventSongListCommand` to one
+runtime-validated command DTO. The draft owns one ordered `items` collection
+and temporary client identities. The command serializer alone recreates
+persistence's split `songs`/`dividers` collections and their `sortOrder` values;
+the component and draft module no longer know the RPC DTO shape.
+
+`useDB3Command(saveEventSongListCommand)` accepts that draft for both creation
+and update. Its registered server handler performs parent and child writes in
+one serializable transaction, verifies that persisted child IDs belong to the
+setlist, checks referenced event/song visibility, composes the DB3 row services,
+and runs final aggregate mutation effects. Authorization-incomplete client
+values cannot become editable drafts. Generic DB3 editing still uses legacy
+mechanisms in many places, so this pattern is not yet universal.
 
 A read DTO's optional fields must not silently become optional write semantics.
 An editor should either require the complete fields needed to construct its
 draft or use a purpose-specific patch command. The server always validates and
 authorizes a command again against persisted state.
+
+### Open direction: first-class edit models
+
+The setlist migration also exposes a remaining client-side seam. Draft creation,
+hydrated-client-to-draft adaptation, deep cloning, and temporary client identity
+allocation are still separate domain functions, with some identity allocation
+visible in components. These operations describe one edit-model lifecycle and
+are candidates for a typed `DB3EditModel` contract.
+
+Such a contract could provide `create`, `beginEdit`, and `clone` operations and
+be referenced by an editable command. `useDB3Command()` could expose those pure
+facilities for convenient call sites, or a later `useDB3Editor()` could compose
+a view, edit model, save command, and optional delete command. The underlying
+draft should remain detached mutable data; hydrated query objects should not
+gain hidden I/O methods or be mutated in place because they may share canonical
+references or query-cache identity.
+
+This direction is not implemented yet. Commands that represent actions such as
+publish, approve, reorder, or merge may have no meaningful edit model, so draft
+lifecycle must not become mandatory for every command. Setlist temporary
+identity should also eventually distinguish an optional persisted identity from
+an opaque always-local key instead of encoding persistence in the sign of
+`clientId`.
 
 ### Transitional escape hatches
 
@@ -242,7 +374,12 @@ layout. New entity/view work should be colocated under
 - named views and DTO schemas;
 - hydrated value objects;
 - editable drafts; and
-- mutation command schemas.
+- shared command descriptors, DTO/result schemas, and serializers.
+
+Server command handlers remain under `server/commands/`, beside the generic
+dispatcher, handler registry, and command execution context. This keeps the
+shared command contract importable by clients without pulling server mutation
+code into the domain's shared module.
 
 This does not require a big-bang move of every existing `xTable`, but a migrated
 slice should not add another payload alias or domain command to a historical
@@ -386,8 +523,8 @@ a per-row compatibility flag or a second lookup mode.
   hydration boundaries are stabilized. The pilot remains useful, but new
   conversions should not multiply legacy shape assumptions that the view work
   is actively removing.
-- Entity/view/hydration primitives exist, and initial instrument, event, file,
-  song, and event-song-list views use them.
+- Entity/view/hydration/command primitives exist, and initial instrument, event,
+  file, song, and event-song-list views use the read-side primitives.
 - `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
   `ClientEntityOf<>`, and typed `useDb3Query({ view })` establish the intended
   inference chain without result casts.
@@ -395,9 +532,22 @@ a per-row compatibility flag or a second lookup mode.
   than merely renaming fields.
 - Event song lists prove collection reshaping and a separate write model:
   `EventSongListContent` merges songs and dividers, the editor consumes an
-  `EventSongListDraft`, and insert/update RPCs validate a colocated mutation
-  command. Making the multi-table write atomic and normalizing the combined
-  position namespace on the server remain outstanding.
+  `EventSongListDraft`, and `saveEventSongListCommand` owns draft-to-DTO
+  serialization for both creation and update.
+- `defineCommand()`, typed `useDB3Command()`, the generic command RPC, the
+  server handler registry, and `DB3CommandExecutionContext` establish the first
+  named write-contract path. DTO and result validation occur on both sides of
+  transport as appropriate; server authorization remains authoritative.
+- The registered event-song-list save handler now performs parent, song, and
+  divider synchronization atomically in one serializable transaction by
+  composing authorized DB3 row services. The two legacy insert/update RPCs and
+  the raw `UpdateEventSongListSongs` path have been removed.
+- Setlist divider persistence fields needed by the command are real DB3 fields
+  rather than `GhostField`s, so normal validation, transformation, and field
+  authorization apply. Setlist delete and generic list reordering remain on
+  legacy endpoints, and the server does not yet normalize or reject malformed
+  combined song/divider `sortOrder` namespaces independently of the trusted
+  serializer.
 - Legacy queries without a named view still use `xTable.getClientModel()` and the
   generic public-ID projector.
 - Some server-owned dashboard loaders query Prisma directly, then explicitly
@@ -426,6 +576,15 @@ a per-row compatibility flag or a second lookup mode.
 - Preserve the difference between absent, null, and empty.
 - Prefer semantic client values over persistence-shaped bags of fields.
 - Do not use a hydrated read model as an implicit write model.
+- Define named commands for operation-specific or aggregate writes; keep their
+  client input, strict DTO, strict result, and server handler connected by one
+  typed contract.
+- Treat `useDB3Command()` serialization and validation as client contract
+  ergonomics, never as a replacement for server validation or authorization.
+- Compose aggregate command handlers from the existing authoritative DB3 row
+  mutation services instead of copying table authorization and mutation rules.
+- Retain legacy table-client mutation for straightforward single-row CRUD where
+  an aggregate command adds no semantic value.
 - Keep domain-specific filters and selection behavior out of DB3 core.
 - Do not add generic untyped payload bags where a named DTO/client shape can
   express the requirement.
@@ -447,8 +606,10 @@ Migrate one bounded entity/view/consumer slice at a time:
 4. Hydrate to the semantic client value and consume it through typed
    `useDb3Query({ view })`; remove the corresponding manual enrichment and
    result casts in the migrated slice.
-5. If the value is editable, introduce an explicit draft and validated command
-   rather than sending the hydrated read model back to the server.
+5. If the value is editable, introduce an explicit draft and named command
+   rather than sending the hydrated read model back to the server. Put the
+   client-input-to-DTO transformation on the command, register a server handler,
+   and compose its writes from DB3 row services inside the command transaction.
 6. Audit identity, sorting, caches, keys, URLs, filters, mutations, and exports
    before converting that entity to `publicId`.
 7. Add tests for complete and field-stripped DTOs, nested authorization,
@@ -467,8 +628,16 @@ boundary.
   ranges, and event-song-list content.
 - [x] Separate setlist hydrated content, editable draft, and validated mutation
   command.
-- [ ] Make setlist parent/item writes atomic and normalize the combined
-  song/divider position namespace transactionally.
+- [x] Establish typed command descriptors, `useDB3Command()`, a generic RPC and
+  registry, an authorized transactional context, and reusable DB3 row services.
+- [x] Migrate setlist create/update to one atomic aggregate save command and
+  remove its legacy RPC and raw child-synchronization paths.
+- [ ] Validate or normalize the combined setlist song/divider position namespace
+  on the server, independent of the client serializer.
+- [ ] Decide and prove the first-class edit-model contract for draft creation,
+  hydrated-client adaptation, cloning, and local identity allocation.
+- [ ] Decide whether setlist delete/reorder should become commands or remain
+  generic/specialized mutations based on their actual aggregate semantics.
 - [ ] Convert remaining legacy `enrich*` consumers and duplicate query-shape
   declarations to named views.
 - [ ] Remove remaining generic query/view escape hatches and replace relation
