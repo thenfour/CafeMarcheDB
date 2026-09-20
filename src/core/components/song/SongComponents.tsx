@@ -3,7 +3,6 @@ import { useDB3Authorization } from "src/core/db3/components/useDB3Authorization
 import { TAnyModel } from '@/shared/rootroot';
 import HomeIcon from '@mui/icons-material/Home';
 import { Breadcrumbs, Button, Tooltip } from "@mui/material";
-import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React from "react";
 import { IsNullOrWhitespace, StringToEnumValue } from 'shared/utils';
@@ -14,7 +13,6 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../../db3/clientAPI';
 import { gIconMap } from '../../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../../db3/components/db3NewObjectDialog';
-import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
 import { AppContextMarker } from '../AppContext';
 import { CMChipContainer, CMStandardDBChip } from '../CMChip';
 import { AdminInspectObject, NameValuePair } from '../CMCoreComponents2';
@@ -60,7 +58,7 @@ export const SongClientColumns = {
 
 ////////////////////////////////////////////////////////////////
 export interface SongBreadcrumbProps {
-    song: db3.SongPayloadMinimum,
+    song: Pick<db3.SongDetailClient, "id" | "name">,
 };
 export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
     const dashboardContext = useDashboardContext();
@@ -96,14 +94,8 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
         ;
 };
 
-type SongWithDescription = Prisma.SongGetPayload<{
-    select: {
-        id: true,
-        name: true,
-        description: true,
-        createdByUserId: true,
-    }
-}>;
+type SongWithDescription = Pick<db3.SongDetailClient,
+    "id" | "name" | "description" | "createdByUserId">;
 
 ////////////////////////////////////////////////////////////////
 interface SongDescriptionEditorProps {
@@ -171,10 +163,10 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: Song
         model: null,
         columnName: "description",
         publicData,
-        fallbackOwnerId: song.createdByUserId,
+        fallbackOwnerId: song.createdByUserId ?? null,
     });
 
-    readonly = readonly && authorized;
+    readonly = readonly || !authorized;
 
     return <div className='descriptionContainer'>
         {!readonly && !editing && <Button onClick={() => setEditing(true)}>Edit</Button>}
@@ -182,7 +174,7 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: Song
             song={song}
             refetch={refetch}
             onClose={() => setEditing(false)}
-        /> : <Markdown markdown={song.description} />}
+        /> : <Markdown markdown={song.description || ""} />}
     </div>;
 };
 
@@ -200,7 +192,7 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: Song
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongCreditEditButtonProps {
     //songData: SongWithMetadata;
-    value: db3.SongCreditPayloadFromVerboseSong;
+    value: db3.SongDetailClient["credits"][number];
     refetch: () => void;
     readonly: boolean;
     creditsTableClient: DB3Client.xTableRenderClient;
@@ -340,7 +332,8 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 
     if (props.showCredits) {
         songData.song.credits.forEach(credit => {
-            const type = dashboardContext.songCreditType.getById(credit.typeId)!;
+            const type = dashboardContext.songCreditType.getById(credit.typeId);
+            if (!type) return;
             rows.push({
                 rowClassName: `credit `,
                 cells: [
@@ -348,11 +341,11 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
                     <td key={1} className={`user`}><div className='flexRow'>
                         <SongCreditEditButton readonly={props.readonly} refetch={refetch} creditsTableClient={creditsTableClient} value={credit} />
                         {/* {credit.user && credit.user.name} */}
-                        <UserChip value={credit.user} />
+                        <UserChip value={credit.user || null} />
                     </div>
                     </td>,
                     <td key={2} className={`year`}>{credit.year}</td>,
-                    <td key={3} className={`comment`}><Markdown markdown={credit.comment} compact={true} /></td>,
+                    <td key={3} className={`comment`}><Markdown markdown={credit.comment || ""} compact={true} /></td>,
                 ],
             });
         });
@@ -405,7 +398,10 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
         tableClient?.refetch();
     };
 
-    const visInfo = dashboardContext.getVisibilityInfo(song);
+    const visInfo = dashboardContext.getVisibilityInfo({
+        visiblePermissionId: song.visiblePermissionId ?? null,
+        visiblePermission: song.visiblePermission ?? null,
+    });
 
     return React.createElement(props.renderAsLinkTo ? "a" : "div", {
         href: props.renderAsLinkTo,
@@ -449,7 +445,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     onCancel={() => { }}
-                    onOK={(obj: EnrichedVerboseSong, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: db3.SongDetailClient, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.song_edit,
                             context: "song detail dialog",
@@ -492,7 +488,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     key={tag.id}
                     size='small'
                     model={tag.tag}
-                    variation={{ ...StandardVariationSpec.Weak, selected: highlightedTagIds.includes(tag.tagId) }}
+                    variation={{ ...StandardVariationSpec.Weak, selected: highlightedTagIds.includes(tag.tag.id) }}
                     getTooltip={(_) => tag.tag.description}
                 />)}
             </CMChipContainer>
@@ -518,7 +514,7 @@ export enum SongDetailTabSlug {
 
 
 export interface SongDetailArgs {
-    song: EnrichedVerboseSong;
+    song: db3.SongDetailClient;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTab?: SongDetailTabSlug;
@@ -532,7 +528,18 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         tableClient.refetch();
     };
 
-    const fileInfo = GetSongFileInfo(song, dashboardContext);
+    const fileInfo = GetSongFileInfo(song);
+
+    const contextSong = song.name !== undefined
+        && song.pinnedRecordingId !== undefined
+        && song.lengthSeconds !== undefined
+        ? {
+            id: song.id,
+            name: song.name,
+            pinnedRecordingId: song.pinnedRecordingId,
+            lengthSeconds: song.lengthSeconds,
+        }
+        : undefined;
 
     const [selectedTab, setSelectedTab] = React.useState<SongDetailTabSlug>(props.initialTab || ((IsNullOrWhitespace(song.description) && (fileInfo.enrichedFiles.length > 0)) ? SongDetailTabSlug.files : SongDetailTabSlug.info));
 
@@ -589,7 +596,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                             songTagIds: [song.id],
                             fileTagIds: partitionTagId ? [partitionTagId] : [],
                         }}
-                        contextSong={song}
+                        contextSong={contextSong}
                     />
                 </AppContextMarker>
             </CMTab>
@@ -613,7 +620,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                             songTagIds: [song.id],
                             fileTagIds: recordingTagId ? [recordingTagId] : [],
                         }}
-                        contextSong={song}
+                        contextSong={contextSong}
                     />
                 </AppContextMarker>
             </CMTab>
@@ -632,7 +639,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                         uploadTags={{
                             taggedSongId: song.id,
                         }}
-                        contextSong={song}
+                        contextSong={contextSong}
                         hiddenTagIds={{
                             songTagIds: [song.id],
                         }}

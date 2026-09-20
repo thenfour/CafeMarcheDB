@@ -39,26 +39,43 @@ import { UserChip } from './user/userChip';
 import { WikiPageChip } from './wiki/WikiPageChip';
 
 
-type EnrichedFileEx = EnrichedFile<db3.FileWithTagsPayload>;
+type DetailFile = db3.FileDetailClient | EnrichedFile<db3.FileWithTagsPayload>;
+
+const hasEventChipFields = (event: {
+    id: number;
+    name?: string;
+    startsAt?: Date | null;
+    statusId?: number | null;
+    typeId?: number | null;
+}): event is {
+    id: number;
+    name: string;
+    startsAt: Date | null;
+    statusId: number | null;
+    typeId: number | null;
+} => event.name !== undefined
+    && event.startsAt !== undefined
+    && event.statusId !== undefined
+    && event.typeId !== undefined;
 
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
 //const gMaximumFilterTagsPerType = 10 as const;
 
-type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt" | "fileLeafName"; // keyof File
+type SortByKey = "uploadedAt" | "uploadedByUserName" | "mimeType" | "sizeBytes" | "fileCreatedAt" | "fileLeafName";
 type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments" | "taggedWikiPages";
 
 //////////////////////////////////////////////////////////////////
 
 export interface FileTagBase {
     id: number;
-    file: EnrichedFileEx;
-    fileId: number;
+    file: DetailFile;
+    fileId?: number;
     // plus a songId, eventId, whatever...
 };
 
 //////////////////////////////////////////////////////////////////
 interface PinSongRecordingMenuItemProps {
-    value: EnrichedFileEx;
+    value: DetailFile;
     contextSong: MediaPlayerSongContextPayload;
     closeProc: () => void; // proc to close the menu.
     refetch?: () => void; // optional, if provided, will be called after pinning the file.
@@ -134,24 +151,30 @@ export const UnpinSongRecordingMenuItem = (props: Omit<PinSongRecordingMenuItemP
 }
 
 
-export const FileExternalLink = ({ file, highlight }: { file: EnrichedFileEx, highlight?: boolean }) => {
+export const FileExternalLink = ({ file, highlight }: { file: DetailFile, highlight?: boolean }) => {
     const dashboardContext = useDashboardContext();
     const filenameClass = highlight ? "filename highlight" : "filename";
+    const fileName = file.fileLeafName || "Restricted file";
+    const storedLeafName = file.storedLeafName;
 
-    return file.externalURI ? (
-        <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={file.externalURI}>
-            {gIconMap.Link()}
-            <Tooltip title={file.fileLeafName}>
-                <div className={filenameClass}>{smartTruncate(file.fileLeafName)}</div>
-            </Tooltip>
-        </CMLink>
-    ) : (
-        <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={dashboardContext.routingApi.getURIForFile(file)}>
-            <FileDownloadIcon />
-            <Tooltip title={file.fileLeafName}>
-                <div className={filenameClass}>{smartTruncate(file.fileLeafName)}</div>
-            </Tooltip>
-        </CMLink>)
+    let href = file.externalURI || undefined;
+    if (!href) {
+        if (!storedLeafName) {
+            return <div className={filenameClass}>{smartTruncate(fileName)}</div>;
+        }
+        href = dashboardContext.routingApi.getURIForFile({
+            storedLeafName,
+            fileLeafName: file.fileLeafName || "",
+            externalURI: null,
+        });
+    }
+
+    return <CMLink trackingFeature={ActivityFeature.file_download} target="_empty" className="downloadLink" href={href}>
+        {file.externalURI ? gIconMap.Link() : <FileDownloadIcon />}
+        <Tooltip title={fileName}>
+            <div className={filenameClass}>{smartTruncate(fileName)}</div>
+        </Tooltip>
+    </CMLink>;
 
 };
 
@@ -167,7 +190,7 @@ interface FileViewerHiddenTagIds {
 };
 
 interface FileViewerProps {
-    value: EnrichedFileEx;
+    value: DetailFile;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
     readonly: boolean;
     statHighlight: SortByKey;
@@ -183,7 +206,10 @@ export const FileValueViewer = (props: FileViewerProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const file = props.value;
-    const visInfo = dashboardContext.getVisibilityInfo(file);
+    const visInfo = dashboardContext.getVisibilityInfo({
+        visiblePermissionId: file.visiblePermissionId ?? null,
+        visiblePermission: file.visiblePermission ?? null,
+    });
 
     const classes: string[] = [
         `EventFileValue EventFileValueViewer ${visInfo.className}`
@@ -200,7 +226,13 @@ export const FileValueViewer = (props: FileViewerProps) => {
     }
 
     const variation = StandardVariationSpec.Weak;
-    const uri = file.externalURI || dashboardContext.routingApi.getURIForFile(file);
+    const uri = file.externalURI || (file.storedLeafName
+        ? dashboardContext.routingApi.getURIForFile({
+            storedLeafName: file.storedLeafName,
+            fileLeafName: file.fileLeafName || "",
+            externalURI: null,
+        })
+        : undefined);
 
     const isPinned = props.contextSong?.pinnedRecordingId === file.id;
 
@@ -228,7 +260,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         <ListItemIcon>{gIconMap.Edit()}</ListItemIcon>
                         Edit
                     </MenuItem>}
-                    <MenuItem
+                    {uri && <MenuItem
                         onClick={async () => {
                             await snackbar.invokeAsync(async () => {
                                 await navigator.clipboard.writeText(uri);
@@ -237,11 +269,11 @@ export const FileValueViewer = (props: FileViewerProps) => {
                         }}>
                         <ListItemIcon>{gIconMap.Share()}</ListItemIcon>
                         Copy link
-                    </MenuItem>
-                    <MenuItem
+                    </MenuItem>}
+                    {uri && <MenuItem
                         onClick={async () => {
                             await snackbar.invokeAsync(async () => {
-                                const markdownLink = `[${file.fileLeafName}](${uri})`;
+                                const markdownLink = `[${file.fileLeafName || "Restricted file"}](${uri})`;
                                 await navigator.clipboard.writeText(markdownLink);
                                 endMenuItemRef.current();
                             }, "Link copied to clipboard");
@@ -253,7 +285,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
                                 can be pasted in a markdown text field
                             </div>
                         </div>
-                    </MenuItem>
+                    </MenuItem>}
                     <Divider />
                     {!isPinned && isAudio && props.contextSong &&
                         <PinSongRecordingMenuItem contextSong={props.contextSong} value={props.value} closeProc={() => {
@@ -283,7 +315,9 @@ export const FileValueViewer = (props: FileViewerProps) => {
                     {(file.taggedEvents.length > 0) && (
                         file.taggedEvents
                             .filter(a => !props.hiddenTagIds.eventTagIds || !existsInArray(props.hiddenTagIds.eventTagIds, a.event.id))
-                            .map(a => <EventChip key={a.id} value={a.event} size="small" variation={variation} />)
+                            .map(a => hasEventChipFields(a.event)
+                                ? <EventChip key={a.id} value={a.event} size="small" variation={variation} />
+                                : null)
                     )}
 
                     {(file.taggedUsers.length > 0) && (
@@ -295,7 +329,9 @@ export const FileValueViewer = (props: FileViewerProps) => {
                     {(file.taggedSongs.length > 0) && (
                         file.taggedSongs
                             .filter(a => !props.hiddenTagIds.songTagIds || !existsInArray(props.hiddenTagIds.songTagIds, a.song.id))
-                            .map(a => <SongChip key={a.id} value={a.song} size="small" variation={variation} />)
+                            .map(a => a.song.name === undefined
+                                ? null
+                                : <SongChip key={a.id} value={{ id: a.song.id, name: a.song.name }} size="small" variation={variation} />)
                     )}
 
                     {(file.taggedInstruments.length > 0) && (
@@ -307,13 +343,15 @@ export const FileValueViewer = (props: FileViewerProps) => {
                     {(file.taggedWikiPages.length > 0) && (
                         file.taggedWikiPages
                             .filter(a => !props.hiddenTagIds.wikiPageTagIds || !existsInArray(props.hiddenTagIds.wikiPageTagIds, a.wikiPage.id))
-                            .map(a => <WikiPageChip key={a.id} slug={a.wikiPage.slug} size="small" variation={variation} />)
+                            .map(a => a.wikiPage.slug === undefined
+                                ? null
+                                : <WikiPageChip key={a.id} slug={a.wikiPage.slug} size="small" variation={variation} />)
                     )}
                 </CMChipContainer>
 
 
                 <div className="descriptionContainer">
-                    <Markdown markdown={file.description} />
+                    <Markdown markdown={file.description || ""} />
                 </div>
 
                 {/* <div className="preview">
@@ -326,7 +364,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
 
                 <Tooltip title={<div>
-                    <div>uploaded at {file.uploadedAt.toLocaleString()} by {file.uploadedByUser?.name}</div>
+                    {file.uploadedAt && <div>uploaded at {file.uploadedAt.toLocaleString()} by {file.uploadedByUser?.name}</div>}
                     {file.externalURI && <div>{file.externalURI}</div>}
                 </div>}>
                     <div className="stats">
@@ -337,11 +375,11 @@ export const FileValueViewer = (props: FileViewerProps) => {
                             </div>
                         }
 
-                        {file.sizeBytes !== null && <div className={`stat ${props.statHighlight === 'sizeBytes' && "highlight"}`}>{formatFileSize(file.sizeBytes)}</div>}
+                        {file.sizeBytes != null && <div className={`stat ${props.statHighlight === 'sizeBytes' && "highlight"}`}>{formatFileSize(file.sizeBytes)}</div>}
                         {file.mimeType && <div className={`stat ${props.statHighlight === 'mimeType' && "highlight"}`}>{file.mimeType}</div>}
                         {file.fileCreatedAt && <div className={`stat ${props.statHighlight === 'fileCreatedAt' && "highlight"}`}>created at {file.fileCreatedAt.toLocaleString()}</div>}
-                        {props.statHighlight === 'uploadedByUserId' && <div className='stat highlight'>uploaded by {file.uploadedByUser?.name}</div>}
-                        {props.statHighlight === 'uploadedAt' && <div className='stat highlight'>uploaded at {file.uploadedAt.toLocaleString()}</div>}
+                        {props.statHighlight === 'uploadedByUserName' && <div className='stat highlight'>uploaded by {file.uploadedByUser?.name}</div>}
+                        {props.statHighlight === 'uploadedAt' && file.uploadedAt && <div className='stat highlight'>uploaded at {file.uploadedAt.toLocaleString()}</div>}
                     </div>
                 </Tooltip>
             </div>
@@ -352,7 +390,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileEditorProps {
-    initialValue: db3.FileWithTagsPayload;
+    initialValue: DetailFile;
     onClose: () => void;
     rowMode: db3.DB3RowMode;
 };
@@ -495,13 +533,13 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const filterTokens = SplitQuickFilter(spec.quickFilter);
 
         const tokensToSearch = [
-            item.file.description.toLocaleLowerCase(),
-            item.file.fileLeafName.toLocaleLowerCase(),
-            item.file.taggedInstruments.map(i => i.instrument.name.toLocaleLowerCase()),
-            item.file.taggedUsers.map(i => i.user.name.toLocaleLowerCase()),
-            item.file.taggedEvents.map(i => i.event.name.toLocaleLowerCase()),
-            item.file.taggedSongs.map(i => i.song.name.toLocaleLowerCase()),
-            item.file.taggedWikiPages.map(i => i.wikiPage.slug.toLocaleLowerCase()),
+            (item.file.description || "").toLocaleLowerCase(),
+            (item.file.fileLeafName || "").toLocaleLowerCase(),
+            item.file.taggedInstruments.map(i => (i.instrument.name || "").toLocaleLowerCase()),
+            item.file.taggedUsers.map(i => (i.user.name || "").toLocaleLowerCase()),
+            item.file.taggedEvents.map(i => (i.event.name || "").toLocaleLowerCase()),
+            item.file.taggedSongs.map(i => (i.song.name || "").toLocaleLowerCase()),
+            item.file.taggedWikiPages.map(i => (i.wikiPage.slug || "").toLocaleLowerCase()),
             item.file.tags.map(i => i.fileTag.text.toLocaleLowerCase()),
         ];
 
@@ -510,16 +548,19 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
 
     // sort.
     filteredItems.sort((a, b) => {
-        let aValue = a.file[spec.sortBy];
-        let bValue = b.file[spec.sortBy];
+        const getSortValue = (file: DetailFile) => spec.sortBy === "uploadedByUserName"
+            ? file.uploadedByUser?.name
+            : file[spec.sortBy];
+        let aValue = getSortValue(a.file);
+        let bValue = getSortValue(b.file);
 
-        if (aValue === bValue) {
-            return a.file.id - b.file.id;
+        if (aValue == null && bValue == null) {
+            return 0;
         }
-        if (aValue === null) {
+        if (aValue == null) {
             return 1;
         }
-        if (bValue === null) {
+        if (bValue == null) {
             return -1;
         }
 
@@ -529,7 +570,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         }
 
         if (aValue === bValue) {
-            return a.file.id - b.file.id;
+            return 0;
         }
 
         return aValue > bValue ? 1 : -1;
@@ -797,8 +838,8 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                                         onClick={() => props.onChange({ ...props.value, sortBy: 'mimeType', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
                                     >Type {props.value.sortBy === 'mimeType' && sortArrow}</CMSmallButton>
                                     <CMSmallButton
-                                        onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedByUserId', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
-                                    >Uploader {props.value.sortBy === 'uploadedByUserId' && sortArrow}</CMSmallButton>
+                                        onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedByUserName', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
+                                    >Uploader {props.value.sortBy === 'uploadedByUserName' && sortArrow}</CMSmallButton>
                                 </CMChipContainer>
                             </div>
 
@@ -818,7 +859,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileControlProps {
-    value: EnrichedFileEx;
+    value: DetailFile;
     readonly: boolean;
     refetch: () => void;
     statHighlight: SortByKey;
@@ -984,7 +1025,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
 // File-specific audio controls that use the global media player
 type AudioPlayerFileControlsProps = {
-    file: db3.FileWithTagsPayload,
+    file: DetailFile,
     song?: MediaPlayerSongContextPayload | undefined,
     event?: MediaPlayerEventContextPayload | undefined,
 };
@@ -994,6 +1035,31 @@ export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileCo
     const isCurrent = mediaPlayer.isPlayingFile(file.id);
     const isPlaying = isCurrent && mediaPlayer.isPlaying;
 
+    if (file.fileLeafName === undefined
+        || file.externalURI === undefined
+        || file.mimeType === undefined
+        || file.sizeBytes === undefined
+        || file.parentFileId === undefined
+        || file.previewFileId === undefined
+        || file.fileCreatedAt === undefined
+        || file.storedLeafName === undefined
+        || file.uploadedAt === undefined) {
+        return null;
+    }
+
+    const playableFile = {
+        id: file.id,
+        fileLeafName: file.fileLeafName,
+        externalURI: file.externalURI,
+        mimeType: file.mimeType,
+        sizeBytes: file.sizeBytes,
+        parentFileId: file.parentFileId,
+        previewFileId: file.previewFileId,
+        fileCreatedAt: file.fileCreatedAt,
+        storedLeafName: file.storedLeafName,
+        uploadedAt: file.uploadedAt,
+    };
+
     // Play this file via the global player
     const handlePlay = () => {
         if (isCurrent) {
@@ -1001,18 +1067,7 @@ export function AudioPlayerFileControls({ file, song, event }: AudioPlayerFileCo
         } else {
             mediaPlayer.setPlaylist([
                 {
-                    file: {
-                        id: file.id,
-                        fileLeafName: file.fileLeafName,
-                        externalURI: file.externalURI,
-                        mimeType: file.mimeType,
-                        sizeBytes: file.sizeBytes,
-                        parentFileId: file.parentFileId,
-                        previewFileId: file.previewFileId,
-                        fileCreatedAt: file.fileCreatedAt,
-                        storedLeafName: file.storedLeafName,
-                        uploadedAt: file.uploadedAt,
-                    },
+                    file: playableFile,
                     playlistIndex: -1,
                     setlistId: undefined, // individual file playback, not from a setlist
                     //url: file.externalURI || undefined,

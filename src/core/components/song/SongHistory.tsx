@@ -7,12 +7,11 @@ import { GetSongActivityReportFilterSpec, GetSongActivityReportFilterSpecTimingF
 import { ActivityVis, ActivityVisBucket } from '../ActivityVis';
 import { SettingMarkdown } from '../SettingMarkdown';
 
-import { EventAPI } from '../../db3/db3';
+import * as db3 from '../../db3/db3';
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from '../search/FilterControl';
 import { arraysContainSameValues } from 'shared/arrayUtils';
 import { AdminInspectObject } from '../CMCoreComponents2';
 import { useDashboardContext } from '../dashboardContext/DashboardContext';
-import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,7 +113,7 @@ const SongHistoryQuerier = (props: SongHistoryQuerierProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface SongHistoryProps {
-    song: EnrichedVerboseSong;
+    song: db3.SongDetailClient;
 }
 
 export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
@@ -167,7 +166,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
             getBucketInfo={(bucket) => {
                 if (bucket.items.length === 0) return { tooltip: "" };
                 return {
-                    tooltip: <ul>{bucket.items.map(x => <li key={x.item.id}>{EventAPI.getLabel(x.item)}</li>)}</ul>
+                    tooltip: <ul>{bucket.items.map(x => <li key={x.item.id}>{db3.EventAPI.getLabel(x.item)}</li>)}</ul>
                 }
             }}
             selectedMonthBucketId={selectedBucket?.yearMonthBucketId || null}
@@ -184,7 +183,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
             {selectedBucket && selectedBucket.items.map(i => {
                 return <li key={i.item.id}>
                     <a rel="noreferrer" target="_blank" href={dashboardContext.routingApi.getURIForEvent(i.item)}>
-                        {EventAPI.getLabel(i.item)}
+                        {db3.EventAPI.getLabel(i.item)}
                     </a></li>;
             })}
         </ul>

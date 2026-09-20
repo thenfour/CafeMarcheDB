@@ -2,6 +2,7 @@ import { Prisma } from "db";
 import { z } from "zod";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { fileTagEntity } from "../file/fileEntities";
+import { FileDetailDtoSchema, fileDetailSelection, hydrateFileDetailDto } from "../file/fileViews";
 import { permissionEntity } from "../user/userEntities";
 import { songEntity, songTagEntity } from "./songEntities";
 
@@ -149,3 +150,120 @@ export const songSearchView = defineView({
 
 export type SongSearchDto = DtoOf<typeof songSearchView>;
 export type SongSearchClient = ClientOf<typeof songSearchView>;
+
+const SongDetailTaggedFileDtoSchema = z.object({
+    id: z.number().int(),
+    file: FileDetailDtoSchema.optional(),
+});
+
+const SongDetailCreditDtoSchema = z.object({
+    id: z.number().int(),
+    userId: z.number().int().nullable().optional(),
+    songId: z.number().int().optional(),
+    typeId: z.number().int().optional(),
+    year: z.string().optional(),
+    comment: z.string().optional(),
+    user: z.object({
+        id: z.number().int(),
+        name: z.string().optional(),
+    }).nullable().optional(),
+});
+
+const SongDetailDtoSchema = z.object({
+    id: z.number().int(),
+    name: z.string().optional(),
+    aliases: z.string().optional(),
+    description: z.string().optional(),
+    startBPM: z.number().int().nullable().optional(),
+    endBPM: z.number().int().nullable().optional(),
+    introducedYear: z.number().int().nullable().optional(),
+    lengthSeconds: z.number().int().nullable().optional(),
+    createdByUserId: z.number().int().nullable().optional(),
+    visiblePermissionId: z.number().int().nullable().optional(),
+    pinnedRecordingId: z.number().int().nullable().optional(),
+    tags: z.array(SongTagAssociationDtoSchema).optional(),
+    taggedFiles: z.array(SongDetailTaggedFileDtoSchema).optional(),
+    credits: z.array(SongDetailCreditDtoSchema).optional(),
+});
+
+export const songDetailSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        aliases: true,
+        description: true,
+        startBPM: true,
+        endBPM: true,
+        introducedYear: true,
+        lengthSeconds: true,
+        createdByUserId: true,
+        visiblePermissionId: true,
+        pinnedRecordingId: true,
+        isDeleted: true,
+        tags: {
+            select: {
+                id: true,
+                songId: true,
+                tagId: true,
+            },
+        },
+        taggedFiles: {
+            select: {
+                id: true,
+                fileId: true,
+                songId: true,
+                file: fileDetailSelection,
+            },
+            orderBy: { file: { uploadedAt: "desc" } },
+        },
+        credits: {
+            select: {
+                id: true,
+                userId: true,
+                songId: true,
+                typeId: true,
+                year: true,
+                comment: true,
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        },
+    },
+});
+
+export const songDetailView = defineView({
+    viewID: "Song_Detail",
+    entity: songEntity,
+    selection: songDetailSelection,
+    dtoSchema: SongDetailDtoSchema,
+    hydrate: (dto, references) => ({
+        ...dto,
+        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+        tags: references.getTags(dto.tags, (association, index) => ({
+            ...association,
+            tag: references.require(
+                songTagEntity,
+                association.tagId,
+                `Song(${dto.id}).tags[${index}].tagId`,
+            ),
+        })).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+        taggedFiles: references.getTags(dto.taggedFiles, association => association)
+            .flatMap((association, index) => association.file == null ? [] : [{
+                ...association,
+                file: hydrateFileDetailDto(
+                    association.file,
+                    references,
+                    `Song(${dto.id}).taggedFiles[${index}].file`,
+                ),
+            }]),
+        credits: references.getTags(dto.credits, credit => credit),
+    }),
+    getIdentity: client => client.id,
+});
+
+export type SongDetailDto = DtoOf<typeof songDetailView>;
+export type SongDetailClient = ClientOf<typeof songDetailView>;

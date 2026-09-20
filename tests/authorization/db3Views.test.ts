@@ -291,6 +291,170 @@ describe("DB3 named views", () => {
         expect(result.items[0]?.credits?.[0]).not.toHaveProperty("songId");
     });
 
+    it("hydrates the Song detail view, including its reusable File detail shape", () => {
+        const references = new db3.DB3ReferenceStore();
+        const permission = {
+            id: 4,
+            name: "members",
+            description: "",
+            isVisibility: true,
+            sortOrder: 1,
+            significance: null,
+            color: null,
+            iconName: null,
+        };
+        const songTag = { id: 20, text: "March", description: "", color: null, sortOrder: 1, significance: null, group: null, indicator: null, indicatorCssClass: null };
+        const fileTag = { id: 30, text: "Partition", description: "", color: null, sortOrder: 1, significance: db3.FileTagSignificance.Partition };
+        const instrument = {
+            id: 40,
+            name: "Trumpet",
+            description: "",
+            autoAssignFileLeafRegex: null,
+            sortOrder: 1,
+            functionalGroupId: groupPublicId,
+            functionalGroup: group,
+            instrumentTags: [],
+        };
+        references.register(db3.permissionEntity, [permission]);
+        references.register(db3.songTagEntity, [songTag]);
+        references.register(db3.fileTagEntity, [fileTag]);
+        references.register(db3.instrumentEntity, [instrument]);
+
+        const dto = db3.songDetailView.parseDto({
+            id: 7,
+            name: "A song",
+            description: "Detail description",
+            visiblePermissionId: permission.id,
+            tags: [{ id: 70, tagId: songTag.id }],
+            taggedFiles: [{
+                id: 80,
+                fileId: 8,
+                file: {
+                    id: 8,
+                    fileLeafName: "score.pdf",
+                    visiblePermissionId: permission.id,
+                    tags: [{ id: 90, fileTagId: fileTag.id }],
+                    taggedInstruments: [{ id: 100, instrumentId: instrument.id }],
+                },
+            }],
+        });
+        const hydrated = db3.hydrateView(db3.songDetailView, dto, references);
+
+        expect(hydrated.visiblePermission).toBe(permission);
+        expect(hydrated.tags[0]?.tag).toBe(songTag);
+        expect(hydrated.taggedFiles[0]?.file.visiblePermission).toBe(permission);
+        expect(hydrated.taggedFiles[0]?.file.tags[0]?.fileTag).toBe(fileTag);
+        expect(hydrated.taggedFiles[0]?.file.taggedInstruments[0]?.instrument).toBe(instrument);
+        expect(hydrated.taggedFiles[0]?.file.taggedEvents).toEqual([]);
+        expect(hydrated.credits).toEqual([]);
+        expectTypeOf(dto.aliases).toEqualTypeOf<string | undefined>();
+        expectTypeOf(hydrated).toEqualTypeOf<db3.SongDetailClient>();
+    });
+
+    it("projects the Song detail DTO recursively without leaking authorization support fields", async () => {
+        const uploadedAt = new Date("2026-01-02T12:00:00Z");
+        const findMany = vi.fn(async () => [{
+            id: 7,
+            name: "A song",
+            aliases: "",
+            description: "Detail description",
+            startBPM: null,
+            endBPM: null,
+            introducedYear: null,
+            lengthSeconds: null,
+            createdByUserId: 100,
+            visiblePermissionId: 3,
+            pinnedRecordingId: null,
+            isDeleted: false,
+            tags: [{ id: 70, songId: 7, tagId: 20 }],
+            taggedFiles: [{
+                id: 80,
+                fileId: 8,
+                songId: 7,
+                file: {
+                    id: 8,
+                    fileLeafName: "score.pdf",
+                    description: "",
+                    uploadedAt,
+                    uploadedByUserId: 100,
+                    visiblePermissionId: 3,
+                    isDeleted: false,
+                    sizeBytes: 123,
+                    storedLeafName: "stored.pdf",
+                    mimeType: "application/pdf",
+                    externalURI: null,
+                    fileCreatedAt: null,
+                    parentFileId: null,
+                    previewFileId: null,
+                    tags: [{ id: 90, fileTagId: 30 }],
+                    taggedUsers: [],
+                    taggedSongs: [{
+                        id: 91,
+                        songId: 9,
+                        song: {
+                            id: 9,
+                            name: "Private related song",
+                            createdByUserId: 100,
+                            visiblePermissionId: null,
+                            isDeleted: false,
+                        },
+                    }],
+                    taggedEvents: [],
+                    taggedInstruments: [],
+                    taggedWikiPages: [],
+                },
+            }],
+            credits: [],
+        }]);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.visibility_members },
+            { id: 4, name: Permission.view_songs },
+            { id: 5, name: Permission.view_files },
+        ]);
+
+        const result = await queryTable({
+            table: {
+                tableID: db3.xSong.tableID,
+                tableName: db3.xSong.tableName,
+                viewID: db3.songDetailView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [], tableParams: { songId: 7 } },
+            cmdbQueryContext: "song-detail-view-test",
+        }, {
+            user: { id: 100 } as any,
+            effectivePermissions,
+        }, {
+            Song: { findMany },
+        } as any);
+
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0]).toMatchObject({
+            id: 7,
+            name: "A song",
+            taggedFiles: [{
+                id: 80,
+                file: {
+                    id: 8,
+                    fileLeafName: "score.pdf",
+                    tags: [{ id: 90, fileTagId: 30 }],
+                    taggedSongs: [{
+                        id: 91,
+                        song: { id: 9, name: "Private related song" },
+                    }],
+                },
+            }],
+        });
+        expect(result.items[0]).not.toHaveProperty("isDeleted");
+        expect(result.items[0]?.taggedFiles?.[0]).not.toHaveProperty("fileId");
+        expect(result.items[0]?.taggedFiles?.[0]?.file).not.toHaveProperty("isDeleted");
+        expect(result.items[0]?.taggedFiles?.[0]?.file?.taggedSongs?.[0]?.song)
+            .not.toHaveProperty("createdByUserId");
+        expect(findMany).toHaveBeenCalledOnce();
+    });
+
     it("reports the exact missing reference path", () => {
         const references = new db3.DB3ReferenceStore();
         references.register(db3.instrumentFunctionalGroupEntity, [group]);

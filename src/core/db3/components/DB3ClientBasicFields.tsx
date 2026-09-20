@@ -1073,6 +1073,8 @@ export interface UseDb3QueryArgs {
     schema: db3.xTable;
     filterSpec?: CMDBTableFilterModel | undefined;
     enable?: boolean;
+    requestedCaps?: DB3ClientCore.xTableClientCaps;
+    tableSpec?: DB3ClientCore.xTableClientSpec;
 };
 
 export interface UseDb3QueryArgsWithEnable extends UseDb3QueryArgs {
@@ -1083,6 +1085,8 @@ export interface UseDb3ViewQueryArgs<TView extends db3.AnyDB3View> {
     view: TView;
     filterSpec?: CMDBTableFilterModel | undefined;
     enable?: boolean;
+    requestedCaps?: DB3ClientCore.xTableClientCaps;
+    tableSpec?: DB3ClientCore.xTableClientSpec;
 };
 
 export interface UseDb3ViewQueryArgsWithEnable<TView extends db3.AnyDB3View> extends UseDb3ViewQueryArgs<TView> {
@@ -1107,8 +1111,8 @@ export function useDb3Query(
     const view = "view" in args ? args.view : undefined;
     const schema = "view" in args ? args.view.entity.schema : args.schema;
     const mutationCtx = DB3ClientCore.useTableRenderContext({
-        requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-        tableSpec: new DB3ClientCore.xTableClientSpec({
+        requestedCaps: args.requestedCaps ?? DB3ClientCore.xTableClientCaps.Query,
+        tableSpec: args.tableSpec ?? new DB3ClientCore.xTableClientSpec({
             table: schema,
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
         }),

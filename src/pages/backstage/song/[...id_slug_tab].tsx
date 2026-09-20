@@ -2,9 +2,8 @@ import { loadAuthorizedPageEntity } from "@/src/auth/server/serverPageAuthorizat
 import { gSSP } from "@/src/blitz-server";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
-import { useDashboardContext, useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
+import { useRecordFeatureUse } from "@/src/core/components/dashboardContext/DashboardContext";
 import { ActivityFeature } from "@/src/core/components/featureReports/activityTracking";
-import { enrichSong } from "@/src/core/db3/shared/schema/enrichedSongTypes";
 import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from 'react';
@@ -20,50 +19,43 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
 
-    const dashboardContext = useDashboardContext();
-
     if (!songId) throw new Error(`song not found`);
 
     useRecordFeatureUse({ feature: ActivityFeature.song_view, songId });
 
 
 
-    const queryArgs: DB3Client.xTableClientArgs = {
-        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xSong_Verbose,
-            columns: [
-                SongClientColumns.id,
-                SongClientColumns.name,
-                SongClientColumns.aliases,
-                //SongClientColumns.slug,
-                //SongClientColumns.description,
-                SongClientColumns.startBPM,
-                SongClientColumns.endBPM,
-                SongClientColumns.introducedYear,
-                SongClientColumns.lengthSeconds,
-                SongClientColumns.tags,
-                //SongClientColumns.createdByUser,
-                SongClientColumns.visiblePermission,
-            ],
-        }),
-        filterModel: {
-            tableParams: {}
-        }
-    };
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xSong,
+        columns: [
+            SongClientColumns.id,
+            SongClientColumns.name,
+            SongClientColumns.aliases,
+            SongClientColumns.startBPM,
+            SongClientColumns.endBPM,
+            SongClientColumns.introducedYear,
+            SongClientColumns.lengthSeconds,
+            SongClientColumns.tags,
+            SongClientColumns.visiblePermission,
+        ],
+    });
 
-    queryArgs.filterModel!.tableParams!.songId = songId;
+    const tableClient = DB3Client.useDb3Query({
+        view: db3.songDetailView,
+        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+        tableSpec,
+        filterSpec: {
+            tableParams: { songId },
+        },
+    });
 
     let initialTab: SongDetailTabSlug = SongDetailTabSlug.info;
     if (!!tab) {
         initialTab = StringToEnumValue(SongDetailTabSlug, tab) || SongDetailTabSlug.info;
     }
 
-    const tableClient = DB3Client.useTableRenderContext(queryArgs);
-    if (tableClient.items.length > 1) throw new Error(`db returned too many songs; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
-    if (tableClient.items.length < 1) throw new Error(`Song not found`);
-    const songRaw = tableClient.items[0]! as db3.SongPayload_Verbose;
-    const song = enrichSong(songRaw, dashboardContext);
+    if (tableClient.items.length !== 1) throw new Error(`Unexpected number of songs returned: ${tableClient.items.length}`);
+    const song = tableClient.items[0]!;
 
     return <div className="songsDetailComponent">
         <NewSongButton />

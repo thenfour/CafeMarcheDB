@@ -2,18 +2,9 @@
 import { formatSongLength } from 'shared/time';
 import * as db3 from "src/core/db3/db3";
 import { getFormattedBPM } from '../../db3/clientAPILL';
-import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
-import { EnrichedVerboseSong } from '../../db3/shared/schema/enrichedSongTypes';
 import { DashboardContextData } from '../dashboardContext/DashboardContext';
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface SongWithMetadata {
-    song: EnrichedVerboseSong;
-    songURI: string;
-    formattedBPM: null | string;
-    formattedLength: null | string;
-};
-
 export interface SongMetadataSource {
     id: number;
     name?: string;
@@ -29,6 +20,8 @@ export interface SongMetadata<TSong extends SongMetadataSource> {
     formattedLength: null | string;
 }
 
+export type SongWithMetadata = SongMetadata<db3.SongDetailClient>;
+
 export const CalculateSongMetadata = <TSong extends SongMetadataSource>(
     song: TSong,
     tabSlug: string | undefined | null,
@@ -43,14 +36,9 @@ export const CalculateSongMetadata = <TSong extends SongMetadataSource>(
 };
 
 
-export const GetSongFileInfo = (song: EnrichedVerboseSong, dashboardContext: DashboardContextData) => {
+export const GetSongFileInfo = (song: db3.SongDetailClient) => {
 
-    const enrichedFiles = song.taggedFiles.map(ft => {
-        return {
-            ...ft,
-            file: enrichFile(ft.file, dashboardContext),
-        };
-    });
+    const enrichedFiles = song.taggedFiles;
 
     const partitions = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Partition));
     const recordings = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Recording));

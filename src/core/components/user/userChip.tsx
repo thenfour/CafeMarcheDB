@@ -2,7 +2,6 @@ import React from "react";
 import { CMChip, CMChipSizeOptions } from "../CMChip";
 import { useQuery } from "@blitzjs/rpc";
 import getUser from "../../db3/queries/getUser";
-import * as db3 from "src/core/db3/db3";
 import { getHashedColor } from "shared/utils";
 import { ColorVariationSpec } from "../color/palette";
 import { Permission } from "@/shared/permissions";
@@ -22,7 +21,7 @@ export interface UserChipBaseProps {
 
 // the user chip when you know the user info.
 type ValuedUserChipProps = UserChipBaseProps & {
-    value: db3.UserPayload_Name | null;
+    value: { id: number; name?: string } | null;
     userId?: never;
     color?: string | null;
 };
