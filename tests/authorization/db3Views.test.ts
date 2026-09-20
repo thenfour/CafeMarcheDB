@@ -217,6 +217,60 @@ describe("DB3 named views", () => {
         expectTypeOf(hydrated).toEqualTypeOf<db3.SongSearchClient>();
     });
 
+    it("hydrates the File search view without restoring authorization-omitted relations", () => {
+        const references = new db3.DB3ReferenceStore();
+        const permission = {
+            id: 4,
+            name: "members",
+            description: "",
+            isVisibility: true,
+            sortOrder: 1,
+            significance: null,
+            color: null,
+            iconName: null,
+        };
+        const fileTag = {
+            id: 30,
+            text: "Partition",
+            description: "",
+            color: null,
+            sortOrder: 1,
+            significance: db3.FileTagSignificance.Partition,
+        };
+        const instrument = {
+            id: 40,
+            name: "Trumpet",
+            description: "",
+            autoAssignFileLeafRegex: null,
+            sortOrder: 1,
+            functionalGroupId: groupPublicId,
+            functionalGroup: group,
+            instrumentTags: [],
+        };
+        references.register(db3.permissionEntity, [permission]);
+        references.register(db3.fileTagEntity, [fileTag]);
+        references.register(db3.instrumentEntity, [instrument]);
+
+        const dto = db3.fileSearchView.parseDto({
+            id: 8,
+            fileLeafName: "score.pdf",
+            visiblePermissionId: permission.id,
+            tags: [{ id: 80, fileTagId: fileTag.id }],
+            taggedSongs: [{ id: 81, song: { id: 7, name: "A song" } }],
+            taggedInstruments: [{ id: 82, instrumentId: instrument.id }],
+        });
+        const hydrated = db3.hydrateView(db3.fileSearchView, dto, references);
+
+        expect(hydrated.visiblePermission).toBe(permission);
+        expect(hydrated.tags?.[0]?.fileTag).toBe(fileTag);
+        expect(hydrated.taggedSongs?.[0]?.song.name).toBe("A song");
+        expect(hydrated.taggedInstruments?.[0]?.instrument).toBe(instrument);
+        expect(hydrated.taggedEvents).toBeUndefined();
+        expect(hydrated.taggedWikiPages).toBeUndefined();
+        expectTypeOf(dto.description).toEqualTypeOf<string | undefined>();
+        expectTypeOf(hydrated).toEqualTypeOf<db3.FileSearchClient>();
+    });
+
     it("builds Event search selections from the authenticated actor, never client identity", () => {
         const authorization = db3.createDB3Authorization({ id: 42 }, new PermissionSet([]));
         const selection = db3.eventSearchView.getSelectionArgs({

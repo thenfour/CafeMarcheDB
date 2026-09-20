@@ -12,20 +12,28 @@ import { GenericSearchListItem } from "../search/SearchListItem";
 import { SongChip } from "../song/SongChip";
 import { WikiPageChip } from "../wiki/WikiPageChip";
 import { FilesFilterSpec } from "./FileClientBaseTypes";
-import { EnrichedFile } from "../../db3/shared/schema/enrichedFileTypes";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 
 type FileListItemProps = {
     index: number;
-    file: EnrichedFile<db3.FilePayload>;
+    file: db3.FileSearchClient;
     results: SearchResultsRet;
     refetch: () => void;
     filterSpec: FilesFilterSpec;
 };
 
-export const FileIcon = ({ file }: { file: EnrichedFile<db3.FilePayload> }) => {
-    const fileClass = GetFileClass(file);
+export const FileIcon = ({ file }: { file: db3.FileSearchClient }) => {
+    if (file.fileLeafName === undefined
+        || file.mimeType === undefined
+        || file.externalURI === undefined) {
+        return gIconMap.AttachFile();
+    }
+    const fileClass = GetFileClass({
+        fileLeafName: file.fileLeafName,
+        mimeType: file.mimeType,
+        externalURI: file.externalURI,
+    });
     switch (fileClass) {
         case FileClass.Audio:
             return gIconMap.MusicNote();
@@ -51,13 +59,13 @@ export const FileListItem = (props: FileListItemProps) => {
     //const visInfo = dashboardContext.getVisibilityInfo(props.file);
     const uploadedAt = props.file.uploadedAt ? new Date(props.file.uploadedAt) : null;
     const uploadedByUser = props.file.uploadedByUser ? props.file.uploadedByUser.name : null;
-    return <GenericSearchListItem<EnrichedFile<db3.FilePayload>>
+    return <GenericSearchListItem<db3.FileSearchClient>
         index={props.index}
         item={props.file}
         icon={<FileIcon file={props.file} />}
         refetch={props.refetch}
         href={dashboardContext.routingApi.getURIForFileLandingPage(props.file)}
-        title={props.file.fileLeafName}
+        title={props.file.fileLeafName || "Restricted file"}
         credits={[
             props.file.description && <Markdown markdown={props.file.description} />,
         ]}
@@ -67,7 +75,11 @@ export const FileListItem = (props: FileListItemProps) => {
                     <CMChip
                         key={tag.id}
                         color={tag.fileTag.color}
-                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.fileTagId) }}
+                        variation={{
+                            ...StandardVariationSpec.Weak,
+                            selected: tag.fileTagId !== undefined
+                                && props.filterSpec.tagFilter.options.includes(tag.fileTagId),
+                        }}
                         size="small"
                         shape="rectangle"
                     >
@@ -75,25 +87,40 @@ export const FileListItem = (props: FileListItemProps) => {
                     </CMChip>
                 ))}
 
-                {(props.file.taggedEvents || []).map(taggedEvent => (
-                    <EventChip key={taggedEvent.id} value={taggedEvent.event} size="small" variation={StandardVariationSpec.Weak} />
-                ))}
+                {(props.file.taggedEvents || []).map(taggedEvent => {
+                    const event = taggedEvent.event;
+                    return event.name !== undefined
+                        && event.startsAt !== undefined
+                        && event.statusId !== undefined
+                        && event.typeId !== undefined
+                        ? <EventChip key={taggedEvent.id} value={{
+                            id: event.id,
+                            name: event.name,
+                            startsAt: event.startsAt,
+                            statusId: event.statusId,
+                            typeId: event.typeId,
+                        }} size="small" variation={StandardVariationSpec.Weak} />
+                        : null;
+                })}
 
                 {/* {(props.file.taggedUsers || []).map(taggedUser => (
                     <UserChip key={taggedUser.id} value={taggedUser.user} size="small" variation={StandardVariationSpec.Weak} />
                 ))} */}
 
-                {(props.file.taggedSongs || []).map(taggedSong => (
-                    <SongChip key={taggedSong.id} value={taggedSong.song} size="small" variation={StandardVariationSpec.Weak} />
-                ))}
+                {(props.file.taggedSongs || []).map(taggedSong => taggedSong.song.name === undefined
+                    ? null
+                    : <SongChip key={taggedSong.id} value={{
+                        id: taggedSong.song.id,
+                        name: taggedSong.song.name,
+                    }} size="small" variation={StandardVariationSpec.Weak} />)}
 
                 {(props.file.taggedInstruments || []).map(taggedInstrument => (
                     <InstrumentChip key={taggedInstrument.id} value={taggedInstrument.instrument} size="small" variation={StandardVariationSpec.Weak} />
                 ))}
 
-                {(props.file.taggedWikiPages || []).map(taggedWikiPage => (
-                    <WikiPageChip key={taggedWikiPage.id} slug={taggedWikiPage.wikiPage.slug} size="small" variation={StandardVariationSpec.Weak} />
-                ))}
+                {(props.file.taggedWikiPages || []).map(taggedWikiPage => taggedWikiPage.wikiPage.slug === undefined
+                    ? null
+                    : <WikiPageChip key={taggedWikiPage.id} slug={taggedWikiPage.wikiPage.slug} size="small" variation={StandardVariationSpec.Weak} />)}
             </div>
         }
 

@@ -7,7 +7,6 @@ import { WikiPagesFilterSpec } from '../components/wiki/WikiClientBaseTypes';
 import { UsersFilterSpec } from '../components/user/UserClientBaseTypes';
 import { FilesFilterSpec } from '../components/file/FileClientBaseTypes';
 import { enrichUser } from '../db3/shared/schema/enrichedUserTypes';
-import { enrichFile } from '../db3/shared/schema/enrichedFileTypes';
 
 // Song search configuration
 export const songSearchConfig = defineViewSearchConfig({
@@ -85,11 +84,11 @@ export const userSearchConfig = defineLegacySearchConfig({
 });
 
 // File search configuration  
-export const fileSearchConfig = defineLegacySearchConfig({
+export const fileSearchConfig = defineViewSearchConfig({
+    view: db3.fileSearchView,
     getQueryArgs: (filterSpec: FilesFilterSpec, offset: number, take: number) => ({
         offset,
         take,
-        tableID: db3.xFile.tableID,
         refreshSerial: filterSpec.refreshSerial,
         sort: [{
             db3Column: filterSpec.orderByColumn,
@@ -101,10 +100,6 @@ export const fileSearchConfig = defineLegacySearchConfig({
             filterSpec.taggedInstrumentFilter,
         ],
     }),
-
-    enrichItem: (rawItem: db3.FilePayload, dashboardContext) =>
-        enrichFile(rawItem, dashboardContext),
-    getItemKey: item => item.id,
 
     errorMessage: 'Failed to load more files.',
 });

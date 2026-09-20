@@ -3,7 +3,6 @@ import { NavRealm } from "@/src/core/components/dashboard/StaticMenuItems";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { FileOrderByColumnNames, FileOrderByColumnOption, FileOrderByColumnOptions, FilesFilterSpec } from "@/src/core/components/file/FileClientBaseTypes";
 import { FileListItem } from "@/src/core/components/file/FileListItem";
-import { EnrichedFile } from "@/src/core/db3/shared/schema/enrichedFileTypes";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
@@ -111,7 +110,7 @@ const FileListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<FilesFilterSpecStatic, FilesFilterSpec, db3.FilePayload, EnrichedFile<db3.FilePayload>> = {
+    const config: SearchPageContentConfig<FilesFilterSpecStatic, FilesFilterSpec, db3.FileSearchDto, db3.FileSearchClient> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: FileOrderByColumnOptions,
@@ -132,13 +131,21 @@ const FileListOuter = () => {
             itemToCSVRow: (file, index) => ({
                 Order: (index + 1).toString(),
                 ID: file.id.toString(),
-                Name: file.fileLeafName,
+                Name: file.fileLeafName || "",
                 Description: file.description || "",
                 MimeType: file.mimeType || "",
                 SizeBytes: file.sizeBytes?.toString() || "",
                 UploadedAt: file.uploadedAt?.toISOString() || "",
                 UploadedBy: file.uploadedByUser?.name || "",
-                URL: dashboardContext.routingApi.getURIForFile(file),
+                URL: file.storedLeafName !== undefined
+                    && file.fileLeafName !== undefined
+                    && file.externalURI !== undefined
+                    ? dashboardContext.routingApi.getURIForFile({
+                        storedLeafName: file.storedLeafName,
+                        fileLeafName: file.fileLeafName,
+                        externalURI: file.externalURI,
+                    })
+                    : "",
             })
         },
         className: "filesListContainer",
