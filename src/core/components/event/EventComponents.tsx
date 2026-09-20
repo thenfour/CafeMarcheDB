@@ -21,8 +21,6 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { gCharMap, gIconMap } from '../../db3/components/IconMap';
-import { SearchResultsRet } from '../../db3/shared/apiTypes';
-import { EnrichedSearchEventPayload, enrichSearchResultEvent } from '../../db3/shared/schema/enrichedEventTypes';
 import { enrichFile } from '../../db3/shared/schema/enrichedFileTypes';
 import { EventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
 import { wikiMakeWikiPathFromEventDescription } from '../../wiki/shared/wikiUtils';
@@ -1196,7 +1194,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
 
 export interface EventSearchItemContainerProps {
-    event: db3.EventSearch_Event;
+    event: db3.EventSearchClient;
 
     highlightTagIds?: number[];
     highlightStatusIds?: number[];
@@ -1206,17 +1204,27 @@ export interface EventSearchItemContainerProps {
 
 export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = useDashboardContext();
-    const event = enrichSearchResultEvent(props.event, dashboardContext);
+    const event = props.event;
 
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusIds || [];
     const highlightTypeIds = props.highlightTypeIds || [];
 
-    const eventURI = dashboardContext.routingApi.getURIForEvent(event);
-    const dateRange = API.events.getEventDateRange(event);
-    const eventTiming = dateRange.hitTestDateTime(new Date());
+    const eventURI = dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" });
+    const dateRange = event.startsAt !== undefined
+        && event.durationMillis !== undefined
+        && event.isAllDay !== undefined
+        ? API.events.getEventDateRange({
+            startsAt: event.startsAt,
+            durationMillis: event.durationMillis,
+            isAllDay: event.isAllDay,
+        })
+        : null;
+    const eventTiming = dateRange?.hitTestDateTime(new Date());
 
-    const visInfo = dashboardContext.getVisibilityInfo(event);
+    const visibilityClassName = event.visiblePermissionId === undefined
+        ? ""
+        : dashboardContext.getVisibilityInfo({ visiblePermissionId: event.visiblePermissionId }).className;
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Weak,
         color: event.type?.color || null,
@@ -1228,7 +1236,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
         `event`,
         `ApplyBorderLeftColor`,
         event.type?.text,
-        visInfo.className,
+        visibilityClassName,
         ((eventTiming === Timing.Past)) ? "past" : "notPast",
         `status_${event.status?.significance}`,
     ];
@@ -1253,7 +1261,11 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
                 <div className='flex-spacer'></div>
 
-                <RelevanceClassOverrideIndicator event={event} colorStyle='subtle' />
+                {event.relevanceClassOverride !== undefined
+                    && <RelevanceClassOverrideIndicator
+                        event={{ relevanceClassOverride: event.relevanceClassOverride }}
+                        colorStyle='subtle'
+                    />}
 
                 <CMChipContainer>
                     {event.type &&
@@ -1270,8 +1282,16 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
                 <AdminInspectObject src={event} />
 
-                {!reducedInfo &&
-                    <EventDotMenu event={event} showVisibility={false} refetch={() => { }} />}
+                {!reducedInfo
+                    && event.name !== undefined
+                    && event.visiblePermissionId !== undefined
+                    && event.relevanceClassOverride !== undefined &&
+                    <EventDotMenu event={{
+                        id: event.id,
+                        name: event.name,
+                        visiblePermissionId: event.visiblePermissionId,
+                        relevanceClassOverride: event.relevanceClassOverride,
+                    }} showVisibility={false} refetch={() => { }} />}
             </div>
 
             <div className='content'>
@@ -1285,9 +1305,9 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
                     </div>
                 </CMLink>
 
-                <div className='titleLine'>
+                {dateRange && <div className='titleLine'>
                     <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
-                </div>
+                </div>}
 
                 {!IsNullOrWhitespace(event.locationDescription) &&
                     <div className='titleLine'>
@@ -1299,11 +1319,11 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 
                 {(event.status?.significance !== db3.EventStatusSignificance.Cancelled) &&
                     <CMChipContainer>
-                        {event.tags.map(tag => <CMStandardDBChip
+                        {event.tags?.map(tag => <CMStandardDBChip
                             key={tag.id}
                             model={tag.eventTag}
                             size='small'
-                            variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
+                            variation={{ ...StandardVariationSpec.Weak, selected: tag.eventTagId !== undefined && highlightTagIds.includes(tag.eventTagId) }}
                             getTooltip={(_) => tag.eventTag.description}
                         />)}
                     </CMChipContainer>}
@@ -1316,8 +1336,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
 };
 
 export interface EventListItemProps {
-    event: EnrichedSearchEventPayload;
-    results: SearchResultsRet;
+    event: db3.EventSearchClient;
     refetch: () => void;
     filterSpec?: EventsFilterSpec; // for highlighting matching fields
     showTabs?: boolean;
@@ -1327,7 +1346,7 @@ export interface EventListItemProps {
 
 export const EventListItem = ({ showTabs = false, showAttendanceControl = true, reducedInfo = false, event, ...props }: EventListItemProps) => {
     const dashboardContext = useDashboardContext();
-    const { eventData, userMap } = CalculateEventSearchResultsMetadata({ event, results: props.results });
+    const metadata = CalculateEventSearchResultsMetadata({ event });
 
     return <EventSearchItemContainer
         event={event}
@@ -1337,11 +1356,11 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
         reducedInfo={reducedInfo}
     //queryText={props.queryText}
     >
-        {showAttendanceControl &&
+        {showAttendanceControl && metadata &&
             <EventAttendanceControl
-                eventData={eventData}
+                eventData={metadata.eventData}
                 onRefetch={props.refetch}
-                userMap={userMap}
+                userMap={metadata.userMap}
                 minimalWhenNotAlert={true}
             />
         }
@@ -1350,14 +1369,14 @@ export const EventListItem = ({ showTabs = false, showAttendanceControl = true, 
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <SearchItemBigCardLink
                     icon={<EditNote />}
                     title="View info"
-                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
                     eventId={event.id}
                 />
                 }
-                {event.songLists.length > 0 && <SearchItemBigCardLink
+                {(event.songLists?.length || 0) > 0 && <SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="View setlist"
-                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
                     eventId={event.id}
                 />
                 }

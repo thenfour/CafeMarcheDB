@@ -1,6 +1,5 @@
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import { calendarWindowSql } from "./calendarWindowSql";
-import { loadUserAuthorization } from "@/src/auth/server/requestAuthorization";
 import { getRequestAuthorization } from "@/src/auth/server/requestAuthorization";
 // generalized version of search results.
 // hopefully can unify song & event search, and then extend to users & files.
@@ -11,53 +10,10 @@ import { SqlCombineAndExpression, SqlCombineOrExpression } from "shared/mysqlUti
 import { SplitQuickFilter } from "shared/quickFilter";
 import { Stopwatch, TAnyModel } from "shared/rootroot";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
-import { CalculateFilterQueryResult, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchCustomDataHookId, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
+import { CalculateFilterQueryResult, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet, SortQueryElements } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../../../core/db3/db3";
 import { UserWithRolesPayload } from "../shared/schema/userPayloads";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
-
-async function GetCustomSearchResultsHook(currentUser: UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
-    const fullEvents = resultsSoFar.results as db3.EventSearch_Event[];
-
-    // collect distinct usertags
-    const expectedAttendanceUserTagIds = new Set<number>();
-    fullEvents.forEach(e => {
-        if (!e.expectedAttendanceUserTagId) return;
-        expectedAttendanceUserTagIds.add(e.expectedAttendanceUserTagId);
-    });
-
-    let userTags: db3.EventResponses_ExpectedUserTag[] = [];
-
-    if (!expectedAttendanceUserTagIds.size) {
-        return {
-            userTags: []
-        };
-    }
-    const tableParams: db3.UserTagTableParams = {
-        ids: [...expectedAttendanceUserTagIds],
-    };
-
-    const queryResult = await queryTable({
-        cmdbQueryContext: "getEventFilterInfo-userTags",
-        table: db3.xUserTagForEventSearch,
-        filter: {
-            tableParams,
-        },
-        orderBy: undefined,
-    }, await loadUserAuthorization(currentUser));
-
-    userTags = queryResult.items as db3.EventResponses_ExpectedUserTag[];
-    return {
-        userTags,
-    };
-};
-
-
-type CustomSearchHookProc = (currentUser: UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet) => Promise<any>;
-
-const gSearchCustomHookMap: { [key in SearchCustomDataHookId]: CustomSearchHookProc } = {
-    "Events": GetCustomSearchResultsHook,
-} as const;
 
 
 
@@ -400,18 +356,6 @@ async function getSearchResults(args: GetSearchResultsInput, ctx: AuthenticatedC
             });
 
             ret.results = queryResult.items;
-        }
-
-        if (table.SearchCustomDataHookId) {
-            const hooksw = new Stopwatch();
-            const proc = gSearchCustomHookMap[table.SearchCustomDataHookId];
-            ret.customData = await proc(u, authorizedSearchArgs, ret);
-            ret.queryMetrics.push({
-                title: `Custom hook: [${table.SearchCustomDataHookId}]`,
-                millis: hooksw.ElapsedMillis,
-                query: "",
-                rowCount: 0,
-            });
         }
 
         ret.queryMetrics.push({

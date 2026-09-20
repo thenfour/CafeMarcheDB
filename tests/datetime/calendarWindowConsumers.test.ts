@@ -5,7 +5,10 @@ import { act } from "react-dom/test-utils"
 import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-vi.mock("src/core/hooks/useSearchableList", () => ({ useSearchableList: vi.fn() }))
+vi.mock("src/core/hooks/useSearchableList", async () => ({
+  ...await vi.importActual<typeof import("src/core/hooks/useSearchableList")>("src/core/hooks/useSearchableList"),
+  useSearchableList: vi.fn(),
+}))
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => {
   const eventStatus = { items: [{ id: 9, significance: "Cancelled" }], getById: (id: number | null) => id === 9 ? { significance: "Cancelled" } : undefined }
   return { useDashboardContext: () => ({ eventStatus, bandTimeZone: "Europe/Brussels" }) }
@@ -61,6 +64,7 @@ describe("picker calendar-window consumer", () => {
     const end = new Date(2026, 6, 12)
     const { args } = mount(new DateTimeRange({ startsAtDateTime: start, durationMillis: end.valueOf() - start.valueOf(), isAllDay: false }))
     expect(args.quickFilter).toBe("")
+    expect(args.viewID).toBe("Event_Search")
     expect(args.calendarWindow).toEqual({ startDate: "2026-07-11", endDateExclusive: "2026-07-12", startInstant: start.toISOString(), endInstantExclusive: end.toISOString() })
   })
 

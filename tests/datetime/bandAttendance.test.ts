@@ -34,7 +34,7 @@ describe("band lifecycle reaches production attendance", () => {
     vi.setSystemTime(new Date(now))
     const metadata = CalculateEventMetadata(event as any, undefined, context as any, [], null, () => null, () => null)
     expect(metadata.eventTiming).toBe(timing)
-    const attendance = CalcEventAttendance({ eventData: metadata as any, userMap: [] })
+    const attendance = CalcEventAttendance({ eventData: metadata as any, userMap: [], dashboardContext: context as any })
     expect(attendance.eventIsPast).toBe(past)
     expect(attendance.alertFlag).toBe(!past)
   })

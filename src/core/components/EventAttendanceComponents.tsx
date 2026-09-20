@@ -1,13 +1,11 @@
 // Production adapter for the shared attendance control.
 import React from "react";
 import { API } from "../db3/clientAPI";
-import type * as db3 from "../db3/db3";
-import type { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
 import type { UserInstrumentList } from "../db3/shared/schema/eventAPI";
 import { AdminInspectObject } from "./CMCoreComponents2";
 import { useDashboardContext, useFeatureRecorder } from "./dashboardContext/DashboardContext";
 import { AttendanceChange, AttendanceControlView } from "./event/AttendanceControlView";
-import { CalcEventAttendance, EventWithMetadata } from "./event/EventComponentsBase";
+import { CalcEventAttendance, type AttendanceEventMetadata } from "./event/EventComponentsBase";
 import { ActivityFeature } from "./featureReports/activityTracking";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { SnackbarContext } from "./SnackbarContext";
@@ -34,12 +32,7 @@ export const CreatedUpdatedView = (props: { obj: CreatedUpdatedObj, caption: str
 
 
 export interface EventAttendanceControlProps {
-    eventData: EventWithMetadata<
-        EnrichedSearchEventPayload,
-        db3.EventResponses_MinimalEventUserResponse,
-        db3.EventResponses_MinimalEventSegment,
-        db3.EventResponses_MinimalEventSegmentUserResponse
-    >;
+    eventData: AttendanceEventMetadata;
     onRefetch: () => void,
     userMap: UserInstrumentList,
     minimalWhenNotAlert: boolean,
@@ -48,7 +41,11 @@ export interface EventAttendanceControlProps {
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
     const dashboardContext = useDashboardContext();
-    const attendance = CalcEventAttendance({ eventData: props.eventData, userMap: props.userMap });
+    const attendance = CalcEventAttendance({
+        eventData: props.eventData,
+        userMap: props.userMap,
+        dashboardContext,
+    });
     const token = API.events.updateUserEventAttendance.useToken();
     const recordFeature = useFeatureRecorder();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);

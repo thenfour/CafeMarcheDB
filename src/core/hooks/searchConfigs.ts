@@ -7,7 +7,6 @@ import { WikiPagesFilterSpec } from '../components/wiki/WikiClientBaseTypes';
 import { UsersFilterSpec } from '../components/user/UserClientBaseTypes';
 import { FilesFilterSpec } from '../components/file/FileClientBaseTypes';
 import { enrichUser } from '../db3/shared/schema/enrichedUserTypes';
-import { enrichSearchResultEvent } from '../db3/shared/schema/enrichedEventTypes';
 import { enrichFile } from '../db3/shared/schema/enrichedFileTypes';
 
 // Song search configuration
@@ -31,12 +30,12 @@ export const songSearchConfig = defineViewSearchConfig({
 });
 
 // Event search configuration
-export const eventSearchConfig = defineLegacySearchConfig({
+export const eventSearchConfig = defineViewSearchConfig({
+    view: db3.eventSearchView,
     getQueryArgs: (filterSpec: EventsFilterSpec, offset: number, take: number) => ({
         calendarWindow: filterSpec.calendarWindow,
         offset,
         take,
-        tableID: db3.xEvent.tableID,
         refreshSerial: filterSpec.refreshSerial,
         sort: [{
             db3Column: filterSpec.orderByColumn,
@@ -50,10 +49,6 @@ export const eventSearchConfig = defineLegacySearchConfig({
             filterSpec.tagFilter,
         ],
     }),
-
-    enrichItem: (rawItem: db3.EventVerbose_Event, dashboardContext) =>
-        enrichSearchResultEvent(rawItem, dashboardContext),
-    getItemKey: item => item.id,
 
     errorMessage: 'Failed to load more events.',
 });

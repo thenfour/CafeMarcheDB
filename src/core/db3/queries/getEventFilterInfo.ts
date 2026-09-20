@@ -233,7 +233,7 @@ export default resolver.pipe(
             if (eventIds.length) {
                 const tableParams: db3.EventTableParams = {
                     eventIds: eventIds.map(e => e.EventId), // prevent fetching the entire table!
-                    userIdForResponses: u.id, // fetch user responses for this user id.
+                    limitResponsesToActor: true,
                 };
 
                 const queryResult = await queryTable({

@@ -1,15 +1,11 @@
-import { useQuery } from "@blitzjs/rpc";
 import { InfoOutlined, LibraryMusic } from "@mui/icons-material";
 import React from "react";
-import { distinctValuesOfArray, toSorted } from "shared/arrayUtils";
+import { toSorted } from "shared/arrayUtils";
 import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, Timing } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { useDb3Query } from "../../db3/DB3Client";
-import getUserTagWithAssignments from "../../db3/queries/getUserTagWithAssignments";
-import { MakeEmptySearchResultsRet, SearchResultsRet } from "../../db3/shared/apiTypes";
-import { EnrichedSearchEventPayload, enrichSearchResultEvent } from "../../db3/shared/schema/enrichedEventTypes";
 import { AppContextMarker } from "../AppContext";
 import { CMLink } from "../CMLink";
 import { GetStyleVariablesForColor } from "../color/ColorClientUtils";
@@ -22,9 +18,11 @@ import { EventListItem, gEventDetailTabSlugIndices } from "./EventComponents";
 import { RelevanceClassOverrideIndicator } from "./EventRelevanceOverrideComponents";
 import { EventShortDate } from "./EventShortDate";
 
-export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSearchEventPayload, dateRange: DateTimeRange, now: Date }) => {
+export const SubtleEventCard = ({ event, dateRange, now }: { event: db3.EventSearchClient, dateRange: DateTimeRange, now: Date }) => {
     const dashboardContext = useDashboardContext();
-    const visInfo = dashboardContext.getVisibilityInfo(event);
+    const visibilityClassName = event.visiblePermissionId === undefined
+        ? ""
+        : dashboardContext.getVisibilityInfo({ visiblePermissionId: event.visiblePermissionId }).className;
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Weak,
         color: event.type?.color || null,
@@ -35,16 +33,19 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSear
     const classes = [
         "SubtleEventCard",
         event.type?.text,
-        visInfo.className,
+        visibilityClassName,
         `status_${event.status?.significance}`,
         (eventTiming === Timing.Past) ? "past" : "notPast",
     ];
 
     return <AppContextMarker eventId={event.id}>
         <div className={classes.join(" ")} style={typeStyle.style} >
-            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={dashboardContext.routingApi.getURIForEvent(event)} className="SubtleEventCardLink">
+            <CMLink trackingFeature={ActivityFeature.link_follow_internal} href={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" })} className="SubtleEventCardLink">
                 <div className="SubtleEventCardTitle">
-                    <RelevanceClassOverrideIndicator event={event} colorStyle="subtle" />
+                    {event.relevanceClassOverride !== undefined && <RelevanceClassOverrideIndicator
+                        event={{ relevanceClassOverride: event.relevanceClassOverride }}
+                        colorStyle="subtle"
+                    />}
                     <div>{event.name}</div>
                 </div>
                 <div className="SubtleEventCardDate">
@@ -57,15 +58,15 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSear
                 {!IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && <AppContextMarker name="info inner card"><SearchItemBigCardLink
                     icon={<InfoOutlined />}
                     title="Info"
-                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.info)}
+                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.info)}
                     eventId={event.id}
                 />
                 </AppContextMarker>
                 }
-                {event.songLists.length > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
+                {(event.songLists?.length || 0) > 0 && <AppContextMarker name="setlist inner card"><SearchItemBigCardLink
                     icon={<LibraryMusic />}
                     title="Setlist"
-                    uri={dashboardContext.routingApi.getURIForEvent(event, gEventDetailTabSlugIndices.setlists)}
+                    uri={dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }, gEventDetailTabSlugIndices.setlists)}
                     eventId={event.id}
                 />
                 </AppContextMarker>
@@ -76,18 +77,6 @@ export const SubtleEventCard = ({ event, dateRange, now }: { event: EnrichedSear
     </AppContextMarker>;
 };
 
-function MakeMockSearchResultsRetFromEvents(events: EnrichedSearchEventPayload[], userTags: db3.UserTagWithAssignmentPayload[]): SearchResultsRet {
-    const customData: db3.EventSearchCustomData = {
-        userTags,
-    };
-    return {
-        ...MakeEmptySearchResultsRet(),
-        results: events,
-        rowCount: events.length,
-        customData,
-    };
-}
-
 const gHighlightEvent = false;
 
 const RelevantEventsWithDashboardContext = ({
@@ -97,29 +86,28 @@ const RelevantEventsWithDashboardContext = ({
 }) => {
     const [now, setNow] = React.useState<Date>(new Date());
 
-    const tableClient = useDb3Query<db3.EventVerbose_Event>({
-        schema: db3.xEventVerbose, filterSpec: {
+    const tableClient = useDb3Query({
+        view: db3.eventSearchView, filterSpec: {
             pks: dashboardContext.relevantEventIds,
         }
     });
-    const items = tableClient.items;
-
-    let enrichedEvents: EnrichedSearchEventPayload[] = items.map(e => enrichSearchResultEvent(e, dashboardContext));
-
-    // relevant user tags
-    let relevantUserTagIds = enrichedEvents.map(e => e.expectedAttendanceUserTagId)
-        .filter(e => e !== null);
-    relevantUserTagIds = distinctValuesOfArray(relevantUserTagIds, (a, b) => a === b);
-    const [userTagWithAssignments, _] = useQuery(getUserTagWithAssignments, {
-        userTagIds: relevantUserTagIds,
-    });
+    const enrichedEvents = tableClient.items;
 
     if (dashboardContext.relevantEventIds.length < 1) return null;
 
     // allow 1 single "happening now" event.
 
-    let eventsWithTiming = enrichedEvents.map(event => {
-        const dateRange = API.events.getEventDateRange(event);
+    let eventsWithTiming = enrichedEvents.flatMap(event => {
+        if (event.startsAt === undefined
+            || event.durationMillis === undefined
+            || event.isAllDay === undefined) {
+            return [];
+        }
+        const dateRange = API.events.getEventDateRange({
+            startsAt: event.startsAt,
+            durationMillis: event.durationMillis,
+            isAllDay: event.isAllDay,
+        });
         const relativeTiming = CalcRelativeTiming(
             now,
             dateRange,
@@ -140,13 +128,13 @@ const RelevantEventsWithDashboardContext = ({
                 sortValue = 2;
                 break;
         }
-        return {
+        return [{
             event,
             relativeTiming,
             dateRange,
             sortValue,
             worthyOfHighlight,
-        }
+        }];
     });
 
     // extract a single event to highlight, if there's one happening now or today.
@@ -171,7 +159,6 @@ const RelevantEventsWithDashboardContext = ({
                     <EventListItem
                         event={highlightedEvent.event}
                         refetch={tableClient.refetch}
-                        results={MakeMockSearchResultsRetFromEvents([highlightedEvent.event], userTagWithAssignments)}
                         showTabs={true}
                         reducedInfo={true}
                     //feature={ActivityFeature.relevant_event_link_click}

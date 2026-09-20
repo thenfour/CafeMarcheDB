@@ -2,10 +2,16 @@ import type { TAnyModel } from "@/shared/rootroot";
 import type { Prisma } from "db";
 import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
+import type { DB3Authorization } from "../db3Authorization";
 import type { DB3ReferenceProvider } from "./db3Hydration";
 import type { AnyDB3Entity, DB3EntityId, PrismaDelegateOf } from "./db3Entity";
 
 type ArrayItem<T> = T extends readonly (infer TItem)[] ? TItem : never;
+
+export interface DB3ViewSelectionContext {
+    readonly filter: CMDBTableFilterModel;
+    readonly authorization: DB3Authorization;
+}
 
 export interface DB3View<
     TEntity extends AnyDB3Entity,
@@ -18,7 +24,7 @@ export interface DB3View<
     readonly tableID: string;
     readonly tableName: string;
     readonly dtoSchema: TDtoSchema;
-    readonly getSelectionArgs: (filter: CMDBTableFilterModel) => TSelection;
+    readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
     readonly hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
     readonly getIdentity: (client: TClient) => DB3EntityId;
 
@@ -49,7 +55,7 @@ export function defineView<
 >(args: {
     viewID: string;
     entity: TEntity;
-    selection: TSelection | ((filter: CMDBTableFilterModel) => TSelection);
+    selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
     getIdentity: (client: TClient) => DB3EntityId;
@@ -61,7 +67,7 @@ export function defineView<
         tableName: args.entity.schema.tableName,
         dtoSchema: args.dtoSchema,
         getSelectionArgs: typeof args.selection === "function"
-            ? args.selection as (filter: CMDBTableFilterModel) => TSelection
+            ? args.selection as (context: DB3ViewSelectionContext) => TSelection
             : () => args.selection as TSelection,
         hydrate: args.hydrate,
         getIdentity: args.getIdentity,

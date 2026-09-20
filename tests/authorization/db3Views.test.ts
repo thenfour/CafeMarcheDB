@@ -217,6 +217,149 @@ describe("DB3 named views", () => {
         expectTypeOf(hydrated).toEqualTypeOf<db3.SongSearchClient>();
     });
 
+    it("builds Event search selections from the authenticated actor, never client identity", () => {
+        const authorization = db3.createDB3Authorization({ id: 42 }, new PermissionSet([]));
+        const selection = db3.eventSearchView.getSelectionArgs({
+            filter: { items: [] },
+            authorization,
+        });
+
+        expect(selection.select.responses.where).toEqual({ userId: 42 });
+        expect(selection.select.segments.select.responses.where).toEqual({ userId: 42 });
+        expect(selection.select.expectedAttendanceUserTag.select.userAssignments.where)
+            .toEqual({ userId: 42 });
+    });
+
+    it("hydrates Event search data into one typed client shape and preserves omitted collections", () => {
+        const references = new db3.DB3ReferenceStore();
+        const eventType = {
+            id: 2, text: "Concert", description: "", color: null, sortOrder: 1,
+            significance: null, iconName: null, isDeleted: false,
+        };
+        const eventStatus = {
+            id: 3, label: "Confirmed", description: "", color: null, sortOrder: 1,
+            significance: null, iconName: null, isDeleted: false,
+        };
+        const eventTag = {
+            id: 4, text: "Public", description: "", color: null, sortOrder: 1,
+            significance: null, visibleOnFrontpage: true,
+        };
+        references.register(db3.eventTypeEntity, [eventType]);
+        references.register(db3.eventStatusEntity, [eventStatus]);
+        references.register(db3.eventTagEntity, [eventTag]);
+
+        const dto = db3.eventSearchView.parseDto({
+            id: 1,
+            name: "Actor-scoped event",
+            typeId: eventType.id,
+            statusId: eventStatus.id,
+            tags: [{ id: 10, eventTagId: eventTag.id }],
+            responses: [{ id: 11, userId: 42, instrumentId: null, isInvited: true, userComment: null }],
+            expectedAttendanceUserTag: {
+                id: 5,
+                userAssignments: [{ id: 12, userId: 42 }],
+            },
+        });
+        const hydrated = db3.hydrateView(db3.eventSearchView, dto, references);
+
+        expect(hydrated.type).toBe(eventType);
+        expect(hydrated.status).toBe(eventStatus);
+        expect(hydrated.tags?.[0]?.eventTag).toBe(eventTag);
+        expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(42);
+        expect(hydrated.segments).toBeUndefined();
+        expect(hydrated.songLists).toBeUndefined();
+        expectTypeOf(hydrated).toEqualTypeOf<db3.EventSearchClient>();
+    });
+
+    it("applies nested Event view authorization before returning its DTO", async () => {
+        const startsAt = new Date("2026-09-20T18:00:00Z");
+        const findMany = vi.fn(async (_args: unknown) => [{
+            id: 1,
+            revision: 1,
+            name: "Actor-scoped event",
+            typeId: null,
+            locationDescription: "",
+            locationURL: "",
+            statusId: null,
+            relevanceClassOverride: null,
+            descriptionWikiPageId: null,
+            segmentBehavior: null,
+            startsAt,
+            durationMillis: BigInt(3_600_000),
+            isAllDay: false,
+            createdByUserId: 42,
+            visiblePermissionId: null,
+            isDeleted: false,
+            expectedAttendanceUserTagId: 5,
+            tags: [{ id: 10, eventTagId: 4 }],
+            responses: [{ id: 11, userId: 42, instrumentId: null, isInvited: true, userComment: null }],
+            segments: [{
+                id: 20,
+                name: "Main",
+                startsAt,
+                durationMillis: BigInt(3_600_000),
+                isAllDay: false,
+                statusId: null,
+                responses: [{ id: 21, userId: 42, attendanceId: null }],
+            }],
+            songLists: [],
+            expectedAttendanceUserTag: {
+                id: 5,
+                userAssignments: [{ id: 22, userId: 42 }],
+            },
+            descriptionWikiPage: null,
+        }]);
+        const permissionNames = [
+            Permission.always_grant,
+            Permission.public,
+            Permission.login,
+            Permission.view_events,
+            Permission.view_events_nonpublic,
+            Permission.view_users_basic_info,
+            Permission.view_wiki_pages,
+            Permission.view_wiki_page_revisions,
+        ];
+        const effectivePermissions = new PermissionSet(permissionNames.map((name, index) => ({
+            id: index + 1,
+            name,
+        })));
+
+        const result = await queryTable({
+            table: {
+                tableID: db3.xEvent.tableID,
+                tableName: db3.xEvent.tableName,
+                viewID: db3.eventSearchView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "event-search-view-test",
+        }, {
+            user: { id: 42 } as any,
+            effectivePermissions,
+        }, {
+            Event: { findMany },
+        } as any);
+
+        expect(result.items).toEqual([expect.objectContaining({
+            id: 1,
+            responses: [expect.objectContaining({ userId: 42 })],
+            segments: [expect.objectContaining({
+                responses: [expect.objectContaining({ userId: 42 })],
+            })],
+            expectedAttendanceUserTag: expect.objectContaining({
+                userAssignments: [expect.objectContaining({ userId: 42 })],
+            }),
+        })]);
+        expect(result.items[0]).not.toHaveProperty("createdByUserId");
+        expect(result.items[0]).not.toHaveProperty("isDeleted");
+
+        const queryArgs = findMany.mock.calls[0]![0] as any;
+        expect(queryArgs.select.responses.where.AND[0]).toEqual({ userId: 42 });
+        expect(queryArgs.select.segments.select.responses.where.AND[0]).toEqual({ userId: 42 });
+        expect(queryArgs.select.expectedAttendanceUserTag.select.userAssignments.where.AND[0])
+            .toEqual({ userId: 42 });
+    });
+
     it("projects the Song search DTO through nested field authorization", async () => {
         const findMany = vi.fn(async () => [{
             id: 7,
@@ -341,12 +484,12 @@ describe("DB3 named views", () => {
         const hydrated = db3.hydrateView(db3.songDetailView, dto, references);
 
         expect(hydrated.visiblePermission).toBe(permission);
-        expect(hydrated.tags[0]?.tag).toBe(songTag);
-        expect(hydrated.taggedFiles[0]?.file.visiblePermission).toBe(permission);
-        expect(hydrated.taggedFiles[0]?.file.tags[0]?.fileTag).toBe(fileTag);
-        expect(hydrated.taggedFiles[0]?.file.taggedInstruments[0]?.instrument).toBe(instrument);
-        expect(hydrated.taggedFiles[0]?.file.taggedEvents).toEqual([]);
-        expect(hydrated.credits).toEqual([]);
+        expect(hydrated.tags?.[0]?.tag).toBe(songTag);
+        expect(hydrated.taggedFiles?.[0]?.file.visiblePermission).toBe(permission);
+        expect(hydrated.taggedFiles?.[0]?.file.tags?.[0]?.fileTag).toBe(fileTag);
+        expect(hydrated.taggedFiles?.[0]?.file.taggedInstruments?.[0]?.instrument).toBe(instrument);
+        expect(hydrated.taggedFiles?.[0]?.file.taggedEvents).toBeUndefined();
+        expect(hydrated.credits).toBeUndefined();
         expectTypeOf(dto.aliases).toEqualTypeOf<string | undefined>();
         expectTypeOf(hydrated).toEqualTypeOf<db3.SongDetailClient>();
     });

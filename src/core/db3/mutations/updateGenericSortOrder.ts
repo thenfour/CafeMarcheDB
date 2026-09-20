@@ -86,7 +86,7 @@ export default resolver.pipe(
             whereClause[table.pkMember] = { in: args.scopeRowIds };
 
             const items = await dbTableClient.findMany({
-                ...table.getSelectionArgs({ items: [] }),
+                ...table.getSelectionArgs({ items: [] }, publicData),
                 where: whereClause,
                 orderBy: { [sortOrderColumn.member]: "asc" },
             }) as unknown as Array<Record<string, any>>;

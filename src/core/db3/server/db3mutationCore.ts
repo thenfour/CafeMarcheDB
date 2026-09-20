@@ -442,7 +442,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 
         const selectionArgs = table.tableName === db3.xUser.tableName
             ? UserWithRolesArgs // require roles in order to do protected auth checks
-            : table.getSelectionArgs({ items: [] });
+            : table.getSelectionArgs({ items: [] }, publicData);
         const oldValues = await dbTableClient.findFirst({
             ...selectionArgs,
             where: { [table.pkMember]: id },

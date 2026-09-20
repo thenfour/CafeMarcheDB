@@ -613,11 +613,6 @@ export interface SearchResultsRet<TResult extends TAnyModel = TAnyModel> {
     facets: SearchResultsFacet[];
     filterQueryResult: CalculateFilterQueryResult;
 
-    // use case: events search results also want to do some extra querying
-    // to avoid further query roundtrips. in particular, more info about invited
-    // users, user tags, etc, to be returned separate from the main search results array.
-    customData: unknown;
-
     queryMetrics: SearchQueryMetric[];
 };
 
@@ -626,7 +621,6 @@ export function MakeEmptySearchResultsRet<TResult extends TAnyModel = TAnyModel>
         facets: [],
         results: [],
         rowCount: 0,
-        customData: null,
         queryMetrics: [],
         filterQueryResult: {
             errors: [],
@@ -686,10 +680,6 @@ export interface DiscreteCriterion {
     behavior: DiscreteCriterionFilterType;
 };
 
-
-export enum SearchCustomDataHookId {
-    Events = "Events",
-};
 
 export interface GetSearchResultsSortModel {
     db3Column: string; // the db3 column name to use for sorting

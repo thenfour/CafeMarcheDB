@@ -1,5 +1,4 @@
 import { Prisma } from "db";
-import * as db3 from "@db3/db3";
 import { TableAccessor } from "@/shared/rootroot";
 import { assert } from "blitz";
 
@@ -17,8 +16,6 @@ export type EnrichedEvent<T extends EnrichEventInput> = Omit<T, 'tags'> & Prisma
         }
     },
 }>;
-
-export type EnrichedSearchEventPayload = EnrichedEvent<db3.EventSearch_Event>;
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichSearchResultEvent<T extends EnrichEventInput>(

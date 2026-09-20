@@ -2,7 +2,6 @@ import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { EventOrderByColumnNames, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "@/src/core/components/event/EventClientBaseTypes";
 import { NewEventButton } from "@/src/core/components/event/NewEventComponents";
-import { EnrichedSearchEventPayload } from "@/src/core/db3/shared/schema/enrichedEventTypes";
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { SortDirection } from "shared/rootroot";
@@ -250,7 +249,7 @@ const EventListOuter = () => {
     });
 
     // Configuration for the generic SearchPageContent component
-    const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EventVerbose_Event, EnrichedSearchEventPayload> = {
+    const config: SearchPageContentConfig<EventsFilterSpecStatic, EventsFilterSpec, db3.EventSearchDto, db3.EventSearchClient> = {
         staticFilters: gStaticFilters,
         defaultStaticFilter: gDefaultStaticFilterValue,
         sortColumnOptions: EventOrderByColumnOptions,
@@ -261,7 +260,6 @@ const EventListOuter = () => {
                 event={event}
                 filterSpec={filterSpec}
                 refetch={refetch}
-                results={results}
             />
         ),
         getItemKey: (event) => event.id,
@@ -269,15 +267,17 @@ const EventListOuter = () => {
             itemToCSVRow: (event, index) => ({
                 Order: index.toString(),
                 ID: event.id.toString(),
-                Name: event.name,
+                Name: event.name || "",
                 Type: event.type?.text || "",
                 Status: event.status?.label || "",
                 StartsAt: event.startsAt?.toISOString() || "TBD",
                 IsAllDay: event.isAllDay ? "yes" : "no",
-                DurationMinutes: (new Number(event.durationMillis).valueOf() / 60000).toString(),
+                DurationMinutes: event.durationMillis === undefined
+                    ? ""
+                    : (Number(event.durationMillis) / 60000).toString(),
                 Location: event.locationDescription || "",
                 LocationURL: event.locationURL || "",
-                URL: dashboardContext.routingApi.getURIForEvent(event),
+                URL: dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }),
             }),
             filename: "events"
         },

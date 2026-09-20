@@ -18,11 +18,12 @@ export interface DB3ReferenceProvider {
         id: EntityIdOf<TEntity> | null | undefined,
     ): ClientEntityOf<TEntity> | undefined;
 
-    // convenience when hydrating a -to-many association, such as tags on a song.
-    getTags<TAssociation, Treturn>(
+    // Preserves the distinction between an authorized empty collection and a
+    // collection omitted by field authorization.
+    mapOptionalCollection<TAssociation, Treturn>(
         associations: (TAssociation | null | undefined)[] | null | undefined,
         hydrate: (association: TAssociation, index: number) => Treturn,
-    ): Treturn[];
+    ): Treturn[] | undefined;
 
     require<TEntity extends AnyDB3Entity>(
         entity: TEntity,
@@ -57,14 +58,11 @@ export class DB3ReferenceStore implements DB3ReferenceProvider {
         return this.entities.get(entity.entityID)?.get(id) as ClientEntityOf<TEntity> | undefined;
     }
 
-    // convenience when hydrating a -to-many association, such as tags on a song.
-    getTags<TAssociation, Treturn>(
+    mapOptionalCollection<TAssociation, Treturn>(
         associations: (TAssociation | null | undefined)[] | null | undefined,
         hydrate: (association: TAssociation, index: number) => Treturn,
-    ): Treturn[] {
-        if (!associations) {
-            return [];
-        }
+    ): Treturn[] | undefined {
+        if (associations == null) return undefined;
         return associations.flatMap((association, index) => association == null ? [] : [hydrate(association, index)]);
     }
 
@@ -84,4 +82,3 @@ export class DB3ReferenceStore implements DB3ReferenceProvider {
         return value;
     }
 }
-

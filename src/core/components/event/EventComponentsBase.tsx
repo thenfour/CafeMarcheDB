@@ -8,14 +8,13 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from '../../db3/clientAPI';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../../db3/components/DB3ClientCore';
-import { SearchResultsRet } from '../../db3/shared/apiTypes';
-import { EnrichedEvent, EnrichedSearchEventPayload } from '../../db3/shared/schema/enrichedEventTypes';
+import { EnrichedEvent } from '../../db3/shared/schema/enrichedEventTypes';
 import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
 import { DashboardContextData, useDashboardContext } from '../dashboardContext/DashboardContext';
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 
 
-type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
+export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {
         expectedAttendanceUserTagId: true,
         name: true,
@@ -180,21 +179,29 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
+type CalculateAttendanceEvent = CalculateEventMetadataEvent & {
+    segments: db3.EventResponses_MinimalEventSegment[];
+    status?: { significance: string | null } | null;
+};
+
+export type AttendanceEventMetadata = EventWithMetadata<
+    CalculateAttendanceEvent,
+    db3.EventResponses_MinimalEventUserResponse,
+    db3.EventResponses_MinimalEventSegment,
+    db3.EventResponses_MinimalEventSegmentUserResponse
+>;
+
 export interface CalcEventAttendanceArgs {
-    eventData: EventWithMetadata<
-        EnrichedSearchEventPayload,
-        db3.EventResponses_MinimalEventUserResponse,
-        db3.EventResponses_MinimalEventSegment,
-        db3.EventResponses_MinimalEventSegmentUserResponse
-    >;
+    eventData: AttendanceEventMetadata;
     userMap: UserInstrumentList,
+    dashboardContext: DashboardContextDataBase;
 };
 
 export { type EventAttendanceResult } from "./attendanceCalculation";
 
 // Production context adapter; the calculation itself has no React dependencies.
 export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttendanceResult => {
-    const dashboardContext = useDashboardContext();
+    const dashboardContext = props.dashboardContext;
     const user = dashboardContext.currentUser!;
     if (!props.eventData.responseInfo) throw new Error("no response info");
     const eventUserResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
@@ -213,26 +220,113 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 export interface EventListItemProps {
-    event: EnrichedSearchEventPayload;
-    results: SearchResultsRet;
+    event: db3.EventSearchClient;
     //refetch: () => void;
     //filterSpec: EventsFilterSpec;
 };
 
-export const CalculateEventSearchResultsMetadata = ({ event, results }: EventListItemProps) => {
-    const dashboardContext = useDashboardContext();
+type EventSearchMetadataSegment = db3.EventResponses_MinimalEventSegment & {
+    responses: db3.EventResponses_MinimalEventSegmentUserResponse[];
+};
 
-    const userMap: UserInstrumentList = [dashboardContext.currentUser!];
-    const customData = results.customData as db3.EventSearchCustomData;
-    const userTags = (customData ? customData.userTags : []) as db3.EventResponses_ExpectedUserTag[];
-    const expectedAttendanceUserTag = userTags.find(t => t.id === event.expectedAttendanceUserTagId) || null;
+type EventSearchMetadataEvent = db3.EventSearchClient & {
+    expectedAttendanceUserTagId: number | null;
+    name: string;
+    startsAt: Date | null;
+    durationMillis: bigint;
+    isAllDay: boolean;
+    responses: db3.EventResponses_MinimalEventUserResponse[];
+    segments: EventSearchMetadataSegment[];
+};
+
+export type EventSearchMetadata = EventWithMetadata<
+    EventSearchMetadataEvent,
+    db3.EventResponses_MinimalEventUserResponse,
+    EventSearchMetadataSegment,
+    db3.EventResponses_MinimalEventSegmentUserResponse
+>;
+
+const isEventUserResponseReady = (
+    response: NonNullable<db3.EventSearchClient["responses"]>[number],
+): response is typeof response & db3.EventResponses_MinimalEventUserResponse => (
+    response.userId !== undefined
+    && response.instrumentId !== undefined
+    && response.isInvited !== undefined
+    && response.userComment !== undefined
+);
+
+const isSegmentResponseReady = (
+    response: NonNullable<NonNullable<db3.EventSearchClient["segments"]>[number]["responses"]>[number],
+): response is typeof response & db3.EventResponses_MinimalEventSegmentUserResponse => (
+    response.userId !== undefined && response.attendanceId !== undefined
+);
+
+const isEventSegmentReady = (
+    segment: NonNullable<db3.EventSearchClient["segments"]>[number],
+): segment is typeof segment & EventSearchMetadataSegment => (
+    segment.name !== undefined
+    && segment.startsAt !== undefined
+    && segment.durationMillis !== undefined
+    && segment.isAllDay !== undefined
+    && segment.statusId !== undefined
+    && segment.responses !== undefined
+    && segment.responses.every(isSegmentResponseReady)
+);
+
+export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProps): {
+    eventData: EventSearchMetadata;
+    userMap: UserInstrumentList;
+} | null => {
+    const dashboardContext = useDashboardContext();
+    const currentUser = dashboardContext.currentUser;
+
+    if (!currentUser
+        || event.expectedAttendanceUserTagId === undefined
+        || event.name === undefined
+        || event.startsAt === undefined
+        || event.durationMillis === undefined
+        || event.isAllDay === undefined
+        || event.responses === undefined
+        || !event.responses.every(isEventUserResponseReady)
+        || event.segments === undefined
+        || !event.segments.every(isEventSegmentReady)) {
+        return null;
+    }
+
+    const userMap: UserInstrumentList = [currentUser];
+    const attendanceTag = event.expectedAttendanceUserTag;
+    if (attendanceTag && (
+        attendanceTag.userAssignments === undefined
+        || attendanceTag.userAssignments.some(assignment => assignment.userId === undefined)
+    )) {
+        return null;
+    }
+    const expectedAttendanceUserTag: db3.EventResponses_ExpectedUserTag | null = attendanceTag
+        ? {
+            id: attendanceTag.id,
+            userAssignments: attendanceTag.userAssignments!.map(assignment => ({
+                userId: assignment.userId!,
+            })),
+        }
+        : null;
+
+    const metadataEvent: EventSearchMetadataEvent = {
+        ...event,
+        expectedAttendanceUserTagId: event.expectedAttendanceUserTagId,
+        name: event.name,
+        startsAt: event.startsAt,
+        durationMillis: event.durationMillis,
+        isAllDay: event.isAllDay,
+        responses: event.responses,
+        segments: event.segments,
+    };
 
     const eventData = CalculateEventMetadata<
-        EnrichedSearchEventPayload,
-        db3.EventSearch_EventUserResponse,
-        db3.EventSearch_EventSegment,
-        db3.EventSearch_EventSegmentUserResponse
-    >(event, undefined, dashboardContext,
+        EventSearchMetadataEvent,
+        db3.EventResponses_MinimalEventUserResponse,
+        EventSearchMetadataSegment,
+        db3.EventResponses_MinimalEventSegmentUserResponse
+    >(metadataEvent, undefined, dashboardContext,
         userMap,
         expectedAttendanceUserTag,
         (segment, user) => { // makeMockEventSegmentResponse

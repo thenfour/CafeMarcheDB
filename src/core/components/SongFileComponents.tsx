@@ -206,6 +206,12 @@ export const FileValueViewer = (props: FileViewerProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const file = props.value;
+    const tags = file.tags ?? [];
+    const taggedEvents = file.taggedEvents ?? [];
+    const taggedUsers = file.taggedUsers ?? [];
+    const taggedSongs = file.taggedSongs ?? [];
+    const taggedInstruments = file.taggedInstruments ?? [];
+    const taggedWikiPages = file.taggedWikiPages ?? [];
     const visInfo = dashboardContext.getVisibilityInfo({
         visiblePermissionId: file.visiblePermissionId ?? null,
         visiblePermission: file.visiblePermission ?? null,
@@ -306,42 +312,42 @@ export const FileValueViewer = (props: FileViewerProps) => {
             </div>
             <div className="content">
                 <CMChipContainer>
-                    {(file.tags.length > 0) && (
-                        file.tags
+                    {(tags.length > 0) && (
+                        tags
                             .filter(a => !props.hiddenTagIds.fileTagIds || !existsInArray(props.hiddenTagIds.fileTagIds, a.fileTag.id))
                             .map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variation={variation} />)
                     )}
 
-                    {(file.taggedEvents.length > 0) && (
-                        file.taggedEvents
+                    {(taggedEvents.length > 0) && (
+                        taggedEvents
                             .filter(a => !props.hiddenTagIds.eventTagIds || !existsInArray(props.hiddenTagIds.eventTagIds, a.event.id))
                             .map(a => hasEventChipFields(a.event)
                                 ? <EventChip key={a.id} value={a.event} size="small" variation={variation} />
                                 : null)
                     )}
 
-                    {(file.taggedUsers.length > 0) && (
-                        file.taggedUsers
+                    {(taggedUsers.length > 0) && (
+                        taggedUsers
                             .filter(a => !props.hiddenTagIds.userTagIds || !existsInArray(props.hiddenTagIds.userTagIds, a.user.id))
                             .map(a => <UserChip key={a.id} value={a.user} size="small" variation={variation} />)
                     )}
 
-                    {(file.taggedSongs.length > 0) && (
-                        file.taggedSongs
+                    {(taggedSongs.length > 0) && (
+                        taggedSongs
                             .filter(a => !props.hiddenTagIds.songTagIds || !existsInArray(props.hiddenTagIds.songTagIds, a.song.id))
                             .map(a => a.song.name === undefined
                                 ? null
                                 : <SongChip key={a.id} value={{ id: a.song.id, name: a.song.name }} size="small" variation={variation} />)
                     )}
 
-                    {(file.taggedInstruments.length > 0) && (
-                        file.taggedInstruments
+                    {(taggedInstruments.length > 0) && (
+                        taggedInstruments
                             .filter(a => !props.hiddenTagIds.instrumentTagIds || !existsInArray(props.hiddenTagIds.instrumentTagIds, a.instrument.id))
                             .map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
                     )}
 
-                    {(file.taggedWikiPages.length > 0) && (
-                        file.taggedWikiPages
+                    {(taggedWikiPages.length > 0) && (
+                        taggedWikiPages
                             .filter(a => !props.hiddenTagIds.wikiPageTagIds || !existsInArray(props.hiddenTagIds.wikiPageTagIds, a.wikiPage.id))
                             .map(a => a.wikiPage.slug === undefined
                                 ? null
@@ -501,22 +507,28 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
 
     // apply filter
     let filteredItems = items.filter(item => {
-        const tagIds = item.file.tags.map(tag => tag.fileTag.id);
+        const tags = item.file.tags ?? [];
+        const taggedUsers = item.file.taggedUsers ?? [];
+        const taggedInstruments = item.file.taggedInstruments ?? [];
+        const taggedSongs = item.file.taggedSongs ?? [];
+        const taggedEvents = item.file.taggedEvents ?? [];
+        const taggedWikiPages = item.file.taggedWikiPages ?? [];
+        const tagIds = tags.map(tag => tag.fileTag.id);
         if (spec.tagIds.length && !tagIds.some(id => spec.tagIds.includes(id))) return false;
 
-        const userIds = item.file.taggedUsers.map(user => user.user.id);
+        const userIds = taggedUsers.map(user => user.user.id);
         if (spec.taggedUserIds.length && !userIds.some(id => spec.taggedUserIds.includes(id))) return false;
 
-        const instrumentIds = item.file.taggedInstruments.map(instrument => instrument.instrument.id);
+        const instrumentIds = taggedInstruments.map(instrument => instrument.instrument.id);
         if (spec.taggedInstrumentIds.length && !instrumentIds.some(id => spec.taggedInstrumentIds.includes(id))) return false;
 
-        const songIds = item.file.taggedSongs.map(song => song.song.id);
+        const songIds = taggedSongs.map(song => song.song.id);
         if (spec.taggedSongIds.length && !songIds.some(id => spec.taggedSongIds.includes(id))) return false;
 
-        const eventIds = item.file.taggedEvents.map(event => event.event.id);
+        const eventIds = taggedEvents.map(event => event.event.id);
         if (spec.taggedEventIds.length && !eventIds.some(id => spec.taggedEventIds.includes(id))) return false;
 
-        const wikiPageIds = item.file.taggedWikiPages.map(wikiPage => wikiPage.wikiPage.id);
+        const wikiPageIds = taggedWikiPages.map(wikiPage => wikiPage.wikiPage.id);
         if (spec.taggedWikiPageIds.length && !wikiPageIds.some(id => spec.taggedWikiPageIds.includes(id))) return false;
 
         if (spec.mimeTypes.length) {
@@ -535,12 +547,12 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         const tokensToSearch = [
             (item.file.description || "").toLocaleLowerCase(),
             (item.file.fileLeafName || "").toLocaleLowerCase(),
-            item.file.taggedInstruments.map(i => (i.instrument.name || "").toLocaleLowerCase()),
-            item.file.taggedUsers.map(i => (i.user.name || "").toLocaleLowerCase()),
-            item.file.taggedEvents.map(i => (i.event.name || "").toLocaleLowerCase()),
-            item.file.taggedSongs.map(i => (i.song.name || "").toLocaleLowerCase()),
-            item.file.taggedWikiPages.map(i => (i.wikiPage.slug || "").toLocaleLowerCase()),
-            item.file.tags.map(i => i.fileTag.text.toLocaleLowerCase()),
+            taggedInstruments.map(i => (i.instrument.name || "").toLocaleLowerCase()),
+            taggedUsers.map(i => (i.user.name || "").toLocaleLowerCase()),
+            taggedEvents.map(i => (i.event.name || "").toLocaleLowerCase()),
+            taggedSongs.map(i => (i.song.name || "").toLocaleLowerCase()),
+            taggedWikiPages.map(i => (i.wikiPage.slug || "").toLocaleLowerCase()),
+            tags.map(i => i.fileTag.text.toLocaleLowerCase()),
         ];
 
         return filterTokens.every(searchToken => tokensToSearch.flat().some(t => t.includes(searchToken)));

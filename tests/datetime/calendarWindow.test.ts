@@ -34,7 +34,15 @@ describe("structured calendar windows", () => {
   })
 
   it("retains the window through the real search request schema", () => {
-    const args = { tableID: "Event", offset: 0, take: 100, sort: [], quickFilter: "", discreteCriteria: [], calendarWindow: window }
+    const args = {
+      tableID: "Event",
+      offset: 0,
+      take: 100,
+      sort: [{ db3Column: "startsAt", direction: "asc" }],
+      quickFilter: "",
+      discreteCriteria: [],
+      calendarWindow: window,
+    }
     expect(ZGetSearchResultsInput.parse(args).calendarWindow).toEqual(window)
   })
 })

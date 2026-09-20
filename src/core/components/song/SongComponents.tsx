@@ -192,7 +192,7 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: Song
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongCreditEditButtonProps {
     //songData: SongWithMetadata;
-    value: db3.SongDetailClient["credits"][number];
+    value: NonNullable<db3.SongDetailClient["credits"]>[number];
     refetch: () => void;
     readonly: boolean;
     creditsTableClient: DB3Client.xTableRenderClient;
@@ -331,7 +331,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     }
 
     if (props.showCredits) {
-        songData.song.credits.forEach(credit => {
+        (songData.song.credits ?? []).forEach(credit => {
             const type = dashboardContext.songCreditType.getById(credit.typeId);
             if (!type) return;
             rows.push({
@@ -484,7 +484,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
 
 
             <CMChipContainer>
-                {song.tags.map(tag => <CMStandardDBChip
+                {song.tags?.map(tag => <CMStandardDBChip
                     key={tag.id}
                     size='small'
                     model={tag.tag}
@@ -628,8 +628,8 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 thisTabId={SongDetailTabSlug.files}
                 summaryTitle={"All files"}
                 summaryIcon={gIconMap.AttachFile()}
-                summarySubtitle={song.taggedFiles.length}
-                canBeDefault={!!song.taggedFiles.length}
+                summarySubtitle={song.taggedFiles?.length || 0}
+                canBeDefault={!!song.taggedFiles?.length}
             >
                 <AppContextMarker name="all files tab" songId={song.id}>
                     <FilesTabContent

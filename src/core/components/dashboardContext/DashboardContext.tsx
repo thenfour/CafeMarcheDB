@@ -243,8 +243,11 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.wikiPageTag = new TableAccessor(dashboardData.wikiPageTag);
     valueRef.current.role = new TableAccessor(dashboardData.role);
     valueRef.current.eventType = new TableAccessor(dashboardData.eventType);
+    valueRef.current.referenceStore.register(db3.eventTypeEntity, valueRef.current.eventType.items);
     valueRef.current.eventStatus = new TableAccessor(dashboardData.eventStatus);
+    valueRef.current.referenceStore.register(db3.eventStatusEntity, valueRef.current.eventStatus.items);
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
+    valueRef.current.referenceStore.register(db3.eventTagEntity, valueRef.current.eventTag.items);
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
     valueRef.current.referenceStore.register(

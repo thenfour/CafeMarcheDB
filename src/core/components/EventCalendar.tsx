@@ -18,27 +18,35 @@ import { EventListItem } from "./event/EventComponents";
 import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClientBaseTypes";
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
-import { EnrichedSearchEventPayload } from "../db3/shared/schema/enrichedEventTypes";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
 import { localTimeZone } from "@/shared/time";
 
 
 // attach useful data to the event for passing around the calendar.
 type EventWithSearchResult = {
-    event: EnrichedSearchEventPayload;
+    event: db3.EventSearchClient;
     result: SearchResultsRet;
 }
 
+type EventCalendarSegment = NonNullable<db3.EventSearchClient["segments"]>[number] & {
+    name: string;
+    startsAt: Date | null;
+    durationMillis: bigint;
+    isAllDay: boolean;
+    statusId: number | null;
+};
+
 type TCalendarEventItem = {
     calendarRange: CalendarDisplayRange;
-    segment: EnrichedSearchEventPayload["segments"][0];
-    event: EnrichedSearchEventPayload;
+    segment: EventCalendarSegment;
+    event: db3.EventSearchClient;
     result: SearchResultsRet;
     isSingleSegmentEvent: boolean;
 };
 
 function GetEventName(e: TCalendarEventItem) {
-    return e.isSingleSegmentEvent ? e.event.name : `${e.event.name}: ${e.segment.name}`;
+    const eventName = e.event.name || "Untitled event";
+    return e.isSingleSegmentEvent ? eventName : `${eventName}: ${e.segment.name}`;
 }
 
 
@@ -143,12 +151,18 @@ interface CustomEventWrapperProps {
 };
 
 const CustomEventWrapper = (props: React.PropsWithChildren<CustomEventWrapperProps>) => {
+    const dashboardContext = useDashboardContext();
 
-    const { eventData, userMap } = CalculateEventSearchResultsMetadata({ event: props.event.event, results: props.event.result });
+    const metadata = CalculateEventSearchResultsMetadata({ event: props.event.event });
+    if (!metadata) {
+        return <div className={`CMCustomEventWrapper ${props.selected && "selected"}`}>
+            {props.children}
+        </div>;
+    }
     const y = CalcEventAttendance({
-        eventData,
-        userMap,
-        //alertOnly: false,
+        eventData: metadata.eventData,
+        userMap: metadata.userMap,
+        dashboardContext,
     });
 
     return <Tooltip title={GetEventName(props.event)} disableInteractive>
@@ -182,14 +196,26 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     // moment.locale('nl-be'); // doesn't work.
     const localizer = momentLocalizer(moment) // or globalizeLocalizer
 
-    const isSegmentCancelled = (segment: EnrichedSearchEventPayload["segments"][0]) => {
+    const isSegmentCancelled = (segment: EventCalendarSegment) => {
         const status = dashboardContext.eventStatus.getById(segment.statusId);
         return (status?.significance === db3.EventStatusSignificance.Cancelled);
     };
 
+    const isCalendarSegment = (
+        segment: NonNullable<db3.EventSearchClient["segments"]>[number],
+    ): segment is EventCalendarSegment => (
+        segment.name !== undefined
+        && segment.startsAt !== undefined
+        && segment.durationMillis !== undefined
+        && segment.isAllDay !== undefined
+        && segment.statusId !== undefined
+    );
+
     // don't show events. show segments.
     const eventsWithMore = props.enrichedEvents.map(e => {
-        const uncancelledSegments = e.event.segments.filter(s => !isSegmentCancelled(s));
+        const uncancelledSegments = (e.event.segments || [])
+            .filter(isCalendarSegment)
+            .filter(segment => !isSegmentCancelled(segment));
         return {
             event: e,
             result: e.result,
@@ -330,10 +356,7 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
     };
 
     const { enrichedItems: enrichedEvents, results } = useSearchableList(filterSpec, eventSearchConfig, 100);
-    const eventsWithSearch = enrichedEvents.map(e => ({
-        event: e,
-        result: results,
-    }));
+    const eventsWithSearch = enrichedEvents.map(event => ({ event, result: results }));
     const selectedEvent = eventsWithSearch.find(e => e.event.id === selectedEventId) || null;
 
     // nossr to prevent using server's locale settings.
@@ -363,7 +386,6 @@ export const BigEventCalendarInner = (props: { selectedEventId?: undefined | num
                 event={selectedEvent.event}
                 filterSpec={filterSpec}
                 refetch={() => setRefreshSerial(refreshSerial + 1)}
-                results={results}
             //feature={ActivityFeature.big_calendar_event_link_click}
             />}
         </AppContextMarker>

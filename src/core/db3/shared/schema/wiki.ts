@@ -50,6 +50,14 @@ const wikiPageRevisionTableAuthMap: db3.DB3AuthTablePermissionMap = {
     Insert: Permission.admin_wiki_pages,
 } as const;
 
+const wikiPageCurrentRevisionAuthMap: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_wiki_page_revisions,
+    PostQuery: Permission.view_wiki_page_revisions,
+    PreMutateAsOwner: Permission.admin_wiki_pages,
+    PreMutate: Permission.admin_wiki_pages,
+    PreInsert: Permission.admin_wiki_pages,
+} as const;
+
 
 ////////////////////////////////////////////////////////////////
 const WikiPageArgs = Prisma.validator<Prisma.WikiPageDefaultArgs>()({
@@ -125,9 +133,13 @@ export const xWikiPage = new db3.xTable({
             }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
-        new GhostField({
-            authMap: wikiPageAdministrationAuthMap,
-            memberName: "currentRevisionId",
+        new ForeignSingleField<Prisma.WikiPageRevisionGetPayload<{}>>({
+            columnName: "currentRevision",
+            fkidMember: "currentRevisionId",
+            allowNull: true,
+            foreignTableID: "WikiPageRevision",
+            authMap: wikiPageCurrentRevisionAuthMap,
+            getQuickFilterWhereClause: () => false,
         }),
         new GhostField({
             authMap: wikiPageAdministrationAuthMap,

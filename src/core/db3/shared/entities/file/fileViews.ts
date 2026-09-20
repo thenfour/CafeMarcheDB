@@ -184,7 +184,7 @@ export function hydrateFileDetailDto(
     return {
         ...dto,
         visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
-        tags: references.getTags(dto.tags, (association, index) => ({
+        tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
             ...association,
             fileTag: references.require(
                 fileTagEntity,
@@ -192,22 +192,22 @@ export function hydrateFileDetailDto(
                 `${path}.tags[${index}].fileTagId`,
             ),
         })),
-        taggedUsers: references.getTags(dto.taggedUsers, association => association)
-            .flatMap(association => association.user == null ? [] : [{
+        taggedUsers: references.mapOptionalCollection(dto.taggedUsers, association => association)
+            ?.flatMap(association => association.user == null ? [] : [{
                 ...association,
                 user: association.user,
             }]),
-        taggedSongs: references.getTags(dto.taggedSongs, association => association)
-            .flatMap(association => association.song == null ? [] : [{
+        taggedSongs: references.mapOptionalCollection(dto.taggedSongs, association => association)
+            ?.flatMap(association => association.song == null ? [] : [{
                 ...association,
                 song: association.song,
             }]),
-        taggedEvents: references.getTags(dto.taggedEvents, association => association)
-            .flatMap(association => association.event == null ? [] : [{
+        taggedEvents: references.mapOptionalCollection(dto.taggedEvents, association => association)
+            ?.flatMap(association => association.event == null ? [] : [{
                 ...association,
                 event: association.event,
             }]),
-        taggedInstruments: references.getTags(dto.taggedInstruments, (association, index) => ({
+        taggedInstruments: references.mapOptionalCollection(dto.taggedInstruments, (association, index) => ({
             ...association,
             instrument: references.require(
                 instrumentEntity,
@@ -215,8 +215,8 @@ export function hydrateFileDetailDto(
                 `${path}.taggedInstruments[${index}].instrumentId`,
             ),
         })),
-        taggedWikiPages: references.getTags(dto.taggedWikiPages, association => association)
-            .flatMap(association => association.wikiPage == null ? [] : [{
+        taggedWikiPages: references.mapOptionalCollection(dto.taggedWikiPages, association => association)
+            ?.flatMap(association => association.wikiPage == null ? [] : [{
                 ...association,
                 wikiPage: association.wikiPage,
             }]),

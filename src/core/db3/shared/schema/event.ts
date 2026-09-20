@@ -10,7 +10,7 @@ import { assertIsNumberArray, assertIsStringArray } from "shared/arrayUtils";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, gIconOptions, smartTruncate } from "shared/utils";
-import { type CMDBTableFilterModel, SearchCustomDataHookId } from "../apiTypes";
+import { type CMDBTableFilterModel } from "../apiTypes";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignCollectionField, ForeignSingleField, GenericIntegerField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeIsDeletedField, MakePKfield, MakeSignificanceField, MakeSortOrderField, MakeUpdatedAtField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { GenericStringField, MakeDescriptionField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeTitleField } from "../genericStringField";
@@ -329,7 +329,7 @@ export interface EventTableParams {
     minDate?: Date;
     forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
     refreshSerial?: number; // ignored but useful to force a refresh
-    userIdForResponses?: number; // when searching for multiple events, include this to limit returned responses to this user. prevents huge bloat.
+    limitResponsesToActor?: boolean;
 };
 
 const EventQueryParameters = {
@@ -341,7 +341,7 @@ const EventQueryParameters = {
     minDate: { kind: "date", authorizeAs: "endDateTime" },
     forFrontPageAgenda: { kind: "boolean", authorizeAs: ["frontpageVisible", "typeId", "endDateTime"] },
     refreshSerial: { kind: "integer", authorizeAs: null },
-    userIdForResponses: { kind: "integer", authorizeAs: "responses" },
+    limitResponsesToActor: { kind: "boolean", authorizeAs: "responses" },
 } satisfies db3.DB3QueryParameterMap;
 
 export type UserTagWithAssignmentPayload = Prisma.UserTagGetPayload<{
@@ -354,10 +354,6 @@ export type UserTagWithAssignmentPayload = Prisma.UserTagGetPayload<{
         }
     }
 }>;
-
-export interface EventSearchCustomData {
-    userTags: UserTagWithAssignmentPayload[],
-};
 
 export const EventAPI = {
     getLabel: ({ name = "", startsAt }: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>, options?: {
@@ -385,7 +381,6 @@ export const xEventArgs_Base: db3.TableDesc = {
     getSelectionArgs: (filterModel): Prisma.EventDefaultArgs => {
         return EventArgs;
     },
-    SearchCustomDataHookId: SearchCustomDataHookId.Events,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
@@ -609,11 +604,17 @@ export const xEventArgs_Base: db3.TableDesc = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventWhereInput | boolean => false,
         }), // tags
 
-        new GhostField({ memberName: "segments", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new ForeignCollectionField({ memberName: "segments", foreignTableID: "EventSegment", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new ForeignCollectionField({ memberName: "responses", foreignTableID: "EventUserResponse", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new ForeignCollectionField({ memberName: "songLists", foreignTableID: "EventSongList", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "descriptionWikiPageId", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "descriptionWikiPage", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new ForeignSingleField<Prisma.WikiPageGetPayload<{}>>({
+            columnName: "descriptionWikiPage",
+            fkidMember: "descriptionWikiPageId",
+            allowNull: true,
+            foreignTableID: "WikiPage",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+            getQuickFilterWhereClause: () => false,
+        }),
 
         // because this is used for generating icals
         new GhostField({ memberName: "uid", authMap: xEventAuthMap_Homepage }),
@@ -712,12 +713,13 @@ const xEventArgs_Search: db3.TableDesc = {
     tableUniqueName: "xEventArgs_Search",
     queryParameters: {
         ...EventQueryParameters,
-        userIdForResponses: { kind: "integer", authorizeAs: "responses", required: true },
+        limitResponsesToActor: { kind: "boolean", authorizeAs: "responses", required: true },
     },
-    getSelectionArgs: (filterModel): Prisma.EventDefaultArgs => {
+    getSelectionArgs: (filterModel, authorization): Prisma.EventDefaultArgs => {
         const tableParams = filterModel.tableParams as EventTableParams;
-        assert(tableParams.userIdForResponses, "when searching for events you must provide a userid to limit responses");
-        return EventSearchArgs(tableParams.userIdForResponses);
+        assert(tableParams.limitResponsesToActor === true, "event search responses must be limited to the actor");
+        assert(authorization.userId, "event search responses require an authenticated actor");
+        return EventSearchArgs(authorization.userId);
     },
 };
 
@@ -821,7 +823,7 @@ export const xEventSegment = new db3.xTable({
                 PreMutateAsOwner: Permission.never_grant,
             },
         }),
-        new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new ForeignCollectionField({ memberName: "responses", foreignTableID: "EventSegmentUserResponse", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 

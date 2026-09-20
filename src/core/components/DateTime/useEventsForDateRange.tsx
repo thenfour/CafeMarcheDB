@@ -47,14 +47,25 @@ export const useEventsForDateRange = (dateRange: CalendarRange) => {
 
         if (enrichedEvents) {
             try {
-                const transformed = enrichedEvents.flatMap(event => event.segments
-                    .filter(segment => segment.startsAt && dashboardContext.eventStatus.getById(segment.statusId)?.significance !== EventStatusSignificance.Cancelled)
-                    .map(segment => ({
+                const transformed = enrichedEvents.flatMap(event => (event.segments || [])
+                    .flatMap(segment => {
+                        if (!segment.startsAt
+                            || segment.durationMillis === undefined
+                            || segment.isAllDay === undefined
+                            || segment.statusId === undefined
+                            || dashboardContext.eventStatus.getById(segment.statusId)?.significance === EventStatusSignificance.Cancelled) {
+                            return [];
+                        }
+                        return [{
                         id: event.id.toString(), // Preserve the picker cell's data-event-id.
                         title: event.name || 'Untitled Event',
                         color: event.type?.color || 'blue',
                         dateRange: (() => {
-                            const range = getEventSegmentDateTimeRange(segment);
+                            const range = getEventSegmentDateTimeRange({
+                                startsAt: segment.startsAt,
+                                durationMillis: segment.durationMillis,
+                                isAllDay: segment.isAllDay,
+                            });
                             const dates = getRangeCalendarDates(range, eventPresentationTimeZone(range, {
                                 viewerTimeZone: dateRange.start.timeZone,
                                 bandTimeZone: dashboardContext.bandTimeZone,
@@ -64,7 +75,8 @@ export const useEventsForDateRange = (dateRange: CalendarRange) => {
                             return new CalendarRange(new CalendarDate(dates.start.date, dateRange.start.timeZone),
                                 new CalendarDate(dates.endExclusive.date, dateRange.start.timeZone));
                         })(),
-                    })));
+                    }];
+                    }));
                 setEvents(transformed);
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to transform events'));

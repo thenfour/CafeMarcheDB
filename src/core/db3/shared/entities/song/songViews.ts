@@ -120,7 +120,7 @@ export const songSearchView = defineView({
         ...dto,
         visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
 
-        tags: references.getTags(dto.tags, (assoc, index) => ({
+        tags: references.mapOptionalCollection(dto.tags, (assoc, index) => ({
             ...assoc,
             tag: references.require(
                 songTagEntity,
@@ -128,13 +128,13 @@ export const songSearchView = defineView({
                 `Song(${dto.id}).tags[${index}].tagId`,
             ),
         }))
-            .sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+            ?.sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
 
-        taggedFiles: references.getTags(dto.taggedFiles, (association, associationIndex) => ({
+        taggedFiles: references.mapOptionalCollection(dto.taggedFiles, (association, associationIndex) => ({
             ...association,
             file: association.file && {
                 ...association.file,
-                tags: references.getTags(association.file.tags, (tagAssociation, tagIndex) => ({
+                tags: references.mapOptionalCollection(association.file.tags, (tagAssociation, tagIndex) => ({
                     ...tagAssociation,
                     fileTag: references.require(
                         fileTagEntity,
@@ -243,16 +243,16 @@ export const songDetailView = defineView({
     hydrate: (dto, references) => ({
         ...dto,
         visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
-        tags: references.getTags(dto.tags, (association, index) => ({
+        tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
             ...association,
             tag: references.require(
                 songTagEntity,
                 association.tagId,
                 `Song(${dto.id}).tags[${index}].tagId`,
             ),
-        })).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
-        taggedFiles: references.getTags(dto.taggedFiles, association => association)
-            .flatMap((association, index) => association.file == null ? [] : [{
+        }))?.sort((a, b) => a.tag.sortOrder - b.tag.sortOrder),
+        taggedFiles: references.mapOptionalCollection(dto.taggedFiles, association => association)
+            ?.flatMap((association, index) => association.file == null ? [] : [{
                 ...association,
                 file: hydrateFileDetailDto(
                     association.file,
@@ -260,7 +260,7 @@ export const songDetailView = defineView({
                     `Song(${dto.id}).taggedFiles[${index}].file`,
                 ),
             }]),
-        credits: references.getTags(dto.credits, credit => credit),
+        credits: references.mapOptionalCollection(dto.credits, credit => credit),
     }),
     getIdentity: client => client.id,
 });

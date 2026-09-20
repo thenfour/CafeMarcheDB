@@ -139,7 +139,7 @@ describe("search recovery capability", () => {
         expect(() => ZGetSearchResultsInput.parse({ ...query(), includeDeleted: "true" })).toThrow();
     });
 
-    it("keeps ordinary event searches and their custom data hook working", async () => {
+    it("keeps ordinary event searches working without a domain-specific side channel", async () => {
         const event = {
             id: 904, name: "Member event", isDeleted: false,
             visiblePermissionId: null, createdByUserId: actor.id, expectedAttendanceUserTagId: 905,
@@ -154,6 +154,6 @@ describe("search recovery capability", () => {
         const result = await GetSearchResultsCore(query({ tableID: "Event", discreteCriteria: [] }),
             createAuthorizationTestContext(actor) as AuthenticatedCtx);
         expect(result.results).toEqual([expect.objectContaining({ id: event.id })]);
-        expect(result.customData).toEqual({ userTags: [] });
+        expect(result).not.toHaveProperty("customData");
     });
 });

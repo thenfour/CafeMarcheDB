@@ -10,7 +10,6 @@ import type { SortDirection, TAnyModel } from "shared/rootroot";
 import {
     type CMDBTableFilterModel, type CriterionQueryElements,
     type DiscreteCriterion, type GetSearchResultsSortModel,
-    SearchCustomDataHookId,
     type SearchResultsFacetQuery, type SortQueryElements
 } from "./apiTypes";
 import { GetVisibilityWhereExpression } from "./db3Helpers";
@@ -474,7 +473,7 @@ export interface TableDesc {
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
     columns: FieldBase<unknown>[];
 
-    getSelectionArgs: (filterModel: CMDBTableFilterModel) => TAnyModel,
+    getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText?: (row: TAnyModel, filterText: string) => boolean,
@@ -507,8 +506,6 @@ export interface TableDesc {
     // Search features are opt-in independently of admin-grid recovery.
     searchCapabilities?: { includeDeleted?: boolean };
 
-    // this allows tables to supplement search results with extra "customdata".
-    SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 };
 
 export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
@@ -519,7 +516,7 @@ export class xTable /* implements TableDesc*/ {
     tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
-    getSelectionArgs: (filterModel: CMDBTableFilterModel) => TAnyModel;
+    getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel;
 
     deletePolicy: DB3DeletePolicy;
     viewDeletedPermission?: Permission;
@@ -545,8 +542,6 @@ export class xTable /* implements TableDesc*/ {
     getRowInfo: (row: TAnyModel) => RowInfo;
     doesItemExactlyMatchText: (row: TAnyModel, filterText: string) => boolean;
     SqlSpecialColumns: SqlSpecialColumnFunctionMap;
-
-    SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
@@ -1047,10 +1042,16 @@ export class xTable /* implements TableDesc*/ {
         publicData: DB3Authorization,
         filterModel: CMDBTableFilterModel,
         includeDeleted = false,
-        getSelectionArgs: (filterModel: CMDBTableFilterModel) => TAnyModel = this.getSelectionArgs,
+        getSelectionArgs?: (context: {
+            readonly filter: CMDBTableFilterModel;
+            readonly authorization: DB3Authorization;
+        }) => TAnyModel,
     ): Promise<TAnyModel | undefined> => {
         // create a deep copy so our modifications don't spill into other stuff.
-        const selectionArgs = JSON.parse(JSON.stringify(getSelectionArgs(filterModel)));
+        const requestedSelection = getSelectionArgs
+            ? getSelectionArgs({ filter: filterModel, authorization: publicData })
+            : this.getSelectionArgs(filterModel, publicData);
+        const selectionArgs = JSON.parse(JSON.stringify(requestedSelection));
 
         // selection args can be like,
         // { include: { field1: true, field2: true } }
