@@ -1,5 +1,6 @@
-import { CalendarDate, CalendarRange } from "shared/dateTimePolicy";
 // @vitest-environment jsdom
+
+import { CalendarDate, CalendarRange } from "shared/dateTimePolicy";
 import React from "react"
 import { act } from "react-dom/test-utils"
 import { createRoot } from "react-dom/client"

@@ -1,4 +1,5 @@
-import { JSDOM } from "jsdom";
+// @vitest-environment jsdom
+
 import React from "react";
 import { act } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
@@ -40,29 +41,23 @@ import { DeactivateUserButton, ReactivateUserButton } from "src/core/components/
 
 let root: Root;
 let container: HTMLDivElement;
-let dom: JSDOM;
-const originalGlobals = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
+const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 const user = { id: 2, name: "Member" } as any;
 const capabilities = { canDeactivate: true, canReactivate: false, deactivationContinuityWarnings: [] } as any;
 
 beforeEach(() => {
-    dom = new JSDOM("<div id='root'></div>", { url: "http://localhost/backstage/user/2" });
-    Object.defineProperties(globalThis, {
-        document: { value: dom.window.document, configurable: true, writable: true },
-        window: { value: dom.window, configurable: true, writable: true },
-        IS_REACT_ACT_ENVIRONMENT: { value: true, configurable: true, writable: true },
-    });
+    window.history.replaceState({}, "", "/backstage/user/2");
+    document.body.innerHTML = "<div id='root'></div>";
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     container = document.getElementById("root") as HTMLDivElement;
     root = createRoot(container);
 });
 
 afterEach(async () => {
     await act(async () => root?.unmount());
-    dom?.window.close();
-    for (const [key, descriptor] of originalGlobals) {
-        if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-        else Reflect.deleteProperty(globalThis, key);
-    }
+    document.body.replaceChildren();
+    if (originalActEnvironment) Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", originalActEnvironment);
+    else Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 });
 
 describe("user profile lifecycle navigation", () => {

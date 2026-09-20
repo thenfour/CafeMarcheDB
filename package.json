@@ -14,8 +14,8 @@
     "typecheck": "tsc --noEmit",
     "studio": "blitz prisma studio",
     "lint": "eslint --ignore-path .gitignore --ext .js,.ts,.tsx .",
-    "test": "vitest run",
-    "test:auth": "vitest run tests/authorization",
+    "test": "node scripts/test-unit.cjs",
+    "test:auth": "node scripts/test-unit.cjs tests/authorization",
     "test:watch": "vitest",
     "test:release": "node scripts/test-release.mjs",
     "prepare": "husky install"

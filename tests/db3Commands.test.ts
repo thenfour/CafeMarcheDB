@@ -1,14 +1,20 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { eventSongListSaveCommandHandler } from "@db3/server/commands/eventSongListSaveCommand";
 import type { DB3CommandExecutionContext } from "@db3/server/db3CommandCore";
+import { defineEntityCrudCommandHandlers } from "@db3/server/db3EntityCrudCommand";
+import { isPublicId, parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
+import { z } from "zod";
 
 function createContext(seed?: {
     songList?: Record<string, unknown> | null;
     songs?: Record<string, unknown>[];
     dividers?: Record<string, unknown>[];
 }) {
-    const insert = vi.fn(async (entity: db3.AnyDB3Entity, values: Record<string, unknown>) => ({
+    const insert = vi.fn(async (
+        entity: db3.AnyDB3Entity,
+        values: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> => ({
         id: entity.entityID === db3.eventSongListEntity.entityID ? 50 : 900,
         ...values,
     }));
@@ -35,7 +41,7 @@ function createContext(seed?: {
                 findMany: vi.fn(async () => seed?.dividers ?? []),
             },
         } as any,
-        rows: {
+        rowServices: {
             insert,
             update,
             delete: deleteRow,
@@ -55,6 +61,31 @@ const parentFields = {
     sortOrder: 3,
 };
 
+const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGroupPublicId>(
+    (value): value is InstrumentFunctionalGroupPublicId => isPublicId(value),
+    "Expected an InstrumentFunctionalGroup public ID.",
+);
+const instrumentFunctionalGroupCrud = db3.defineEntityCrudCommands({
+    entity: db3.instrumentFunctionalGroupEntity,
+    identitySchema: InstrumentFunctionalGroupPublicIdSchema,
+    createSchema: z.object({
+        name: z.string().min(1),
+        description: z.string(),
+        sortOrder: z.number().int(),
+        color: z.string().nullable(),
+    }),
+    updateFieldsSchema: z.object({
+        name: z.string().min(1),
+        description: z.string(),
+        sortOrder: z.number().int(),
+        color: z.string().nullable(),
+    }),
+});
+const instrumentFunctionalGroupCrudHandlers = defineEntityCrudCommandHandlers(
+    instrumentFunctionalGroupCrud,
+);
+const functionalGroupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
+
 describe("DB3 commands", () => {
     it("validates strict command DTOs and results at the shared boundary", () => {
         expect(db3.saveEventSongListCommand.commandID).toBe("EventSongList_Save");
@@ -66,6 +97,129 @@ describe("DB3 commands", () => {
         })).toThrow();
         expect(db3.saveEventSongListCommand.parseResult({ id: 50 })).toEqual({ id: 50 });
         expect(() => db3.saveEventSongListCommand.parseResult({ id: -1 })).toThrow();
+        expect(db3.saveEventSongListCommand.invalidation).toEqual({
+            mode: "caller",
+            entityIDs: ["EventSongList", "EventSongListSong", "EventSongListDivider"],
+        });
+    });
+
+    it("defines strict generated CRUD DTOs with present-keys-only patch semantics", () => {
+        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.createCommand>>()
+            .toEqualTypeOf<{
+                name: string;
+                description: string;
+                sortOrder: number;
+                color: string | null;
+            }>();
+        expectTypeOf<db3.CommandClientInputOf<typeof instrumentFunctionalGroupCrud.updateCommand>>()
+            .toEqualTypeOf<{
+                identity: InstrumentFunctionalGroupPublicId;
+                patch: {
+                    name?: string;
+                    description?: string;
+                    sortOrder?: number;
+                    color?: string | null;
+                };
+            }>();
+        expectTypeOf<db3.CommandResultOf<typeof instrumentFunctionalGroupCrud.deleteCommand>>()
+            .toEqualTypeOf<{ identity: InstrumentFunctionalGroupPublicId }>();
+        expect(instrumentFunctionalGroupCrud.createCommand.commandID)
+            .toBe("InstrumentFunctionalGroup_Create");
+        expect(instrumentFunctionalGroupCrud.updateCommand.commandID)
+            .toBe("InstrumentFunctionalGroup_Update");
+        expect(instrumentFunctionalGroupCrud.deleteCommand.commandID)
+            .toBe("InstrumentFunctionalGroup_Delete");
+        expect(instrumentFunctionalGroupCrud.deleteType).toBe("hard");
+        expect(instrumentFunctionalGroupCrud.updateCommand.parseDto({
+            identity: functionalGroupPublicId,
+            patch: { color: null },
+        })).toEqual({
+            identity: functionalGroupPublicId,
+            patch: { color: null },
+        });
+        expect(() => instrumentFunctionalGroupCrud.createCommand.parseDto({
+            name: "Brass",
+            description: "",
+            sortOrder: 0,
+            color: null,
+            publicId: functionalGroupPublicId,
+        })).toThrow();
+        expect(() => db3.defineEntityCrudCommands({
+            entity: db3.instrumentFunctionalGroupEntity,
+            identitySchema: InstrumentFunctionalGroupPublicIdSchema,
+            createSchema: z.object({ publicId: InstrumentFunctionalGroupPublicIdSchema }),
+            updateFieldsSchema: z.object({ name: z.string() }),
+        })).toThrow("must not declare server-owned identity fields: publicId");
+        expect(() => instrumentFunctionalGroupCrud.updateCommand.parseDto({
+            identity: functionalGroupPublicId,
+            patch: {},
+        })).toThrow("Update patch must contain at least one field");
+        expect(() => instrumentFunctionalGroupCrud.updateCommand.parseDto({
+            identity: functionalGroupPublicId,
+            patch: { name: undefined },
+        })).toThrow("Patch fields cannot be undefined");
+        expect(() => instrumentFunctionalGroupCrud.updateCommand.parseDto({
+            identity: 42,
+            patch: { name: "Brass" },
+        })).toThrow();
+        expect(() => instrumentFunctionalGroupCrud.deleteCommand.parseDto({
+            identity: functionalGroupPublicId,
+            deleteType: "hard",
+        })).toThrow();
+        expect(instrumentFunctionalGroupCrud.createCommand.invalidation).toEqual({
+            mode: "caller",
+            entityIDs: [db3.instrumentFunctionalGroupEntity.entityID],
+        });
+    });
+
+    it("executes generated CRUD through row services and returns canonical identity", async () => {
+        const { context, insert, update, deleteRow } = createContext();
+        insert.mockResolvedValueOnce({
+            id: 12,
+            publicId: functionalGroupPublicId,
+            name: "Brass",
+        });
+
+        await expect(instrumentFunctionalGroupCrudHandlers.create.execute({
+            name: "Brass",
+            description: "",
+            sortOrder: 0,
+            color: null,
+        }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
+        expect(insert).toHaveBeenLastCalledWith(db3.instrumentFunctionalGroupEntity, {
+            name: "Brass",
+            description: "",
+            sortOrder: 0,
+            color: null,
+        });
+
+        await expect(instrumentFunctionalGroupCrudHandlers.update.execute({
+            identity: functionalGroupPublicId,
+            patch: { name: "Winds" },
+        }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
+        expect(update).toHaveBeenLastCalledWith(
+            db3.instrumentFunctionalGroupEntity,
+            functionalGroupPublicId,
+            { name: "Winds" },
+        );
+
+        await expect(instrumentFunctionalGroupCrudHandlers.delete.execute({
+            identity: functionalGroupPublicId,
+        }, context)).resolves.toEqual({ identity: functionalGroupPublicId });
+        expect(deleteRow).toHaveBeenLastCalledWith(
+            db3.instrumentFunctionalGroupEntity,
+            functionalGroupPublicId,
+            "hard",
+        );
+        expect(instrumentFunctionalGroupCrudHandlers.all).toHaveLength(3);
+
+        insert.mockResolvedValueOnce({ id: 13, name: "Missing public identity" });
+        await expect(instrumentFunctionalGroupCrudHandlers.create.execute({
+            name: "Strings",
+            description: "",
+            sortOrder: 1,
+            color: null,
+        }, context)).rejects.toThrow("Expected an InstrumentFunctionalGroup public ID");
     });
 
     it("creates a setlist aggregate through authorized row operations", async () => {

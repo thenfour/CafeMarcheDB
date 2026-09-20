@@ -1,4 +1,5 @@
-import { JSDOM } from "jsdom";
+// @vitest-environment jsdom
+
 import React from "react";
 import { act } from "react-dom/test-utils";
 import { createRoot, Root } from "react-dom/client";
@@ -20,24 +21,17 @@ import { useSearchPage } from "src/core/hooks/useSearchFilters";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 
 let root: Root;
-let dom: JSDOM;
-const originalGlobals = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
+const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 beforeEach(() => {
-    dom = new JSDOM("<div id='root'></div>");
-    Object.defineProperties(globalThis, {
-        document: { value: dom.window.document, configurable: true, writable: true },
-        window: { value: dom.window, configurable: true, writable: true },
-        IS_REACT_ACT_ENVIRONMENT: { value: true, configurable: true, writable: true },
-    });
+    document.body.innerHTML = "<div id='root'></div>";
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     root = createRoot(document.getElementById("root")!);
 });
 afterEach(async () => {
     await act(async () => root?.unmount());
-    dom?.window.close();
-    for (const [key, descriptor] of originalGlobals) {
-        if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-        else Reflect.deleteProperty(globalThis, key);
-    }
+    document.body.replaceChildren();
+    if (originalActEnvironment) Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", originalActEnvironment);
+    else Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
 });
 
 describe("search recovery filter state", () => {

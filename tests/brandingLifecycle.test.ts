@@ -1,8 +1,9 @@
-import { JSDOM } from "jsdom"
+// @vitest-environment jsdom
+
 import React from "react"
 import { act } from "react-dom/test-utils"
-import { createRoot } from "react-dom/client"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { createRoot, Root } from "react-dom/client"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("@blitzjs/next", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react")
@@ -105,13 +106,20 @@ vi.mock("src/core/components/SnackbarContext", async () => {
 })
 vi.mock("src/core/createEmotionCache", () => ({ default: () => ({}) }))
 
-const dom = new JSDOM("<!doctype html><html><head></head><body><div id=\"root\"></div></body></html>")
-vi.stubGlobal("document", dom.window.document)
-vi.stubGlobal("window", dom.window)
-vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true)
+let root: Root | undefined
+const originalActEnvironment = Object.getOwnPropertyDescriptor(globalThis, "IS_REACT_ACT_ENVIRONMENT")
 
-afterEach(() => {
-  document.getElementById("root")!.replaceChildren()
+beforeEach(() => {
+  document.body.innerHTML = '<div id="root"></div>'
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true)
+})
+
+afterEach(async () => {
+  if (root) await act(async () => root?.unmount())
+  root = undefined
+  document.body.replaceChildren()
+  if (originalActEnvironment) Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", originalActEnvironment)
+  else Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT")
 })
 
 describe("application branding lifecycle", () => {
@@ -130,7 +138,8 @@ describe("application branding lifecycle", () => {
     const blitz = await import("@blitzjs/next") as any
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined)
     const container = document.getElementById("root")!
-    const root = createRoot(container)
+    const mountedRoot = createRoot(container)
+    root = mountedRoot
     const brand = {
       hostingMode: "GenericSingleTenant",
       siteTitle: "Persistent Band",
@@ -156,7 +165,7 @@ describe("application branding lifecycle", () => {
     }
 
     await act(async () => {
-      root.render(React.createElement(MyApp as any, {
+      mountedRoot.render(React.createElement(MyApp as any, {
         Component: CaptureBrand,
         pageProps: { brand },
       }))
@@ -164,7 +173,7 @@ describe("application branding lifecycle", () => {
     expect(renderedBrandTitle).toBe("Persistent Band")
 
     await act(async () => {
-      root.render(React.createElement(MyApp as any, {
+      mountedRoot.render(React.createElement(MyApp as any, {
         Component: ThrowPage,
         pageProps: {},
       }))
@@ -173,7 +182,7 @@ describe("application branding lifecycle", () => {
     expect(container.textContent).toContain("page failed")
 
     await act(async () => {
-      root.render(React.createElement(MyApp as any, {
+      mountedRoot.render(React.createElement(MyApp as any, {
         Component: CaptureBrand,
         pageProps: {},
       }))
@@ -181,7 +190,6 @@ describe("application branding lifecycle", () => {
     })
 
     expect(renderedBrandTitle).toBe("Persistent Band")
-    await act(async () => root.unmount())
     errorLog.mockRestore()
   })
 })

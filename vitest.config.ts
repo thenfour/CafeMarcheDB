@@ -7,6 +7,11 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     setupFiles: ["tests/setup.ts"],
+    // Direct and watch-mode runs use one isolated worker. The full-suite wrapper
+    // additionally gives every jsdom file a fresh process; see scripts/test-unit.cjs.
+    threads: true,
+    minThreads: 1,
+    maxThreads: 1,
     clearMocks: true,
     mockReset: true,
     restoreMocks: true,
