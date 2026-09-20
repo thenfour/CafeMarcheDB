@@ -42,7 +42,6 @@ const ClipboardControls = (props: ClipboardControlsProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onCopy = async () => {
-
         const rows = props.client.items.map(row => {
             const x = props.client.prepareInsertMutation(row);
             const { localFields, ..._ } = db3.separateMutationValues({ table: props.client.schema, fields: x });

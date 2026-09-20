@@ -39,6 +39,19 @@ function createIdentitySchema<TEntity extends AnyDB3Entity>(
 }
 
 /**
+ * Compatibility bridge for xTable fields whose client value differs from the
+ * database/DTO value. CRUD views still use the table schema's established
+ * conversion contract while entities migrate to explicitly typed hydration.
+ */
+function applyTableSchemaDbToClient<TModel extends TAnyModel>(
+    entity: AnyDB3Entity,
+    model: TModel,
+    mode: "view" | "new" | "update",
+): TModel {
+    return entity.schema.getClientModel(model, mode) as TModel;
+}
+
+/**
  * Builds the strict transport-key boundary for prepared TableClient values.
  * Field values are still parsed and authorized by the authoritative xTable
  * mutation services; this schema prevents identities and unknown members from
@@ -61,8 +74,16 @@ function createPreparedMutationSchema(
             continue;
         }
         shape[member] = zod.unknown().superRefine((value, context) => {
+            // Prepared mutation values have already passed through
+            // ApplyClientToDb. Convert them back to the table's client shape
+            // before invoking the field's client-value validator.
+            const clientModel = applyTableSchemaDbToClient(
+                entity,
+                { [member]: value },
+                mode,
+            );
             const validation = field.ValidateAndParse({
-                row: { [member]: value },
+                row: clientModel,
                 mode,
             });
             if (validation.result === "error") {
@@ -111,7 +132,13 @@ export function defineCrudView<
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
     getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 }) {
-    const view = defineView(args);
+    const view = defineView({
+        ...args,
+        hydrate: (dto, references) => args.hydrate(
+            applyTableSchemaDbToClient(args.entity, dto, "view"),
+            references,
+        ),
+    });
     const createSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "new");
     const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
     const crud = defineEntityCrudCommands({

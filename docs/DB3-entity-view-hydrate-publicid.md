@@ -342,6 +342,17 @@ The CRUD contract is derived from two existing authorities:
   authorization, client-to-database transformation, delete policy, and
   public-versus-natural identity metadata.
 
+As a migration bridge, CRUD-view hydration first runs the parsed database DTO
+through the linked `xTable.getClientModel(..., "view")` conversion and then
+passes that client-shaped row to the view hydrator. This preserves established
+field behavior such as `ColorField.ApplyDbToClient`, where a stored color ID is
+represented by a `ColorPaletteEntry` in the editor. Prepared command values
+travel in the opposite, database-shaped direction; generated command schemas
+convert each value back through the same table contract before invoking the
+field's client-value validator. This compatibility behavior belongs only to
+CRUD-enabled views and can be retired field by field as their client hydration
+becomes explicit and typed.
+
 This is deliberately the same limited CRUD model supported by TableClient
 today. A CRUD-enabled view does not make arbitrary computed fields, nested
 relations, or rich hydrated objects automatically writable, and hydration does

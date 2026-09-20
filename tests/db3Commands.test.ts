@@ -273,6 +273,42 @@ describe("DB3 commands", () => {
         );
     });
 
+    it("preserves xTable client-value transforms across CRUD reads and writes", () => {
+        const view = db3.instrumentFunctionalGroupEditorView;
+        const colorField = db3.xInstrumentFunctionalGroup.getColumn("color")!;
+
+        for (const colorId of ["red", "light_red"] as const) {
+            const dto = view.parseDto({
+                publicId: functionalGroupPublicId,
+                color: colorId,
+            });
+            const hydrated = db3.hydrateView(
+                view,
+                dto,
+                new db3.DB3ReferenceStore(),
+            );
+
+            expect(hydrated.color).toMatchObject({ id: colorId });
+            expect(colorField.ValidateAndParse({
+                row: hydrated,
+                mode: "update",
+            }).result).toBe("success");
+
+            const prepared = db3.xInstrumentFunctionalGroup.clientToDbModel(
+                { color: hydrated.color },
+                "update",
+            );
+            expect(prepared.color).toBe(colorId);
+            expect(view.crud.updateCommand.parseDto({
+                identity: functionalGroupPublicId,
+                patch: { color: prepared.color },
+            })).toEqual({
+                identity: functionalGroupPublicId,
+                patch: { color: colorId },
+            });
+        }
+    });
+
     it("builds a present-keys-only patch from prepared TableClient values", () => {
         expect(db3.createEntityCrudUpdatePatch({
             name: "Brass",
