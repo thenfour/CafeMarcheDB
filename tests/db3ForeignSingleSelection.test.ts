@@ -5,10 +5,13 @@ import { createRoot, Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@blitzjs/rpc", () => ({ useQuery: vi.fn(), useMutation: vi.fn() }));
-vi.mock("src/core/db3/db3", () => ({}));
+vi.mock("src/core/db3/db3", () => ({
+    hydrateView: (view: any, dto: any, references: any) => view.hydrate(dto, references),
+}));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({
     IColumnClient: class { constructor(args: object) { Object.assign(this, args); } },
 }));
+vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
 vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
 vi.mock("src/core/db3/components/IconMap", () => ({ RenderMuiIcon: () => null }));
 vi.mock("src/core/components/CMCoreComponents2", () => ({
@@ -17,7 +20,7 @@ vi.mock("src/core/components/CMCoreComponents2", () => ({
         ...props, type, onClick, disabled: disabled ?? !enabled,
     }, children),
 }));
-vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ refreshCachedData: vi.fn() }) }));
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ referenceStore: {}, refreshCachedData: vi.fn() }) }));
 vi.mock("src/core/components/SettingMarkdown", () => ({
     GenerateForeignSingleSelectStyleSettingName: () => "selection-style",
     SettingMarkdown: () => null,
@@ -35,6 +38,7 @@ import { useMutation, useQuery } from "@blitzjs/rpc";
 import getSetting from "src/auth/queries/getSetting";
 import db3mutations from "src/core/db3/mutations/db3mutations";
 import { ForeignSingleFieldClient, ForeignSingleFieldInput, ForeignSingleFieldInputProps, SelectSingleForeignDialog } from "src/core/db3/components/db3ForeignSingleFieldClient";
+import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 
 const options = [{ id: 1, name: "Trumpet" }, { id: 2, name: "Flugelhorn" }, { id: 3, name: "Tuba" }];
 type Instrument = typeof options[number];
@@ -56,6 +60,7 @@ beforeEach(() => {
     insertAuthorized = true;
     selectStyleSetting = null;
     queryState = { isLoading: false, isFetching: false, isError: false, isPreviousData: false };
+    vi.mocked(useCrudViewCreate).mockReturnValue(undefined);
     vi.mocked(useMutation).mockImplementation(resolver => [resolver === db3mutations ? createOption : vi.fn()] as any);
     vi.mocked(useQuery).mockImplementation((query, args: any) => {
         if (query === getSetting) return [selectStyleSetting, { refetch }] as any;
@@ -274,6 +279,45 @@ describe("shared DB3 foreign-single selection", () => {
         expect(onChange).toHaveBeenCalledTimes(1);
         expect(onChange).toHaveBeenCalledWith(flute);
         expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
+
+    it("uses a named CRUD view for public-ID option reads and creation", async () => {
+        const foreignSchema = {
+            ...spec.typedSchemaColumn.getForeignTableSchema(),
+            clientIdMember: "publicId",
+        } as any;
+        (spec.schemaColumn as any).getForeignTableSchema = () => foreignSchema;
+        const view = {
+            viewID: "InstrumentFunctionalGroup_Editor",
+            entity: { schema: foreignSchema },
+            parseDto: (value: unknown) => value,
+            hydrate: (dto: Instrument) => ({ ...dto, publicId: `public-id-${dto.id}` }),
+            getIdentity: (item: { publicId: string }) => item.publicId,
+            crud: { createCommand: {} },
+        } as any;
+        spec.args.selectionView = view;
+        const created = { id: 4, publicId: "AbCdEfGhIjKlMn02", name: "Flute" };
+        const commandCreate = vi.fn().mockResolvedValue(created);
+        vi.mocked(useCrudViewCreate).mockReturnValue({ create: commandCreate } as any);
+
+        await renderDialog(false, { ...options[0]!, publicId: "AbCdEfGhIjKlMn01" } as any);
+        await search("Flute");
+        await click([...document.querySelectorAll("button")].find(candidate => (
+            candidate.textContent?.includes("Create") && candidate.textContent.includes("Flute")
+        ))!);
+        await click(button("Apply"));
+
+        expect(commandCreate).toHaveBeenCalledWith({ name: "Flute" });
+        expect(createOption).not.toHaveBeenCalled();
+        expect(onChange).toHaveBeenCalledWith(created);
+        const queryInput = vi.mocked(useQuery).mock.calls
+            .map(call => call[1] as any)
+            .find(input => input?.cmdbQueryContext === "ForeignSingleFieldRenderContext");
+        expect(queryInput.table).toMatchObject({
+            tableID: "Instrument",
+            tableName: "Instrument",
+            viewID: view.viewID,
+        });
     });
 
     it("retains custom option content and captions, inline filtering and read-only behavior", async () => {

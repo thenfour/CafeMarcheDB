@@ -519,6 +519,8 @@ export const useTableRenderContext = <Trow extends TAnyModel,>(args: xTableClien
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface FetchAsyncArgs<T> {
     schema: db3.xTable;
+    view?: db3.AnyDB3View;
+    referenceProvider?: db3.DB3ReferenceProvider;
 
     sortModel?: GridSortModel,
     filterModel?: CMDBTableFilterModel,
@@ -537,8 +539,17 @@ export interface FetchAsyncResult<T> {
 
 // allows fetching without suspense interaction
 export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T> {
+    if (args.view && args.view.entity.schema !== args.schema) {
+        throw new Error(
+            `DB3 view '${args.view.viewID}' does not belong to table '${args.schema.tableID}'.`,
+        );
+    }
     const queryInput: db3.QueryRequestInput = {
-        table: args.schema,
+        table: {
+            tableID: args.schema.tableID,
+            tableName: args.schema.tableName,
+            viewID: args.view?.viewID,
+        },
         orderBy: CalculateOrderBy(args.sortModel),
         take: args.take,
         filter: args.filterModel || { items: [] },
@@ -563,6 +574,16 @@ export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T
 
     // convert items from a database result to a client-side object.
     const clientItems: T[] = dbItems.map(dbitem => {
+        if (args.view) {
+            if (!args.referenceProvider) {
+                throw new Error(`DB3 view '${args.view.viewID}' requires a reference provider.`);
+            }
+            return db3.hydrateView(
+                args.view,
+                args.view.parseDto(dbitem),
+                args.referenceProvider,
+            ) as T;
+        }
         return args.schema.getClientModel(dbitem, "view") as T;
     });
 

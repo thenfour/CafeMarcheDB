@@ -104,7 +104,7 @@ export const SelectionExamples = () => {
                 <DB3MultiSelect {...shared} schema={db3.xInstrumentTag} value={tags} onChange={setTags} allowInsertFromString dialogTitle="Choose instrument tags" />
             </Example>
             <Example title="Instrument group" description="Creation is also available to single-choice fields when permitted." value={group?.name || null}>
-                <DB3SingleSelect {...shared} schema={db3.xInstrumentFunctionalGroup} value={group} onChange={setGroup} nullBehavior={CMSelectNullBehavior.AllowNull} allowInsertFromString dialogTitle="Choose an instrument group" />
+                <DB3SingleSelect {...shared} schema={db3.xInstrumentFunctionalGroup} view={db3.instrumentFunctionalGroupEditorView} value={group} onChange={setGroup} nullBehavior={CMSelectNullBehavior.AllowNull} allowInsertFromString dialogTitle="Choose an instrument group" />
             </Example>
             <Example title="User" description="A minimal DB3 picker needs only a schema, value, and change handler." value={user?.name || null}>
                 <DB3SingleSelect {...shared} schema={db3.xUser} value={user} onChange={setUser} nullBehavior={CMSelectNullBehavior.AllowNull} dialogTitle="Choose a user" />

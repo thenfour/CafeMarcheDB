@@ -27,6 +27,7 @@ import db3queries from "../queries/db3queries";
 import type { CMDBTableFilterModel } from "../shared/apiTypes";
 import { IColumnClient, type RenderForNewItemDialogArgs, type RenderViewerArgs, type TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconMap";
+import { type CrudViewCreateToken, useCrudViewCreate } from "./useCrudViewCreate";
 import { type ColorPaletteEntry, type ColorVariationSpec, StandardVariationSpec } from "../../components/color/palette";
 import { TAnyModel } from "@/shared/rootroot";
 
@@ -212,6 +213,8 @@ export interface ForeignSingleFieldNullItemInfo {
 export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     columnName: string;
     cellWidth: number;
+    // the db3 view used for populating selection dialogs
+    selectionView?: db3.AnyDB3CrudView;
 
     renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactNode;
 
@@ -453,7 +456,8 @@ export interface ForeignSingleFieldRenderContextArgs<TForeign extends TAnyModel>
 // the "live" adapter handling server-side comms.
 export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
     args: ForeignSingleFieldRenderContextArgs<TForeign>;
-    mutateFn: TMutateFn;
+    mutateFn?: TMutateFn;
+    crudCreate?: CrudViewCreateToken<db3.AnyDB3CrudView>;
 
     items: TForeign[];
     refetch: () => void;
@@ -464,14 +468,26 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
 
     constructor(args: ForeignSingleFieldRenderContextArgs<TForeign>) {
         this.args = args;
+        const foreignSchema = this.args.spec.typedSchemaColumn.getForeignTableSchema();
+        const selectionView = this.args.spec.args.selectionView;
+        if (selectionView && selectionView.entity.schema !== foreignSchema) {
+            throw new Error(
+                `DB3 CRUD view '${selectionView.viewID}' does not belong to table '${foreignSchema.tableID}'.`,
+            );
+        }
+        const dashboard = useDashboardContext();
+        this.crudCreate = useCrudViewCreate(selectionView);
 
-        if (this.args.spec.typedSchemaColumn.allowInsertFromString) {
+        if (this.args.spec.typedSchemaColumn.allowInsertFromString && !selectionView) {
             this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
         }
 
         const [result, queryStatus] = useQuery(db3queries, {
-            tableID: args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
-            tableName: args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
+            table: {
+                tableID: foreignSchema.tableID,
+                tableName: foreignSchema.tableName,
+                viewID: selectionView?.viewID,
+            },
             orderBy: undefined,
             filter: {
                 quickFilterValues: SplitQuickFilter(args.filterText),
@@ -483,7 +499,13 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
             ...(args.suspense === false ? { useErrorBoundary: false } : {}),
             keepPreviousData: args.suspense === false,
         });
-        this.items = (result?.items || []) as TForeign[];
+        this.items = selectionView
+            ? (result?.items || []).map(item => db3.hydrateView(
+                selectionView,
+                selectionView.parseDto(item),
+                dashboard.referenceStore,
+            ) as TForeign)
+            : (result?.items || []) as TForeign[];
         this.refetch = queryStatus.refetch;
         this.isLoading = queryStatus.isLoading;
         this.isFetching = queryStatus.isFetching;
@@ -495,7 +517,10 @@ export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
         console.assert(!!this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString);
         const insertModel = this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString!(userInput);
         try {
-            return await this.mutateFn({
+            if (this.crudCreate) {
+                return await this.crudCreate.create(insertModel) as TForeign;
+            }
+            return await this.mutateFn!({
                 tableID: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
                 tableName: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
                 mutationType: "insert",
@@ -547,7 +572,7 @@ export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props
                 ...query,
                 createOption: canCreate ? async text => {
                     const item = await query.doInsertFromString(text);
-                    dashboard.refreshCachedData();
+                    if (!props.spec.args.selectionView) dashboard.refreshCachedData();
                     showMessage({ children: "New option created", severity: "success" });
                     return item;
                 } : undefined,

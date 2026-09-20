@@ -696,7 +696,19 @@ a per-row compatibility flag or a second lookup mode.
   public-ID pilot. Its call site supplies only its `tableSpec` and editor view;
   it has no entity-specific writable schema, serializer, handler file, registry
   entry, command hooks, mutation adapter, numeric ID, or generic mutation
-  envelope. Other editing and selection entrypoints remain to be migrated.
+  envelope.
+- Selection creation can now opt into the same CRUD view. Both the generic DB3
+  selection source and `ForeignSingleFieldRenderContext` query and hydrate
+  through that view, invoke its generated create command, and read the returned
+  canonical identity back through an authorized exact-identity view query
+  before publishing it as the selected value. A successful create that is not
+  readable through the view fails explicitly rather than manufacturing a
+  partial client row. The Instrument editor's functional-group selector proves
+  this path with public IDs; unmigrated selection entities retain their legacy
+  create path until they define a CRUD view.
+- `DB3NewObjectDialog` now requires its table-render client to be injected. The
+  grid-owned dialog therefore cannot silently construct a second legacy
+  mutation client underneath a command-backed grid.
 - The registered event-song-list save handler now performs parent, song, and
   divider synchronization atomically in one serializable transaction by
   composing authorized DB3 row services. The two legacy insert/update RPCs and
@@ -851,9 +863,12 @@ boundary safely.
   the CRUD-enabled view, without entity-specific command schemas, serializers,
   handler files, registry wiring, command hooks, mutation adapters, table names,
   numeric table IDs, `TAnyModel`, or the generic mutation envelope.
-- [ ] Make generic editing infrastructure command-backed, including
-  `DB3EditGrid`, `DB3NewObjectDialog`, selection-source creation, and
-  `DB3AssociationMatrix`.
+- [ ] Make generic editing infrastructure command-backed.
+  - [x] `DB3EditGrid` and its injected-client `DB3NewObjectDialog` path.
+  - [x] Selection-source creation, proved through the public-ID
+    `InstrumentFunctionalGroup` CRUD view.
+  - [ ] `DB3AssociationMatrix`, using an explicit association-command contract
+    rather than ordinary row CRUD.
 - [ ] Prohibit new consumers of the legacy TableClient mutation transport, then
   migrate existing writers by category: generated CRUD for ordinary rows and
   named commands for aggregates or workflows.

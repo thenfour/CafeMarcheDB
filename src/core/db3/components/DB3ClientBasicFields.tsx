@@ -1055,10 +1055,11 @@ export class AnyColumnClient extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const useInsertMutationClient = (schema: db3.xTable) => {
-    const ctx = useDashboardContext();
+export const useInsertMutationClient = (schema: db3.xTable, enabled = true) => {
     const mutationCtx = DB3ClientCore.useTableRenderContext({
-        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
+        requestedCaps: enabled
+            ? DB3ClientCore.xTableClientCaps.Mutation
+            : DB3ClientCore.xTableClientCaps.None,
         tableSpec: new DB3ClientCore.xTableClientSpec({
             table: schema,
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),

@@ -10,6 +10,7 @@ type Tnull = null | undefined;
 export interface DB3SingleSelectDialogBaseProps<T extends TAnyModel> {
     //    nullBehavior?: CMSelectNullBehavior | undefined;
     schema: db3.xTable,
+    view?: db3.AnyDB3CrudView;
 
     value?: T | null | undefined;
     onOK: (value: T | Tnull) => void;
@@ -57,6 +58,7 @@ export function DB3SingleSelectDialog<T extends TAnyModel>(props: Db3SingleSelec
 
 export interface DB3MultiSelectDialogProps<T extends TAnyModel> {
     schema: db3.xTable,
+    view?: db3.AnyDB3CrudView;
 
     onOK: (value: T[]) => void;
     onCancel: () => void;

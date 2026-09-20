@@ -8,10 +8,12 @@ import { SelectionSource } from "src/core/components/select/selectionSource";
 import * as db3 from "../db3";
 import { fetchUnsuspended } from "./DB3ClientCore";
 import { useInsertMutationClient } from "./DB3ClientBasicFields";
+import { useCrudViewCreate } from "./useCrudViewCreate";
 import { useDB3Authorization } from "./useDB3Authorization";
 
 interface DB3SelectionSourceProps<T> {
     schema: db3.xTable;
+    view?: db3.AnyDB3CrudView;
     renderOption?: (item: T) => React.ReactNode;
     chipSize?: CMChipSizeOptions;
     chipShape?: CMChipShapeOptions;
@@ -21,8 +23,13 @@ interface DB3SelectionSourceProps<T> {
 
 // DB3 decides how to query, name, render and create rows; generic pickers own the UX.
 export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSourceProps<T>): SelectionSource<T> {
+    if (props.view && props.view.entity.schema !== props.schema) {
+        throw new Error(
+            `DB3 CRUD view '${props.view.viewID}' does not belong to table '${props.schema.tableID}'.`,
+        );
+    }
     return {
-        getKey: item => props.schema.getRowInfo(item).pk,
+        getKey: item => props.view?.getIdentity(item) ?? props.schema.getRowInfo(item).pk,
         getLabel: item => props.schema.getRowInfo(item).name,
         matchesText: (item, text) => props.schema.doesItemExactlyMatchText(item, text),
         renderValue: item => {
@@ -32,9 +39,13 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
         useOptions(filterText, enabled) {
             const publicData = useDB3Authorization();
             const dashboard = useDashboardContext();
-            const mutation = useInsertMutationClient(props.schema);
+            const mutation = useInsertMutationClient(props.schema, !props.view);
+            const crudCreate = useCrudViewCreate(props.view);
             const query = fetchUnsuspended<T>({
-                schema: props.schema, filterModel: { items: [], quickFilterValues: SplitQuickFilter(filterText) },
+                schema: props.schema,
+                view: props.view,
+                referenceProvider: dashboard.referenceStore,
+                filterModel: { items: [], quickFilterValues: SplitQuickFilter(filterText) },
                 queryOptions: { enabled, suspense: false, useErrorBoundary: false, keepPreviousData: true },
             });
             const canCreate = props.allowInsertFromString !== false && !!props.schema.createInsertModelFromString && props.schema.authorizeRowBeforeInsert({ publicData });
@@ -45,8 +56,10 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
                 refetch: query.refetch,
                 createOption: canCreate ? async text => {
                     const model = props.schema.createInsertModelFromString!(text);
-                    const item = await mutation.doInsertMutation(model) as T;
-                    dashboard.refreshCachedData();
+                    const item = crudCreate
+                        ? await crudCreate.create(model) as T
+                        : await mutation.doInsertMutation(model) as T;
+                    if (!crudCreate) dashboard.refreshCachedData();
                     props.onInsert?.(item);
                     return item;
                 } : undefined,

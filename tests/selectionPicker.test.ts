@@ -9,8 +9,9 @@ vi.mock("src/core/components/CMLink", () => ({ CMLink: () => null }));
 vi.mock("src/core/db3/db3", () => ({}));
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({ fetchUnsuspended: vi.fn() }));
 vi.mock("src/core/db3/components/DB3ClientBasicFields", () => ({ useInsertMutationClient: vi.fn() }));
+vi.mock("src/core/db3/components/useCrudViewCreate", () => ({ useCrudViewCreate: vi.fn() }));
 vi.mock("src/core/db3/components/useDB3Authorization", () => ({ useDB3Authorization: () => ({}) }));
-vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ refreshCachedData: vi.fn() }) }));
+vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => ({ referenceStore: {}, refreshCachedData: vi.fn() }) }));
 
 import { CMSelectDisplayStyle, CMMultiSelect, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/select/CMSelect";
 import { CMSingleSelectDialog, CMSelectNullBehavior } from "src/core/components/select/CMSingleSelectDialog";
@@ -19,6 +20,7 @@ import { DB3SingleSelect } from "src/core/db3/components/db3Select";
 import { DB3MultiSelectDialog } from "src/core/db3/components/db3SelectDialog";
 import { fetchUnsuspended } from "src/core/db3/components/DB3ClientCore";
 import { useInsertMutationClient } from "src/core/db3/components/DB3ClientBasicFields";
+import { useCrudViewCreate } from "src/core/db3/components/useCrudViewCreate";
 
 const numberOptions = StringArrayOptionsProvider([0, 1, 2]);
 let root: Root;
@@ -207,5 +209,56 @@ describe("DB3 picker adapters", () => {
         await render(React.createElement(DB3MultiSelectDialog<typeof instrument>, { schema, initialValues: [instrument], title: "Instruments", description: "", onOK: onChange, onCancel }));
         expect(checkbox("Trumpet").checked).toBe(true);
         expect(button("Apply").disabled).toBe(true);
+    });
+
+    it("creates through a CRUD view and selects the hydrated public-ID row", async () => {
+        const existing = { publicId: "AbCdEfGhIjKlMn01", name: "Brass" };
+        const created = { publicId: "AbCdEfGhIjKlMn02", name: "Flute", hydrated: true };
+        const legacyInsert = vi.fn();
+        const create = vi.fn().mockResolvedValue(created);
+        const schema = {
+            tableID: "InstrumentFunctionalGroup",
+            getRowInfo: (item: typeof existing) => ({ pk: item.publicId, name: item.name, color: null }),
+            createInsertModelFromString: (name: string) => ({ name, description: "", sortOrder: 0 }),
+            authorizeRowBeforeInsert: () => true,
+            doesItemExactlyMatchText: (item: typeof existing, text: string) => item.name === text,
+        } as any;
+        const view = {
+            viewID: "InstrumentFunctionalGroup_Editor",
+            entity: { schema },
+            getIdentity: (item: typeof existing) => item.publicId,
+            crud: { createCommand: {} },
+        } as any;
+        vi.mocked(useInsertMutationClient).mockReturnValue({ doInsertMutation: legacyInsert } as any);
+        vi.mocked(useCrudViewCreate).mockReturnValue({ create } as any);
+        vi.mocked(fetchUnsuspended).mockReturnValue({
+            items: [], isLoading: false, refetch: vi.fn(),
+            queryResult: { isError: false, isFetching: false, isPreviousData: false },
+        } as any);
+
+        await render(React.createElement(DB3SingleSelect<typeof existing>, {
+            schema,
+            view,
+            value: existing,
+            onChange,
+            displayStyle: CMSelectDisplayStyle.SelectedWithDialog,
+            dialogTitle: "Instrument group",
+            allowInsertFromString: true,
+        }));
+        await click(button("Edit Instrument group"));
+        await search(" Flute ");
+        await click([...document.querySelectorAll("button")].find(candidate => (
+            candidate.textContent?.includes("Create") && candidate.textContent.includes("Flute")
+        ))!);
+
+        expect(create).toHaveBeenCalledWith({ name: "Flute", description: "", sortOrder: 0 });
+        expect(legacyInsert).not.toHaveBeenCalled();
+        expect(onChange).toHaveBeenCalledWith(created);
+        expect(vi.mocked(fetchUnsuspended).mock.calls.at(-1)![0]).toMatchObject({
+            schema,
+            view,
+            referenceProvider: {},
+        });
+        expect(vi.mocked(useInsertMutationClient)).toHaveBeenCalledWith(schema, false);
     });
 });

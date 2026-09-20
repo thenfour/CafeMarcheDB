@@ -9,6 +9,7 @@ type Tnull = null | undefined;
 
 interface Db3SingleSelectBaseProps<Toption extends TAnyModel> {
     schema: db3.xTable,
+    view?: db3.AnyDB3CrudView;
 
     value: Toption | Tnull;
     onChange: (optionIds: Toption | Tnull) => void;
@@ -63,6 +64,7 @@ export const DB3SingleSelect = <Toption extends TAnyModel,>(props: Db3SingleSele
 
 interface DB3MultiSelectProps<Toption extends TAnyModel> {
     schema: db3.xTable,
+    view?: db3.AnyDB3CrudView;
 
     value: Toption[];
     onChange: (optionIds: Toption[]) => void;

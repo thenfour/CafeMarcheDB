@@ -20,7 +20,7 @@ type db3NewObjectDialogProps = {
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => any;
     onCancel: () => any;
     table: DB3ClientCore.xTableClientSpec;
-    tableRenderClient?: DB3ClientCore.xTableRenderClient;
+    tableRenderClient: DB3ClientCore.xTableRenderClient;
 
 
     caption?: string;
@@ -28,18 +28,7 @@ type db3NewObjectDialogProps = {
 };
 
 export function DB3NewObjectDialog(props: db3NewObjectDialogProps) {
-    if (props.tableRenderClient) {
-        return <DB3NewObjectDialogWithClient {...props} tableRenderClient={props.tableRenderClient} />;
-    }
-    return <LegacyDB3NewObjectDialog {...props} />;
-}
-
-function LegacyDB3NewObjectDialog(props: db3NewObjectDialogProps) {
-    const tableClient = DB3ClientCore.useTableRenderContext({
-        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
-        tableSpec: props.table,
-    });
-    return <DB3NewObjectDialogWithClient {...props} tableRenderClient={tableClient} />;
+    return <DB3NewObjectDialogWithClient {...props} />;
 }
 
 function DB3NewObjectDialogWithClient({

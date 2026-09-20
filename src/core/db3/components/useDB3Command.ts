@@ -14,8 +14,15 @@ export interface DB3CommandToken<TCommand extends AnyDB3Command> {
 
 export function useDB3Command<TCommand extends AnyDB3Command>(
     command: TCommand,
-): DB3CommandToken<TCommand> {
+): DB3CommandToken<TCommand>;
+export function useDB3Command<TCommand extends AnyDB3Command>(
+    command: TCommand | undefined,
+): DB3CommandToken<TCommand> | undefined;
+export function useDB3Command<TCommand extends AnyDB3Command>(
+    command: TCommand | undefined,
+): DB3CommandToken<TCommand> | undefined {
     const [mutate] = useMutation(executeDB3CommandMutation);
+    if (!command) return undefined;
     return {
         invalidation: command.invalidation,
         invoke: async input => {
