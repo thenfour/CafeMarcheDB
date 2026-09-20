@@ -34,7 +34,7 @@ const Inner = () => {
 
     return <>
         {missingInDb.map(x => <div key={x} style={{ fontSize: "48px" }}>❗🟥 "{x}" is missing in the db; restarting the server will sync it up</div>)}
-        <DB3EditGrid tableSpec={PermissionClientSchema} renderExtraActions={(x) => {
+        <DB3EditGrid tableSpec={PermissionClientSchema} legacyMutationTransport renderExtraActions={(x) => {
             return <div>{codePermissions.some(k => k === x.row.name) ? (
                 <Tooltip title="this permission is in sync with code."><div>☑</div></Tooltip>)
                 : (<Tooltip title="this permission is not known in code; it can probably be deleted.">

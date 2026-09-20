@@ -22,7 +22,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 const MainContent = () => {
     return <>
         <SettingMarkdown setting="EditUserTagsPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
     </>;
 };
 

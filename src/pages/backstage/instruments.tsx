@@ -32,7 +32,7 @@ const InstrumentListContent = () => {
     return <>
         <SettingMarkdown setting="instrumentList_markdown"></SettingMarkdown>
         <DB3EditGrid
-            tableSpec={tableSpec} renderExtraActions={(args) => <GridActionsCellItem
+            tableSpec={tableSpec} legacyMutationTransport renderExtraActions={(args) => <GridActionsCellItem
                 icon={<PageviewIcon />}
                 key="view"
                 label="View"

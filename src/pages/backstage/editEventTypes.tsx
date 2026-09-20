@@ -23,7 +23,7 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="EditEventTypesPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid tableSpec={tableSpec} view={db3.eventTypeEditorView} />
     </>;
 };
 

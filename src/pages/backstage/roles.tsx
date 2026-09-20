@@ -108,7 +108,7 @@ const MainContent = () => {
     return <>
         <SettingMarkdown setting="RolesAdminPage_markdown"></SettingMarkdown>
         <BuiltInRoleAssignments />
-        <DB3EditGrid tableSpec={RoleClientSchema} />
+        <DB3EditGrid tableSpec={RoleClientSchema} legacyMutationTransport />
     </>;
 };
 

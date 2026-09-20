@@ -24,7 +24,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 const MainContent = () => {
     return <>
         <SettingMarkdown setting="EditEventStatusesPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid tableSpec={tableSpec} view={db3.eventStatusEditorView} />
     </>;
 };
 

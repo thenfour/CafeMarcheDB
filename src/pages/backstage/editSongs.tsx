@@ -47,6 +47,7 @@ const MainContent = () => {
         <SettingMarkdown setting="editSongs_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={songTableSpec}
+            legacyMutationTransport
             renderExtraActions={(args) => <ExtraActions gridArgs={args} />}
         />
     </>;

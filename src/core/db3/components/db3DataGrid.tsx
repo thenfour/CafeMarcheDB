@@ -81,9 +81,8 @@ export interface DB3EditGridExtraActionsArgs {
     refetch: () => void;
 };
 
-export type DB3EditGridProps = {
+type DB3EditGridBaseProps = {
     tableSpec: DB3Client.xTableClientSpec,
-    view?: db3.AnyDB3CrudView,
     renderExtraActions?: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
     tableParams?: TAnyModel,
     readOnly?: boolean,
@@ -93,9 +92,29 @@ export type DB3EditGridProps = {
     isCellEditable?: (row: TAnyModel, field: string) => boolean;
 };
 
+export type DB3EditGridProps = DB3EditGridBaseProps & (
+    | {
+        view: db3.AnyDB3CrudView;
+        legacyMutationTransport?: never;
+    }
+    | {
+        readOnly: true;
+        view?: never;
+        legacyMutationTransport?: never;
+    }
+    | {
+        /**
+         * Existing migration inventory only. New writable grids must supply a
+         * CRUD-enabled view instead of opting into the generic mutation RPC.
+         */
+        legacyMutationTransport: true;
+        view?: never;
+    }
+);
+
 function useDB3EditGridQueryState(
     tableSpec: DB3Client.xTableClientSpec,
-    props: Omit<DB3EditGridProps, "tableSpec" | "view">,
+    props: Omit<DB3EditGridBaseProps, "tableSpec">,
 ) {
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
         page: 0,
@@ -125,13 +144,22 @@ type DB3EditGridQueryState = ReturnType<typeof useDB3EditGridQueryState>;
 
 export function DB3EditGrid(props: DB3EditGridProps) {
     if (props.view) return <DB3CrudEditGrid {...props} view={props.view} />;
+    if (!props.readOnly && !props.legacyMutationTransport) {
+        throw new Error(
+            "Writable DB3EditGrid instances require a CRUD-enabled view. "
+            + "The legacy mutation transport is restricted to the migration inventory.",
+        );
+    }
     return <DB3LegacyEditGrid {...props} />;
 }
 
 function DB3LegacyEditGrid({ view: _view, tableSpec, ...props }: DB3EditGridProps) {
     const queryState = useDB3EditGridQueryState(tableSpec, props);
     const tableClient = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery
+            | (props.readOnly
+                ? DB3Client.xTableClientCaps.None
+                : DB3Client.xTableClientCaps.Mutation),
         tableSpec,
         filterModel: {
             items: queryState.filterModel.items.filter(i => i.value !== undefined).map(i => {

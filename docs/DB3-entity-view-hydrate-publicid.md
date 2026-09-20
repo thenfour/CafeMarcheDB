@@ -748,6 +748,42 @@ a per-row compatibility flag or a second lookup mode.
   replacement is generated entity CRUD commands for ordinary row editors and
   handwritten commands for aggregate or workflow operations.
 
+### Legacy TableClient mutation inventory and deletion gate
+
+The legacy mutation transport is now a closed migration inventory. The source
+test `tests/db3LegacyMutationInventory.test.ts` records every remaining
+`xTableClientCaps.Mutation` acquisition, every direct call to
+`doInsertMutation()`, `doUpdateMutation()`, or `doDeleteMutation()`, and every
+writable `DB3EditGrid` that still uses the legacy branch. A new file, call, or
+capability acquisition fails the test. Counts are recorded as well as paths so
+adding another writer inside an already-inventoried file also fails. The
+inventory may shrink; it must not be expanded to make a new failure pass.
+
+Writable grids make this boundary visible in their type contract. A grid must
+now supply a CRUD-enabled `view`, or an existing inventoried call site must
+carry the explicit `legacyMutationTransport` marker. A read-only legacy grid
+does not request mutation capability. The marker is not a supported opt-in for
+new code; it makes the remaining debt searchable and is itself checked against
+the inventory.
+
+The existing writers are grouped by the replacement they need:
+
+| Category | Remaining surfaces | Intended replacement |
+| --- | --- | --- |
+| Ordinary and lookup grids | User/Event/File/Song/Instrument grids, tags, permissions, roles, settings, attendance, song credits, and gallery-item administration | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
+| Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
+| Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
+| Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
+| Compatibility infrastructure | The legacy grid branch, standalone edit dialog, selection-creation fallback, generic mutation-capable query helpers, and the TableClient transport implementation | Delete each bridge after its callers migrate; remove the capability flag and generic mutation RPC last. |
+
+The first post-inventory category slice migrates the Event Type, Event Status,
+and Event Tag administration grids. Each now has one registered editor CRUD
+view and uses generated create/update/delete commands. Their editor DTOs keep
+authorization-removable fields optional, omit relation collections that the
+grid does not edit, and retain the existing `xTable` client-value conversion
+behavior for fields such as color.
+
 ## Design principles
 
 - Define an entity once; define multiple named views for its use-specific shapes.
@@ -882,6 +918,15 @@ boundary safely.
 - [ ] Prohibit new consumers of the legacy TableClient mutation transport, then
   migrate existing writers by category: generated CRUD for ordinary rows and
   named commands for aggregates or workflows.
+  - [x] Add a source-enforced deletion inventory for mutation capability,
+    direct legacy method calls, and legacy writable-grid call sites.
+  - [x] Require remaining writable legacy grids to opt in explicitly; ensure
+    read-only grids never acquire mutation capability.
+  - [x] Migrate the Event Type, Event Status, and Event Tag lookup-grid batch to
+    generated CRUD views and commands.
+  - [ ] Migrate the remaining ordinary and lookup grids, then entity-detail,
+    nested/relationship, collection, and workflow categories in that order,
+    splitting out named domain commands wherever row CRUD is not truthful.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,

@@ -62,6 +62,7 @@ const MainContent = () => {
         <SettingMarkdown setting="editEvents_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
+            legacyMutationTransport
             renderExtraActions={(args) => {
                 return <ExtraActions gridArgs={args} />
             }}

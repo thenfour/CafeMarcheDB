@@ -224,6 +224,7 @@ export enum xTableClientCaps {
     None = 0,
     PaginatedQuery = 1,
     Query = 2,
+    /** @deprecated Existing migration inventory only. Use a CRUD view or named command. */
     Mutation = 4,
 };
 

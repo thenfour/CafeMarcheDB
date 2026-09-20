@@ -1,9 +1,107 @@
 import { Prisma } from "db";
 import { z } from "zod";
+import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { permissionEntity } from "../user/userEntities";
 import { hydrateEventDateRange } from "./eventDateRange";
 import { eventEntity, eventStatusEntity, eventTagEntity, eventTypeEntity } from "./eventEntities";
+
+const EventTypeEditorDtoSchema = z.object({
+    id: z.number().int(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+    iconName: z.string().nullable().optional(),
+    isDeleted: z.boolean().optional(),
+});
+
+const EventStatusEditorDtoSchema = z.object({
+    id: z.number().int(),
+    label: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+    iconName: z.string().nullable().optional(),
+    isDeleted: z.boolean().optional(),
+});
+
+const EventTagEditorDtoSchema = z.object({
+    id: z.number().int(),
+    text: z.string().optional(),
+    description: z.string().optional(),
+    color: z.string().nullable().optional(),
+    sortOrder: z.number().int().optional(),
+    significance: z.string().nullable().optional(),
+    visibleOnFrontpage: z.boolean().optional(),
+});
+
+const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+        iconName: true,
+        isDeleted: true,
+    },
+});
+
+const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
+    select: {
+        id: true,
+        label: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+        iconName: true,
+        isDeleted: true,
+    },
+});
+
+const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
+    select: {
+        id: true,
+        text: true,
+        description: true,
+        color: true,
+        sortOrder: true,
+        significance: true,
+        visibleOnFrontpage: true,
+    },
+});
+
+export const eventTypeEditorView = defineCrudView({
+    viewID: "EventType_Editor",
+    entity: eventTypeEntity,
+    selection: eventTypeEditorSelection,
+    dtoSchema: EventTypeEditorDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
+
+export const eventStatusEditorView = defineCrudView({
+    viewID: "EventStatus_Editor",
+    entity: eventStatusEntity,
+    selection: eventStatusEditorSelection,
+    dtoSchema: EventStatusEditorDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
+
+export const eventTagEditorView = defineCrudView({
+    viewID: "EventTag_Editor",
+    entity: eventTagEntity,
+    selection: eventTagEditorSelection,
+    dtoSchema: EventTagEditorDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.id,
+});
 
 const EventTagAssignmentDtoSchema = z.object({
     id: z.number().int(),

@@ -387,6 +387,46 @@ describe("DB3 commands", () => {
         );
     });
 
+    it("registers generated CRUD for the event lookup-grid migration batch", () => {
+        const views = [
+            db3.eventTypeEditorView,
+            db3.eventStatusEditorView,
+            db3.eventTagEditorView,
+        ];
+
+        for (const view of views) {
+            expect(db3.getDB3CrudViewForCommand(view.crud.createCommand.commandID)).toBe(view);
+            expect(getDB3CommandHandler(view.crud.createCommand.commandID).command)
+                .toBe(view.crud.createCommand);
+            expect(getDB3CommandHandler(view.crud.updateCommand.commandID).command)
+                .toBe(view.crud.updateCommand);
+            expect(getDB3CommandHandler(view.crud.deleteCommand.commandID).command)
+                .toBe(view.crud.deleteCommand);
+        }
+
+        expect(db3.eventTypeEditorView.crud.createCommand.parseDto({
+            text: "Concert",
+            description: "",
+            color: null,
+            sortOrder: 0,
+            significance: null,
+            iconName: null,
+            isDeleted: false,
+        })).toMatchObject({ text: "Concert", sortOrder: 0 });
+        expect(() => db3.eventTypeEditorView.crud.createCommand.parseDto({
+            text: "Concert",
+            events: [],
+        })).toThrow();
+        expect(() => db3.eventStatusEditorView.crud.updateCommand.parseDto({
+            identity: 1,
+            patch: { id: 2 },
+        })).toThrow();
+        expect(() => db3.eventTagEditorView.crud.deleteCommand.parseDto({
+            identity: 1,
+            deleteType: "hard",
+        })).toThrow();
+    });
+
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {
         const view = db3.instrumentFunctionalGroupEditorView;
         const colorField = db3.xInstrumentFunctionalGroup.getColumn("color")!;

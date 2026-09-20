@@ -35,6 +35,7 @@ const MainContent = () => {
         <SettingMarkdown setting="EditFilesPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
+            legacyMutationTransport
         />
     </>;
 };

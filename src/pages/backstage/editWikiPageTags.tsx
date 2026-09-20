@@ -21,7 +21,7 @@ const MainContent = () => {
     return <>
         <SettingMarkdown setting="editWikiPageTags_markdown"></SettingMarkdown>
         <div>Wiki Page Tags admin page will be available after database migration.</div>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
     </>;
 };
 

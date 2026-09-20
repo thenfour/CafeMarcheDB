@@ -24,7 +24,7 @@ const InstrumentTagListContent = () => {
 
     return <>
         <SettingMarkdown setting="instrumentTagList_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid tableSpec={tableSpec} legacyMutationTransport />
     </>;
 };
 

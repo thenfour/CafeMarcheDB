@@ -40,6 +40,7 @@ const MainContent = () => {
         <SettingMarkdown setting="EditEventSegmentsPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
+            legacyMutationTransport
             tableParams={{ eventId }}
         />
     </>;
