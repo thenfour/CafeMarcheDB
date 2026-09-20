@@ -62,6 +62,15 @@ the natural database primary-key member.
 The entity/view work is being introduced around `xTable`, not by replacing all
 of it at once.
 
+Domain-specific query behavior belongs with the table/entity or view that owns
+it, not in DB3 core. `CMDBTableFilterModel.tableParams` is the transitional
+carrier for this behavior, with `xTable.queryParameters` providing runtime
+validation and field-authorization mapping. For example, limiting event
+responses to the requesting actor is an event-search concern expressed as
+`limitResponsesToActor`; it is not a generic `userIdForResponses` DB3 feature.
+The longer-term type-safe API should infer a view's query parameters just as it
+infers its DTO and client result.
+
 ### Entity: stable identity and table-level type anchor
 
 `defineEntity()` describes the stable, view-independent identity of an entity.
@@ -78,6 +87,12 @@ At this stage an entity does **not** define its own columns and does not replace
 `xTable`. It is the typed anchor shared by multiple views and by the reference
 store. Moving more stable metadata out of `xTable` may be a later refactor, but
 views must remain independent of query shape either way.
+
+`ClientEntityOf<TEntity>` is the canonical normalized reference shape for an
+entity; it need not be the richest client shape available for that entity.
+`EntityIdOf<TEntity>` and `PrismaDelegateOf<TEntity>` expose the corresponding
+identity and type-only Prisma delegate contracts without coupling callers to a
+particular view.
 
 ### View: one named read contract
 
@@ -99,6 +114,20 @@ One entity may have several views, for example a compact list view, dashboard
 reference view, search view, and detail/editor view. This is the replacement for
 duplicating table schemas merely to obtain different payload shapes.
 
+The view is also the source of result-type inference:
+
+- `DbPayloadOf<TView>` is the selected pre-authorization Prisma payload;
+- `DtoOf<TView>` is inferred from the Zod transport schema; and
+- `ClientOf<TView>` is inferred from the hydration return type.
+
+`useDb3Query({ view })` carries `ClientOf<typeof view>` through to `items`.
+Consumers should not need assertions such as
+`songsClient.items as SongPayload_Verbose[]`. A cast at that boundary is a sign
+that the view, DTO schema, hydration type, or query API is not expressing its
+contract completely. Named-view query execution validates and hydrates results
+automatically; ordinary consumers should not remember to call `enrich*` or a
+hydrator manually.
+
 ### DTO: the authorized transport boundary
 
 A DTO is neither a Prisma model nor the final rich client object. It is the
@@ -107,6 +136,10 @@ view.
 
 - Its type comes from the view's Zod schema, not from an asserted Prisma payload.
 - Fields that field authorization may remove must be optional in the DTO.
+- The compiler cannot know the requesting actor's runtime permissions. A field
+  selected by a view but removable by field authorization is therefore
+  optional for **every** client role, including Sysadmins. Callers must narrow
+  it before use; there is no role-dependent TypeScript payload type.
 - `undefined`/absent, `null`, and an empty collection have different meanings:
   unauthorized or unselected, explicitly no value, and an authorized empty
   collection respectively.
@@ -139,6 +172,14 @@ Hydration must preserve authorization omissions. In particular, it must not turn
 an omitted collection into `[]` or restore an omitted object from a global cache
 unless that reference was explicitly present in the DTO contract.
 
+Hydration depth is defined by the named view, not by unrestricted recursion or a
+client-provided depth number. Each view selects a finite graph and its hydrator
+walks only that graph. Cyclic domain relationships such as
+`Instrument -> Tags -> Instrument` therefore do not imply cyclic object
+expansion: a relation either stops at an identity/reference view or names a
+different finite nested shape. Hydration never discovers and fetches another
+level on demand.
+
 ### Client values, editable drafts, and mutation commands are distinct
 
 A hydrated client value is optimized for reading and application behavior; it is
@@ -153,8 +194,81 @@ Complex editors should use an explicit progression:
 
 The event-song-list work is the current example: separate persistence
 collections hydrate into `EventSongListContent`, then adapt to an editor draft,
-and finally serialize to one mutation command. Generic DB3 editing still uses
-legacy mechanisms in many places, so this pattern is not yet universal.
+and finally serialize to one runtime-validated mutation command. The draft owns
+one ordered `items` collection and has temporary client identities; the adapter
+alone recreates persistence's split `songs`/`dividers` collections and
+`sortOrder` values. Authorization-incomplete client values cannot become
+editable drafts. Generic DB3 editing still uses legacy mechanisms in many
+places, so this pattern is not yet universal.
+
+A read DTO's optional fields must not silently become optional write semantics.
+An editor should either require the complete fields needed to construct its
+draft or use a purpose-specific patch command. The server always validates and
+authorizes a command again against persisted state.
+
+### Transitional escape hatches
+
+The target design has no generic query/view `customData` bag. A domain that
+needs an unusual shape should define that shape in its view DTO and hydration
+result so it remains typed and authorized. This does not by itself remove
+domain persistence columns that happen to be named `customData`, such as file
+metadata; those are separate schema/migration decisions.
+
+`GhostField` remains a transitional way to acknowledge a Prisma member that DB3
+does not fully model. It may remain for deliberately opaque or server-owned
+fields when no richer behavior is needed. It must not be used for a relation
+that needs recursive authorization, visibility filtering, public-ID
+translation, or hydration. Such a relation needs a real relation descriptor,
+for example `ForeignCollectionField`, so generic traversal can enforce policy.
+
+### Ordering is semantic, not identity-based
+
+Natural database IDs are not a client-visible ordering contract. Generic search
+and grid APIs must not expose `id` as a sort option, choose it as their default,
+or append it as an implicit tie-breaker. A request supplies at least one
+authorized semantic sort; table/view defaults use fields such as name, date, or
+explicit `sortOrder`. If deterministic pagination needs additional ordering,
+the view must define another appropriate semantic key rather than leaking
+insertion order through the primary key.
+
+### Module organization
+
+The historical concentration of Prisma selections, payload aliases, schemas,
+and API types in files such as `prismArgs.ts` and `apiTypes.ts` is not the target
+layout. New entity/view work should be colocated under
+`shared/entities/<entity>/`, with separate modules where useful for:
+
+- stable entity metadata;
+- named views and DTO schemas;
+- hydrated value objects;
+- editable drafts; and
+- mutation command schemas.
+
+This does not require a big-bang move of every existing `xTable`, but a migrated
+slice should not add another payload alias or domain command to a historical
+catch-all file merely because similar legacy definitions are there.
+
+### Design pressure cases
+
+The abstraction should continue to be tested against materially different
+shapes, not only simple row queries:
+
+- a scalar foreign reference such as `eventTagId -> eventTag`, resolved through
+  the normalized reference provider;
+- a field-authorized partial DTO where scalar fields or whole nested
+  collections are absent;
+- a semantic value object such as event timing hydrated into `DateTimeRange`,
+  with useful behavior rather than only renamed fields;
+- a heterogeneous aggregate such as a setlist, where separate persistence
+  collections become one ordered client model and a distinct editor draft;
+- a cyclic domain model whose named view deliberately stops at a finite
+  reference boundary; and
+- a converted public-ID entity participating in reads, filters, foreign keys,
+  mutation commands, caches, React keys, and routes.
+
+Future rich objects may also expose domain operations such as URI generation,
+provided those operations are deterministic client behavior and do not conceal
+I/O or authorization decisions.
 
 ## `publicId` design
 
@@ -268,8 +382,22 @@ a per-row compatibility flag or a second lookup mode.
 
 - `InstrumentFunctionalGroup` is the public-ID pilot and currently the only
   converted DB3 entity.
+- Broad public-ID rollout is intentionally paused while entity/view/DTO/
+  hydration boundaries are stabilized. The pilot remains useful, but new
+  conversions should not multiply legacy shape assumptions that the view work
+  is actively removing.
 - Entity/view/hydration primitives exist, and initial instrument, event, file,
   song, and event-song-list views use them.
+- `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
+  `ClientEntityOf<>`, and typed `useDb3Query({ view })` establish the intended
+  inference chain without result casts.
+- Event timing proves hydration into a behavioral `DateTimeRange` value rather
+  than merely renaming fields.
+- Event song lists prove collection reshaping and a separate write model:
+  `EventSongListContent` merges songs and dividers, the editor consumes an
+  `EventSongListDraft`, and insert/update RPCs validate a colocated mutation
+  command. Making the multi-table write atomic and normalizing the combined
+  position namespace on the server remain outstanding.
 - Legacy queries without a named view still use `xTable.getClientModel()` and the
   generic public-ID projector.
 - Some server-owned dashboard loaders query Prisma directly, then explicitly
@@ -282,6 +410,9 @@ a per-row compatibility flag or a second lookup mode.
   participating entities are converted.
 - Raw SQL returned in `SearchResultsRet` is intentionally unchanged for now and
   is expected to be removed separately.
+- Most unconverted named views still expose numeric identities. That is
+  transitional evidence for the view/hydration design, not permission to treat
+  numeric IDs as part of the final client contract.
 
 ## Design principles
 
@@ -291,12 +422,42 @@ a per-row compatibility flag or a second lookup mode.
 - Make relation graphs finite and explicit; do not recursively hydrate an
   unbounded object graph.
 - Hydration is deterministic, synchronous, and free of I/O.
+- Hydration traverses only the finite graph declared by its named view.
 - Preserve the difference between absent, null, and empty.
 - Prefer semantic client values over persistence-shaped bags of fields.
 - Do not use a hydrated read model as an implicit write model.
+- Keep domain-specific filters and selection behavior out of DB3 core.
+- Do not add generic untyped payload bags where a named DTO/client shape can
+  express the requirement.
+- Never use natural identity as a client sort contract or hidden default sort.
 - Keep natural/public identity conversion at the transport boundary; internal
   persistence code continues to use the database's natural keys.
 - Never treat opacity as authorization.
+
+## Migration method
+
+Migrate one bounded entity/view/consumer slice at a time:
+
+1. Trace the current Prisma selection, `xTable`, manual enrichment, casts,
+   mutation inputs, raw-SQL paths, and all consumers for that use case.
+2. Reuse or define the stable entity, then define a named view with the maximum
+   required selection and an authorization-compatible Zod DTO.
+3. Replace relation `GhostField`s needed by that graph with real relation
+   metadata so recursive policy remains generic.
+4. Hydrate to the semantic client value and consume it through typed
+   `useDb3Query({ view })`; remove the corresponding manual enrichment and
+   result casts in the migrated slice.
+5. If the value is editable, introduce an explicit draft and validated command
+   rather than sending the hydrated read model back to the server.
+6. Audit identity, sorting, caches, keys, URLs, filters, mutations, and exports
+   before converting that entity to `publicId`.
+7. Add tests for complete and field-stripped DTOs, nested authorization,
+   hydration failure paths, inferred result types, and relevant write/identity
+   behavior.
+
+Do not combine all public-ID migrations into the architecture refactor. Resume
+entity conversion only as each bounded slice has a coherent read and write
+boundary.
 
 ## Roadmap
 
@@ -304,11 +465,18 @@ a per-row compatibility flag or a second lookup mode.
 - [x] Establish a normalized reference store and public-ID pilot.
 - [x] Prove richer hydration with search/detail views, structured event date
   ranges, and event-song-list content.
-- [ ] Complete the setlist draft/edit/mutation design and transactional write.
+- [x] Separate setlist hydrated content, editable draft, and validated mutation
+  command.
+- [ ] Make setlist parent/item writes atomic and normalize the combined
+  song/divider position namespace transactionally.
 - [ ] Convert remaining legacy `enrich*` consumers and duplicate query-shape
   declarations to named views.
+- [ ] Remove remaining generic query/view escape hatches and replace relation
+  `GhostField`s where recursive policy or hydration is required.
 - [ ] Strengthen `xTable` typing and decide which stable metadata should
   ultimately move to entity definitions.
+- [ ] Infer and validate typed view-specific query parameters instead of exposing
+  untyped `tableParams` to callers.
 - [ ] Generalize public-ID translation for association/tag mutation commands.
 - [ ] Audit generic sort/reorder, association-matrix, raw SQL, exports, routes,
   and non-DB3 Prisma endpoints for identity assumptions.
