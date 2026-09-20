@@ -60,6 +60,27 @@ best expresses an operation and serializes it to a purpose-specific write DTO.
 The server remains authoritative for validation, authorization, persisted-state
 invariants, and transactionality.
 
+The intended converged client boundary is therefore:
+
+```text
+reads:  Entity -> View -> DTO -> hydrated client value
+writes: edit model or action input -> Command DTO -> command handler -> persistence
+```
+
+Commands are intended to become the only DB3 client-to-server write transport.
+That does not mean every write needs a bespoke aggregate implementation. The
+command system should support two authoring levels:
+
+- generated entity CRUD commands for ordinary single-row create, update, and
+  delete operations; and
+- handwritten domain commands for aggregates, workflows, and other operations
+  whose contract is not meaningfully row-shaped.
+
+The goal is one mutation architecture with a simple form and an expressive form,
+not an easy legacy path beside a more type-safe command path. The current
+TableClient mutation API remains only as migration infrastructure until command
+ergonomics cover its useful behavior.
+
 ## Current vocabulary and responsibilities
 
 ### `xTable`: policy and persistence metadata
@@ -259,15 +280,24 @@ migrated or that do not need a DB3 command contract. It leaves input shaping,
 endpoint selection, result interpretation, and any client-side runtime checking
 to each caller.
 
-The legacy DB3 TableClient (`xTableRenderClient`) solves a different problem.
-Its mutation methods provide generic single-table CRUD. `prepareMutation()`
-walks configured client columns and `xTable` columns, converts client fields to
-database-shaped fields, performs advisory client-side authorization filtering,
-selects numeric or public identity, invokes the generic table mutation endpoint,
-and may refetch the table query. That remains useful for conventional row
-editors.
+The legacy DB3 TableClient (`xTableRenderClient`) currently solves a different
+problem. Its mutation methods provide generic single-table CRUD.
+`prepareMutation()` walks configured client columns and `xTable` columns,
+converts client fields to database-shaped fields, performs advisory client-side
+authorization filtering, selects numeric or public identity, invokes the
+generic table mutation endpoint, and may refetch the table query. Those are
+important capabilities to preserve, but the TableClient mutation transport is
+not part of the target architecture.
 
-A command is preferable when the operation:
+Generated entity CRUD commands should make conventional row editing as easy as
+the legacy path while providing strict operation-specific input and result
+types. They may reuse existing column transformation, validation, authorization,
+auditing, hook, and public-ID machinery internally. The public client contract
+must not expose `TAnyModel`, table names, numeric table IDs, or the generic
+mutation envelope merely because the implementation delegates to mature DB3
+row services.
+
+A handwritten command is preferable to generated CRUD when the operation:
 
 - accepts a rich client value that is not a table row;
 - has an operation-specific strict DTO or result;
@@ -281,6 +311,13 @@ services reuse the authoritative DB3 row mutation core. This avoids making a
 table-shaped client sanitizer responsible for aggregate semantics without
 discarding the mature row-level validation, authorization, audit, public-ID,
 and hook behavior already implemented there.
+
+During migration, TableClient mutation methods may temporarily delegate to
+generated commands so generic editors can move without a flag day. That is a
+compatibility seam, not a permanent second API. Once all consumers of a
+capability have moved, remove the corresponding `doInsertMutation()`,
+`doUpdateMutation()`, `doDeleteMutation()`, mutation capability flag, and
+generic mutation RPC surface.
 
 ### Client values, editable drafts, and mutation commands are distinct
 
@@ -315,7 +352,7 @@ An editor should either require the complete fields needed to construct its
 draft or use a purpose-specific patch command. The server always validates and
 authorizes a command again against persisted state.
 
-### Open direction: first-class edit models
+### Direction: first-class edit models
 
 The setlist migration also exposes a remaining client-side seam. Draft creation,
 hydrated-client-to-draft adaptation, deep cloning, and temporary client identity
@@ -331,12 +368,13 @@ draft should remain detached mutable data; hydrated query objects should not
 gain hidden I/O methods or be mutated in place because they may share canonical
 references or query-cache identity.
 
-This direction is not implemented yet. Commands that represent actions such as
-publish, approve, reorder, or merge may have no meaningful edit model, so draft
-lifecycle must not become mandatory for every command. Setlist temporary
-identity should also eventually distinguish an optional persisted identity from
-an opaque always-local key instead of encoding persistence in the sign of
-`clientId`.
+This direction is not implemented yet and must be proved before it becomes a
+mandatory abstraction for editable entity commands. Commands that represent
+actions such as publish, approve, reorder, or merge may have no meaningful edit
+model, so draft lifecycle must not become mandatory for every command. Setlist
+temporary identity should also eventually distinguish an optional persisted
+identity from an opaque always-local key instead of encoding persistence in the
+sign of `clientId`.
 
 ### Transitional escape hatches
 
@@ -519,10 +557,11 @@ a per-row compatibility flag or a second lookup mode.
 
 - `InstrumentFunctionalGroup` is the public-ID pilot and currently the only
   converted DB3 entity.
-- Broad public-ID rollout is intentionally paused while entity/view/DTO/
-  hydration boundaries are stabilized. The pilot remains useful, but new
-  conversions should not multiply legacy shape assumptions that the view work
-  is actively removing.
+- Broad public-ID rollout should not proceed as a big-bang schema exercise while
+  entity/view/command boundaries are still being proved. However, `publicId` is
+  now an acceptance criterion for those primitives rather than a distant final
+  phase: new generic CRUD, association, filtering, and edit-model facilities
+  should be proved against the existing public-ID pilot.
 - Entity/view/hydration/command primitives exist, and initial instrument, event,
   file, song, and event-song-list views use the read-side primitives.
 - `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
@@ -563,6 +602,9 @@ a per-row compatibility flag or a second lookup mode.
 - Most unconverted named views still expose numeric identities. That is
   transitional evidence for the view/hydration design, not permission to treat
   numeric IDs as part of the final client contract.
+- Legacy TableClient mutation transport is still broadly used. The intended
+  replacement is generated entity CRUD commands for ordinary row editors and
+  handwritten commands for aggregate or workflow operations.
 
 ## Design principles
 
@@ -579,12 +621,15 @@ a per-row compatibility flag or a second lookup mode.
 - Define named commands for operation-specific or aggregate writes; keep their
   client input, strict DTO, strict result, and server handler connected by one
   typed contract.
+- Use generated entity CRUD commands for ordinary row writes so commands become
+  the sole DB3 client mutation boundary without making simple editors verbose.
 - Treat `useDB3Command()` serialization and validation as client contract
   ergonomics, never as a replacement for server validation or authorization.
 - Compose aggregate command handlers from the existing authoritative DB3 row
   mutation services instead of copying table authorization and mutation rules.
-- Retain legacy table-client mutation for straightforward single-row CRUD where
-  an aggregate command adds no semantic value.
+- Treat legacy TableClient mutation as temporary migration infrastructure. Do
+  not add new consumers, and delete each legacy capability once its consumers
+  have moved to commands.
 - Keep domain-specific filters and selection behavior out of DB3 core.
 - Do not add generic untyped payload bags where a named DTO/client shape can
   express the requirement.
@@ -594,6 +639,12 @@ a per-row compatibility flag or a second lookup mode.
 - Never treat opacity as authorization.
 
 ## Migration method
+
+Migration proceeds through vertical slices with deletion gates, not through a
+cleanup sweep followed by a later public-ID project. Each slice must prove its
+replacement, migrate the relevant consumers, and remove the superseded path.
+Compatibility seams are acceptable only while a known set of consumers is in
+flight.
 
 Migrate one bounded entity/view/consumer slice at a time:
 
@@ -610,15 +661,42 @@ Migrate one bounded entity/view/consumer slice at a time:
    rather than sending the hydrated read model back to the server. Put the
    client-input-to-DTO transformation on the command, register a server handler,
    and compose its writes from DB3 row services inside the command transaction.
-6. Audit identity, sorting, caches, keys, URLs, filters, mutations, and exports
-   before converting that entity to `publicId`.
-7. Add tests for complete and field-stripped DTOs, nested authorization,
+6. For ordinary row editing, use the generated entity CRUD command contract;
+   reserve handwritten commands for aggregates and domain actions.
+7. Audit identity, sorting, caches, keys, URLs, filters, mutations, associations,
+   raw SQL, routes, and exports before converting that entity to `publicId`.
+8. Add tests for complete and field-stripped DTOs, nested authorization,
    hydration failure paths, inferred result types, and relevant write/identity
    behavior.
+9. Migrate every consumer in the bounded capability, then remove the replaced
+   TableClient, RPC, enrichment, compatibility, or numeric-identity surface.
 
-Do not combine all public-ID migrations into the architecture refactor. Resume
-entity conversion only as each bounded slice has a coherent read and write
-boundary.
+Do not combine all public-ID migrations into one architecture refactor. Convert
+entities individually once each bounded slice has coherent read and write
+boundaries. Public identity nevertheless remains part of the acceptance test
+for every new generic facility so the architecture cannot accidentally settle
+around numeric client IDs.
+
+### Definition of a migrated entity
+
+An entity is complete only when the applicable items below are true:
+
+- it has stable typed entity metadata and named client views;
+- view DTOs are runtime validated and hydrate without result casts or
+  supplemental `enrich*` work;
+- editable uses have an explicit edit model or action input;
+- all client writes use strict generated or handwritten commands;
+- no consumer uses TableClient mutation transport for the entity;
+- public identity is used across client-facing DTOs, command inputs and results,
+  foreign references, filters, caches, and React keys;
+- associations, routes, search, imports/exports, and raw SQL have been audited;
+- recursive authorization and projection do not leak natural IDs or provide an
+  existence oracle; and
+- the replaced compatibility code and legacy endpoints have been removed.
+
+Track these facts per entity. This is more useful than counting converted schema
+columns, because it records whether an entity has actually crossed every client
+boundary safely.
 
 ## Roadmap
 
@@ -632,12 +710,29 @@ boundary.
   registry, an authorized transactional context, and reusable DB3 row services.
 - [x] Migrate setlist create/update to one atomic aggregate save command and
   remove its legacy RPC and raw child-synchronization paths.
+- [ ] Define strict generated entity CRUD command contracts and shared handlers,
+  including create/update/delete identity, patch semantics, result types,
+  validation, error behavior, and refetch/invalidation expectations.
+- [ ] Prove generated CRUD against `InstrumentFunctionalGroup`, the existing
+  public-ID pilot, and migrate its `DB3EditGrid` without exposing table names,
+  numeric table IDs, `TAnyModel`, or the generic mutation envelope.
+- [ ] Make generic editing infrastructure command-backed, including
+  `DB3EditGrid`, `DB3NewObjectDialog`, selection-source creation, and
+  `DB3AssociationMatrix`.
+- [ ] Prohibit new TableClient mutation consumers, then migrate existing writers
+  by category: generated CRUD for ordinary rows and named commands for
+  aggregates or workflows.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,
   hydrated-client adaptation, cloning, and local identity allocation.
 - [ ] Decide whether setlist delete/reorder should become commands or remain
-  generic/specialized mutations based on their actual aggregate semantics.
+  separate generated/domain commands based on their actual aggregate semantics.
+- [ ] Finish the setlist aggregate proof, including edit-model lifecycle,
+  ordering invariants, concurrency/lost-update policy, deletion/reordering, and
+  removal of every remaining legacy setlist write path.
+- [ ] Remove TableClient mutation methods, mutation capability flags, and the
+  generic DB3 mutation RPC after their final consumers have moved.
 - [ ] Convert remaining legacy `enrich*` consumers and duplicate query-shape
   declarations to named views.
 - [ ] Remove remaining generic query/view escape hatches and replace relation
@@ -646,10 +741,14 @@ boundary.
   ultimately move to entity definitions.
 - [ ] Infer and validate typed view-specific query parameters instead of exposing
   untyped `tableParams` to callers.
-- [ ] Generalize public-ID translation for association/tag mutation commands.
+- [ ] Generalize public-ID translation for association/tag mutation commands
+  before converting entities used through those mutation shapes.
 - [ ] Audit generic sort/reorder, association-matrix, raw SQL, exports, routes,
   and non-DB3 Prisma endpoints for identity assumptions.
 - [ ] Migrate all client-facing entities to `publicId`, one bounded model slice at
   a time.
   - [x] `InstrumentFunctionalGroup`
   - [ ] catalog remaining candidate entities and their relation/mutation shapes
+  - [ ] choose successive pilots that exercise scalar foreign keys,
+    associations/tags, and route/search identity before converting central
+    entities such as Event and User
