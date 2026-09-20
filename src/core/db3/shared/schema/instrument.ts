@@ -161,6 +161,10 @@ export const xInstrumentTagAssociation = new db3.xTable({
     }),
     columns: [
         MakePKfield(),
+        new GhostField({
+            memberName: "instrumentId",
+            authMap: xInstrumentAuthMap_R_EAdmins,
+        }),
         // do not add the `instrument` column here; this is used only as an association FROM the instrument table; excluding it
         // 1. enforces this purpose (minor)
         // 2. avoids a circular reference to xInstrument (major)

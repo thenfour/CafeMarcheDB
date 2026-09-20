@@ -38,15 +38,16 @@ const sanitizeGroup = (publicData: db3.DB3Authorization) => {
 };
 
 describe("InstrumentFunctionalGroup public-ID transport", () => {
-    it("uses publicId as canonical client identity while exposing the natural id only to Sysadmins", () => {
-        expect(sanitizeGroup(authorization(Permission.login))).toEqual({
+    it("uses publicId as canonical client identity for every role", () => {
+        const expected = {
             publicId,
             name: group.name,
             description: group.description,
             color: group.color,
             sortOrder: group.sortOrder,
-        });
-        expect(sanitizeGroup(authorization(Permission.login, Permission.sysadmin))).toEqual(group);
+        };
+        expect(sanitizeGroup(authorization(Permission.login))).toEqual(expected);
+        expect(sanitizeGroup(authorization(Permission.login, Permission.sysadmin))).toEqual(expected);
     });
 
     it("projects converted foreign keys through direct, association, and nested relation payloads", () => {

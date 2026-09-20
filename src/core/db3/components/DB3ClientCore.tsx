@@ -229,6 +229,8 @@ export enum xTableClientCaps {
 
 export interface xTableClientArgs {
     tableSpec: xTableClientSpec,
+    queryView?: db3.AnyDB3View,
+    referenceProvider?: db3.DB3ReferenceProvider,
 
     requestedCaps: xTableClientCaps,
 
@@ -309,7 +311,11 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 throw new Error("Paginated DB3 queries require a pagination model.");
             }
             const paginatedQueryInput: db3.PaginatedQueryRequestInput = {
-                table: this.args.tableSpec.args.table,
+                table: {
+                    tableID: this.args.tableSpec.args.table.tableID,
+                    tableName: this.args.tableSpec.args.table.tableName,
+                    viewID: this.args.queryView?.viewID,
+                },
                 orderBy,
                 skip,
                 take,
@@ -350,6 +356,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
                 table: {
                     tableID: this.args.tableSpec.args.table.tableID,
                     tableName: this.args.tableSpec.args.table.tableName,
+                    viewID: this.args.queryView?.viewID,
                 },
                 orderBy,
                 take,
@@ -380,6 +387,16 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
 
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
+            if (this.args.queryView) {
+                if (!this.args.referenceProvider) {
+                    throw new Error(`DB3 view '${this.args.queryView.viewID}' requires a reference provider.`);
+                }
+                return db3.hydrateView(
+                    this.args.queryView,
+                    this.args.queryView.parseDto(dbitem),
+                    this.args.referenceProvider,
+                ) as Trow;
+            }
             return this.schema.getClientModel(dbitem, "view") as Trow;
         });
 

@@ -680,14 +680,8 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
     const showCancelledSegmentsControls = dashboardContext.isAuthorized(Permission.manage_events) && cancelledSegments.length > 0;
     const shownSegments: (typeof event.segments[0])[] = showCancelledSegments ? event.segments : uncancelledSegments;
 
-    const functionalGroupsClient = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xInstrumentFunctionalGroup,
-            columns: [
-                new DB3Client.PublicIdColumnClient(),
-            ],
-        }),
+    const functionalGroupsClient = DB3Client.useDb3Query({
+        view: db3.instrumentFunctionalGroupListView,
     });
 
     if (!responseInfo) return null;
@@ -726,7 +720,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: Ev
                         </th>;
                     })}
                 </tr>
-                {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupClientPayload[]).map(functionalGroup => {
+                {functionalGroupsClient.items.map(functionalGroup => {
                     return <tr key={functionalGroup.publicId}>
                         <td className='instrumentFunctionalGroupTD'>
                             <InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} border={'noBorder'} shape='rectangle' />

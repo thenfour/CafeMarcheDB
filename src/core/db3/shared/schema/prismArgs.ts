@@ -570,7 +570,6 @@ export type InstrumentFunctionalGroupPayloadMinimum = Prisma.InstrumentFunctiona
 // i'm thinking of a generic way to do this, but probably done together with an enrichment step.
 export type InstrumentFunctionalGroupClientPayload = Omit<InstrumentFunctionalGroupPayload, "id" | "publicId"> & {
     publicId: InstrumentFunctionalGroupPublicId;
-    id?: number;
 };
 
 // Canonical client representation of an instrument. Instrument itself has not

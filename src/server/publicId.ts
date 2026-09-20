@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { PUBLIC_ID_LENGTH, PUBLIC_ID_PLACEHOLDER_PREFIX, type PublicId } from "shared/publicId";
+import { PUBLIC_ID_LENGTH, PUBLIC_ID_PLACEHOLDER_PREFIX, PublicId } from "shared/publicId";
 
 const PUBLIC_ID_REPAIR_BATCH_SIZE = 100;
 const PUBLIC_ID_COLLISION_RETRIES = 8;

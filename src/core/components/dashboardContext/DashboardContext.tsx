@@ -19,7 +19,6 @@ import { ActivityFeature, ClientActivityParams, collectDeviceInfo, UseFeatureUse
 import { DbBrandConfig, DefaultDbBrandConfig } from '@/shared/brandConfigBase';
 import { useBrand } from '@/shared/brandConfig';
 import { DashboardContextDataBase } from './dashboardContextTypes';
-import { enrichInstrument } from '@db3/shared/schema/enrichedInstrumentTypes';
 import { PermissionSet } from '@/src/auth/shared/PermissionSet';
 import { isAttendanceGoing } from 'shared/eventAttendance';
 import { partition, zip } from "@/shared/arrayUtils";
@@ -249,6 +248,14 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         dashboardData.instrumentFunctionalGroup,
         group => group.publicId,
     );
+    valueRef.current.referenceStore.register(
+        db3.instrumentFunctionalGroupEntity,
+        valueRef.current.instrumentFunctionalGroup.items,
+    );
+    valueRef.current.referenceStore.register(
+        db3.instrumentTagEntity,
+        valueRef.current.instrumentTag.items,
+    );
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
     valueRef.current.serverBaseUri = dashboardData.serverBaseUri;
@@ -279,7 +286,12 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         }
     }));
 
-    valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => enrichInstrument(i, valueRef.current)));
+    valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(dto => db3.hydrateView(
+        db3.instrumentDashboardView,
+        db3.instrumentDashboardView.parseDto(dto),
+        valueRef.current.referenceStore,
+    )));
+    valueRef.current.referenceStore.register(db3.instrumentEntity, valueRef.current.instrument.items);
 
     return (
         <DashboardContext.Provider value={{ data: valueRef.current }}>

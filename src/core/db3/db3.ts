@@ -4,6 +4,9 @@ export * from "./shared/db3core"
 export * from "./shared/db3Authorization"
 export * from "./shared/db3basicFields"
 export * from "./shared/db3schema"
+export * from "./shared/core/db3Entity"
+export * from "./shared/core/db3Hydration"
+export * from "./shared/core/db3View"
 
 export * from "./shared/schema/instrument"
 export * from "./shared/schema/user"
@@ -16,5 +19,6 @@ export * from "./shared/schema/wiki"
 export * from "./shared/schema/wikiPageTag"
 export * from "./shared/schema/menuLink"
 export * from "./shared/schema/setlistPlan"
+export * from "./shared/entities/instrument/instrumentViews"
 
 

@@ -1,6 +1,5 @@
 // server
 import type { TAnyModel } from "@/shared/rootroot";
-import { Permission } from "shared/permissions";
 import { isPublicId } from "shared/publicId";
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
@@ -98,9 +97,8 @@ export function projectDB3ModelPublicIds(
     publicData: db3.DB3Authorization,
 ): TAnyModel {
     const ret = { ...model };
-    const canViewNaturalIds = publicData.effectivePermissions.includesName(Permission.sysadmin);
 
-    if (table.publicIdMember && !canViewNaturalIds) {
+    if (table.publicIdMember) {
         delete ret[table.pkMember];
     }
 
@@ -139,6 +137,81 @@ export function projectDB3ModelPublicIds(
     }
 
     return ret;
+}
+
+// Applies field and row authorization to every selected relation before projecting
+// database identifiers. This is intentionally separate from the legacy transport
+// helper: named views opt into the complete DTO boundary while older callers can be
+// migrated independently.
+export function authorizeAndProjectDB3ViewModel(
+    table: db3.xTable,
+    model: TAnyModel,
+    publicData: db3.DB3Authorization,
+    contextDesc: string,
+    includeDeleted = false,
+): TAnyModel | null {
+    const authorizeRecursively = (
+        currentTable: db3.xTable,
+        currentModel: TAnyModel,
+        path: string,
+    ): TAnyModel | null => {
+        const result = currentTable.authorizeAndSanitize({
+            contextDesc: `${contextDesc}:${path}`,
+            publicData,
+            includeDeleted,
+            rowMode: "view",
+            model: currentModel,
+            fallbackOwnerId: null,
+        });
+        if (!result.rowIsAuthorized) return null;
+
+        const authorizedModel = { ...result.authorizedModel };
+        for (const field of currentTable.columns) {
+            if (!Object.prototype.hasOwnProperty.call(authorizedModel, field.member)) continue;
+            const value = authorizedModel[field.member];
+
+            if (field.fieldTableAssociation === "foreignObject" && value && typeof value === "object") {
+                const foreignTable = (field as db3.ForeignSingleField<TAnyModel>).getForeignTableSchema();
+                const authorizedForeign = authorizeRecursively(foreignTable, value, `${path}.${field.member}`);
+                if (authorizedForeign) {
+                    authorizedModel[field.member] = authorizedForeign;
+                } else {
+                    delete authorizedModel[field.member];
+                    if (field.fkidMember) delete authorizedModel[field.fkidMember];
+                }
+                continue;
+            }
+
+            if (field.fieldTableAssociation === "associationRecord" && Array.isArray(value)) {
+                const associationTable = (field as db3.TagsField<TAnyModel>).getAssociationTableShema();
+                authorizedModel[field.member] = value
+                    .map((association, index) => authorizeRecursively(
+                        associationTable,
+                        association,
+                        `${path}.${field.member}[${index}]`,
+                    ))
+                    .filter((association): association is TAnyModel => association !== null);
+                continue;
+            }
+
+            if (field instanceof db3.ForeignCollectionField && Array.isArray(value)) {
+                const foreignTable = db3.GetTableById(field.foreignTableID);
+                authorizedModel[field.member] = value
+                    .map((foreignModel, index) => authorizeRecursively(
+                        foreignTable,
+                        foreignModel,
+                        `${path}.${field.member}[${index}]`,
+                    ))
+                    .filter((foreignModel): foreignModel is TAnyModel => foreignModel !== null);
+            }
+        }
+        return authorizedModel;
+    };
+
+    const authorizedModel = authorizeRecursively(table, model, table.tableID);
+    return authorizedModel
+        ? projectDB3ModelPublicIds(table, authorizedModel, publicData)
+        : null;
 }
 
 // recursively checks if a table or any of its related tables use public IDs in transport

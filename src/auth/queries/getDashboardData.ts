@@ -7,14 +7,22 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
 import { getClientServerState } from "shared/serverStateBase";
-import { createDB3Authorization, EventStatusSignificance, xEvent, xInstrument, xInstrumentFunctionalGroup, xMenuLink } from "src/core/db3/db3";
+import {
+    createDB3Authorization,
+    EventStatusSignificance,
+    instrumentDashboardView,
+    instrumentFunctionalGroupDashboardView,
+    xEvent,
+    xInstrument,
+    xInstrumentFunctionalGroup,
+    xMenuLink,
+} from "src/core/db3/db3";
 import { queryTable } from "src/core/db3/server/db3QueryCore";
 import { projectDB3ModelPublicIds } from "src/core/db3/server/db3PublicIds";
 import type { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { getRequestAuthorization } from "../server/requestAuthorization";
 import { loadUserSettings } from "../server/userSettings";
 import { loadBandTimeZone } from "@/src/server/bandTimeZone";
-import type { DashboardInstrumentPayload, InstrumentFunctionalGroupClientPayload } from "@/src/core/db3/shared/schema/prismArgs";
 
 
 // returns a list of eventIds to show in the dashboard for the current user.
@@ -187,10 +195,14 @@ export default resolver.pipe(
             const clientServerState = getClientServerState(effectivePermissions.includesName(Permission.sysadmin));
             const clientInstrumentFunctionalGroups = instrumentFunctionalGroup
                 .map(group => (
-                    projectDB3ModelPublicIds(xInstrumentFunctionalGroup, group, publicData) as InstrumentFunctionalGroupClientPayload
+                    instrumentFunctionalGroupDashboardView.parseDto(
+                        projectDB3ModelPublicIds(xInstrumentFunctionalGroup, group, publicData),
+                    )
                 ));
             const clientInstruments = instrument.map(item => (
-                projectDB3ModelPublicIds(xInstrument, item, publicData) as DashboardInstrumentPayload
+                instrumentDashboardView.parseDto(
+                    projectDB3ModelPublicIds(xInstrument, item, publicData),
+                )
             ));
 
             const ret = {

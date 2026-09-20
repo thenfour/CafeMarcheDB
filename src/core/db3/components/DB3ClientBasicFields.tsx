@@ -1079,22 +1079,41 @@ export interface UseDb3QueryArgsWithEnable extends UseDb3QueryArgs {
     enable: boolean;
 };
 
+export interface UseDb3ViewQueryArgs<TView extends db3.AnyDB3View> {
+    view: TView;
+    filterSpec?: CMDBTableFilterModel | undefined;
+    enable?: boolean;
+};
+
+export interface UseDb3ViewQueryArgsWithEnable<TView extends db3.AnyDB3View> extends UseDb3ViewQueryArgs<TView> {
+    enable: boolean;
+};
+
+export function useDb3Query<TView extends db3.AnyDB3View>(args: UseDb3ViewQueryArgsWithEnable<TView>): DB3ClientCore.xTableRenderClient<db3.ClientOf<TView>> | undefined;
+export function useDb3Query<TView extends db3.AnyDB3View>(args: UseDb3ViewQueryArgs<TView>): DB3ClientCore.xTableRenderClient<db3.ClientOf<TView>>;
 // Overload: when enable is explicitly provided, return type includes undefined
 export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgsWithEnable): DB3ClientCore.xTableRenderClient<Trow> | undefined;
 // Overload: when enable is not provided (or optional), return type never includes undefined  
 export function useDb3Query<Trow extends TAnyModel>(args: UseDb3QueryArgs): DB3ClientCore.xTableRenderClient<Trow>;
 // Implementation
-export function useDb3Query<Trow extends TAnyModel>({ enable = true, schema, filterSpec }: UseDb3QueryArgs): DB3ClientCore.xTableRenderClient<Trow> | undefined {
+export function useDb3Query(
+    args: UseDb3QueryArgs | UseDb3ViewQueryArgs<db3.AnyDB3View>,
+): DB3ClientCore.xTableRenderClient<TAnyModel> | undefined {
+    const { enable = true, filterSpec } = args;
     const ctx = useDashboardContext();
     if (!enable) {
         return undefined;
     }
-    const mutationCtx = DB3ClientCore.useTableRenderContext<Trow>({
+    const view = "view" in args ? args.view : undefined;
+    const schema = "view" in args ? args.view.entity.schema : args.schema;
+    const mutationCtx = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Query,
         tableSpec: new DB3ClientCore.xTableClientSpec({
             table: schema,
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
         }),
+        queryView: view,
+        referenceProvider: ctx.referenceStore,
         filterModel: filterSpec,
     });
     return mutationCtx;

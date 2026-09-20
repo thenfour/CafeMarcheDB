@@ -6,7 +6,7 @@ import { getRequestAuthorization, type RequestAuthorization } from "@/src/auth/s
 import * as db3 from "../db3";
 import type { TransactionalPrismaClient } from "../shared/apiTypes";
 import type { TAnyModel } from "@/shared/rootroot";
-import { projectDB3ModelPublicIds } from "./db3PublicIds";
+import { authorizeAndProjectDB3ViewModel, projectDB3ModelPublicIds } from "./db3PublicIds";
 
 export class DB3QueryAuthorizationError extends AuthorizationError {
     constructor() {
@@ -18,6 +18,10 @@ export class DB3QueryAuthorizationError extends AuthorizationError {
 
 async function prepareTableQuery(input: db3.QueryInputBase, authorization: RequestAuthorization) {
     const table = db3.GetTableById(input.table.tableID);
+    const view = input.table.viewID ? db3.getDB3View(input.table.viewID) : undefined;
+    if (view && view.tableID !== table.tableID) {
+        throw new Error(`DB3 view '${view.viewID}' does not belong to table '${table.tableID}'.`);
+    }
     const publicData = db3.createDB3Authorization(authorization.user, authorization.effectivePermissions);
     const includeDeleted = input.includeDeleted === true;
 
@@ -37,11 +41,29 @@ async function prepareTableQuery(input: db3.QueryInputBase, authorization: Reque
         if (!table.authorizeQueryParameter(parameterName, publicData)) throw new DB3QueryAuthorizationError();
     });
     const where = await table.CalculateWhereClause({ publicData, includeDeleted, filterModel: input.filter });
-    const selectionArgs = await table.CalculateSelectionArgs(publicData, input.filter, includeDeleted);
-    return { table, publicData, includeDeleted, where, selectionArgs };
+    const selectionArgs = await table.CalculateSelectionArgs(
+        publicData,
+        input.filter,
+        includeDeleted,
+        view?.getSelectionArgs,
+    );
+    return { table, view, publicData, includeDeleted, where, selectionArgs };
 }
 
 function sanitizeQueryRows(items: TAnyModel[], query: Awaited<ReturnType<typeof prepareTableQuery>>, contextDesc: string): TAnyModel[] {
+    if (query.view) {
+        return items
+            .map(model => authorizeAndProjectDB3ViewModel(
+                query.table,
+                model,
+                query.publicData,
+                contextDesc,
+                query.includeDeleted,
+            ))
+            .filter((model): model is TAnyModel => model !== null)
+            .map(model => query.view!.parseDto(model));
+    }
+
     return items.map(model => query.table.authorizeAndSanitize({
         contextDesc,
         publicData: query.publicData,

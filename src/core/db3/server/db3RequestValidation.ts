@@ -46,6 +46,7 @@ const QueryBaseShape = {
     table: z.object({
         tableID: Identifier,
         tableName: Identifier,
+        viewID: Identifier.optional(),
     }),
     orderBy: OrderBySchema.optional(),
     filter: FilterModelSchema,
@@ -179,15 +180,35 @@ function schemaForQueryParameter(spec: db3.DB3QueryParameterSpec): z.ZodTypeAny 
     return schema;
 }
 
-function validateTableParameters(table: db3.xTable, params: Record<string, unknown> | undefined): Record<string, unknown> {
+function validateTableParameters(
+    table: db3.xTable,
+    params: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+    const parameterMap = table.queryParameters || {};
     const shape = Object.fromEntries(
-        Object.entries(table.queryParameters || {}).map(([name, spec]) => [name, schemaForQueryParameter(spec)]),
+        Object.entries(parameterMap).map(([name, spec]) => [name, schemaForQueryParameter(spec)]),
     );
     return parseRequest(z.object(shape).strict(), params || {}, "filter.tableParams");
 }
 
 function validateQueryForTable<T extends db3.QueryRequestInput | db3.PaginatedQueryRequestInput>(input: T): T {
     const table = getRequestTable(input.table);
+    let view: db3.AnyDB3View | undefined;
+    if (input.table.viewID) {
+        try {
+            view = db3.getDB3View(input.table.viewID);
+        } catch {
+            throw new DB3RequestValidationError(`unknown view ID '${input.table.viewID}'`);
+        }
+        if (view.viewID !== input.table.viewID) {
+            throw new DB3RequestValidationError(`view ID must use its registered spelling '${view.viewID}'`);
+        }
+        if (view.tableID !== table.tableID || view.tableName !== table.tableName) {
+            throw new DB3RequestValidationError(
+                `view '${view.viewID}' does not belong to table '${table.tableID}'`,
+            );
+        }
+    }
 
     input.filter.items?.forEach(item => validateFieldName(table, item.field, "filter"));
     if (input.orderBy) {

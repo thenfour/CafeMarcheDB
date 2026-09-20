@@ -68,6 +68,9 @@ export interface QueryInputBase {
         // xTable provides these; pass in an xtable.
         tableName: string;
         tableID: string;
+        // Named views own query selection and DTO shape. Omitted by legacy
+        // callers that still use the table-bound getSelectionArgs contract.
+        viewID?: string;
     },
     // tableID: string;
     // tableName: string;
@@ -1040,9 +1043,14 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    CalculateSelectionArgs = async (publicData: DB3Authorization, filterModel: CMDBTableFilterModel, includeDeleted = false): Promise<TAnyModel | undefined> => {
+    CalculateSelectionArgs = async (
+        publicData: DB3Authorization,
+        filterModel: CMDBTableFilterModel,
+        includeDeleted = false,
+        getSelectionArgs: (filterModel: CMDBTableFilterModel) => TAnyModel = this.getSelectionArgs,
+    ): Promise<TAnyModel | undefined> => {
         // create a deep copy so our modifications don't spill into other stuff.
-        const selectionArgs = JSON.parse(JSON.stringify(this.getSelectionArgs(filterModel)));
+        const selectionArgs = JSON.parse(JSON.stringify(getSelectionArgs(filterModel)));
 
         // selection args can be like,
         // { include: { field1: true, field2: true } }

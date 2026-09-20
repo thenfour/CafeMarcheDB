@@ -1,8 +1,8 @@
 import { useQuery } from "@blitzjs/rpc";
-import getUserExtraInfo from "../../db3/queries/getUserExtraInfo";
-import { GoogleIconSmall, NameValuePair } from "../CMCoreComponents2";
 import { Email, Google } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
+import getUserExtraInfo from "../../db3/queries/getUserExtraInfo";
+import { NameValuePair } from "../CMCoreComponents2";
 
 type UserIdentityIndicatorProps = {
     // whether to show the password indicator. for user search list items,

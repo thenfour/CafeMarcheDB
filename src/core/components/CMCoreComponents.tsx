@@ -189,7 +189,7 @@ export const InstrumentChip = (props: InstrumentChipProps) => {
 }
 
 export interface InstrumentFunctionalGroupChipProps {
-    value: Pick<db3.InstrumentFunctionalGroupClientPayload, "name" | "color">;
+    value: Pick<db3.InstrumentFunctionalGroupListItem, "name" | "color">;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -208,7 +208,7 @@ export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupCh
         shape={props.shape}
         border={props.border}
     >
-        {props.value.name}
+        {props.value.name || "<restricted>"}
     </CMChip>
 }
 

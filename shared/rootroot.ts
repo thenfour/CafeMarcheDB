@@ -93,11 +93,18 @@ export class Stopwatch {
 //
 // here Tid can be number (trad id) or string (publicId)
 // and default is the type of `id` in the row, excluding undefined.
-export class TableAccessor<TRow extends { id?: number | string }, TId extends number | string = Exclude<TRow['id'], undefined>> {
+type DefaultTableAccessorId<TRow> = TRow extends { id?: infer TId }
+    ? Extract<TId, number | string>
+    : never;
+
+export class TableAccessor<TRow, TId extends number | string = DefaultTableAccessorId<TRow>> {
     private rows: Map<TId, TRow>;
     private asArray: TRow[];
 
-    constructor(rows: TRow[], getId: (row: TRow) => TId = (row => row.id as TId)) {
+    constructor(
+        rows: TRow[],
+        getId: (row: TRow) => TId = (row => (row as { id: TId }).id),
+    ) {
         this.asArray = rows;
         this.rows = new Map(rows.map(row => [getId(row), row]));
     }

@@ -4,12 +4,12 @@ import { ServerStartInfo } from "@/shared/serverStateBase";
 import { concatenateUrlParts, IsNullOrWhitespace } from "@/shared/utils";
 import * as db3 from "@db3/db3";
 import { Prisma } from "db";
-import type { InstrumentClientPayload, InstrumentFunctionalGroupClientPayload } from "../../db3/shared/schema/prismArgs";
 import type { InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { DEFAULT_BAND_TIME_ZONE } from "shared/dateTimePolicy";
 import { resolveUserSettings, UserSettings } from "shared/userSettings";
 
 export abstract class DashboardContextDataBase {
+    readonly referenceStore = new db3.DB3ReferenceStore();
     userSettings: UserSettings = resolveUserSettings();
     bandTimeZone: string = DEFAULT_BAND_TIME_ZONE;
     userTag: TableAccessor<Prisma.UserTagGetPayload<{}>>;
@@ -28,8 +28,11 @@ export abstract class DashboardContextDataBase {
     permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     role: TableAccessor<Prisma.RoleGetPayload<{}>>;
 
-    instrument: TableAccessor<InstrumentClientPayload>;
-    instrumentFunctionalGroup: TableAccessor<InstrumentFunctionalGroupClientPayload, InstrumentFunctionalGroupPublicId>;
+    instrument: TableAccessor<db3.InstrumentDashboardClient>;
+    instrumentFunctionalGroup: TableAccessor<
+        db3.ClientOf<typeof db3.instrumentFunctionalGroupDashboardView>,
+        InstrumentFunctionalGroupPublicId
+    >;
 
     currentUser: db3.UserPayload | null;
     serverBaseUri: string;
