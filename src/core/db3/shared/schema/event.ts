@@ -1059,7 +1059,7 @@ export const xEventSongList = new db3.xTable({
             getQuickFilterWhereClause: (query: string): Prisma.EventSongListWhereInput | boolean => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
         }),
-        new GhostField({ memberName: "dividers", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new ForeignCollectionField({ memberName: "dividers", foreignTableID: "EventSongListDivider", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "userId", authMap: xEventAuthMap_R_EOwn_EManagers }), // what is this??
     ]
 });
@@ -1150,6 +1150,10 @@ export const xEventSongListDivider = new db3.xTable({
         MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeColorField({ authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GhostField({ memberName: "isSong", authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GhostField({ memberName: "subtitleIfSong", authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GhostField({ memberName: "lengthSeconds", authMap: xEventAuthMap_R_EOwn_EManagers, }),
+
         new BoolField({ columnName: "isInterruption", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "textStyle", defaultValue: EventSongListDividerTextStyle.Default, options: EventSongListDividerTextStyle }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({

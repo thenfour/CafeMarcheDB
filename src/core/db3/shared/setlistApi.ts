@@ -9,7 +9,7 @@ import { markdownToPlainText } from "shared/markdownUtils";
 import { formatSongLength } from "shared/time";
 import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue } from "shared/utils";
 import { getFormattedBPM } from "../clientAPILL";
-import { EventSongListDividerTextStyle } from "../db3";
+import { EventSongListDividerTextStyle } from "./schema/prismArgs";
 
 // make song nullable for "add new item" support
 export type EventSongListSongItemDb = Prisma.EventSongListSongGetPayload<{
@@ -81,7 +81,7 @@ export type EventSongListNewItem = {
 
 export type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
 
-type LocalSongListPayload = Prisma.EventSongListGetPayload<{
+export type LocalSongListPayload = Prisma.EventSongListGetPayload<{
     select: {
         songs: {
             select: {
@@ -202,9 +202,11 @@ function DividerToString(subtitle: string | null | undefined) {
 }
 
 export function SongListNamesToString(setlist: LocalSongListPayload): string {
-    const rowItems = GetRowItems(setlist);
+    return SongListItemsNamesToString(GetRowItems(setlist));
+}
 
-    const txt = rowItems.map(item => {
+export function SongListItemsNamesToString(rowItems: readonly EventSongListItem[]): string {
+    return rowItems.map(item => {
         if (item.type === 'divider') {
             if (item.isSong) {
                 return item.subtitle;
@@ -216,13 +218,13 @@ export function SongListNamesToString(setlist: LocalSongListPayload): string {
         }
         return '';
     }).join('\n');
-
-    return txt;
 }
 
 export function SongListIndexAndNamesToString(setlist: LocalSongListPayload): string {
-    const rowItems = GetRowItems(setlist);
+    return SongListItemsIndexAndNamesToString(GetRowItems(setlist));
+}
 
+export function SongListItemsIndexAndNamesToString(rowItems: readonly EventSongListItem[]): string {
     const lines: string[] = [];
 
     for (const item of rowItems) {
@@ -245,9 +247,10 @@ export function SongListIndexAndNamesToString(setlist: LocalSongListPayload): st
 
 
 export function SongListToTSV(setlist: LocalSongListPayload): string {
-    // Get the combined list of songs and dividers in order
-    const rowItems = GetRowItems(setlist);
+    return SongListItemsToTSV(GetRowItems(setlist));
+}
 
+export function SongListItemsToTSV(rowItems: readonly EventSongListItem[]): string {
     const csvRows: any[] = [];
 
     for (const item of rowItems) {
@@ -286,8 +289,10 @@ export function SongListToTSV(setlist: LocalSongListPayload): string {
 }
 
 export function SongListToMarkdown(setlist: LocalSongListPayload) {
-    const rowItems = GetRowItems(setlist);
+    return SongListItemsToMarkdown(GetRowItems(setlist));
+}
 
+export function SongListItemsToMarkdown(rowItems: readonly EventSongListItem[]) {
     const lines: string[] = [];
     for (const item of rowItems) {
         if (item.type === 'divider') {

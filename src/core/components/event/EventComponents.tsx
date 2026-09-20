@@ -1079,7 +1079,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summarySubtitle={<>({event.songLists.length})</>}
         >
             <AppContextMarker name="setlists tab">
-                <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+                <EventSongListTabContent event={event} readonly={props.readonly} refetch={refetch} />
             </AppContextMarker>
         </CMTab>
 

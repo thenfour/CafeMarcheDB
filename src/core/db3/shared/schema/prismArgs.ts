@@ -884,7 +884,6 @@ export type EventSegmentPayloadMinimum = Prisma.EventSegmentGetPayload<{}>;
 
 export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
-    { id: 'asc' },
 ];
 
 export const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
@@ -1008,7 +1007,6 @@ export type EventWithAttendanceUserTagPayload = Prisma.EventGetPayload<{
 
 export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
-    { id: 'asc' },
 ];
 
 

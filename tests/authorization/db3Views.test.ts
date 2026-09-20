@@ -708,6 +708,225 @@ describe("DB3 named views", () => {
         expect(findMany).toHaveBeenCalledOnce();
     });
 
+    it("hydrates EventSongList persistence collections into one client value object", () => {
+        const dto = db3.eventSongListDetailView.parseDto({
+            id: 50,
+            name: "Concert set",
+            description: "Main set",
+            eventId: 5,
+            sortOrder: 10,
+            isOrdered: true,
+            isActuallyPlayed: false,
+            songs: [{
+                id: 501,
+                eventSongListId: 50,
+                subtitle: "Open quietly",
+                sortOrder: 20,
+                songId: 7,
+                song: {
+                    id: 7,
+                    name: "First song",
+                    lengthSeconds: 120,
+                    startBPM: 110,
+                    endBPM: 120,
+                    pinnedRecordingId: null,
+                    tags: [{ id: 701, songId: 7, tagId: 9 }],
+                },
+            }, {
+                id: 502,
+                eventSongListId: 50,
+                subtitle: null,
+                sortOrder: 40,
+                songId: 8,
+                song: {
+                    id: 8,
+                    name: "Second song",
+                    lengthSeconds: null,
+                    startBPM: 140,
+                    endBPM: null,
+                    pinnedRecordingId: null,
+                    tags: [],
+                },
+            }],
+            dividers: [{
+                id: 601,
+                eventSongListId: 50,
+                subtitle: "Break",
+                sortOrder: 10,
+                color: null,
+                isInterruption: true,
+                isSong: false,
+                subtitleIfSong: null,
+                lengthSeconds: null,
+                textStyle: null,
+            }, {
+                id: 602,
+                eventSongListId: 50,
+                subtitle: "Encore",
+                sortOrder: 30,
+                color: "blue",
+                isInterruption: false,
+                isSong: true,
+                subtitleIfSong: "Guest feature",
+                lengthSeconds: 30,
+                textStyle: "Title",
+            }],
+        });
+
+        const hydrated = db3.hydrateEventSongListDetailDto(dto);
+
+        expect(hydrated.content).toBeInstanceOf(db3.EventSongListContent);
+        expect(hydrated.content?.items.map(item => item.type)).toEqual([
+            "divider", "song", "divider", "song",
+        ]);
+        expect(hydrated.content?.items.map(item => "index" in item ? item.index : null))
+            .toEqual([0, 0, 1, 2]);
+        expect(hydrated.content?.stats).toEqual({
+            songCount: 2,
+            durationSeconds: 120,
+            songsOfUnknownDuration: 1,
+            maxBpm: 140,
+        });
+        expect(hydrated.content?.toMarkdown()).toContain("**First song**");
+        expect(hydrated.content?.toTSV()).toContain("First song");
+        expect(hydrated).not.toHaveProperty("songs");
+        expect(hydrated).not.toHaveProperty("dividers");
+        expectTypeOf(hydrated).toEqualTypeOf<db3.EventSongListDetailClient>();
+        expectTypeOf(hydrated.content).toEqualTypeOf<db3.EventSongListContent | undefined>();
+    });
+
+    it("keeps EventSongList content unavailable when field authorization leaves an incomplete shape", () => {
+        const missingCollection = db3.hydrateEventSongListDetailDto(
+            db3.eventSongListDetailView.parseDto({ id: 50, songs: [] }),
+        );
+        const incompleteSong = db3.hydrateEventSongListDetailDto(
+            db3.eventSongListDetailView.parseDto({
+                id: 50,
+                songs: [{
+                    id: 501,
+                    eventSongListId: 50,
+                    subtitle: null,
+                    sortOrder: 10,
+                    songId: 7,
+                    song: { id: 7 },
+                }],
+                dividers: [],
+            }),
+        );
+
+        expect(missingCollection.content).toBeUndefined();
+        expect(incompleteSong.content).toBeUndefined();
+    });
+
+    it("queries the EventSongList detail view with recursive authorization and no ID ordering", async () => {
+        const findMany = vi.fn(async (_query: any) => [{
+            id: 50,
+            name: "Concert set",
+            description: "Main set",
+            eventId: 5,
+            sortOrder: 10,
+            isOrdered: true,
+            isActuallyPlayed: false,
+            songs: [{
+                id: 501,
+                eventSongListId: 50,
+                subtitle: null,
+                sortOrder: 10,
+                songId: 7,
+                song: {
+                    id: 7,
+                    name: "Visible song",
+                    lengthSeconds: 120,
+                    startBPM: 110,
+                    endBPM: 120,
+                    pinnedRecordingId: null,
+                    createdByUserId: 42,
+                    visiblePermissionId: null,
+                    isDeleted: false,
+                    tags: [{ id: 701, songId: 7, tagId: 9 }],
+                },
+            }],
+            dividers: [],
+        }]);
+        const permissionNames = [
+            Permission.always_grant,
+            Permission.public,
+            Permission.login,
+            Permission.view_events_nonpublic,
+            Permission.view_songs,
+        ];
+        const effectivePermissions = new PermissionSet(permissionNames.map((name, index) => ({
+            id: index + 1,
+            name,
+        })));
+
+        const result = await queryTable({
+            table: {
+                tableID: db3.xEventSongList.tableID,
+                tableName: db3.xEventSongList.tableName,
+                viewID: db3.eventSongListDetailView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [], tableParams: { eventId: 5 } },
+            cmdbQueryContext: "event-song-list-detail-view-test",
+        }, {
+            user: { id: 42 } as any,
+            effectivePermissions,
+        }, {
+            EventSongList: { findMany },
+        } as any);
+
+        expect(result.items[0]).toMatchObject({
+            id: 50,
+            songs: [{ song: { id: 7, name: "Visible song" } }],
+            dividers: [],
+        });
+        expect(result.items[0]?.songs?.[0]?.song).not.toHaveProperty("createdByUserId");
+        const query = findMany.mock.calls[0]![0];
+        expect(query.orderBy).toEqual([{ sortOrder: "asc" }]);
+        expect(query.select.songs.orderBy).toEqual({ sortOrder: "asc" });
+        expect(query.select.songs.where).toBeDefined();
+        expect(query.select.dividers.orderBy).toEqual({ sortOrder: "asc" });
+    });
+
+    it("returns an explicitly incomplete EventSongList DTO when fields are unauthorized", async () => {
+        const findMany = vi.fn(async () => [{
+            id: 50,
+            name: "Restricted set",
+            description: "Restricted",
+            eventId: 5,
+            sortOrder: 10,
+            isOrdered: true,
+            isActuallyPlayed: false,
+            songs: [],
+            dividers: [],
+        }]);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.public },
+        ]);
+
+        const result = await queryTable({
+            table: {
+                tableID: db3.xEventSongList.tableID,
+                tableName: db3.xEventSongList.tableName,
+                viewID: db3.eventSongListDetailView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "restricted-event-song-list-detail-view-test",
+        }, {
+            user: null,
+            effectivePermissions,
+        }, {
+            EventSongList: { findMany },
+        } as any);
+
+        expect(result.items).toEqual([{ id: 50, sortOrder: 10 }]);
+        const dto = db3.eventSongListDetailView.parseDto(result.items[0]);
+        expect(db3.hydrateEventSongListDetailDto(dto).content).toBeUndefined();
+    });
+
     it("reports the exact missing reference path", () => {
         const references = new db3.DB3ReferenceStore();
         references.register(db3.instrumentFunctionalGroupEntity, [group]);

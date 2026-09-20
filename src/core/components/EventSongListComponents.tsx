@@ -69,6 +69,10 @@ const RowItemToMediaPlayerTrack = (args: { allPinnedRecordings: Record<number, T
     }
 }
 
+const hydrateLegacyEventSongList = (value: db3.EventSongListPayload): db3.EventSongListDetailClient => (
+    db3.hydrateEventSongListDetailDto(db3.eventSongListDetailView.parseDto(value))
+);
+
 const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
     sortOrder: number,
     value: SetlistAPI.EventSongListDividerItem,
@@ -193,7 +197,13 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                     <Select value={controlledValue.textStyle} onChange={(v) => setControlledValue({ ...controlledValue, textStyle: v.target.value as db3.EventSongListDividerTextStyle })}>
                         {Object.values(db3.EventSongListDividerTextStyle).map(option => <MenuItem key={option} value={option} style={{ display: "flex", flexDirection: "column" }}>
                             <h3>{option}</h3>
-                            <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(option)} event={undefined} showHeader={false} disableInteraction />
+                            <EventSongListValueViewerTable
+                                readonly={true}
+                                value={hydrateLegacyEventSongList(makeFakeSongList(option))}
+                                event={undefined}
+                                showHeader={false}
+                                disableInteraction
+                            />
                         </MenuItem>)}
                     </Select>
                 </div>
@@ -223,8 +233,8 @@ const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { so
 interface EventSongListValueViewerRowProps {
     value: SetlistAPI.EventSongListItem;
     rowIndex: number; // The index of this row in the setlistRowItems array
-    setlistRowItems: SetlistAPI.EventSongListItem[];
-    songList: db3.EventSongListPayload;
+    setlistRowItems: readonly SetlistAPI.EventSongListItem[];
+    songList: db3.EventSongListDetailClient;
     pinnedRecordings: Record<number, TSongPinnedRecording>; // songId -> pinnedRecording
     lengthColumnMode: LengthColumnMode;
     toggleLengthColumnMode: () => void;
@@ -329,7 +339,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         }
     }
     const dashboardContext = useDashboardContext();
-    const enrichedSong = props.value.type === 'song' ? enrichSong(props.value.song, dashboardContext) : null;
+    const song = props.value.type === 'song' ? props.value.song : null;
     const bpmValue = getRowStartBpm(props.value);
     const tempoCellStyle = getBpmBarStyle(bpmValue, props.maxBpm);
 
@@ -343,16 +353,16 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     // Collect all unique tag IDs from all songs in the song list
     const allTagIds = React.useMemo(() => {
         const tagIds = new Set<number>();
-        props.songList.songs.forEach(songListItem => {
+        props.songList.content?.songItems.forEach(songListItem => {
             songListItem.song.tags.forEach(tag => tagIds.add(tag.tagId));
         });
         return Array.from(tagIds);
-    }, [props.songList.songs]);
+    }, [props.songList.content]);
 
     return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type} ${isCurrentMediaPlayerTrack ? 'currentMediaPlayerTrack' : ''}`}>
-        <AppContextMarker songId={enrichedSong?.id || undefined}>
+        <AppContextMarker songId={song?.id || undefined}>
             <div className="td songIndex">
-                {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
+                {props.songList.isOrdered === true && props.value.type === 'song' && (props.value.index + 1)}
             </div>
             <div className="td play">{props.value.type === 'song' && props.mediaPlayerTrack && <SongPlayButton
                 rowIndex={props.rowIndex}
@@ -376,7 +386,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
                 )}
             </div>
             <div className="td tempo" style={tempoCellStyle}>
-                {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
+                {song?.startBPM && <MetronomeButton bpm={song.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}
             </div>
 
             <div className="td comment">
@@ -394,14 +404,14 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 //     return subtitle ? `-- ${subtitle} ------` : `--------`;
 // }
 
-async function CopySongListNames(setlist: db3.EventSongListPayload, snackbarContext: SnackbarContextType) {
-    const txt = SetlistAPI.SongListNamesToString(setlist);
+async function CopySongListNames(content: db3.EventSongListContent, snackbarContext: SnackbarContextType) {
+    const txt = content.toNamesText();
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
-async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
-    const txt = SetlistAPI.SongListIndexAndNamesToString(setlist);
+async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, content: db3.EventSongListContent) {
+    const txt = content.toIndexedNamesText();
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
@@ -458,14 +468,14 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
 }
 
 
-async function CopySongListTSV(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
-    const txt = SetlistAPI.SongListToTSV(setlist);
+async function CopySongListTSV(snackbarContext: SnackbarContextType, content: db3.EventSongListContent) {
+    const txt = content.toTSV();
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
-async function CopySongListMarkdown(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
-    const txt = SetlistAPI.SongListToMarkdown(setlist);
+async function CopySongListMarkdown(snackbarContext: SnackbarContextType, content: db3.EventSongListContent) {
+    const txt = content.toMarkdown();
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
@@ -594,7 +604,8 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
-    value: db3.EventSongListPayload;
+    value: db3.EventSongListDetailClient;
+    legacyMutationValue?: db3.EventSongListPayload;
     event: db3.EventClientPayload_Verbose | undefined;
     readonly: boolean;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
@@ -608,25 +619,21 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
     const [lengthColumnMode, setLengthColumnMode] = React.useState<LengthColumnMode>("length");
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const publicData = useDB3Authorization();
-
-
     // Fetch all pinned recordings for songs in this list at once
-    const songIds = props.value.songs.map(s => s.song.id);
+    const songIds = props.value.content?.songItems.map(item => item.song.id) ?? [];
     const [pinnedRecordings] = useQuery(getSongPinnedRecording, {
         songIds: songIds,
     }, {
         enabled: songIds.length > 0
     });
 
-    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
-        publicData,
-        model: props.value,
-    });
-
-    const rowItems = SetlistAPI.GetRowItems(props.value);
-
-    const stats = API.events.getSongListStats(props.value);
+    const rowItems = props.value.content?.items ?? [];
+    const stats = props.value.content?.stats ?? {
+        songCount: 0,
+        durationSeconds: 0,
+        songsOfUnknownDuration: 0,
+        maxBpm: null,
+    };
 
     const handleClickSortOrderTH = () => {
         if (sortSpec === 'sortOrderAsc') {
@@ -658,40 +665,6 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
         setLengthColumnMode(prev => prev === "length" ? "runningTime" : "length");
     };
 
-    // create a id -> index map.
-    // the list is already sorted by sortorder
-    const indexMap = new Map<number, number>();
-    props.value.songs.forEach((s, i) => {
-        indexMap.set(s.id, i + 1);
-    });
-
-    let sortedSongs = [...props.value.songs];
-    sortedSongs.sort((a, b) => {
-        switch (sortSpec) {
-            case 'nameAsc':
-                return a.song.name < b.song.name ? -1 : 1;
-            case 'nameDesc':
-                return a.song.name > b.song.name ? -1 : 1;
-            case 'bpmAsc': {
-                const aBpm = a.song.startBPM || 0;
-                const bBpm = b.song.startBPM || 0;
-                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
-                return aBpm - bBpm;
-            }
-            case 'bpmDesc': {
-                const aBpm = a.song.startBPM || 0;
-                const bBpm = b.song.startBPM || 0;
-                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
-                return bBpm - aBpm;
-            }
-            default:
-            case 'sortOrderAsc':
-                return a.sortOrder < b.sortOrder ? -1 : 1;
-            case 'sortOrderDesc':
-                return a.sortOrder > b.sortOrder ? -1 : 1;
-        }
-    });
-
     const getCombinedList = (): db3.EventSongListPayload => {
         if (!props.event) throw new Error();
 
@@ -709,6 +682,12 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
             return a.song.name < b.song.name ? -1 : 1;
         });
         return t;
+    };
+
+    const getCombinedContent = (): db3.EventSongListContent => {
+        const content = hydrateLegacyEventSongList(getCombinedList()).content;
+        if (!content) throw new Error("Combined setlist content is incomplete.");
+        return content;
     };
 
     // Store current dependencies in a ref so the playlist function always returns current data
@@ -740,15 +719,19 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
                         <EventSongListDotMenu
                             readonly={true}
                             multipleLists={props.event.songLists.length > 1}
-                            handleCopySongNames={async () => await CopySongListNames(props.value, snackbarContext)}
-                            handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value)}
-                            handleCopyTSV={async () => await CopySongListTSV(snackbarContext, props.value)}
-                            handleCopyJSON={async () => await CopySongListJSON(snackbarContext, props.value)}
-                            handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value)}
+                            handleCopySongNames={async () => await CopySongListNames(props.value.content!, snackbarContext)}
+                            handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value.content!)}
+                            handleCopyTSV={async () => await CopySongListTSV(snackbarContext, props.value.content!)}
+                            handleCopyJSON={async () => {
+                                if (props.legacyMutationValue) {
+                                    await CopySongListJSON(snackbarContext, props.legacyMutationValue);
+                                }
+                            }}
+                            handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value.content!)}
 
-                            handleCopyCombinedSongNames={async () => await CopySongListNames(getCombinedList(), snackbarContext)}
-                            handleCopyCombinedMarkdown={async () => await CopySongListMarkdown(snackbarContext, getCombinedList())}
-                            handleCopyCombinedTSV={async () => { }}
+                            handleCopyCombinedSongNames={async () => await CopySongListNames(getCombinedContent(), snackbarContext)}
+                            handleCopyCombinedMarkdown={async () => await CopySongListMarkdown(snackbarContext, getCombinedContent())}
+                            handleCopyCombinedTSV={async () => await CopySongListTSV(snackbarContext, getCombinedContent())}
                             handleCopyCombinedJSON={async () => await CopySongListJSON(snackbarContext, getCombinedList())}
 
                             handlePasteAppend={async () => { }}
@@ -787,99 +770,8 @@ export const EventSongListValueViewerTable = ({ showHeader = true, disableIntera
 
 
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
-    const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
-    const snackbarContext = React.useContext(SnackbarContext);
-
-    const publicData = useDB3Authorization();
-
-
-    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
-        publicData,
-        model: props.value,
-    });
-
-    //const rowItems = SetlistAPI.GetRowItems(props.value);
-
-    const stats = API.events.getSongListStats(props.value);
-
-    const handleClickSortOrderTH = () => {
-        if (sortSpec === 'sortOrderAsc') {
-            setSortSpec('sortOrderDesc');
-        }
-        else {
-            setSortSpec('sortOrderAsc');
-        }
-    };
-
-    const handleClickSongNameTH = () => {
-        if (sortSpec === 'nameAsc') {
-            setSortSpec('nameDesc');
-        }
-        else {
-            setSortSpec('nameAsc');
-        }
-    };
-
-    const handleClickBpmTH = () => {
-        if (sortSpec === 'bpmAsc') {
-            setSortSpec('bpmDesc');
-        } else {
-            setSortSpec('bpmAsc');
-        }
-    };
-
-    // create a id -> index map.
-    // the list is already sorted by sortorder
-    const indexMap = new Map<number, number>();
-    props.value.songs.forEach((s, i) => {
-        indexMap.set(s.id, i + 1);
-    });
-
-    let sortedSongs = [...props.value.songs];
-    sortedSongs.sort((a, b) => {
-        switch (sortSpec) {
-            case 'nameAsc':
-                return a.song.name < b.song.name ? -1 : 1;
-            case 'nameDesc':
-                return a.song.name > b.song.name ? -1 : 1;
-            case 'bpmAsc': {
-                const aBpm = a.song.startBPM || 0;
-                const bBpm = b.song.startBPM || 0;
-                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
-                return aBpm - bBpm;
-            }
-            case 'bpmDesc': {
-                const aBpm = a.song.startBPM || 0;
-                const bBpm = b.song.startBPM || 0;
-                if (aBpm === bBpm) return a.song.name.localeCompare(b.song.name);
-                return bBpm - aBpm;
-            }
-            default:
-            case 'sortOrderAsc':
-                return a.sortOrder < b.sortOrder ? -1 : 1;
-            case 'sortOrderDesc':
-                return a.sortOrder > b.sortOrder ? -1 : 1;
-        }
-    });
-
-    const getCombinedList = (): db3.EventSongListPayload => {
-        if (!props.event) throw new Error();
-
-        const t: db3.EventSongListPayload = { ...props.event.songLists[0]!, songs: [] }; // create a copy of any random list
-        // replace its song lists with a new array of combined
-        const d = new Map<number, db3.EventSongListSongPayload>();
-        props.event.songLists.forEach(sl => {
-            sl.songs.forEach(sls => {
-                d.set(sls.songId, sls);
-            });
-        });
-
-        t.songs = [...d.values()];
-        t.songs.sort((a, b) => {
-            return a.song.name < b.song.name ? -1 : 1;
-        });
-        return t;
-    };
+    const stats = props.value.content?.stats;
+    const editAuthorized = !props.readonly && !!props.onEnterEditMode;
 
     return <div className={`EventSongListValue EventSongListValueViewer`}>
 
@@ -887,8 +779,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
             <div className={`columnName-name ${editAuthorized && "draggable dragHandle"}`}>
                 {editAuthorized && <div className="dragHandleIcon ">{gCharMap.Hamburger()}</div>}
-                {props.value.name}
-                {props.value.isActuallyPlayed && <Tooltip disableInteractive title={`This is the playlist that was actually played or will be played`}><span className='verified songListVerified'>{gIconMap.Check()}</span></Tooltip>}
+                {props.value.name ?? ""}
+                {props.value.isActuallyPlayed === true && <Tooltip disableInteractive title={`This is the playlist that was actually played or will be played`}><span className='verified songListVerified'>{gIconMap.Check()}</span></Tooltip>}
             </div>
             {!props.readonly && editAuthorized && <CMButton onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</CMButton>}
 
@@ -899,15 +791,17 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                 {props.value.isActuallyPlayed && <CMChip tooltip={"This setlist will be/was actually played; it's complete and in order"} size='small' color={gSwatchColors.green}>As performed</CMChip>}
             </CMChipContainer> */}
 
-            <Markdown markdown={props.value.description} />
+            <Markdown markdown={props.value.description ?? ""} />
 
-            <EventSongListValueViewerTable {...props} />
+            {props.value.content
+                ? <EventSongListValueViewerTable {...props} />
+                : <div className="CMSidenote">Setlist content is not available.</div>}
 
-            <div className="stats CMSidenote">
+            {stats && <div className="stats CMSidenote">
                 {stats.songCount} songs,
                 length: {formatSongLength(stats.durationSeconds)}
                 {stats.songsOfUnknownDuration > 0 && <> (with {stats.songsOfUnknownDuration} song(s) of unknown length)</>}
-            </div>
+            </div>}
         </div>
     </div>;
 };
@@ -1260,6 +1154,8 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     });
 
     const rowItems = SetlistAPI.GetRowItems(value);
+    const hydratedContent = hydrateLegacyEventSongList(value).content;
+    if (!hydratedContent) throw new Error("Editor setlist content is incomplete.");
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSongList,
@@ -1471,11 +1367,11 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
                         <EventSongListDotMenu
                             readonly={false}
                             multipleLists={false} // don't bother with this from the editor
-                            handleCopySongNames={async () => await CopySongListNames(value, snackbarContext)}
-                            handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
-                            handleCopyTSV={async () => await CopySongListTSV(snackbarContext, value)}
+                            handleCopySongNames={async () => await CopySongListNames(hydratedContent, snackbarContext)}
+                            handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, hydratedContent)}
+                            handleCopyTSV={async () => await CopySongListTSV(snackbarContext, hydratedContent)}
                             handleCopyJSON={async () => await CopySongListJSON(snackbarContext, value)}
-                            handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, value)}
+                            handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, hydratedContent)}
                             handleCopyCombinedSongNames={async () => { }}
                             handleCopyCombinedMarkdown={async () => { }}
                             handleCopyCombinedTSV={async () => { }}
@@ -1614,7 +1510,12 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
 
             {preview ? (
                 <div style={{ pointerEvents: "none" }}>
-                    <EventSongListValueViewer readonly={true} value={value} event={props.event} />
+                    <EventSongListValueViewer
+                        readonly={true}
+                        value={hydrateLegacyEventSongList(value)}
+                        legacyMutationValue={value}
+                        event={props.event}
+                    />
                 </div>
             ) : (
                 <EventSongListValueEditor {...props} value={value} setValue={setValue} />
@@ -1633,7 +1534,8 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
 //             <EventSongListValueViewer> - has an edit button to switch modes
 //             <EventSongListValueEditor>
 interface EventSongListControlProps {
-    value: db3.EventSongListPayload;
+    value: db3.EventSongListDetailClient;
+    legacyMutationValue?: db3.EventSongListPayload;
     event: db3.EventClientPayload_Verbose;
     readonly: boolean;
     refetch: () => void;
@@ -1646,9 +1548,9 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     const publicData = useDB3Authorization();
 
 
-    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
+    const editAuthorized = !!props.legacyMutationValue && db3.xEventSongList.authorizeRowForEdit({
         publicData,
-        model: props.value,
+        model: props.legacyMutationValue,
     });
 
     const recordFeature = useFeatureRecorder();
@@ -1712,8 +1614,8 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     };
 
     return <>
-        {!props.readonly && editAuthorized && editMode && <EventSongListValueEditorDialog
-            initialValue={props.value}
+        {!props.readonly && editAuthorized && editMode && props.legacyMutationValue && <EventSongListValueEditorDialog
+            initialValue={props.legacyMutationValue}
             onSave={handleSave}
             onDelete={handleDelete}
             event={props.event}
@@ -1722,7 +1624,8 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
         <EventSongListValueViewer
             readonly={props.readonly}
             value={props.value}
-            onEnterEditMode={() => setEditMode(true)}
+            legacyMutationValue={props.legacyMutationValue}
+            onEnterEditMode={editAuthorized ? () => setEditMode(true) : undefined}
             event={props.event}
         />
     </>;
@@ -1796,7 +1699,12 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSongListList = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
+export const EventSongListList = ({ values, event, readonly, refetch }: {
+    values: readonly db3.EventSongListDetailClient[],
+    event: db3.EventClientPayload_Verbose,
+    readonly: boolean,
+    refetch: () => void,
+}) => {
     const [saving, setSaving] = React.useState<boolean>(false);
     const recordFeature = useFeatureRecorder();
 
@@ -1809,8 +1717,8 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
-        const movingItemId = event.songLists[args.removedIndex]!.id;
-        const newPositionItemId = event.songLists[args.addedIndex]!.id;
+        const movingItemId = values[args.removedIndex]!.id;
+        const newPositionItemId = values[args.addedIndex]!.id;
         assert(!!movingItemId && !!newPositionItemId, "moving item not found?");
 
         void recordFeature({
@@ -1823,7 +1731,7 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
             tableName: db3.xEventSongList.tableName,
             movingItemId,
             newPositionItemId,
-            scopeRowIds: event.songLists.map(item => item.id),
+            scopeRowIds: values.map(item => item.id),
             groupByColumn: "eventId",
             groupValue: event.id,
         }).then(() => {
@@ -1844,10 +1752,17 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
             lockAxis="y"
             onDrop={onDrop}
         >
-            {event.songLists.map(c => (
+            {values.map(c => (
                 <ReactSmoothDndDraggable key={c.id}>
                     <AppContextMarker name="EventSongListControl">
-                        <EventSongListControl key={c.id} value={c} readonly={false} refetch={refetch} event={event} />
+                        <EventSongListControl
+                            key={c.id}
+                            value={c}
+                            legacyMutationValue={event.songLists.find(item => item.id === c.id)}
+                            readonly={readonly}
+                            refetch={refetch}
+                            event={event}
+                        />
                     </AppContextMarker>
                 </ReactSmoothDndDraggable>
             ))}
@@ -1857,9 +1772,21 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSongListTabContent = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
+export const EventSongListTabContent = ({ event, readonly, refetch }: { event: db3.EventClientPayload_Verbose, readonly: boolean, refetch: () => void }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
     const publicData = useDB3Authorization();
+    const songListsClient = DB3Client.useDb3Query({
+        view: db3.eventSongListDetailView,
+        filterSpec: {
+            items: [],
+            tableParams: { eventId: event.id },
+        },
+    });
+
+    const refetchAll = () => {
+        refetch();
+        songListsClient.refetch();
+    };
 
 
     const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
@@ -1871,10 +1798,10 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
         {insertAuthorized && !readonly && <CMButton className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</CMButton>}
         {newOpen && !readonly && insertAuthorized && (
             <AppContextMarker name="EventSongListNewEditor">
-                <EventSongListNewEditor event={event} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
+                <EventSongListNewEditor event={event} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetchAll(); }} />
             </AppContextMarker>
         )}
-        <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
+        <EventSongListList values={songListsClient.items} event={event} readonly={readonly} refetch={refetchAll} />
     </div>;
 };
 

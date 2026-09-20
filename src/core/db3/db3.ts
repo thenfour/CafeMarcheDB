@@ -28,5 +28,8 @@ export * from "./shared/entities/song/songViews"
 export * from "./shared/entities/user/userEntities"
 export * from "./shared/entities/event/eventEntities"
 export * from "./shared/entities/event/eventViews"
+export * from "./shared/entities/eventSongList/eventSongListContent"
+export * from "./shared/entities/eventSongList/eventSongListEntities"
+export * from "./shared/entities/eventSongList/eventSongListViews"
 
 
