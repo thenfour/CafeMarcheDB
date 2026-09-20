@@ -7,9 +7,7 @@ import { useSession } from "@blitzjs/auth";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import * as db3 from "@db3/db3";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
-import { Prisma } from "db";
 import { SettingKey } from "shared/settingKeys";
-import { DateTimeRange } from "shared/time";
 import { shouldShowAdminControls } from "shared/adminControls";
 import { CoerceToNumberOr, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
@@ -115,16 +113,6 @@ const gUsersAPI = new UsersAPI();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class EventsAPI {
-
-
-    getEventDateRange(event: Prisma.EventGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay: true, } }>) {
-        return new DateTimeRange({
-            startsAtDateTime: event.startsAt,
-            durationMillis: Number(event.durationMillis),
-            isAllDay: event.isAllDay,
-        });
-    }
-
     getSongListStats = (songList: db3.EventSongListPayload): SongListStats => {
         console.assert(songList.songs);
         const initialValue: SongListStats = {

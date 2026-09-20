@@ -2,6 +2,7 @@ import { Prisma } from "db";
 import { z } from "zod";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { permissionEntity } from "../user/userEntities";
+import { hydrateEventDateRange } from "./eventDateRange";
 import { eventEntity, eventStatusEntity, eventTagEntity, eventTypeEntity } from "./eventEntities";
 
 const EventTagAssignmentDtoSchema = z.object({
@@ -171,20 +172,25 @@ export const eventSearchView = defineView({
     entity: eventEntity,
     selection: eventSearchSelection,
     dtoSchema: EventSearchDtoSchema,
-    hydrate: (dto, references) => ({
-        ...dto,
-        type: references.get(eventTypeEntity, dto.typeId),
-        status: references.get(eventStatusEntity, dto.statusId),
-        visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
-        tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
-            ...association,
-            eventTag: references.require(
-                eventTagEntity,
-                association.eventTagId,
-                `Event(${dto.id}).tags[${index}].eventTagId`,
-            ),
-        }))?.sort((a, b) => a.eventTag.sortOrder - b.eventTag.sortOrder),
-    }),
+    hydrate: (dto, references) => {
+        const { segments, ...eventDto } = dto;
+        return {
+            ...hydrateEventDateRange(eventDto),
+            type: references.get(eventTypeEntity, dto.typeId),
+            status: references.get(eventStatusEntity, dto.statusId),
+            visiblePermission: references.get(permissionEntity, dto.visiblePermissionId),
+            tags: references.mapOptionalCollection(dto.tags, (association, index) => ({
+                ...association,
+                eventTag: references.require(
+                    eventTagEntity,
+                    association.eventTagId,
+                    `Event(${dto.id}).tags[${index}].eventTagId`,
+                ),
+            }))?.sort((a, b) => a.eventTag.sortOrder - b.eventTag.sortOrder),
+            segments: references.mapOptionalCollection(segments, segment =>
+                hydrateEventDateRange(segment)),
+        };
+    },
     getIdentity: client => client.id,
 });
 

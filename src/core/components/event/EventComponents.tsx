@@ -1211,15 +1211,7 @@ export const EventSearchItemContainer = ({ reducedInfo = false, ...props }: Reac
     const highlightTypeIds = props.highlightTypeIds || [];
 
     const eventURI = dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" });
-    const dateRange = event.startsAt !== undefined
-        && event.durationMillis !== undefined
-        && event.isAllDay !== undefined
-        ? API.events.getEventDateRange({
-            startsAt: event.startsAt,
-            durationMillis: event.durationMillis,
-            isAllDay: event.isAllDay,
-        })
-        : null;
+    const dateRange = event.dateRange;
     const eventTiming = dateRange?.hitTestDateTime(new Date());
 
     const visibilityClassName = event.visiblePermissionId === undefined

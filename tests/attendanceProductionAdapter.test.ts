@@ -4,6 +4,7 @@ import { act } from "react-dom/test-utils";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import type { AttendanceControlViewProps } from "src/core/components/event/AttendanceControlView";
+import { DateTimeRange } from "shared/time";
 
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { updateUserEventAttendance: { useToken: () => ({ invoke }) } } } }));
 vi.mock("src/core/components/event/EventComponentsBase", () => ({ CalcEventAttendance: () => ({ eventUserResponse: { user: { id: 12 } } }) }));
@@ -33,7 +34,10 @@ describe("production attendance adapter", () => {
             await act(async () => root.render(React.createElement(SnackbarContext.Provider, {
                 value: { showMessage, showSuccess: vi.fn(), showError: vi.fn(), invokeAsync: vi.fn() },
             }, React.createElement(EventAttendanceControl, {
-                eventData: { event: { id: 42, name: "Concert", startsAt: null } } as EventAttendanceControlProps["eventData"],
+                eventData: {
+                    event: { id: 42, name: "Concert" },
+                    dateRange: new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: false }),
+                } as EventAttendanceControlProps["eventData"],
                 userMap: [], onRefetch: refetch, minimalWhenNotAlert: true,
             }))));
             await view!.environment.onSave({ type: "segment", segmentId: 7, attendanceId: null });

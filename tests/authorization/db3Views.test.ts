@@ -6,6 +6,7 @@ import { validateDB3QueryRequest } from "@db3/server/db3RequestValidation";
 import { PermissionSet } from "src/auth/shared/PermissionSet";
 import { Permission } from "shared/permissions";
 import { parsePublicId } from "shared/publicId";
+import { DateTimeRange } from "shared/time";
 
 const groupPublicId = parsePublicId<"InstrumentFunctionalGroup">("AbCdEfGhIjKlMn01");
 const group = {
@@ -320,9 +321,64 @@ describe("DB3 named views", () => {
         expect(hydrated.status).toBe(eventStatus);
         expect(hydrated.tags?.[0]?.eventTag).toBe(eventTag);
         expect(hydrated.expectedAttendanceUserTag?.userAssignments?.[0]?.userId).toBe(42);
+        expect(hydrated.dateRange).toBeUndefined();
+        expect("startsAt" in hydrated).toBe(false);
         expect(hydrated.segments).toBeUndefined();
         expect(hydrated.songLists).toBeUndefined();
         expectTypeOf(hydrated).toEqualTypeOf<db3.EventSearchClient>();
+    });
+
+    it("hydrates complete Event timing tuples into DateTimeRange value objects", () => {
+        const references = new db3.DB3ReferenceStore();
+        const segmentStart = new Date("2026-09-20T19:00:00Z");
+        const dto = db3.eventSearchView.parseDto({
+            id: 1,
+            startsAt: null,
+            durationMillis: BigInt(86_400_000),
+            isAllDay: true,
+            segments: [
+                {
+                    id: 2,
+                    startsAt: segmentStart,
+                    durationMillis: BigInt(3_600_000),
+                    isAllDay: false,
+                },
+                {
+                    id: 3,
+                    startsAt: segmentStart,
+                    durationMillis: BigInt(3_600_000),
+                },
+            ],
+        });
+
+        const hydrated = db3.hydrateView(db3.eventSearchView, dto, references);
+        const completeSegment = hydrated.segments?.[0];
+        const incompleteSegment = hydrated.segments?.[1];
+
+        expect(hydrated.dateRange).toBeInstanceOf(DateTimeRange);
+        expect(hydrated.dateRange?.isTBD()).toBe(true);
+        expect(hydrated.dateRange?.getSpec()).toEqual({
+            startsAtDateTime: null,
+            durationMillis: 86_400_000,
+            isAllDay: true,
+        });
+        expect(completeSegment?.dateRange).toBeInstanceOf(DateTimeRange);
+        expect(completeSegment?.dateRange?.getBounds()).toEqual({
+            start: segmentStart,
+            end: new Date("2026-09-20T20:00:00Z"),
+        });
+        expect(incompleteSegment?.dateRange).toBeUndefined();
+        expect("startsAt" in completeSegment!).toBe(false);
+        expect("durationMillis" in incompleteSegment!).toBe(false);
+
+        type EventRawTimingKeys = Extract<keyof db3.EventSearchClient,
+            "startsAt" | "durationMillis" | "isAllDay">;
+        type Segment = NonNullable<db3.EventSearchClient["segments"]>[number];
+        type SegmentRawTimingKeys = Extract<keyof Segment,
+            "startsAt" | "durationMillis" | "isAllDay">;
+        expectTypeOf<EventRawTimingKeys>().toEqualTypeOf<never>();
+        expectTypeOf<SegmentRawTimingKeys>().toEqualTypeOf<never>();
+        expectTypeOf(hydrated.dateRange).toEqualTypeOf<DateTimeRange | undefined>();
     });
 
     it("applies nested Event view authorization before returning its DTO", async () => {

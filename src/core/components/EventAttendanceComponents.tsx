@@ -76,7 +76,12 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             throw error;
         }
     };
-    return <AttendanceControlView attendance={attendance} event={props.eventData.event}
+    const attendanceEvent = {
+        id: props.eventData.event.id,
+        name: props.eventData.event.name,
+        startsAt: props.eventData.dateRange.getStartDateTime(),
+    };
+    return <AttendanceControlView attendance={attendance} event={attendanceEvent}
         minimalWhenNotAlert={props.minimalWhenNotAlert}
         debugView={<AdminInspectObject src={attendance} label="AttendanceControl" />}
         environment={{

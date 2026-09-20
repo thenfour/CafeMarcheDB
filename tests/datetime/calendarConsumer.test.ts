@@ -1,6 +1,7 @@
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { DateTimeRange } from "shared/time"
 
 // Inspect the real month component's calendar boundary. The widget itself is
 // mounted with this display contract in calendarDisplay's five-zone probes.
@@ -26,11 +27,17 @@ import type { EventsFilterSpec } from "src/core/components/event/EventClientBase
 beforeEach(() => { vi.mocked(Calendar).mockClear() })
 
 function render() {
+  const segment = (id: number, name: string, startsAt: Date | null, durationMillis: number, isAllDay: boolean, statusId: number | null = null) => ({
+    id,
+    name,
+    dateRange: new DateTimeRange({ startsAtDateTime: startsAt, durationMillis, isAllDay }),
+    statusId,
+  })
   const segments = [
-    { id: 1, name: "All day", startsAt: new Date("2026-07-09T22:00:00.000Z"), durationMillis: BigInt(86_400_000), isAllDay: true, statusId: null },
-    { id: 2, name: "Timed", startsAt: new Date("2026-07-10T15:30:12.345Z"), durationMillis: BigInt(1_200_789), isAllDay: false, statusId: null },
-    { id: 3, name: "TBD", startsAt: null, durationMillis: BigInt(86_400_000), isAllDay: true, statusId: null },
-    { id: 4, name: "Cancelled", startsAt: new Date("2026-07-09T22:00:00.000Z"), durationMillis: BigInt(86_400_000), isAllDay: true, statusId: 9 },
+    segment(1, "All day", new Date("2026-07-09T22:00:00.000Z"), 86_400_000, true),
+    segment(2, "Timed", new Date("2026-07-10T15:30:12.345Z"), 1_200_789, false),
+    segment(3, "TBD", null, 86_400_000, true),
+    segment(4, "Cancelled", new Date("2026-07-09T22:00:00.000Z"), 86_400_000, true, 9),
   ]
   const event = { id: 10, name: "Rehearsal", segments }
   const result = {}

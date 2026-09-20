@@ -6,7 +6,7 @@ import { DiscreteCriterionFilterType } from "../../db3/shared/apiTypes";
 import { useSearchableList } from "../../hooks/useSearchableList";
 import { eventSearchConfig } from "../../hooks/searchConfigs";
 import { EventOrderByColumnOptions, EventsFilterSpec } from "../event/EventClientBaseTypes";
-import { EventStatusSignificance, getEventSegmentDateTimeRange } from "../../db3/db3";
+import { EventStatusSignificance } from "../../db3/db3";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
 
 export const useEventsForDateRange = (dateRange: CalendarRange) => {
@@ -49,33 +49,26 @@ export const useEventsForDateRange = (dateRange: CalendarRange) => {
             try {
                 const transformed = enrichedEvents.flatMap(event => (event.segments || [])
                     .flatMap(segment => {
-                        if (!segment.startsAt
-                            || segment.durationMillis === undefined
-                            || segment.isAllDay === undefined
+                        const range = segment.dateRange;
+                        if (!range
+                            || range.isTBD()
                             || segment.statusId === undefined
                             || dashboardContext.eventStatus.getById(segment.statusId)?.significance === EventStatusSignificance.Cancelled) {
                             return [];
                         }
+                        const dates = getRangeCalendarDates(range, eventPresentationTimeZone(range, {
+                            viewerTimeZone: dateRange.start.timeZone,
+                            bandTimeZone: dashboardContext.bandTimeZone,
+                            locale: dashboardContext.userLocale,
+                        }))!;
                         return [{
-                        id: event.id.toString(), // Preserve the picker cell's data-event-id.
-                        title: event.name || 'Untitled Event',
-                        color: event.type?.color || 'blue',
-                        dateRange: (() => {
-                            const range = getEventSegmentDateTimeRange({
-                                startsAt: segment.startsAt,
-                                durationMillis: segment.durationMillis,
-                                isAllDay: segment.isAllDay,
-                            });
-                            const dates = getRangeCalendarDates(range, eventPresentationTimeZone(range, {
-                                viewerTimeZone: dateRange.start.timeZone,
-                                bandTimeZone: dashboardContext.bandTimeZone,
-                                locale: dashboardContext.userLocale,
-                            }))!;
+                            id: event.id.toString(), // Preserve the picker cell's data-event-id.
+                            title: event.name || 'Untitled Event',
+                            color: event.type?.color || 'blue',
                             // Paint the selected band dates into this calendar's date cells.
-                            return new CalendarRange(new CalendarDate(dates.start.date, dateRange.start.timeZone),
-                                new CalendarDate(dates.endExclusive.date, dateRange.start.timeZone));
-                        })(),
-                    }];
+                            dateRange: new CalendarRange(new CalendarDate(dates.start.date, dateRange.start.timeZone),
+                                new CalendarDate(dates.endExclusive.date, dateRange.start.timeZone)),
+                        }];
                     }));
                 setEvents(transformed);
             } catch (err) {

@@ -19,7 +19,7 @@ import { EventOrderByColumnOptions, EventsFilterSpec } from "./event/EventClient
 import { StandardVariationSpec } from "./color/palette";
 import { GetStyleVariablesForColor } from "./color/ColorClientUtils";
 import { useDashboardContext } from "./dashboardContext/DashboardContext";
-import { localTimeZone } from "@/shared/time";
+import { DateTimeRange, localTimeZone } from "@/shared/time";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -30,9 +30,7 @@ type EventWithSearchResult = {
 
 type EventCalendarSegment = NonNullable<db3.EventSearchClient["segments"]>[number] & {
     name: string;
-    startsAt: Date | null;
-    durationMillis: bigint;
-    isAllDay: boolean;
+    dateRange: DateTimeRange;
     statusId: number | null;
 };
 
@@ -205,9 +203,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
         segment: NonNullable<db3.EventSearchClient["segments"]>[number],
     ): segment is EventCalendarSegment => (
         segment.name !== undefined
-        && segment.startsAt !== undefined
-        && segment.durationMillis !== undefined
-        && segment.isAllDay !== undefined
+        && segment.dateRange !== undefined
         && segment.statusId !== undefined
     );
 
@@ -224,7 +220,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     });
 
     const segments: TCalendarEventItem[] = eventsWithMore.flatMap(event => event.uncancelledSegments.flatMap(segment => {
-        const calendarRange = getCalendarWidgetRange(db3.getEventSegmentDateTimeRange(segment), dashboardContext.bandTimeZone);
+        const calendarRange = getCalendarWidgetRange(segment.dateRange, dashboardContext.bandTimeZone);
         if (!calendarRange) return [];
         return [{
             segment,

@@ -264,21 +264,27 @@ const EventListOuter = () => {
         ),
         getItemKey: (event) => event.id,
         contextMarkerName: "EventList", csvExporter: {
-            itemToCSVRow: (event, index) => ({
-                Order: index.toString(),
-                ID: event.id.toString(),
-                Name: event.name || "",
-                Type: event.type?.text || "",
-                Status: event.status?.label || "",
-                StartsAt: event.startsAt?.toISOString() || "TBD",
-                IsAllDay: event.isAllDay ? "yes" : "no",
-                DurationMinutes: event.durationMillis === undefined
-                    ? ""
-                    : (Number(event.durationMillis) / 60000).toString(),
-                Location: event.locationDescription || "",
-                LocationURL: event.locationURL || "",
-                URL: dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }),
-            }),
+            itemToCSVRow: (event, index) => {
+                const dateRange = event.dateRange;
+                const dateRangeSpec = dateRange?.getSpec();
+                return {
+                    Order: index.toString(),
+                    ID: event.id.toString(),
+                    Name: event.name || "",
+                    Type: event.type?.text || "",
+                    Status: event.status?.label || "",
+                    StartsAt: dateRange
+                        ? dateRange.getStartDateTime()?.toISOString() || "TBD"
+                        : "",
+                    IsAllDay: dateRangeSpec ? (dateRangeSpec.isAllDay ? "yes" : "no") : "",
+                    DurationMinutes: dateRangeSpec
+                        ? (dateRangeSpec.durationMillis / 60000).toString()
+                        : "",
+                    Location: event.locationDescription || "",
+                    LocationURL: event.locationURL || "",
+                    URL: dashboardContext.routingApi.getURIForEvent({ id: event.id, name: event.name || "" }),
+                };
+            },
             filename: "events"
         },
         showAdminControls: true,

@@ -30,10 +30,14 @@ afterEach(() => {
 
 function mount(range: DateTimeRange, timeZone?: string) {
   Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true })
-  const segment = (id: number, startsAt: Date | null, durationMillis: number, statusId: number | null = null) => ({ id, startsAt, durationMillis: BigInt(durationMillis), isAllDay: false, statusId })
+  const segment = (id: number, startsAt: Date | null, durationMillis: number, statusId: number | null = null) => ({
+    id,
+    dateRange: new DateTimeRange({ startsAtDateTime: startsAt, durationMillis, isAllDay: false }),
+    statusId,
+  })
   vi.mocked(useSearchableList).mockClear()
   vi.mocked(useSearchableList).mockReturnValue({
-    enrichedItems: [{ id: 1, name: "Rehearsal", startsAt: new Date("2026-06-01T00:00:00Z"), segments: [
+    enrichedItems: [{ id: 1, name: "Rehearsal", segments: [
       segment(1, new Date(2026, 5, 1), 3_600_000),
       segment(2, timeZone ? new Date("2026-07-10T15:30:00Z") : new Date(2026, 6, 11), 0),
       segment(3, null, 3_600_000),
@@ -74,7 +78,7 @@ describe("picker calendar-window consumer", () => {
     // Highlight ranges represent calendar days after projection into the explicit zone.
     expect(output.events[1]!.dateRange.dayCount).toBe(1)
     const source = vi.mocked(useSearchableList).mock.results[0]!.value.enrichedItems[0].segments[1]
-    expect(source.durationMillis).toBe(BigInt(0))
+    expect(source.dateRange.getSpec().durationMillis).toBe(0)
     expect(output.events[1]!.dateRange.start.date).toBe("2026-07-11")
     expect(output.events.some(event => event.dateRange.hitTest(new CalendarDate("2026-07-10", output.events[1]!.dateRange.start.timeZone)).inRange)).toBe(false)
     expect(output.events[1]!.dateRange.hitTest(new CalendarDate("2026-07-11", output.events[1]!.dateRange.start.timeZone)).inRange).toBe(true)

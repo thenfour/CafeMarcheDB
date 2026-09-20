@@ -1193,7 +1193,7 @@ export type EventResponses_MinimalEventSegmentUserResponse = Prisma.EventSegment
 export const EventResponses_MinimalEventSegmentArgs = Prisma.validator<Prisma.EventSegmentFindManyArgs>()({
     select: {
         id: true,
-        responses: true,
+        responses: EventResponses_MinimalEventSegmentUserResponseArgs,
         name: true, // for attendance control
         startsAt: true, // for attendance control
         durationMillis: true, // for attendance control

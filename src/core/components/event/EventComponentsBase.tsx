@@ -6,7 +6,6 @@ import { calculateEventAttendance, EventAttendanceResult } from "./attendanceCal
 import { getUniqueNegativeID } from 'shared/utils';
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API } from '../../db3/clientAPI';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../../db3/components/DB3ClientCore';
 import { EnrichedEvent } from '../../db3/shared/schema/enrichedEventTypes';
 import { EventResponseInfo, fn_makeMockEventSegmentResponse, fn_makeMockEventUserResponse, GetEventResponseInfo, UserInstrumentList } from '../../db3/shared/schema/eventAPI';
@@ -14,15 +13,10 @@ import { DashboardContextData, useDashboardContext } from '../dashboardContext/D
 import { DashboardContextDataBase } from '../dashboardContext/dashboardContextTypes';
 
 
-export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
-    select: {
-        expectedAttendanceUserTagId: true,
-        name: true,
-        startsAt: true,
-        durationMillis: true,
-        isAllDay: true,
-    }
-}>
+export type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & {
+    expectedAttendanceUserTagId: number | null;
+    name: string;
+};
 
 export interface EventWithMetadata<
     TEvent extends CalculateEventMetadataEvent,
@@ -47,6 +41,7 @@ export function CalculateEventMetadata<
     TSegmentResponse extends db3.EventResponses_MinimalEventSegmentUserResponse,
 >(
     event: TEvent,
+    dateRange: DateTimeRange,
     tabSlug: string | undefined,
     dashboardContext: DashboardContextDataBase,
     userMap: UserInstrumentList, // unique list of all relevant users.
@@ -67,8 +62,6 @@ export function CalculateEventMetadata<
         makeMockEventUserResponse,
     });
     const eventURI = dashboardContext.routingApi.getURIForEvent(event, tabSlug);
-
-    const dateRange = API.events.getEventDateRange(event);
 
     return {
         event,
@@ -133,7 +126,11 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
         db3.EventVerbose_EventUserResponse,
         db3.EventVerbose_EventSegment,
         db3.EventVerbose_EventSegmentUserResponse
-    >(event, tabSlug, dashboardContext, userMap, event.expectedAttendanceUserTag,
+    >(event, new DateTimeRange({
+        startsAtDateTime: event.startsAt,
+        durationMillis: Number(event.durationMillis),
+        isAllDay: event.isAllDay,
+    }), tabSlug, dashboardContext, userMap, event.expectedAttendanceUserTag,
         (segment, user) => {
             if (!user?.id) return null;
             return {
@@ -225,16 +222,18 @@ export interface EventListItemProps {
     //filterSpec: EventsFilterSpec;
 };
 
-type EventSearchMetadataSegment = db3.EventResponses_MinimalEventSegment & {
+type ReadyEventSearchSegment = NonNullable<db3.EventSearchClient["segments"]>[number] & {
+    name: string;
+    dateRange: DateTimeRange;
+    statusId: number | null;
     responses: db3.EventResponses_MinimalEventSegmentUserResponse[];
 };
+
+type EventSearchMetadataSegment = ReadyEventSearchSegment & db3.EventResponses_MinimalEventSegment;
 
 type EventSearchMetadataEvent = db3.EventSearchClient & {
     expectedAttendanceUserTagId: number | null;
     name: string;
-    startsAt: Date | null;
-    durationMillis: bigint;
-    isAllDay: boolean;
     responses: db3.EventResponses_MinimalEventUserResponse[];
     segments: EventSearchMetadataSegment[];
 };
@@ -263,11 +262,9 @@ const isSegmentResponseReady = (
 
 const isEventSegmentReady = (
     segment: NonNullable<db3.EventSearchClient["segments"]>[number],
-): segment is typeof segment & EventSearchMetadataSegment => (
+): segment is ReadyEventSearchSegment => (
     segment.name !== undefined
-    && segment.startsAt !== undefined
-    && segment.durationMillis !== undefined
-    && segment.isAllDay !== undefined
+    && segment.dateRange !== undefined
     && segment.statusId !== undefined
     && segment.responses !== undefined
     && segment.responses.every(isSegmentResponseReady)
@@ -283,9 +280,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
     if (!currentUser
         || event.expectedAttendanceUserTagId === undefined
         || event.name === undefined
-        || event.startsAt === undefined
-        || event.durationMillis === undefined
-        || event.isAllDay === undefined
+        || event.dateRange === undefined
         || event.responses === undefined
         || !event.responses.every(isEventUserResponseReady)
         || event.segments === undefined
@@ -310,15 +305,23 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
         }
         : null;
 
+    const metadataSegments: EventSearchMetadataSegment[] = event.segments.map(segment => {
+        const dateRangeSpec = segment.dateRange.getSpec();
+        return {
+            ...segment,
+            responses: segment.responses as db3.EventResponses_MinimalEventSegmentUserResponse[],
+            startsAt: dateRangeSpec.startsAtDateTime,
+            durationMillis: BigInt(dateRangeSpec.durationMillis),
+            isAllDay: dateRangeSpec.isAllDay,
+        };
+    });
+
     const metadataEvent: EventSearchMetadataEvent = {
         ...event,
         expectedAttendanceUserTagId: event.expectedAttendanceUserTagId,
         name: event.name,
-        startsAt: event.startsAt,
-        durationMillis: event.durationMillis,
-        isAllDay: event.isAllDay,
         responses: event.responses,
-        segments: event.segments,
+        segments: metadataSegments,
     };
 
     const eventData = CalculateEventMetadata<
@@ -326,7 +329,7 @@ export const CalculateEventSearchResultsMetadata = ({ event }: EventListItemProp
         db3.EventResponses_MinimalEventUserResponse,
         EventSearchMetadataSegment,
         db3.EventResponses_MinimalEventSegmentUserResponse
-    >(metadataEvent, undefined, dashboardContext,
+    >(metadataEvent, event.dateRange, undefined, dashboardContext,
         userMap,
         expectedAttendanceUserTag,
         (segment, user) => { // makeMockEventSegmentResponse

@@ -7,9 +7,7 @@ vi.mock("src/core/db3/DB3Client", () => Object.fromEntries([
   "ConstEnumStringFieldClient", "TagsFieldClient", "CreatedAtColumn", "MarkdownStringColumnClient",
 ].map(name => [name, class {}])))
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({}))
-vi.mock("src/core/db3/clientAPI", () => ({ API: { events: { getEventDateRange: (event: any) => new DateTimeRange({
-  startsAtDateTime: event.startsAt, durationMillis: Number(event.durationMillis), isAllDay: event.isAllDay,
-}) } } }))
+vi.mock("src/core/db3/clientAPI", () => ({ API: { events: {} } }))
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => context }))
 vi.mock("src/core/db3/shared/schema/eventAPI", () => ({ GetEventResponseInfo: () => ({
   getEventResponseForUser: () => ({ isInvited: true, response: {} }),
@@ -32,7 +30,12 @@ describe("band lifecycle reaches production attendance", () => {
   ] as const)("classifies %s using the configured band interval", (now, timing, past) => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(now))
-    const metadata = CalculateEventMetadata(event as any, undefined, context as any, [], null, () => null, () => null)
+    const dateRange = new DateTimeRange({
+      startsAtDateTime: event.startsAt,
+      durationMillis: Number(event.durationMillis),
+      isAllDay: event.isAllDay,
+    })
+    const metadata = CalculateEventMetadata(event as any, dateRange, undefined, context as any, [], null, () => null, () => null)
     expect(metadata.eventTiming).toBe(timing)
     const attendance = CalcEventAttendance({ eventData: metadata as any, userMap: [], dashboardContext: context as any })
     expect(attendance.eventIsPast).toBe(past)

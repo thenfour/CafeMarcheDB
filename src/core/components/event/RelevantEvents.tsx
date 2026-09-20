@@ -3,7 +3,6 @@ import React from "react";
 import { toSorted } from "shared/arrayUtils";
 import { CalcRelativeTiming, DateTimeRange, RelativeTimingBucket, Timing } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
-import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { useDb3Query } from "../../db3/DB3Client";
 import { AppContextMarker } from "../AppContext";
@@ -98,16 +97,8 @@ const RelevantEventsWithDashboardContext = ({
     // allow 1 single "happening now" event.
 
     let eventsWithTiming = enrichedEvents.flatMap(event => {
-        if (event.startsAt === undefined
-            || event.durationMillis === undefined
-            || event.isAllDay === undefined) {
-            return [];
-        }
-        const dateRange = API.events.getEventDateRange({
-            startsAt: event.startsAt,
-            durationMillis: event.durationMillis,
-            isAllDay: event.isAllDay,
-        });
+        const dateRange = event.dateRange;
+        if (!dateRange) return [];
         const relativeTiming = CalcRelativeTiming(
             now,
             dateRange,
