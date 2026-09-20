@@ -28,7 +28,6 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { useDashboardContext } from '../../components/dashboardContext/DashboardContext';
 import * as DB3Client from "../DB3Client";
 import * as db3 from '../db3';
-import type { CMDBTableFilterItem } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 
@@ -85,6 +84,7 @@ export interface DB3EditGridExtraActionsArgs {
 
 export type DB3EditGridProps = {
     tableSpec: DB3Client.xTableClientSpec,
+    view?: db3.AnyDB3CrudView,
     renderExtraActions?: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
     tableParams?: TAnyModel,
     readOnly?: boolean,
@@ -94,12 +94,10 @@ export type DB3EditGridProps = {
     isCellEditable?: (row: TAnyModel, field: string) => boolean;
 };
 
-export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const dashboardContext = useDashboardContext();
-    const readOnly = CoerceToBoolean(props.readOnly, false);
-
-    // set initial pagination values + get pagination state.
+function useDB3EditGridQueryState(
+    tableSpec: DB3Client.xTableClientSpec,
+    props: Omit<DB3EditGridProps, "tableSpec" | "view">,
+) {
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
         page: 0,
         pageSize: gPageSizeDefault,
@@ -112,28 +110,104 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const publicData = useDB3Authorization();
     const canRecoverDeletedRows = tableSpec.args.table.authorizeIncludeDeleted(publicData, true);
     const includeDeleted = props.includeDeleted ?? canRecoverDeletedRows;
+    return {
+        paginationModel,
+        setPaginationModel,
+        sortModel,
+        setSortModel,
+        filterModel,
+        setFilterModel,
+        publicData,
+        includeDeleted,
+    };
+}
 
+type DB3EditGridQueryState = ReturnType<typeof useDB3EditGridQueryState>;
 
+export function DB3EditGrid(props: DB3EditGridProps) {
+    if (props.view) return <DB3CrudEditGrid {...props} view={props.view} />;
+    return <DB3LegacyEditGrid {...props} />;
+}
+
+function DB3LegacyEditGrid({ view: _view, tableSpec, ...props }: DB3EditGridProps) {
+    const queryState = useDB3EditGridQueryState(tableSpec, props);
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
         tableSpec,
         filterModel: {
-            items: filterModel.items.filter(i => i.value !== undefined).map(i => {
+            items: queryState.filterModel.items.filter(i => i.value !== undefined).map(i => {
                 console.assert(i.operator === "equals");
-                const ret: CMDBTableFilterItem = {
-                    field: i.field,
-                    value: i.value,
-                    operator: "equals",
-                }
-                return ret;
+                return { field: i.field, value: i.value, operator: "equals" };
             }),
-            quickFilterValues: filterModel.quickFilterValues,
-            tableParams: props.tableParams || {}
+            quickFilterValues: queryState.filterModel.quickFilterValues,
+            tableParams: props.tableParams || {},
         },
-        sortModel,
-        paginationModel,
-        includeDeleted,
+        sortModel: queryState.sortModel,
+        paginationModel: queryState.paginationModel,
+        includeDeleted: queryState.includeDeleted,
     });
+    return <DB3EditGridImpl
+        {...props}
+        tableSpec={tableSpec}
+        tableClient={tableClient}
+        queryState={queryState}
+        commandBacked={false}
+    />;
+}
+
+function DB3CrudEditGrid({ view, tableSpec, ...props }: DB3EditGridProps & { view: db3.AnyDB3CrudView }) {
+    const queryState = useDB3EditGridQueryState(tableSpec, props);
+    const tableClient = DB3Client.useCrudTableRenderContext({
+        view,
+        tableSpec,
+        filterModel: {
+            items: queryState.filterModel.items.filter(i => i.value !== undefined).map(i => {
+                console.assert(i.operator === "equals");
+                return { field: i.field, value: i.value, operator: "equals" };
+            }),
+            quickFilterValues: queryState.filterModel.quickFilterValues,
+            tableParams: props.tableParams || {},
+        },
+        sortModel: queryState.sortModel,
+        paginationModel: queryState.paginationModel,
+        includeDeleted: queryState.includeDeleted,
+        paginated: true,
+    });
+    return <DB3EditGridImpl
+        {...props}
+        tableSpec={tableSpec}
+        tableClient={tableClient}
+        queryState={queryState}
+        commandBacked
+    />;
+}
+
+type DB3EditGridImplProps = Omit<DB3EditGridProps, "view"> & {
+    tableClient: DB3Client.xTableRenderClient;
+    queryState: DB3EditGridQueryState;
+    commandBacked: boolean;
+};
+
+function DB3EditGridImpl({
+    tableSpec,
+    tableClient,
+    queryState,
+    commandBacked,
+    ...props
+}: DB3EditGridImplProps) {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = useDashboardContext();
+    const readOnly = CoerceToBoolean(props.readOnly, false);
+    const [isWaitingForRefresh, setIsWaitingForRefresh] = React.useState<boolean>(false);
+    const {
+        paginationModel,
+        setPaginationModel,
+        sortModel,
+        setSortModel,
+        filterModel,
+        setFilterModel,
+        publicData,
+    } = queryState;
 
     const [rowModesModel, setRowModesModel] = React.useState({});
     const [explicitSave, setExplicitSave] = React.useState(false); // flag to know if the user proactively clicked save, otherwise we consider it implied and requires stronger consent
@@ -199,10 +273,12 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         try {
             let updatedRow = newRow;
             if (props.onUpdateRow) updatedRow = await props.onUpdateRow(newRow, oldRow, tableClient);
-            else await tableClient.doUpdateMutation(newRow);
+            else await tableClient.doUpdateMutation(newRow, oldRow);
             resolve(updatedRow);
-            await tableClient.refetch();
-            dashboardContext.refreshCachedData();
+            if (!commandBacked || props.onUpdateRow) {
+                await tableClient.refetch();
+                dashboardContext.refreshCachedData();
+            }
             if (updatedRow !== oldRow) showSnackbar({ children: "update success", severity: 'success' });
         } catch (error) {
             showSnackbar({ children: error instanceof Error ? error.message : "update error", severity: 'error' });
@@ -221,7 +297,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             tableClient.doDeleteMutation(deleteRowId, 'softWhenPossible').then(() => {
                 showSnackbar({ children: "deleted successful", severity: 'success' });
                 setDeleteRowId(null);
-                tableClient.refetch();
+                if (!commandBacked) tableClient.refetch();
             }).catch(e => {
                 showSnackbar({ children: "delete error", severity: 'error' });
                 console.error(e);
@@ -280,10 +356,12 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     };
 
     const onAddOK = (obj) => {
-        tableClient.doInsertMutation(obj).then((newRow) => {
+        tableClient.doInsertMutation(obj).then((_newRow) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
-            tableClient.refetch();
-            dashboardContext.refreshCachedData();
+            if (!commandBacked) {
+                tableClient.refetch();
+                dashboardContext.refreshCachedData();
+            }
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "insert error", severity: 'error' });
@@ -395,6 +473,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddOK}
             table={tableSpec}
+            tableRenderClient={tableClient}
 
         />}
 

@@ -676,12 +676,16 @@ a per-row compatibility flag or a second lookup mode.
   derive hard-versus-soft behavior from trusted table metadata, update patches
   use present-keys-only semantics, results return canonical identity, and
   callers explicitly own refetching declared by command invalidation metadata.
-- The first explicit `InstrumentFunctionalGroup` integration proved the command
-  semantics but was not accepted as the ordinary CRUD shape: it required
-  entity-specific writable schemas, serializers, handler/registry wiring,
-  command hooks, and a grid adapter. The replacement design is a generic
-  CRUD-enabled view plus command-backed table-render context, with the pilot
-  complete only when the grid call site needs just its `tableSpec` and view.
+- Generic CRUD-enabled views now compose named reads with generated entity CRUD
+  commands. The command-backed table-render context retains existing
+  TableClient/client-column preparation, computes present-keys-only update
+  patches, invokes generated commands, and owns refetching. Server handlers are
+  discovered from registered CRUD views rather than wired per entity.
+- The `InstrumentFunctionalGroup` grid proves that generic path against the
+  public-ID pilot. Its call site supplies only its `tableSpec` and editor view;
+  it has no entity-specific writable schema, serializer, handler file, registry
+  entry, command hooks, mutation adapter, numeric ID, or generic mutation
+  envelope. Other editing and selection entrypoints remain to be migrated.
 - The registered event-song-list save handler now performs parent, song, and
   divider synchronization atomically in one serializable transaction by
   composing authorized DB3 row services. The two legacy insert/update RPCs and
@@ -828,10 +832,10 @@ boundary safely.
 - [x] Define strict generated entity CRUD command contracts and shared handlers,
   including create/update/delete identity, patch semantics, result types,
   validation, error behavior, and refetch/invalidation expectations.
-- [ ] Define a generic CRUD-enabled view and command-backed table-render context
+- [x] Define a generic CRUD-enabled view and command-backed table-render context
   that derive typed row/identity behavior and generated command invocation from
   a named view plus its linked `xTable`.
-- [ ] Prove generated CRUD against `InstrumentFunctionalGroup`, the existing
+- [x] Prove generated CRUD against `InstrumentFunctionalGroup`, the existing
   public-ID pilot. Its `DB3EditGrid` call site should need only `tableSpec` and
   the CRUD-enabled view, without entity-specific command schemas, serializers,
   handler files, registry wiring, command hooks, mutation adapters, table names,

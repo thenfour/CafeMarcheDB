@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Prisma } from "db";
 import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { defineEntity } from "../../core/db3Entity";
+import { defineCrudView } from "../../core/db3CrudView";
 import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
 import { xInstrument, xInstrumentFunctionalGroup, xInstrumentTag } from "../../schema/instrument";
 import {
@@ -80,6 +81,15 @@ export const dashboardInstrumentArgs = Prisma.validator<Prisma.InstrumentDefault
 
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
+    entity: instrumentFunctionalGroupEntity,
+    selection: InstrumentFunctionalGroupArgs,
+    dtoSchema: InstrumentFunctionalGroupListDtoSchema,
+    hydrate: dto => dto,
+    getIdentity: client => client.publicId,
+});
+
+export const instrumentFunctionalGroupEditorView = defineCrudView({
+    viewID: "InstrumentFunctionalGroup_Editor",
     entity: instrumentFunctionalGroupEntity,
     selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,

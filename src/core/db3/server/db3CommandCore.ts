@@ -80,6 +80,8 @@ export type AnyDB3CommandHandler = DB3CommandHandler<AnyDB3Command>;
 
 // helper fn to create a DB3CommandHandler<>
 // note: when you create a command handler, add  it to the `commandHandlers` registry
+// with registerDB3CommandHandler.
+//
 // so it's findable when the server tries to look them up from client requests.
 export function defineCommandHandler<TCommand extends AnyDB3Command>(
     command: TCommand,

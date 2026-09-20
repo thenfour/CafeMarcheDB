@@ -444,7 +444,7 @@ export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
     // all the columns in our spec though represent logical values which can be passed into mutations.
     // that is, all the columns comprise the updation model completely.
     // for things like FK, 
-    doUpdateMutation = async (row: TAnyModel) => {
+    doUpdateMutation = async (row: TAnyModel, _previousRow?: TAnyModel) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
 
         const dbModel = this.prepareMutation(row, "update");

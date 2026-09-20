@@ -20,24 +20,41 @@ type db3NewObjectDialogProps = {
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => any;
     onCancel: () => any;
     table: DB3ClientCore.xTableClientSpec;
+    tableRenderClient?: DB3ClientCore.xTableRenderClient;
 
 
     caption?: string;
     descriptionSettingName?: SettingKey;
 };
 
-export function DB3NewObjectDialog({ onOK, onCancel, table, ...props }: db3NewObjectDialogProps) {
+export function DB3NewObjectDialog(props: db3NewObjectDialogProps) {
+    if (props.tableRenderClient) {
+        return <DB3NewObjectDialogWithClient {...props} tableRenderClient={props.tableRenderClient} />;
+    }
+    return <LegacyDB3NewObjectDialog {...props} />;
+}
+
+function LegacyDB3NewObjectDialog(props: db3NewObjectDialogProps) {
+    const tableClient = DB3ClientCore.useTableRenderContext({
+        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
+        tableSpec: props.table,
+    });
+    return <DB3NewObjectDialogWithClient {...props} tableRenderClient={tableClient} />;
+}
+
+function DB3NewObjectDialogWithClient({
+    onOK,
+    onCancel,
+    table,
+    tableRenderClient: tableClient,
+    ...props
+}: db3NewObjectDialogProps & { tableRenderClient: DB3ClientCore.xTableRenderClient }) {
     const [currentUser] = useCurrentUser();
     const [obj, setObj] = React.useState(table.args.table.createNew(currentUser));
     const [oldObj, setOldObj] = React.useState(table.args.table.createNew(currentUser)); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
     const publicData = useDB3Authorization();
     const [grayed, setGrayed] = React.useState<boolean>(false);
-
-    const tableClient = DB3ClientCore.useTableRenderContext({
-        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
-        tableSpec: table,
-    });
 
     // validate on change
     React.useEffect(() => {

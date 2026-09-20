@@ -4,7 +4,7 @@ import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import type { DB3ReferenceProvider } from "./db3Hydration";
-import type { AnyDB3Entity, DB3EntityId, PrismaDelegateOf } from "./db3Entity";
+import type { AnyDB3Entity, EntityIdOf, PrismaDelegateOf } from "./db3Entity";
 
 type ArrayItem<T> = T extends readonly (infer TItem)[] ? TItem : never;
 
@@ -26,7 +26,7 @@ export interface DB3View<
     readonly dtoSchema: TDtoSchema;
     readonly getSelectionArgs: (context: DB3ViewSelectionContext) => TSelection;
     readonly hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    readonly getIdentity: (client: TClient) => DB3EntityId;
+    readonly getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 
     parseDto(value: unknown): z.infer<TDtoSchema>;
 }
@@ -58,7 +58,7 @@ export function defineView<
     selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    getIdentity: (client: TClient) => DB3EntityId;
+    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 }): DB3View<TEntity, TSelection, TDtoSchema, TClient> {
     const view: DB3View<TEntity, TSelection, TDtoSchema, TClient> = {
         viewID: args.viewID,

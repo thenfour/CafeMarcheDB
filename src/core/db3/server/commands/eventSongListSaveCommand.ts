@@ -16,6 +16,7 @@ import {
     defineCommandHandler,
     type DB3CommandExecutionContext,
 } from "../db3CommandCore";
+import { registerDB3CommandHandler } from "../db3CommandRegistry";
 
 type PersistedSong = Prisma.EventSongListSongGetPayload<{}>;
 type PersistedDivider = Prisma.EventSongListDividerGetPayload<{}>;
@@ -171,3 +172,6 @@ export const eventSongListSaveCommandHandler = defineCommandHandler(
     saveEventSongListCommand,
     saveEventSongList,
 );
+
+registerDB3CommandHandler(eventSongListSaveCommandHandler);
+

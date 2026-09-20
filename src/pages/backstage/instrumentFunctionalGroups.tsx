@@ -10,7 +10,6 @@ const InstrumentFunctionalGroupListContent = () => {
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xInstrumentFunctionalGroup,
         columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.PublicIdColumnClient(),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 300 }),
@@ -21,7 +20,10 @@ const InstrumentFunctionalGroupListContent = () => {
 
     return <>
         <SettingMarkdown setting="InstrumentFunctionalGroupList_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid
+            tableSpec={tableSpec}
+            view={db3.instrumentFunctionalGroupEditorView}
+        />
     </>;
 };
 

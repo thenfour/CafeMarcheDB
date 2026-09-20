@@ -1,7 +1,8 @@
 // crud are basically a specialization of the db3 command system to support simple mutations.
 
+import type { TAnyModel } from "@/shared/rootroot";
 import { z } from "zod";
-import { defineCommand } from "./db3Command";
+import { defineCommand, type AnyDB3Command } from "./db3Command";
 import type { AnyDB3Entity, EntityIdOf } from "./db3Entity";
 
 const identityResultSchema = <TIdentitySchema extends z.ZodTypeAny>(
@@ -137,4 +138,41 @@ export function defineEntityCrudCommands<
     } as const;
 }
 
-export type AnyDB3EntityCrudCommands = ReturnType<typeof defineEntityCrudCommands>;
+export interface AnyDB3EntityCrudCommands {
+    readonly entity: AnyDB3Entity;
+    readonly identitySchema: z.ZodTypeAny;
+    readonly deleteType: "softWhenPossible" | "hard";
+    readonly createCommand: AnyDB3Command;
+    readonly updateCommand: AnyDB3Command;
+    readonly deleteCommand: AnyDB3Command;
+}
+
+function preparedValuesEqual(a: unknown, b: unknown): boolean {
+    if (Object.is(a, b)) return true;
+    if (a instanceof Date && b instanceof Date) return a.valueOf() === b.valueOf();
+    if (Array.isArray(a) && Array.isArray(b)) {
+        return a.length === b.length
+            && a.every((value, index) => preparedValuesEqual(value, b[index]));
+    }
+    if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
+    const aRecord = a as Record<string, unknown>;
+    const bRecord = b as Record<string, unknown>;
+    const aKeys = Object.keys(aRecord);
+    const bKeys = Object.keys(bRecord);
+    return aKeys.length === bKeys.length
+        && aKeys.every(key => Object.prototype.hasOwnProperty.call(bRecord, key)
+            && preparedValuesEqual(aRecord[key], bRecord[key]));
+}
+
+/** Returns the present-keys-only patch between two prepared mutation models. */
+export function createEntityCrudUpdatePatch(
+    previous: TAnyModel,
+    next: TAnyModel,
+): TAnyModel {
+    return Object.fromEntries(
+        Object.entries(next).filter(([member, value]) => (
+            !Object.prototype.hasOwnProperty.call(previous, member)
+            || !preparedValuesEqual(previous[member], value)
+        )),
+    );
+}

@@ -8,4 +8,5 @@ export * from './components/DB3ClientDateRangeColumn';
 export * from './components/db3ForeignSingleFieldClient';
 export * from './components/DB3ClientTagsField';
 export * from './components/useDB3Command';
+export * from './components/useCrudTableRenderContext';
 

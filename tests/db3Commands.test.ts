@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import * as db3 from "@db3/db3";
 import { eventSongListSaveCommandHandler } from "@db3/server/commands/eventSongListSaveCommand";
 import type { DB3CommandExecutionContext } from "@db3/server/db3CommandCore";
+import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
 import { defineEntityCrudCommandHandlers } from "@db3/server/db3EntityCrudCommand";
 import { isPublicId, parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { z } from "zod";
@@ -220,6 +221,72 @@ describe("DB3 commands", () => {
             sortOrder: 1,
             color: null,
         }, context)).rejects.toThrow("Expected an InstrumentFunctionalGroup public ID");
+    });
+
+    it("composes and registers CRUD from the InstrumentFunctionalGroup editor view", async () => {
+        const view = db3.instrumentFunctionalGroupEditorView;
+        expect(view.entity).toBe(db3.instrumentFunctionalGroupEntity);
+        expect(db3.getDB3CrudViewForCommand(view.crud.createCommand.commandID)).toBe(view);
+        expect(view.crud.createCommand.parseDto({
+            name: "Brass",
+            description: "",
+            sortOrder: 0,
+            color: null,
+        })).toEqual({
+            name: "Brass",
+            description: "",
+            sortOrder: 0,
+            color: null,
+        });
+        expect(() => view.crud.createCommand.parseDto({
+            name: "Brass",
+            publicId: functionalGroupPublicId,
+        })).toThrow();
+        expect(() => view.crud.createCommand.parseDto({
+            name: "Brass",
+            instruments: [],
+        })).toThrow();
+        expect(() => view.crud.createCommand.parseDto({ name: 42 }))
+            .toThrow("field is of unknown type");
+        expect(() => view.crud.updateCommand.parseDto({
+            identity: functionalGroupPublicId,
+            patch: { sortOrder: "not a number" },
+        })).toThrow("Input string was not convertible to integer");
+        expect(() => view.crud.updateCommand.parseDto({
+            identity: functionalGroupPublicId,
+            patch: { unknownField: true },
+        })).toThrow();
+
+        const createHandler = getDB3CommandHandler(view.crud.createCommand.commandID);
+        expect(createHandler.command).toBe(view.crud.createCommand);
+        const { context, insert } = createContext();
+        insert.mockResolvedValueOnce({
+            id: 15,
+            publicId: functionalGroupPublicId,
+            name: "Brass",
+        });
+        await expect(createHandler.execute({ name: "Brass" }, context))
+            .resolves.toEqual({ identity: functionalGroupPublicId });
+        expect(insert).toHaveBeenCalledWith(
+            db3.instrumentFunctionalGroupEntity,
+            { name: "Brass" },
+        );
+    });
+
+    it("builds a present-keys-only patch from prepared TableClient values", () => {
+        expect(db3.createEntityCrudUpdatePatch({
+            name: "Brass",
+            color: null,
+            tags: [1, 2],
+        }, {
+            name: "Winds",
+            color: null,
+            tags: [1, 2],
+        })).toEqual({ name: "Winds" });
+        expect(db3.createEntityCrudUpdatePatch({ color: "red" }, { color: null }))
+            .toEqual({ color: null });
+        expect(db3.createEntityCrudUpdatePatch({}, { sortOrder: 0 }))
+            .toEqual({ sortOrder: 0 });
     });
 
     it("creates a setlist aggregate through authorized row operations", async () => {

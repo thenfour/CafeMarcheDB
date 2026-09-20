@@ -9,6 +9,7 @@ export * from "./shared/core/db3Hydration"
 export * from "./shared/core/db3View"
 export * from "./shared/core/db3Command"
 export * from "./shared/core/db3EntityCrud"
+export * from "./shared/core/db3CrudView"
 
 export * from "./shared/schema/instrument"
 export * from "./shared/schema/user"

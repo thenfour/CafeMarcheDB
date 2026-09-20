@@ -1,0 +1,136 @@
+import type { TAnyModel } from "@/shared/rootroot";
+import type { z } from "zod";
+import { z as zod } from "zod";
+import { defineEntityCrudCommands, type AnyDB3EntityCrudCommands } from "./db3EntityCrud";
+import type { AnyDB3Entity, EntityIdOf } from "./db3Entity";
+import {
+    defineView,
+    type DB3View,
+    type DB3ViewSelectionContext,
+} from "./db3View";
+import type { DB3ReferenceProvider } from "./db3Hydration";
+
+export interface DB3CrudView<
+    TEntity extends AnyDB3Entity,
+    TSelection,
+    TDtoSchema extends z.ZodTypeAny,
+    TClient extends TAnyModel,
+    TCrud extends AnyDB3EntityCrudCommands,
+> extends DB3View<TEntity, TSelection, TDtoSchema, TClient> {
+    readonly crud: TCrud;
+}
+
+export type AnyDB3CrudView = DB3View<
+    AnyDB3Entity,
+    any,
+    z.ZodTypeAny,
+    TAnyModel
+> & { readonly crud: AnyDB3EntityCrudCommands };
+
+const crudViewsByCommandID = new Map<string, AnyDB3CrudView>();
+
+function createIdentitySchema<TEntity extends AnyDB3Entity>(
+    entity: TEntity,
+): z.ZodType<EntityIdOf<TEntity>> {
+    const schema = entity.schema.publicIdMember
+        ? zod.string().length(16).regex(/^[A-Za-z0-9_-]+$/)
+        : zod.number().int();
+    return schema as z.ZodType<EntityIdOf<TEntity>>;
+}
+
+/**
+ * Builds the strict transport-key boundary for prepared TableClient values.
+ * Field values are still parsed and authorized by the authoritative xTable
+ * mutation services; this schema prevents identities and unknown members from
+ * entering the generated-command envelope.
+ */
+function createPreparedMutationSchema(
+    entity: AnyDB3Entity,
+    dtoSchema: z.AnyZodObject,
+    mode: "new" | "update",
+): z.AnyZodObject {
+    const shape: z.ZodRawShape = {};
+    const dtoMembers = new Set(Object.keys(dtoSchema.shape));
+    for (const field of entity.schema.columns) {
+        if (!dtoMembers.has(field.member)
+            && (!field.fkidMember || !dtoMembers.has(field.fkidMember))) {
+            continue;
+        }
+        const member = field.fkidMember || field.member;
+        if (member === entity.schema.pkMember || member === entity.schema.publicIdMember) {
+            continue;
+        }
+        shape[member] = zod.unknown().superRefine((value, context) => {
+            const validation = field.ValidateAndParse({
+                row: { [member]: value },
+                mode,
+            });
+            if (validation.result === "error") {
+                context.addIssue({
+                    code: zod.ZodIssueCode.custom,
+                    message: validation.errorMessage || `Invalid value for ${member}.`,
+                });
+            }
+        }).optional();
+    }
+    return zod.object(shape).strict();
+}
+
+function registerCrudView(view: AnyDB3CrudView): void {
+    const commands = [
+        view.crud.createCommand,
+        view.crud.updateCommand,
+        view.crud.deleteCommand,
+    ];
+    for (const command of commands) {
+        const existing = crudViewsByCommandID.get(command.commandID);
+        if (existing && existing.viewID !== view.viewID) {
+            throw new Error(
+                `DB3 CRUD command '${command.commandID}' is already registered by view '${existing.viewID}'.`,
+            );
+        }
+        crudViewsByCommandID.set(command.commandID, view);
+    }
+}
+
+/**
+ * Defines a named read view with generated single-row create/update/delete
+ * commands. The linked xTable remains the authority for writable fields,
+ * transformation, authorization, defaults, and delete policy.
+ */
+export function defineCrudView<
+    TEntity extends AnyDB3Entity,
+    TSelection,
+    TDtoSchema extends z.AnyZodObject,
+    TClient extends TAnyModel,
+>(args: {
+    viewID: string;
+    entity: TEntity;
+    selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+    dtoSchema: TDtoSchema;
+    hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
+}) {
+    const view = defineView(args);
+    const createSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "new");
+    const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
+    const crud = defineEntityCrudCommands({
+        entity: args.entity,
+        identitySchema: createIdentitySchema(args.entity),
+        createSchema,
+        updateFieldsSchema,
+    });
+    const crudView = Object.assign(view, { crud }) as DB3CrudView<
+        TEntity,
+        TSelection,
+        TDtoSchema,
+        TClient,
+        typeof crud
+    >;
+    registerCrudView(crudView as unknown as AnyDB3CrudView);
+    return crudView;
+}
+
+export function getDB3CrudViewForCommand(commandID: string): AnyDB3CrudView | undefined {
+    return crudViewsByCommandID.get(commandID);
+}
