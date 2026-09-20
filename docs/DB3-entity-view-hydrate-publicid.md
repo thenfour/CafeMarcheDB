@@ -78,8 +78,9 @@ command system should support two authoring levels:
 
 The goal is one mutation architecture with a simple form and an expressive form,
 not an easy legacy path beside a more type-safe command path. The current
-TableClient mutation API remains only as migration infrastructure until command
-ergonomics cover its useful behavior.
+TableClient CRUD facade provides useful automatic editor ergonomics and may
+remain, but its legacy generic mutation transport is migration infrastructure
+until the facade is command-backed.
 
 ## Current vocabulary and responsibilities
 
@@ -297,8 +298,9 @@ must not expose `TAnyModel`, table names, numeric table IDs, or the generic
 mutation envelope merely because the implementation delegates to mature DB3
 row services.
 
-`defineEntityCrudCommands()` establishes that contract from an entity, its
-runtime identity schema, and explicit create/update field schemas:
+`defineEntityCrudCommands()` is the low-level foundation for that contract. It
+establishes create/update/delete descriptors from an entity, its runtime
+identity schema, and create/update field schemas:
 
 - create accepts the strict create DTO directly; natural and public identity
   fields are server-owned and cannot be declared by the writable schema;
@@ -316,7 +318,74 @@ DB3/Zod error path and the generic command RPC transaction. They do not convert
 failures into a second result union. Command descriptors declare affected entity
 IDs with `invalidation.mode: "caller"`; `useDB3Command()` exposes that metadata,
 but callers still own refetching until DB3 has a normalized client query cache.
-Handler registration remains explicit and server-only.
+
+That low-level factory is not intended to be the per-entity authoring surface
+for ordinary editors. Requiring each simple table to repeat writable schemas,
+serializers, three command hooks, a handler module, registry entries, and a grid
+adapter would discard the main ergonomic benefit of the existing TableClient:
+a conventional editor is automatic once its schema and columns are declared.
+
+#### CRUD-enabled views and automatic editors
+
+Ordinary row editing should be exposed through a CRUD-enabled named view. A
+generic `defineCrudView()` composes the normal `defineView()` contract with the
+generated CRUD command foundation. It receives the same entity, selection, DTO
+schema, hydration, and identity information as a normal view, and returns a
+view carrying generated create/update/delete command metadata.
+
+The CRUD contract is derived from two existing authorities:
+
+- the view supplies the selected DTO shape, hydrated client type, and typed
+  client identity; and
+- the view's entity links to the existing `xTable`, which continues to supply
+  new-row defaults, writable-column behavior, validation, field and row
+  authorization, client-to-database transformation, delete policy, and
+  public-versus-natural identity metadata.
+
+This is deliberately the same limited CRUD model supported by TableClient
+today. A CRUD-enabled view does not make arbitrary computed fields, nested
+relations, or rich hydrated objects automatically writable, and hydration does
+not need to become generally reversible. The existing table/client-column
+mutation preparation path determines which configured editor values can be
+serialized. Existing `xTable` column types and authorization maps continue to
+govern server-owned fields such as `createdAt`; the CRUD-view layer must not
+introduce a parallel writable-field policy or require per-view omit lists for
+facts already expressed by the table schema.
+
+The client counterpart is a generic `useCrudTableRenderContext()` with arguments
+similar to `useTableRenderContext()`, plus a CRUD-enabled view. It:
+
+- queries and hydrates through the supplied view;
+- infers its row type as `ClientOf<TView>` and its identity as
+  `EntityIdOf<EntityOf<TView>>`;
+- uses the existing TableClient/client-column preparation behavior for create
+  and update values;
+- computes an update patch from the prepared previous and next values;
+- invokes the view's generated commands; and
+- owns the conventional refetch and invalidation lifecycle.
+
+`DB3EditGrid` should use that hook internally. The ordinary call site remains
+limited to presentation metadata and the semantic view:
+
+```tsx
+<DB3EditGrid
+    tableSpec={tableSpec}
+    view={instrumentFunctionalGroupEditorView}
+/>
+```
+
+It must not require per-entity command hooks, DTO mappers, mutation adapters, or
+knowledge of command IDs. Creation may initially retain the same new-row model
+and limitations as the current TableClient; defining a more general first-class
+edit-draft abstraction is separate work.
+
+Because command descriptors and handlers must also exist on the server,
+`defineCrudView()` performs module-level composition and registration while
+`useCrudTableRenderContext()` only performs client-side invocation. Generated
+CRUD views are discoverable by generic server CRUD-handler infrastructure, so
+an ordinary entity does not need its own handler file or manual command-registry
+entries. This registration remains an allowlist of declared CRUD views; clients
+cannot nominate arbitrary database tables.
 
 A handwritten command is preferable to generated CRUD when the operation:
 
@@ -326,19 +395,21 @@ A handwritten command is preferable to generated CRUD when the operation:
 - must enforce aggregate invariants in one transaction; or
 - should hide insert/update choice and persistence layout from the component.
 
-Commands do not call the legacy client `prepareMutation()` path. Their serializer
-is the explicit client-input-to-DTO transformation, while the server command row
-services reuse the authoritative DB3 row mutation core. This avoids making a
-table-shaped client sanitizer responsible for aggregate semantics without
-discarding the mature row-level validation, authorization, audit, public-ID,
-and hook behavior already implemented there.
+Handwritten commands do not call the legacy client `prepareMutation()` path.
+Their serializer is the explicit client-input-to-DTO transformation, while the
+server command row services reuse the authoritative DB3 row mutation core. A
+generated CRUD view may reuse TableClient's current mutation preparation because
+its purpose is precisely the same constrained row-shaped editing behavior. This
+does not make that table-shaped serializer responsible for aggregate semantics.
 
-During migration, TableClient mutation methods may temporarily delegate to
-generated commands so generic editors can move without a flag day. That is a
-compatibility seam, not a permanent second API. Once all consumers of a
-capability have moved, remove the corresponding `doInsertMutation()`,
-`doUpdateMutation()`, `doDeleteMutation()`, mutation capability flag, and
-generic mutation RPC surface.
+During migration, the existing TableClient CRUD facade may delegate to generated
+commands so generic editors can move without a flag day. The high-level
+automatic CRUD ergonomics may remain; the compatibility seam to remove is its
+legacy generic mutation transport, table-name envelope, and RPC endpoint. Once
+all consumers of that transport have moved, remove the legacy mutation
+capability flag and generic mutation RPC surface. Do not remove a useful
+high-level grid/editor facade merely because its implementation used to call
+the legacy endpoint.
 
 ### Client values, editable drafts, and mutation commands are distinct
 
@@ -433,12 +504,14 @@ layout. New entity/view work should be colocated under
 - named views and DTO schemas;
 - hydrated value objects;
 - editable drafts; and
-- shared command descriptors, DTO/result schemas, and serializers.
+- handwritten command descriptors, DTO/result schemas, and serializers.
 
-Server command handlers remain under `server/commands/`, beside the generic
-dispatcher, handler registry, and command execution context. This keeps the
-shared command contract importable by clients without pulling server mutation
-code into the domain's shared module.
+Handwritten server command handlers remain under `server/commands/`, beside the
+generic dispatcher, handler registry, and command execution context. This keeps
+the shared command contract importable by clients without pulling server
+mutation code into the domain's shared module. Generated CRUD commands are
+instead composed and registered generically by `defineCrudView()` and must not
+require per-entity command or handler modules.
 
 This does not require a big-bang move of every existing `xTable`, but a migrated
 slice should not add another payload alias or domain command to a historical
@@ -603,6 +676,12 @@ a per-row compatibility flag or a second lookup mode.
   derive hard-versus-soft behavior from trusted table metadata, update patches
   use present-keys-only semantics, results return canonical identity, and
   callers explicitly own refetching declared by command invalidation metadata.
+- The first explicit `InstrumentFunctionalGroup` integration proved the command
+  semantics but was not accepted as the ordinary CRUD shape: it required
+  entity-specific writable schemas, serializers, handler/registry wiring,
+  command hooks, and a grid adapter. The replacement design is a generic
+  CRUD-enabled view plus command-backed table-render context, with the pilot
+  complete only when the grid call site needs just its `tableSpec` and view.
 - The registered event-song-list save handler now performs parent, song, and
   divider synchronization atomically in one serializable transaction by
   composing authorized DB3 row services. The two legacy insert/update RPCs and
@@ -649,13 +728,18 @@ a per-row compatibility flag or a second lookup mode.
   typed contract.
 - Use generated entity CRUD commands for ordinary row writes so commands become
   the sole DB3 client mutation boundary without making simple editors verbose.
+- Compose ordinary CRUD from a named view and its linked `xTable`; do not repeat
+  table policy, writable schemas, field serializers, handlers, or registry
+  wiring for each simple entity.
+- Preserve the automatic TableClient/grid facade while replacing its legacy
+  generic mutation transport underneath it.
 - Treat `useDB3Command()` serialization and validation as client contract
   ergonomics, never as a replacement for server validation or authorization.
 - Compose aggregate command handlers from the existing authoritative DB3 row
   mutation services instead of copying table authorization and mutation rules.
-- Treat legacy TableClient mutation as temporary migration infrastructure. Do
-  not add new consumers, and delete each legacy capability once its consumers
-  have moved to commands.
+- Treat the legacy TableClient mutation transport as temporary migration
+  infrastructure. Do not add new consumers, and delete each legacy transport
+  capability once its consumers have moved to commands.
 - Keep domain-specific filters and selection behavior out of DB3 core.
 - Do not add generic untyped payload bags where a named DTO/client shape can
   express the requirement.
@@ -683,11 +767,13 @@ Migrate one bounded entity/view/consumer slice at a time:
 4. Hydrate to the semantic client value and consume it through typed
    `useDb3Query({ view })`; remove the corresponding manual enrichment and
    result casts in the migrated slice.
-5. If the value is editable, introduce an explicit draft and named command
-   rather than sending the hydrated read model back to the server. Put the
-   client-input-to-DTO transformation on the command, register a server handler,
-   and compose its writes from DB3 row services inside the command transaction.
-6. For ordinary row editing, use the generated entity CRUD command contract;
+5. For a rich or aggregate editable value, introduce an explicit draft and
+   handwritten command rather than sending the hydrated read model back to the
+   server. Put the client-input-to-DTO transformation on the command and compose
+   its writes from DB3 row services inside the command transaction.
+6. For ordinary row editing, define a CRUD-enabled view and let the generic
+   table-render context derive and invoke generated CRUD. Preserve the current
+   limited TableClient payload behavior rather than adding per-entity adapters;
    reserve handwritten commands for aggregates and domain actions.
 7. Audit identity, sorting, caches, keys, URLs, filters, mutations, associations,
    raw SQL, routes, and exports before converting that entity to `publicId`.
@@ -695,7 +781,8 @@ Migrate one bounded entity/view/consumer slice at a time:
    hydration failure paths, inferred result types, and relevant write/identity
    behavior.
 9. Migrate every consumer in the bounded capability, then remove the replaced
-   TableClient, RPC, enrichment, compatibility, or numeric-identity surface.
+   TableClient transport, RPC, enrichment, compatibility, or numeric-identity
+   surface.
 
 Do not combine all public-ID migrations into one architecture refactor. Convert
 entities individually once each bounded slice has coherent read and write
@@ -710,9 +797,11 @@ An entity is complete only when the applicable items below are true:
 - it has stable typed entity metadata and named client views;
 - view DTOs are runtime validated and hydrate without result casts or
   supplemental `enrich*` work;
-- editable uses have an explicit edit model or action input;
+- editable uses have an appropriate edit model or action input; ordinary
+  row-shaped CRUD may retain the limited table-client edit model;
 - all client writes use strict generated or handwritten commands;
-- no consumer uses TableClient mutation transport for the entity;
+- no consumer uses the legacy TableClient generic mutation transport for the
+  entity, although a command-backed TableClient CRUD facade may remain;
 - public identity is used across client-facing DTOs, command inputs and results,
   foreign references, filters, caches, and React keys;
 - associations, routes, search, imports/exports, and raw SQL have been audited;
@@ -739,15 +828,20 @@ boundary safely.
 - [x] Define strict generated entity CRUD command contracts and shared handlers,
   including create/update/delete identity, patch semantics, result types,
   validation, error behavior, and refetch/invalidation expectations.
+- [ ] Define a generic CRUD-enabled view and command-backed table-render context
+  that derive typed row/identity behavior and generated command invocation from
+  a named view plus its linked `xTable`.
 - [ ] Prove generated CRUD against `InstrumentFunctionalGroup`, the existing
-  public-ID pilot, and migrate its `DB3EditGrid` without exposing table names,
+  public-ID pilot. Its `DB3EditGrid` call site should need only `tableSpec` and
+  the CRUD-enabled view, without entity-specific command schemas, serializers,
+  handler files, registry wiring, command hooks, mutation adapters, table names,
   numeric table IDs, `TAnyModel`, or the generic mutation envelope.
 - [ ] Make generic editing infrastructure command-backed, including
   `DB3EditGrid`, `DB3NewObjectDialog`, selection-source creation, and
   `DB3AssociationMatrix`.
-- [ ] Prohibit new TableClient mutation consumers, then migrate existing writers
-  by category: generated CRUD for ordinary rows and named commands for
-  aggregates or workflows.
+- [ ] Prohibit new consumers of the legacy TableClient mutation transport, then
+  migrate existing writers by category: generated CRUD for ordinary rows and
+  named commands for aggregates or workflows.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,
@@ -757,8 +851,10 @@ boundary safely.
 - [ ] Finish the setlist aggregate proof, including edit-model lifecycle,
   ordering invariants, concurrency/lost-update policy, deletion/reordering, and
   removal of every remaining legacy setlist write path.
-- [ ] Remove TableClient mutation methods, mutation capability flags, and the
-  generic DB3 mutation RPC after their final consumers have moved.
+- [ ] Remove the legacy TableClient mutation implementation, mutation capability
+  flag, table-name envelope, and generic DB3 mutation RPC after their final
+  consumers have moved; retain a command-backed high-level CRUD facade where it
+  preserves automatic editor ergonomics.
 - [ ] Convert remaining legacy `enrich*` consumers and duplicate query-shape
   declarations to named views.
 - [ ] Remove remaining generic query/view escape hatches and replace relation
