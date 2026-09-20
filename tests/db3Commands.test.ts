@@ -401,6 +401,7 @@ describe("DB3 commands", () => {
             db3.permissionEditorView,
             db3.settingEditorView,
             db3.frontpageGalleryItemEditorView,
+            db3.roleEditorView,
         ];
 
         for (const view of views) {
@@ -533,6 +534,40 @@ describe("DB3 commands", () => {
         })).toThrow();
         expect(db3.frontpageGalleryItemEditorView.crud.deleteType)
             .toBe("softWhenPossible");
+        expect(db3.roleEditorView.parseDto({
+            id: 10,
+            name: "Editors",
+            description: "Can edit content",
+            sortOrder: 2,
+            color: null,
+            significance: null,
+            permissions: [{
+                id: 50,
+                roleId: 10,
+                permissionId: 20,
+                permission: {
+                    id: 20,
+                    name: "edit_content",
+                    description: "Edit content",
+                },
+            }],
+        })).toMatchObject({
+            id: 10,
+            permissions: [{ permissionId: 20, permission: { name: "edit_content" } }],
+        });
+        expect(db3.roleEditorView.crud.updateCommand.parseDto({
+            identity: 10,
+            patch: { name: "Editors", permissions: [20, 30] },
+        })).toEqual({
+            identity: 10,
+            patch: { name: "Editors", permissions: [20, 30] },
+        });
+        expect(() => db3.roleEditorView.crud.updateCommand.parseDto({
+            identity: 10,
+            patch: { isSysAdminRole: true },
+        })).toThrow();
+        expect(db3.hasGeneratedDeleteCommand(db3.roleEditorView.crud)).toBe(false);
+        expect(db3.getDB3CrudViewForCommand("Role_Delete")).toBeUndefined();
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {
@@ -569,6 +604,24 @@ describe("DB3 commands", () => {
                 patch: { color: colorId },
             });
         }
+    });
+
+    it("routes Role permission-set edits through the generated Role update command", async () => {
+        const handler = getDB3CommandHandler(db3.roleEditorView.crud.updateCommand.commandID);
+        const { context, update } = createContext();
+
+        await expect(handler.execute({
+            identity: 10,
+            patch: {
+                name: "Editors",
+                permissions: [20, 30],
+            },
+        }, context)).resolves.toEqual({ identity: 10 });
+        expect(update).toHaveBeenCalledWith(
+            db3.roleEntity,
+            10,
+            { name: "Editors", permissions: [20, 30] },
+        );
     });
 
     it("builds a present-keys-only patch from prepared TableClient values", () => {

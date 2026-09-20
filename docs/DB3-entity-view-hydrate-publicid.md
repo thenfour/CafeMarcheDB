@@ -770,7 +770,7 @@ The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary grids | User/Event/File/Song/Instrument grids and roles | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Ordinary grids | User/Event/File/Song/Instrument grids | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
@@ -815,6 +815,15 @@ authority for generated deletion. This does not migrate the separate
 frontpage-gallery composition workflow: upload, crop/display adjustment,
 caption editing, deletion/restoration, and reorder remain inventoried as a
 multi-step workflow that needs named domain commands.
+
+The fifth slice migrates the Role administration grid. Its strict editor view
+contains the editable role metadata and the finite permission-association shape
+needed by the tag column. The generated `Role_Create` and `Role_Update`
+commands apply the desired permission-ID set through the existing schema-owned
+association service in the command transaction; deletion remains disabled.
+Built-in-role designations are deliberately absent from the editor DTO and
+continue through `setRoleDesignation`. The separate role-permission matrix
+continues to use its explicit pairwise `RolePermission_Set` command.
 
 ## Design principles
 
@@ -965,6 +974,9 @@ boundary safely.
   - [x] Migrate the standalone Frontpage Gallery Item administration grid,
     retaining the separate gallery-composition workflow in the named-command
     migration inventory.
+  - [x] Migrate the Role administration grid, preserving bulk permission-set
+    editing while keeping built-in designations and the pairwise permission
+    matrix on their explicit command boundaries.
   - [ ] Migrate the remaining ordinary grids, then entity-detail,
     nested/relationship, collection, and workflow categories in that order.
     Split out named domain commands wherever row CRUD is not truthful, and
