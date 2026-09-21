@@ -22,9 +22,12 @@ export function useCrudViewCommands(args: {
     readonly view: AnyDB3CrudView;
     readonly tableClient: xTableRenderClient;
 }): CrudViewCommandClient {
-    if (args.tableClient.schema !== args.view.entity.schema) {
+    // Legacy read schemas can select a richer shape under a distinct tableID
+    // (for example xEventArgs_Verbose) while still describing the same
+    // persistence table and editor-value conversion contract.
+    if (args.tableClient.schema.tableName !== args.view.entity.schema.tableName) {
         throw new Error(
-            `DB3 CRUD view '${args.view.viewID}' does not belong to table '${args.tableClient.schema.tableID}'.`,
+            `DB3 CRUD view '${args.view.viewID}' does not belong to table '${args.tableClient.schema.tableName}'.`,
         );
     }
 

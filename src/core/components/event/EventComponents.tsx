@@ -850,6 +850,7 @@ export const gEventDetailTabSlugIndices = {
 export interface EventDetailContainerProps {
     eventData: VerboseEventWithMetadata;
     tableClient: DB3Client.xTableRenderClient | null;
+    editCommands?: DB3Client.CrudViewCommandClient;
     refetch: () => void;
     readonly: boolean;
     fadePastEvents: boolean;
@@ -860,7 +861,7 @@ export interface EventDetailContainerProps {
     highlightTypeId?: number[];
 }
 
-export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
+export const EventDetailContainer = ({ eventData, tableClient, editCommands, refetch, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const dashboardContext = useDashboardContext();
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
@@ -922,21 +923,22 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
 
             <AdminInspectObject src={eventData} />
 
-            {tableClient &&
+            {tableClient && editCommands &&
                 <EditFieldsDialogButton
                     dialogTitle='Edit event'
                     readonly={props.readonly}
                     initialValue={eventData.event}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
+                    tableRenderClient={tableClient}
                     dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
                     onCancel={() => { }}
-                    onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: db3.EventClientPayload_Verbose, _tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.event_edit,
                             context: "EditFieldsDialogButton",
                         });
-                        tableClient.doUpdateMutation(obj).then(() => {
+                        editCommands.update(obj, eventData.event).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
                             // if (obj.slug !== eventData.event.slug) {
@@ -946,19 +948,19 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                         }).catch(err => {
                             console.log(err);
                             showSnackbar({ children: "update error", severity: 'error' });
-                        }).finally(refetch);
+                        });
                     }}
                     onDelete={(api: EditFieldsDialogButtonApi) => {
                         void recordFeature({
                             feature: ActivityFeature.event_delete,
                         });
-                        tableClient.doDeleteMutation(eventData.event.id, 'softWhenPossible').then(() => {
+                        editCommands.delete(eventData.event.id).then(() => {
                             showSnackbar({ children: "delete successful", severity: 'success' });
                             api.close();
                         }).catch(err => {
                             console.log(err);
                             showSnackbar({ children: "delete error", severity: 'error' });
-                        }).finally(refetch);
+                        });
                     }}
                 />
             }
@@ -1149,6 +1151,11 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
 
 export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
 
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.eventEditorView,
+        tableClient,
+    });
+
     const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(event.descriptionWikiPage?.currentRevision?.content) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
     const tabSlug = selectedTab;//Object.keys(gEventDetailTabSlugIndices)[selectedTab];
     const router = useRouter();
@@ -1167,6 +1174,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         eventData={eventData}
         readonly={props.readonly}
         tableClient={tableClient}
+        editCommands={editCommands}
         fadePastEvents={false}
         showVisibility={true}
         refetch={props.refetch}

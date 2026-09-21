@@ -31,7 +31,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
 
     const queryArgs: DB3Client.xTableClientArgs = {
-        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+        requestedCaps: DB3Client.xTableClientCaps.Query,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
             columns: [

@@ -793,7 +793,7 @@ The existing writers are grouped by the replacement they need:
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
 | Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
-| Entity detail editors | Event, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
+| Entity detail editors | File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Embedded event-segment and song-credit/file editors, the profile user-instrument editor, and setlist-plan groups | Reuse generated row/association commands when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
 | Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
@@ -896,6 +896,15 @@ patches are computed from explicit previous and next values. Embedded song
 credit editing and the new-song workflow remain in their later nested-row and
 workflow categories. This slice intentionally preserves Song's current natural
 identity; public-ID conversion follows the entity/view/command migration.
+
+The eleventh slice migrates Event detail update/delete. The full detail page
+continues to use its existing verbose query and enrichment because the current
+`eventSearchView` deliberately omits richer attendance, file, segment, and
+setlist data needed by this consumer. That render client is now query-only and
+is injected into the edit dialog for field rendering; `eventEditorView` owns
+the generated update/delete commands and strict write DTO. Event segments,
+attendance, setlists, description content, and other nested actions remain on
+their existing boundaries for later slices. Event retains its natural identity.
 
 ## Design principles
 
@@ -1064,7 +1073,10 @@ boundary safely.
     Credit, and User Instrument grids, removing the writable legacy-grid branch.
   - [x] Begin the entity-detail category with Song update/delete, retaining the
     rich detail view for reads and using `songEditorView` commands for writes.
-  - [ ] Migrate the remaining Event, File, User/Profile, Wiki metadata, and
+  - [x] Migrate Event detail update/delete through `eventEditorView`, retaining
+    the existing verbose read/enrichment path until a finite detail view owns
+    that complete graph.
+  - [ ] Migrate the remaining File, User/Profile, Wiki metadata, and
     user-administration entity-detail writers.
   - [ ] Migrate the nested/relationship, collection, and workflow categories in
     that order. Split out named domain commands wherever row CRUD is not
