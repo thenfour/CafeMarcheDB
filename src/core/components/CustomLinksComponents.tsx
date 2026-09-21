@@ -61,8 +61,9 @@ export class CustomLinkSlugColumn extends DB3Client.GenericStringColumnClient {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface CustomLinkItemProps {
-    item: db3.CustomLinkPayload;
-    client: DB3Client.xTableRenderClient;
+    item: db3.CustomLinkListClient;
+    client: DB3Client.xTableRenderClient<db3.CustomLinkListClient>;
+    commands: DB3Client.CrudViewCommandClient;
     readonly: boolean;
 };
 
@@ -78,9 +79,8 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
             customLinkId: props.item.id,
             context: `CustomLinkItem`,
         });
-        props.client.doUpdateMutation(obj).then(async (ret) => {
+        props.commands.update(obj, props.item).then(() => {
             showSnackbar({ severity: "success", children: "success" });
-            props.client.refetch();
             api.closeDialog();
         }).catch(e => {
             console.log(e);
@@ -94,13 +94,13 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
             customLinkId: props.item.id,
             context: `CustomLinkItem`,
         });
-        props.client.doDeleteMutation(props.item.id, 'softWhenPossible').then(() => {
+        props.commands.delete(props.item.id).then(() => {
             showSnackbar({ children: "delete successful", severity: 'success' });
             api.closeDialog();
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "delete error", severity: 'error' });
-        }).finally(props.client.refetch);
+        });
     }
 
     const redirectType: keyof typeof db3.CustomLinkRedirectType = props.item.redirectType as any;
@@ -190,8 +190,10 @@ export const CustomLinkList = () => {
         };
     };
 
-    const client = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+    const client = DB3Client.useTableRenderContext<db3.CustomLinkListClient>({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        queryView: db3.customLinkListView,
+        referenceProvider: dashboardContext.referenceStore,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xCustomLink,
             columns: [
@@ -206,6 +208,10 @@ export const CustomLinkList = () => {
             ],
         }),
     });
+    const commands = DB3Client.useCrudViewCommands({
+        view: db3.customLinkEditorView,
+        tableClient: client,
+    });
 
     const canEdit = dashboardContext.isAuthorized(Permission.manage_custom_links);
 
@@ -216,9 +222,8 @@ export const CustomLinkList = () => {
             feature: ActivityFeature.custom_link_create,
             context: `CustomLinkList`,
         });
-        client.doInsertMutation(obj).then(async (ret) => {
+        commands.create(obj).then(() => {
             showSnackbar({ severity: "success", children: "success" });
-            client.refetch();
             api.closeDialog();
         }).catch(e => {
             console.log(e);
@@ -227,7 +232,7 @@ export const CustomLinkList = () => {
 
     };
 
-    const items = client.items as db3.CustomLinkPayload[];
+    const items = client.items;
 
     return <div>
         <AppContextMarker name="CustomLinkList">
@@ -240,7 +245,13 @@ export const CustomLinkList = () => {
                 />}
 
             <div className='EventDashboard'>
-                {items.map(i => <CustomLinkItem key={i.id} item={i} client={client} readonly={!canEdit} />)}
+                {items.map(i => <CustomLinkItem
+                    key={i.id}
+                    item={i}
+                    client={client}
+                    commands={commands}
+                    readonly={!canEdit}
+                />)}
             </div>
         </AppContextMarker>
     </div>;

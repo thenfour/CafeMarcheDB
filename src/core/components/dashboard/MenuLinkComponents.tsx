@@ -18,13 +18,13 @@ import { VisibilityValue } from "../VisibilityControl";
 import { AppContextMarker } from "../AppContext";
 import { CMLink } from "../CMLink";
 import { useDashboardContext, useFeatureRecorder } from "../dashboardContext/DashboardContext";
-import { enrichMenuLink } from "../../db3/shared/schema/enrichedMenuLinkTypes";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MenuLinkItemProps {
-    item: db3.MenuLinkPayload;
-    client: DB3Client.xTableRenderClient;
+    item: db3.MenuLinkListClient;
+    client: DB3Client.xTableRenderClient<db3.MenuLinkListClient>;
+    commands: DB3Client.CrudViewCommandClient;
     readonly: boolean;
 };
 
@@ -40,9 +40,8 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
             menuLinkId: props.item.id,
             context: "MenuLinkItem",
         });
-        props.client.doUpdateMutation(obj).then(async (ret) => {
+        props.commands.update(obj, props.item).then(() => {
             showSnackbar({ severity: "success", children: "success" });
-            props.client.refetch();
             dashboardContext.refetchDashboardData();
             api.closeDialog();
         }).catch(e => {
@@ -57,14 +56,13 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
             menuLinkId: props.item.id,
             context: "MenuLinkItem",
         });
-        props.client.doDeleteMutation(props.item.id, 'softWhenPossible').then(() => {
+        props.commands.delete(props.item.id).then(() => {
             showSnackbar({ children: "delete successful", severity: 'success' });
             api.closeDialog();
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "delete error", severity: 'error' });
         }).finally(() => {
-            props.client.refetch();
             dashboardContext.refetchDashboardData();
         });
     }
@@ -215,8 +213,10 @@ export const MenuLinkList = () => {
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const client = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+    const client = DB3Client.useTableRenderContext<db3.MenuLinkListClient>({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        queryView: db3.menuLinkListView,
+        referenceProvider: dashboardContext.referenceStore,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xMenuLink,
             columns: [
@@ -240,6 +240,10 @@ export const MenuLinkList = () => {
             ],
         }),
     });
+    const commands = DB3Client.useCrudViewCommands({
+        view: db3.menuLinkEditorView,
+        tableClient: client,
+    });
 
     const canEdit = dashboardContext.isAuthorized(Permission.customize_menu);
 
@@ -254,9 +258,8 @@ export const MenuLinkList = () => {
             feature: ActivityFeature.menu_link_create,
             context: "MenuLinkList",
         });
-        client.doInsertMutation(obj).then(async (ret) => {
+        commands.create(obj).then(() => {
             showSnackbar({ severity: "success", children: "success" });
-            client.refetch();
             dashboardContext.refetchDashboardData();
             api.closeDialog();
         }).catch(e => {
@@ -266,8 +269,7 @@ export const MenuLinkList = () => {
 
     };
 
-    const itemsRaw = client.items as db3.MenuLinkPayload[];
-    const items = itemsRaw.map(i => enrichMenuLink(i, dashboardContext));
+    const items = client.items;
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved
@@ -318,7 +320,13 @@ export const MenuLinkList = () => {
                 >
                     {items.map(i =>
                         <ReactSmoothDndDraggable key={i.id}>
-                            <MenuLinkItem key={i.id} item={i} client={client} readonly={!canEdit} />
+                            <MenuLinkItem
+                                key={i.id}
+                                item={i}
+                                client={client}
+                                commands={commands}
+                                readonly={!canEdit}
+                            />
                         </ReactSmoothDndDraggable>
                     )}
                 </ReactSmoothDndContainer>

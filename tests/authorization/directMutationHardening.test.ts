@@ -610,6 +610,89 @@ describe("DB3 command boundary", () => {
     }, ctx)).rejects.toThrow("Not authorized to mutate File fields: storedLeafName")
   })
 
+  it("updates and hard-deletes Custom Link and Menu Link rows through generated CRUD", async () => {
+    const permissions = [
+      Permission.login,
+      Permission.view_custom_links,
+      Permission.manage_custom_links,
+      Permission.customize_menu,
+    ]
+    const actor = createAuthorizationTestUser("normal", { id: 103, permissions })
+    const customLink = {
+      id: 70,
+      name: "Scores",
+      description: "Old description",
+      slug: "scores",
+      destinationURL: "https://example.test/scores",
+      redirectType: "Temporary",
+      intermediateMessage: null,
+      forwardQuery: true,
+      createdByUserId: actor.id,
+      createdAt: new Date("2026-09-21T10:00:00.000Z"),
+    }
+    const menuLink = {
+      id: 71,
+      sortOrder: 3,
+      realm: "General",
+      applicationPage: null,
+      groupName: "Resources",
+      groupCssClass: "resources",
+      itemCssClass: "scores",
+      linkType: "ExternalURL",
+      externalURI: "https://example.test/scores",
+      wikiSlug: null,
+      iconName: "Link",
+      caption: "Scores",
+      visiblePermissionId: null,
+      createdByUserId: actor.id,
+      createdAt: new Date("2026-09-21T10:00:00.000Z"),
+    }
+    authorizationTestDb.reset({
+      user: [actor],
+      customLink: [customLink],
+      menuLink: [menuLink],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.customLinkEditorView.crud.operations.update.command.commandID,
+      payload: {
+        identity: customLink.id,
+        patch: { description: "Updated description", forwardQuery: false },
+      },
+    }, ctx)).resolves.toEqual({ identity: customLink.id })
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.menuLinkEditorView.crud.operations.update.command.commandID,
+      payload: {
+        identity: menuLink.id,
+        patch: { caption: "Updated scores" },
+      },
+    }, ctx)).resolves.toEqual({ identity: menuLink.id })
+
+    expect(authorizationTestDb.snapshot("customLink")[0]).toMatchObject({
+      id: customLink.id,
+      description: "Updated description",
+      forwardQuery: false,
+    })
+    expect(authorizationTestDb.snapshot("menuLink")[0]).toMatchObject({
+      id: menuLink.id,
+      caption: "Updated scores",
+      sortOrder: 3,
+    })
+
+    await invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.customLinkEditorView.crud.operations.delete.command.commandID,
+      payload: { identity: customLink.id },
+    }, ctx)
+    await invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.menuLinkEditorView.crud.operations.delete.command.commandID,
+      payload: { identity: menuLink.id },
+    }, ctx)
+    expect(authorizationTestDb.snapshot("customLink")).toEqual([])
+    expect(authorizationTestDb.snapshot("menuLink")).toEqual([])
+  })
+
   it("revalidates command DTOs and enforces server-side entity authorization", async () => {
     const permissions = [Permission.login, Permission.view_events]
     const actor = createAuthorizationTestUser("normal", { id: 92, permissions })

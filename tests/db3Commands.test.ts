@@ -413,6 +413,8 @@ describe("DB3 commands", () => {
             db3.songCreditEditorView,
             db3.userInstrumentEditorView,
             db3.setlistPlanGroupEditorView,
+            db3.customLinkEditorView,
+            db3.menuLinkEditorView,
         ];
 
         for (const view of views) {
@@ -1033,6 +1035,118 @@ describe("DB3 commands", () => {
             patch: { setlistPlans: [] },
         })).toThrow();
         expect(db3.setlistPlanGroupEditorView.crud.operations.delete.deleteType).toBe("hard");
+    });
+
+    it("separates collection list projections from row CRUD command DTOs", () => {
+        expect(db3.customLinkListView.parseDto({
+            id: 20,
+            name: "Scores",
+            description: "Shared score folder",
+            slug: "scores",
+            destinationURL: "https://example.test/scores",
+            redirectType: "Temporary",
+            intermediateMessage: null,
+            forwardQuery: true,
+            createdAt: new Date("2026-09-21T12:00:00.000Z"),
+            createdByUserId: 6,
+            createdByUser: { id: 6, name: "Ada", cssClass: null },
+            _count: { visits: 42 },
+        })).toMatchObject({
+            id: 20,
+            slug: "scores",
+            _count: { visits: 42 },
+        });
+        expect(db3.customLinkEditorView.crud.operations.update.command.parseDto({
+            identity: 20,
+            patch: {
+                destinationURL: "https://example.test/new-scores",
+                forwardQuery: false,
+            },
+        })).toEqual({
+            identity: 20,
+            patch: {
+                destinationURL: "https://example.test/new-scores",
+                forwardQuery: false,
+            },
+        });
+        expect(db3.customLinkEditorView.crud.operations.create.command.parseDto({
+            name: "Scores",
+            description: "Shared score folder",
+            slug: "scores",
+            destinationURL: "https://example.test/scores",
+            redirectType: "Temporary",
+            intermediateMessage: null,
+            forwardQuery: true,
+        })).toMatchObject({ slug: "scores", forwardQuery: true });
+        expect(() => db3.customLinkEditorView.crud.operations.create.command.parseDto({
+            redirectType: "Invalid",
+        })).toThrow();
+        expect(() => db3.customLinkEditorView.crud.operations.update.command.parseDto({
+            identity: 20,
+            patch: { _count: { visits: 43 } },
+        })).toThrow();
+        expect(db3.customLinkEditorView.crud.operations.delete.deleteType).toBe("hard");
+
+        const menuLinkDto = db3.menuLinkListView.parseDto({
+            id: 30,
+            sortOrder: 2,
+            realm: "General",
+            applicationPage: null,
+            groupName: "Resources",
+            caption: "Scores",
+            iconName: "Link",
+            linkType: "ExternalURL",
+            externalURI: "https://example.test/scores",
+            wikiSlug: null,
+            visiblePermissionId: null,
+            groupCssClass: "resources",
+            itemCssClass: "scores",
+            createdAt: new Date("2026-09-21T12:00:00.000Z"),
+            createdByUserId: 6,
+            createdByUser: { id: 6, name: "Ada", cssClass: null },
+        });
+        expect(db3.hydrateView(
+            db3.menuLinkListView,
+            menuLinkDto,
+            new db3.DB3ReferenceStore(),
+        )).toMatchObject({
+            id: 30,
+            sortOrder: 2,
+            visiblePermission: undefined,
+        });
+        expect(db3.menuLinkEditorView.crud.operations.update.command.parseDto({
+            identity: 30,
+            patch: {
+                caption: "Updated scores",
+                visiblePermissionId: null,
+            },
+        })).toEqual({
+            identity: 30,
+            patch: {
+                caption: "Updated scores",
+                visiblePermissionId: null,
+            },
+        });
+        expect(db3.menuLinkEditorView.crud.operations.create.command.parseDto({
+            applicationPage: null,
+            groupName: "Resources",
+            caption: "Scores",
+            iconName: "Link",
+            linkType: "ExternalURL",
+            externalURI: "https://example.test/scores",
+            wikiSlug: null,
+            visiblePermissionId: null,
+            groupCssClass: "resources",
+            itemCssClass: "scores",
+        })).toMatchObject({ caption: "Scores", visiblePermissionId: null });
+        expect(() => db3.menuLinkEditorView.crud.operations.create.command.parseDto({
+            linkType: "Invalid",
+        })).toThrow();
+        expect(() => db3.menuLinkEditorView.crud.operations.update.command.parseDto({
+            identity: 30,
+            patch: { sortOrder: 3 },
+        })).toThrow();
+        expect(db3.menuLinkEditorView.crud.operations.delete.deleteType).toBe("hard");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {

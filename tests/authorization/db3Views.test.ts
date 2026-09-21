@@ -171,6 +171,82 @@ describe("DB3 named views", () => {
         expect(result.items.every(item => !("id" in item))).toBe(true);
     });
 
+    it("queries the finite Custom Link and Menu Link collection views", async () => {
+        const createdAt = new Date("2026-09-21T12:00:00.000Z");
+        const createdByUser = { id: 100, name: "Ada", cssClass: null };
+        const customLink = {
+            id: 20,
+            name: "Scores",
+            description: "Shared scores",
+            slug: "scores",
+            destinationURL: "https://example.test/scores",
+            redirectType: "Temporary",
+            intermediateMessage: null,
+            forwardQuery: true,
+            createdAt,
+            createdByUserId: createdByUser.id,
+            createdByUser,
+            _count: { visits: 42 },
+        };
+        const menuLink = {
+            id: 30,
+            sortOrder: 2,
+            realm: "General",
+            applicationPage: null,
+            groupName: "Resources",
+            caption: "Scores",
+            iconName: "Link",
+            linkType: "ExternalURL",
+            externalURI: "https://example.test/scores",
+            wikiSlug: null,
+            visiblePermissionId: null,
+            groupCssClass: "resources",
+            itemCssClass: "scores",
+            createdAt,
+            createdByUserId: createdByUser.id,
+            createdByUser,
+        };
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.sysadmin },
+            { id: 4, name: Permission.view_custom_links },
+            { id: 5, name: Permission.public },
+        ]);
+        const authorization = {
+            user: { id: createdByUser.id } as any,
+            effectivePermissions,
+        };
+
+        const customResult = await queryTable({
+            table: {
+                tableID: db3.xCustomLink.tableID,
+                tableName: db3.xCustomLink.tableName,
+                viewID: db3.customLinkListView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "custom-link-list-view-test",
+        }, authorization, {
+            CustomLink: { findMany: vi.fn(async () => [customLink]) },
+        } as any);
+        const menuResult = await queryTable({
+            table: {
+                tableID: db3.xMenuLink.tableID,
+                tableName: db3.xMenuLink.tableName,
+                viewID: db3.menuLinkListView.viewID,
+            },
+            orderBy: undefined,
+            filter: { items: [] },
+            cmdbQueryContext: "menu-link-list-view-test",
+        }, authorization, {
+            MenuLink: { findMany: vi.fn(async () => [menuLink]) },
+        } as any);
+
+        expect(customResult.items).toEqual([customLink]);
+        expect(menuResult.items).toEqual([menuLink]);
+    });
+
     it("represents authorization-stripped fields as absent optional DTO members", () => {
         const publicData = db3.createDB3Authorization(null, new PermissionSet([
             { id: 1, name: Permission.always_grant },

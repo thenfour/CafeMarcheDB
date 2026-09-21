@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 
 type LegacyWriterCategory =
     | "transport-infrastructure"
-    | "collection-editor"
     | "workflow"
     | "legacy-helper";
 
@@ -18,8 +17,6 @@ interface InventoryEntry {
 // new dependency on the transport being retired and must not be added. Migrate
 // the caller to a CRUD-enabled view or named command instead.
 const legacyMutationCapabilitySites: Record<string, InventoryEntry> = {
-    "src/core/components/CustomLinksComponents.tsx": { category: "collection-editor", count: 1 },
-    "src/core/components/dashboard/MenuLinkComponents.tsx": { category: "collection-editor", count: 1 },
     "src/core/components/song/NewSongComponents.tsx": { category: "workflow", count: 1 },
     "src/core/db3/components/DB3ClientBasicFields.tsx": { category: "legacy-helper", count: 2 },
     "src/core/db3/components/DB3ClientCore.tsx": { category: "transport-infrastructure", count: 1 },
@@ -27,8 +24,6 @@ const legacyMutationCapabilitySites: Record<string, InventoryEntry> = {
 };
 
 const legacyMutationCallSites: Record<string, InventoryEntry> = {
-    "src/core/components/CustomLinksComponents.tsx": { category: "collection-editor", count: 3 },
-    "src/core/components/dashboard/MenuLinkComponents.tsx": { category: "collection-editor", count: 3 },
     "src/core/components/song/NewSongComponents.tsx": { category: "workflow", count: 1 },
     "src/core/db3/components/db3DataGrid.tsx": { category: "transport-infrastructure", count: 3 },
     "src/core/db3/components/useDB3SelectionSource.tsx": { category: "legacy-helper", count: 1 },

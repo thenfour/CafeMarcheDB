@@ -795,7 +795,7 @@ The existing writers are grouped by the replacement they need:
 | Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
 | Entity detail editors | None | Song, Event, File, User/Profile, and Wiki tag metadata now use generated CRUD commands for row-shaped patches. Privileged and operation-specific actions remain named workflows. |
 | Nested rows and relationships | None | Embedded Event Segment, Song Credit, File metadata, profile instrument-set, and Setlist Plan Group edits now use generated CRUD commands. Setlist group reordering remains an explicit ordered operation. |
-| Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
+| Collection editors | None | Custom Link and Menu Link row edits use generated CRUD commands over narrow editor DTOs. Menu Link ordering remains an explicit scoped collection operation. |
 | Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
 | Compatibility infrastructure | The selection-creation fallback, generic mutation-capable query helpers, and the TableClient transport implementation | Delete each bridge after its callers migrate; remove the capability flag and generic mutation RPC last. The standalone edit dialog's mutation-capable fallback is already gone. |
 
@@ -939,6 +939,18 @@ ordered set rather than one row. The standalone edit dialog no longer has a
 mutation-capable fallback: every caller must inject a query-only or render-only
 TableClient for editor preparation. Dedicated Event response-copy/clear and
 primary-instrument commands remain separate domain operations.
+
+The fifteenth slice completes the collection-editor category. Custom Link and
+Menu Link each gain a typed entity, a finite list view for display-only data,
+and a narrower CRUD editor view for independent row create/update/delete. The
+Custom Link list view owns creator metadata and visit counts without exposing
+either to its command DTO. The Menu Link list view hydrates visibility from the
+shared reference store, while its editor command deliberately excludes
+`sortOrder`, realm, and creator metadata. Drag reordering therefore stays on
+the existing authorization-tested scoped sort operation, which owns the
+collection-wide ordering change. Both component trees now query through their
+named list views and contain no legacy TableClient mutation capability or
+direct mutation calls.
 
 ## Design principles
 
@@ -1119,9 +1131,12 @@ boundary safely.
     instrument-set, and Setlist Plan Group writes through generated CRUD,
     retaining ordered group reordering and dedicated domain actions on their
     explicit boundaries.
-  - [ ] Migrate the collection and workflow categories in that order. Split out
-    named domain commands wherever row CRUD is not truthful, and separately
-    migrate selection create-from-string consumers to the matching CRUD views.
+  - [x] Migrate Custom Link and Menu Link collection editors through finite
+    list/editor views and generated row CRUD, retaining Menu Link reorder on its
+    explicit scoped sort boundary.
+  - [ ] Migrate the workflow category. Split out named domain commands wherever
+    row CRUD is not truthful, and separately migrate selection
+    create-from-string consumers to the matching CRUD views.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,
