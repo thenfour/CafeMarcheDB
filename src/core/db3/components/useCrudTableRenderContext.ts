@@ -14,7 +14,12 @@ import { useCrudViewCommands } from "./useCrudViewCommands";
 
 export interface UseCrudTableRenderContextArgs<TView extends AnyDB3CrudView> {
     readonly view: TView;
-    readonly tableSpec: xTableClientSpec;
+    /**
+     * The first arm is the new view-bound contract. The undefined arm is an
+     * explicit migration allowance for table-only specs created by the legacy
+     * constructor; it provides no row or column inference.
+     */
+    readonly tableSpec: xTableClientSpec<TView> | xTableClientSpec<undefined>;
     readonly filterModel?: CMDBTableFilterModel;
     readonly sortModel?: GridSortModel;
     readonly paginationModel?: GridPaginationModel;
@@ -31,6 +36,11 @@ export interface UseCrudTableRenderContextArgs<TView extends AnyDB3CrudView> {
 export function useCrudTableRenderContext<TView extends AnyDB3CrudView>(
     args: UseCrudTableRenderContextArgs<TView>,
 ): xTableRenderClient<ClientOf<TView>> {
+    if (args.tableSpec.args.view && args.tableSpec.args.view !== args.view) {
+        throw new Error(
+            `DB3 table client view '${args.tableSpec.args.view.viewID}' cannot be used with CRUD view '${args.view.viewID}'.`,
+        );
+    }
     if (args.tableSpec.args.table !== args.view.entity.schema) {
         throw new Error(
             `DB3 CRUD view '${args.view.viewID}' does not belong to table '${args.tableSpec.args.table.tableID}'.`,

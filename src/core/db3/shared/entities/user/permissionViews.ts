@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import { permissionEntity } from "./userEntities";
 
 const PermissionEditorDtoSchema = z.object({
@@ -13,7 +13,7 @@ const PermissionEditorDtoSchema = z.object({
     iconName: z.string().nullable().optional(),
 });
 
-export const permissionEditorView = defineCrudView({
+export const permissionEditorView = defineLegacyCrudView({
     viewID: "Permission_Editor",
     entity: permissionEntity,
     operations: { create: true, update: true },

@@ -5,6 +5,7 @@ import { rolePermissionSetCommandHandler } from "@db3/server/commands/rolePermis
 import type { DB3CommandExecutionContext } from "@db3/server/db3CommandCore";
 import { getDB3CommandHandler } from "@db3/server/db3CommandRegistry";
 import { defineEntityCrudCommandHandlers } from "@db3/server/db3EntityCrudCommand";
+import type { ColorPaletteEntry } from "@components/color/palette";
 import { isPublicId, parsePublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { z } from "zod";
 
@@ -1152,6 +1153,16 @@ describe("DB3 commands", () => {
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {
         const view = db3.instrumentFunctionalGroupEditorView;
         const colorField = db3.xInstrumentFunctionalGroup.getColumn("color")!;
+
+        expectTypeOf(colorField).toEqualTypeOf<db3.ColorField>();
+        expectTypeOf<db3.ClientOf<typeof view>["publicId"]>()
+            .toEqualTypeOf<InstrumentFunctionalGroupPublicId>();
+        expectTypeOf<db3.ClientOf<typeof view>["color"]>()
+            .toEqualTypeOf<ColorPaletteEntry | null | undefined>();
+        if (false) {
+            // @ts-expect-error Typed xTable keys reject members outside its field map.
+            db3.xInstrumentFunctionalGroup.getColumn("notAColumn");
+        }
 
         for (const colorId of ["red", "light_red"] as const) {
             const dto = view.parseDto({

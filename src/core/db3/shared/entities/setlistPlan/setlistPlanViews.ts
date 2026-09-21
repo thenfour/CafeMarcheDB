@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import { setlistPlanGroupEntity } from "./setlistPlanEntities";
 
 const SetlistPlanGroupEditorDtoSchema = z.object({
@@ -12,7 +12,7 @@ const SetlistPlanGroupEditorDtoSchema = z.object({
     createdAt: z.date(),
 });
 
-export const setlistPlanGroupEditorView = defineCrudView({
+export const setlistPlanGroupEditorView = defineLegacyCrudView({
     viewID: "SetlistPlanGroup_Editor",
     entity: setlistPlanGroupEntity,
     operations: { create: true, update: true, delete: true },

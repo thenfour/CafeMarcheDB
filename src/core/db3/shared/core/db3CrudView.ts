@@ -57,15 +57,19 @@ function createIdentitySchema<TEntity extends AnyDB3Entity>(
 }
 
 /**
- * Compatibility bridge for xTable fields whose client value differs from the
- * database/DTO value. CRUD views still use the table schema's established
- * conversion contract while entities migrate to explicitly typed hydration.
+ * Legacy migration-only compat
+ * this is a hydrate() impl which acts like the old-style ApplyDbToClient,
+ * where the returned model is cast to TModel which may not be an honest representation
+ * (e.g. ColorField)
  */
-function applyTableSchemaDbToClient<TModel extends TAnyModel>(
+function applyLegacyTableSchemaDbToClient<TModel extends TAnyModel>(
     entity: AnyDB3Entity,
     model: TModel,
     mode: "view" | "new" | "update",
 ): TModel {
+    // Legacy views have no typed field map from which to derive the changed
+    // result. This cast documents the old contract precisely; it must not be
+    // used by the new defineCrudView() path.
     return entity.schema.getClientModel(model, mode) as TModel;
 }
 
@@ -95,11 +99,7 @@ function createPreparedMutationSchema(
             // Prepared mutation values have already passed through
             // ApplyClientToDb. Convert them back to the table's client shape
             // before invoking the field's client-value validator.
-            const clientModel = applyTableSchemaDbToClient(
-                entity,
-                { [member]: value },
-                mode,
-            );
+            const clientModel = entity.schema.getClientModel({ [member]: value }, mode);
             const validation = field.ValidateAndParse({
                 row: clientModel,
                 mode,
@@ -130,8 +130,9 @@ function registerCrudView(view: AnyDB3CrudView): void {
 /**
  * Defines a named read view with generated single-row mutation operations.
  * Update is always supported; create and delete are explicit capabilities.
- * The linked xTable remains the authority for writable fields,
- * transformation, authorization, defaults, and delete policy.
+ * The view's hydrate function explicitly owns DTO-to-client conversion. The
+ * linked xTable remains the authority for writable fields, authorization,
+ * defaults, and delete policy.
  */
 export function defineCrudView<
     TEntity extends AnyDB3Entity,
@@ -151,10 +152,7 @@ export function defineCrudView<
         viewID: args.viewID,
         entity: args.entity,
         dtoSchema: args.dtoSchema,
-        hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => args.hydrate(
-            applyTableSchemaDbToClient(args.entity, dto, "view"),
-            references,
-        ),
+        hydrate: args.hydrate,
     };
     type TResolvedSelection = CrudViewSelection<TEntity, TDtoSchema, TSelection>;
     const selection = args.selection === undefined
@@ -182,6 +180,34 @@ export function defineCrudView<
     >;
     registerCrudView(crudView as unknown as AnyDB3CrudView);
     return crudView;
+}
+
+/**
+ * Migration-only CRUD view constructor preserving the historical
+ * implicit xTable DTO-to-client conversion (ApplyDbToClient style field replacements)
+ * Note that if there are no special columns doing that conversion, the legacy behavior is effectively a nop.
+ */
+export function defineLegacyCrudView<
+    TEntity extends AnyDB3Entity,
+    TDtoSchema extends z.AnyZodObject,
+    TClient extends TAnyModel,
+    TOperations extends DB3CrudOperationFlags,
+    TSelection extends DB3ViewSelectionArgs<TEntity> | undefined = undefined,
+>(args: {
+    viewID: string;
+    entity: TEntity;
+    selection?: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+    dtoSchema: TDtoSchema;
+    hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+    operations: TOperations;
+}) {
+    return defineCrudView({
+        ...args,
+        hydrate: (dto, references) => args.hydrate(
+            applyLegacyTableSchemaDbToClient(args.entity, dto, "view"),
+            references,
+        ),
+    });
 }
 
 export function getDB3CrudViewForCommand(commandID: string): AnyDB3CrudView | undefined {

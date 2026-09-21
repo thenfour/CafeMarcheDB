@@ -93,6 +93,15 @@ the natural database primary-key member.
 The entity/view work is being introduced around `xTable`, not by replacing all
 of it at once.
 
+New tables can use `defineTable({ fields: { ... } })`. The keyed field map is
+the compile-time authority for column names while `xTable.columns` remains its
+ordered runtime representation. A field whose database/DTO value differs from
+its client value declares a `DB3ReadCodec<Transport, Client>` next to the runtime
+conversion. `DB3SchemaClientModel<Dto, Fields>` applies those declarations to a
+DTO while preserving its optional members. Legacy `new xTable({ columns })`
+definitions remain runtime-only and intentionally do not gain inferred keys or
+conversion results.
+
 Domain-specific query behavior belongs with the table/entity or view that owns
 it, not in DB3 core. `CMDBTableFilterModel.tableParams` is the transitional
 carrier for this behavior, with `xTable.queryParameters` providing runtime
@@ -363,16 +372,21 @@ The CRUD contract is derived from two existing authorities:
   authorization, client-to-database transformation, delete policy, and
   public-versus-natural identity metadata.
 
-As a migration bridge, CRUD-view hydration first runs the parsed database DTO
-through the linked `xTable.getClientModel(..., "view")` conversion and then
-passes that client-shaped row to the view hydrator. This preserves established
+`defineCrudView()` does not perform an implicit table conversion. Its hydrator
+receives the declared DTO and must explicitly return the client type. A typed
+table may make that concise and checked, for example
+`hydrate: dto => table.getClientModel(dto, "view")`. This preserves established
 field behavior such as `ColorField.ApplyDbToClient`, where a stored color ID is
-represented by a `ColorPaletteEntry` in the editor. Prepared command values
-travel in the opposite, database-shaped direction; generated command schemas
-convert each value back through the same table contract before invoking the
-field's client-value validator. This compatibility behavior belongs only to
-CRUD-enabled views and can be retired field by field as their client hydration
-becomes explicit and typed.
+represented by a `ColorPaletteEntry`, without falsely typing the hydrator input
+as the unchanged DTO.
+
+Existing CRUD views that depended on the old hidden conversion must opt into
+`defineLegacyCrudView()`. That constructor is migration-only: it contains the
+single unsound DTO/client compatibility cast and makes the old intention
+visible at every remaining declaration. New views must not use it. Prepared
+command values still travel in the opposite, database-shaped direction;
+generated command schemas convert each value back through the table contract
+before invoking the field's client-value validator.
 
 This is deliberately the same limited CRUD model supported by TableClient
 today. A CRUD-enabled view does not make arbitrary computed fields, nested
@@ -395,6 +409,14 @@ similar to `useTableRenderContext()`, plus a CRUD-enabled view. It:
 - computes an update patch from the prepared previous and next values;
 - invokes the view's generated commands; and
 - owns the conventional refetch and invalidation lifecycle.
+
+The new `defineTableClientSpec({ view, columns })` path binds presentation to the
+same concrete view. Every column name and its declared client value type are
+checked against `ClientOf<TView>`, and the view type continues through
+`DB3EditGrid`, its row callbacks, and `xTableRenderClient`. The historical
+`new xTableClientSpec({ table, columns })` constructor remains an explicitly
+table-only migration path and carries no view-derived typing. A runtime guard
+also rejects pairing a view-bound spec with a different CRUD view.
 
 `DB3EditGrid` should use that hook internally. The ordinary call site remains
 limited to presentation metadata and the semantic view:
@@ -695,6 +717,11 @@ a per-row compatibility flag or a second lookup mode.
 - `defineView()`, `DbPayloadOf<>`, `DtoOf<>`, `ClientOf<>`,
   `ClientEntityOf<>`, and typed `useDb3Query({ view })` establish the intended
   inference chain without result casts.
+- `defineTable()`, field `DB3ReadCodec`s, and
+  `DB3SchemaClientModel<>` establish the typed schema-to-client link for the
+  `InstrumentFunctionalGroup` pilot. Its `color` member is inferred as
+  `ColorPaletteEntry | null | undefined`, while its table keys and public-ID
+  identity remain statically checked.
 - Event timing proves hydration into a behavioral `DateTimeRange` value rather
   than merely renaming fields.
 - Event song lists prove collection reshaping and a separate write model:
@@ -716,7 +743,9 @@ a per-row compatibility flag or a second lookup mode.
   patches, invokes generated commands, and owns refetching. Server handlers are
   discovered from registered CRUD views rather than wired per entity.
 - The `InstrumentFunctionalGroup` grid proves that generic path against the
-  public-ID pilot. Its call site supplies only its `tableSpec` and editor view;
+  public-ID pilot. Its view-bound table spec checks all configured column keys
+  and value types against the hydrated row. Its call site supplies only that
+  `tableSpec` and editor view;
   it has no entity-specific writable schema, serializer, handler file, registry
   entry, command hooks, mutation adapter, numeric ID, or generic mutation
   envelope.
@@ -1154,8 +1183,11 @@ boundary safely.
   declarations to named views.
 - [ ] Remove remaining generic query/view escape hatches and replace relation
   `GhostField`s where recursive policy or hydration is required.
-- [ ] Strengthen `xTable` typing and decide which stable metadata should
-  ultimately move to entity definitions.
+- [ ] Complete `xTable` typing beyond the pilot and decide which stable metadata
+  should ultimately move to entity definitions.
+  - [x] Add keyed typed-table construction, field-level read codecs, inferred
+    DTO-to-client results, and a view-bound TableClient spec; prove them with
+    `InstrumentFunctionalGroup` and its public identity.
 - [ ] Infer and validate typed view-specific query parameters instead of exposing
   untyped `tableParams` to callers.
 - [ ] Generalize public-ID translation for association/tag mutation commands

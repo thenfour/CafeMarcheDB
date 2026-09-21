@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { permissionEntity } from "../user/userEntities";
@@ -21,7 +21,7 @@ const MenuLinkEditorDtoSchema = z.object({
     itemCssClass: z.string().optional(),
 });
 
-export const menuLinkEditorView = defineCrudView({
+export const menuLinkEditorView = defineLegacyCrudView({
     viewID: "MenuLink_Editor",
     entity: menuLinkEntity,
     operations: { create: true, update: true, delete: true },

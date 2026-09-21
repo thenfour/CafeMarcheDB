@@ -35,7 +35,7 @@ export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 
 
-export const xInstrumentFunctionalGroup = new db3.xTable({
+export const xInstrumentFunctionalGroup = db3.defineTable({
     getSelectionArgs: (): Prisma.InstrumentFunctionalGroupDefaultArgs => {
         return InstrumentFunctionalGroupArgs;
     },
@@ -55,30 +55,30 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
         name: input,
         sortOrder: 0,
     }),
-    columns: [
-        MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        MakePublicIdField(),
-        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EAdmins }),
-        new GenericStringField({
+    fields: {
+        id: MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: MakePublicIdField(),
+        name: MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EAdmins }),
+        description: new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new ColorField({
+        color: new ColorField({
             columnName: "color",
             allowNull: true,
             palette: gGeneralPaletteList,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new GenericIntegerField({
+        sortOrder: new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
             allowSearchingThisField: false,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new GhostField({ memberName: "instruments", authMap: xInstrumentAuthMap_R_EAdmins }),
-    ]
+        instruments: new GhostField({ memberName: "instruments", authMap: xInstrumentAuthMap_R_EAdmins }),
+    },
 });
 
 

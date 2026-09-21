@@ -338,12 +338,32 @@ export interface SqlGetSortableQueryElementsAPI {
     getTableAlias: () => string; // for getting a unique table alias for joins
 };
 
-export abstract class FieldBase<FieldDataType> {
+/**
+ * A field-level DTO-to-client conversion. Fields without a codec retain the
+ * exact value type supplied by the view DTO; this is important for narrow
+ * relation DTOs whose type is more specific than the legacy xTable field.
+ */
+export interface DB3ReadCodec<TTransportValue, TClientValue> {
+    readonly decode: (value: TTransportValue) => TClientValue;
+}
+
+export type AnyDB3ReadCodec = DB3ReadCodec<any, any>;
+
+export abstract class FieldBase<
+    FieldDataType,
+    TReadCodec extends AnyDB3ReadCodec | undefined = undefined,
+> {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     fkidMember?: string | undefined; // if this is a foreign key field, this is the member name of the foreign key column.
     defaultValue: FieldDataType | null;
     specialFunction: SqlSpecialColumnFunction | undefined;
+
+    /**
+     * Omitted for identity/pass-through fields. A concrete codec is both the
+     * runtime implementation and the type-level declaration of a conversion.
+     */
+    readonly readCodec?: TReadCodec;
 
     authMap: DB3AuthContextPermissionMap | null;
     _customAuth: ((args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean) | null;
@@ -444,7 +464,7 @@ export interface RowInfo {
 };
 
 export type SqlSpecialColumnFunctionMap = {
-    [K in SqlSpecialColumnFunction]: FieldBase<unknown> | undefined;
+    [K in SqlSpecialColumnFunction]: AnyDB3Field | undefined;
 };
 
 export interface CalculateWhereClauseArgs {
@@ -471,7 +491,11 @@ export type DB3QueryParameterMap = Record<string, DB3QueryParameterSpec>;
 export interface TableDesc {
     tableName: string;
     tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
-    columns: FieldBase<unknown>[];
+    /**
+     * Legacy runtime-only field list. New typed tables are created through
+     * defineTable(), which accepts a keyed field map and derives this array.
+     */
+    columns: AnyDB3Field[];
 
     getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
@@ -508,13 +532,42 @@ export interface TableDesc {
 
 };
 
+export type AnyDB3Field = FieldBase<any, AnyDB3ReadCodec | undefined>;
+
+export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
+
+type DB3ReadCodecResult<TField, TSourceValue> =
+    TField extends FieldBase<any, infer TCodec>
+    ? TCodec extends DB3ReadCodec<infer TTransportValue, infer TClientValue>
+    ? Exclude<TSourceValue, undefined> extends TTransportValue
+    ? TClientValue | Extract<TSourceValue, undefined>
+    : never
+    : TSourceValue
+    : TSourceValue;
+
+/**
+ * Applies the declared field codecs to only the members present in a view DTO.
+ * Mapped properties retain the DTO's optional/readonly modifiers, so fields
+ * removed by authorization remain optional in the resulting client model.
+ */
+export type DB3SchemaClientModel<
+    TDto,
+    TFields extends DB3FieldMap,
+> = {
+        [K in keyof TDto]: K extends keyof TFields
+        ? DB3ReadCodecResult<TFields[K], TDto[K]>
+        : TDto[K];
+    };
+
 export type DB3DeletePolicy = "disabled" | "hard" | "softOnly";
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
-export class xTable /* implements TableDesc*/ {
+export class xTable<
+    TFields extends DB3FieldMap = DB3FieldMap,
+> /* implements TableDesc*/ {
     tableName: string; // the actual name of the table in the database; can be used in prisma db[t.tableName]
     tableID: string; // unique name for the instance
-    columns: FieldBase<unknown>[];
+    columns: AnyDB3Field[];
 
     getSelectionArgs: (filterModel: CMDBTableFilterModel, authorization: DB3Authorization) => TAnyModel;
 
@@ -564,7 +617,7 @@ export class xTable /* implements TableDesc*/ {
         gAllTables[this.tableID.toLowerCase()] = this;
 
         // for each sql special column, find its field.
-        const findFieldWithFunction = (functionName: SqlSpecialColumnFunction): FieldBase<unknown> | undefined => {
+        const findFieldWithFunction = (functionName: SqlSpecialColumnFunction): AnyDB3Field | undefined => {
             const ret = args.columns.find(c => c.specialFunction === functionName);
             return ret;
         };
@@ -802,7 +855,7 @@ export class xTable /* implements TableDesc*/ {
         const isOwner = ownerUserId != null
             && ((args.publicData.userId || 0) > 0)
             && (args.publicData.userId === ownerUserId);
-        const col = this.getColumn(args.columnName);
+        const col = this.columns.find(candidate => candidate.member === args.columnName);
         if (!col) return false;
         return col.authorize({
             authContext: isOwner ? "PreMutateAsOwner" : "PreMutate",
@@ -816,7 +869,7 @@ export class xTable /* implements TableDesc*/ {
     };
 
     authorizeColumnForInsert = <T extends TAnyModel,>(args: DB3AuthorizeForViewColumnArgs<T>) => {
-        const col = this.getColumn(args.columnName);
+        const col = this.columns.find(candidate => candidate.member === args.columnName);
         if (!col) return false;
         return col.authorize({
             authContext: "PreInsert",
@@ -1224,13 +1277,20 @@ export class xTable /* implements TableDesc*/ {
         return ret;
     };
 
-    getClientModel = (dbModel: TAnyModel, mode: DB3RowMode, currentUser?: UserWithRolesPayload | null) => {
+    getClientModel = <TDto extends TAnyModel,>(
+        dbModel: TDto,
+        mode: DB3RowMode,
+        currentUser?: UserWithRolesPayload | null,
+    ): DB3SchemaClientModel<TDto, TFields> => {
         const ret: TAnyModel = {};
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
             field.ApplyDbToClient(dbModel, ret, mode, currentUser);
         }
-        return { ...dbModel, ...ret };
+        // Each typed field's declared readCodec describes the transformation
+        // performed by ApplyDbToClient on that same field instance. The cast
+        // exposes the merged runtime result without duplicating conversion.
+        return { ...dbModel, ...ret } as DB3SchemaClientModel<TDto, TFields>;
         //return ret;
     }
 
@@ -1243,8 +1303,10 @@ export class xTable /* implements TableDesc*/ {
         return dbModel;
     };
 
-    getColumn = (name: string) => {
-        return this.columns.find(c => c.member === name);
+    getColumn = <TKey extends Extract<keyof TFields, string>>(name: TKey): TFields[TKey] | undefined => {
+        // defineTable verifies that map keys and runtime members agree. Legacy
+        // tables use the default string-keyed field map.
+        return this.columns.find(c => c.member === name) as TFields[TKey] | undefined;
     }
 
     getColumnForAuthorization = (name: string) => {
@@ -1262,6 +1324,52 @@ export class xTable /* implements TableDesc*/ {
     }
 
 };
+
+export type DB3TypedTableDesc<TFields extends DB3FieldMap> =
+    Omit<TableDesc, "columns"> & {
+        readonly fields: TFields;
+    };
+
+/** The type-bearing xTable shape returned by defineTable(). */
+export type DB3TypedTable<TFields extends DB3FieldMap> =
+    {
+        readonly fields: TFields;
+        readonly columns: Array<TFields[keyof TFields]>;
+    } & xTable<TFields>;
+
+/**
+ * New typed table construction path. The keyed field map is the type authority;
+ * xTable.columns remains only the ordered runtime representation used by the
+ * existing DB3 algorithms.
+ */
+export function defineTable<TFields extends DB3FieldMap>(
+    args: DB3TypedTableDesc<TFields>,
+): DB3TypedTable<TFields> {
+    const columns = Object.entries(args.fields).map(([member, field]) => {
+        if (field.member !== member) {
+            throw new Error(
+                `Typed DB3 field key '${member}' does not match its runtime member '${field.member}'.`,
+            );
+        }
+        return field;
+    });
+    const { fields, ...legacyArgs } = args;
+    const table = new xTable<TFields>({
+        ...legacyArgs,
+        columns,
+    });
+    Object.defineProperty(table, "fields", {
+        value: fields,
+        enumerable: true,
+        writable: false,
+    });
+
+    // The runtime xTable was built from exactly this keyed map, and getClientModel
+    // executes the readCodec stored on those same field instances. The cast only
+    // exposes that construction invariant to TypeScript; it does not invent a
+    // separate model declaration or conversion path.
+    return table as unknown as DB3TypedTable<TFields>;
+}
 
 ////////////////////////////////////////////////////////////////
 export const gAllTables: { [key: string]: xTable } = {

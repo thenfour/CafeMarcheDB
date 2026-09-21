@@ -16,10 +16,15 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
 ////////////////////////////////////////////////////////////////
-type db3NewObjectDialogProps = {
+// this type spec is directly from xTableClientSpec
+type ViewBase = db3.AnyDB3View | undefined;
+
+type db3NewObjectDialogProps<TView extends ViewBase> = {
+
+    // todo: complete typing of row & view models.
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => any;
     onCancel: () => any;
-    table: DB3ClientCore.xTableClientSpec;
+    table: DB3ClientCore.xTableClientSpec<TView>;
     tableRenderClient: DB3ClientCore.xTableRenderClient;
 
 
@@ -27,17 +32,17 @@ type db3NewObjectDialogProps = {
     descriptionSettingName?: SettingKey;
 };
 
-export function DB3NewObjectDialog(props: db3NewObjectDialogProps) {
+export function DB3NewObjectDialog<TView extends ViewBase>(props: db3NewObjectDialogProps<TView>) {
     return <DB3NewObjectDialogWithClient {...props} />;
 }
 
-function DB3NewObjectDialogWithClient({
+function DB3NewObjectDialogWithClient<TView extends ViewBase>({
     onOK,
     onCancel,
     table,
     tableRenderClient: tableClient,
     ...props
-}: db3NewObjectDialogProps & { tableRenderClient: DB3ClientCore.xTableRenderClient }) {
+}: db3NewObjectDialogProps<TView> & { tableRenderClient: DB3ClientCore.xTableRenderClient }) {
     const [currentUser] = useCurrentUser();
     const [obj, setObj] = React.useState(table.args.table.createNew(currentUser));
     const [oldObj, setOldObj] = React.useState(table.args.table.createNew(currentUser)); // needed for tracking changes

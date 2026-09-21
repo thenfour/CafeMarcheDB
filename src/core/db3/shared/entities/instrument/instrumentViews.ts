@@ -3,7 +3,7 @@ import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { defineEntity } from "../../core/db3Entity";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineCrudView, defineLegacyCrudView } from "../../core/db3CrudView";
 import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
 import { xInstrument, xInstrumentFunctionalGroup, xInstrumentTag } from "../../schema/instrument";
 import {
@@ -121,7 +121,7 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
     entity: instrumentFunctionalGroupEntity,
     operations: { create: true, update: true, delete: true },
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
-    hydrate: dto => dto,
+    hydrate: dto => xInstrumentFunctionalGroup.getClientModel(dto, "view"),
 });
 
 export const instrumentFunctionalGroupDashboardView = defineView({
@@ -131,7 +131,7 @@ export const instrumentFunctionalGroupDashboardView = defineView({
     hydrate: dto => dto,
 });
 
-export const instrumentTagEditorView = defineCrudView({
+export const instrumentTagEditorView = defineLegacyCrudView({
     viewID: "InstrumentTag_Editor",
     entity: instrumentTagEntity,
     operations: { create: true, update: true, delete: true },
@@ -139,7 +139,7 @@ export const instrumentTagEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
-export const instrumentEditorView = defineCrudView({
+export const instrumentEditorView = defineLegacyCrudView({
     viewID: "Instrument_Editor",
     entity: instrumentEntity,
     operations: { create: true, update: true, delete: true },

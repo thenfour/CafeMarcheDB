@@ -9,7 +9,7 @@ import {
 } from "./apiTypes";
 import {
     ApplyIncludeFilteringToRelation, type DB3AuthSpec, type DB3RowMode, ErrorValidateAndParseResult,
-    FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
+    type DB3ReadCodec, FieldBase, GetTableById, type SqlGetSortableQueryElementsAPI, SqlSpecialColumnFunction, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult,
     type ValidateAndParseArgs, type ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, createAuthContextMap_SysadminNaturalPK, xTable
 } from "./db3core";
 import type { DB3Authorization } from "./db3Authorization";
@@ -472,9 +472,16 @@ export type ColorFieldArgs = {
     palette: ColorPaletteList;
 } & DB3AuthSpec;
 
-export class ColorField extends FieldBase<ColorPaletteEntry> {
+export class ColorField extends FieldBase<
+    ColorPaletteEntry,
+    DB3ReadCodec<string | null, ColorPaletteEntry | null> // says "i decode strings to ColorPaletteEntry and back"
+> {
     allowNull: boolean;
     palette: ColorPaletteList;
+
+    readonly readCodec: DB3ReadCodec<string | null, ColorPaletteEntry | null> = {
+        decode: value => this.palette.findEntry(value),
+    };
 
     constructor(args: ColorFieldArgs) {
         super({
@@ -509,11 +516,13 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: string | null = dbModel[this.member];
-        clientModel[this.member] = this.palette.findEntry(dbVal);
+        clientModel[this.member] = this.readCodec.decode(dbVal);
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
-        if (clientModel[this.member] === undefined) return;
+        if (clientModel[this.member] === undefined) {
+            return;
+        }
         const val: ColorPaletteEntry | null = clientModel[this.member];
         mutationModel[this.member] = (val?.id) || null;
     };

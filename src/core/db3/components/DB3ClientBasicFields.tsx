@@ -37,12 +37,13 @@ import { gNullValue, TAnyModel } from "@/shared/rootroot";
 import { useDashboardContext } from "../../components/dashboardContext/DashboardContext";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface PKColumnArgs {
-    columnName: string;
+export interface PKColumnArgs<TColumnName extends string = string> {
+    columnName: TColumnName;
 };
 
-export class PKColumnClient extends DB3ClientCore.IColumnClient {
-    constructor(args: PKColumnArgs) {
+export class PKColumnClient<TColumnName extends string = string>
+    extends DB3ClientCore.IColumnClient<TColumnName, number> {
+    constructor(args: PKColumnArgs<TColumnName>) {
         super({
             columnName: args.columnName,
             editable: false,
@@ -74,7 +75,8 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export class PublicIdColumnClient extends DB3ClientCore.IColumnClient {
+export class PublicIdColumnClient
+    extends DB3ClientCore.IColumnClient<"publicId", string> {
     constructor() {
         super({
             columnName: "publicId",
@@ -107,8 +109,8 @@ export class PublicIdColumnClient extends DB3ClientCore.IColumnClient {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface GenericStringColumnArgs {
-    columnName: string;
+export interface GenericStringColumnArgs<TColumnName extends string = string> {
+    columnName: TColumnName;
     cellWidth: number;
     className?: string;
     fieldCaption?: string;
@@ -116,11 +118,12 @@ export interface GenericStringColumnArgs {
     renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 };
 
-export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
+export class GenericStringColumnClient<TColumnName extends string = string>
+    extends DB3ClientCore.IColumnClient<TColumnName, string> {
     typedSchemaColumn: GenericStringField;
     renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 
-    constructor(args: GenericStringColumnArgs) {
+    constructor(args: GenericStringColumnArgs<TColumnName>) {
         super({
             columnName: args.columnName,
             editable: true,
@@ -196,8 +199,8 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface MarkdownStringColumnArgs {
-    columnName: string;
+export interface MarkdownStringColumnArgs<TColumnName extends string = string> {
+    columnName: TColumnName;
     cellWidth: number;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
@@ -205,10 +208,11 @@ export interface MarkdownStringColumnArgs {
     visible?: boolean;
 };
 
-export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
+export class MarkdownStringColumnClient<TColumnName extends string = string>
+    extends DB3ClientCore.IColumnClient<TColumnName, string> {
     typedSchemaColumn: GenericStringField;
 
-    constructor(args: MarkdownStringColumnArgs) {
+    constructor(args: MarkdownStringColumnArgs<TColumnName>) {
         super({
             columnName: args.columnName,
             editable: true,
@@ -280,16 +284,17 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface GenericIntegerColumnArgs {
-    columnName: string;
+export interface GenericIntegerColumnArgs<TColumnName extends string = string> {
+    columnName: TColumnName;
     cellWidth: number;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
     className?: string;
 };
 
-export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
-    constructor(args: GenericIntegerColumnArgs) {
+export class GenericIntegerColumnClient<TColumnName extends string = string>
+    extends DB3ClientCore.IColumnClient<TColumnName, number> {
+    constructor(args: GenericIntegerColumnArgs<TColumnName>) {
         super({
             columnName: args.columnName,
             editable: true,
@@ -501,16 +506,17 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface ColorColumnArgs {
-    columnName: string;
+export interface ColorColumnArgs<TColumnName extends string = string> {
+    columnName: TColumnName;
     cellWidth: number;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
     className?: string;
 };
 
-export class ColorColumnClient extends DB3ClientCore.IColumnClient {
-    constructor(args: ColorColumnArgs) {
+export class ColorColumnClient<TColumnName extends string = string>
+    extends DB3ClientCore.IColumnClient<TColumnName, ColorPaletteEntry | null> {
+    constructor(args: ColorColumnArgs<TColumnName>) {
         super({
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,

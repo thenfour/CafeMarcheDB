@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import { userTagEntity } from "./userEntities";
 
 const UserTagEditorDtoSchema = z.object({
@@ -12,7 +12,7 @@ const UserTagEditorDtoSchema = z.object({
     cssClass: z.string().nullable().optional(),
 });
 
-export const userTagEditorView = defineCrudView({
+export const userTagEditorView = defineLegacyCrudView({
     viewID: "UserTag_Editor",
     entity: userTagEntity,
     operations: { create: true, update: true, delete: true },

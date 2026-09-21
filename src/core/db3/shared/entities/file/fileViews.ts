@@ -1,6 +1,6 @@
 import { Prisma } from "db";
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import type { DB3ReferenceProvider } from "../../core/db3Hydration";
 import { defineView, type ClientOf } from "../../core/db3View";
 import { instrumentEntity } from "../instrument/instrumentViews";
@@ -16,7 +16,7 @@ const FileTagEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
-export const fileTagEditorView = defineCrudView({
+export const fileTagEditorView = defineLegacyCrudView({
     viewID: "FileTag_Editor",
     entity: fileTagEntity,
     operations: { create: true, update: true, delete: true },
@@ -53,7 +53,7 @@ const FrontpageGalleryItemEditorDtoSchema = z.object({
     }).nullable().optional(),
 });
 
-export const frontpageGalleryItemEditorView = defineCrudView({
+export const frontpageGalleryItemEditorView = defineLegacyCrudView({
     viewID: "FrontpageGalleryItem_Editor",
     entity: frontpageGalleryItemEntity,
     operations: { create: true, update: true, delete: true },
@@ -323,7 +323,7 @@ const fileEditorSelection = Prisma.validator<Prisma.FileDefaultArgs>()({
     },
 });
 
-export const fileEditorView = defineCrudView({
+export const fileEditorView = defineLegacyCrudView({
     viewID: "File_Editor",
     entity: fileEntity,
     operations: { update: true, delete: true },

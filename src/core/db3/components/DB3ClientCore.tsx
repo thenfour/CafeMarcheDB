@@ -53,9 +53,9 @@ export interface RenderViewerArgs<T> {
     className?: string;
 };
 
-export interface IColumnClientArgs {
+export interface IColumnClientArgs<TColumnName extends string = string> {
     // NB: keep IColumnClient in sync with these fields.
-    columnName: string;
+    columnName: TColumnName;
     headerName: string;
     editable: boolean;
     visible: boolean;
@@ -69,9 +69,14 @@ export interface IColumnClientArgs {
     GridColProps?: Partial<GridColDef>;
 };
 
-export abstract class IColumnClient {
+export abstract class IColumnClient<
+    TColumnName extends string = string,
+    TValue = unknown,
+> {
     // IColumnClientArgs here...
-    columnName: string;
+    columnName: TColumnName;
+    /** Type-only marker consumed by the view-bound table-spec factory. */
+    readonly __columnValueType?: TValue;
     headerName: string;
     editable: boolean;
     visible: boolean;
@@ -91,9 +96,9 @@ export abstract class IColumnClient {
     abstract onSchemaConnected(tableClient: xTableRenderClient<any>): void;
 
     schemaTable: db3.xTable;
-    schemaColumn: db3.FieldBase<unknown>;
+    schemaColumn: db3.AnyDB3Field;
 
-    constructor(args: IColumnClientArgs) {
+    constructor(args: IColumnClientArgs<TColumnName>) {
         Object.assign(this, args);
         // safety.
         assert(this.visible !== undefined, "visible is required; maybe a column client type forgot to include this in the ctor?");
@@ -131,18 +136,51 @@ export abstract class IColumnClient {
 // the class that describes front-end behavior of a model. i.e. a restatement of the db schema, but describing how it translates to GUI.
 // this is the client-side analog to xTable.
 
+/** Legacy table-only specification; new specs use defineTableClientSpec(). */
 export interface xTableClientSpecArgs {
     table: db3.xTable;
-    columns: IColumnClient[];
+    columns: AnyIColumnClient[];
 };
 
-export class xTableClientSpec {
-    args: xTableClientSpecArgs;
+type NormalizedTableClientSpecArgs<TView extends db3.AnyDB3View | undefined> = {
+    table: db3.xTable;
+    view?: TView;
+    columns: AnyIColumnClient[];
+};
+
+export class xTableClientSpec<
+    TView extends db3.AnyDB3View | undefined = undefined,
+> {
+    args: NormalizedTableClientSpecArgs<TView>;
+
+    /**
+     * Migration-only table construction. It intentionally carries no view
+     * type, so it cannot participate in new column/result inference.
+     */
     constructor(args: xTableClientSpecArgs) {
         this.args = args;
     };
 
-    getColumn = (name: string): IColumnClient => this.args.columns.find(c => c.columnName === name)!;
+    /** @internal Use defineTableClientSpec() for the typed public entry point. */
+    static fromView<TView extends db3.AnyDB3View>(args: {
+        view: TView;
+        columns: AnyIColumnClient[];
+    }): xTableClientSpec<TView> {
+        const spec = new xTableClientSpec({
+            table: args.view.entity.schema,
+            columns: args.columns,
+        });
+        // The legacy constructor deliberately produces the `undefined` view
+        // specialization. This assignment upgrades that same argument bag
+        // only after storing the concrete view that owns its schema.
+        (spec.args as unknown as NormalizedTableClientSpecArgs<TView>).view = args.view;
+
+        // This cast changes only the phantom view parameter. The runtime view
+        // stored above is the same concrete value that supplied the table.
+        return spec as unknown as xTableClientSpec<TView>;
+    }
+
+    getColumn = (name: string): AnyIColumnClient => this.args.columns.find(c => c.columnName === name)!;
 
     renderViewer = <T extends TAnyModel,>(columnName: string, row: T) => {
         return this.getColumn(columnName).renderViewer({
@@ -172,6 +210,40 @@ export class xTableClientSpec {
     }
 
 };
+
+type ColumnNameOf<TColumn> =
+    TColumn extends IColumnClient<infer TColumnName, any> ? TColumnName : never;
+
+type ColumnValueOf<TColumn> =
+    TColumn extends IColumnClient<any, infer TValue> ? TValue : never;
+
+type ValidateViewColumn<TRow, TColumn> =
+    ColumnNameOf<TColumn> extends keyof TRow
+    ? Exclude<TRow[ColumnNameOf<TColumn>], undefined> extends ColumnValueOf<TColumn>
+    ? TColumn
+    : never
+    : never;
+
+type ValidateViewColumns<TRow, TColumns extends readonly AnyIColumnClient[]> = {
+    [TIndex in keyof TColumns]: ValidateViewColumn<TRow, TColumns[TIndex]>;
+};
+
+/**
+ * New view-bound table specification. Its column tuple is checked against the
+ * hydrated client row inferred from the concrete view.
+ */
+export function defineTableClientSpec<
+    TView extends db3.AnyDB3View,
+    TColumns extends readonly AnyIColumnClient[],
+>(args: {
+    view: TView;
+    columns: readonly [...TColumns] & ValidateViewColumns<db3.ClientOf<TView>, TColumns>;
+}): xTableClientSpec<TView> {
+    return xTableClientSpec.fromView({
+        view: args.view,
+        columns: [...args.columns],
+    });
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,8 +300,10 @@ export enum xTableClientCaps {
     Mutation = 4,
 };
 
+export type AnyIColumnClient = IColumnClient<any, any>;
+
 export interface xTableClientArgs {
-    tableSpec: xTableClientSpec,
+    tableSpec: xTableClientSpec<any>,
     queryView?: db3.AnyDB3View,
     referenceProvider?: db3.DB3ReferenceProvider,
 
@@ -246,7 +320,7 @@ export interface xTableClientArgs {
 };
 
 export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
-    tableSpec: xTableClientSpec;
+    tableSpec: xTableClientSpec<any>;
     args: xTableClientArgs;
     mutateFn: TMutateFn;
 

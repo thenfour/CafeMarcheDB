@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
 import { SongTagAssociationNaturalOrderBy } from "../../schema/prismArgs";
 import { fileTagEntity } from "../file/fileEntities";
@@ -101,7 +101,7 @@ const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     },
 });
 
-export const songTagEditorView = defineCrudView({
+export const songTagEditorView = defineLegacyCrudView({
     viewID: "SongTag_Editor",
     entity: songTagEntity,
     operations: { create: true, update: true, delete: true },
@@ -109,7 +109,7 @@ export const songTagEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
-export const songCreditTypeEditorView = defineCrudView({
+export const songCreditTypeEditorView = defineLegacyCrudView({
     viewID: "SongCreditType_Editor",
     entity: songCreditTypeEntity,
     operations: { create: true, update: true, delete: true },
@@ -117,7 +117,7 @@ export const songCreditTypeEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
-export const songCreditEditorView = defineCrudView({
+export const songCreditEditorView = defineLegacyCrudView({
     viewID: "SongCredit_Editor",
     entity: songCreditEntity,
     operations: { create: true, update: true, delete: true },
@@ -125,7 +125,7 @@ export const songCreditEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
-export const songEditorView = defineCrudView({
+export const songEditorView = defineLegacyCrudView({
     viewID: "Song_Editor",
     entity: songEntity,
     operations: { create: true, update: true, delete: true },

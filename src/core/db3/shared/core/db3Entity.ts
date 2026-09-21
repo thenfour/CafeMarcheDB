@@ -13,9 +13,10 @@ export interface DB3Entity<
     TDelegate,
     TClientEntity extends TAnyModel,
     TId extends DB3EntityId,
+    TSchema extends xTable = xTable,
 > {
     readonly entityID: string;
-    readonly schema: xTable;
+    readonly schema: TSchema;
     readonly getIdentity: (entity: TClientEntity) => TId;
 
     // Phantom members preserve the entity contract without adding runtime data.
@@ -24,7 +25,7 @@ export interface DB3Entity<
     readonly __identity?: TId;
 }
 
-export type AnyDB3Entity = DB3Entity<any, TAnyModel, DB3EntityId>;
+export type AnyDB3Entity = DB3Entity<any, TAnyModel, DB3EntityId, xTable>;
 
 export type PrismaDelegateOf<TEntity extends AnyDB3Entity> =
     NonNullable<TEntity["__delegate"]>;
@@ -35,6 +36,8 @@ export type ClientEntityOf<TEntity extends AnyDB3Entity> =
 export type EntityIdOf<TEntity extends AnyDB3Entity> =
     NonNullable<TEntity["__identity"]>;
 
+export type SchemaOf<TEntity extends AnyDB3Entity> = TEntity["schema"];
+
 /**
  * Curried so the Prisma delegate can be supplied once while the client entity
  * and identity types are inferred from getIdentity.
@@ -42,11 +45,12 @@ export type EntityIdOf<TEntity extends AnyDB3Entity> =
 export const defineEntity = <TDelegate,>() => <
     TClientEntity extends TAnyModel,
     TId extends DB3EntityId,
+    TSchema extends xTable,
 >(args: {
     entityID?: string;
-    schema: xTable;
+    schema: TSchema;
     getIdentity: (entity: TClientEntity) => TId;
-}): DB3Entity<TDelegate, TClientEntity, TId> => ({
+}): DB3Entity<TDelegate, TClientEntity, TId, TSchema> => ({
     entityID: args.entityID || args.schema.tableID,
     schema: args.schema,
     getIdentity: args.getIdentity,

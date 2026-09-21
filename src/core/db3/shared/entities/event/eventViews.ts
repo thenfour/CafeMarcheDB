@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
 import { EventTagAssignmentNaturalOrderBy } from "../../schema/prismArgs";
 import { permissionEntity } from "../user/userEntities";
@@ -62,7 +62,7 @@ const EventAttendanceEditorDtoSchema = z.object({
     strength: z.number().int().optional(),
 });
 
-export const eventTypeEditorView = defineCrudView({
+export const eventTypeEditorView = defineLegacyCrudView({
     viewID: "EventType_Editor",
     entity: eventTypeEntity,
     operations: { create: true, update: true, delete: true },
@@ -70,7 +70,7 @@ export const eventTypeEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
-export const eventStatusEditorView = defineCrudView({
+export const eventStatusEditorView = defineLegacyCrudView({
     viewID: "EventStatus_Editor",
     entity: eventStatusEntity,
     operations: { create: true, update: true, delete: true },
@@ -78,7 +78,7 @@ export const eventStatusEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
-export const eventTagEditorView = defineCrudView({
+export const eventTagEditorView = defineLegacyCrudView({
     viewID: "EventTag_Editor",
     entity: eventTagEntity,
     operations: { create: true, update: true, delete: true },
@@ -86,7 +86,7 @@ export const eventTagEditorView = defineCrudView({
     hydrate: dto => dto,
 });
 
-export const eventAttendanceEditorView = defineCrudView({
+export const eventAttendanceEditorView = defineLegacyCrudView({
     viewID: "EventAttendance_Editor",
     entity: eventAttendanceEntity,
     operations: { create: true, update: true, delete: true },
@@ -133,7 +133,7 @@ const EventSegmentEditorDtoSchema = z.object({
     }).optional(),
 });
 
-export const eventSegmentEditorView = defineCrudView({
+export const eventSegmentEditorView = defineLegacyCrudView({
     viewID: "EventSegment_Editor",
     entity: eventSegmentEntity,
     operations: { create: true, update: true, delete: true },
@@ -221,7 +221,7 @@ const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     },
 });
 
-export const eventEditorView = defineCrudView({
+export const eventEditorView = defineLegacyCrudView({
     viewID: "Event_Editor",
     entity: eventEntity,
     operations: { create: true, update: true, delete: true },

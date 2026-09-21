@@ -1,7 +1,7 @@
 import { Prisma } from "db";
 import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
-import { defineCrudView } from "../../core/db3CrudView";
+import { defineLegacyCrudView } from "../../core/db3CrudView";
 import { roleEntity } from "./userEntities";
 
 const RolePermissionEditorDtoSchema = z.object({
@@ -40,7 +40,7 @@ const roleEditorSelection = Prisma.validator<Prisma.RoleDefaultArgs>()({
     },
 });
 
-export const roleEditorView = defineCrudView({
+export const roleEditorView = defineLegacyCrudView({
     viewID: "Role_Editor",
     entity: roleEntity,
     operations: { create: true, update: true },

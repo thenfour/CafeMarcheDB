@@ -105,7 +105,12 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
 
     const redirectType: keyof typeof db3.CustomLinkRedirectType = props.item.redirectType as any;
 
-    const absoluteLocalURL = dashboardContext.getAbsoluteUri(props.item.slug);
+    // Optional view members represent fields omitted by authorization. Keep
+    // those values absent rather than inventing a legacy display/copy fallback.
+    const absoluteLocalURL = props.item.slug === undefined
+        ? undefined
+        : dashboardContext.getAbsoluteUri(props.item.slug);
+    const destinationURL = props.item.destinationURL;
 
     const clipboardCopy = async (text: string) => {
         await navigator.clipboard.writeText(text);
@@ -144,7 +149,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
             <div className='subtitleLine'>Visited {props.item._count.visits} times</div>
             <div className='subtitleLine'>Created by {props.item.createdByUser?.name} on {props.item.createdAt.toDateString()}</div>
 
-            <Markdown markdown={props.item.description} />
+            <Markdown markdown={props.item.description ?? null} />
 
             <NameValuePair
                 isReadOnly={props.readonly}
@@ -152,9 +157,9 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
                 value={<div className="customURLslugValueRow">
                     <div>{absoluteLocalURL}</div>
                     <div className="flex-spacer"></div>
-                    <Tooltip title={"Copy URL to clipboard. Useful for testing."}>
+                    {absoluteLocalURL !== undefined && <Tooltip title={"Copy URL to clipboard. Useful for testing."}>
                         <div><CMSmallButton onClick={() => { void clipboardCopy(absoluteLocalURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></div>
-                    </Tooltip>
+                    </Tooltip>}
                 </div>}
             />
 
@@ -162,16 +167,16 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
                 isReadOnly={props.readonly}
                 name="External URL"
                 value={<div className="customURLslugValueRow">
-                    <div>{props.item.destinationURL}</div>
+                    <div>{destinationURL}</div>
                     <div className="flex-spacer"></div>
-                    <Tooltip title={"Copy URL to clipboard."}>
-                        <div><CMSmallButton onClick={() => { void clipboardCopy(props.item.destinationURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></div>
-                    </Tooltip>
+                    {destinationURL !== undefined && <Tooltip title={"Copy URL to clipboard."}>
+                        <div><CMSmallButton onClick={() => { void clipboardCopy(destinationURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></div>
+                    </Tooltip>}
                 </div>}
             />
 
             {redirectType === "IntermediatePage" &&
-                <Markdown markdown={props.item.intermediateMessage} />}
+                <Markdown markdown={props.item.intermediateMessage ?? null} />}
 
         </div>
     </div>;
