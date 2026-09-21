@@ -68,7 +68,6 @@ const legacyGridSites: Record<string, LegacyWriterCategory> = {
     "src/pages/backstage/editEventSegments.tsx": "nested-row",
     "src/pages/backstage/editFiles.tsx": "ordinary-grid",
     "src/pages/backstage/editSongCredits.tsx": "nested-row",
-    "src/pages/backstage/editSongs.tsx": "ordinary-grid",
     "src/pages/backstage/userInstruments.tsx": "relationship",
 };
 

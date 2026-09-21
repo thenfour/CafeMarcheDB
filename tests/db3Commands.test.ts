@@ -403,6 +403,7 @@ describe("DB3 commands", () => {
             db3.frontpageGalleryItemEditorView,
             db3.roleEditorView,
             db3.instrumentEditorView,
+            db3.songEditorView,
         ];
 
         for (const view of views) {
@@ -620,6 +621,77 @@ describe("DB3 commands", () => {
             patch: { functionalGroup: { publicId: functionalGroupPublicId } },
         })).toThrow();
         expect(db3.instrumentEditorView.crud.deleteType).toBe("hard");
+        expect(db3.songEditorView.parseDto({
+            id: 8,
+            name: "Autumn Leaves",
+            aliases: "Les Feuilles mortes",
+            description: "",
+            startBPM: 120,
+            endBPM: null,
+            introducedYear: 1945,
+            lengthSeconds: 180,
+            isDeleted: false,
+            createdByUserId: 7,
+            createdByUser: { id: 7, name: "Editor", cssClass: null },
+            visiblePermissionId: 3,
+            visiblePermission: {
+                id: 3,
+                name: "visibility_public",
+                description: "Public",
+                isVisibility: true,
+                sortOrder: 1,
+                significance: null,
+                color: null,
+                iconName: null,
+            },
+            tags: [{
+                id: 80,
+                songId: 8,
+                tagId: 20,
+                tag: {
+                    id: 20,
+                    text: "Jazz",
+                    description: "",
+                    color: null,
+                    sortOrder: 1,
+                    significance: null,
+                    group: "Style",
+                    indicator: null,
+                    indicatorCssClass: null,
+                },
+            }],
+        })).toMatchObject({
+            id: 8,
+            createdByUser: { id: 7, name: "Editor" },
+            visiblePermission: { id: 3, name: "visibility_public" },
+            tags: [{ tagId: 20, tag: { text: "Jazz" } }],
+        });
+        expect(db3.songEditorView.crud.updateCommand.parseDto({
+            identity: 8,
+            patch: {
+                visiblePermissionId: 3,
+                tags: [20, 30],
+            },
+        })).toEqual({
+            identity: 8,
+            patch: {
+                visiblePermissionId: 3,
+                tags: [20, 30],
+            },
+        });
+        expect(() => db3.songEditorView.crud.updateCommand.parseDto({
+            identity: 8,
+            patch: { taggedFiles: [40] },
+        })).toThrow();
+        expect(() => db3.songEditorView.crud.updateCommand.parseDto({
+            identity: 8,
+            patch: { credits: [50] },
+        })).toThrow();
+        expect(() => db3.songEditorView.crud.updateCommand.parseDto({
+            identity: 8,
+            patch: { pinnedRecordingId: 40 },
+        })).toThrow();
+        expect(db3.songEditorView.crud.deleteType).toBe("softWhenPossible");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {

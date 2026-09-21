@@ -286,6 +286,101 @@ describe("DB3 command boundary", () => {
     ])
   })
 
+  it("updates and soft-deletes a Song through generated CRUD", async () => {
+    const permissions = [Permission.login, Permission.view_songs, Permission.manage_songs]
+    const actor = createAuthorizationTestUser("normal", { id: 97, permissions })
+    const visibility = {
+      id: 3,
+      name: Permission.visibility_public,
+      description: "Public",
+      isVisibility: true,
+      sortOrder: 1,
+      significance: null,
+      color: null,
+      iconName: null,
+      roles: [],
+    }
+    const song = {
+      id: 8,
+      name: "Autumn Leaves",
+      aliases: "",
+      description: "",
+      startBPM: null,
+      endBPM: null,
+      introducedYear: null,
+      lengthSeconds: null,
+      isDeleted: false,
+      createdByUserId: actor.id,
+      createdByUser: actor,
+      visiblePermissionId: null,
+      visiblePermission: null,
+      tags: [],
+    }
+    const oldTag = {
+      id: 20,
+      text: "Old style",
+      description: "",
+      color: null,
+      sortOrder: 1,
+      significance: null,
+      group: null,
+      indicator: null,
+      indicatorCssClass: null,
+    }
+    const jazzTag = {
+      id: 21,
+      text: "Jazz",
+      description: "",
+      color: null,
+      sortOrder: 2,
+      significance: null,
+      group: "Style",
+      indicator: null,
+      indicatorCssClass: null,
+    }
+    authorizationTestDb.reset({
+      user: [actor],
+      permission: [visibility],
+      song: [song],
+      songTag: [oldTag, jazzTag],
+      songTagAssociation: [{ id: 80, songId: song.id, tagId: oldTag.id }],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.songEditorView.crud.updateCommand.commandID,
+      payload: {
+        identity: song.id,
+        patch: {
+          aliases: "Les Feuilles mortes",
+          visiblePermissionId: visibility.id,
+          tags: [jazzTag.id],
+        },
+      },
+    }, ctx)).resolves.toEqual({ identity: song.id })
+
+    expect(authorizationTestDb.snapshot("song")).toEqual([
+      expect.objectContaining({
+        id: song.id,
+        aliases: "Les Feuilles mortes",
+        visiblePermissionId: visibility.id,
+      }),
+    ])
+    expect(authorizationTestDb.snapshot("songTagAssociation")).toEqual([
+      expect.objectContaining({ songId: song.id, tagId: jazzTag.id }),
+    ])
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.songEditorView.crud.deleteCommand.commandID,
+      payload: { identity: song.id },
+    }, ctx)).resolves.toEqual({ identity: song.id })
+    expect(authorizationTestDb.snapshot("song")[0]).toMatchObject({
+      id: song.id,
+      isDeleted: true,
+    })
+  })
+
   it("revalidates command DTOs and enforces server-side entity authorization", async () => {
     const permissions = [Permission.login, Permission.view_events]
     const actor = createAuthorizationTestUser("normal", { id: 92, permissions })

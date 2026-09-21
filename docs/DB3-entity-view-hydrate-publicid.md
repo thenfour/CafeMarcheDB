@@ -770,7 +770,7 @@ The existing writers are grouped by the replacement they need:
 
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
-| Ordinary grids | User/Event/File/Song grids | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
+| Ordinary grids | User/Event/File grids | Add a CRUD-enabled named view, pass it to `DB3EditGrid`, and remove the legacy marker. Split out any operation that proves not to be ordinary row CRUD. |
 | Entity detail editors | Event, Song, File, User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
 | Nested rows and relationships | Event segments, song credits/files, user instruments, and setlist-plan groups | Choose a generated row/association command only when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
@@ -832,6 +832,13 @@ uses the existing public-FK resolver and schema-owned association service in
 the command transaction, retaining the table's hard-delete policy. The grid's
 stale link to the removed Instrument `slug` column is replaced with its numeric
 identity, which is the value consumed by the current placeholder detail route.
+
+The seventh slice migrates the Song administration grid. Its strict editor
+view contains the displayed scalar fields, creator and visibility references,
+and the finite Song-tag association shape. Tagged files, credits, and the
+pinned-recording workflow remain outside this row contract. Generated Song
+CRUD reconciles the desired tag-ID set transactionally and retains the table's
+soft-delete policy and existing recovery authorization.
 
 ## Design principles
 
@@ -988,6 +995,8 @@ boundary safely.
   - [x] Migrate the Instrument administration grid, including its public-ID
     functional-group reference and finite tag set, while retaining the existing
     hard-delete policy.
+  - [x] Migrate the Song administration grid, retaining creator/visibility
+    references, tag-set editing, and the existing soft-delete/recovery boundary.
   - [ ] Migrate the remaining ordinary grids, then entity-detail,
     nested/relationship, collection, and workflow categories in that order.
     Split out named domain commands wherever row CRUD is not truthful, and
