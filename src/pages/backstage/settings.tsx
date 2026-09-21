@@ -67,13 +67,13 @@ const SettingsControls = (props) => {
 
 const SettingsContent = () => {
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xSetting,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "value", cellWidth: 200 }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            value: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+        },
     });
 
     return <>

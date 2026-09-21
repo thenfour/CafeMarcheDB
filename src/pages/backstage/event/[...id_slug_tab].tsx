@@ -32,9 +32,9 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: new DB3Client.xTableClientSpec({
+        tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xEventVerbose,
-            columns: [
+            columns: DB3Client.makeClientColumnSelection(
                 EventTableClientColumns.id,
                 EventTableClientColumns.name,
                 EventTableClientColumns.locationDescription,
@@ -43,7 +43,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
                 EventTableClientColumns.tags,
                 EventTableClientColumns.expectedAttendanceUserTag,
                 EventTableClientColumns.visiblePermission,
-            ],
+            ),
         }),
         filterModel: {
             tableParams: {}

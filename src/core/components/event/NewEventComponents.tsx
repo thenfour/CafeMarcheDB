@@ -36,9 +36,9 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const router = useRouter();
 
     // EVENT table bindings
-    const eventTableSpec = new DB3Client.xTableClientSpec({
+    const eventTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEvent,
-        columns: [
+        columns: DB3Client.makeClientColumnSelection(
             EventTableClientColumns.id,
             EventTableClientColumns.name,
             //EventTableClientColumns.slug,
@@ -49,7 +49,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             //EventTableClientColumns.segmentBehavior,
             EventTableClientColumns.expectedAttendanceUserTag,
             EventTableClientColumns.visiblePermission,
-        ],
+        ),
     });
 
     // necessary to connect all the columns in the spec.
@@ -78,12 +78,12 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
 
     // EVENT SEGMENT BINDINGS
-    const segmentTableSpec = new DB3Client.xTableClientSpec({
+    const segmentTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegment,
-        columns: [
+        columns: DB3Client.makeClientColumnSelection(
             EventSegmentClientColumns.id,
-            EventSegmentClientColumns.dateRange,
-        ],
+            EventSegmentClientColumns.startsAt,
+        ),
     });
 
     // necessary to connect all the columns in the spec.

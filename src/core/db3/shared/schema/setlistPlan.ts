@@ -54,7 +54,7 @@ export const SetlistPlanGroupNaturalOrderBy: Prisma.SetlistPlanGroupOrderByWithR
 // }
 
 ////////////////////////////////////////////////////////////////
-export const xSetlistPlanGroup = new db3.xTable({
+export const xSetlistPlanGroup = db3.defineTable({
     getSelectionArgs: (): Prisma.SetlistPlanGroupDefaultArgs => {
         return SetlistPlanGroupArgs;
     },
@@ -71,15 +71,15 @@ export const xSetlistPlanGroup = new db3.xTable({
         ownerUserId: row.createdByUserId,
     }),
     tableAuthMap: xTableAuthMap,
-    columns: [
-        MakePKfield(),
-        MakeTitleField("name", { authMap: xAuthMap, }),
-        MakeDescriptionField({ authMap: xAuthMap, }),
-        MakeColorField({ authMap: xAuthMap, }),
-        MakeSortOrderField({ authMap: xAuthMap, }),
-        MakeCreatedAtField({}),
-        MakeCreatedByField(),
-    ]
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
+        description: () => MakeDescriptionField({ authMap: xAuthMap, }),
+        color: () => MakeColorField({ authMap: xAuthMap, }),
+        sortOrder: () => MakeSortOrderField({ authMap: xAuthMap, }),
+        createdAt: () => MakeCreatedAtField({}),
+        createdByUser: () => MakeCreatedByField(),
+    })
 });
 
 
@@ -99,7 +99,7 @@ export const SetlistPlanNaturalOrderBy: Prisma.SetlistPlanOrderByWithRelationInp
 ];
 
 ////////////////////////////////////////////////////////////////
-export const xSetlistPlan = new db3.xTable({
+export const xSetlistPlan = db3.defineTable({
     getSelectionArgs: (): Prisma.SetlistPlanDefaultArgs => {
         return {};
     },
@@ -116,19 +116,19 @@ export const xSetlistPlan = new db3.xTable({
         ownerUserId: row.createdByUserId,
     }),
     tableAuthMap: xTableAuthMap,
-    columns: [
-        MakePKfield(),
-        MakeTitleField("name", { authMap: xAuthMap, }),
-        MakeDescriptionField({ authMap: xAuthMap, }),
-        MakeSortOrderField({ authMap: xAuthMap, }),
-        MakeIsDeletedField({ authMap: xAuthMap, }),
-        MakeCreatedAtField({}),
-        MakeCreatedByField(),
-        MakeVisiblePermissionField({ authMap: xAuthMap }),
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
+        description: () => MakeDescriptionField({ authMap: xAuthMap, }),
+        sortOrder: () => MakeSortOrderField({ authMap: xAuthMap, }),
+        isDeleted: () => MakeIsDeletedField({ authMap: xAuthMap, }),
+        createdAt: () => MakeCreatedAtField({}),
+        createdByUser: () => MakeCreatedByField(),
+        visiblePermission: () => MakeVisiblePermissionField({ authMap: xAuthMap }),
 
-        new GhostField({ memberName: "groupId", authMap: xAuthMap }),
-        new GhostField({ memberName: "payloadJson", authMap: xAuthMap }),
-    ]
+        groupId: memberName => new GhostField({ memberName, authMap: xAuthMap }),
+        payloadJson: memberName => new GhostField({ memberName, authMap: xAuthMap }),
+    })
 });
 
 

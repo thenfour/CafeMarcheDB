@@ -46,12 +46,12 @@ export const SetlistPlanGroupSelect = ({ tableClient, selectedGroupId, onChange 
     />;
 };
 
-export const SetlistPlanGroupClientColumns = {
-    id: new DB3Client.PKColumnClient({ columnName: "id" }),
-    name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 250 }),
-    description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-    color: new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 100 }),
-};
+export const SetlistPlanGroupClientColumns = DB3Client.makeClientColumnSet({
+    id: columnName => new DB3Client.PKColumnClient({ columnName }),
+    name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250 }),
+    description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+    color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 100 }),
+});
 
 
 interface SetlistPlanGroupListItemProps {

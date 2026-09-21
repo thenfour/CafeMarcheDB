@@ -156,6 +156,8 @@ export class xTableClientSpec<
     /**
      * Migration-only table construction. It intentionally carries no view
      * type, so it cannot participate in new column/result inference.
+     * @deprecated Use defineTableClientSpec(), defineLegacyTableClientSpec(),
+     * or defineLegacyDynamicTableClientSpec() so the intended contract is explicit.
      */
     constructor(args: xTableClientSpecArgs) {
         this.args = args;
@@ -211,22 +213,92 @@ export class xTableClientSpec<
 
 };
 
-type ColumnNameOf<TColumn> =
-    TColumn extends IColumnClient<infer TColumnName, any> ? TColumnName : never;
-
 type ColumnValueOf<TColumn> =
     TColumn extends IColumnClient<any, infer TValue> ? TValue : never;
 
-type ValidateViewColumn<TRow, TColumn> =
-    ColumnNameOf<TColumn> extends keyof TRow
-    ? Exclude<TRow[ColumnNameOf<TColumn>], undefined> extends ColumnValueOf<TColumn>
-    ? TColumn
-    : never
+export type DB3ClientColumnFactory<TColumn extends AnyIColumnClient = AnyIColumnClient> =
+    (columnName: string) => TColumn;
+
+export type DB3ClientColumnFactoryMap = Readonly<Record<string, DB3ClientColumnFactory>>;
+
+type RebindClientColumnName<TColumn, TColumnName extends string> =
+    TColumn extends IColumnClient<any, infer TValue>
+    ? TColumn & IColumnClient<TColumnName, TValue>
     : never;
 
-type ValidateViewColumns<TRow, TColumns extends readonly AnyIColumnClient[]> = {
-    [TIndex in keyof TColumns]: ValidateViewColumn<TRow, TColumns[TIndex]>;
+export type DB3ClientColumnSet<TFactories extends DB3ClientColumnFactoryMap> = {
+    readonly [K in keyof TFactories]: K extends string
+    ? RebindClientColumnName<ReturnType<TFactories[K]>, K>
+    : never;
 };
+
+export type DB3ClientColumnSelection<TColumns extends readonly AnyIColumnClient[]> = {
+    readonly [TColumn in TColumns[number] as TColumn["columnName"]]: () => TColumn;
+};
+
+type ColumnValueOfFactory<TFactory> =
+    TFactory extends DB3ClientColumnFactory<infer TColumn>
+    ? ColumnValueOf<TColumn>
+    : never;
+
+type InvalidViewColumnFactoryKeys<TRow, TFactories extends DB3ClientColumnFactoryMap> = {
+    [K in keyof TFactories]: K extends keyof TRow
+    ? Exclude<TRow[K], undefined> extends ColumnValueOfFactory<TFactories[K]>
+    ? never
+    : K
+    : K;
+}[keyof TFactories];
+
+function instantiateClientColumnSet(factories: DB3ClientColumnFactoryMap): Record<string, AnyIColumnClient> {
+    const columns: Record<string, AnyIColumnClient> = {};
+    Object.keys(factories).forEach(columnName => {
+        const column = factories[columnName]!(columnName);
+        if (column.columnName !== columnName) {
+            throw new Error(
+                `DB3 client-column factory '${columnName}' produced runtime column '${column.columnName}'.`,
+            );
+        }
+        columns[columnName] = column;
+    });
+    return columns;
+}
+
+/**
+ * Constructs a reusable set of client columns whose object keys are the sole
+ * source of their runtime column names.
+ */
+export function makeClientColumnSet<
+    TFactories extends { [K in keyof TFactories]: DB3ClientColumnFactory },
+>(factories: TFactories): DB3ClientColumnSet<TFactories> {
+    const columns = instantiateClientColumnSet(factories);
+    // Each factory was invoked with its object key and the runtime check above
+    // proved that every resulting column retained that exact key.
+    return columns as DB3ClientColumnSet<TFactories>;
+}
+
+/**
+ * Adapts already-constructed named columns for a table spec without requiring
+ * callers to repeat those names as object keys.
+ */
+export function makeClientColumnSelection<TColumns extends readonly AnyIColumnClient[]>(
+    ...columns: TColumns
+): DB3ClientColumnSelection<TColumns> {
+    const selection: Record<string, DB3ClientColumnFactory> = {};
+    columns.forEach(column => {
+        if (selection[column.columnName]) {
+            throw new Error(`Duplicate DB3 client column '${column.columnName}' in selection.`);
+        }
+        selection[column.columnName] = () => column;
+    });
+
+    // The map is populated only from each column's own typed runtime name, and
+    // the duplicate check proves that every selected name has exactly one value.
+    return selection as DB3ClientColumnSelection<TColumns>;
+}
+
+function instantiateClientColumns(factories: DB3ClientColumnFactoryMap): AnyIColumnClient[] {
+    return Object.values(instantiateClientColumnSet(factories));
+}
 
 /**
  * New view-bound table specification. Its column tuple is checked against the
@@ -234,15 +306,62 @@ type ValidateViewColumns<TRow, TColumns extends readonly AnyIColumnClient[]> = {
  */
 export function defineTableClientSpec<
     TView extends db3.AnyDB3View,
-    TColumns extends readonly AnyIColumnClient[],
+    TFactories extends { [K in keyof TFactories]: DB3ClientColumnFactory },
 >(args: {
     view: TView;
-    columns: readonly [...TColumns] & ValidateViewColumns<db3.ClientOf<TView>, TColumns>;
-}): xTableClientSpec<TView> {
+    columns: TFactories;
+} & ([InvalidViewColumnFactoryKeys<db3.ClientOf<TView>, TFactories>] extends [never]
+    ? unknown
+    : { readonly __invalidColumnKeys: InvalidViewColumnFactoryKeys<db3.ClientOf<TView>, TFactories> })
+): xTableClientSpec<TView> {
     return xTableClientSpec.fromView({
         view: args.view,
-        columns: [...args.columns],
+        columns: instantiateClientColumns(args.columns),
     });
+}
+
+type TableFieldKeys<TTable extends db3.xTable> =
+    TTable extends db3.xTable<infer TFields>
+    ? Extract<keyof TFields, string>
+    : string;
+
+type InvalidLegacyColumnFactoryKeys<
+    TTable extends db3.xTable,
+    TFactories extends DB3ClientColumnFactoryMap,
+> = {
+    [K in keyof TFactories]: K extends TableFieldKeys<TTable> ? never : K;
+}[keyof TFactories];
+
+/**
+ * Migration-only keyed construction for table clients that do not yet own a
+ * named view. It validates table keys but deliberately provides no hydrated
+ * row type; use defineTableClientSpec() whenever a view exists.
+ */
+export function defineLegacyTableClientSpec<
+    TTable extends db3.xTable,
+    TFactories extends { [K in keyof TFactories]: DB3ClientColumnFactory },
+>(args: {
+    table: TTable;
+    columns: TFactories;
+} & ([InvalidLegacyColumnFactoryKeys<TTable, TFactories>] extends [never]
+    ? unknown
+    : { readonly __invalidColumnKeys: InvalidLegacyColumnFactoryKeys<TTable, TFactories> })
+): xTableClientSpec<undefined> {
+    return new xTableClientSpec({
+        table: args.table,
+        columns: instantiateClientColumns(args.columns),
+    });
+}
+
+/**
+ * Legacy escape hatch for callers whose schema or column names are selected at
+ * runtime. Those names cannot be checked as a static keyed column set and this
+ * result deliberately carries no hydrated view type.
+ */
+export function defineLegacyDynamicTableClientSpec(
+    args: xTableClientSpecArgs,
+): xTableClientSpec<undefined> {
+    return new xTableClientSpec(args);
 }
 
 

@@ -23,24 +23,26 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 
 const MainContent = () => {
-    const songTableSpec = new DB3Client.xTableClientSpec({
+    const songTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xSong,
-        columns: [
-            SongClientColumns.id,
-            SongClientColumns.name,
-            SongClientColumns.aliases,
-            //SongClientColumns.slug,
-            SongClientColumns.description,
-            SongClientColumns.startBPM,
-            SongClientColumns.endBPM,
-            SongClientColumns.introducedYear,
-            SongClientColumns.lengthSeconds,
-            SongClientColumns.tags,
-            SongClientColumns.createdByUser,
-            SongClientColumns.visiblePermission,
+        columns: {
+            ...DB3Client.makeClientColumnSelection(
+                SongClientColumns.id,
+                SongClientColumns.name,
+                SongClientColumns.aliases,
+                //SongClientColumns.slug,
+                SongClientColumns.description,
+                SongClientColumns.startBPM,
+                SongClientColumns.endBPM,
+                SongClientColumns.introducedYear,
+                SongClientColumns.lengthSeconds,
+                SongClientColumns.tags,
+                SongClientColumns.createdByUser,
+                SongClientColumns.visiblePermission,
+            ),
 
-            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-        ],
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+        },
     });
 
     return <>

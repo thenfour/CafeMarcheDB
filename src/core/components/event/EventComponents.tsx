@@ -162,27 +162,27 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     });
 
     // use the db3 client stuff for rendering / validating fields.
-    const eventResponseTableSpec = new DB3Client.xTableClientSpec({
+    const eventResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventUserResponse,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "userComment", cellWidth: 200 }),
-            new DB3Client.BoolColumnClient({ columnName: "isInvited", fieldCaption: "Is invited?" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120 }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            userComment: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            isInvited: columnName => new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Is invited?" }),
+            instrument: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+        },
     });
 
-    const eventSegmentResponseTableSpec = new DB3Client.xTableClientSpec({
+    const eventSegmentResponseTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegmentUserResponse,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({
-                columnName: "attendance",
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            attendance: columnName => new DB3Client.ForeignSingleFieldClient({
+                columnName,
                 cellWidth: 120,
                 fieldCaption: "Going?"
                 //renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} variation={args.colorVariant} />,
             }),
-        ],
+        },
     });
 
     //necessary to connect all the columns in the spec.

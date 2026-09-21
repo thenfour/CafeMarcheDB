@@ -16,30 +16,30 @@ import * as db3 from "src/core/db3/db3";
 const MainContent = () => {
     const [showUnknown, setShowUnknown] = React.useState<boolean>(false);
 
-    const RoleClientSchema = new DB3Client.xTableClientSpec({
+    const RoleClientSchema = DB3Client.defineLegacyTableClientSpec({
         table: db3.xRole,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-            new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 300, allowDeleteFromCell: false }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+            permissions: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 300, allowDeleteFromCell: false }),
+        },
     });
 
 
-    const PermissionClientSchema = new DB3Client.xTableClientSpec({
+    const PermissionClientSchema = DB3Client.defineLegacyTableClientSpec({
         table: db3.xPermission,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-            new DB3Client.BoolColumnClient({ columnName: "isVisibility" }),
-            new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 120 }),
-            new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120 }),
-            new DB3Client.TagsFieldClient({ columnName: "roles", cellWidth: 300, allowDeleteFromCell: false }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+            isVisibility: columnName => new DB3Client.BoolColumnClient({ columnName }),
+            color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 120 }),
+            iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120 }),
+            roles: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 300, allowDeleteFromCell: false }),
+        },
     });
 
     const codePermissions = gPermissionOrdered;

@@ -28,15 +28,15 @@ const MainContent = () => {
         feature: ActivityFeature.profile_view,
     });
 
-    const spec = new DB3Client.xTableClientSpec({
+    const spec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xUser,
-        columns: [
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
-            new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-        ],
+        columns: {
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 160 }),
+            email: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
+            phone: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
+            tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+        },
     });
 
     const client = DB3Client.useCrudTableRenderContext({

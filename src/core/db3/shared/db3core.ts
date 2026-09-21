@@ -536,6 +536,44 @@ export type AnyDB3Field = FieldBase<any, AnyDB3ReadCodec | undefined>;
 
 export type DB3FieldMap = Readonly<Record<string, AnyDB3Field>>;
 
+/**
+ * Defers field construction until makeColumnSet() can supply the authoritative
+ * member name from the surrounding object key.
+ */
+export type DB3ColumnFactory<TField extends AnyDB3Field = AnyDB3Field> =
+    (member: string) => TField;
+
+export type DB3ColumnFactoryMap = Readonly<Record<string, DB3ColumnFactory>>;
+
+export type DB3ColumnSet<TFactories extends DB3ColumnFactoryMap> = {
+    readonly [K in keyof TFactories]: ReturnType<TFactories[K]>;
+};
+
+/**
+ * Creates a typed field map while writing each member name exactly once. Field
+ * constructors run only after their key is known; initialized fields are never
+ * renamed or otherwise patched afterward.
+ */
+export function makeColumnSet<TFactories extends DB3ColumnFactoryMap>(
+    factories: TFactories,
+): DB3ColumnSet<TFactories> {
+    const fields: Record<string, AnyDB3Field> = {};
+    for (const member of Object.keys(factories)) {
+        const field = factories[member]!(member);
+        if (field.member !== member) {
+            throw new Error(
+                `DB3 field factory '${member}' produced runtime member '${field.member}'.`,
+            );
+        }
+        fields[member] = field;
+    }
+
+    // Every mapped value was created by the factory at that exact key and was
+    // checked above to expose the same runtime member. The cast preserves each
+    // concrete factory return type, which Object.keys() otherwise erases.
+    return fields as DB3ColumnSet<TFactories>;
+}
+
 type DB3ReadCodecResult<TField, TSourceValue> =
     TField extends FieldBase<any, infer TCodec>
     ? TCodec extends DB3ReadCodec<infer TTransportValue, infer TClientValue>
@@ -1329,6 +1367,13 @@ export type DB3TypedTableDesc<TFields extends DB3FieldMap> =
     Omit<TableDesc, "columns"> & {
         readonly fields: TFields;
     };
+
+/** Preserves a reusable typed table descriptor before one or more tables use it. */
+export function defineTableDesc<TFields extends DB3FieldMap>(
+    args: DB3TypedTableDesc<TFields>,
+): DB3TypedTableDesc<TFields> {
+    return args;
+}
 
 /** The type-bearing xTable shape returned by defineTable(). */
 export type DB3TypedTable<TFields extends DB3FieldMap> =

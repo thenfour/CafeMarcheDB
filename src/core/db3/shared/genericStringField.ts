@@ -325,7 +325,7 @@ export class GenericStringField extends FieldBase<string> {
 
 export const MakePlainTextField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
-        columnName: columnName,
+        columnName,
         allowNull: false,
         format: "plain",
         authMap: (authSpec as any).authMap || null,
@@ -333,7 +333,7 @@ export const MakePlainTextField = (columnName: string, authSpec: DB3AuthSpec) =>
     }));
 export const MakeNullableRawTextField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
-        columnName: columnName,
+        columnName,
         allowNull: true,
         format: "raw",
         authMap: (authSpec as any).authMap || null,
@@ -341,7 +341,7 @@ export const MakeNullableRawTextField = (columnName: string, authSpec: DB3AuthSp
     }));
 export const MakeRawTextField = (columnName: string, authSpec: DB3AuthSpec, allowNull?: boolean) => (
     new GenericStringField({
-        columnName: columnName,
+        columnName,
         allowNull: CoalesceBool(allowNull, false),
         format: "raw",
         authMap: (authSpec as any).authMap || null,
@@ -358,7 +358,7 @@ export const MakeMarkdownTextField = (columnName: string, authSpec: DB3AuthSpec,
     }));
 export const MakeTitleField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
-        columnName: columnName,
+        columnName,
         allowNull: false,
         format: "title",
         specialFunction: SqlSpecialColumnFunction.name,

@@ -5,7 +5,7 @@ import {
     WikiPageTagAssignmentArgs, WikiPageTagAssignmentNaturalOrderBy, WikiPageTagAssignmentPayload
 } from "./prismArgs";
 import { ForeignSingleField, GhostField, MakeColorField, MakePKfield, MakeSignificanceField, MakeSortOrderField } from "../db3basicFields";
-import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, xTable } from "../db3core";
+import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, defineTable, makeColumnSet } from "../db3core";
 import { MakeDescriptionField, MakeTitleField } from "../genericStringField";
 import { gGeneralPaletteList } from "@/src/core/components/color/palette";
 
@@ -49,7 +49,7 @@ const wikiPageTagAssignmentTableAuthMap: DB3AuthTablePermissionMap = {
 } as const;
 
 //////////////////////////////////////////////////////////////
-export const xWikiPageTag = new xTable({
+export const xWikiPageTag = defineTable({
     getSelectionArgs: (): Prisma.WikiPageTagDefaultArgs => {
         return WikiPageTagArgs;
     },
@@ -73,19 +73,19 @@ export const xWikiPageTag = new xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        MakeTitleField("text", { authMap: wikiPageTagAuthMap }),
-        MakeDescriptionField({ authMap: wikiPageTagAuthMap }),
-        MakeColorField({ authMap: wikiPageTagAuthMap }),
-        MakeSortOrderField({ authMap: wikiPageTagAuthMap }),
-        MakeSignificanceField("significance", WikiPageTagSignificance, { authMap: wikiPageTagAuthMap }),
-        new GhostField({ memberName: "wikiPages", authMap: wikiPageTagAuthMap }),
-    ]
+    fields: makeColumnSet({
+        id: () => MakePKfield(),
+        text: columnName => MakeTitleField(columnName, { authMap: wikiPageTagAuthMap }),
+        description: () => MakeDescriptionField({ authMap: wikiPageTagAuthMap }),
+        color: () => MakeColorField({ authMap: wikiPageTagAuthMap }),
+        sortOrder: () => MakeSortOrderField({ authMap: wikiPageTagAuthMap }),
+        significance: columnName => MakeSignificanceField(columnName, WikiPageTagSignificance, { authMap: wikiPageTagAuthMap }),
+        wikiPages: memberName => new GhostField({ memberName, authMap: wikiPageTagAuthMap }),
+    })
 });
 
 //////////////////////////////////////////////////////////////
-export const xWikiPageTagAssignment = new xTable({
+export const xWikiPageTagAssignment = defineTable({
     tableName: "WikiPageTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: WikiPageTagAssignmentNaturalOrderBy,
@@ -102,15 +102,15 @@ export const xWikiPageTagAssignment = new xTable({
             ownerUserId: null,
         };
     },
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.WikiPageTagGetPayload<{}>>({
-            columnName: "tag",
+    fields: makeColumnSet({
+        id: () => MakePKfield(),
+        tag: columnName => new ForeignSingleField<Prisma.WikiPageTagGetPayload<{}>>({
+            columnName,
             fkidMember: "tagId",
             allowNull: false,
             foreignTableID: "WikiPageTag",
             authMap: wikiPageTagAssignmentAuthMap,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });

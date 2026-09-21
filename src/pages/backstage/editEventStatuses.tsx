@@ -6,18 +6,18 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
 
-const tableSpec = new DB3Client.xTableClientSpec({
+const tableSpec = DB3Client.defineLegacyTableClientSpec({
     table: db3.xEventStatus,
-    columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-        new DB3Client.GenericStringColumnClient({ columnName: "label", cellWidth: 180 }),
-        new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-        new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
-        new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 120 }),
-        new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120 }),
-    ],
+    columns: {
+        id: columnName => new DB3Client.PKColumnClient({ columnName }),
+        isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+        label: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
+        description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+        color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
+        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+        significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120 }),
+        iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120 }),
+    },
 });
 
 

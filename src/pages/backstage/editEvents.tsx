@@ -26,12 +26,12 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 };
 
 const MainContent = () => {
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEvent,
-        columns: [
+        columns: DB3Client.makeClientColumnSelection(
             EventTableClientColumns.id,
             EventTableClientColumns.name,
-            EventTableClientColumns.dateRange,
+            EventTableClientColumns.startsAt,
             //EventTableClientColumns.description,
             EventTableClientColumns.isDeleted,
             EventTableClientColumns.locationDescription,
@@ -52,7 +52,7 @@ const MainContent = () => {
             EventTableClientColumns.frontpageLocation,
             EventTableClientColumns.frontpageLocationURI,
             EventTableClientColumns.frontpageTags,
-        ],
+        ),
     });
 
     return <>

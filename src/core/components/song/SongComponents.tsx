@@ -34,27 +34,27 @@ import { CalculateSongMetadata, GetSongFileInfo, SongWithMetadata } from './Song
 import { SongHistory } from './SongHistory';
 
 
-export const SongClientColumns = {
-    id: new DB3Client.PKColumnClient({ columnName: "id" }),
-    name: new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
+export const SongClientColumns = DB3Client.makeClientColumnSet({
+    id: columnName => new DB3Client.PKColumnClient({ columnName }),
+    name: columnName => new SearchableNameColumnClient({ columnName, cellWidth: 250 }),
     //searchableName: new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
-    aliases: new DB3Client.GenericStringColumnClient({ columnName: "aliases", cellWidth: 180 }),
-    description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-    isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-    startBPM: new DB3Client.GenericIntegerColumnClient({ columnName: "startBPM", cellWidth: 100 }),
-    endBPM: new DB3Client.GenericIntegerColumnClient({ columnName: "endBPM", cellWidth: 100 }),
-    introducedYear: new DB3Client.GenericIntegerColumnClient({ columnName: "introducedYear", cellWidth: 100 }),
-    lengthSeconds: new DB3Client.SongLengthSecondsColumnClient({ columnName: "lengthSeconds", cellWidth: 100, fieldCaption: "Length / duration" }),
-    tags: new DB3Client.TagsFieldClient({ columnName: "tags", cellWidth: 200, allowDeleteFromCell: false }),
-    createdByUser: new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
-    visiblePermission: new DB3Client.ForeignSingleFieldClient({
-        columnName: "visiblePermission", cellWidth: 120, nullItemInfo: {
+    aliases: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
+    description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+    isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+    startBPM: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 100 }),
+    endBPM: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 100 }),
+    introducedYear: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 100 }),
+    lengthSeconds: columnName => new DB3Client.SongLengthSecondsColumnClient({ columnName, cellWidth: 100, fieldCaption: "Length / duration" }),
+    tags: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 200, allowDeleteFromCell: false }),
+    createdByUser: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+    visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({
+        columnName, cellWidth: 120, nullItemInfo: {
             label: "Private",
             color: "red",
             tooltip: "Only you will be able to view this item for now. You can make it public later when you're ready."
         }
     }),
-};
+});
 
 ////////////////////////////////////////////////////////////////
 export interface SongBreadcrumbProps {
@@ -264,16 +264,16 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     const dashboardContext = useDashboardContext();
     const recordFeature = useFeatureRecorder();
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xSongCredit,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "type", cellWidth: 120, }),
-            new DB3Client.GenericStringColumnClient({ columnName: "year", cellWidth: 120 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "comment", cellWidth: 120 }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, visible: false }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            type: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            year: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
+            comment: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
+            song: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, visible: false }),
+        },
     });
 
     const creditsTableClient = DB3Client.useTableRenderContext({

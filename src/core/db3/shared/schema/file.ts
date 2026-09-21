@@ -101,7 +101,7 @@ const authorizeFileServerOwnedField = (args: db3.DB3AuthorizeAndSanitizeInput<TA
 //   }
 
 
-export const xFileTag = new db3.xTable({
+export const xFileTag = db3.defineTable({
     getSelectionArgs: (): Prisma.FileTagDefaultArgs => {
         return FileTagArgs;
     },
@@ -125,19 +125,19 @@ export const xFileTag = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        MakeTitleField("text", { authMap: xFileAuthMap_AdminObjects }),
-        MakeMarkdownTextField("description", { authMap: xFileAuthMap_AdminObjects }),
-        MakeSortOrderField({ authMap: xFileAuthMap_AdminObjects }),
-        MakeColorField({ authMap: xFileAuthMap_AdminObjects }),
-        MakeSignificanceField("significance", FileTagSignificance, { authMap: xFileAuthMap_AdminObjects }),
-        new GhostField({ memberName: "fileAssignments", authMap: xFileAuthMap_AdminObjects }),
-    ]
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        text: columnName => MakeTitleField(columnName, { authMap: xFileAuthMap_AdminObjects }),
+        description: columnName => MakeMarkdownTextField(columnName, { authMap: xFileAuthMap_AdminObjects }),
+        sortOrder: () => MakeSortOrderField({ authMap: xFileAuthMap_AdminObjects }),
+        color: () => MakeColorField({ authMap: xFileAuthMap_AdminObjects }),
+        significance: columnName => MakeSignificanceField(columnName, FileTagSignificance, { authMap: xFileAuthMap_AdminObjects }),
+        fileAssignments: memberName => new GhostField({ memberName, authMap: xFileAuthMap_AdminObjects }),
+    })
 });
 
 
-export const xFileTagAssignment = new db3.xTable({
+export const xFileTagAssignment = db3.defineTable({
     tableName: "FileTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: FileTagAssignmentNaturalOrderBy,
@@ -158,17 +158,17 @@ export const xFileTagAssignment = new db3.xTable({
         };
     }
     ,
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
-            columnName: "fileTag",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        fileTag: columnName => new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
+            columnName,
             fkidMember: "fileTagId",
             allowNull: false,
             foreignTableID: "FileTag",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });
 
 
@@ -192,7 +192,7 @@ export const xFileTagAssignment = new db3.xTable({
 
 
 
-export const xFileUserTag = new db3.xTable({
+export const xFileUserTag = db3.defineTable({
     tableName: "FileUserTag",
     deletePolicy: "hard",
     naturalOrderBy: FileUserTagNaturalOrderBy,
@@ -207,17 +207,17 @@ export const xFileUserTag = new db3.xTable({
             ownerUserId: null,
         };
     },
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.FileUserTagGetPayload<{}>>({
-            columnName: "user",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        user: columnName => new ForeignSingleField<Prisma.FileUserTagGetPayload<{}>>({
+            columnName,
             fkidMember: "userId",
             allowNull: false,
             foreignTableID: "User",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });
 
 
@@ -239,7 +239,7 @@ export const xFileUserTag = new db3.xTable({
 
 
 
-export const xFileSongTag = new db3.xTable({
+export const xFileSongTag = db3.defineTable({
     tableName: "FileSongTag",
     deletePolicy: "hard",
     naturalOrderBy: FileSongTagNaturalOrderBy,
@@ -254,25 +254,25 @@ export const xFileSongTag = new db3.xTable({
             ownerUserId: null,
         };
     },
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.FileGetPayload<{}>>({
-            columnName: "file",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        file: columnName => new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+            columnName,
             fkidMember: "fileId",
             allowNull: false,
             authMap: xFileAuthMap_FileObjects,
             foreignTableID: "File",
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new ForeignSingleField<Prisma.FileSongTagGetPayload<{}>>({
-            columnName: "song",
+        song: columnName => new ForeignSingleField<Prisma.FileSongTagGetPayload<{}>>({
+            columnName,
             fkidMember: "songId",
             allowNull: false,
             authMap: xFileAuthMap_FileObjects,
             foreignTableID: "Song",
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });
 
 
@@ -289,7 +289,7 @@ export const xFileSongTag = new db3.xTable({
 //     @@unique([fileId, eventId]) // 
 //   }
 
-export const xFileEventTag = new db3.xTable({
+export const xFileEventTag = db3.defineTable({
     tableName: "FileEventTag",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -304,25 +304,25 @@ export const xFileEventTag = new db3.xTable({
             ownerUserId: null,
         };
     },
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.EventGetPayload<{}>>({
-            columnName: "event",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        event: columnName => new ForeignSingleField<Prisma.EventGetPayload<{}>>({
+            columnName,
             fkidMember: "eventId",
             allowNull: false,
             foreignTableID: "Event",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new ForeignSingleField<Prisma.FileGetPayload<{}>>({
-            columnName: "file",
+        file: columnName => new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+            columnName,
             fkidMember: "fileId",
             allowNull: false,
             foreignTableID: "File",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });
 
 
@@ -341,7 +341,7 @@ export const xFileEventTag = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-export const xFileInstrumentTag = new db3.xTable({
+export const xFileInstrumentTag = db3.defineTable({
     tableName: "FileInstrumentTag",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -356,17 +356,17 @@ export const xFileInstrumentTag = new db3.xTable({
             ownerUserId: null,
         };
     },
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.FileInstrumentTagGetPayload<{}>>({
-            columnName: "instrument",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        instrument: columnName => new ForeignSingleField<Prisma.FileInstrumentTagGetPayload<{}>>({
+            columnName,
             fkidMember: "instrumentId",
             allowNull: false,
             foreignTableID: "Instrument",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });
 
 
@@ -428,64 +428,64 @@ const xFileBaseArgs = {
         description: row.description,
         ownerUserId: row.uploadedByUserId,
     }),
-    columns: [
-        MakePKfield(),
-        MakeTitleField("fileLeafName", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
-        MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
-        MakeCreatedAtField({ columnName: "uploadedAt" }),
-        MakeIsDeletedField({ authMap: xFileAuthMap_FileObjects, }),
-        new CreatedByUserField({
-            columnName: "uploadedByUser",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        fileLeafName: columnName => MakeTitleField(columnName, { authMap: xFileAuthMap_FileObjects_AdminEdit }),
+        description: () => MakeDescriptionField({ authMap: xFileAuthMap_FileObjects }),
+        uploadedAt: columnName => MakeCreatedAtField({ columnName }),
+        isDeleted: () => MakeIsDeletedField({ authMap: xFileAuthMap_FileObjects, }),
+        uploadedByUser: columnName => new CreatedByUserField({
+            columnName,
             fkidMember: "uploadedByUserId",
             _customAuth: authorizeFileServerOwnedField,
         }),
-        MakeVisiblePermissionField({ authMap: xFileAuthMap_FileObjects }),
+        visiblePermission: () => MakeVisiblePermissionField({ authMap: xFileAuthMap_FileObjects }),
 
-        new GenericIntegerField({
-            columnName: "sizeBytes",
+        sizeBytes: columnName => new GenericIntegerField({
+            columnName,
             allowNull: true,
             allowSearchingThisField: false,
             _customAuth: authorizeFileServerOwnedField,
         }),
-        new GenericStringField({
-            columnName: "storedLeafName",
+        storedLeafName: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             _customAuth: authorizeFileServerOwnedField,
         }),
-        new GenericStringField({
-            columnName: "mimeType",
+        mimeType: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             _customAuth: authorizeFileServerOwnedField,
         }),
-        new GenericStringField({
-            columnName: "externalURI",
+        externalURI: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             authMap: xFileAuthMap_FileObjects,
         }),
-        new GenericStringField({
-            columnName: "customData",
+        customData: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             _customAuth: authorizeFileServerOwnedField,
         }),
-        new DateTimeField({
-            columnName: "fileCreatedAt",
+        fileCreatedAt: columnName => new DateTimeField({
+            columnName,
             allowNull: true,
             authMap: xFileAuthMap_FileObjects,
         }),
-        new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
-            columnName: "previewFile",
+        previewFile: columnName => new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
+            columnName,
             fkidMember: "previewFileId",
             allowNull: true,
             foreignTableID: "File",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
-            columnName: "parentFile",
+        parentFile: columnName => new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
+            columnName,
             fkidMember: "parentFileId",
             allowNull: true,
             foreignTableID: "File",
@@ -493,8 +493,8 @@ const xFileBaseArgs = {
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
-        new TagsField<FileTagAssignmentPayload>({
-            columnName: "tags",
+        tags: columnName => new TagsField<FileTagAssignmentPayload>({
+            columnName,
             associationForeignIDMember: "fileTagId",
             associationForeignObjectMember: "fileTag",
             associationLocalIDMember: "fileId",
@@ -519,8 +519,8 @@ const xFileBaseArgs = {
             },
         }), // column: tags
 
-        new TagsField<FileUserTag>({
-            columnName: "taggedUsers",
+        taggedUsers: columnName => new TagsField<FileUserTag>({
+            columnName,
             associationForeignIDMember: "userId",
             associationForeignObjectMember: "user",
             associationLocalIDMember: "fileId",
@@ -542,8 +542,8 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedUsers
 
-        new TagsField<FileSongTag>({
-            columnName: "taggedSongs",
+        taggedSongs: columnName => new TagsField<FileSongTag>({
+            columnName,
             associationForeignIDMember: "songId",
             associationForeignObjectMember: "song",
             associationLocalIDMember: "fileId",
@@ -565,8 +565,8 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedSongs
 
-        new TagsField<FileEventTag>({
-            columnName: "taggedEvents",
+        taggedEvents: columnName => new TagsField<FileEventTag>({
+            columnName,
             associationForeignIDMember: "eventId",
             associationForeignObjectMember: "event",
             associationLocalIDMember: "fileId",
@@ -588,8 +588,8 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedEvents
 
-        new TagsField<FileInstrumentTag>({
-            columnName: "taggedInstruments",
+        taggedInstruments: columnName => new TagsField<FileInstrumentTag>({
+            columnName,
             associationForeignIDMember: "instrumentId",
             associationForeignObjectMember: "instrument",
             associationLocalIDMember: "fileId",
@@ -611,8 +611,8 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedInstruments
 
-        new TagsField<FileWikiPageTag>({
-            columnName: "taggedWikiPages",
+        taggedWikiPages: columnName => new TagsField<FileWikiPageTag>({
+            columnName,
             associationForeignIDMember: "wikiPageId",
             associationForeignObjectMember: "wikiPage",
             associationLocalIDMember: "fileId",
@@ -634,18 +634,20 @@ const xFileBaseArgs = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedWikiPages
 
-        new GhostField({ memberName: "parentFile", authMap: xFileAuthMap_FileObjects }),
-        new GhostField({ memberName: "childFiles", authMap: xFileAuthMap_FileObjects }),
-        new GhostField({ memberName: "frontpageGalleryItems", authMap: xFileAuthMap_FileObjects }),
-        new GhostField({ memberName: "pinnedForSongs", authMap: xFileAuthMap_FileObjects }),
-        new GhostField({ memberName: "previewFile", authMap: xFileAuthMap_FileObjects }),
-        new GhostField({ memberName: "previewForFile", authMap: xFileAuthMap_FileObjects }),
-    ]
+        // parentFile and previewFile are already the authoritative relation
+        // fields above. The old array repeated them as later GhostFields; those
+        // duplicates could not be addressed independently and are not carried
+        // into the new one-key-per-field contract.
+        childFiles: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
+        frontpageGalleryItems: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
+        pinnedForSongs: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
+        previewForFile: memberName => new GhostField({ memberName, authMap: xFileAuthMap_FileObjects }),
+    })
 
 };
 
-export const xFile = new db3.xTable(xFileBaseArgs);
-export const xFileVerbose = new db3.xTable(xFileBaseArgs);
+export const xFile = db3.defineTable(xFileBaseArgs);
+export const xFileVerbose = db3.defineTable(xFileBaseArgs);
 
 
 
@@ -675,7 +677,7 @@ export const xFrontpageAuthMap_Basic: db3.DB3AuthContextPermissionMap = {
 //     visiblePermissionId Int?
 //     visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 //   }
-export const xFrontpageGalleryItem = new db3.xTable({
+export const xFrontpageGalleryItem = db3.defineTable({
     tableName: "FrontpageGalleryItem",
     deletePolicy: "softOnly",
     viewDeletedPermission: Permission.edit_public_homepage,
@@ -694,53 +696,53 @@ export const xFrontpageGalleryItem = new db3.xTable({
         description: row.caption,
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        MakeIsDeletedField({ authMap: xFrontpageAuthMap_Basic }),
-        MakeSortOrderField({ authMap: xFrontpageAuthMap_Basic }),
-        MakeCreatedByField(),
-        MakeVisiblePermissionField({ authMap: xFrontpageAuthMap_Basic }),
-        new GenericStringField({
-            columnName: "caption",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        isDeleted: () => MakeIsDeletedField({ authMap: xFrontpageAuthMap_Basic }),
+        sortOrder: () => MakeSortOrderField({ authMap: xFrontpageAuthMap_Basic }),
+        createdByUser: () => MakeCreatedByField(),
+        visiblePermission: () => MakeVisiblePermissionField({ authMap: xFrontpageAuthMap_Basic }),
+        caption: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "markdown",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xFrontpageAuthMap_Basic,
         }),
 
-        new GenericStringField({
-            columnName: "caption_nl",
+        caption_nl: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "markdown",
             authMap: xFrontpageAuthMap_Basic,
         }),
-        new GenericStringField({
-            columnName: "caption_fr",
+        caption_fr: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "markdown",
             authMap: xFrontpageAuthMap_Basic,
         }),
-        new GenericStringField({
-            columnName: "displayParams",
+        displayParams: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xFrontpageAuthMap_Basic,
         }),
-        new ForeignSingleField<Prisma.FileGetPayload<{}>>({
-            columnName: "file",
+        file: columnName => new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+            columnName,
             fkidMember: "fileId",
             allowNull: false,
             foreignTableID: "File",
             authMap: xFrontpageAuthMap_Basic,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 
 });
 
 
 ////////////////////////////////////////////////////////////////
-export const xFileWikiPageTag = new db3.xTable({
+export const xFileWikiPageTag = db3.defineTable({
     tableName: "FileWikiPageTag",
     deletePolicy: "hard",
     tableAuthMap: xFileTableAuth_FileObjects,
@@ -755,15 +757,15 @@ export const xFileWikiPageTag = new db3.xTable({
             ownerUserId: null,
         };
     },
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.FileWikiPageTagGetPayload<{}>>({
-            columnName: "wikiPage",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        wikiPage: columnName => new ForeignSingleField<Prisma.FileWikiPageTagGetPayload<{}>>({
+            columnName,
             fkidMember: "wikiPageId",
             allowNull: false,
             foreignTableID: "WikiPage",
             authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });

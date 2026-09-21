@@ -1172,13 +1172,13 @@ export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSon
     const hydratedContent = db3.getEventSongListDraftContent(value);
     const rowItems = [...hydratedContent.items];
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSongList,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+        },
     });
 
     // necessary to connect columns.

@@ -55,34 +55,34 @@ export const xInstrumentFunctionalGroup = db3.defineTable({
         name: input,
         sortOrder: 0,
     }),
-    fields: {
-        id: MakePKfield({ naturalIdVisibility: "sysadmin" }),
-        publicId: MakePublicIdField(),
-        name: MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EAdmins }),
-        description: new GenericStringField({
-            columnName: "description",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield({ naturalIdVisibility: "sysadmin" }),
+        publicId: () => MakePublicIdField(),
+        name: columnName => MakeTitleField(columnName, { authMap: xInstrumentAuthMap_R_EAdmins }),
+        description: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "markdown",
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        color: new ColorField({
-            columnName: "color",
+        color: columnName => new ColorField({
+            columnName,
             allowNull: true,
             palette: gGeneralPaletteList,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        sortOrder: new GenericIntegerField({
-            columnName: "sortOrder",
+        sortOrder: columnName => new GenericIntegerField({
+            columnName,
             allowNull: false,
             allowSearchingThisField: false,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        instruments: new GhostField({ memberName: "instruments", authMap: xInstrumentAuthMap_R_EAdmins }),
-    },
+        instruments: memberName => new GhostField({ memberName, authMap: xInstrumentAuthMap_R_EAdmins }),
+    }),
 });
 
 
-export const xInstrumentTag = new db3.xTable({
+export const xInstrumentTag = db3.defineTable({
     getSelectionArgs: (): Prisma.InstrumentTagDefaultArgs => {
         return InstrumentTagArgs;
     },
@@ -106,45 +106,45 @@ export const xInstrumentTag = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        MakeTitleField("text", { authMap: xInstrumentAuthMap_R_EAdmins }),
-        new GenericStringField({
-            columnName: "description",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        text: columnName => MakeTitleField(columnName, { authMap: xInstrumentAuthMap_R_EAdmins }),
+        description: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "markdown",
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new GenericIntegerField({
-            columnName: "sortOrder",
+        sortOrder: columnName => new GenericIntegerField({
+            columnName,
             allowNull: false,
             allowSearchingThisField: false,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new ColorField({
-            columnName: "color",
+        color: columnName => new ColorField({
+            columnName,
             allowNull: true,
             palette: gGeneralPaletteList,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new ConstEnumStringField({
-            columnName: "significance",
+        significance: columnName => new ConstEnumStringField({
+            columnName,
             allowNull: true,
             defaultValue: null,
             options: InstrumentTagSignificance,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new GhostField({
-            memberName: "instruments",
+        instruments: memberName => new GhostField({
+            memberName,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-    ]
+    })
 });
 
 ////////////////////////////////////////////////////////////////
 
 // this is mostly only in order to define the tags field in xInstruments.
-export const xInstrumentTagAssociation = new db3.xTable({
+export const xInstrumentTagAssociation = db3.defineTable({
     tableName: "InstrumentTagAssociation",
     deletePolicy: "hard",
     getSelectionArgs: (): Prisma.InstrumentTagAssociationDefaultArgs => {
@@ -159,29 +159,29 @@ export const xInstrumentTagAssociation = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.tag?.color || ""),
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        new GhostField({
-            memberName: "instrumentId",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        instrumentId: memberName => new GhostField({
+            memberName,
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
         // do not add the `instrument` column here; this is used only as an association FROM the instrument table; excluding it
         // 1. enforces this purpose (minor)
         // 2. avoids a circular reference to xInstrument (major)
-        new ForeignSingleField<Prisma.InstrumentTagGetPayload<{}>>({
-            columnName: "tag",
+        tag: columnName => new ForeignSingleField<Prisma.InstrumentTagGetPayload<{}>>({
+            columnName,
             fkidMember: "tagId",
             allowNull: false,
             foreignTableID: "InstrumentTag",
             authMap: xInstrumentAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-    ]
+    })
 });
 
 ////////////////////////////////////////////////////////////////
 
-export const xInstrument = new db3.xTable({
+export const xInstrument = db3.defineTable({
     getSelectionArgs: (): Prisma.InstrumentDefaultArgs => {
         return InstrumentArgs;
     },
@@ -197,31 +197,31 @@ export const xInstrument = new db3.xTable({
     }),
     createInsertModelFromString: undefined, // because you must set things like functional group. don't allow simple create.
     tableAuthMap: xInstrumentTableAuthMap,
-    columns: [
-        MakePKfield(),
-        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EAdmins, }),
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        name: columnName => MakeTitleField(columnName, { authMap: xInstrumentAuthMap_R_EAdmins, }),
         // new GenericStringField({
         //     columnName: "slug",
         //     allowNull: false,
         //     format: "plain",
         //     authMap: xInstrumentAuthMap_R_EAdmins,
         // }),
-        new GenericStringField({
-            columnName: "description",
+        description: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "markdown",
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
-        new GenericStringField({
-            columnName: "autoAssignFileLeafRegex",
+        autoAssignFileLeafRegex: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xInstrumentAuthMap_R_EAdmins,
         }),
 
-        MakeSortOrderField({ authMap: xInstrumentAuthMap_R_EAdmins }),
-        new ForeignSingleField<InstrumentFunctionalGroupPayload>({
-            columnName: "functionalGroup",
+        sortOrder: () => MakeSortOrderField({ authMap: xInstrumentAuthMap_R_EAdmins }),
+        functionalGroup: columnName => new ForeignSingleField<InstrumentFunctionalGroupPayload>({
+            columnName,
             fkidMember: "functionalGroupId",
             foreignTableID: "InstrumentFunctionalGroup",
             allowNull: false,
@@ -232,8 +232,8 @@ export const xInstrument = new db3.xTable({
                 }
             }),
         }),
-        new TagsField<InstrumentTagAssociationPayload>({
-            columnName: "instrumentTags",
+        instrumentTags: columnName => new TagsField<InstrumentTagAssociationPayload>({
+            columnName,
             associationForeignIDMember: "tagId",
             associationForeignObjectMember: "tag",
             associationLocalIDMember: "instrumentId",
@@ -254,7 +254,7 @@ export const xInstrument = new db3.xTable({
             }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
         }),
-    ]
+    })
 });
 
 

@@ -33,22 +33,22 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
     const queryArgs = {
         includeDeleted: dashboardContext.isAuthorized(Permission.recover_users),
         view: db3.userEditorView,
-        tableSpec: new DB3Client.xTableClientSpec({
+        tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xUser,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
+            columns: {
+                id: columnName => new DB3Client.PKColumnClient({ columnName }),
+                name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 160 }),
                 //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
-                new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
-                new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
-                new DB3Client.GenericStringColumnClient({ columnName: "cssClass", cellWidth: 150 }),
-                new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
-                new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
-                new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+                email: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
+                phone: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
+                cssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
+                createdAt: columnName => new DB3Client.CreatedAtColumn({ columnName, cellWidth: 200 }),
+                instruments: columnName => new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+                tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
 
                 // required to be able to edit.
-                new DB3Client.ForeignSingleFieldClient<db3.RolePayload>({ columnName: "role", cellWidth: 150 }),
-            ],
+                role: columnName => new DB3Client.ForeignSingleFieldClient<db3.RolePayload>({ columnName, cellWidth: 150 }),
+            },
         }),
         filterModel: {
             pks: [userId]

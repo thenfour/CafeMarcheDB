@@ -5,16 +5,16 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
-const tableSpec = new DB3Client.xTableClientSpec({
+const tableSpec = DB3Client.defineLegacyTableClientSpec({
     table: db3.xWikiPageTag,
-    columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
-        new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-        new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
-        new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 200 }),
-    ],
+    columns: {
+        id: columnName => new DB3Client.PKColumnClient({ columnName }),
+        text: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
+        description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+        color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
+        sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+        significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 200 }),
+    },
 });
 
 const MainContent = () => {

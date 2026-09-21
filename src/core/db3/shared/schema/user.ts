@@ -159,7 +159,7 @@ const xVisibilityPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
 } as const;
 
 
-export const xUserMinimum = new db3.xTable({
+export const xUserMinimum = db3.defineTable({
     getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserMinimumArgs;
     },
@@ -201,51 +201,51 @@ export const xUserMinimum = new db3.xTable({
         }
         return false;
     },
-    columns: [
-        MakePKfield({ isRowOwner: true }),
-        MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
-        MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield({ isRowOwner: true }),
+        createdAt: () => MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
+        isDeleted: () => MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
 
-        new GenericStringField({
-            columnName: "name",
+        name: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserBasicProfileAuthMap,
         }),
-        new GenericStringField({
-            columnName: "email",
+        email: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "email",
             //_customAuth: authorizeUserLoginEmail,
             authMap: xUserEmailAuthMap,
         }),
-        new GenericStringField({
-            columnName: "phone",
+        phone: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "plain",
             authMap: xUserContactInfoAuthMap,
         }),
-        new BoolField({
-            columnName: "isSysAdmin",
+        isSysAdmin: columnName => new BoolField({
+            columnName,
             defaultValue: false,
             authMap: xUserOperationalMetadataAuthMap,
             allowNull: false,
         }),
-        new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "signInMethods", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "mergedIntoUserId", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "mergedAt", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "calendarFeedToken", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "accessToken", _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name
-        new GhostField({ memberName: "uid", _customAuth: denyGenericUserAuthenticationField }),
-    ]
+        hashedPassword: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        signInMethods: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        mergedIntoUserId: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        mergedAt: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        calendarFeedToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        accessToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name
+        uid: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+    })
 });
 
 
 
 
-export const xPermissionBaseArgs: db3.TableDesc = {
+export const xPermissionBaseArgs = db3.defineTableDesc({
     getSelectionArgs: (): Prisma.PermissionDefaultArgs => {
         return PermissionArgs;
     },
@@ -260,28 +260,28 @@ export const xPermissionBaseArgs: db3.TableDesc = {
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        new GenericStringField({
-            columnName: "name",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        name: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xPermissionMetadataAuthMap,
         }),
-        MakeDescriptionField({ authMap: xPermissionMetadataAuthMap }),
-        MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
-        new BoolField({
-            columnName: "isVisibility",
+        description: () => MakeDescriptionField({ authMap: xPermissionMetadataAuthMap }),
+        sortOrder: () => MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
+        isVisibility: columnName => new BoolField({
+            columnName,
             defaultValue: false,
             authMap: xPermissionMetadataAuthMap,
             allowNull: false,
         }),
-        MakeSignificanceField("significance", PermissionSignificance, { authMap: xPermissionMetadataAuthMap }),
-        MakeColorField({ authMap: xPermissionMetadataAuthMap }),
-        MakeIconField("iconName", gIconOptions, { authMap: xPermissionMetadataAuthMap }),
-        new TagsField<RolePermissionAssociationPayload>({
-            columnName: "roles",
+        significance: columnName => MakeSignificanceField(columnName, PermissionSignificance, { authMap: xPermissionMetadataAuthMap }),
+        color: () => MakeColorField({ authMap: xPermissionMetadataAuthMap }),
+        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xPermissionMetadataAuthMap }),
+        roles: columnName => new TagsField<RolePermissionAssociationPayload>({
+            columnName,
             associationForeignIDMember: "roleId",
             associationForeignObjectMember: "role",
             associationLocalIDMember: "permissionId",
@@ -293,12 +293,12 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             authMap: xPermissionMetadataAuthMap,
         }),
 
-    ]
-};
+    })
+});
 
-export const xPermission = new db3.xTable(xPermissionBaseArgs);
+export const xPermission = db3.defineTable(xPermissionBaseArgs);
 
-export const xPermissionForVisibility = new db3.xTable({
+export const xPermissionForVisibility = db3.defineTable({
     ...xPermissionBaseArgs,
     tableUniqueName: "xPermissionForVisibility",
     tableAuthMap: xVisibilityPermissionTableAuthMap,
@@ -324,7 +324,7 @@ export const xPermissionForVisibility = new db3.xTable({
 // then roles are the local object, and permissions are the foreign tags object.
 
 // this schema is required for tags selection dlg.
-export const xRolePermissionAssociation = new db3.xTable({
+export const xRolePermissionAssociation = db3.defineTable({
     tableName: "RolePermission",
     deletePolicy: "disabled",
     getSelectionArgs: (): Prisma.RolePermissionDefaultArgs => {
@@ -338,30 +338,30 @@ export const xRolePermissionAssociation = new db3.xTable({
         description: row.permission?.description || "",
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<PermissionPayload>({
-            columnName: "permission",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        permission: columnName => new ForeignSingleField<PermissionPayload>({
+            columnName,
             fkidMember: "permissionId",
             allowNull: false,
             foreignTableID: "Permission",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xPermissionMetadataAuthMap,
         }),
-        new ForeignSingleField<RolePayload>({
-            columnName: "role",
+        role: columnName => new ForeignSingleField<RolePayload>({
+            columnName,
             fkidMember: "roleId",
             allowNull: false,
             foreignTableID: "Role",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xPermissionMetadataAuthMap,
         }),
-    ]
+    })
 });
 
 ////////////////////////////////////////////////////////////////
 
-export const xRole = new db3.xTable({
+export const xRole = db3.defineTable({
     getSelectionArgs: (): Prisma.RoleDefaultArgs => {
         return RoleArgs;
     },
@@ -383,39 +383,39 @@ export const xRole = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        new GenericStringField({
-            columnName: "name",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        name: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "plain",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xPermissionMetadataAuthMap,
         }),
-        MakeDescriptionField({ authMap: xPermissionMetadataAuthMap }),
-        new BoolField({
-            columnName: "isRoleForNewUsers",
+        description: () => MakeDescriptionField({ authMap: xPermissionMetadataAuthMap }),
+        isRoleForNewUsers: columnName => new BoolField({
+            columnName,
             defaultValue: false,
             _customAuth: authorizeBuiltInRoleFlag("isRoleForNewUsers"),
             allowNull: false,
         }),
-        new BoolField({
-            columnName: "isPublicRole",
+        isPublicRole: columnName => new BoolField({
+            columnName,
             defaultValue: false,
             _customAuth: authorizeBuiltInRoleFlag("isPublicRole"),
             allowNull: false,
         }),
-        new BoolField({
-            columnName: "isSysAdminRole",
+        isSysAdminRole: columnName => new BoolField({
+            columnName,
             defaultValue: false,
             _customAuth: authorizeBuiltInRoleFlag("isSysAdminRole"),
             allowNull: false,
         }),
-        MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
-        MakeColorField({ authMap: xPermissionMetadataAuthMap }),
-        MakeSignificanceField("significance", RoleSignificance, { authMap: xPermissionMetadataAuthMap }),
-        new TagsField<RolePermissionAssociationPayload>({
-            columnName: "permissions",
+        sortOrder: () => MakeSortOrderField({ authMap: xPermissionMetadataAuthMap }),
+        color: () => MakeColorField({ authMap: xPermissionMetadataAuthMap }),
+        significance: columnName => MakeSignificanceField(columnName, RoleSignificance, { authMap: xPermissionMetadataAuthMap }),
+        permissions: columnName => new TagsField<RolePermissionAssociationPayload>({
+            columnName,
             associationForeignIDMember: "permissionId",
             associationForeignObjectMember: "permission",
             associationLocalIDMember: "roleId",
@@ -434,14 +434,14 @@ export const xRole = new db3.xTable({
                 }
             }),
         }),
-    ]
+    })
 });
 
 
 
 
 
-export const xUserInstrument = new db3.xTable({
+export const xUserInstrument = db3.defineTable({
     tableName: "UserInstrument",
     deletePolicy: "hard",
     tableAuthMap: xUserTableAuthMap,
@@ -458,19 +458,19 @@ export const xUserInstrument = new db3.xTable({
             ownerUserId: row.userId,
         };
     },
-    columns: [
-        MakePKfield(),
-        new BoolField({ columnName: "isPrimary", defaultValue: false, authMap: xUserBasicProfileAuthMap, allowNull: false }),
-        new ForeignSingleField<Prisma.UserInstrumentGetPayload<{}>>({ // tags field should include the foreign object (tag object)
-            columnName: "instrument",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        isPrimary: columnName => new BoolField({ columnName, defaultValue: false, authMap: xUserBasicProfileAuthMap, allowNull: false }),
+        instrument: columnName => new ForeignSingleField<Prisma.UserInstrumentGetPayload<{}>>({ // tags field should include the foreign object (tag object)
+            columnName,
             fkidMember: "instrumentId",
             allowNull: false,
             foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xUserBasicProfileAuthMap,
         }),
-        new ForeignSingleField<Prisma.UserGetPayload<{}>>({ // tags field should include the foreign object (tag object)
-            columnName: "user",
+        user: columnName => new ForeignSingleField<Prisma.UserGetPayload<{}>>({ // tags field should include the foreign object (tag object)
+            columnName,
             fkidMember: "userId",
             allowNull: false,
             foreignTableID: "user",
@@ -479,7 +479,7 @@ export const xUserInstrument = new db3.xTable({
             authMap: xUserBasicProfileAuthMap,
         }),
         // don't include local object because of dependencies / redundancy issues
-    ]
+    })
 });
 
 
@@ -498,8 +498,7 @@ export interface UserTagTableParams {
 };
 
 
-const userTagBaseArgs: db3.TableDesc =
-{
+const userTagBaseArgs = db3.defineTableDesc({
     getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
         return UserTagArgs;
     },
@@ -544,28 +543,28 @@ const userTagBaseArgs: db3.TableDesc =
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
-        MakeTitleField("text", { authMap: xUserTaxonomyDefinitionAuthMap }),
-        MakeDescriptionField({ authMap: xUserTaxonomyDefinitionAuthMap }),
-        MakeSortOrderField({ authMap: xUserTaxonomyDefinitionAuthMap }),
-        MakeColorField({ authMap: xUserTaxonomyDefinitionAuthMap }),
-        new GenericStringField({
-            columnName: "cssClass",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        text: columnName => MakeTitleField(columnName, { authMap: xUserTaxonomyDefinitionAuthMap }),
+        description: () => MakeDescriptionField({ authMap: xUserTaxonomyDefinitionAuthMap }),
+        sortOrder: () => MakeSortOrderField({ authMap: xUserTaxonomyDefinitionAuthMap }),
+        color: () => MakeColorField({ authMap: xUserTaxonomyDefinitionAuthMap }),
+        cssClass: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             authMap: xUserTaxonomyDefinitionAuthMap,
         }),
-        MakeSignificanceField("significance", UserTagSignificance, { authMap: xUserTaxonomyDefinitionAuthMap }),
-        new ForeignCollectionField({
-            memberName: "userAssignments",
+        significance: columnName => MakeSignificanceField(columnName, UserTagSignificance, { authMap: xUserTaxonomyDefinitionAuthMap }),
+        userAssignments: memberName => new ForeignCollectionField({
+            memberName,
             foreignTableID: "UserTagAssignment",
             authMap: xUserTaxonomyDefinitionAuthMap,
         }),
-    ]
-};
+    })
+});
 
-export const xUserTag = new db3.xTable(userTagBaseArgs);
+export const xUserTag = db3.defineTable(userTagBaseArgs);
 
 
 
@@ -589,7 +588,7 @@ export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
     }
 }>;
 
-export const xUserTagForEventSearch = new db3.xTable({
+export const xUserTagForEventSearch = db3.defineTable({
     ...userTagBaseArgs,
     tableUniqueName: "xUserTagForEventSearch",
     getSelectionArgs: (): Prisma.UserTagDefaultArgs => {
@@ -614,7 +613,7 @@ export const xUserTagForEventSearch = new db3.xTable({
 
 
 
-export const xUserTagAssignment = new db3.xTable({
+export const xUserTagAssignment = db3.defineTable({
     tableName: "UserTagAssignment",
     deletePolicy: "hard",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
@@ -635,22 +634,22 @@ export const xUserTagAssignment = new db3.xTable({
         };
     }
     ,
-    columns: [
-        MakePKfield(),
-        new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
-            columnName: "userTag",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        userTag: columnName => new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
+            columnName,
             fkidMember: "userTagId",
             allowNull: false,
             foreignTableID: "UserTag",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xUserBasicProfileManagerWriteAuthMap,
         }),
-        new GhostField({
-            memberName: "userId",
+        userId: memberName => new GhostField({
+            memberName,
             specialFunction: db3.SqlSpecialColumnFunction.ownerUser,
             authMap: xUserBasicProfileManagerWriteAuthMap,
         }),
-    ]
+    })
 });
 
 
@@ -686,7 +685,7 @@ export interface UserTablParams {
     userIds?: number[];
 };
 
-const userBaseArgs: db3.TableDesc = {
+const userBaseArgs = db3.defineTableDesc({
     getSelectionArgs: (): Prisma.UserDefaultArgs => {
         return UserSafeArgs;
     },
@@ -721,43 +720,43 @@ const userBaseArgs: db3.TableDesc = {
         }
         return ret;
     },
-    columns: [
-        MakePKfield({ isRowOwner: true }),
-        MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
-        MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
-        new GenericStringField({
-            columnName: "name",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield({ isRowOwner: true }),
+        isDeleted: () => MakeIsDeletedField({ authMap: xUserOperationalMetadataAuthMap }),
+        createdAt: () => MakeCreatedAtField({ authMap: xUserOperationalMetadataAuthMap }),
+        name: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: xUserBasicProfileAuthMap,
         }),
-        new GenericStringField({
-            columnName: "email",
+        email: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "email",
             authMap: xUserEmailAuthMap,
         }),
-        new GenericStringField({
-            columnName: "phone",
+        phone: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "plain",
             authMap: xUserContactInfoAuthMap,
         }),
-        new GenericStringField({
-            columnName: "cssClass",
+        cssClass: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             authMap: xUserPresentationMetadataAuthMap,
         }),
-        new BoolField({
-            columnName: "isSysAdmin",
+        isSysAdmin: columnName => new BoolField({
+            columnName,
             defaultValue: false,
             authMap: xUserOperationalMetadataAuthMap,
             allowNull: false,
         }),
-        new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
-            columnName: "role",
+        role: columnName => new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
+            columnName,
             allowNull: true,
             fkidMember: "roleId",
             foreignTableID: "Role",
@@ -769,8 +768,8 @@ const userBaseArgs: db3.TableDesc = {
                 ]
             }),
         }),
-        new TagsField<UserInstrumentPayload>({
-            columnName: "instruments",
+        instruments: columnName => new TagsField<UserInstrumentPayload>({
+            columnName,
             associationForeignIDMember: "instrumentId",
             associationForeignObjectMember: "instrument",
             associationLocalIDMember: "userId",
@@ -781,8 +780,8 @@ const userBaseArgs: db3.TableDesc = {
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new TagsField<UserTagAssignmentPayload>({
-            columnName: "tags",
+        tags: columnName => new TagsField<UserTagAssignmentPayload>({
+            columnName,
             associationForeignIDMember: "userTagId",
             associationForeignObjectMember: "userTag",
             associationLocalIDMember: "userId",
@@ -807,26 +806,28 @@ const userBaseArgs: db3.TableDesc = {
             },
         }), // column: tags
 
-        new GhostField({ memberName: "signInMethods", _customAuth: denyGenericUserAuthenticationField }),
+        signInMethods: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
 
         // this is not a real db column but allows us to attach auth maps to arbitrary
         // queries like getUserExtraInfo
-        new GhostField({ memberName: "signInMethodSummary", authMap: xUserSignInMetadataAuthMap }),
+        signInMethodSummary: memberName => new GhostField({ memberName, authMap: xUserSignInMetadataAuthMap }),
 
-        MakeUserSignInEmailSearchField(),
-        new GhostField({ memberName: "mergedIntoUserId", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "mergedAt", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "hashedPassword", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "calendarFeedToken", _customAuth: denyGenericUserAuthenticationField }),
-        new GhostField({ memberName: "accessToken", _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name
-        new GhostField({ memberName: "uid", _customAuth: denyGenericUserAuthenticationField }),
-    ]
-};
+        // This search-only field's runtime member is signInEmailSearch; the old
+        // array placement beside email did not make it a second email field.
+        signInEmailSearch: () => MakeUserSignInEmailSearchField(),
+        mergedIntoUserId: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        mergedAt: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        hashedPassword: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        calendarFeedToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+        accessToken: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }), // rejected legacy field name
+        uid: memberName => new GhostField({ memberName, _customAuth: denyGenericUserAuthenticationField }),
+    })
+});
 
-export const xUser = new db3.xTable(userBaseArgs);
+export const xUser = db3.defineTable(userBaseArgs);
 
 
-export const xUserWithInstrument = new db3.xTable({
+export const xUserWithInstrument = db3.defineTable({
     ...userBaseArgs,
     tableUniqueName: "xUserWithInstrument",
     getSelectionArgs: (): Prisma.UserDefaultArgs => {

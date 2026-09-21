@@ -199,18 +199,18 @@ export const CustomLinkList = () => {
         requestedCaps: DB3Client.xTableClientCaps.Query,
         queryView: db3.customLinkListView,
         referenceProvider: dashboardContext.referenceStore,
-        tableSpec: new DB3Client.xTableClientSpec({
+        tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xCustomLink,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 250, fieldCaption: "Name" }),
-                new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 250, visible: true }), // required field but it's distracting to see here.
-                new CustomLinkSlugColumn({ columnName: "slug", fieldCaption: "Slug" }),
-                new DB3Client.GenericStringColumnClient({ columnName: "destinationURL", cellWidth: 250, fieldCaption: "External URL" }),
-                new DB3Client.ConstEnumStringFieldClient({ columnName: "redirectType", cellWidth: 250, getItemInfo }),
-                new DB3Client.MarkdownStringColumnClient({ columnName: "intermediateMessage", cellWidth: 250, visible: true }),
-                new DB3Client.BoolColumnClient({ columnName: "forwardQuery", fieldCaption: "Forward URL parameters?" }),
-            ],
+            columns: {
+                id: columnName => new DB3Client.PKColumnClient({ columnName }),
+                name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "Name" }),
+                description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true }), // required field but it's distracting to see here.
+                slug: columnName => new CustomLinkSlugColumn({ columnName, fieldCaption: "Slug" }),
+                destinationURL: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 250, fieldCaption: "External URL" }),
+                redirectType: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 250, getItemInfo }),
+                intermediateMessage: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 250, visible: true }),
+                forwardQuery: columnName => new DB3Client.BoolColumnClient({ columnName, fieldCaption: "Forward URL parameters?" }),
+            },
         }),
     });
     const commands = DB3Client.useCrudViewCommands({

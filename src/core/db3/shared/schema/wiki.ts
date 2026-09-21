@@ -79,7 +79,7 @@ export const WikiPageNaturalOrderBy: Prisma.WikiPageOrderByWithRelationInput[] =
 ];
 
 ////////////////////////////////////////////////////////////////
-export const xWikiPage = new db3.xTable({
+export const xWikiPage = db3.defineTable({
     getSelectionArgs: (): Prisma.WikiPageDefaultArgs => {
         return WikiPageArgs;
     },
@@ -94,27 +94,27 @@ export const xWikiPage = new db3.xTable({
         ownerUserId: null,
     }),
     tableAuthMap: wikiPageTableAuthMap,
-    columns: [
-        MakePKfield(),
-        MakeCreatedByField(),
-        MakeCreatedAtField(),
-        MakeVisiblePermissionField({ authMap: wikiPageAuthMap, }),
-        new GenericStringField({
-            columnName: "slug",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        createdByUser: () => MakeCreatedByField(),
+        createdAt: () => MakeCreatedAtField(),
+        visiblePermission: () => MakeVisiblePermissionField({ authMap: wikiPageAuthMap, }),
+        slug: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "title",
             specialFunction: db3.SqlSpecialColumnFunction.name,
             authMap: wikiPageAuthMap,
         }),
-        new GenericStringField({
-            columnName: "namespace",
+        namespace: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "plain",
             allowDiscreteCriteria: true,
             authMap: wikiPageAuthMap,
         }),
-        new TagsField<WikiPageTagAssignmentPayload>({
-            columnName: "tags",
+        tags: columnName => new TagsField<WikiPageTagAssignmentPayload>({
+            columnName,
             associationForeignIDMember: "tagId",
             associationForeignObjectMember: "tag",
             associationLocalIDMember: "wikiPageId",
@@ -133,41 +133,41 @@ export const xWikiPage = new db3.xTable({
             }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.WikiPageWhereInput | boolean => false,
         }),
-        new ForeignSingleField<Prisma.WikiPageRevisionGetPayload<{}>>({
-            columnName: "currentRevision",
+        currentRevision: columnName => new ForeignSingleField<Prisma.WikiPageRevisionGetPayload<{}>>({
+            columnName,
             fkidMember: "currentRevisionId",
             allowNull: true,
             foreignTableID: "WikiPageRevision",
             authMap: wikiPageCurrentRevisionAuthMap,
             getQuickFilterWhereClause: () => false,
         }),
-        new GhostField({
+        lockedByUserId: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
-            memberName: "lockedByUserId",
+            memberName,
         }),
-        new GhostField({
+        lockAcquiredAt: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
-            memberName: "lockAcquiredAt",
+            memberName,
         }),
-        new GhostField({
+        lockExpiresAt: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
-            memberName: "lockExpiresAt",
+            memberName,
         }),
-        new GhostField({
+        lastEditPingAt: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
-            memberName: "lastEditPingAt",
+            memberName,
         }),
-        new GhostField({
+        lockId: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
-            memberName: "lockId",
+            memberName,
         }),
-        new GhostField({
+        contentVersion: memberName => new GhostField({
             authMap: wikiPageAdministrationAuthMap,
-            memberName: "contentVersion",
+            memberName,
         }),
 
         // Virtual field for searching wiki page content; hackhack
-        (() => {
+        contentSearch: () => (() => {
             const contentSearchField = new GhostField({
                 authMap: wikiPageAdministrationAuthMap,
                 memberName: "contentSearch",
@@ -186,7 +186,7 @@ export const xWikiPage = new db3.xTable({
 
             return contentSearchField;
         })(),
-    ]
+    })
 });
 
 
@@ -216,7 +216,7 @@ export interface WikiPageRevisionTableParams {
 };
 
 ////////////////////////////////////////////////////////////////
-export const xWikiPageRevision = new db3.xTable({
+export const xWikiPageRevision = db3.defineTable({
     getSelectionArgs: (): Prisma.WikiPageRevisionDefaultArgs => {
         return WikiPageRevisionArgs;
     },
@@ -231,27 +231,27 @@ export const xWikiPageRevision = new db3.xTable({
         ownerUserId: null,
     }),
     tableAuthMap: wikiPageRevisionTableAuthMap,
-    columns: [
-        MakePKfield(),
-        MakeTitleField("name", { authMap: wikiPageRevisionAuthMap, }),
-        MakeCreatedByField(),
-        MakeCreatedAtField(),
-        new GenericStringField({
-            columnName: "content",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        name: columnName => MakeTitleField(columnName, { authMap: wikiPageRevisionAuthMap, }),
+        createdByUser: () => MakeCreatedByField(),
+        createdAt: () => MakeCreatedAtField(),
+        content: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "markdown",
             authMap: wikiPageRevisionAuthMap,
         }),
 
-        new ForeignSingleField<Prisma.WikiPageGetPayload<{}>>({
-            columnName: "wikiPage",
+        wikiPage: columnName => new ForeignSingleField<Prisma.WikiPageGetPayload<{}>>({
+            columnName,
             fkidMember: "wikiPageId",
             allowNull: false,
             foreignTableID: "WikiPage",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: wikiPageRevisionAuthMap,
         }),
-    ]
+    })
 });
 
 

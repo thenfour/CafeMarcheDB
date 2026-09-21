@@ -408,20 +408,20 @@ export const FileEditor = (props: FileEditorProps) => {
 
 
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xFile,
-        columns: [
+        columns: {
             // any columns that I intend to update via doUpdateMutation need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "fileLeafName", cellWidth: 150, fieldCaption: "File name" }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-            new DB3Client.DateTimeColumn({ columnName: "fileCreatedAt" }),
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+            fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150, fieldCaption: "File name" }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 150 }),
+            fileCreatedAt: columnName => new DB3Client.DateTimeColumn({ columnName }),
 
-            new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline' }),
-            new DB3Client.TagsFieldClient<db3.FileInstrumentTagClientPayload>({
-                columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
+            tags: columnName => new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline' }),
+            taggedInstruments: columnName => new DB3Client.TagsFieldClient<db3.FileInstrumentTagClientPayload>({
+                columnName, cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileInstrumentTagClientPayload, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
                     const fg = dashboardContext.instrumentFunctionalGroup.getById(association.instrument.functionalGroupId);
@@ -429,10 +429,10 @@ export const FileEditor = (props: FileEditorProps) => {
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
             }),
-            new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName: "taggedUsers", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName: "taggedSongs", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({
-                columnName: "taggedEvents",
+            taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedEvents: columnName => new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({
+                columnName,
                 cellWidth: 150,
                 allowDeleteFromCell: false,
                 renderAsChip: (args) => {
@@ -445,8 +445,8 @@ export const FileEditor = (props: FileEditorProps) => {
                     return <EventChip renderAsLink={false} value={value.event} />;
                 }
             }),
-            new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName: "taggedWikiPages", cellWidth: 150, allowDeleteFromCell: false }),
-        ],
+            taggedWikiPages: columnName => new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+        },
     });
     const tableRenderClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,

@@ -9,13 +9,13 @@ import * as db3 from "src/core/db3/db3";
 const InstrumentFunctionalGroupListContent = () => {
     const tableSpec = DB3Client.defineTableClientSpec({
         view: db3.instrumentFunctionalGroupEditorView,
-        columns: [
-            new DB3Client.PublicIdColumnClient(),
-            new DB3Client.GenericStringColumnClient<"name">({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.MarkdownStringColumnClient<"description">({ columnName: "description", cellWidth: 300 }),
-            new DB3Client.ColorColumnClient<"color">({ columnName: "color", cellWidth: 300 }),
-            new DB3Client.GenericIntegerColumnClient<"sortOrder">({ columnName: "sortOrder", cellWidth: 80 }),
-        ],
+        columns: {
+            publicId: () => new DB3Client.PublicIdColumnClient(),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 300 }),
+            color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 300 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+        },
     });
 
     // const tableRenderClient = DB3Client.useTableRenderContext({

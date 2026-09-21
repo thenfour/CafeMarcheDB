@@ -29,7 +29,7 @@ export interface ChangeTableParams {
     recordId?: number | null;
 };
 
-export const xChange = new db3.xTable({
+export const xChange = db3.defineTable({
     tableName: "Change",
     deletePolicy: "disabled",
     queryParameters: {
@@ -81,67 +81,67 @@ export const xChange = new db3.xTable({
         name: `${row.id}`,
         ownerUserId: null,
     }),
-    columns: [
-        MakePKfield(),
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
 
-        new GenericStringField({
-            columnName: "action",
+        action: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new GenericStringField({
-            columnName: "context",
+        context: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new GenericStringField({
-            columnName: "operationId",
+        operationId: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new GenericStringField({
-            columnName: "table",
+        table: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new GenericIntegerField({
-            columnName: "recordId",
+        recordId: columnName => new GenericIntegerField({
+            columnName,
             allowNull: false,
             authMap: xSysadminColumnAuthMap,
         }),
 
 
-        new GenericStringField({
-            columnName: "sessionHandle",
+        sessionHandle: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new GenericStringField({
-            columnName: "oldValues",
+        oldValues: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new GenericStringField({
-            columnName: "newValues",
+        newValues: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-            columnName: "user",
+        user: columnName => new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName,
             fkidMember: "userId",
             allowNull: false,
             foreignTableID: "User",
@@ -149,10 +149,10 @@ export const xChange = new db3.xTable({
             authMap: xSysadminColumnAuthMap,
         }),
 
-        new GhostField({
+        changedAt: memberName => new GhostField({
             authMap: xSysadminColumnAuthMap,
-            memberName: "changedAt",
+            memberName,
         }),
 
-    ]
+    })
 });

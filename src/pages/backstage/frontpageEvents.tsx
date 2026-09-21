@@ -23,11 +23,11 @@ const EventsList = () => {
     };
 
     const eventsClient = DB3Client.useTableRenderContext({
-        tableSpec: new DB3Client.xTableClientSpec({
+        tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xEventVerbose,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
+            columns: {
+                id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            },
         }),
         filterModel: {
         },

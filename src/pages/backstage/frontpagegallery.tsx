@@ -594,20 +594,20 @@ const MainContent = () => {
     const recordFeature = useFeatureRecorder();
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xFrontpageGalleryItem,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
             // fields which are editable through db3mutation need to be specified here.
-            new DB3Client.ForeignSingleFieldClient({ columnName: "file", cellWidth: 120 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "caption", cellWidth: 120 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "caption_nl", cellWidth: 120 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "caption_fr", cellWidth: 120 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
-        ],
+            file: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+            caption: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
+            caption_nl: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
+            caption_fr: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 120 }),
+            displayParams: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
+            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120 }),
+        },
     });
 
     const client = DB3Client.useTableRenderContext({

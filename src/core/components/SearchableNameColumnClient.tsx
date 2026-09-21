@@ -13,11 +13,10 @@ export interface TextInputWithSearchProps extends CMTextInputBaseProps {
 export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
     const searchQuery = props.value || "";
 
-
-
-
+    // i'm almost certain the only columnName used here is `name`;
+    // hard-coding that and asserting it in callers can allow use of the newer style table clients.
     const songsClient = DB3Client.useTableRenderContext({
-        tableSpec: new DB3Client.xTableClientSpec({
+        tableSpec: DB3Client.defineLegacyDynamicTableClientSpec({
             table: props.schema,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),

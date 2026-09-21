@@ -2,10 +2,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { DateTimeRange, Timing } from "shared/time"
 
-vi.mock("src/core/db3/DB3Client", () => Object.fromEntries([
-  "PKColumnClient", "GenericStringColumnClient", "EventDateRangeColumn", "BoolColumnClient", "ForeignSingleFieldClient",
-  "ConstEnumStringFieldClient", "TagsFieldClient", "CreatedAtColumn", "MarkdownStringColumnClient",
-].map(name => [name, class {}])))
+vi.mock("src/core/db3/DB3Client", () => ({
+  ...Object.fromEntries([
+    "PKColumnClient", "GenericStringColumnClient", "EventDateRangeColumn", "BoolColumnClient", "ForeignSingleFieldClient",
+    "ConstEnumStringFieldClient", "TagsFieldClient", "CreatedAtColumn", "MarkdownStringColumnClient",
+  ].map(name => [name, class {}])),
+  makeClientColumnSet: (factories: Record<string, (columnName: string) => unknown>) => Object.fromEntries(
+    Object.entries(factories).map(([columnName, factory]) => [columnName, factory(columnName)]),
+  ),
+}))
 vi.mock("src/core/db3/components/DB3ClientCore", () => ({}))
 vi.mock("src/core/db3/clientAPI", () => ({ API: { events: {} } }))
 vi.mock("src/core/components/dashboardContext/DashboardContext", () => ({ useDashboardContext: () => context }))

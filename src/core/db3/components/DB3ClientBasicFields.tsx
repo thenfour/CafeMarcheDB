@@ -1066,7 +1066,7 @@ export const useInsertMutationClient = (schema: db3.xTable, enabled = true) => {
         requestedCaps: enabled
             ? DB3ClientCore.xTableClientCaps.Mutation
             : DB3ClientCore.xTableClientCaps.None,
-        tableSpec: new DB3ClientCore.xTableClientSpec({
+        tableSpec: DB3ClientCore.defineLegacyDynamicTableClientSpec({
             table: schema,
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
         }),
@@ -1119,7 +1119,7 @@ export function useDb3Query(
     const schema = "view" in args ? args.view.entity.schema : args.schema;
     const mutationCtx = DB3ClientCore.useTableRenderContext({
         requestedCaps: args.requestedCaps ?? DB3ClientCore.xTableClientCaps.Query,
-        tableSpec: args.tableSpec ?? new DB3ClientCore.xTableClientSpec({
+        tableSpec: args.tableSpec ?? DB3ClientCore.defineLegacyDynamicTableClientSpec({
             table: schema,
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
         }),
@@ -1136,7 +1136,7 @@ export const useDb3Update = <Trow extends TAnyModel,>(schema: db3.xTable) => {
     const ctx = useDashboardContext();
     const mutationCtx = DB3ClientCore.useTableRenderContext<Trow>({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
-        tableSpec: new DB3ClientCore.xTableClientSpec({
+        tableSpec: DB3ClientCore.defineLegacyDynamicTableClientSpec({
             table: schema,
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
         }),

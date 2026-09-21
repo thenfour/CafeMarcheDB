@@ -713,9 +713,14 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
 
     const groupTableClient = DB3Client.useCrudTableRenderContext({
         view: db3.setlistPlanGroupEditorView,
-        tableSpec: new DB3Client.xTableClientSpec({
+        tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xSetlistPlanGroup,
-            columns: Object.values(SetlistPlanGroupClientColumns),
+            columns: DB3Client.makeClientColumnSelection(
+                SetlistPlanGroupClientColumns.id,
+                SetlistPlanGroupClientColumns.name,
+                SetlistPlanGroupClientColumns.description,
+                SetlistPlanGroupClientColumns.color,
+            ),
         }),
     });
 

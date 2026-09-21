@@ -22,27 +22,27 @@ const UserListContent: React.FC<{}> = () => {
     const dashboardContext = useDashboardContext();
     //const lifecycle = useUserLifecycleActions();
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xUser,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
 
             // isDeleted should require continuity checks and dedicated lifecycle actions.
             // but this adds complexity to the grid capabilities; as this is sysadmin maintenance only,
             // leave as-is.
-            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 160 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "cssClass", cellWidth: 150 }),
-            new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
-            makeDisplayOnlyColumn(new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" })),
+            email: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
+            phone: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 120 }),
+            cssClass: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
+            createdAt: columnName => new DB3Client.CreatedAtColumn({ columnName, cellWidth: 200 }),
+            isSysAdmin: columnName => makeDisplayOnlyColumn(new DB3Client.BoolColumnClient({ columnName })),
             //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
-            new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, })),
-        ],
+            instruments: columnName => new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            tags: columnName => new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            role: columnName => makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, })),
+        },
     });
 
     const extraActions = (args: DB3EditGridExtraActionsArgs) => {

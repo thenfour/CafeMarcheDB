@@ -13,18 +13,18 @@ const Inner = () => {
 
     const codePermissions = gPermissionOrdered;
 
-    const PermissionClientSchema = new DB3Client.xTableClientSpec({
+    const PermissionClientSchema = DB3Client.defineLegacyTableClientSpec({
         table: db3.xPermission,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-            new DB3Client.BoolColumnClient({ columnName: "isVisibility" }),
-            new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 120 }),
-            new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 120 }),
-            new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120 }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+            isVisibility: columnName => new DB3Client.BoolColumnClient({ columnName }),
+            significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120 }),
+            color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 120 }),
+            iconName: columnName => new DB3Client.IconFieldClient({ columnName, cellWidth: 120 }),
+        },
     });
 
     const dbps = dashboardContext.permission.items;

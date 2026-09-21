@@ -150,12 +150,12 @@ export const OwnInstrumentsControl = () => {
     const recordFeature = useFeatureRecorder();
     const tableClient = DB3Client.useCrudTableRenderContext({
         view: db3.userEditorView,
-        tableSpec: new DB3Client.xTableClientSpec({
+        tableSpec: DB3Client.defineLegacyTableClientSpec({
             table: db3.xUser,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
-            ],
+            columns: {
+                id: columnName => new DB3Client.PKColumnClient({ columnName }),
+                instruments: columnName => new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            },
         }),
         filterModel: {
             tableParams: {

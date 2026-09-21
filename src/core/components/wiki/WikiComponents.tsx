@@ -78,11 +78,11 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
     const wikiPageId = props.wikiPageApi.currentPageData?.wikiPage?.id
     if (!wikiPageId) return null;
 
-    const tagsTableSpec = React.useMemo(() => new DB3Client.xTableClientSpec({
+    const tagsTableSpec = React.useMemo(() => DB3Client.defineLegacyTableClientSpec({
         table: db3.xWikiPage,
-        columns: [
-            new DB3Client.TagsFieldClient<db3.WikiPageTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags" }),
-        ],
+        columns: {
+            tags: columnName => new DB3Client.TagsFieldClient<db3.WikiPageTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags" }),
+        },
     }), []);
 
     const filterModel = React.useMemo(() => ({

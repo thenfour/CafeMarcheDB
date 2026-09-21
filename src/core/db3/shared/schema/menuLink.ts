@@ -40,7 +40,7 @@ export const MenuLinkNaturalOrderBy: Prisma.MenuLinkOrderByWithRelationInput[] =
 ];
 
 ////////////////////////////////////////////////////////////////
-export const xMenuLink = new db3.xTable({
+export const xMenuLink = db3.defineTable({
     getSelectionArgs: (): Prisma.MenuLinkDefaultArgs => {
         return MenuLinkArgs;
     },
@@ -57,66 +57,66 @@ export const xMenuLink = new db3.xTable({
         ownerUserId: row.createdByUserId,
     }),
     tableAuthMap: xTableAuthMap,
-    columns: [
-        MakePKfield(),
-        MakeIconField("iconName", gIconOptions, { authMap: xAuthMap, }),
-        MakeSortOrderField({ authMap: xAuthMap, }),
-        MakeCreatedAtField({}),
-        MakeCreatedByField(),
-        MakeVisiblePermissionField({ authMap: xAuthMap }),
-        MakeTitleField("caption", { authMap: xAuthMap, }),
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        iconName: columnName => MakeIconField(columnName, gIconOptions, { authMap: xAuthMap, }),
+        sortOrder: () => MakeSortOrderField({ authMap: xAuthMap, }),
+        createdAt: () => MakeCreatedAtField({}),
+        createdByUser: () => MakeCreatedByField(),
+        visiblePermission: () => MakeVisiblePermissionField({ authMap: xAuthMap }),
+        caption: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
 
-        new ConstEnumStringField({
-            columnName: "realm",
+        realm: columnName => new ConstEnumStringField({
+            columnName,
             allowNull: true,
             defaultValue: DynamicMenuLinkRealm.General,
             options: DynamicMenuLinkRealm,
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "groupName",
+        groupName: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "groupCssClass",
+        groupCssClass: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "itemCssClass",
+        itemCssClass: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "raw",
             authMap: xAuthMap,
         }),
-        new ConstEnumStringField({
-            columnName: "linkType",
+        linkType: columnName => new ConstEnumStringField({
+            columnName,
             allowNull: false,
             defaultValue: DynamicMenuLinkType.ExternalURL,
             options: DynamicMenuLinkType,
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "externalURI",
+        externalURI: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "uri",
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "applicationPage",
+        applicationPage: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "plain",
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "wikiSlug",
+        wikiSlug: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "raw",
             authMap: xAuthMap,
         }),
-    ]
+    })
 });
 
 

@@ -29,13 +29,13 @@ import { CMButton } from "../CMCoreComponents2";
 
 
 
-export const EventSegmentClientColumns = {
-    "id": new DB3Client.PKColumnClient({ columnName: "id" }),
-    "name": new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
-    "description": new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, fieldCaption: "Description" }),
-    "dateRange": new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range" }),
-    "event": new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, visible: false }),
-} as const;
+export const EventSegmentClientColumns = DB3Client.makeClientColumnSet({
+    id: columnName => new DB3Client.PKColumnClient({ columnName }),
+    name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 180 }),
+    description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Description" }),
+    startsAt: columnName => new DB3Client.EventDateRangeColumn({ startsAtColumnName: columnName, headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range" }),
+    event: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, visible: false }),
+});
 
 
 
@@ -68,16 +68,16 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
     //const currentUser = useCurrentUser()[0]!;
     const dashboardContext = useDashboardContext();
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegment,
-        columns: [
+        columns: DB3Client.makeClientColumnSelection(
             EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
             EventTableClientColumns.status,
-            EventSegmentClientColumns.dateRange,
+            EventSegmentClientColumns.startsAt,
             EventSegmentClientColumns.description,
             EventSegmentClientColumns.event,
-        ],
+        ),
     });
     const tableRenderClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.None,

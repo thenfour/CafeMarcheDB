@@ -32,23 +32,27 @@ export const NewSongButton = () => {
     })();
 
     // song table bindings
-    const songTableSpec = new DB3Client.xTableClientSpec({
+    const songTableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xSong,
-        columns: [
-            SongClientColumns.id,
-            SongClientColumns.name,
-            //new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
-            SongClientColumns.aliases,
-            //SongClientColumns.slug,
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, visible: false }), // required field but it's distracting to see here.
-            SongClientColumns.startBPM,
-            SongClientColumns.endBPM,
-            SongClientColumns.introducedYear,
-            SongClientColumns.lengthSeconds,
-            SongClientColumns.tags,
-            //SongClientColumns.createdByUser,
-            SongClientColumns.visiblePermission,
-        ],
+        columns: {
+            ...DB3Client.makeClientColumnSelection(
+                SongClientColumns.id,
+                SongClientColumns.name,
+                //new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
+                SongClientColumns.aliases,
+                //SongClientColumns.slug,
+            ),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200, visible: false }), // required field but it's distracting to see here.
+            ...DB3Client.makeClientColumnSelection(
+                SongClientColumns.startBPM,
+                SongClientColumns.endBPM,
+                SongClientColumns.introducedYear,
+                SongClientColumns.lengthSeconds,
+                SongClientColumns.tags,
+                //SongClientColumns.createdByUser,
+                SongClientColumns.visiblePermission,
+            ),
+        },
     });
 
     // necessary to connect all the columns in the spec.

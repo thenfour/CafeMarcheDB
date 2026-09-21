@@ -11,21 +11,21 @@ import * as DB3Client from "src/core/db3/DB3Client";
 const InstrumentListContent = () => {
     const router = useRouter();
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xInstrument,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "autoAssignFileLeafRegex", cellWidth: 200, fieldCaption: "Regex" }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-            new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupClientPayload>({
-                columnName: "functionalGroup",
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            autoAssignFileLeafRegex: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200, fieldCaption: "Regex" }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+            functionalGroup: columnName => new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupClientPayload>({
+                columnName,
                 cellWidth: 200,
                 selectionView: db3.instrumentFunctionalGroupEditorView,
             }),
-            new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName: "instrumentTags", cellWidth: 220, allowDeleteFromCell: false }),
-        ],
+            instrumentTags: columnName => new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName, cellWidth: 220, allowDeleteFromCell: false }),
+        },
     });
 
 

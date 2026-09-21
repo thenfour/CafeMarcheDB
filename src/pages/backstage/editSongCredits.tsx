@@ -11,14 +11,14 @@ const MainContent = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const songId: number | null = parseIntOrNull(urlParams.get('songId'));
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xSongCredit,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "type", cellWidth: 120, }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            song: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+            type: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
+        },
     });
 
     return <>

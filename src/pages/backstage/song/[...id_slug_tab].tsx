@@ -25,9 +25,9 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
 
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xSong,
-        columns: [
+        columns: DB3Client.makeClientColumnSelection(
             SongClientColumns.id,
             SongClientColumns.name,
             SongClientColumns.aliases,
@@ -37,7 +37,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
             SongClientColumns.lengthSeconds,
             SongClientColumns.tags,
             SongClientColumns.visiblePermission,
-        ],
+        ),
     });
 
     const tableClient = DB3Client.useDb3Query({

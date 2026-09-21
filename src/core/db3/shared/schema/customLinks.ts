@@ -52,7 +52,7 @@ export const CustomLinkRedirectType = {
 
 
 ////////////////////////////////////////////////////////////////
-export const xCustomLink = new db3.xTable({
+export const xCustomLink = db3.defineTable({
     getSelectionArgs: (): Prisma.CustomLinkDefaultArgs => {
         return CustomLinkArgs;
     },
@@ -67,48 +67,48 @@ export const xCustomLink = new db3.xTable({
         ownerUserId: row.createdByUserId,
     }),
     tableAuthMap: xTableAuthMap,
-    columns: [
-        MakePKfield(),
-        MakeTitleField("name", { authMap: xAuthMap, }),
-        MakeDescriptionField({ authMap: xAuthMap, }),
-        MakeCreatedAtField(),
-        MakeCreatedByField(),
-        new GenericStringField({
-            columnName: "slug",
+    fields: db3.makeColumnSet({
+        id: () => MakePKfield(),
+        name: columnName => MakeTitleField(columnName, { authMap: xAuthMap, }),
+        description: () => MakeDescriptionField({ authMap: xAuthMap, }),
+        createdAt: () => MakeCreatedAtField(),
+        createdByUser: () => MakeCreatedByField(),
+        slug: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "customLinkSlug",
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "destinationURL",
+        destinationURL: columnName => new GenericStringField({
+            columnName,
             allowNull: false,
             format: "uri",
             authMap: xAuthMap,
         }),
-        new ConstEnumStringField({
-            columnName: "redirectType",
+        redirectType: columnName => new ConstEnumStringField({
+            columnName,
             allowNull: true,
             defaultValue: CustomLinkRedirectType.Temporary,
             options: CustomLinkRedirectType,
             authMap: xAuthMap,
         }),
-        new GenericStringField({
-            columnName: "intermediateMessage",
+        intermediateMessage: columnName => new GenericStringField({
+            columnName,
             allowNull: true,
             format: "markdown",
             authMap: xAuthMap,
         }),
-        new BoolField({
-            columnName: "forwardQuery",
+        forwardQuery: columnName => new BoolField({
+            columnName,
             defaultValue: true,
             allowNull: false,
             authMap: xAuthMap,
         }),
-        new GhostField({
+        _count: memberName => new GhostField({
             authMap: xAuthMap,
-            memberName: "_count",
+            memberName,
         }),
-    ]
+    })
 });
 
 

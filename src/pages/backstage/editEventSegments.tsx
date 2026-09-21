@@ -24,16 +24,16 @@ const MainContent = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xEventSegment,
-        columns: [
+        columns: DB3Client.makeClientColumnSelection(
             EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
             EventTableClientColumns.status, // ya
-            EventSegmentClientColumns.dateRange,
+            EventSegmentClientColumns.startsAt,
             EventSegmentClientColumns.description,
             EventSegmentClientColumns.event,
-        ],
+        ),
     });
 
     return <>

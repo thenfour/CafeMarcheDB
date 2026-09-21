@@ -93,14 +93,17 @@ the natural database primary-key member.
 The entity/view work is being introduced around `xTable`, not by replacing all
 of it at once.
 
-New tables can use `defineTable({ fields: { ... } })`. The keyed field map is
-the compile-time authority for column names while `xTable.columns` remains its
-ordered runtime representation. A field whose database/DTO value differs from
-its client value declares a `DB3ReadCodec<Transport, Client>` next to the runtime
-conversion. `DB3SchemaClientModel<Dto, Fields>` applies those declarations to a
-DTO while preserving its optional members. Legacy `new xTable({ columns })`
-definitions remain runtime-only and intentionally do not gain inferred keys or
-conversion results.
+Tables use `defineTable({ fields: makeColumnSet({ ... }) })`. The object key is
+the single source of each field name: `makeColumnSet()` supplies it to the field
+factory, verifies the resulting runtime member, and preserves object insertion
+order in `xTable.columns`. The keyed field map is therefore the compile-time
+authority while `xTable.columns` remains the ordered runtime representation. A
+field whose database/DTO value differs from its client value declares a
+`DB3ReadCodec<Transport, Client>` next to the runtime conversion.
+`DB3SchemaClientModel<Dto, Fields>` applies those declarations to a DTO while
+preserving its optional members. The historical `new xTable({ columns })`
+constructor shape remains only as an explicit runtime-only compatibility path;
+in-tree schema declarations no longer use it.
 
 Domain-specific query behavior belongs with the table/entity or view that owns
 it, not in DB3 core. `CMDBTableFilterModel.tableParams` is the transitional
@@ -411,12 +414,20 @@ similar to `useTableRenderContext()`, plus a CRUD-enabled view. It:
 - owns the conventional refetch and invalidation lifecycle.
 
 The new `defineTableClientSpec({ view, columns })` path binds presentation to the
-same concrete view. Every column name and its declared client value type are
-checked against `ClientOf<TView>`, and the view type continues through
-`DB3EditGrid`, its row callbacks, and `xTableRenderClient`. The historical
-`new xTableClientSpec({ table, columns })` constructor remains an explicitly
-table-only migration path and carries no view-derived typing. A runtime guard
-also rejects pairing a view-bound spec with a different CRUD view.
+same concrete view. Its keyed factories receive the object key as their runtime
+column name, and every key and declared client value type is checked against
+`ClientOf<TView>`. Reusable declarations use `makeClientColumnSet()` for the
+same single-name contract. Table-only callers use the explicitly named
+`defineLegacyTableClientSpec()`, which checks field keys but deliberately carries
+no view-derived row type. The few callers whose schema or column name is chosen
+at runtime use `defineLegacyDynamicTableClientSpec()` and receive no static key
+validation. Direct construction is deprecated. A runtime guard also rejects
+pairing a view-bound spec with a different CRUD view.
+
+Propagating the spec's `TView` through the general `useTableRenderContext()`
+return type remains separate work; until then that legacy hook still defaults
+its `items` to `TAnyModel[]`. The command-backed CRUD hook already returns
+`xTableRenderClient<ClientOf<TView>>`.
 
 `DB3EditGrid` should use that hook internally. The ordinary call site remains
 limited to presentation metadata and the semantic view:
@@ -722,6 +733,12 @@ a per-row compatibility flag or a second lookup mode.
   `InstrumentFunctionalGroup` pilot. Its `color` member is inferred as
   `ColorPaletteEntry | null | undefined`, while its table keys and public-ID
   identity remain statically checked.
+- All in-tree `xTable` declarations now use keyed `makeColumnSet()` factories,
+  and fixed-name TableClient declarations use keyed client factories. Reusable
+  column sets follow the same contract. Composite event date-range columns are
+  keyed by their actual primary field, `startsAt`, while companion fields remain
+  explicit configuration. Runtime-selected legacy clients are separately named
+  and intentionally retain no inferred key or row contract.
 - Event timing proves hydration into a behavioral `DateTimeRange` value rather
   than merely renaming fields.
 - Event song lists prove collection reshaping and a separate write model:
@@ -1188,6 +1205,10 @@ boundary safely.
   - [x] Add keyed typed-table construction, field-level read codecs, inferred
     DTO-to-client results, and a view-bound TableClient spec; prove them with
     `InstrumentFunctionalGroup` and its public identity.
+  - [x] Convert in-tree table and fixed-name client-column declarations to keyed
+    factories so each field/column name is written once and checked.
+  - [ ] Propagate `TView` through the general `useTableRenderContext()` result so
+    view-bound specs expose `ClientOf<TView>[]` without an explicit row generic.
 - [ ] Infer and validate typed view-specific query parameters instead of exposing
   untyped `tableParams` to callers.
 - [ ] Generalize public-ID translation for association/tag mutation commands

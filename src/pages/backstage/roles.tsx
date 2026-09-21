@@ -92,17 +92,17 @@ const BuiltInRoleAssignments = () => {
 };
 
 const MainContent = () => {
-    const RoleClientSchema = new DB3Client.xTableClientSpec({
+    const RoleClientSchema = DB3Client.defineLegacyTableClientSpec({
         table: db3.xRole,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-            new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 120 }),
-            new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 120 }),
-            new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 300, allowDeleteFromCell: false }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            name: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 200 }),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 200 }),
+            sortOrder: columnName => new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 }),
+            color: columnName => new DB3Client.ColorColumnClient({ columnName, cellWidth: 120 }),
+            significance: columnName => new DB3Client.ConstEnumStringFieldClient({ columnName, cellWidth: 120 }),
+            permissions: columnName => new DB3Client.TagsFieldClient({ columnName, cellWidth: 300, allowDeleteFromCell: false }),
+        },
     });
 
     return <>

@@ -13,28 +13,28 @@ const makeDisplayOnlyColumn = <T extends DB3Client.IColumnClient>(column: T): T 
 };
 
 const MainContent = () => {
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xFile,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "fileLeafName", cellWidth: 150 }),
-            makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName: "storedLeafName", cellWidth: 150 })),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-            makeDisplayOnlyColumn(new DB3Client.CreatedAtColumn({ columnName: "uploadedAt", cellWidth: 150 })),
-            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-            makeDisplayOnlyColumn(new DB3Client.GenericIntegerColumnClient({ columnName: "sizeBytes", cellWidth: 80 })),
-            makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName: "customData", cellWidth: 150 })),
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            fileLeafName: columnName => new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 }),
+            storedLeafName: columnName => makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 })),
+            description: columnName => new DB3Client.MarkdownStringColumnClient({ columnName, cellWidth: 150 }),
+            uploadedAt: columnName => makeDisplayOnlyColumn(new DB3Client.CreatedAtColumn({ columnName, cellWidth: 150 })),
+            isDeleted: columnName => new DB3Client.BoolColumnClient({ columnName }),
+            sizeBytes: columnName => makeDisplayOnlyColumn(new DB3Client.GenericIntegerColumnClient({ columnName, cellWidth: 80 })),
+            customData: columnName => makeDisplayOnlyColumn(new DB3Client.GenericStringColumnClient({ columnName, cellWidth: 150 })),
 
-            makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName: "uploadedByUser", cellWidth: 120, })),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, }),
+            uploadedByUser: columnName => makeDisplayOnlyColumn(new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, })),
+            visiblePermission: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 120, }),
 
-            new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName: "taggedUsers", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName: "taggedSongs", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({ columnName: "taggedEvents", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileInstrumentTagPayload>({ columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName: "taggedWikiPages", cellWidth: 150, allowDeleteFromCell: false }),
-        ],
+            tags: columnName => new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedUsers: columnName => new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedSongs: columnName => new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedEvents: columnName => new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedInstruments: columnName => new DB3Client.TagsFieldClient<db3.FileInstrumentTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+            taggedWikiPages: columnName => new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName, cellWidth: 150, allowDeleteFromCell: false }),
+        },
     });
 
     return <>

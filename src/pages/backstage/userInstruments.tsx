@@ -7,14 +7,14 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 
 const MainContent = () => {
-    const tableSpec = new DB3Client.xTableClientSpec({
+    const tableSpec = DB3Client.defineLegacyTableClientSpec({
         table: db3.xUserInstrument,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 180, }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 180, }),
-            new DB3Client.BoolColumnClient({ columnName: "isPrimary" }),
-        ],
+        columns: {
+            id: columnName => new DB3Client.PKColumnClient({ columnName }),
+            user: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, }),
+            instrument: columnName => new DB3Client.ForeignSingleFieldClient({ columnName, cellWidth: 180, }),
+            isPrimary: columnName => new DB3Client.BoolColumnClient({ columnName }),
+        },
     });
 
     return <>
