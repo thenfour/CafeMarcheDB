@@ -39,30 +39,34 @@ const MainContent = () => {
         ],
     });
 
-    const client = DB3Client.useTableRenderContext({
+    const client = DB3Client.useCrudTableRenderContext({
+        view: db3.userEditorView,
         tableSpec: spec,
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         filterModel: {
             items: [{ field: "id", value: dashboardContext.currentUser?.id || -1, operator: "equals" }]
         },
     });
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.userEditorView,
+        tableClient: client,
+    });
 
     //const value = client.items[0]! as db3.UserPayload;
 
-    const handleSave = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
+    const handleSave = async (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({
             feature: ActivityFeature.profile_edit,
         });
-        client.doUpdateMutation(updateObj).then(e => {
+        try {
+            await editCommands.update(updateObj, client.items[0]!);
             showSnackbar({ severity: "success", children: "updated" });
-        }).catch(e => {
-            console.log(e);
+        } catch (error) {
+            console.log(error);
             showSnackbar({ severity: "error", children: "error updating" });
-        }).finally(async () => {
-            client.refetch();
-            dashboardContext.refetchDashboardData();
+        } finally {
+            await dashboardContext.refetchDashboardData();
             api.closeDialog();
-        });
+        }
     };
 
     return <>

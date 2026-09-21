@@ -57,6 +57,11 @@ describe("DB3 named views", () => {
                 { permission: { name: "asc" } },
                 { permission: { id: "asc" } },
             ]);
+        expect(db3.wikiPageEditorView.getSelectionArgs(context).select.tags.orderBy)
+            .toEqual([
+                { tag: { sortOrder: "asc" } },
+                { tag: { text: "asc" } },
+            ]);
 
         expectTypeOf<db3.DbPayloadOf<typeof db3.eventTypeEditorView>>()
             .toMatchTypeOf<{ id: number; text: string }>();
@@ -183,6 +188,66 @@ describe("DB3 named views", () => {
 
         expect(authorized).toMatchObject({ id: 8, name: "Public concert" });
         expect(authorized).not.toHaveProperty("isDeleted");
+    });
+
+    it("projects the finite WikiPage tag editor view", async () => {
+        const findMany = vi.fn(async () => [{
+            id: 15,
+            slug: "policy",
+            createdByUserId: 100,
+            visiblePermissionId: null,
+            tags: [{
+                id: 16,
+                tagId: 17,
+                tag: {
+                    id: 17,
+                    text: "Policy",
+                    description: "Policy page",
+                    color: null,
+                    sortOrder: 1,
+                    significance: "Policy",
+                },
+            }],
+        }]);
+        const effectivePermissions = new PermissionSet([
+            { id: 1, name: Permission.always_grant },
+            { id: 2, name: Permission.login },
+            { id: 3, name: Permission.view_wiki_pages },
+        ]);
+
+        const result = await queryTable({
+            table: {
+                tableID: db3.xWikiPage.tableID,
+                tableName: db3.xWikiPage.tableName,
+                viewID: db3.wikiPageEditorView.viewID,
+            },
+            orderBy: undefined,
+            filter: { pks: [15] },
+            cmdbQueryContext: "wiki-page-editor-view-test",
+        }, {
+            user: { id: 100 } as any,
+            effectivePermissions,
+        }, {
+            WikiPage: { findMany },
+        } as any);
+
+        expect(result.items).toEqual([{
+            id: 15,
+            tags: [{
+                id: 16,
+                tagId: 17,
+                tag: {
+                    id: 17,
+                    text: "Policy",
+                    description: "Policy page",
+                    color: null,
+                    sortOrder: 1,
+                    significance: "Policy",
+                },
+            }],
+        }]);
+        expect(result.items[0]).not.toHaveProperty("slug");
+        expect(findMany).toHaveBeenCalledOnce();
     });
 
     it("hydrates a finite view graph from an explicit reference provider", () => {

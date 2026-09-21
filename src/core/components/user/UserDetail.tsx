@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import React, { Suspense } from "react";
 import { StringToEnumValue } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
 import { gIconMap } from "../../db3/components/IconMap";
 import { CMChip, CMChipContainer, CMStandardDBChip } from "../CMChip";
 import { AdminInspectObject, CMButtonGroup, KeyValueTable } from "../CMCoreComponents2";
@@ -17,7 +18,8 @@ import { CMSelectDisplayStyle, CMSingleSelect } from "../select/CMSelect";
 import { CMSelectNullBehavior } from "../select/CMSingleSelectDialog";
 import { SongsProvider } from "../song/SongsContext";
 import { AdminResetPasswordButton } from "./AdminResetPasswordButton";
-import { EditUserProfileButton, UserAdminPanel } from "./UserAdminPanel";
+import { EditUserProfileButton } from "./EditUserProfileButton";
+import { UserAdminPanel } from "./UserAdminPanel";
 import { UserAttendanceTabContent, UserCreditsTabContent, UserMassAnalysisTabContent, UserWikiContributionsTabContent } from "./UserAnalyticTables";
 import { UserIdentityIndicator } from "./UserIdentityIndicator";
 import { EnrichedVerboseUser } from "./UserListItem";
@@ -36,6 +38,10 @@ type RoleControlProps = {
 export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: RoleControlProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.userEditorView,
+        tableClient,
+    });
     return (
         <CMSingleSelect<_Role>
             value={value}
@@ -45,10 +51,13 @@ export const RoleControl = ({ value, userId, tableClient, readonly, onChange }: 
                 await snackbar.invokeAsync(async () => {
                     const newid = option?.id ?? null;
                     console.log("Updating role for userId:", userId, "to roleId:", newid, " - ", dashboardContext.role.getById(newid));
-                    await tableClient.doUpdateMutation({
+                    await editCommands.update({
                         id: userId,
                         roleId: newid,
                         //role: dashboardContext.role.getById(newid) ?? null,
+                    }, {
+                        id: userId,
+                        roleId: value?.id ?? null,
                     });
                 });
                 onChange();
@@ -188,8 +197,6 @@ export const UserDetail = ({ user, tableClient, ...props }: UserDetailArgs) => {
 
                 <UserAdminPanel
                     user={user}
-                    tableClient={tableClient}
-                    readonly={props.readonly}
                     refetch={refetch}
                     capabilities={capabilities}
                 />

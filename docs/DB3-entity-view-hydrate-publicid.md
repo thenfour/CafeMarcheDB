@@ -793,7 +793,7 @@ The existing writers are grouped by the replacement they need:
 | Category | Remaining surfaces | Intended replacement |
 | --- | --- | --- |
 | Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
-| Entity detail editors | User, Profile, Wiki metadata, and user-administration panels | Use generated CRUD for row-shaped patches; use named commands for privileged or operation-specific changes. |
+| Entity detail editors | None | Song, Event, File, User/Profile, and Wiki tag metadata now use generated CRUD commands for row-shaped patches. Privileged and operation-specific actions remain named workflows. |
 | Nested rows and relationships | Embedded event-segment and song-credit/file editors, the profile user-instrument editor, and setlist-plan groups | Reuse generated row/association commands when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
 | Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
@@ -915,6 +915,17 @@ for editor-value preparation, while `fileEditorView` supplies the generated
 update/delete commands. Upload remains the only File creation workflow;
 storage-owned fields and file-association workflows remain outside this slice.
 File retains its natural identity.
+
+The thirteenth slice completes the entity-detail category as one larger batch.
+The User detail page, self-profile editor, admin profile editor, and inline role
+control now read through `userEditorView` and send row-shaped changes through
+its generated update command. Existing account lifecycle, authentication,
+email-correction, merge, password, impersonation, and Sysadmin operations stay
+on their dedicated boundaries. Wiki tag metadata now has a finite
+`wikiPageEditorView` over a typed WikiPage entity; it owns only the complete tag
+projection and an update command. Wiki content/revisions, edit locking, and
+visibility remain explicit workflows. Both entities retain their natural
+identities.
 
 ## Design principles
 
@@ -1088,8 +1099,9 @@ boundary safely.
     that complete graph.
   - [x] Migrate File detail update/delete through `fileEditorView`, preserving
     upload-owned creation and the broader legacy detail read graph.
-  - [ ] Migrate the remaining User/Profile, Wiki metadata, and user-administration
-    entity-detail writers.
+  - [x] Complete the entity-detail category by migrating User/Profile,
+    user-administration profile and role edits, and Wiki tag metadata through
+    finite named views and generated update commands.
   - [ ] Migrate the nested/relationship, collection, and workflow categories in
     that order. Split out named domain commands wherever row CRUD is not
     truthful, and separately migrate selection create-from-string consumers to

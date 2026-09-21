@@ -439,6 +439,55 @@ describe("DB3 command boundary", () => {
     expect(db3.getDB3CrudViewForCommand("User_Delete")).toBeUndefined()
   })
 
+  it("updates WikiPage tag metadata through its update-only generated command", async () => {
+    const permissions = [
+      Permission.login,
+      Permission.view_wiki_pages,
+      Permission.edit_wiki_pages,
+    ]
+    const actor = createAuthorizationTestUser("normal", { id: 105, permissions })
+    const wikiPage = {
+      id: 106,
+      slug: "rehearsal-policy",
+      namespace: null,
+      createdByUserId: actor.id,
+      visiblePermissionId: null,
+    }
+    const wikiPageTag = {
+      id: 107,
+      text: "Policy",
+      description: "Policy page",
+      color: null,
+      sortOrder: 1,
+      significance: "Policy",
+    }
+    authorizationTestDb.reset({
+      user: [actor],
+      wikiPage: [wikiPage],
+      wikiPageTag: [wikiPageTag],
+      wikiPageTagAssignment: [],
+      change: [],
+    })
+    const { ctx } = createAuthorizationPersona("normal", { id: actor.id, permissions })
+
+    await expect(invokeResolver(executeDB3CommandMutation, {
+      commandID: db3.wikiPageEditorView.crud.operations.update.command.commandID,
+      payload: {
+        identity: wikiPage.id,
+        patch: { tags: [wikiPageTag.id] },
+      },
+    }, ctx)).resolves.toEqual({ identity: wikiPage.id })
+
+    expect(authorizationTestDb.snapshot("wikiPageTagAssignment")).toEqual([
+      expect.objectContaining({
+        wikiPageId: wikiPage.id,
+        tagId: wikiPageTag.id,
+      }),
+    ])
+    expect(db3.wikiPageEditorView.crud.operations.create).toBeUndefined()
+    expect(db3.wikiPageEditorView.crud.operations.delete).toBeUndefined()
+  })
+
   it("updates an Event row and tag set through generated CRUD", async () => {
     const actor = createAuthorizationTestUser("sysadmin", { id: 100 })
     const eventTag = {

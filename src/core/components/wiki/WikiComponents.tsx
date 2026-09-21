@@ -89,10 +89,14 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
         pks: [wikiPageId],
     }), [wikiPageId]);
 
-    const tableClient = DB3Client.useTableRenderContext<db3.WikiPagePayload>({
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+    const tableClient = DB3Client.useCrudTableRenderContext({
+        view: db3.wikiPageEditorView,
         tableSpec: tagsTableSpec,
         filterModel,
+    });
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.wikiPageEditorView,
+        tableClient,
     });
 
     const wikiPageRecord = tableClient.items[0];
@@ -118,7 +122,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
                     feature: ActivityFeature.wiki_page_tag_update,
                     context: "WikiPageTagsControl",
                 });
-                await tableClient.doUpdateMutation({
+                await editCommands.update({
                     id: wikiPageId,
                     tags: newTags.map(t => ({
                         id: -1,
@@ -126,7 +130,7 @@ export const WikiPageTagsControl = (props: WikiPageTagsControlProps) => {
                         tag: t,
                         wikiPageId: wikiPageId,
                     })) satisfies db3.WikiPageTagAssignmentPayload[],
-                });
+                }, wikiPageRecord);
                 if (props.refetch) {
                     props.refetch();
                 }

@@ -8,11 +8,9 @@ import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
 import setUserSysAdmin from "src/auth/mutations/setUserSysAdmin";
-import * as DB3Client from "src/core/db3/DB3Client";
 import { CMUserMgmtButton } from "../CMCoreComponents2";
 import { useConfirm } from "../ConfirmationDialog";
 import { useDashboardContext } from "../dashboardContext/DashboardContext";
-import { EditFieldsDialogButton } from "../EditFieldsDialog";
 import { useSnackbar } from "../SnackbarContext";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 import { MergeUsersButton } from "./MergeUsersButton";
@@ -35,43 +33,8 @@ type UserMgmtCaps = {
 
 interface UserAdminPanelProps {
     user: EnrichedVerboseUser;
-    tableClient: DB3Client.xTableRenderClient;
     refetch?: () => void;
-    readonly: boolean;
     capabilities: UserMgmtCaps;
-}
-
-type EditUserProfileButtonProps = {
-    readonly: boolean;
-    tableClient: DB3Client.xTableRenderClient;
-    user: EnrichedVerboseUser;
-    onOK: () => void;
-};
-
-export const EditUserProfileButton = ({ readonly, tableClient, user, onOK }: EditUserProfileButtonProps) => {
-    const snackbar = useSnackbar();
-    const canEdit = tableClient.schema.authorizeRowForEdit({
-        model: user,
-        publicData: tableClient.publicData,
-    });
-
-    return <>{canEdit && <EditFieldsDialogButton
-        buttonComponent={CMUserMgmtButton}
-        readonly={readonly}
-        dialogTitle="Edit user profile"
-        tableSpec={tableClient.tableSpec}
-        initialValue={user}
-        onCancel={() => { }}
-        onOK={async (updatedUser, tableClient, api) => {
-            await snackbar.invokeAsync(async () => {
-                await tableClient.doUpdateMutation(updatedUser);
-                onOK();
-                api.close();
-            });
-        }}
-        dialogDescription={null}
-        renderButtonChildren={() => "Edit profile"}
-    />}</>
 }
 
 export type DeactivateUserButtonProps = {

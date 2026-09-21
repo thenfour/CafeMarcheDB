@@ -746,6 +746,44 @@ describe("DB3 commands", () => {
         })).toThrow();
         expect(db3.userEditorView.crud.operations.delete).toBeUndefined();
 
+        expect(db3.wikiPageEditorView.parseDto({
+            id: 12,
+            tags: [{
+                id: 30,
+                tagId: 5,
+                tag: {
+                    id: 5,
+                    text: "Policy",
+                    description: "Policy page",
+                    color: null,
+                    sortOrder: 1,
+                    significance: "Policy",
+                },
+            }],
+        })).toMatchObject({
+            id: 12,
+            tags: [{ tagId: 5, tag: { text: "Policy" } }],
+        });
+        expect(db3.wikiPageEditorView.crud.operations.update.command.parseDto({
+            identity: 12,
+            patch: { tags: [5, 8] },
+        })).toEqual({
+            identity: 12,
+            patch: { tags: [5, 8] },
+        });
+        expect(() => db3.wikiPageEditorView.crud.operations.update.command.parseDto({
+            identity: 12,
+            patch: { currentRevisionId: 20 },
+        })).toThrow();
+        expect(db3.wikiPageEditorView.crud.operations.create).toBeUndefined();
+        expect(db3.wikiPageEditorView.crud.operations.delete).toBeUndefined();
+        expect(db3.getDB3CrudViewForCommand(
+            db3.wikiPageEditorView.crud.operations.update.command.commandID,
+        )).toBe(db3.wikiPageEditorView);
+        expect(getDB3CommandHandler(
+            db3.wikiPageEditorView.crud.operations.update.command.commandID,
+        ).command).toBe(db3.wikiPageEditorView.crud.operations.update.command);
+
         expect(db3.eventEditorView.parseDto({
             id: 20,
             revision: 3,

@@ -30,9 +30,9 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
 
     if (!userId) throw new Error(`user not found`);
 
-    const queryArgs: DB3Client.xTableClientArgs = {
+    const queryArgs = {
         includeDeleted: dashboardContext.isAuthorized(Permission.recover_users),
-        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+        view: db3.userEditorView,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xUser,
             columns: [
@@ -55,7 +55,7 @@ const MyComponent = ({ userId }: { userId: number | null }) => {
         }
     };
 
-    const tableClient = DB3Client.useTableRenderContext(queryArgs);
+    const tableClient = DB3Client.useCrudTableRenderContext(queryArgs);
     if (tableClient.items.length > 1) throw new Error(`db returned too many items; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
     if (tableClient.items.length < 1) {
         console.warn(`no user found with id ${userId}`);
