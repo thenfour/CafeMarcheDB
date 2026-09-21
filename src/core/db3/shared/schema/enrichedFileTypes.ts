@@ -38,14 +38,16 @@ export type EnrichedVerboseFile = EnrichedFile<db3.FilePayload>;
 
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
-export function enrichFile<T extends EnrichFileInput>(
-    item: T,
-    data: {
+export function enrichFile<
+    T extends EnrichFileInput,
+    TData extends {
         instrument: TableAccessor<db3.InstrumentClientPayload>;
         fileTag: TableAccessor<Prisma.FileTagGetPayload<{}>>;
         permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
-    },
-): EnrichedFile<T> {
+    }>(
+        item: T,
+        data: TData,
+    ): EnrichedFile<T> {
     // original payload type,
     // removing items we're replacing,
     // + stuff we're adding/changing.
