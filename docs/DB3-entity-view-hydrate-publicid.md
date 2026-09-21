@@ -130,10 +130,25 @@ particular view.
 `defineView()` represents one use-specific read shape for an entity. A view owns:
 
 - a globally registered `viewID` tied to exactly one entity/table;
-- a Prisma selection, optionally derived from trusted server-side authorization
-  and filter context;
+- a Prisma selection, derived from its Zod DTO schema by default or supplied
+  explicitly when query behavior requires it;
 - a Zod DTO schema for the authorized transport shape;
 - a pure hydration function from DTO plus references to a client value.
+
+`ZodToPrismaSelection()` recursively maps DTO scalars to `true`, nested objects
+to nested `select` clauses, and arrays to their element selection. Optionality,
+nullability, defaults, brands, and refinements do not affect which database
+member is selected. Its mapped return type preserves the literal selection
+shape used by Prisma payload inference. Consequently, ordinary views declare
+only `dtoSchema`; `defineView()` and `defineCrudView()` derive their selection.
+
+An explicit selection remains part of the view contract when it adds meaning
+that a transport schema cannot express: relation ordering or filtering,
+request-authorization-dependent clauses, authorization-only fields that must
+not enter the DTO, or hidden relation data required for public-ID projection.
+Such selections can spread the result of `ZodToPrismaSelection(dtoSchema)` and
+add only those query concerns. Ambiguous Zod relation shapes fail explicitly
+rather than producing a guessed Prisma query.
 
 The selection is the maximum data the view may need. DB3 still applies `xTable`
 row, field, relation, soft-delete, and visibility authorization before validating

@@ -15,19 +15,10 @@ const SettingEditorDtoSchema = z.object({
     value: z.string().optional(),
 });
 
-const settingEditorSelection = Prisma.validator<Prisma.SettingDefaultArgs>()({
-    select: {
-        id: true,
-        name: true,
-        value: true,
-    },
-});
-
 export const settingEditorView = defineCrudView({
     viewID: "Setting_Editor",
     entity: settingEntity,
     operations: { create: true, update: true },
-    selection: settingEditorSelection,
     dtoSchema: SettingEditorDtoSchema,
     hydrate: dto => dto,
 });

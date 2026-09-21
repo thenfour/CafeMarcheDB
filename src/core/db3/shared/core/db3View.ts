@@ -1,4 +1,8 @@
 import type { TAnyModel } from "@/shared/rootroot";
+import {
+    ZodToPrismaSelection,
+    type ZodPrismaSelection,
+} from "@/shared/prismaUtils";
 import type { Prisma } from "db";
 import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
@@ -12,6 +16,16 @@ export interface DB3ViewSelectionContext {
     readonly filter: CMDBTableFilterModel;
     readonly authorization: DB3Authorization;
 }
+
+export type DB3ViewSelectionArgs<TEntity extends AnyDB3Entity> = Partial<Pick<
+    Prisma.Args<PrismaDelegateOf<TEntity>, "findMany">,
+    "select" | "include"
+>>;
+
+export type DerivedDB3ViewSelection<
+    TEntity extends AnyDB3Entity,
+    TDtoSchema extends z.AnyZodObject,
+> = ZodPrismaSelection<TDtoSchema> & DB3ViewSelectionArgs<TEntity>;
 
 export interface DB3View<
     TEntity extends AnyDB3Entity,
@@ -46,27 +60,68 @@ export type ClientOf<TView extends AnyDB3View> = ReturnType<TView["hydrate"]>;
 
 const views = new Map<string, AnyDB3View>();
 
-export function defineView<
+interface DefineViewBaseArgs<
     TEntity extends AnyDB3Entity,
-    TSelection,
-    TDtoSchema extends z.ZodTypeAny,
+    TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
->(args: {
+> {
     viewID: string;
     entity: TEntity;
-    selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
+}
+
+type DB3ViewSelectionInput<
+    TSelection,
+> = TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+
+// overload with no selection specified (will be deduced from the DTO schema)
+export function defineView<
+    TEntity extends AnyDB3Entity,
+    TDtoSchema extends z.AnyZodObject,
+    TClient extends TAnyModel,
+>(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient> & {
+    selection?: undefined;
+}): DB3View<
+    TEntity,
+    DerivedDB3ViewSelection<TEntity, TDtoSchema>,
+    TDtoSchema,
+    TClient
+>;
+
+// overload with a selection specified explicitly and concretely.
+export function defineView<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+    TDtoSchema extends z.AnyZodObject,
+    TClient extends TAnyModel,
+>(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient> & {
+    selection: DB3ViewSelectionInput<TSelection>;
+}): DB3View<TEntity, TSelection, TDtoSchema, TClient>;
+
+// implementation handling both overloads
+export function defineView<
+    TEntity extends AnyDB3Entity,
+    TSelection extends DB3ViewSelectionArgs<TEntity>,
+    TDtoSchema extends z.AnyZodObject,
+    TClient extends TAnyModel,
+>(args: DefineViewBaseArgs<TEntity, TDtoSchema, TClient> & {
+    selection?: DB3ViewSelectionInput<TSelection>;
 }): DB3View<TEntity, TSelection, TDtoSchema, TClient> {
+    const derivedSelection = args.selection === undefined
+        ? ZodToPrismaSelection(args.dtoSchema)
+        : undefined;
     const view: DB3View<TEntity, TSelection, TDtoSchema, TClient> = {
         viewID: args.viewID,
         entity: args.entity,
         tableID: args.entity.schema.tableID,
         tableName: args.entity.schema.tableName,
         dtoSchema: args.dtoSchema,
-        getSelectionArgs: typeof args.selection === "function"
-            ? args.selection as (context: DB3ViewSelectionContext) => TSelection
-            : () => args.selection as TSelection,
+        getSelectionArgs: args.selection === undefined
+            ? () => derivedSelection as TSelection
+            : typeof args.selection === "function"
+                ? args.selection as (context: DB3ViewSelectionContext) => TSelection
+                : () => args.selection as TSelection,
         hydrate: args.hydrate,
         parseDto: value => args.dtoSchema.parse(value),
     };

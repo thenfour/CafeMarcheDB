@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { Prisma } from "db";
+import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { isPublicId, type InstrumentFunctionalGroupPublicId } from "shared/publicId";
 import { defineEntity } from "../../core/db3Entity";
 import { defineCrudView } from "../../core/db3CrudView";
 import { type ClientOf, type DtoOf, defineView } from "../../core/db3View";
 import { xInstrument, xInstrumentFunctionalGroup, xInstrumentTag } from "../../schema/instrument";
 import {
-    InstrumentFunctionalGroupArgs,
     type InstrumentClientPayload,
     type InstrumentFunctionalGroupClientPayload,
     InstrumentTagAssociationNaturalOrderBy,
@@ -77,50 +77,12 @@ const InstrumentEditorDtoSchema = z.object({
     instrumentTags: z.array(InstrumentTagAssociationEditorDtoSchema).optional(),
 });
 
-const instrumentTagEditorSelection = Prisma.validator<Prisma.InstrumentTagDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        sortOrder: true,
-        color: true,
-        significance: true,
-    },
-});
-
+const instrumentEditorBaseSelection = ZodToPrismaSelection(InstrumentEditorDtoSchema);
 const instrumentEditorSelection = Prisma.validator<Prisma.InstrumentDefaultArgs>()({
     select: {
-        id: true,
-        name: true,
-        description: true,
-        autoAssignFileLeafRegex: true,
-        sortOrder: true,
-        functionalGroupId: true,
-        functionalGroup: {
-            select: {
-                publicId: true,
-                name: true,
-                description: true,
-                sortOrder: true,
-                color: true,
-            },
-        },
+        ...instrumentEditorBaseSelection.select,
         instrumentTags: {
-            select: {
-                id: true,
-                instrumentId: true,
-                tagId: true,
-                tag: {
-                    select: {
-                        id: true,
-                        text: true,
-                        description: true,
-                        sortOrder: true,
-                        color: true,
-                        significance: true,
-                    },
-                },
-            },
+            ...instrumentEditorBaseSelection.select.instrumentTags,
             orderBy: InstrumentTagAssociationNaturalOrderBy,
         },
     },
@@ -150,7 +112,6 @@ export const dashboardInstrumentArgs = Prisma.validator<Prisma.InstrumentDefault
 export const instrumentFunctionalGroupListView = defineView({
     viewID: "InstrumentFunctionalGroup_List",
     entity: instrumentFunctionalGroupEntity,
-    selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => dto,
 });
@@ -159,7 +120,6 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
     viewID: "InstrumentFunctionalGroup_Editor",
     entity: instrumentFunctionalGroupEntity,
     operations: { create: true, update: true, delete: true },
-    selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupListDtoSchema,
     hydrate: dto => dto,
 });
@@ -167,7 +127,6 @@ export const instrumentFunctionalGroupEditorView = defineCrudView({
 export const instrumentFunctionalGroupDashboardView = defineView({
     viewID: "InstrumentFunctionalGroup_Dashboard",
     entity: instrumentFunctionalGroupEntity,
-    selection: InstrumentFunctionalGroupArgs,
     dtoSchema: InstrumentFunctionalGroupDashboardDtoSchema,
     hydrate: dto => dto,
 });
@@ -176,7 +135,6 @@ export const instrumentTagEditorView = defineCrudView({
     viewID: "InstrumentTag_Editor",
     entity: instrumentTagEntity,
     operations: { create: true, update: true, delete: true },
-    selection: instrumentTagEditorSelection,
     dtoSchema: InstrumentTagDtoSchema,
     hydrate: dto => dto,
 });

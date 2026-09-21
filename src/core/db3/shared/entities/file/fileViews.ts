@@ -16,22 +16,10 @@ const FileTagEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
-const fileTagEditorSelection = Prisma.validator<Prisma.FileTagDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
-
 export const fileTagEditorView = defineCrudView({
     viewID: "FileTag_Editor",
     entity: fileTagEntity,
     operations: { create: true, update: true, delete: true },
-    selection: fileTagEditorSelection,
     dtoSchema: FileTagEditorDtoSchema,
     hydrate: dto => dto,
 });
@@ -65,48 +53,10 @@ const FrontpageGalleryItemEditorDtoSchema = z.object({
     }).nullable().optional(),
 });
 
-const frontpageGalleryItemEditorSelection = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
-    select: {
-        id: true,
-        isDeleted: true,
-        caption: true,
-        caption_nl: true,
-        caption_fr: true,
-        sortOrder: true,
-        fileId: true,
-        file: {
-            select: {
-                id: true,
-                fileLeafName: true,
-                description: true,
-                uploadedByUserId: true,
-            },
-        },
-        displayParams: true,
-        createdByUserId: true,
-        createdByUser: {
-            select: {
-                id: true,
-                name: true,
-            },
-        },
-        visiblePermissionId: true,
-        visiblePermission: {
-            select: {
-                id: true,
-                name: true,
-                description: true,
-                color: true,
-            },
-        },
-    },
-});
-
 export const frontpageGalleryItemEditorView = defineCrudView({
     viewID: "FrontpageGalleryItem_Editor",
     entity: frontpageGalleryItemEntity,
     operations: { create: true, update: true, delete: true },
-    selection: frontpageGalleryItemEditorSelection,
     dtoSchema: FrontpageGalleryItemEditorDtoSchema,
     hydrate: dto => dto,
 });

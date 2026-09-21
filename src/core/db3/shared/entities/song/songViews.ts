@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DtoOf } from "../../core/db3View";
@@ -70,82 +71,12 @@ const SongEditorDtoSchema = z.object({
     tags: z.array(SongTagAssociationEditorDtoSchema).optional(),
 });
 
-const songTagEditorSelection = Prisma.validator<Prisma.SongTagDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-        group: true,
-        indicator: true,
-        indicatorCssClass: true,
-    },
-});
-
-const songCreditTypeEditorSelection = Prisma.validator<Prisma.SongCreditTypeDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
-
+const songEditorBaseSelection = ZodToPrismaSelection(SongEditorDtoSchema);
 const songEditorSelection = Prisma.validator<Prisma.SongDefaultArgs>()({
     select: {
-        id: true,
-        name: true,
-        aliases: true,
-        description: true,
-        startBPM: true,
-        endBPM: true,
-        introducedYear: true,
-        lengthSeconds: true,
-        isDeleted: true,
-        createdByUserId: true,
-        createdByUser: {
-            select: {
-                id: true,
-                name: true,
-                cssClass: true,
-            },
-        },
-        visiblePermissionId: true,
-        visiblePermission: {
-            select: {
-                id: true,
-                name: true,
-                description: true,
-                isVisibility: true,
-                sortOrder: true,
-                significance: true,
-                color: true,
-                iconName: true,
-            },
-        },
+        ...songEditorBaseSelection.select,
         tags: {
-            select: {
-                id: true,
-                songId: true,
-                tagId: true,
-                tag: {
-                    select: {
-                        id: true,
-                        text: true,
-                        description: true,
-                        color: true,
-                        sortOrder: true,
-                        significance: true,
-                        group: true,
-                        indicator: true,
-                        indicatorCssClass: true,
-                    },
-                },
-            },
+            ...songEditorBaseSelection.select.tags,
             orderBy: SongTagAssociationNaturalOrderBy,
         },
     },
@@ -155,7 +86,6 @@ export const songTagEditorView = defineCrudView({
     viewID: "SongTag_Editor",
     entity: songTagEntity,
     operations: { create: true, update: true, delete: true },
-    selection: songTagEditorSelection,
     dtoSchema: SongTagEditorDtoSchema,
     hydrate: dto => dto,
 });
@@ -164,7 +94,6 @@ export const songCreditTypeEditorView = defineCrudView({
     viewID: "SongCreditType_Editor",
     entity: songCreditTypeEntity,
     operations: { create: true, update: true, delete: true },
-    selection: songCreditTypeEditorSelection,
     dtoSchema: SongCreditTypeEditorDtoSchema,
     hydrate: dto => dto,
 });

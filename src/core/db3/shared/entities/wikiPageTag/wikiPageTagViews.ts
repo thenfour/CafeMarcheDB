@@ -1,4 +1,3 @@
-import { Prisma } from "db";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { wikiPageTagEntity } from "./wikiPageTagEntities";
@@ -12,22 +11,10 @@ const WikiPageTagEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
 });
 
-const wikiPageTagEditorSelection = Prisma.validator<Prisma.WikiPageTagDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-    },
-});
-
 export const wikiPageTagEditorView = defineCrudView({
     viewID: "WikiPageTag_Editor",
     entity: wikiPageTagEntity,
     operations: { create: true, update: true, delete: true },
-    selection: wikiPageTagEditorSelection,
     dtoSchema: WikiPageTagEditorDtoSchema,
     hydrate: dto => dto,
 });

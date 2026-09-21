@@ -26,6 +26,42 @@ const tag = {
 };
 
 describe("DB3 named views", () => {
+    it("derives ordinary selections from DTO schemas and preserves explicit query additions", () => {
+        const context = {
+            filter: { items: [] },
+            authorization: db3.createDB3Authorization(null, new PermissionSet([])),
+        };
+
+        expect(db3.eventTypeEditorView.getSelectionArgs(context)).toEqual({
+            select: {
+                id: true,
+                text: true,
+                description: true,
+                color: true,
+                sortOrder: true,
+                significance: true,
+                iconName: true,
+                isDeleted: true,
+            },
+        });
+        expect(db3.frontpageGalleryItemEditorView.getSelectionArgs(context))
+            .toMatchObject({
+                select: {
+                    file: { select: { id: true, fileLeafName: true } },
+                    createdByUser: { select: { id: true, name: true } },
+                },
+            });
+        expect(db3.roleEditorView.getSelectionArgs(context).select.permissions.orderBy)
+            .toEqual([
+                { permission: { sortOrder: "asc" } },
+                { permission: { name: "asc" } },
+                { permission: { id: "asc" } },
+            ]);
+
+        expectTypeOf<db3.DbPayloadOf<typeof db3.eventTypeEditorView>>()
+            .toMatchTypeOf<{ id: number; text: string }>();
+    });
+
     it("validates view ownership as part of the query contract", () => {
         const request = validateDB3QueryRequest({
             table: {

@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import {
@@ -65,67 +66,16 @@ const UserEditorDtoSchema = z.object({
 
 
 
+const userEditorBaseSelection = ZodToPrismaSelection(UserEditorDtoSchema);
 const userEditorSelection = Prisma.validator<Prisma.UserDefaultArgs>()({
     select: {
-        id: true,
-        isDeleted: true,
-        name: true,
-        email: true,
-        phone: true,
-        cssClass: true,
-        createdAt: true,
-        isSysAdmin: true,
-        roleId: true,
-        role: {
-            select: {
-                id: true,
-                name: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                significance: true,
-            },
-        },
+        ...userEditorBaseSelection.select,
         instruments: {
-            select: {
-                id: true,
-                userId: true,
-                instrumentId: true,
-                isPrimary: true,
-                instrument: {
-                    select: {
-                        id: true,
-                        name: true,
-                        description: true,
-                        sortOrder: true,
-                        functionalGroup: {
-                            select: {
-                                publicId: true,
-                                color: true,
-                            },
-                        },
-                    },
-                },
-            },
+            ...userEditorBaseSelection.select.instruments,
             orderBy: UserInstrumentNaturalOrderBy,
         },
         tags: {
-            select: {
-                id: true,
-                userId: true,
-                userTagId: true,
-                userTag: {
-                    select: {
-                        id: true,
-                        text: true,
-                        description: true,
-                        color: true,
-                        sortOrder: true,
-                        cssClass: true,
-                        significance: true,
-                    },
-                },
-            },
+            ...userEditorBaseSelection.select.tags,
             orderBy: UserTagAssignmentNaturalOrderBy,
         },
     },

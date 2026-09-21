@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { defineView, type ClientOf, type DB3ViewSelectionContext, type DtoOf } from "../../core/db3View";
@@ -16,19 +17,6 @@ const EventTypeEditorDtoSchema = z.object({
     significance: z.string().nullable().optional(),
     iconName: z.string().nullable().optional(),
     isDeleted: z.boolean().optional(),
-});
-
-const eventTypeEditorSelection = Prisma.validator<Prisma.EventTypeDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-        iconName: true,
-        isDeleted: true,
-    },
 });
 
 const EventStatusEditorDtoSchema = z.object({
@@ -52,36 +40,10 @@ const EventTagEditorDtoSchema = z.object({
     visibleOnFrontpage: z.boolean().optional(),
 });
 
-const eventStatusEditorSelection = Prisma.validator<Prisma.EventStatusDefaultArgs>()({
-    select: {
-        id: true,
-        label: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-        iconName: true,
-        isDeleted: true,
-    },
-});
-
-const eventTagEditorSelection = Prisma.validator<Prisma.EventTagDefaultArgs>()({
-    select: {
-        id: true,
-        text: true,
-        description: true,
-        color: true,
-        sortOrder: true,
-        significance: true,
-        visibleOnFrontpage: true,
-    },
-});
-
 export const eventTypeEditorView = defineCrudView({
     viewID: "EventType_Editor",
     entity: eventTypeEntity,
     operations: { create: true, update: true, delete: true },
-    selection: eventTypeEditorSelection,
     dtoSchema: EventTypeEditorDtoSchema,
     hydrate: dto => dto,
 });
@@ -90,7 +52,6 @@ export const eventStatusEditorView = defineCrudView({
     viewID: "EventStatus_Editor",
     entity: eventStatusEntity,
     operations: { create: true, update: true, delete: true },
-    selection: eventStatusEditorSelection,
     dtoSchema: EventStatusEditorDtoSchema,
     hydrate: dto => dto,
 });
@@ -99,7 +60,6 @@ export const eventTagEditorView = defineCrudView({
     viewID: "EventTag_Editor",
     entity: eventTagEntity,
     operations: { create: true, update: true, delete: true },
-    selection: eventTagEditorSelection,
     dtoSchema: EventTagEditorDtoSchema,
     hydrate: dto => dto,
 });
@@ -193,103 +153,14 @@ const EventEditorDtoSchema = z.object({
     frontpageTags: z.string().nullable().optional(),
 });
 
+const eventEditorBaseSelection = ZodToPrismaSelection(EventEditorDtoSchema);
 const eventEditorSelection = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
-        id: true,
-        revision: true,
-        name: true,
-        startsAt: true,
-        durationMillis: true,
-        isAllDay: true,
-        isDeleted: true,
-        locationDescription: true,
-        locationURL: true,
-        createdAt: true,
-        typeId: true,
-        type: {
-            select: {
-                id: true,
-                text: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                significance: true,
-                iconName: true,
-            },
-        },
-        statusId: true,
-        status: {
-            select: {
-                id: true,
-                label: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                significance: true,
-                iconName: true,
-            },
-        },
+        ...eventEditorBaseSelection.select,
         tags: {
-            select: {
-                id: true,
-                eventId: true,
-                eventTagId: true,
-                eventTag: {
-                    select: {
-                        id: true,
-                        text: true,
-                        description: true,
-                        color: true,
-                        sortOrder: true,
-                        significance: true,
-                        visibleOnFrontpage: true,
-                    },
-                },
-            },
+            ...eventEditorBaseSelection.select.tags,
             orderBy: EventTagAssignmentNaturalOrderBy,
         },
-        segmentBehavior: true,
-        expectedAttendanceUserTagId: true,
-        expectedAttendanceUserTag: {
-            select: {
-                id: true,
-                text: true,
-                description: true,
-                color: true,
-                sortOrder: true,
-                cssClass: true,
-                significance: true,
-            },
-        },
-        createdByUserId: true,
-        createdByUser: {
-            select: {
-                id: true,
-                name: true,
-                cssClass: true,
-            },
-        },
-        visiblePermissionId: true,
-        visiblePermission: {
-            select: {
-                id: true,
-                name: true,
-                description: true,
-                isVisibility: true,
-                sortOrder: true,
-                significance: true,
-                color: true,
-                iconName: true,
-            },
-        },
-        frontpageVisible: true,
-        frontpageDate: true,
-        frontpageTime: true,
-        frontpageDetails: true,
-        frontpageTitle: true,
-        frontpageLocation: true,
-        frontpageLocationURI: true,
-        frontpageTags: true,
     },
 });
 

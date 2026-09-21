@@ -1,4 +1,5 @@
 import { Prisma } from "db";
+import { ZodToPrismaSelection } from "@/shared/prismaUtils";
 import { z } from "zod";
 import { defineCrudView } from "../../core/db3CrudView";
 import { roleEntity } from "./userEntities";
@@ -24,27 +25,12 @@ const RoleEditorDtoSchema = z.object({
     permissions: z.array(RolePermissionEditorDtoSchema).optional(),
 });
 
+const roleEditorBaseSelection = ZodToPrismaSelection(RoleEditorDtoSchema);
 const roleEditorSelection = Prisma.validator<Prisma.RoleDefaultArgs>()({
     select: {
-        id: true,
-        name: true,
-        description: true,
-        sortOrder: true,
-        color: true,
-        significance: true,
+        ...roleEditorBaseSelection.select,
         permissions: {
-            select: {
-                id: true,
-                roleId: true,
-                permissionId: true,
-                permission: {
-                    select: {
-                        id: true,
-                        name: true,
-                        description: true,
-                    },
-                },
-            },
+            ...roleEditorBaseSelection.select.permissions,
             orderBy: [
                 { permission: { sortOrder: "asc" } },
                 { permission: { name: "asc" } },

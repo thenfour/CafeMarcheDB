@@ -1,4 +1,7 @@
 import type { TAnyModel } from "@/shared/rootroot";
+import {
+    ZodToPrismaSelection,
+} from "@/shared/prismaUtils";
 import type { z } from "zod";
 import { z as zod } from "zod";
 import {
@@ -11,7 +14,9 @@ import type { AnyDB3Entity, EntityIdOf } from "./db3Entity";
 import {
     defineView,
     type DB3View,
+    type DB3ViewSelectionArgs,
     type DB3ViewSelectionContext,
+    type DerivedDB3ViewSelection,
 } from "./db3View";
 import type { DB3ReferenceProvider } from "./db3Hydration";
 
@@ -31,6 +36,14 @@ export type AnyDB3CrudView = DB3View<
     z.ZodTypeAny,
     TAnyModel
 > & { readonly crud: AnyDB3EntityEditorCommands };
+
+type CrudViewSelection<
+    TEntity extends AnyDB3Entity,
+    TDtoSchema extends z.AnyZodObject,
+    TSelection,
+> = [TSelection] extends [undefined]
+    ? DerivedDB3ViewSelection<TEntity, TDtoSchema>
+    : TSelection;
 
 const crudViewsByCommandID = new Map<string, AnyDB3CrudView>();
 
@@ -122,28 +135,35 @@ function registerCrudView(view: AnyDB3CrudView): void {
  */
 export function defineCrudView<
     TEntity extends AnyDB3Entity,
-    TSelection,
     TDtoSchema extends z.AnyZodObject,
     TClient extends TAnyModel,
     TOperations extends DB3CrudOperationFlags,
+    TSelection extends DB3ViewSelectionArgs<TEntity> | undefined = undefined,
 >(args: {
     viewID: string;
     entity: TEntity;
-    selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
+    selection?: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
     operations: TOperations;
 }) {
-    const view = defineView({
+    const viewArgs = {
         viewID: args.viewID,
         entity: args.entity,
-        selection: args.selection,
         dtoSchema: args.dtoSchema,
-        hydrate: (dto, references) => args.hydrate(
+        hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => args.hydrate(
             applyTableSchemaDbToClient(args.entity, dto, "view"),
             references,
         ),
-    });
+    };
+    type TResolvedSelection = CrudViewSelection<TEntity, TDtoSchema, TSelection>;
+    const selection = args.selection === undefined
+        ? ZodToPrismaSelection(args.dtoSchema) as TResolvedSelection
+        : args.selection;
+    const view = defineView({
+        ...viewArgs,
+        selection: selection as DB3ViewSelectionArgs<TEntity>,
+    }) as DB3View<TEntity, TResolvedSelection, TDtoSchema, TClient>;
     const createSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "new");
     const updateFieldsSchema = createPreparedMutationSchema(args.entity, args.dtoSchema, "update");
     const crud = defineEntityCrudCommands({
@@ -155,7 +175,7 @@ export function defineCrudView<
     });
     const crudView = Object.assign(view, { crud }) as DB3CrudView<
         TEntity,
-        TSelection,
+        TResolvedSelection,
         TDtoSchema,
         TClient,
         typeof crud
