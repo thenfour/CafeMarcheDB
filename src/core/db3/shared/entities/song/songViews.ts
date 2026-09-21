@@ -32,6 +32,8 @@ const SongCreditTypeEditorDtoSchema = z.object({
 
 const SongCreditEditorDtoSchema = z.object({
     id: z.number().int(),
+    comment: z.string().optional(),
+    year: z.string().optional(),
     userId: z.number().int().nullable().optional(),
     user: z.object({
         id: z.number().int(),

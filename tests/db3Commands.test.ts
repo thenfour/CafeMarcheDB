@@ -412,6 +412,7 @@ describe("DB3 commands", () => {
             db3.eventSegmentEditorView,
             db3.songCreditEditorView,
             db3.userInstrumentEditorView,
+            db3.setlistPlanGroupEditorView,
         ];
 
         for (const view of views) {
@@ -827,6 +828,7 @@ describe("DB3 commands", () => {
             fileLeafName: "concert.pdf",
             storedLeafName: "storage-id.pdf",
             description: "Program",
+            fileCreatedAt: new Date("2026-09-19T19:00:00.000Z"),
             uploadedAt: new Date("2026-09-20T10:00:00.000Z"),
             isDeleted: false,
             sizeBytes: 1234,
@@ -844,12 +846,14 @@ describe("DB3 commands", () => {
             id: 40,
             fileLeafName: "concert.pdf",
             storedLeafName: "storage-id.pdf",
+            fileCreatedAt: new Date("2026-09-19T19:00:00.000Z"),
             uploadedByUser: { name: "Ada" },
         });
         expect(db3.fileEditorView.crud.operations.update.command.parseDto({
             identity: 40,
             patch: {
                 fileLeafName: "concert-program.pdf",
+                fileCreatedAt: new Date("2026-09-19T20:00:00.000Z"),
                 visiblePermissionId: null,
                 tags: [11],
                 taggedEvents: [20],
@@ -858,6 +862,7 @@ describe("DB3 commands", () => {
             identity: 40,
             patch: {
                 fileLeafName: "concert-program.pdf",
+                fileCreatedAt: new Date("2026-09-19T20:00:00.000Z"),
                 visiblePermissionId: null,
                 tags: [11],
                 taggedEvents: [20],
@@ -937,6 +942,8 @@ describe("DB3 commands", () => {
 
         expect(db3.songCreditEditorView.parseDto({
             id: 5,
+            year: "2026",
+            comment: "Original arrangement",
             userId: 6,
             user: { id: 6, name: "Ada" },
             songId: 7,
@@ -945,6 +952,8 @@ describe("DB3 commands", () => {
             type: { id: 8, text: "Composer" },
         })).toMatchObject({
             id: 5,
+            year: "2026",
+            comment: "Original arrangement",
             user: { name: "Ada" },
             song: { name: "Autumn Leaves" },
             type: { text: "Composer" },
@@ -953,7 +962,15 @@ describe("DB3 commands", () => {
             userId: 6,
             songId: 7,
             typeId: 8,
-        })).toEqual({ userId: 6, songId: 7, typeId: 8 });
+            year: "2026",
+            comment: "Original arrangement",
+        })).toEqual({
+            userId: 6,
+            songId: 7,
+            typeId: 8,
+            year: "2026",
+            comment: "Original arrangement",
+        });
         expect(db3.songCreditEditorView.crud.operations.delete.deleteType).toBe("hard");
 
         expect(db3.userInstrumentEditorView.parseDto({
@@ -982,6 +999,40 @@ describe("DB3 commands", () => {
             patch: { instrumentId: 10, isPrimary: false },
         });
         expect(db3.userInstrumentEditorView.crud.operations.delete.deleteType).toBe("hard");
+
+        expect(db3.setlistPlanGroupEditorView.parseDto({
+            id: 11,
+            name: "First half",
+            description: "Opening material",
+            color: "blue",
+            sortOrder: 1,
+            createdByUserId: 6,
+            createdAt: new Date("2026-09-21T12:00:00.000Z"),
+        })).toMatchObject({
+            id: 11,
+            name: "First half",
+            sortOrder: 1,
+        });
+        expect(db3.setlistPlanGroupEditorView.crud.operations.update.command.parseDto({
+            identity: 11,
+            patch: {
+                name: "Opening half",
+                description: "Start here",
+                color: "green",
+            },
+        })).toEqual({
+            identity: 11,
+            patch: {
+                name: "Opening half",
+                description: "Start here",
+                color: "green",
+            },
+        });
+        expect(() => db3.setlistPlanGroupEditorView.crud.operations.update.command.parseDto({
+            identity: 11,
+            patch: { setlistPlans: [] },
+        })).toThrow();
+        expect(db3.setlistPlanGroupEditorView.crud.operations.delete.deleteType).toBe("hard");
     });
 
     it("preserves xTable client-value transforms across CRUD reads and writes", () => {

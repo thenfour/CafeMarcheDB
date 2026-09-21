@@ -2,6 +2,7 @@ import { assert } from "blitz";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { API } from "../../db3/clientAPI";
+import * as db3 from "../../db3/db3";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "../../db3/components/db3NewObjectDialog";
 import { gIconMap } from "../../db3/components/IconMap";
 import * as DB3Client from "../../db3/DB3Client";
@@ -62,11 +63,14 @@ interface SetlistPlanGroupListItemProps {
 export const SetlistPlanGroupListItem = (props: SetlistPlanGroupListItemProps) => {
     const confirm = useConfirm();
     const snackbar = useSnackbar();
+    const commands = DB3Client.useCrudViewCommands({
+        view: db3.setlistPlanGroupEditorView,
+        tableClient: props.tableClient,
+    });
 
     const handleSave = async (obj: SetlistPlanGroupPayload, api: DB3EditRowButtonAPI) => {
         await snackbar.invokeAsync(async () => {
-            await props.tableClient.doUpdateMutation(obj);
-            props.tableClient.refetch();
+            await commands.update(obj, props.group);
             api.closeDialog();
         });
     };
@@ -75,8 +79,7 @@ export const SetlistPlanGroupListItem = (props: SetlistPlanGroupListItemProps) =
         const confirmed = await confirm({});
         if (!confirmed) return;
         await snackbar.invokeAsync(async () => {
-            await props.tableClient.doDeleteMutation(props.group.id, "softWhenPossible");
-            props.tableClient.refetch();
+            await commands.delete(props.group.id);
         });
     };
 
@@ -122,6 +125,10 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const commands = DB3Client.useCrudViewCommands({
+        view: db3.setlistPlanGroupEditorView,
+        tableClient: props.tableClient,
+    });
 
     const newObj = props.tableClient.schema.createNew(dashboardContext.currentUser);
     const client = props.tableClient;
@@ -129,8 +136,7 @@ export const SetlistPlanGroupList = (props: SetlistPlanGroupListProps) => {
 
     const handleSaveNew = async (obj: SetlistPlanGroupPayload, api: DB3EditRowButtonAPI) => {
         await snackbar.invokeAsync(async () => {
-            await props.tableClient.doInsertMutation(obj);
-            props.tableClient.refetch();
+            await commands.create(obj);
             api.closeDialog();
         });
     };

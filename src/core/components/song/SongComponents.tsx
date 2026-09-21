@@ -196,9 +196,10 @@ export interface SongCreditEditButtonProps {
     refetch: () => void;
     readonly: boolean;
     creditsTableClient: DB3Client.xTableRenderClient;
+    creditsCommands: DB3Client.CrudViewCommandClient;
 };
 // also checks authorization & readonly to hide this button
-export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCreditEditButtonProps) => {
+export const SongCreditEditButton = ({ creditsTableClient, creditsCommands, ...props }: SongCreditEditButtonProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const publicData = useDB3Authorization();
@@ -208,7 +209,7 @@ export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCredi
             feature: ActivityFeature.song_credit_delete,
             songCreditTypeId: props.value.typeId,
         });
-        creditsTableClient.doDeleteMutation(props.value.id, 'softWhenPossible').then(e => {
+        creditsCommands.delete(props.value.id).then(() => {
             showSnackbar({ severity: "success", children: "deleted" });
             api.closeDialog();
         }).catch(e => {
@@ -224,7 +225,7 @@ export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCredi
             feature: ActivityFeature.song_credit_edit,
             songCreditTypeId: props.value.typeId,
         });
-        creditsTableClient.doUpdateMutation(newRow).then(e => {
+        creditsCommands.update(newRow, props.value).then(() => {
             showSnackbar({ severity: "success", children: "updated" });
             api.closeDialog();
         }).catch(e => {
@@ -235,7 +236,7 @@ export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCredi
         });
     };
 
-    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
+    const editAuthorized = db3.xSongCredit.authorizeRowForEdit({
         model: props.value,
         publicData,
     });
@@ -276,15 +277,19 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     });
 
     const creditsTableClient = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Mutation,
+        requestedCaps: DB3Client.xTableClientCaps.None,
         tableSpec,
+    });
+    const creditsCommands = DB3Client.useCrudViewCommands({
+        view: db3.songCreditEditorView,
+        tableClient: creditsTableClient,
     });
 
     const handleSaveNew = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
         void recordFeature({
             feature: ActivityFeature.song_credit_add,
         });
-        creditsTableClient.doInsertMutation(updateObj).then(e => {
+        creditsCommands.create(updateObj).then(() => {
             showSnackbar({ severity: "success", children: "updated" });
         }).catch(e => {
             console.log(e);
@@ -301,7 +306,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     newObj.songId = songData.song.id;
     newObj.year = `${(new Date()).getFullYear()}`;
 
-    const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
+    const insertAuthorized = db3.xSongCredit.authorizeRowBeforeInsert({
         publicData,
     });
 
@@ -339,7 +344,13 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
                 cells: [
                     <th key={0} className={`creditType ${type.text}`}>{type.text}</th>,
                     <td key={1} className={`user`}><div className='flexRow'>
-                        <SongCreditEditButton readonly={props.readonly} refetch={refetch} creditsTableClient={creditsTableClient} value={credit} />
+                        <SongCreditEditButton
+                            readonly={props.readonly}
+                            refetch={refetch}
+                            creditsTableClient={creditsTableClient}
+                            creditsCommands={creditsCommands}
+                            value={credit}
+                        />
                         {/* {credit.user && credit.user.name} */}
                         <UserChip value={credit.user || null} />
                     </div>

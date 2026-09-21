@@ -14,7 +14,11 @@ import { CMChipContainer } from "../CMChip";
 import { InstrumentChip } from "../CMCoreComponents";
 
 
-type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
+type UserEditorInstrumentAssociation = NonNullable<
+    db3.ClientOf<typeof db3.userEditorView>["instruments"]
+>[number];
+
+type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<UserEditorInstrumentAssociation> & {
     refetch: () => void;
 };
 
@@ -29,7 +33,8 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isDefaultOpen, setIsDefaultOpen] = React.useState(false);
 
-    const primary: (db3.InstrumentPayload | null) = API.users.getPrimaryInstrument(props.row as db3.UserPayload);
+    const primaryAssociation = props.value.find(value => value.isPrimary) ?? props.value[0];
+    const primaryInstrumentId = primaryAssociation?.instrumentId;
 
     const handleClickMakePrimary = (instrumentId: number) => {
         if (!currentUser) {
@@ -49,9 +54,11 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
         });
     };
 
-    const renderInstrument = (value: db3.UserInstrumentPayload) => //props.spec.renderAsChipForCell({ value, colorVariant: StandardVariationSpec.Strong });
-        <InstrumentChip value={value.instrument} size="big" />;
-    const primaryValue = props.value.find(value => value.instrumentId === primary?.id);
+    const renderInstrument = (value: UserEditorInstrumentAssociation) => {
+        const instrumentId = value.instrumentId ?? value.instrument?.id;
+        return instrumentId == null ? null : <InstrumentChip value={instrumentId} size="big" />;
+    };
+    const primaryValue = props.value.find(value => value.instrumentId === primaryInstrumentId);
 
     const defaultChip = (<Typography
         component="span"
@@ -70,10 +77,10 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     return <Box sx={{ minWidth: 0, py: 0.5 }}>
         <SelectionValueList
             value={props.value}
-            getKey={value => value.instrumentId}
+            getKey={value => value.instrumentId ?? value.instrument?.id ?? value.id}
             getLabel={props.spec.getSelectionLabel}
             renderValue={value => {
-                const isPrimary = value.instrumentId === primary?.id;
+                const isPrimary = value.instrumentId === primaryInstrumentId;
                 return <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, minWidth: 0, maxWidth: "100%" }}>
                     {renderInstrument(value)}
                     {props.value.length > 1 && isPrimary && defaultChip}
@@ -98,7 +105,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
         {isDefaultOpen && <SelectionPicker
             source={makeLocalSelectionSource({
                 items: props.value,
-                getKey: value => value.instrumentId,
+                getKey: value => value.instrumentId ?? value.instrument?.id ?? value.id,
                 getLabel: props.spec.getSelectionLabel,
                 renderValue: renderInstrument
             })}
@@ -107,7 +114,9 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
             onCancel={() => setIsDefaultOpen(false)}
             onAccept={values => {
                 setIsDefaultOpen(false);
-                if (values[0] && values[0].instrumentId !== primary?.id) handleClickMakePrimary(values[0].instrumentId);
+                if (values[0]?.instrumentId != null && values[0].instrumentId !== primaryInstrumentId) {
+                    handleClickMakePrimary(values[0].instrumentId);
+                }
             }}
         />}
         {isOpen && <DB3Client.DB3SelectTagsDialog
@@ -117,7 +126,7 @@ const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
             onClose={() => {
                 setIsOpen(false);
             }}
-            onChange={(newValue: db3.UserInstrumentPayload[]) => {
+            onChange={(newValue: UserEditorInstrumentAssociation[]) => {
                 props.onChange(newValue);
             }}
         />}
@@ -139,7 +148,8 @@ export const OwnInstrumentsControl = () => {
         return null;
     }
     const recordFeature = useFeatureRecorder();
-    const tableClient = DB3Client.useTableRenderContext({
+    const tableClient = DB3Client.useCrudTableRenderContext({
+        view: db3.userEditorView,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xUser,
             columns: [
@@ -147,15 +157,21 @@ export const OwnInstrumentsControl = () => {
                 new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
             ],
         }),
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         filterModel: {
             tableParams: {
                 userId: currentUser.id,
             }
         },
     });
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.userEditorView,
+        tableClient,
+    });
 
-    const row = tableClient.items[0]!;
+    const row = tableClient.items[0];
+    if (!row?.instruments) {
+        return null;
+    }
 
     return <UserInstrumentsFieldInput
         spec={tableClient.getColumn("instruments") as any}
@@ -164,21 +180,20 @@ export const OwnInstrumentsControl = () => {
         row={row}
         value={row.instruments}
         refetch={tableClient.refetch}
-        onChange={(value: db3.UserInstrumentPayload[]) => {
+        onChange={(value: UserEditorInstrumentAssociation[]) => {
             void recordFeature({
                 feature: ActivityFeature.profile_change_instrument,
             });
             const updateObj = {
-                id: currentUser!.id,
+                ...row,
                 instruments: value,
             };
-            tableClient.doUpdateMutation(updateObj).then(e => {
+            editCommands.update(updateObj, row).then(() => {
                 showSnackbar({ severity: "success", children: "Instruments updated" });
             }).catch(e => {
                 console.log(e);
                 showSnackbar({ severity: "error", children: "error updating instruments" });
             }).finally(async () => {
-                tableClient.refetch();
                 dashboardContext.refetchDashboardData();
             });
         }}

@@ -47,5 +47,7 @@ export * from "./shared/entities/eventSongList/eventSongListCommands"
 export * from "./shared/entities/eventSongList/eventSongListDraft"
 export * from "./shared/entities/eventSongList/eventSongListEntities"
 export * from "./shared/entities/eventSongList/eventSongListViews"
+export * from "./shared/entities/setlistPlan/setlistPlanEntities"
+export * from "./shared/entities/setlistPlan/setlistPlanViews"
 
 

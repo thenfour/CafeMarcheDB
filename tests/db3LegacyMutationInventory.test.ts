@@ -5,8 +5,6 @@ import { describe, expect, it } from "vitest";
 
 type LegacyWriterCategory =
     | "transport-infrastructure"
-    | "nested-row"
-    | "relationship"
     | "collection-editor"
     | "workflow"
     | "legacy-helper";
@@ -23,24 +21,15 @@ const legacyMutationCapabilitySites: Record<string, InventoryEntry> = {
     "src/core/components/CustomLinksComponents.tsx": { category: "collection-editor", count: 1 },
     "src/core/components/dashboard/MenuLinkComponents.tsx": { category: "collection-editor", count: 1 },
     "src/core/components/song/NewSongComponents.tsx": { category: "workflow", count: 1 },
-    "src/core/components/song/SongComponents.tsx": { category: "nested-row", count: 1 },
-    "src/core/components/user/UserInstruments.tsx": { category: "relationship", count: 1 },
     "src/core/db3/components/DB3ClientBasicFields.tsx": { category: "legacy-helper", count: 2 },
     "src/core/db3/components/DB3ClientCore.tsx": { category: "transport-infrastructure", count: 1 },
-    "src/core/db3/components/db3NewObjectDialog.tsx": { category: "legacy-helper", count: 1 },
     "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 1 },
-    "src/pages/backstage/setlistPlanner.tsx": { category: "workflow", count: 1 },
 };
 
 const legacyMutationCallSites: Record<string, InventoryEntry> = {
     "src/core/components/CustomLinksComponents.tsx": { category: "collection-editor", count: 3 },
-    "src/core/components/SongFileComponents.tsx": { category: "relationship", count: 2 },
     "src/core/components/dashboard/MenuLinkComponents.tsx": { category: "collection-editor", count: 3 },
-    "src/core/components/event/EventSegmentComponents.tsx": { category: "nested-row", count: 4 },
-    "src/core/components/setlistPlan/SetlistPlanGroupComponents.tsx": { category: "nested-row", count: 3 },
     "src/core/components/song/NewSongComponents.tsx": { category: "workflow", count: 1 },
-    "src/core/components/song/SongComponents.tsx": { category: "nested-row", count: 3 },
-    "src/core/components/user/UserInstruments.tsx": { category: "relationship", count: 1 },
     "src/core/db3/components/db3DataGrid.tsx": { category: "transport-infrastructure", count: 3 },
     "src/core/db3/components/useDB3SelectionSource.tsx": { category: "legacy-helper", count: 1 },
     "src/pages/backstage/frontpagegallery.tsx": { category: "workflow", count: 5 },

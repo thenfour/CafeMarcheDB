@@ -794,10 +794,10 @@ The existing writers are grouped by the replacement they need:
 | --- | --- | --- |
 | Row CRUD grids | None | Every writable `DB3EditGrid` now uses a command-backed editor view. File creation remains owned by the upload workflow rather than the metadata grid. |
 | Entity detail editors | None | Song, Event, File, User/Profile, and Wiki tag metadata now use generated CRUD commands for row-shaped patches. Privileged and operation-specific actions remain named workflows. |
-| Nested rows and relationships | Embedded event-segment and song-credit/file editors, the profile user-instrument editor, and setlist-plan groups | Reuse generated row/association commands when one-row semantics are truthful; otherwise use a domain command that owns the parent and ordering invariants. |
+| Nested rows and relationships | None | Embedded Event Segment, Song Credit, File metadata, profile instrument-set, and Setlist Plan Group edits now use generated CRUD commands. Setlist group reordering remains an explicit ordered operation. |
 | Collection editors | Custom links and dashboard menu links | Define CRUD views if each item remains independent; otherwise use a collection command for ordering or cross-item invariants. |
 | Workflows and aggregates | New-song creation, frontpage gallery composition, setlist planning, and similar multi-step flows | Use handwritten named commands with strict DTOs and one authorized transaction. |
-| Compatibility infrastructure | The standalone edit dialog, selection-creation fallback, generic mutation-capable query helpers, and the TableClient transport implementation | Delete each bridge after its callers migrate; remove the capability flag and generic mutation RPC last. |
+| Compatibility infrastructure | The selection-creation fallback, generic mutation-capable query helpers, and the TableClient transport implementation | Delete each bridge after its callers migrate; remove the capability flag and generic mutation RPC last. The standalone edit dialog's mutation-capable fallback is already gone. |
 
 The first post-inventory category slice migrates the Event Type, Event Status,
 and Event Tag administration grids. Each now has one registered editor CRUD
@@ -926,6 +926,19 @@ on their dedicated boundaries. Wiki tag metadata now has a finite
 projection and an update command. Wiki content/revisions, edit locking, and
 visibility remain explicit workflows. Both entities retain their natural
 identities.
+
+The fourteenth slice completes the nested-row and relationship category as one
+larger batch. Embedded Event Segment and Song Credit create/update/delete,
+embedded File metadata update/delete, the self-profile instrument set, and
+Setlist Plan Group create/update/delete now invoke generated CRUD commands.
+The finite Song Credit write DTO now includes the dialog's `year` and `comment`
+fields, and the File editor DTO includes its editable `fileCreatedAt` metadata.
+Setlist Plan Group gains its own entity and finite editor view; drag reordering
+stays on the existing explicit scoped sort operation because it mutates an
+ordered set rather than one row. The standalone edit dialog no longer has a
+mutation-capable fallback: every caller must inject a query-only or render-only
+TableClient for editor preparation. Dedicated Event response-copy/clear and
+primary-instrument commands remain separate domain operations.
 
 ## Design principles
 
@@ -1102,10 +1115,13 @@ boundary safely.
   - [x] Complete the entity-detail category by migrating User/Profile,
     user-administration profile and role edits, and Wiki tag metadata through
     finite named views and generated update commands.
-  - [ ] Migrate the nested/relationship, collection, and workflow categories in
-    that order. Split out named domain commands wherever row CRUD is not
-    truthful, and separately migrate selection create-from-string consumers to
-    the matching CRUD views.
+  - [x] Migrate embedded Event Segment, Song Credit, File metadata, profile
+    instrument-set, and Setlist Plan Group writes through generated CRUD,
+    retaining ordered group reordering and dedicated domain actions on their
+    explicit boundaries.
+  - [ ] Migrate the collection and workflow categories in that order. Split out
+    named domain commands wherever row CRUD is not truthful, and separately
+    migrate selection create-from-string consumers to the matching CRUD views.
 - [ ] Validate or normalize the combined setlist song/divider position namespace
   on the server, independent of the client serializer.
 - [ ] Decide and prove the first-class edit-model contract for draft creation,

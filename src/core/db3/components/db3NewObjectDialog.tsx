@@ -246,8 +246,7 @@ type DB3EditObjectDialogProps = {
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => void;
     onCancel: () => void;
     onDelete?: (tableClient: DB3ClientCore.xTableRenderClient) => void;
-    table: DB3ClientCore.xTableClientSpec;
-    tableRenderClient?: DB3ClientCore.xTableRenderClient;
+    tableRenderClient: DB3ClientCore.xTableRenderClient;
 
     initialValue: TAnyModel;
     title?: React.ReactNode;
@@ -255,50 +254,19 @@ type DB3EditObjectDialogProps = {
 };
 
 // TODO: is this the same thing as DB3EditRowButton? if so, merge them.
-export function DB3EditObjectDialog({ onOK, onCancel, table, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
-    if (props.tableRenderClient) {
-        return <AppContextMarker name="DB3EditObjectDialog">
-            <DB3EditObject2Dialog
-                initialValue={initialValue}
-                onCancel={onCancel}
-                onOK={onOK}
-                onDelete={onDelete}
-                tableRenderClient={props.tableRenderClient}
-                title={props.title}
-                description={props.description}
-            />
-        </AppContextMarker>;
-    }
-
-    return <LegacyDB3EditObjectDialog
-        initialValue={initialValue}
-        onCancel={onCancel}
-        onOK={onOK}
-        onDelete={onDelete}
-        table={table}
-        title={props.title}
-        description={props.description}
-    />;
-};
-
-function LegacyDB3EditObjectDialog({ onOK, onCancel, table, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
-    const tableClient = DB3ClientCore.useTableRenderContext({
-        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
-        tableSpec: table,
-    });
-
+export function DB3EditObjectDialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
     return <AppContextMarker name="DB3EditObjectDialog">
         <DB3EditObject2Dialog
             initialValue={initialValue}
             onCancel={onCancel}
             onOK={onOK}
             onDelete={onDelete}
-            tableRenderClient={tableClient}
+            tableRenderClient={tableRenderClient}
             title={props.title}
             description={props.description}
         />
     </AppContextMarker>;
-};
+}
 
 
 //////////////////////////////////////////////////////////////////

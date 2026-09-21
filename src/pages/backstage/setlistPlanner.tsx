@@ -711,8 +711,8 @@ const SetlistPlannerPageContent = ({ onTitleChange }: { onTitleChange: (title: s
 
     const [neighbors, setNeighbors] = React.useState<SetlistPlan[]>([]);
 
-    const groupTableClient = DB3Client.useTableRenderContext<db3.SetlistPlanGroupPayload>({
-        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+    const groupTableClient = DB3Client.useCrudTableRenderContext({
+        view: db3.setlistPlanGroupEditorView,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xSetlistPlanGroup,
             columns: Object.values(SetlistPlanGroupClientColumns),

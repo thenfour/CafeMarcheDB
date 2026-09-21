@@ -55,9 +55,13 @@ interface EventSegmentEditDialogProps {
     initialValue: db3.EventVerbose_EventSegment;
     //isNewObject: boolean,
     markdownSettingPrefix: string,
-    onSave: (newValue: db3.EventVerbose_EventSegment, tableRenderClient: DB3Client.xTableRenderClient) => void;
+    onSave: (
+        newValue: db3.EventVerbose_EventSegment,
+        commands: DB3Client.CrudViewCommandClient,
+        previousValue: db3.EventVerbose_EventSegment,
+    ) => void;
     onCancel: () => void;
-    onDelete?: (tableRenderClient: DB3Client.xTableRenderClient) => void;
+    onDelete?: (commands: DB3Client.CrudViewCommandClient) => void;
 };
 
 export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
@@ -75,19 +79,28 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
             EventSegmentClientColumns.event,
         ],
     });
+    const tableRenderClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.None,
+        tableSpec,
+    });
+    const commands = DB3Client.useCrudViewCommands({
+        view: db3.eventSegmentEditorView,
+        tableClient: tableRenderClient,
+    });
+    const initialValue = {
+        ...props.initialValue,
+        // The verbose event payload carries statusId, while the editor column
+        // uses the semantic status object.
+        status: dashboardContext.eventStatus.getById(props.initialValue.statusId),
+    };
 
     return <DB3EditObjectDialog
-        initialValue={{
-            ...props.initialValue,
-            // little hack: the payload doesn't contain a status (only statusId).
-            // should probably be added on enriching
-            status: dashboardContext.eventStatus.getById(props.initialValue.statusId),
-        }}
-        onDelete={props.onDelete}
+        initialValue={initialValue}
+        onDelete={props.onDelete ? () => props.onDelete!(commands) : undefined}
 
         onCancel={props.onCancel}
-        onOK={props.onSave}
-        table={tableSpec}
+        onOK={value => props.onSave(value as db3.EventVerbose_EventSegment, commands, initialValue)}
+        tableRenderClient={tableRenderClient}
         // title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
         // description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
         title={<SettingMarkdown setting={`${props.markdownSettingPrefix}DialogTitle` as any} />}
@@ -117,8 +130,8 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
         publicData,
     });
 
-    const handleSave = (obj, tableClient) => {
-        tableClient.doInsertMutation(obj).then((newRow) => {
+    const handleSave = (obj, commands: DB3Client.CrudViewCommandClient) => {
+        commands.create(obj).then(() => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             setOpen(false);
             refetch();
@@ -158,8 +171,8 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     const dashboardContext = useDashboardContext();
     const publicData = useDB3Authorization();
 
-    const handleDelete = (saveClient: DB3Client.xTableRenderClient) => {
-        saveClient.doDeleteMutation(props.segment.id, 'softWhenPossible').then(e => {
+    const handleDelete = (commands: DB3Client.CrudViewCommandClient) => {
+        commands.delete(props.segment.id).then(() => {
             showSnackbar({ severity: "success", children: "segment deleted" });
             setEditOpen(false);
             refetch();
@@ -169,11 +182,15 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
         });
     };
 
-    const handleSave = (updatedFields, saveClient: DB3Client.xTableRenderClient) => {
+    const handleSave = (
+        updatedFields,
+        commands: DB3Client.CrudViewCommandClient,
+        previousValue: db3.EventVerbose_EventSegment,
+    ) => {
         const updateObj = {
             ...updatedFields,
         };
-        saveClient.doUpdateMutation(updateObj).then(e => {
+        commands.update(updateObj, previousValue).then(() => {
             showSnackbar({ severity: "success", children: "segment updated" });
             setEditOpen(false);
             refetch();
@@ -270,11 +287,15 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
     const publicData = useDB3Authorization();
 
 
-    const handleSave = (updatedFields, saveClient: DB3Client.xTableRenderClient) => {
+    const handleSave = (
+        updatedFields,
+        commands: DB3Client.CrudViewCommandClient,
+        previousValue: db3.EventVerbose_EventSegment,
+    ) => {
         const updateObj = {
             ...updatedFields,
         };
-        saveClient.doUpdateMutation(updateObj).then(e => {
+        commands.update(updateObj, previousValue).then(() => {
             showSnackbar({ severity: "success", children: "segment updated" });
             setEditOpen(false);
             props.refetch();

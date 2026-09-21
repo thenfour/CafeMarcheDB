@@ -448,16 +448,24 @@ export const FileEditor = (props: FileEditorProps) => {
             new DB3Client.TagsFieldClient<db3.FileWikiPageTagPayload>({ columnName: "taggedWikiPages", cellWidth: 150, allowDeleteFromCell: false }),
         ],
     });
+    const tableRenderClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.None,
+        tableSpec,
+    });
+    const editCommands = DB3Client.useCrudViewCommands({
+        view: db3.fileEditorView,
+        tableClient: tableRenderClient,
+    });
 
     return <DB3EditObjectDialog
         initialValue={props.initialValue}
         onCancel={() => props.onClose()}
-        onDelete={(tableClient) => {
+        onDelete={() => {
             void recordFeature({
                 feature: ActivityFeature.file_delete,
                 fileId: props.initialValue.id,
             });
-            tableClient.doDeleteMutation(props.initialValue.id, "softWhenPossible").then(() => {
+            editCommands.delete(props.initialValue.id).then(() => {
                 showSnackbar({ severity: "success", children: "file delete successful" });
             }).catch((e) => {
                 console.log(e);
@@ -466,12 +474,12 @@ export const FileEditor = (props: FileEditorProps) => {
                 props.onClose();
             });
         }}
-        onOK={(value, tableClient) => {
+        onOK={(value) => {
             void recordFeature({
                 feature: ActivityFeature.file_edit,
                 fileId: props.initialValue.id,
             });
-            tableClient.doUpdateMutation(value).then(() => {
+            editCommands.update(value, props.initialValue).then(() => {
                 showSnackbar({ severity: "success", children: "file edit successful" });
             }).catch((e) => {
                 console.log(e);
@@ -480,8 +488,7 @@ export const FileEditor = (props: FileEditorProps) => {
                 props.onClose();
             });
         }}
-
-        table={tableSpec}
+        tableRenderClient={tableRenderClient}
     />;
 };
 

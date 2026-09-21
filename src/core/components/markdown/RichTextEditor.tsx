@@ -126,9 +126,9 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     }
                 }}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                    console.log(`onChange event e=`, e, "nativeEvent=", e.nativeEvent);
+                    //console.log(`onChange event e=`, e, "nativeEvent=", e.nativeEvent);
                     const inputType = getInputType(e.nativeEvent);
-                    console.log(`inputType=${inputType}`);
+                    //console.log(`inputType=${inputType}`);
                     props.onValueChanged({
                         text: e.target.value,
                         selectionStart: e.target.selectionStart,
