@@ -432,9 +432,10 @@ pairing a view-bound spec with a different CRUD view.
 the query `viewID` and hydration, so `items` is `ClientOf<TView>[]` without a
 caller-supplied row generic. Table-only callers use the separately named
 `useLegacyTableRenderContext()` and retain the old caller-declared row type.
-`bindLegacyTableClientSpecToView()` is the explicit migration adapter for an
-existing table-only column set; specs produced through that adapter retain a
-runtime legacy marker rather than silently becoming new typed specs.
+The named-view overload of `useDb3Query()` accepts only a view-bound spec; when
+the caller needs no presentation columns, it constructs an empty typed spec for
+that view. The former `bindLegacyTableClientSpecToView()` adapter has been
+removed rather than silently upgrading a table-only spec.
 
 Mutation preparation follows three distinct stages: a client column returns a
 mutation patch (composite date-range columns can return several fields), xTable
@@ -1003,9 +1004,11 @@ conversions.
   and `useLegacyTableRenderContext()`. Delete the zero-consumer legacy CRUD-view
   constructor and convert the direct Custom Link and Menu Link view adapters to
   typed `defineTableClientSpec()` declarations.
-- [ ] Convert the remaining view-backed inventory to the typed path. The only
-  remaining `bindLegacyTableClientSpecToView()` call is the generic
-  `useDb3Query()` migration bridge; retain a separately documented
+- [x] Remove `bindLegacyTableClientSpecToView()`. The named-view overload of
+  `useDb3Query()` now accepts a typed view-bound spec or creates an empty typed
+  query-only spec; Song detail supplies its typed presentation columns.
+- [ ] Convert the remaining view-backed inventory to the typed path. Retain a
+  separately documented
   runtime-dynamic/query-only API only where static view binding is genuinely
   impossible.
 - [ ] Convert remaining `enrich*` consumers and duplicate asserted Prisma query

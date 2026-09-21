@@ -397,28 +397,6 @@ export function defineLegacyDynamicTableClientSpec(
     return new xTableClientSpec(args);
 }
 
-/**
- * Explicit migration adapter for an existing table-only spec whose runtime
- * columns are known to edit a concrete view. New code should define the spec
- * with defineTableClientSpec() instead.
- */
-export function bindLegacyTableClientSpecToView<TView extends db3.AnyDB3View>(args: {
-    readonly view: TView;
-    readonly tableSpec: xTableClientSpec<undefined>;
-}): xTableClientSpec<TView> {
-    if (args.tableSpec.args.table !== args.view.entity.schema) {
-        throw new Error(
-            `Legacy DB3 table client '${args.tableSpec.args.table.tableID}' cannot be bound to view '${args.view.viewID}'.`,
-        );
-    }
-    return xTableClientSpec.fromView({
-        view: args.view,
-        columns: args.tableSpec.args.columns,
-        legacyMutationProjection: true,
-    });
-}
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
 

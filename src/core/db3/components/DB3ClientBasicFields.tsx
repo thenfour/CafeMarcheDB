@@ -1082,7 +1082,7 @@ export interface UseDb3ViewQueryArgs<TView extends db3.AnyDB3View> {
     filterSpec?: CMDBTableFilterModel | undefined;
     enable?: boolean;
     requestedCaps?: DB3ClientCore.xTableClientCaps;
-    tableSpec?: DB3ClientCore.xTableClientSpec<undefined>;
+    tableSpec?: DB3ClientCore.xTableClientSpec<TView>;
 };
 
 export interface UseDb3ViewQueryArgsWithEnable<TView extends db3.AnyDB3View> extends UseDb3ViewQueryArgs<TView> {
@@ -1104,14 +1104,11 @@ export function useDb3Query(
     if (!enable) {
         return undefined;
     }
-    const view = "view" in args ? args.view : undefined;
-    const schema = "view" in args ? args.view.entity.schema : args.schema;
-    const legacySpec = args.tableSpec ?? DB3ClientCore.defineLegacyDynamicTableClientSpec({
-        table: schema,
-        columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
-    });
-    if (view) {
-        const tableSpec = DB3ClientCore.bindLegacyTableClientSpecToView({ view, tableSpec: legacySpec });
+    if ("view" in args) {
+        const tableSpec = args.tableSpec ?? DB3ClientCore.defineTableClientSpec({
+            view: args.view,
+            columns: {},
+        });
         return DB3ClientCore.useTableRenderContext({
             requestedCaps: args.requestedCaps ?? DB3ClientCore.xTableClientCaps.Query,
             tableSpec,
@@ -1119,6 +1116,10 @@ export function useDb3Query(
             filterModel: filterSpec,
         });
     }
+    const legacySpec = args.tableSpec ?? DB3ClientCore.defineLegacyDynamicTableClientSpec({
+        table: args.schema,
+        columns: args.schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
+    });
     return DB3ClientCore.useLegacyTableRenderContext({
         requestedCaps: args.requestedCaps ?? DB3ClientCore.xTableClientCaps.Query,
         tableSpec: legacySpec,

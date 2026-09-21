@@ -25,8 +25,8 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
 
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xSong,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.songDetailView,
         columns: DB3Client.makeClientColumnSelection(
             SongClientColumns.id,
             SongClientColumns.name,

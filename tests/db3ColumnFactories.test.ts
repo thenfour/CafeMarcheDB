@@ -78,6 +78,18 @@ describe("DB3 keyed column factories", () => {
             .toThrow("Duplicate DB3 client column 'name'");
     });
 
+    it("represents a named query with no presentation columns as a typed view spec", () => {
+        const queryOnlySpec = defineTableClientSpec({
+            view: db3.eventSearchView,
+            columns: {},
+        });
+
+        expect(queryOnlySpec.args.view).toBe(db3.eventSearchView);
+        expect(queryOnlySpec.args.table).toBe(db3.eventSearchView.entity.schema);
+        expect(queryOnlySpec.args.columns).toEqual([]);
+        expect(queryOnlySpec.args.legacyMutationProjection).toBe(false);
+    });
+
     it("propagates a view's hydrated row, encoded mutation, and public identity types", () => {
         type TPilotClient = ReturnType<typeof useInstrumentFunctionalGroupPilotClient>;
         type TPilotRow = TPilotClient["items"][number];

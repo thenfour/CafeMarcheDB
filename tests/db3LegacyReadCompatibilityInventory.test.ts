@@ -73,7 +73,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
     ],
     "src/core/db3/components/DB3ClientBasicFields.tsx": [
         { api: "defineLegacyDynamicTableClientSpec", category: "generic-infrastructure", count: 1 },
-        { api: "bindLegacyTableClientSpecToView", category: "generic-infrastructure", count: 1 },
         { api: "useLegacyTableRenderContext", category: "generic-infrastructure", count: 1 },
     ],
     "src/core/db3/components/db3DataGrid.tsx": [
@@ -105,10 +104,12 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
     "src/pages/backstage/rolePermissions.tsx": [
         { api: "defineLegacyTableClientSpec", category: "table-only-query", count: 2 },
     ],
-    "src/pages/backstage/song/[...id_slug_tab].tsx": [
-        { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },
-    ],
 };
+
+const retiredDefinitionNames = new Set<string>([
+    "bindLegacyTableClientSpecToView",
+    "defineLegacyCrudView",
+]);
 
 function listSourceFiles(directory: string): string[] {
     return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
@@ -171,7 +172,8 @@ function collectCompatibilityUsage() {
             }
 
             if (ts.isFunctionDeclaration(node)
-                && node.name?.text === "defineLegacyCrudView") {
+                && node.name
+                && retiredDefinitionNames.has(node.name.text)) {
                 retiredDefinitionSites.push(relativePath);
             }
 
@@ -188,7 +190,7 @@ describe("legacy DB3 read compatibility inventory", () => {
         expect(collectCompatibilityUsage().callSites).toEqual(expectedCounts());
     });
 
-    it("keeps the unused legacy CRUD-view constructor retired", () => {
+    it("keeps zero-consumer compatibility functions retired", () => {
         expect(collectCompatibilityUsage().retiredDefinitionSites).toEqual([]);
     });
 });

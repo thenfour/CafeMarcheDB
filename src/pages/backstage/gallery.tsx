@@ -4,10 +4,10 @@ import { QrTester } from "@/src/core/components/QrCode";
 import DashboardLayout from "@/src/core/components/dashboard/DashboardLayout";
 import { useDashboardContext } from "@/src/core/components/dashboardContext/DashboardContext";
 import { collectDeviceInfo } from "@/src/core/components/featureReports/activityTracking";
+import { AutoAssignInstrumentPartition } from "@/src/core/db3/shared/autoAssignInstrumentPartition";
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Divider } from "@mui/material";
-import { Prisma } from "db";
 import * as mime from 'mime';
 import React from "react";
 import { arraysContainSameValues } from "shared/arrayUtils";
@@ -26,10 +26,9 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
+import { ClientOf } from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import { ChipFilterGroup, FilterControls } from "../../core/components/search/FilterControl";
-import { ClientOf } from "src/core/db3/db3";
-import { AutoAssignInstrumentPartition } from "@/src/core/db3/shared/autoAssignInstrumentPartition";
 
 interface FilterSpec {
     qfText: string;
