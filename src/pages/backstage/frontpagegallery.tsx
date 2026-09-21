@@ -18,7 +18,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Size } from "recharts/types/util/types";
 import { Permission } from "shared/permissions";
-import { Coord2D, formatFileSize, MulSize, type TAnyModel } from "shared/rootroot";
+import { Coord2D, formatFileSize, MulSize } from "shared/rootroot";
 import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { AppContextMarker } from "src/core/components/AppContext";
@@ -36,12 +36,8 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 
-type FrontpageGalleryClient = DB3Client.xLegacyTableRenderClient<db3.FrontpageGalleryItemPayload> & {
-    readonly crud: DB3Client.CrudViewCommandClient<
-        typeof db3.frontpageGalleryItemEditorView,
-        TAnyModel
-    >;
-};
+type FrontpageGalleryItemClient = db3.ClientOf<typeof db3.frontpageGalleryItemEditorView>;
+type FrontpageGalleryClient = DB3Client.CrudTableRenderContext<typeof db3.frontpageGalleryItemEditorView>;
 
 
 
@@ -89,7 +85,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
                     feature: ActivityFeature.frontpagegallery_item_create,
                 });
                 const promises = resp.files.map(file => {
-                    const newGalleryItem = props.client.tableSpec.args.table.createNew(currentUser) as db3.FrontpageGalleryItemPayloadForUpload;
+                    const newGalleryItem = props.client.tableSpec.args.table.createNew(currentUser) as Partial<FrontpageGalleryItemClient>;
                     newGalleryItem.fileId = file.id;
                     newGalleryItem.file = file;
                     return props.client.crud.create(newGalleryItem);
@@ -146,7 +142,7 @@ interface GalleryItemDescriptionEditorProps {
     //initialValue: string;
     refetch: () => void;
     onClose: () => void;
-    galleryItem: db3.FrontpageGalleryItemPayload;
+    galleryItem: FrontpageGalleryItemClient;
     client: FrontpageGalleryClient;
 };
 
@@ -164,7 +160,7 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
                 feature: ActivityFeature.frontpagegallery_item_edit,
                 frontpageGalleryItemId: props.galleryItem.id,
             });
-            const newrow: db3.FrontpageGalleryItemPayload = {
+            const newrow: FrontpageGalleryItemClient = {
                 ...props.galleryItem,
                 caption: valueEn || "",
                 caption_fr: valueFr || "",
@@ -219,7 +215,7 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
 
 
 export interface GalleryItemDescriptionControlProps {
-    value: db3.FrontpageGalleryItemPayload;
+    value: FrontpageGalleryItemClient;
     client: FrontpageGalleryClient;
     editMode: boolean;
     setEditMode: (newValue: boolean) => void;
@@ -256,7 +252,7 @@ type SelectedTool = "CropBegin" | "CropEnd" | "Move" | "Scale" | "Rotate";
 
 // uncontrolled pattern... so upon mount, we create our own editable version of the value.
 export interface GalleryItemImageEditControlProps {
-    value: db3.FrontpageGalleryItemPayload;
+    value: FrontpageGalleryItemClient;
     client: FrontpageGalleryClient;
     onExitEditMode: () => void;
 };
@@ -264,8 +260,8 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const recordFeature = useFeatureRecorder();
     const updateImageMutation = API.files.updateGalleryItemImageMutation.useToken();
-    const [editingValue, setEditingValue] = React.useState<db3.FrontpageGalleryItemPayloadWithAncestorFile>(() => {
-        const ev: db3.FrontpageGalleryItemPayloadWithAncestorFile = { ...props.value }; // create our own copy of the item, for live editing
+    const [editingValue, setEditingValue] = React.useState<FrontpageGalleryItemClient>(() => {
+        const ev: FrontpageGalleryItemClient = { ...props.value }; // create our own copy of the item, for live editing
         let editParams: ImageEditParams = MakeDefaultImageEditParams();
 
         // DONT operate on parent, because it gets very confusing when trying to re-edit what was a baked file.
@@ -413,8 +409,6 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 
     };
 
-    //const internalValue: db3.FrontpageGalleryItemPayload = { ...props.value, displayParams: JSON.stringify(editParams) };
-
     // const content: HomepageContentSpec = {
     //     agenda: [],
     //     gallery: [editingValue],
@@ -494,7 +488,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface GalleryItemImageControlProps {
-    value: db3.FrontpageGalleryItemPayload;
+    value: FrontpageGalleryItemClient;
     client: FrontpageGalleryClient;
     editMode: boolean;
     setEditMode: (newValue: boolean) => void;
@@ -516,7 +510,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
 
 ////////////////////////////////////////////////////////////////
 interface GalleryItemProps {
-    value: db3.FrontpageGalleryItemPayload;
+    value: FrontpageGalleryItemClient;
     //showImages: boolean;
     client: FrontpageGalleryClient;
 };
@@ -529,7 +523,7 @@ const GalleryItem = (props: GalleryItemProps) => {
     const recordFeature = useFeatureRecorder();
 
     const handleSoftDeleteClick = () => {
-        const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, isDeleted: true };
+        const newrow: FrontpageGalleryItemClient = { ...props.value, isDeleted: true };
         void recordFeature({
             feature: ActivityFeature.frontpagegallery_item_delete,
             frontpageGalleryItemId: newrow.id,
@@ -601,8 +595,8 @@ const MainContent = () => {
     const recordFeature = useFeatureRecorder();
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
 
-    const tableSpec = DB3Client.defineLegacyTableClientSpec({
-        table: db3.xFrontpageGalleryItem,
+    const tableSpec = DB3Client.defineTableClientSpec({
+        view: db3.frontpageGalleryItemEditorView,
         columns: {
             id: columnName => new DB3Client.PKColumnClient({ columnName }),
             // fields which are editable through db3mutation need to be specified here.
@@ -617,18 +611,10 @@ const MainContent = () => {
         },
     });
 
-    const tableClient = DB3Client.useLegacyTableRenderContext<db3.FrontpageGalleryItemPayload>({
-        tableSpec,
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-    });
-    const crud = DB3Client.useLegacyCrudViewCommands<
-        typeof db3.frontpageGalleryItemEditorView,
-        TAnyModel
-    >({
+    const client = DB3Client.useCrudTableRenderContext({
         view: db3.frontpageGalleryItemEditorView,
-        tableClient,
+        tableSpec,
     });
-    const client: FrontpageGalleryClient = Object.assign(tableClient, { crud });
     const items = client.items;
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {

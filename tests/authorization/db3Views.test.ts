@@ -47,8 +47,26 @@ describe("DB3 named views", () => {
         expect(db3.frontpageGalleryItemEditorView.getSelectionArgs(context))
             .toMatchObject({
                 select: {
-                    file: { select: { id: true, fileLeafName: true } },
+                    file: {
+                        select: {
+                            id: true,
+                            fileLeafName: true,
+                            storedLeafName: true,
+                            externalURI: true,
+                            sizeBytes: true,
+                            mimeType: true,
+                            customData: true,
+                        },
+                    },
                     createdByUser: { select: { id: true, name: true } },
+                    visiblePermission: {
+                        select: {
+                            id: true,
+                            name: true,
+                            isVisibility: true,
+                            iconName: true,
+                        },
+                    },
                 },
             });
         expect(db3.roleEditorView.getSelectionArgs(context).select.permissions.orderBy)

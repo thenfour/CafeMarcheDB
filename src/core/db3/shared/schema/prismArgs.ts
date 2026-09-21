@@ -1405,31 +1405,6 @@ export const FrontpageGalleryItemArgs = Prisma.validator<Prisma.FrontpageGallery
 });
 export type FrontpageGalleryItemPayload = Prisma.FrontpageGalleryItemGetPayload<typeof FrontpageGalleryItemArgs>;
 export type FrontpageGalleryItemPayloadMinimum = Prisma.FrontpageGalleryItemGetPayload<{}>;
-export type FrontpageGalleryItemPayloadForUpload = Prisma.FrontpageGalleryItemGetPayload<{
-    include: { file: true }
-}>;
-
-// when editing files, we will graft the parent file onto the file. so create a type that can handle that grafting.
-export const FrontpageGalleryItemArgsWithAncestorFile = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
-    include: {
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
-        file: {
-            include: {
-                visiblePermission: {
-                    include: {
-                        roles: true
-                    }
-                },
-                parentFile: true,
-            }
-        },
-    },
-});
-export type FrontpageGalleryItemPayloadWithAncestorFile = Prisma.FrontpageGalleryItemGetPayload<typeof FrontpageGalleryItemArgsWithAncestorFile>;
 
 
 export const FrontpageGalleryItemNaturalOrderBy: Prisma.FrontpageGalleryItemOrderByWithRelationInput[] = [

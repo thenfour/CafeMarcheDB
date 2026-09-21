@@ -53,9 +53,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
         { api: "defineLegacyDynamicTableClientSpec", category: "runtime-dynamic-query", count: 1 },
         { api: "useLegacyTableRenderContext", category: "runtime-dynamic-query", count: 1 },
     ],
-    "src/core/components/wiki/WikiPageComponentsBase.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },
-    ],
     "src/core/db3/components/DB3AssociationMatrix.tsx": [
         { api: "useLegacyTableRenderContext", category: "generic-infrastructure", count: 2 },
     ],
@@ -82,10 +79,6 @@ const compatibilitySites: Record<string, InventoryEntry[]> = {
         { api: "useLegacyTableRenderContext", category: "named-view-candidate", count: 1 },
     ],
     "src/pages/backstage/frontpageEvents.tsx": [
-        { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },
-        { api: "useLegacyTableRenderContext", category: "named-view-candidate", count: 1 },
-    ],
-    "src/pages/backstage/frontpagegallery.tsx": [
         { api: "defineLegacyTableClientSpec", category: "named-view-candidate", count: 1 },
         { api: "useLegacyTableRenderContext", category: "named-view-candidate", count: 1 },
     ],

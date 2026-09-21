@@ -2,7 +2,6 @@
 // it's useful to group things like this instead of freestanding functions
 
 import { AddCoord2DSize, Coord2D, parsePayloadJSON } from "@/shared/rootroot";
-import * as db3 from "@db3/db3";
 import { Prisma } from "db";
 import { Size } from "recharts/types/util/types";
 import { Clamp, gMinImageDimension } from "shared/utils";
@@ -17,6 +16,12 @@ type GetImageFileEditInfo_File = {
     customData: string | null;
     id: number;
     mimeType: string | null;
+};
+
+type GetGalleryItemImageInfo_Item = {
+    id: number;
+    displayParams: string;
+    file: GetImageFileEditInfo_File;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +122,7 @@ class FilesSharedAPI {
 
 
     // if editParams is omitted, use the ones embedded in the post.
-    getGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayload, editParams?: ImageEditParams) => {
+    getGalleryItemImageInfo = (post: GetGalleryItemImageInfo_Item, editParams?: ImageEditParams) => {
         return this.getImageFileEditInfo(post.file, editParams || this.getGalleryItemDisplayParams(post));
     }; // getGalleryItemImageInfo
 

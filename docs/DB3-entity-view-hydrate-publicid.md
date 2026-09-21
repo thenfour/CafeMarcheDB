@@ -1012,6 +1012,11 @@ conversions.
   clients. The shared edit-dialog callback remains a documented untyped draft
   boundary; File editing normalizes its detail row into the editor view shape
   before entering that boundary.
+- [x] Convert the bespoke front-page gallery editor to its typed CRUD-view
+  facade. Its strict view DTO now carries the nested file metadata the editor
+  actually reads while generated writes remain limited to the gallery entity's
+  prepared fields. Delete the unused WikiPage TableClient module instead of
+  manufacturing a view consumer for it.
 - [ ] Convert the remaining view-backed inventory to the typed path. Retain a
   separately documented
   runtime-dynamic/query-only API only where static view binding is genuinely
