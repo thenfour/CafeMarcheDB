@@ -16,9 +16,9 @@ const GoogleIdentityBadge = () => <Tooltip title="Has a Google sign-in"><Google 
 const EmailIdentityBadge = () => <Tooltip title="Has an email sign-in"><Email /></Tooltip>;
 
 const IdentityIndicator = ({ signinMethods }: { signinMethods: string[] }) => {
-    return signinMethods.sort((a, b) => a.localeCompare(b)).map(method => {
-        if (method === "google") return <GoogleIdentityBadge key="google" />;
-        if (method === "email") return <EmailIdentityBadge key="email" />;
+    return signinMethods.sort((a, b) => a.localeCompare(b)).map((method, index) => {
+        if (method === "google") return <GoogleIdentityBadge key={`google-${index}`} />;
+        if (method === "email") return <EmailIdentityBadge key={`email-${index}`} />;
         return null;
     });
 };
