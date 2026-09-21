@@ -19,14 +19,17 @@ const InstrumentFunctionalGroupPublicIdSchema = z.custom<InstrumentFunctionalGro
 
 export const instrumentFunctionalGroupEntity = defineEntity<Prisma.InstrumentFunctionalGroupDelegate>()({
     schema: xInstrumentFunctionalGroup,
+    getIdentity: (entity: InstrumentFunctionalGroupClientPayload) => entity.publicId,
 });
 
 export const instrumentTagEntity = defineEntity<Prisma.InstrumentTagDelegate>()({
     schema: xInstrumentTag,
+    getIdentity: (entity: Prisma.InstrumentTagGetPayload<{}>) => entity.id,
 });
 
 export const instrumentEntity = defineEntity<Prisma.InstrumentDelegate>()({
     schema: xInstrument,
+    getIdentity: (entity: InstrumentClientPayload) => entity.id,
 });
 
 // The list view deliberately makes non-identity fields optional. Its selection

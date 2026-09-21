@@ -4,7 +4,7 @@ import type { z } from "zod";
 import type { CMDBTableFilterModel } from "../apiTypes";
 import type { DB3Authorization } from "../db3Authorization";
 import type { DB3ReferenceProvider } from "./db3Hydration";
-import type { AnyDB3Entity, EntityIdOf, PrismaDelegateOf } from "./db3Entity";
+import type { AnyDB3Entity, PrismaDelegateOf } from "./db3Entity";
 
 type ArrayItem<T> = T extends readonly (infer TItem)[] ? TItem : never;
 

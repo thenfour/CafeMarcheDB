@@ -4,4 +4,5 @@ import { xWikiPageTag } from "../../schema/wikiPageTag";
 
 export const wikiPageTagEntity = defineEntity<Prisma.WikiPageTagDelegate>()({
     schema: xWikiPageTag,
+    getIdentity: (tag: Prisma.WikiPageTagGetPayload<{}>) => tag.id,
 });

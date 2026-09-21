@@ -45,17 +45,9 @@ export const defineEntity = <TDelegate,>() => <
 >(args: {
     entityID?: string;
     schema: xTable;
-    getIdentity?: (entity: TClientEntity) => TId;
-}): DB3Entity<TDelegate, TClientEntity, TId> => {
-
-    // if you don't supply getIdentity, derive it from the schema.
-    if (!args.getIdentity) {
-        args.getIdentity = (entity: TClientEntity) => entity[args.schema.pkMember] as TId;
-    }
-
-    return {
-        entityID: args.entityID || args.schema.tableID,
-        schema: args.schema,
-        getIdentity: args.getIdentity!,
-    };
-};
+    getIdentity: (entity: TClientEntity) => TId;
+}): DB3Entity<TDelegate, TClientEntity, TId> => ({
+    entityID: args.entityID || args.schema.tableID,
+    schema: args.schema,
+    getIdentity: args.getIdentity,
+});

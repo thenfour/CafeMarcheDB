@@ -133,8 +133,7 @@ particular view.
 - a Prisma selection, optionally derived from trusted server-side authorization
   and filter context;
 - a Zod DTO schema for the authorized transport shape;
-- a pure hydration function from DTO plus references to a client value; and
-- a client-value identity function.
+- a pure hydration function from DTO plus references to a client value.
 
 The selection is the maximum data the view may need. DB3 still applies `xTable`
 row, field, relation, soft-delete, and visibility authorization before validating
@@ -330,14 +329,14 @@ a conventional editor is automatic once its schema and columns are declared.
 Ordinary row editing should be exposed through a CRUD-enabled named view. A
 generic `defineCrudView()` composes the normal `defineView()` contract with the
 generated CRUD command foundation. It receives the same entity, selection, DTO
-schema, hydration, and identity information as a normal view, and returns a
+schema, and hydration as a normal view, and returns a
 view carrying generated create/update/delete command metadata.
 
 The CRUD contract is derived from two existing authorities:
 
-- the view supplies the selected DTO shape, hydrated client type, and typed
-  client identity; and
-- the view's entity links to the existing `xTable`, which continues to supply
+- the view supplies the selected DTO shape and hydrated client type; and
+- the view's entity supplies the typed client identity and links to the existing
+  `xTable`, which continues to supply
   new-row defaults, writable-column behavior, validation, field and row
   authorization, client-to-database transformation, delete policy, and
   public-versus-natural identity metadata.

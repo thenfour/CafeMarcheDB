@@ -44,7 +44,7 @@ export function defineViewSearchConfig<
             args.view.parseDto(transportItem),
             dashboardContext.referenceStore,
         ),
-        getItemKey: args.view.getIdentity,
+        getItemKey: args.view.entity.getIdentity,
         errorMessage: args.errorMessage,
     };
 }

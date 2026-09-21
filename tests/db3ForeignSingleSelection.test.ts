@@ -289,10 +289,12 @@ describe("shared DB3 foreign-single selection", () => {
         (spec.schemaColumn as any).getForeignTableSchema = () => foreignSchema;
         const view = {
             viewID: "InstrumentFunctionalGroup_Editor",
-            entity: { schema: foreignSchema },
+            entity: {
+                schema: foreignSchema,
+                getIdentity: (item: { publicId: string }) => item.publicId,
+            },
             parseDto: (value: unknown) => value,
             hydrate: (dto: Instrument) => ({ ...dto, publicId: `public-id-${dto.id}` }),
-            getIdentity: (item: { publicId: string }) => item.publicId,
             crud: { createCommand: {} },
         } as any;
         spec.args.selectionView = view;

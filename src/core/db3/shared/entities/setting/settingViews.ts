@@ -6,6 +6,7 @@ import { xSetting } from "../../db3schema";
 
 export const settingEntity = defineEntity<Prisma.SettingDelegate>()({
     schema: xSetting,
+    getIdentity: (setting: Prisma.SettingGetPayload<{}>) => setting.id,
 });
 
 const SettingEditorDtoSchema = z.object({

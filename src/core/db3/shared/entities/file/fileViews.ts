@@ -33,7 +33,6 @@ export const fileTagEditorView = defineCrudView({
     selection: fileTagEditorSelection,
     dtoSchema: FileTagEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 const FrontpageGalleryItemEditorDtoSchema = z.object({
@@ -108,7 +107,6 @@ export const frontpageGalleryItemEditorView = defineCrudView({
     selection: frontpageGalleryItemEditorSelection,
     dtoSchema: FrontpageGalleryItemEditorDtoSchema,
     hydrate: dto => dto,
-    getIdentity: client => client.id,
 });
 
 const FileTagAssignmentDtoSchema = z.object({
@@ -377,7 +375,6 @@ export const fileEditorView = defineUpdateDeleteView({
     selection: fileEditorSelection,
     dtoSchema: FileEditorDtoSchema,
     hydrate: (dto, references) => hydrateFileDetailDto(dto, references),
-    getIdentity: client => client.id,
 });
 
 export const fileDetailView = defineView({
@@ -386,7 +383,6 @@ export const fileDetailView = defineView({
     selection: fileDetailSelection,
     dtoSchema: FileDetailDtoSchema,
     hydrate: (dto, references) => hydrateFileDetailDto(dto, references),
-    getIdentity: client => client.id,
 });
 
 export type FileDetailClient = ClientOf<typeof fileDetailView>;

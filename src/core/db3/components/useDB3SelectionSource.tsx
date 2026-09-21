@@ -29,7 +29,7 @@ export function useDB3SelectionSource<T extends TAnyModel>(props: DB3SelectionSo
         );
     }
     return {
-        getKey: item => props.view?.getIdentity(item) ?? props.schema.getRowInfo(item).pk,
+        getKey: item => props.view?.entity.getIdentity(item) ?? props.schema.getRowInfo(item).pk,
         getLabel: item => props.schema.getRowInfo(item).name,
         matchesText: (item, text) => props.schema.doesItemExactlyMatchText(item, text),
         renderValue: item => {

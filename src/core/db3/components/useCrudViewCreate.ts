@@ -54,7 +54,7 @@ export async function fetchCreatedCrudViewRow<TView extends db3.AnyDB3CrudView>(
         view.parseDto(result.items[0]),
         references,
     );
-    if (!Object.is(view.getIdentity(client), identity)) {
+    if (!Object.is(view.entity.getIdentity(client), identity)) {
         throw new DB3CreatedRowNotReadableError(view, identity);
     }
     return client;

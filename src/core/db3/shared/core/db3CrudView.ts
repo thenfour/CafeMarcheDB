@@ -230,7 +230,6 @@ export function defineUpdateDeleteView<
     selection: TSelection | ((context: DB3ViewSelectionContext) => TSelection);
     dtoSchema: TDtoSchema;
     hydrate: (dto: z.infer<TDtoSchema>, references: DB3ReferenceProvider) => TClient;
-    getIdentity: (client: TClient) => EntityIdOf<TEntity>;
 }) {
     if (args.entity.schema.deletePolicy === "disabled") {
         throw new Error(

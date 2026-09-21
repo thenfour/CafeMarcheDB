@@ -225,8 +225,10 @@ describe("DB3 picker adapters", () => {
         } as any;
         const view = {
             viewID: "InstrumentFunctionalGroup_Editor",
-            entity: { schema },
-            getIdentity: (item: typeof existing) => item.publicId,
+            entity: {
+                schema,
+                getIdentity: (item: typeof existing) => item.publicId,
+            },
             crud: { createCommand: {} },
         } as any;
         vi.mocked(useInsertMutationClient).mockReturnValue({ doInsertMutation: legacyInsert } as any);
